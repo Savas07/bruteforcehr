@@ -1,10 +1,10 @@
 # ADR 0001 — Technology stack and repository contracts
 
-- **Status:** Accepted
+- **Status:** Accepted; **client sections superseded by [0007-native-ios-tauri-desktop.md](0007-native-ios-tauri-desktop.md)** (2026-10-22: iOS is native SwiftUI, desktop is Tauri 2; Electron and Expo/React Native removed)
 - **Date:** 2026-10-22
 - **Deciders:** Savas (owner), lead engineer agent
 - **Supersedes:** BRIEF.md §6 "Architecture (default stack)" where noted below
-- **Related:** [0002-data-model.md](0002-data-model.md), [0003-auth-email-otp.md](0003-auth-email-otp.md), [0004-release-updates-signing.md](0004-release-updates-signing.md), [0005-job-sources-scraping.md](0005-job-sources-scraping.md), [0006-hosting-domains.md](0006-hosting-domains.md)
+- **Related:** [0002-data-model.md](0002-data-model.md), [0003-auth-email-otp.md](0003-auth-email-otp.md), [0004-release-updates-signing.md](0004-release-updates-signing.md), [0005-job-sources-scraping.md](0005-job-sources-scraping.md), [0006-hosting-domains.md](0006-hosting-domains.md), [0007-native-ios-tauri-desktop.md](0007-native-ios-tauri-desktop.md)
 
 ## Context
 
@@ -31,50 +31,53 @@ Constraints that shape the backend choice:
 
 | Concern | Decision |
 |---|---|
-| Language | TypeScript, `strict`, everywhere (clients, functions, website, shared packages). |
+| Language | TypeScript, `strict`, for the desktop UI, functions, website and shared packages. Native code: **Swift** for iOS and **Rust** for the Tauri desktop shell ([ADR 0007](0007-native-ios-tauri-desktop.md)). TypeScript (`@bfhr/core`) stays the source of truth for domain rules; Swift is checked against exported JSON conformance vectors. |
 | TypeScript version | **6.0.3**, not 7. typescript-eslint refuses TS 7 at runtime (`'typescript-eslint does not support TS 7.0.'` in [typescript-eslint `src/index.ts`](https://github.com/typescript-eslint/typescript-eslint/blob/main/packages/typescript-eslint/src/index.ts); tracking [issue #12518](https://github.com/typescript-eslint/typescript-eslint/issues/12518)). Revisit when typescript-eslint lists TS 7 in [Dependency Versions](https://typescript-eslint.io/users/dependency-versions/). |
 | Shared tsconfig | `tsconfig.base.json`: `strict`, `exactOptionalPropertyTypes`, `noUncheckedIndexedAccess`, `verbatimModuleSyntax`, `moduleResolution: "Bundler"`. |
-| Package manager | **pnpm 12.14** via corepack, **`nodeLinker: hoisted`**. Expo/Metro and electron-builder resolve dependencies most reliably from a flat `node_modules`; hoisting also keeps one copy of React for every app (see React pin). |
+| Package manager | **pnpm 12.14** via corepack with the **default isolated node linker**. The `nodeLinker: hoisted` setting existed only for Expo/Metro and electron-builder and was removed along with them ([ADR 0007](0007-native-ios-tauri-desktop.md)). |
 | Monorepo | **Turborepo 2.11** task graph and caching. |
 | Lint / format / test | ESLint 10 flat config at root + typescript-eslint 8.72; Prettier 3.9; Vitest 5. |
-| Validation | zod 4.6 for every boundary (IPC, HTTP, Firestore converters, AI structured output). |
-| Runtime | Node 22 (local and Cloud Functions). |
+| Validation | zod 4.6 for every TypeScript boundary (Tauri IPC results, HTTP, Firestore converters, AI structured output). Rust commands validate their own inputs. |
+| Runtime | Node 22 (local and Cloud Functions); Rust 1.99.1 stable (desktop shell); Xcode 26.6 / Swift 6.3.3 (iOS). |
 
 ### Apps and packages (repo contract)
 
 ```
-apps/desktop        Electron (electron-vite, React, Tailwind, Radix, cmdk)        @bfhr/desktop
-apps/ios            Expo dev build, expo-router, @react-native-firebase              @bfhr/ios
+apps/desktop        Tauri 2: src-tauri/ (Rust) + React 19 / Vite / Tailwind 4 / Radix / cmdk / TanStack Router UI   @bfhr/desktop
+apps/ios            Native SwiftUI app, committed BruteForceHR.xcodeproj (Xcode synchronized folders), Firebase iOS SDK via SPM
 apps/web            Astro + Tailwind → Firebase Hosting                              @bfhr/web
 apps/functions      Cloud Functions gen2, esbuild-bundled (workspace deps inlined)  @bfhr/functions
-packages/core       domain types, zod schemas, status state machine, dedupe, matching (no platform deps)  @bfhr/core
-packages/api        typed Firestore paths/converters + functions client; platform adapters               @bfhr/api
-packages/ui-tokens  tokens → CSS variables, Tailwind preset, RN theme (created after design research)    @bfhr/ui-tokens
-packages/fixtures   dev/test-only data typed by @bfhr/core; never imported by production code            @bfhr/fixtures
+packages/core       domain types, zod schemas, status state machine, dedupe, matching (no platform deps); exports JSON conformance vectors   @bfhr/core
+packages/api        typed Firestore paths/converters + functions client (desktop + functions)                                       @bfhr/api
+packages/ui-tokens  tokens → CSS variables, Tailwind 4 theme, Swift package BFHRDesignTokens + asset catalog for iOS                  @bfhr/ui-tokens
+packages/fixtures   dev/test-only data typed by @bfhr/core; never imported by production code; exports conformance JSON           @bfhr/fixtures
+packages/swift/BFHRCore  Swift package: Codable models + status state machine port, tested against the conformance vectors
 firebase.json, .firebaserc, firebase/firestore.rules, firebase/firestore.indexes.json, firebase/storage.rules
 docs/               BRIEF.md, PRD.md, STATUS.md, adr/, design/, integrations/, runbooks/
 ```
 
 - Later milestones add `packages/cv-render` (M2), `packages/mail-intel` (M5) and `packages/ai` (M2/M4). Empty packages are not created ahead of time.
-- Internal packages export TypeScript source (`"exports": { ".": "./src/index.ts" }`, `"type": "module"`); each consumer's bundler compiles them (Vite, Metro, Astro, esbuild).
+- Internal packages export TypeScript source (`"exports": { ".": "./src/index.ts" }`, `"type": "module"`); each consumer's bundler compiles them (Vite, Astro, esbuild).
 - Every package has `lint` (`eslint .`), `typecheck` (`tsc --noEmit`) and `test` (Vitest, when it has tests).
-- Code sharing follows BRIEF §6: share domain logic, validation, API client, query hooks, tokens, i18n strings and CV templates; do **not** share view components. Desktop uses React DOM; iOS uses React Native with native primitives.
+- Code sharing follows BRIEF §6: share domain logic, validation, API client, tokens, i18n strings and CV templates; do **not** share view components. Desktop uses React DOM in the system webview; iOS uses SwiftUI and shares logic with TypeScript only through conformance vectors and generated tokens ([ADR 0007](0007-native-ios-tauri-desktop.md)).
 
-### React version pin
+### React version
 
-**`react` and `react-dom` are pinned to `19.3.0` workspace-wide.** Expo SDK 58 (`react-native` 0.88.0, `expo-router` ~58.0.24, Reanimated 4.7.1) requires that exact React; with the hoisted linker there is one `react` in `node_modules`, so desktop and web must use the same version. Upgrading React means upgrading Expo first. (Versions checked on npm on 2026-10-22, per kickoff.)
+No workspace-wide React pin. The earlier pin to `19.3.0` only existed because Expo SDK 58 required that exact React with the hoisted linker. Expo is gone ([ADR 0007](0007-native-ios-tauri-desktop.md)), so only `@bfhr/desktop` depends on React (19.3.x) and upgrades it on its own.
 
-### Clients
+### Clients — superseded by [ADR 0007](0007-native-ios-tauri-desktop.md)
+
+The Electron and Expo/React Native client decisions that used to be here were rejected by the owner on 2026-10-22. Current decisions:
 
 | Client | Decision |
 |---|---|
-| Desktop | Electron (latest stable) + electron-vite, React 19.3.0, Tailwind, Radix primitives, cmdk, dnd-kit, TanStack Query/Virtual; packaged by electron-builder **26.x stable** (27 is still `next`: `npm view electron-builder dist-tags` → `latest 26.15.3`, `next 27.0.0-alpha.11`), updated by electron-updater (ADR 0004). |
-| Desktop data | **Firebase JS SDK** (`firebase/firestore`, `firebase/auth`, `firebase/storage`) in the renderer with `persistentLocalCache` + `persistentMultipleTabManager` (IndexedDB) for offline reads and queued writes ([PersistentLocalCache](https://firebase.google.com/docs/reference/js/firestore_.persistentlocalcache), [Access data offline](https://firebase.google.com/docs/firestore/manage-data/enable-offline)). |
-| iOS | Expo (SDK 58, dev builds, expo-router), Reanimated, Gesture Handler, expo-secure-store, expo-notifications, expo-web-browser, share-extension config plugin. |
-| iOS data | **`@react-native-firebase/*` 27.x** (native Firebase iOS SDK), not the JS SDK. The native SDK has Firestore offline persistence **on by default** on Apple platforms ([Access data offline](https://firebase.google.com/docs/firestore/manage-data/enable-offline)); the JS SDK's IndexedDB persistence is unavailable in React Native and fails with "Offline persistence has been disabled" ([firebase-js-sdk #7947](https://github.com/firebase/firebase-js-sdk/issues/7947)). Requires an Expo dev build (no Expo Go). |
+| Desktop | **Tauri 2** (Rust shell + React/Vite UI in WKWebView/WebView2), capabilities/CSP security model, `tauri-plugin-updater` with Ed25519-signed `latest.json` from GitHub Releases ([ADR 0007](0007-native-ios-tauri-desktop.md), [ADR 0004](0004-release-updates-signing.md)). |
+| Desktop data | **Firebase JS SDK** (`firebase/firestore`, `firebase/auth`, `firebase/storage`) in the webview with `persistentLocalCache` + `persistentMultipleTabManager` (IndexedDB) for offline reads and queued writes ([PersistentLocalCache](https://firebase.google.com/docs/reference/js/firestore_.persistentlocalcache), [Access data offline](https://firebase.google.com/docs/firestore/manage-data/enable-offline)). |
+| iOS | **Native SwiftUI**, `BFHRCore` + `BFHRDesignTokens` local Swift packages, XCUITest ([ADR 0007](0007-native-ios-tauri-desktop.md)). |
+| iOS data | **Firebase iOS SDK via Swift Package Manager**; Firestore offline persistence is on by default on Apple platforms ([Access data offline](https://firebase.google.com/docs/firestore/manage-data/enable-offline)). |
 | Website | Astro + Tailwind, static output, served by Firebase Hosting (ADR 0006); shares `@bfhr/ui-tokens`. Replaces "GitHub Pages" from the brief. |
 
-`packages/api` exposes one typed interface (paths, converters, function calls) with two adapters: Firebase JS SDK (desktop, web if needed) and React Native Firebase (iOS).
+`packages/api` exposes one typed interface (paths, converters, function calls) for the Firebase JS SDK (desktop, functions). iOS has its own Swift `Codable` models in BFHRCore, checked against the same TS schemas through the fixture conformance vectors.
 
 ### Backend: Firebase project `bruteforcehr`
 
@@ -88,7 +91,7 @@ docs/               BRIEF.md, PRD.md, STATUS.md, adr/, design/, integrations/, r
 | Supabase Storage | Cloud Storage for Firebase with `firebase/storage.rules`. |
 | Supabase Vault | Secret Manager via `defineSecret` ([Configure your environment](https://firebase.google.com/docs/functions/config-env)); per-user OAuth mail tokens encrypted (AES-256-GCM envelope) and stored under `serverOnly/**`, never readable by clients. |
 | Fly.io worker (HTTP API, pg-boss queue, schedulers, Chromium) | **Cloud Functions for Firebase 2nd gen, region `europe-west1`**: `onRequest` HTTPS API behind Hosting rewrites `/api/**` and `/connect/**` (ADR 0006); `onSchedule` for mail polling and saved searches; `onTaskDispatched` task-queue functions (Cloud Tasks) for fan-out work (per-account sync, backfill, embeddings, PDF render, send); headless Chromium for PDF in a high-memory function. |
-| Expo Push | Unchanged (Expo Push Service or direct APNs) — decided in M4/M5. |
+| Expo Push | **APNs** for iOS (directly or through Firebase Cloud Messaging); desktop uses OS notifications from the Tauri shell. Decided in M4/M5. |
 | AI | Provider interface with Anthropic Claude default; key in Secret Manager (`ANTHROPIC_API_KEY`), server-side only. |
 
 Functions source is bundled with **esbuild** so workspace packages (`@bfhr/core`, `@bfhr/api`) are inlined and the deployed `package.json` lists only npm dependencies.
@@ -110,8 +113,7 @@ Negative / risks
 - **Vector search is server-only and capped** (≤ 2048 dims, ≤ 1000 results, no listeners). Matching runs in Functions and writes `jobMatches/{jobId}` documents that clients listen to.
 - **Execution limits:** mail backfill and large syncs must be chunked into task-queue invocations (≤ 30 min each) instead of one long worker loop. Requests through Hosting are capped at 60 s, so long work is enqueued and progress is reported through Firestore documents.
 - **Security Rules replace RLS:** correctness depends on rules tests that only run in CI (no local JDK). A rules change can't be fully verified before push.
-- **Two Firebase client SDKs** (JS on desktop, native via RNFirebase on iOS) with different APIs; `packages/api` adapters must hide the differences and both need tests.
-- **React is pinned by Expo.** Desktop/web can't move to a newer React independently.
+- **Two Firebase client SDKs** (JS on desktop, native Swift on iOS) with different APIs. The iOS models are a port, so the conformance vectors are what keep them aligned with `@bfhr/core` ([ADR 0007](0007-native-ios-tauri-desktop.md)).
 - **TypeScript 7 (native compiler) is deferred** until typescript-eslint supports it.
 - Firestore is in `europe-west1`; functions are co-located there. US users (if any) see higher latency — acceptable for a personal tool.
 
@@ -122,10 +124,10 @@ Negative / risks
 | **Supabase (Postgres + RLS + pgvector, Auth, Storage, Realtime) — the brief's default** | Rejected by the owner at kickoff: wants to stay on the existing Google Cloud/Firebase account and avoid a second vendor. Also needs a separate worker host anyway (Edge Functions can't do mail sync — BRIEF §3). |
 | **Fly.io (or any Docker host) for the worker** | Rejected by the owner: no Docker locally, no container hosting to operate. Cloud Functions gen2 cover the needs within documented limits (60/30/9 min, outbound 587/465). |
 | **Docker for local Postgres/emulators** | Rejected: no Docker or JDK on the dev machine; ~12 GB free disk. Emulators run in CI. |
-| **Tauri 2 everywhere** | Webview UI on iOS instead of native primitives, mobile plugin ecosystem immature, weaker control over PDF output than Chromium `printToPDF` (BRIEF §6). |
-| **Flutter** | Viable, but adds Dart as a second language (backend, website and shared domain stay TS) and desktop auto-update needs third-party updaters instead of the proven electron-updater + GitHub Releases path (BRIEF §6). |
-| **SwiftUI (iOS/macOS) + a separate Windows app** | Three codebases and three languages for one developer; no shared domain logic (BRIEF §6). |
-| **Firebase JS SDK on iOS** | No persistent offline cache in React Native (IndexedDB missing; [firebase-js-sdk #7947](https://github.com/firebase/firebase-js-sdk/issues/7947)), so no offline outbox. RNFirebase uses the native SDK with persistence on by default. |
+| **Tauri 2 everywhere** | iOS would get a webview UI instead of native primitives. Tauri 2 *is* now the desktop shell ([ADR 0007](0007-native-ios-tauri-desktop.md)); iOS is native SwiftUI. |
+| **Electron + Expo/React Native** (this ADR's original client choice) | Rejected by the owner on 2026-10-22 ([ADR 0007](0007-native-ios-tauri-desktop.md)). |
+| **Flutter** | Excluded by the owner. |
+| **SwiftUI (iOS/macOS) + a separate Windows app** | Three UI codebases for one developer. Desktop stays one Tauri app for macOS and Windows; only iOS is native. |
 | **TypeScript 7** | Not supported by typescript-eslint (hard error at load). |
-| **pnpm isolated (symlinked) linker** | Metro and electron-builder packaging are fragile with symlinked `node_modules`; risk of duplicate React copies. Hoisted keeps one tree. |
+| **pnpm hoisted linker** | Only Metro and electron-builder needed a flat `node_modules`. With both gone, the default isolated linker gives stricter dependency boundaries. |
 | **Firebase Data Connect (Cloud SQL Postgres) instead of Firestore** | Would bring back SQL, but adds a Cloud SQL instance with a fixed monthly cost and has no native offline cache on clients; Firestore's offline persistence is a core requirement (BRIEF §6.3). |

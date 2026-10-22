@@ -1,6 +1,6 @@
 # Runbook — accounts, keys and secrets the owner must set up
 
-Owner actions that agents cannot do (accounts, money, legal). Each section ends with where the value goes. **Never paste secrets into chat, issues, commits or client code.** Runtime secrets go to Secret Manager with `firebase functions:secrets:set` ([Configure your environment — secrets](https://firebase.google.com/docs/functions/config-env)); CI secrets go to GitHub → `Savas07/bruteforcehr` → Settings → Secrets and variables → Actions.
+Owner actions that agents can't do (accounts, money, legal). Each section ends with where the value goes. **Never paste secrets into chat, issues, commits or client code.** Runtime secrets go to Secret Manager with `firebase functions:secrets:set` ([Configure your environment — secrets](https://firebase.google.com/docs/functions/config-env)). CI secrets go to GitHub → `Savas07/bruteforcehr` → Settings → Secrets and variables → Actions. The full list of CI secrets, with consumers and rotation, is in [release.md](release.md).
 
 Run `firebase` commands from the repo root (`/Users/savas/Desktop/BruteForceHR`, project `bruteforcehr` from `.firebaserc`). `functions:secrets:set` prompts for the value (paste, Enter) and creates a new secret version; functions pick it up on next deploy.
 
@@ -12,7 +12,8 @@ Run `firebase` commands from the repo root (`/Users/savas/Desktop/BruteForceHR`,
 | 4 | Microsoft Entra app registration | M5 | pending |
 | 5 | Job API keys: Adzuna, Jooble, USAJOBS, Reed | M4 | pending |
 | 6 | Apple: Team ID, App Store Connect API key, Developer ID cert, app record | M1 | membership exists; items pending |
-| 7 | Windows code signing | before sharing the app | deferred |
+| 7 | Tauri updater signing key | M1 (first desktop release) | pending |
+| 8 | Windows code signing | before sharing the app | deferred |
 
 ---
 
@@ -102,27 +103,42 @@ If your firebase-tools version has no `--format` flag, run the command without i
 
 ## 6. Apple (macOS signing/notarization + iOS TestFlight)
 
-1. **Team ID:** <https://developer.apple.com/account> → *Membership details* → *Team ID* (10 chars). GitHub secret `APPLE_TEAM_ID`.
-2. **App Store Connect API key** (used for notarization and fastlane uploads; [Creating API keys](https://developer.apple.com/documentation/appstoreconnectapi/creating-api-keys-for-app-store-connect-api)):
+1. **Team ID:** <https://developer.apple.com/account> → *Membership details* → *Team ID* (10 characters). GitHub secret `APPLE_TEAM_ID`.
+2. **App Store Connect API key** (used by Tauri for notarization and by `xcodebuild` for cloud signing + TestFlight upload; [Creating API keys](https://developer.apple.com/documentation/appstoreconnectapi/creating-api-keys-for-app-store-connect-api)):
    1. <https://appstoreconnect.apple.com> → *Users and Access* → *Integrations* → *App Store Connect API* → *Team Keys* → *Generate API Key* (request access first if it's the first key).
-   2. Name `bruteforcehr-ci`, access **App Manager**.
-   3. Download `AuthKey_<KEYID>.p8` (**only downloadable once**). Note **Key ID** and **Issuer ID** (top of the page).
-   4. GitHub secrets: `APPLE_API_KEY` = full contents of the `.p8`; `APPLE_API_KEY_ID`; `APPLE_API_ISSUER`.
+   2. Name `bruteforcehr-ci`, access **Admin**. Cloud-managed distribution certificates are "accessible only to members of your development team with the Admin role" ([Xcode 13 release notes](https://developer.apple.com/documentation/xcode-release-notes/xcode-13-release-notes)), and the iOS job signs with them ([ADR 0004](../adr/0004-release-updates-signing.md)).
+   3. Download `AuthKey_<KEYID>.p8`. It's **only downloadable once**. Note the **Key ID** and the **Issuer ID** (top of the page).
+   4. GitHub secrets: `APPLE_API_KEY_P8` = full contents of the `.p8`; `APPLE_API_KEY_ID`; `APPLE_API_ISSUER`. (CI writes the `.p8` to a temp file and passes its path as `APPLE_API_KEY_PATH`, and the Key ID as `APPLE_API_KEY`, which are the variable names Tauri expects — [Tauri macOS signing](https://v2.tauri.app/distribute/sign/macos/).)
 3. **Developer ID Application certificate** (macOS distribution outside the App Store):
-   1. Keychain Access → *Certificate Assistant* → *Request a Certificate From a Certificate Authority* → save CSR to disk.
-   2. <https://developer.apple.com/account/resources/certificates/add> → **Developer ID Application** (G2 Sub-CA) → upload CSR → download `.cer` → double-click to install.
+   1. Keychain Access → *Certificate Assistant* → *Request a Certificate From a Certificate Authority* → save the CSR to disk ([Create a CSR](https://developer.apple.com/help/account/create-certificates/create-a-certificate-signing-request)).
+   2. <https://developer.apple.com/account/resources/certificates/add> → **Developer ID Application** (G2 Sub-CA) → upload the CSR → download the `.cer` → double-click to install.
    3. Keychain Access → *My Certificates* → right-click "Developer ID Application: … (TEAMID)" → *Export* → `.p12` with a strong password.
-   4. `base64 -i DeveloperID.p12 | pbcopy` → GitHub secret `MAC_CSC_LINK`; password → `MAC_CSC_KEY_PASSWORD`. Delete the exported `.p12` file afterwards.
-4. **Bundle ID:** <https://developer.apple.com/account/resources/identifiers/add/bundleId> → App IDs → App → explicit `com.savas07.bruteforcehr`; enable Push Notifications and App Groups (share extension). The share extension ID (e.g. `com.savas07.bruteforcehr.share`) is registered the same way when M4 adds it.
+   4. `openssl base64 -A -in DeveloperID.p12 | pbcopy` → GitHub secret `APPLE_CERTIFICATE`; the password → `APPLE_CERTIFICATE_PASSWORD`; the exact identity string (`security find-identity -v -p codesigning`, e.g. `Developer ID Application: Name (TEAMID)`) → `APPLE_SIGNING_IDENTITY`. Tauri imports the certificate into a temporary keychain itself ([Tauri macOS signing](https://v2.tauri.app/distribute/sign/macos/)). Delete the exported `.p12` file afterwards.
+4. **Bundle ID:** <https://developer.apple.com/account/resources/identifiers/add/bundleId> → App IDs → App → explicit `com.savas07.bruteforcehr`; enable Push Notifications and App Groups (share extension). The share extension ID (e.g. `com.savas07.bruteforcehr.share`) is registered the same way when M4 adds it. The Tauri desktop app uses the same identifier on macOS (Developer ID distribution, not the Mac App Store).
 5. **App Store Connect app record:** *Apps* → *+* → *New App*: platform iOS, name `BruteForceHR` (must be unique on the App Store; if taken, use e.g. "BruteForceHR — Job Search"), primary language English (U.S.), bundle ID `com.savas07.bruteforcehr`, SKU `bruteforcehr`, full access.
-6. **TestFlight internal group:** app → *TestFlight* → *Internal Testing* → *+* → group `Owner`, add yourself; enable automatic distribution. Install the TestFlight app on the iPhone and turn on Automatic Updates.
-7. iOS signing uses the API key with automatic signing (no fastlane match repo) — [ADR 0004](../adr/0004-release-updates-signing.md).
+6. **TestFlight internal group:** app → *TestFlight* → *Internal Testing* → *+* → group `Owner`, add yourself, enable automatic distribution. Install the TestFlight app on the iPhone and turn on Automatic Updates.
+7. iOS signing uses the API key with automatic cloud signing (`xcodebuild -allowProvisioningUpdates -authenticationKey…`). There's no fastlane, no match repo and no distribution `.p12` for iOS ([ADR 0004](../adr/0004-release-updates-signing.md)).
 
-## 7. Windows code signing (later, before sharing)
+## 7. Tauri updater signing key (desktop auto-update)
 
-Currently unsigned by decision ([ADR 0004](../adr/0004-release-updates-signing.md)). Azure Artifact Signing is unavailable to an individual in Turkey (individuals: US/Canada only; organizations: listed countries only — [quickstart prerequisites](https://learn.microsoft.com/en-us/azure/artifact-signing/quickstart)). When sharing becomes a goal:
+The desktop updater only installs bundles signed with this key, and that check "cannot be disabled" ([Tauri updater](https://v2.tauri.app/plugin/updater/)). It is also the only update-integrity check for the unsigned Windows build. **If the private key is lost, installed apps can't receive updates any more**, so keep an offline backup.
+
+1. Generate the key pair on your Mac with a strong password (after `apps/desktop` exists; [CLI `signer generate`](https://v2.tauri.app/reference/cli/)):
+   ```sh
+   cd /Users/savas/Desktop/BruteForceHR
+   pnpm --filter @bfhr/desktop exec tauri signer generate -w ~/.tauri/bruteforcehr.key
+   ```
+   It prompts for the password and writes `~/.tauri/bruteforcehr.key` (private) and `~/.tauri/bruteforcehr.key.pub` (public).
+2. GitHub secrets: `TAURI_SIGNING_PRIVATE_KEY` = full contents of `~/.tauri/bruteforcehr.key`; `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` = the password. (`.env` files don't work for these — [Tauri updater](https://v2.tauri.app/plugin/updater/).)
+3. Give the agent the **public key** (contents of `bruteforcehr.key.pub`; not secret). It goes into `apps/desktop/src-tauri/tauri.conf.json` → `plugins.updater.pubkey`, which must contain the key itself, not a file path.
+4. Back up the private key file and the password in two separate places you control (e.g. password manager + encrypted offline drive). Then delete `~/.tauri/bruteforcehr.key` from the Mac if you don't sign locally.
+5. Never regenerate the key for an existing install base. Rotating it means shipping one release signed with the old key that carries the new public key ([ADR 0004](../adr/0004-release-updates-signing.md)).
+
+## 8. Windows code signing (later, before sharing)
+
+Currently unsigned by decision ([ADR 0004](../adr/0004-release-updates-signing.md)). Updates are still verified by the Tauri updater signature (section 7). Azure Artifact Signing is unavailable to an individual in Turkey (individuals: US/Canada only; organizations: listed countries only — [quickstart prerequisites](https://learn.microsoft.com/en-us/azure/artifact-signing/quickstart)). When sharing becomes a goal:
 
 1. Buy an **OV code-signing certificate** from a CA that issues to individuals in Turkey and delivers on a **cloud HSM** usable from CI (e.g. via signtool/KSP or PKCS#11). Keys must live on an HSM per CA/B Forum rules.
-2. Give the agent: certificate subject (for `publisherName`), CI signing credentials → GitHub secrets (names chosen in the release workflow update).
-3. Agent sets `win.sign` + `publisherName` in electron-builder config; the first signed release turns on update signature verification for every installed client.
+2. Give the agent the CI signing credentials → GitHub secrets (names chosen in the release workflow update).
+3. The agent sets `bundle.windows.signCommand` (cloud HSM / Key Vault tools) or `certificateThumbprint` in `tauri.conf.json` ([Tauri Windows code signing](https://v2.tauri.app/distribute/sign/windows/)). The updater signature stays as it is.
 4. Re-check Artifact Signing eligibility if you register a company in an eligible country.

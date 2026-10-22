@@ -1,7 +1,7 @@
 # BruteForceHR — Product Requirements (v1)
 
 - **Status:** Draft for M0 approval · **Date:** 2026-10-22
-- **Sources:** [BRIEF.md](BRIEF.md) (product brief) adapted by kickoff decisions recorded in [adr/0001-stack.md](adr/0001-stack.md), [adr/0002-data-model.md](adr/0002-data-model.md), [adr/0003-auth-email-otp.md](adr/0003-auth-email-otp.md), [adr/0004-release-updates-signing.md](adr/0004-release-updates-signing.md), [adr/0005-job-sources-scraping.md](adr/0005-job-sources-scraping.md), [adr/0006-hosting-domains.md](adr/0006-hosting-domains.md).
+- **Sources:** [BRIEF.md](BRIEF.md) (product brief) adapted by kickoff decisions recorded in [adr/0001-stack.md](adr/0001-stack.md), [adr/0002-data-model.md](adr/0002-data-model.md), [adr/0003-auth-email-otp.md](adr/0003-auth-email-otp.md), [adr/0004-release-updates-signing.md](adr/0004-release-updates-signing.md), [adr/0005-job-sources-scraping.md](adr/0005-job-sources-scraping.md), [adr/0006-hosting-domains.md](adr/0006-hosting-domains.md), [adr/0007-native-ios-tauri-desktop.md](adr/0007-native-ios-tauri-desktop.md).
 - **Design tracking:** [STATUS.md](STATUS.md)
 
 ## 1. Product
@@ -9,7 +9,7 @@
 | | |
 |---|---|
 | Name | BruteForceHR (slug `bruteforcehr`, bundle `com.savas07.bruteforcehr`, scheme `bruteforcehr://`) |
-| Platforms | iOS (iPhone) · macOS (Apple silicon + Intel) · Windows 10/11 x64 · website `https://bruteforcehr.web.app` |
+| Platforms | iOS (iPhone, native SwiftUI) · macOS (Apple silicon + Intel, one universal Tauri app) · Windows 10/11 x64 (Tauri) · website `https://bruteforcehr.web.app` |
 | Markets | Turkey; EU (Germany, Netherlands, relocation); UK; US; Remote worldwide |
 | Languages | English, Turkish, German — UI, CVs, mail parsing |
 | Audience | Personal tool; multi-user-capable architecture (unverified Google OAuth app "In production", TestFlight internal) |
@@ -45,9 +45,9 @@ Story IDs: `M<milestone>-<area>-<n>`. "Both clients" = iOS + desktop (macOS and 
 
 Exit: owner approves the design checkpoint; all three apps launch.
 
-**M0-REPO-1 — Monorepo.** As the developer, I want one pnpm/Turborepo workspace so all apps share types and tooling.
-- `pnpm install` (hoisted) succeeds; `turbo lint typecheck test` passes at root.
-- Layout and package names match [ADR 0001](adr/0001-stack.md); React pinned to 19.3.0; TypeScript 6.0.3.
+**M0-REPO-1 — Monorepo.** As the developer, I want one pnpm/Turborepo workspace plus native projects that share contracts.
+- `pnpm install` (default isolated linker) succeeds; `turbo lint typecheck test` passes at root; `cargo clippy`/`cargo test` pass in `apps/desktop/src-tauri`; `swift test` passes for `packages/swift/BFHRCore` and `packages/ui-tokens/swift/BFHRDesignTokens`.
+- Layout and package names match [ADR 0001](adr/0001-stack.md) / [ADR 0007](adr/0007-native-ios-tauri-desktop.md); TypeScript 6.0.3. BFHRCore passes every conformance vector exported by `@bfhr/core` and `@bfhr/fixtures`.
 
 **M0-CI-1 — CI.** As the developer, I want every push checked.
 - `ci.yml` runs lint, typecheck, unit tests, gitleaks secret scan and dependency audit; Firestore/Storage rules tests run on the emulator in CI (ubuntu runner with Java).
@@ -57,7 +57,7 @@ Exit: owner approves the design checkpoint; all three apps launch.
 - `firebase.json`, `.firebaserc` (`bruteforcehr`), deny-by-default `firebase/firestore.rules`, `firestore.indexes.json`, `storage.rules` committed; Firestore `(default)` exists in europe-west1.
 - A health function (`/api/health` via Hosting rewrite) responds 200 from europe-west1.
 
-**M0-APP-1 — Apps launch.** Desktop (macOS dev build) opens a window; iOS dev build runs on iPhone 17 Pro simulator; website builds and serves locally.
+**M0-APP-1 — Apps launch.** The Tauri desktop app (macOS dev build) opens a window. The native iOS app builds and runs on the iPhone 17 Pro simulator. The website builds and serves locally.
 
 **M0-DES-1 — Design research.** As the owner, I want design grounded in references.
 - `docs/design/research/<area>.md` exists for every row of BRIEF §5.3 (≥ 5 examined, ≥ 3 kept per screen/flow, `mobbin_url` cited, no images committed).
@@ -65,7 +65,7 @@ Exit: owner approves the design checkpoint; all three apps launch.
 
 **M0-DES-2 — Design checkpoint.** The 5 core screens (Today, Job detail, CV editor, Tracker board, Mail review) on iOS and desktop each have critique logs with zero Critical / zero unresolved Moderate findings; owner approves before broad implementation.
 
-**M0-DOC-1 — Docs.** PRD, ADRs 0001–0006, STATUS.md, runbooks/accounts.md exist.
+**M0-DOC-1 — Docs.** PRD, ADRs 0001–0007, STATUS.md, runbooks/accounts.md and runbooks/release.md exist.
 
 ## M1 — Walking-skeleton release
 
@@ -76,10 +76,10 @@ Exit: BRIEF §7 acceptance demonstrated ([ADR 0004](adr/0004-release-updates-sig
 - Wrong/expired code shows calm, specific copy; session persists across restarts (Keychain on iOS).
 
 **M1-REL-1 — Release pipeline.** As the owner, publishing `vX.Y.Z` ships everything.
-- Tag → `release.yml`: backend deploy, macOS signed+notarized DMG+ZIP, Windows unsigned NSIS, iOS TestFlight upload, publish to `Savas07/bruteforcehr-releases`, write `appConfig/{macos,windows,ios}`.
-- Install `v0.1.0` on clean macOS and Windows; publish `v0.1.1`; both update with only "Restart". TestFlight receives `0.1.1`; website download page shows `0.1.1`.
+- Tag → `release.yml`: backend deploy; macOS universal signed + notarized DMG and updater `.app.tar.gz` + `.sig`; Windows unsigned NSIS `-setup.exe` + `.sig`; iOS archive + TestFlight upload via `xcodebuild`; `latest.json` published to `Savas07/bruteforcehr-releases`; `appConfig/{macos,windows,ios}` written.
+- Install `v0.1.0` on clean macOS and Windows; publish `v0.1.1`; both update with only "Restart". The update is rejected if its Ed25519 signature doesn't match. TestFlight receives `0.1.1`; website download page shows `0.1.1`.
 
-**M1-UPD-1 — Desktop updates.** Check at launch + every 6 h; background download; non-blocking "Restart to update" with notes; installs on quit; never interrupts unsaved edits; Stable/Beta channel and "Check for updates" in Settings.
+**M1-UPD-1 — Desktop updates.** `tauri-plugin-updater`: check at launch + every 6 h; background download; non-blocking "Restart to update" with notes; installs on Restart or quit; never interrupts unsaved edits; Stable/Beta channel (separate `latest.json` endpoints) and "Check for updates" in Settings ([ADR 0004](adr/0004-release-updates-signing.md)).
 
 **M1-UPD-2 — iOS version gate.** Banner when `appConfig/ios.latestVersion` > installed; blocking screen below `minSupportedVersion`.
 
@@ -106,7 +106,7 @@ Exit: PDF parity tests pass; all CV screens approved.
 
 **M2-CV-6 — Templates.** ≥ 3 ATS-safe templates (single column, real text, standard headings, embedded fonts, no text in images/layout tables); theme: accent, font pair, density, A4/Letter.
 
-**M2-CV-7 — Export.** PDF (desktop `printToPDF` offline; server Chromium for iOS/attachments; tagged where supported), DOCX, JSON. Default name `First-Last-CV-<Company>.pdf`. Raster diff between engines within threshold in CI.
+**M2-CV-7 — Export.** PDF (desktop offline; server Chromium for iOS/attachments; tagged where supported), DOCX, JSON. Default name `First-Last-CV-<Company>.pdf`. Raster parity between engines within threshold in CI. **The desktop offline PDF engine is open** (system webview PDF via Rust, Typst, or server-only): decided in an ADR at the start of M2 ([ADR 0007](adr/0007-native-ios-tauri-desktop.md) "Open: offline CV PDF export").
 
 **M2-CV-8 — ATS check.** Text extracted from our PDF round-trips every section; keyword coverage shown against a chosen job description.
 
@@ -181,11 +181,11 @@ Exit: all STATUS.md rows approved; `v1.0.0` released through the pipeline.
 
 **M6-SET-1 — Settings & data control.** Mail accounts (connect/re-auth/disconnect + purge), job sources + keys, AI toggle "Allow sending email text to AI", notifications + quiet hours, desktop launch-at-login + menu bar/tray mode (opt-in), update channel, **Export everything** (ZIP: JSON + files), **Delete account** (hard delete incl. Storage and token revocation).
 
-**M6-SEC-1 — Security review.** Electron hardening (contextIsolation, sandbox, no nodeIntegration, strict CSP, zod-validated IPC allowlist, https-only `openExternal` allowlist, navigation blocked, Fuses: RunAsNode off, ASAR integrity on); iOS Keychain sessions, `PrivacyInfo.xcprivacy`, App Privacy answers; data minimization (non-job mail never stored; job-mail bodies kept while active + 180 days); AI minimum text, no PII in logs; crash reporting opt-in and scrubbed.
+**M6-SEC-1 — Security review.** Tauri security model: least-privilege capabilities per window, app commands restricted with `AppManifest::commands`, input validated in Rust commands, strict CSP in `app.security.csp`, `opener` scoped to an https allowlist, navigation and new windows blocked, WebDriver plugins absent from release builds, updater private key only in CI. iOS: Keychain sessions, `PrivacyInfo.xcprivacy`, App Privacy answers. Data minimization (non-job mail never stored; job-mail bodies kept while active + 180 days); AI minimum text, no PII in logs; crash reporting opt-in and scrubbed.
 
 **M6-PERF-1 — Budgets.** Desktop cold start < 2.5 s; 60 fps with 5,000 jobs and 1,000 applications; iOS launch-to-interactive < 2 s; 3-account incremental sync < 30 s.
 
-**M6-QA-1 — Final critiques & a11y.** Final-stage critique and accessibility review on every screen and website page; E2E: Playwright (Electron macOS + Windows, website), Maestro on iOS (onboarding, share-save, email apply, mail-driven status change, CV export).
+**M6-QA-1 — Final critiques & a11y.** Final-stage critique and accessibility review on every screen and website page. E2E: WebdriverIO + `@wdio/tauri-service` on desktop (macOS embedded driver, Windows), Playwright on the website, XCUITest on iOS (onboarding, share-save, email apply, mail-driven status change, CV export).
 
 **M6-DOC-1 — Docs.** Privacy policy, user guide, runbooks (release, accounts, Google verification/CASA for a public launch, Windows signing).
 

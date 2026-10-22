@@ -21,7 +21,7 @@ public struct AutoChangeRow: View {
                 Text(verbatim: "\(item.company.name) · \(item.role)")
                     .font(.bfhr(.headline))
                     .foregroundStyle(BFHRColor.Fg.primary)
-                Text(Strings.autoChange(to: item.to, sender: item.sender))
+                Text(bfhrPlain: Strings.autoChange(to: item.to, sender: item.sender))
                     .font(.bfhr(.subheadline))
                     .foregroundStyle(BFHRColor.Fg.secondary)
                 HStack(spacing: BFHRSpace.s2) {
@@ -74,7 +74,7 @@ public struct NudgeCard: View {
                     Text(verbatim: "\(item.company.name) · \(item.role)")
                         .font(.bfhr(.headline))
                         .foregroundStyle(BFHRColor.Fg.primary)
-                    Text(prompt(days: days))
+                    Text(bfhrPlain: prompt(days: days))
                         .font(.bfhr(.subheadline))
                         .foregroundStyle(BFHRColor.Fg.secondary)
                 }

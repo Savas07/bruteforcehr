@@ -43,6 +43,11 @@ export interface ReviewProposalVM {
   readonly hedged: boolean;
   /** Proposed status move; null when the email only adds information (no status change). */
   readonly move: StatusMoveVM | null;
+  /**
+   * The application the email is linked to (`applicationId`), also when it proposes no move;
+   * null when it isn't linked. Label: "Acme · Frontend Engineer".
+   */
+  readonly application: { readonly id: string; readonly label: string } | null;
   /** `ReasonLine`: the evidence as one sentence ("Same thread as your application email"). */
   readonly reason: string;
   /** Quoted snippet from the email. */

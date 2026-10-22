@@ -57,11 +57,11 @@ public struct InlineAlert: View {
                 .foregroundStyle(colors.text)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: BFHRSpace.s1) {
-                Text(title)
+                Text(bfhrPlain: title)
                     .font(.bfhr(.subheadline, emphasized: true))
                     .foregroundStyle(colors.text)
                 if let message {
-                    Text(message)
+                    Text(bfhrPlain: message)
                         .font(.bfhr(.subheadline))
                         .foregroundStyle(BFHRColor.Fg.primary)
                 }
@@ -121,11 +121,11 @@ public struct PaneError: View {
                 .foregroundStyle(BFHRColor.Fg.tertiary)
                 .accessibilityHidden(true)
             VStack(spacing: BFHRSpace.s2) {
-                Text(title ?? Strings.paneErrorTitle(failure.kind))
+                Text(bfhrPlain: title ?? Strings.paneErrorTitle(failure.kind))
                     .font(.bfhr(.title3, emphasized: true))
                     .foregroundStyle(BFHRColor.Fg.primary)
                     .accessibilityAddTraits(.isHeader)
-                Text(message ?? Strings.paneErrorMessage(failure.kind))
+                Text(bfhrPlain: message ?? Strings.paneErrorMessage(failure.kind))
                     .font(.bfhr(.body))
                     .foregroundStyle(BFHRColor.Fg.secondary)
             }

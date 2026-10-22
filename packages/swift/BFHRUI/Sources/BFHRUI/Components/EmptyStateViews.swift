@@ -51,7 +51,7 @@ public struct EmptyState: View {
         case .firstUse, .caughtUp:
             ContentUnavailableView {
                 Label {
-                    Text(title)
+                    Text(bfhrPlain: title)
                         .font(.bfhr(.title3, emphasized: true))
                         .foregroundStyle(BFHRColor.Fg.primary)
                 } icon: {
@@ -63,7 +63,7 @@ public struct EmptyState: View {
                 }
             } description: {
                 if let message {
-                    Text(message)
+                    Text(bfhrPlain: message)
                         .font(.bfhr(.body))
                         .foregroundStyle(BFHRColor.Fg.secondary)
                 }
@@ -72,11 +72,11 @@ public struct EmptyState: View {
             }
         case .noResults:
             VStack(spacing: BFHRSpace.s2) {
-                Text(title)
+                Text(bfhrPlain: title)
                     .font(.bfhr(.headline))
                     .foregroundStyle(BFHRColor.Fg.primary)
                 if let message {
-                    Text(message)
+                    Text(bfhrPlain: message)
                         .font(.bfhr(.subheadline))
                         .foregroundStyle(BFHRColor.Fg.secondary)
                 }
@@ -89,7 +89,7 @@ public struct EmptyState: View {
             .frame(maxWidth: .infinity)
             .padding(.vertical, BFHRSpace.s8)
         case .subArea:
-            Text(title)
+            Text(bfhrPlain: title)
                 .font(.bfhr(.subheadline))
                 .foregroundStyle(BFHRColor.Fg.tertiary)
                 .frame(maxWidth: .infinity, alignment: .leading)

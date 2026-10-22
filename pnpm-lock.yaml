@@ -196,6 +196,12 @@ importers:
       '@bfhr/ui-tokens':
         specifier: workspace:*
         version: link:../../packages/ui-tokens
+      '@dnd-kit/core':
+        specifier: ^6.3.1
+        version: 6.3.1(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+      '@dnd-kit/utilities':
+        specifier: ^3.2.2
+        version: 3.2.2(react@19.3.1)
       '@tanstack/react-router':
         specifier: ^1.170.45
         version: 1.170.45(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
@@ -697,6 +703,22 @@ packages:
 
   '@dabh/diagnostics@2.0.9':
     resolution: {integrity: sha512-R6siwR65Hm+3yfgP7o8DKhNvputQAwfoz9zTc3kyDudnomj2/BcLmD+uGQQPICjuFUp8ounPBU+jmKsocwVVAg==}
+
+  '@dnd-kit/accessibility@3.1.1':
+    resolution: {integrity: sha512-2P+YgaXF+gRsIihwwY1gCsQSYnu9Zyj2py8kY5fFvUM1qm2WA2u639R6YNVfU4GWr+ZM5mqEsfHZZLoRONbemw==}
+    peerDependencies:
+      react: '>=16.8.0'
+
+  '@dnd-kit/core@6.3.1':
+    resolution: {integrity: sha512-xkGBRQQab4RLwgXxoqETICr6S5JlogafbhNsidmrkVv2YRs5MLwpjoF2qpiGjQt8S9AoxtIV603s0GIUpY5eYQ==}
+    peerDependencies:
+      react: '>=16.8.0'
+      react-dom: '>=16.8.0'
+
+  '@dnd-kit/utilities@3.2.2':
+    resolution: {integrity: sha512-+MKAJEOfaBe5SmV6t34p80MMKhjvUz0vRrvVJbPT0WElzaOJ/1xs+D+KDv+tD/NE5ujfrChEcshd4fLn0wpiqg==}
+    peerDependencies:
+      react: '>=16.8.0'
 
   '@electric-sql/pglite-tools@0.2.21':
     resolution: {integrity: sha512-kv8Z7UmmBVECHud63VblgQLp4A+qSklNP7H22VQqFQGrWFTodc73bubcjgmBqThFsIIiEeAEQQYwWGaK2lSDtA==}
@@ -7859,6 +7881,24 @@ snapshots:
       '@so-ric/colorspace': 1.1.6
       enabled: 2.0.0
       kuler: 2.0.0
+
+  '@dnd-kit/accessibility@3.1.1(react@19.3.1)':
+    dependencies:
+      react: 19.3.1
+      tslib: 2.8.1
+
+  '@dnd-kit/core@6.3.1(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
+    dependencies:
+      '@dnd-kit/accessibility': 3.1.1(react@19.3.1)
+      '@dnd-kit/utilities': 3.2.2(react@19.3.1)
+      react: 19.3.1
+      react-dom: 19.3.1(react@19.3.1)
+      tslib: 2.8.1
+
+  '@dnd-kit/utilities@3.2.2(react@19.3.1)':
+    dependencies:
+      react: 19.3.1
+      tslib: 2.8.1
 
   '@electric-sql/pglite-tools@0.2.21(@electric-sql/pglite@0.3.16)':
     dependencies:

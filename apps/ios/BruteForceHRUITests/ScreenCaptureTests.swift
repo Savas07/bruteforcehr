@@ -57,8 +57,20 @@ final class ScreenCaptureTests: XCTestCase {
                 let app = XCUIApplication()
                 app.launchArguments += english + ["-BFHRScreen", screen] + designArguments(for: state)
                 app.launch()
+                // The screen's tab is selected, then the screen is showing: its design root
+                // (`design.<screen>`), or a view the screen pushed over that root (the root leaves
+                // the tree then, e.g. the CV editor opens the selected CV over the CVs list), which
+                // shows a back button.
+                let tabBar = app.tabBars.firstMatch
+                XCTAssertTrue(tabBar.waitForExistence(timeout: 20), "\(screen) \(state)")
+                XCTAssertTrue(tabBar.buttons[tabTitle(for: screen)].isSelected, "\(screen) \(state): tab")
                 let root = app.descendants(matching: .any)["design.\(screen)"]
-                XCTAssertTrue(root.waitForExistence(timeout: 20), "\(screen) \(state)")
+                let back = app.navigationBars.buttons["BackButton"]
+                let shown = XCTNSPredicateExpectation(
+                    predicate: NSPredicate { _, _ in root.exists || back.exists },
+                    object: nil
+                )
+                XCTAssertEqual(XCTWaiter().wait(for: [shown], timeout: 20), .completed, "\(screen) \(state)")
                 // Past the 300 ms skeleton delay, toasts and the banner's appearance.
                 Thread.sleep(forTimeInterval: state == "loading" ? 1.0 : 1.5)
                 let file = directory.appendingPathComponent("\(screen)-\(state)-\(suffix).png")
@@ -72,6 +84,17 @@ final class ScreenCaptureTests: XCTestCase {
     private func list(_ name: String) -> [String]? {
         guard let value = ProcessInfo.processInfo.environment[name], !value.isEmpty else { return nil }
         return value.split(separator: ",").map(String.init)
+    }
+
+    /// The English title of the tab that hosts a design screen (DesignMode.swift).
+    private func tabTitle(for screen: String) -> String {
+        switch screen {
+        case "job-detail": "Jobs"
+        case "cv-editor": "CVs"
+        case "tracker-board": "Tracker"
+        case "mail-review": "Mail"
+        default: "Today"
+        }
     }
 
     private func designArguments(for state: String) -> [String] {

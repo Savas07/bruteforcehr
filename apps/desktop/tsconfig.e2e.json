@@ -1,0 +1,15 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "types": ["node"],
+    "noEmit": true
+  },
+  "include": [
+    "playwright.config.ts",
+    "scripts/**/*.ts",
+    "tests/**/*.ts",
+    "src/renderer/src/env.d.ts",
+    "src/shared/**/*.ts"
+  ]
+}

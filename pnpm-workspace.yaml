@@ -7,10 +7,14 @@ packages:
 # flat node_modules; see docs/adr/0001-stack.md.
 nodeLinker: hoisted
 
-# Install scripts are opt-in. esbuild needs its postinstall (binary check); the others are optional
-# (protobufjs version check, @firebase/util web-config autoinit, re2 native regex for firebase-tools).
+# Install scripts are opt-in. esbuild needs its postinstall (binary check) and electron its binary
+# download (cached in ~/Library/Caches/electron). Optional, skipped: protobufjs version check,
+# @firebase/util web-config autoinit, re2 native regex for firebase-tools, electron-winstaller
+# (Squirrel.Windows, unused: the Windows target is NSIS) vendor-file copy.
 allowBuilds:
   "@firebase/util": false
+  electron: true
+  electron-winstaller: false
   esbuild: true
   protobufjs: false
   re2: false

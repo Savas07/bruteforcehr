@@ -36,7 +36,7 @@ public struct ProposalSentence: View {
         Group {
             if let target = proposal.proposedStatus, let from = proposal.currentStatus, target != from,
                let company = proposal.company {
-                Text(Strings.proposalMove(
+                Text(bfhrPlain: Strings.proposalMove(
                     application: Self.applicationName(company: company, role: proposal.role),
                     from: from,
                     to: target
@@ -65,7 +65,7 @@ public struct ReasonLine: View {
     }
 
     public var body: some View {
-        Text(text)
+        Text(bfhrPlain: text)
             .font(.bfhr(.subheadline))
             .foregroundStyle(BFHRColor.Fg.secondary)
     }

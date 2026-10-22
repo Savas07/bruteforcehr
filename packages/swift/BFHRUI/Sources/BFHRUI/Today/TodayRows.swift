@@ -54,6 +54,20 @@ struct InlineLabel<Content: View>: View {
     }
 }
 
+/// The company monogram at the head of a row. Decorative (rows name the company), so at
+/// accessibility text sizes it steps aside and the text gets the full row width.
+struct RowMonogram: View {
+    let company: CompanyIdentity
+    var badge: String?
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    var body: some View {
+        if !dynamicTypeSize.isAccessibilitySize {
+            CompanyMonogram(company, badge: badge)
+        }
+    }
+}
+
 // MARK: Next up
 
 /// The next interview within 48 h (Tana "Next Up" + Fireflies prep): what, who, when (with the
@@ -66,7 +80,7 @@ struct NextUpCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: BFHRSpace.s3) {
             HStack(alignment: .top, spacing: BFHRSpace.s3) {
-                CompanyMonogram(next.company, badge: "calendar")
+                RowMonogram(company: next.company, badge: "calendar")
                 VStack(alignment: .leading, spacing: BFHRSpace.s1) {
                     Text(TodayStrings.interviewKind(next.kind, round: next.round))
                         .font(.bfhr(.footnote, emphasized: true))
@@ -198,7 +212,7 @@ struct ReviewRow: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: BFHRSpace.s3) {
-            CompanyMonogram(proposal.company ?? CompanyIdentity(name: proposal.sender.name ?? proposal.sender.address), badge: proposal.category.glyph)
+            RowMonogram(company: proposal.company ?? CompanyIdentity(name: proposal.sender.name ?? proposal.sender.address), badge: proposal.category.glyph)
             VStack(alignment: .leading, spacing: BFHRSpace.s1) {
                 Text(Strings.classification(proposal.category, hedged: proposal.isHedged))
                     .font(.bfhr(.headline))
@@ -242,7 +256,7 @@ struct FollowUpRow: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: BFHRSpace.s3) {
-            CompanyMonogram(nudge.company)
+            RowMonogram(company: nudge.company)
             VStack(alignment: .leading, spacing: BFHRSpace.s1) {
                 Text(verbatim: "\(nudge.company.name) · \(nudge.role)")
                     .font(.bfhr(.headline))
@@ -274,7 +288,7 @@ struct DeadlineRow: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: BFHRSpace.s3) {
-            CompanyMonogram(deadline.company, badge: TodayStrings.deadlineGlyph(deadline.kind))
+            RowMonogram(company: deadline.company, badge: TodayStrings.deadlineGlyph(deadline.kind))
             VStack(alignment: .leading, spacing: BFHRSpace.s1) {
                 Text(verbatim: TodayStrings.deadlineTitle(deadline))
                     .font(.bfhr(.headline))
@@ -307,10 +321,16 @@ struct MatchRow: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            row
+        }
+    }
+
+    @ViewBuilder private var row: some View {
         HStack(alignment: .top, spacing: BFHRSpace.s3) {
             Button(action: onOpen) {
                 HStack(alignment: .top, spacing: BFHRSpace.s3) {
-                    CompanyMonogram(match.company)
+                    RowMonogram(company: match.company)
                     VStack(alignment: .leading, spacing: BFHRSpace.s1) {
                         Text(verbatim: match.title)
                             .font(.bfhr(.headline))
@@ -342,6 +362,20 @@ struct MatchRow: View {
             }
         }
         .padding(.vertical, BFHRSpace.s1)
+        if dynamicTypeSize.isAccessibilitySize {
+            // At accessibility sizes the icon column would squeeze the title; the actions move
+            // under the text as labelled buttons.
+            VStack(alignment: .leading, spacing: 0) {
+                Button(action: onSave) {
+                    Label { Text(TodayStrings.save) } icon: { Image(systemName: "bookmark") }
+                }
+                Button(action: onNotForMe) {
+                    Label { Text(Strings.notForMe) } icon: { Image(systemName: "xmark") }
+                }
+            }
+            .buttonStyle(.bfhrPlain)
+            .padding(.leading, -BFHRSpace.s2)
+        }
     }
 }
 

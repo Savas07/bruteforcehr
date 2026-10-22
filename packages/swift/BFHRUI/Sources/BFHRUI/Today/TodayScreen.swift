@@ -36,8 +36,13 @@ public struct TodayScreen: View {
         .environment(\.bfhrNow, model.now)
         .toolbar {
             ToolbarItem(placement: .bfhrTrailing) {
-                AvatarButton(name: model.profileName, needsAttention: model.accountNeedsAttention) {
-                    openURL(TodayLink.settings)
+                if model.profileName.isEmpty {
+                    // Loading or failed: no initials yet, Settings stays reachable.
+                    IconButton(Strings.settings, systemImage: "person.crop.circle") { openURL(TodayLink.settings) }
+                } else {
+                    AvatarButton(name: model.profileName, needsAttention: model.accountNeedsAttention) {
+                        openURL(TodayLink.settings)
+                    }
                 }
             }
         }
@@ -132,6 +137,7 @@ public struct TodayScreen: View {
     }
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     @ViewBuilder private var emptyState: some View {
         if model.isFirstRun {
@@ -334,10 +340,14 @@ public struct TodayScreen: View {
 
     // MARK: Helpers
 
+    /// "Thursday, October 22"; "Thu, Oct 22" at accessibility sizes, where the navigation subtitle
+    /// would otherwise truncate.
     private var dateLine: String {
-        model.now.formatted(
-            Date.FormatStyle(locale: locale, calendar: model.calendar, timeZone: model.calendar.timeZone)
-                .weekday(.wide).day().month(.wide)
+        let style = Date.FormatStyle(locale: locale, calendar: model.calendar, timeZone: model.calendar.timeZone)
+        return model.now.formatted(
+            dynamicTypeSize.isAccessibilitySize
+                ? style.weekday(.abbreviated).day().month(.abbreviated)
+                : style.weekday(.wide).day().month(.wide)
         )
     }
 

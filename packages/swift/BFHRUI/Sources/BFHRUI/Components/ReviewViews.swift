@@ -155,16 +155,28 @@ public struct ReviewSheet: View {
         .background(.bar)
     }
 
+    private var senderName: some View {
+        Text(verbatim: proposal.sender.name ?? proposal.sender.address)
+            .font(.bfhr(.subheadline, emphasized: true))
+            .foregroundStyle(BFHRColor.Fg.primary)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private var receivedTime: some View {
+        RelativeTimeText(proposal.receivedAt, style: .dayAndTime)
+            .font(.bfhr(.caption1))
+            .foregroundStyle(BFHRColor.Fg.tertiary)
+            .fixedSize()
+    }
+
     private var evidence: some View {
         VStack(alignment: .leading, spacing: BFHRSpace.s2) {
-            HStack(alignment: .firstTextBaseline) {
-                Text(verbatim: proposal.sender.name ?? proposal.sender.address)
-                    .font(.bfhr(.subheadline, emphasized: true))
-                    .foregroundStyle(BFHRColor.Fg.primary)
-                Spacer()
-                RelativeTimeText(proposal.receivedAt, style: .dayAndTime)
-                    .font(.bfhr(.caption1))
-                    .foregroundStyle(BFHRColor.Fg.tertiary)
+            // Sender then time, wrapping the time to the next line when both don't fit; neither is
+            // clipped. A layout, not ViewThatFits, so the texts keep their identity when the text
+            // size changes (the accessibility audit checks that).
+            ChipFlow(spacing: BFHRSpace.s2) {
+                senderName
+                receivedTime
             }
             Text(verbatim: proposal.sender.address + (proposal.accountAddress.map { " → \($0)" } ?? ""))
                 .font(.bfhr(.footnote))
@@ -172,15 +184,19 @@ public struct ReviewSheet: View {
             Text(verbatim: proposal.subject)
                 .font(.bfhr(.subheadline, emphasized: true))
                 .foregroundStyle(BFHRColor.Fg.primary)
-            Text(verbatim: proposal.snippet)
+            // The excerpt is the snippet, shown whole (never clipped); "Show full email" swaps in
+            // the stored body when there is one.
+            Text(verbatim: showsFullEmail ? proposal.bodyText ?? proposal.snippet : proposal.snippet)
                 .font(.bfhr(.subheadline))
                 .foregroundStyle(BFHRColor.Fg.secondary)
-                .lineLimit(showsFullEmail ? nil : 3)
-            Button { showsFullEmail.toggle() } label: {
-                Text(showsFullEmail ? Strings.showLess : Strings.showFullEmail)
+                .fixedSize(horizontal: false, vertical: true)
+            if let body = proposal.bodyText, body != proposal.snippet {
+                Button { showsFullEmail.toggle() } label: {
+                    Text(showsFullEmail ? Strings.showLess : Strings.showFullEmail)
+                }
+                .buttonStyle(.bfhrPlain)
+                .padding(.leading, -BFHRSpace.s2)
             }
-            .buttonStyle(.bfhrPlain)
-            .padding(.leading, -BFHRSpace.s2)
         }
         .padding(BFHRSpace.s3)
         .background(BFHRColor.Surface.sunken, in: BFHRRadius.shape(BFHRRadius.lg))

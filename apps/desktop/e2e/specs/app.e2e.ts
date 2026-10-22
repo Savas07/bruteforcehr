@@ -148,6 +148,32 @@ describe("BruteForceHR desktop", () => {
     expect(results).toEqual(attempts.map(() => "url-not-allowed"));
   });
 
+  it("refuses job links that aren't public https addresses", async () => {
+    // Rejected before anything opens: no browser window appears during the test.
+    const attempts = [
+      "http://jobs.lever.co/acme/1",
+      "https://user:pass@jobs.lever.co/",
+      "https://jobs.lever.co:8443/",
+      "https://127.0.0.1/",
+      "https://169.254.169.254/latest/meta-data",
+      "https://[::1]/",
+      "https://localhost/",
+      "https://printer.local/",
+      "https://intranet/",
+      "file:///etc/passwd",
+      "javascript:alert(1)",
+      `https://jobs.lever.co/${"a".repeat(2048)}`,
+    ];
+    const results = await browser.tauri.execute(async ({ core }, urls: string[]) => {
+      const settled = await Promise.allSettled(urls.map((url) => core.invoke("open_job_url", { url })));
+      return settled.map((result) => {
+        const reason: unknown = result.status === "rejected" ? result.reason : undefined;
+        return typeof reason === "object" && reason !== null && "kind" in reason ? reason.kind : "opened";
+      });
+    }, attempts);
+    expect(results).toEqual(attempts.map(() => "url-not-allowed"));
+  });
+
   it("grants the UI no plugin commands beyond its capability", async () => {
     const result = await browser.tauri.execute(async ({ core }) => {
       try {

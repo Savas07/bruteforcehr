@@ -197,7 +197,7 @@ function matchFor(row: JobRow, job: Job): JobMatch {
         ? factor(
             "requirement",
             "remote",
-            `Remote for ${row.eligibility ?? "listed countries"} only`,
+            `Remote for ${row.eligibility ?? "listed countries"}, which excludes Türkiye`,
             "outside_prefs",
             "most",
             posting(`Remote — ${row.eligibility ?? ""}`.trim()),

@@ -90,7 +90,7 @@ struct CVDocumentView: View {
                 if let paper = model.paper {
                     CVPreviewSegment(
                         blocks: model.pageBlocks, paper: paper, accent: CVThemeColor.color(hex: document.content.meta.theme.accentColor),
-                        templateId: document.templateId, zoomed: zoomed
+                        templateId: document.templateId, zoomed: zoomed, language: document.language
                     )
                 }
             }

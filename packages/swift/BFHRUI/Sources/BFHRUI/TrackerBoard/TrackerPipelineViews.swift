@@ -165,7 +165,6 @@ struct StageSectionHeader: View {
                 Text(phaseCaption.label)
                     .font(.bfhr(.footnote, emphasized: true))
                     .foregroundStyle(BFHRColor.Fg.secondary)
-                    .textCase(.uppercase)
                     .padding(.top, BFHRSpace.s3)
                     .accessibilityAddTraits(.isHeader)
             }

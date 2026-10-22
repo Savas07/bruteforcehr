@@ -100,7 +100,7 @@ export function ShortcutsSheet({
               <section key={group} aria-labelledby={`shortcuts-${group}`} className="mt-3 first:mt-0">
                 <h3
                   id={`shortcuts-${group}`}
-                  className="text-fg-secondary mb-1 text-caption2 font-medium tracking-wide uppercase"
+                  className="text-fg-secondary mb-1 text-footnote font-semibold"
                 >
                   {groupHeading(group)}
                 </h3>

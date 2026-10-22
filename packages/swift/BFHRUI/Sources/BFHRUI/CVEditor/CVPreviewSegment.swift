@@ -23,6 +23,8 @@ struct CVPreviewSegment: View {
     let accent: Color
     let templateId: String
     let zoomed: Bool
+    /// The CV's own language (BCP 47). Section headings are upper-cased with its rules ("DENEYİM", not "DENEYIM").
+    let language: String
     @State private var heights: [CVPageBlock: CGFloat] = [:]
 
     /// Page breaks once every block is measured.
@@ -44,7 +46,7 @@ struct CVPreviewSegment: View {
                 VStack(spacing: BFHRSpace.s4) {
                     if let pages {
                         ForEach(Array(pages.enumerated()), id: \.offset) { number, page in
-                            CVPageView(blocks: page.map { blocks[$0] }, paper: paper, accent: accent)
+                            CVPageView(blocks: page.map { blocks[$0] }, paper: paper, accent: accent, casing: casing)
                                 .scaleEffect(scale, anchor: .topLeading)
                                 .frame(width: paper.width * scale, height: paper.height * scale, alignment: .topLeading)
                                 .accessibilityElement(children: .contain)
@@ -73,7 +75,7 @@ struct CVPreviewSegment: View {
     private var measurement: some View {
         VStack(alignment: .leading, spacing: 0) {
             ForEach(Array(blocks.enumerated()), id: \.offset) { _, block in
-                CVBlockView(block: block, accent: accent)
+                CVBlockView(block: block, accent: accent, casing: casing)
                     .fixedSize(horizontal: false, vertical: true)
                     .onGeometryChange(for: CGFloat.self, of: \.size.height) { heights[block] = $0 }
             }
@@ -83,6 +85,8 @@ struct CVPreviewSegment: View {
         .hidden()
         .accessibilityHidden(true)
     }
+
+    private var casing: Locale { Locale(identifier: language) }
 
     private var templateName: String {
         templateId == "classic" ? String(localized: L.templateClassic) : templateId.capitalized
@@ -96,11 +100,12 @@ struct CVPageView: View {
     let blocks: [CVPageBlock]
     let paper: CVPaper
     let accent: Color
+    let casing: Locale
 
     var body: some View {
         VStack(alignment: .leading, spacing: Self.blockSpacing) {
             ForEach(Array(blocks.enumerated()), id: \.offset) { _, block in
-                CVBlockView(block: block, accent: accent)
+                CVBlockView(block: block, accent: accent, casing: casing)
                     .fixedSize(horizontal: false, vertical: true)
             }
             Spacer(minLength: 0)
@@ -119,6 +124,7 @@ struct CVPageView: View {
 private struct CVBlockView: View {
     let block: CVPageBlock
     let accent: Color
+    let casing: Locale
 
     private func body(_ size: CGFloat) -> Font { .system(size: size) }
     private func serif(_ size: CGFloat, _ weight: Font.Weight) -> Font { .system(size: size, weight: weight, design: .serif) }
@@ -142,7 +148,7 @@ private struct CVBlockView: View {
             .padding(.bottom, 4)
         case .heading(let title):
             VStack(alignment: .leading, spacing: 3) {
-                Text(verbatim: title.uppercased())
+                Text(verbatim: title.uppercased(with: casing))
                     .font(body(9).weight(.semibold))
                     .tracking(0.9)
                     .foregroundStyle(accent)

@@ -60,7 +60,7 @@ export const FOOTER_NAV: readonly { title: string; items: readonly NavItem[] }[]
     title: "Help",
     items: [
       { href: "/support/", label: "Support" },
-      { href: NEW_ISSUE_URL, label: "Report a problem" },
+      { href: "/support/#contact", label: "Report a problem" },
     ],
   },
   {

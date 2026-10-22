@@ -7,17 +7,28 @@ struct RootView: View {
     @State private var selection: AppTab = RootView.initialTab
     /// One toast at a time for the whole app (decisions.md D12).
     @State private var toasts = ToastCenter()
+    /// Badge counts reported by each tab's screen (`bfhrTabBadge`); only Mail uses one.
+    @State private var badges: [AppTab: Int] = [:]
 
     var body: some View {
         TabView(selection: $selection) {
             ForEach(AppTab.allCases) { tab in
                 Tab(tab.title, systemImage: tab.systemImage, value: tab) {
                     TabRootView(tab: tab)
+                        .onPreferenceChange(BFHRTabBadgeKey.self) { badges[tab] = $0 }
                 }
+                .badge(badges[tab] ?? 0)
             }
         }
         .tint(BFHRColor.tint)
         .environment(toasts)
+        // `bruteforcehr://` links opened inside the app (`@Environment(\.openURL)`) navigate here
+        // directly instead of a round trip through the system; other URLs go to the system.
+        .environment(\.openURL, OpenURLAction { url in
+            guard let tab = AppTab(deepLink: url) else { return .systemAction }
+            selection = tab
+            return .handled
+        })
         .onOpenURL { url in
             if let tab = AppTab(deepLink: url) { selection = tab }
         }

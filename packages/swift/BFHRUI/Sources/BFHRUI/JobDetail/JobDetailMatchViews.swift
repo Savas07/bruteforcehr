@@ -311,6 +311,7 @@ struct MatchBreakdownSheet: View {
                     ForEach(match.requirements) { FactorRow(factor: $0, showsStatus: true) }
                 } header: {
                     Text(JobDetailViewStrings.breakdownRequirements)
+                        .foregroundStyle(BFHRColor.Fg.secondary)
                 }
             }
             if match.skillsTotal > 0 {
@@ -322,8 +323,10 @@ struct MatchBreakdownSheet: View {
                     .padding(.vertical, BFHRSpace.s2)
                 } header: {
                     Text(JobDetailViewStrings.breakdownSkills)
+                        .foregroundStyle(BFHRColor.Fg.secondary)
                 } footer: {
                     Text(JobDetailViewStrings.breakdownSkillsFooter)
+                        .foregroundStyle(BFHRColor.Fg.secondary)
                 }
             }
             let reasons = match.reasons.filter { $0.kind != .requirement }
@@ -332,6 +335,7 @@ struct MatchBreakdownSheet: View {
                     ForEach(reasons) { FactorRow(factor: $0) }
                 } header: {
                     Text(JobDetailViewStrings.reasons)
+                        .foregroundStyle(BFHRColor.Fg.secondary)
                 }
             }
             let gaps = match.gaps.filter { $0.kind != .requirement }
@@ -345,6 +349,7 @@ struct MatchBreakdownSheet: View {
                     }
                 } header: {
                     Text(JobDetailViewStrings.gaps)
+                        .foregroundStyle(BFHRColor.Fg.secondary)
                 }
             }
             if let rationale = match.rationale {
@@ -352,6 +357,7 @@ struct MatchBreakdownSheet: View {
                     AISummaryBlock(rationale: rationale, feedback: model.summaryFeedback, onRate: model.rateSummary)
                 } header: {
                     Text(JobDetailViewStrings.summary)
+                        .foregroundStyle(BFHRColor.Fg.secondary)
                 }
             }
             Section {
@@ -363,6 +369,7 @@ struct MatchBreakdownSheet: View {
                     .foregroundStyle(BFHRColor.Fg.secondary)
             } header: {
                 Text(JobDetailViewStrings.explainerTitle)
+                    .foregroundStyle(BFHRColor.Fg.secondary)
             }
         }
         .bfhrInsetGroupedList()

@@ -41,6 +41,8 @@ struct CVHistorySheet: View {
             }
         }
         .presentationDetents([.medium, .large])
+        // Opaque, so text keeps its contrast over the CV behind the sheet.
+        .presentationBackground(BFHRColor.groupedBackground)
     }
 }
 
@@ -139,5 +141,7 @@ struct CVReorderSectionsSheet: View {
             }
         }
         .presentationDetents([.medium, .large])
+        // Opaque, so text keeps its contrast over the CV behind the sheet.
+        .presentationBackground(BFHRColor.groupedBackground)
     }
 }

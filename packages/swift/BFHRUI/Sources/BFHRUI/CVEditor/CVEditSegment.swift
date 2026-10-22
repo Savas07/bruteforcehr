@@ -41,7 +41,6 @@ struct CVEditSegment: View {
                                 Text(verbatim: text)
                                     .font(.bfhr(.subheadline))
                                     .foregroundStyle(BFHRColor.Fg.primary)
-                                    .lineLimit(4)
                             }
                         }
                         .accessibilityHint(Text(L.editHint))
@@ -237,7 +236,6 @@ private struct CVItemRow: View {
                 Text(verbatim: third)
                     .font(.bfhr(.footnote))
                     .foregroundStyle(BFHRColor.Fg.secondary)
-                    .lineLimit(2)
             }
         }
         .accessibilityElement(children: .combine)

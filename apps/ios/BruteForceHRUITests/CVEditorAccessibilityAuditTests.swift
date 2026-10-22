@@ -97,8 +97,8 @@ final class CVEditorAccessibilityAuditTests: XCTestCase {
         XCTAssertFalse(use.isEnabled)
         try snapshot("assist")
         try audit(app)
-        let blank = app.textViews.matching(NSPredicate(format: "label CONTAINS %@", "[X%]")).firstMatch
-        XCTAssertTrue(blank.waitForExistence(timeout: 5))
+        let blank = app.textFields["Your value for [X%]"]
+        scroll(app, to: blank)
         blank.tap()
         blank.typeText("35%")
         XCTAssertTrue(use.isEnabled)
@@ -111,8 +111,12 @@ final class CVEditorAccessibilityAuditTests: XCTestCase {
     @MainActor
     func testAssistSheetAccessibilitySize() throws {
         let app = launch(dataset: "populated", contentSize: largestSize, pane: "assist")
-        XCTAssertTrue(app.buttons["cv.assist.keepMine"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["cv.assist.suggestion.1"].waitForExistence(timeout: 10))
         try snapshot("assist-ax")
+        try audit(app)
+        // The actions scroll with the content at this size.
+        scroll(app, to: app.buttons["cv.assist.keepMine"])
+        try snapshot("assist-ax-actions")
         try audit(app)
     }
 
@@ -140,46 +144,78 @@ final class CVEditorAccessibilityAuditTests: XCTestCase {
         XCTAssertTrue(variant.waitForExistence(timeout: 5))
         try snapshot("more-menu")
         variant.tap()
-        XCTAssertTrue(app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "Variant of Base CV — English")).firstMatch.waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "variant of Base CV — English")).firstMatch.waitForExistence(timeout: 5))
         try snapshot("variant")
         try audit(app)
     }
 
-    /// Audits the current screen. System chrome (tab bar, status bar) is outside this screen.
-    /// With `ignoringPage`, the printed CV page in Preview is exempt from the text-size, clipping
-    /// and contrast checks: it is a fixed-size page in paper colours by design (the chrome around
-    /// it is still audited). Every issue is logged, and appended to `audit-issues.txt` next to
-    /// the shots when `BFHR_CV_SHOTS` is set.
+    /// Audits the current screen and logs every issue (appended to `audit-issues.txt` next to the
+    /// shots when `BFHR_CV_SHOTS` is set). Exempt, each for a stated reason (accessibility.md):
+    /// - system chrome outside this screen: tab bar, status bar, navigation-bar buttons;
+    /// - contrast of disabled controls (WCAG 1.4.3 exempts inactive components);
+    /// - contrast and clipping of content scrolled under a translucent bar (tab bar, navigation
+    ///   bar, the ✦ Improve action bar): it scrolls clear, and the audit measures it against blur;
+    /// - with `ignoringPage`, text-size, clipping and contrast checks on the printed page in
+    ///   Preview (fixed-size print in paper colours by design; the chrome around it is audited).
     @MainActor
     private func audit(_ app: XCUIApplication, ignoringPage: Bool = false, _ function: String = #function) throws {
+        let covers = [app.tabBars.firstMatch, app.navigationBars.firstMatch]
+            .filter(\.exists).map(\.frame)
+            + (app.buttons["cv.assist.keepMine"].exists && !app.buttons["cv.assist.keepMine"].frame.isEmpty
+                ? [CGRect(x: 0, y: app.buttons["cv.assist.keepMine"].frame.minY - 120, width: 10_000, height: 10_000)] : [])
         try app.performAccessibilityAudit { issue in
             let element = issue.element
-            if let element, element.elementType == .tabBar || element.elementType == .statusBar { return true }
-            if ignoringPage, let element, Self.isPageText(element), [.dynamicType, .textClipped, .contrast].contains(issue.auditType) {
-                return true
-            }
-            let line = "\(function): \(issue.compactDescription) — \(element.map { "\($0.elementType.rawValue) id=\($0.identifier) label=\($0.label.prefix(80))" } ?? "no element")"
-            XCTContext.runActivity(named: line) { _ in }
-            if let directory = ProcessInfo.processInfo.environment["BFHR_CV_SHOTS"], !directory.isEmpty {
-                let url = URL(fileURLWithPath: directory).appendingPathComponent("audit-issues.txt")
-                if let handle = try? FileHandle(forWritingTo: url) {
-                    handle.seekToEndOfFile()
-                    handle.write(Data((line + "\n").utf8))
-                    try? handle.close()
-                } else {
-                    try? Data((line + "\n").utf8).write(to: url)
+            var exempt: String?
+            if let element {
+                if element.elementType == .tabBar || element.elementType == .statusBar {
+                    exempt = "system chrome"
+                } else if element.elementType == .button, app.navigationBars.firstMatch.exists,
+                          app.navigationBars.firstMatch.frame.contains(element.frame) {
+                    exempt = "system navigation bar button"
+                } else if issue.auditType == .contrast, !element.isEnabled {
+                    exempt = "disabled control"
+                } else if [.contrast, .textClipped].contains(issue.auditType), covers.contains(where: { $0.intersects(element.frame) }) {
+                    exempt = "under a translucent bar"
+                } else if ignoringPage, Self.isPageText(element, in: app), [.dynamicType, .textClipped, .contrast].contains(issue.auditType) {
+                    exempt = "printed page"
                 }
             }
-            return false
+            let line = "\(function): \(exempt.map { "[exempt: \($0)] " } ?? "")\(issue.compactDescription) — \(element.map { "\($0.elementType.rawValue) id=\($0.identifier) label=\($0.label.prefix(80)) frame=\($0.frame.integral)" } ?? "no element")"
+            XCTContext.runActivity(named: line) { _ in }
+            Self.log(line)
+            return exempt != nil
+        }
+    }
+
+    private static func log(_ line: String) {
+        guard let directory = ProcessInfo.processInfo.environment["BFHR_CV_SHOTS"], !directory.isEmpty else { return }
+        let url = URL(fileURLWithPath: directory).appendingPathComponent("audit-issues.txt")
+        if let handle = try? FileHandle(forWritingTo: url) {
+            handle.seekToEndOfFile()
+            handle.write(Data((line + "\n").utf8))
+            try? handle.close()
+        } else {
+            try? Data((line + "\n").utf8).write(to: url)
         }
     }
 
     /// Static text inside a rendered page (`cv.page.N`).
     @MainActor
-    private static func isPageText(_ element: XCUIElement) -> Bool {
+    private static func isPageText(_ element: XCUIElement, in app: XCUIApplication) -> Bool {
         guard element.elementType == .staticText else { return false }
-        let page = XCUIApplication().descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH %@", "cv.page.")).firstMatch
-        return page.exists && page.frame.contains(element.frame)
+        let pages = app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH %@", "cv.page."))
+        return pages.allElementsBoundByIndex.contains { $0.frame.contains(element.frame) }
+    }
+
+    /// Swipes up until `element` is on screen (lists load rows lazily).
+    @MainActor
+    private func scroll(_ app: XCUIApplication, to element: XCUIElement) {
+        var swipes = 0
+        while !(element.exists && element.isHittable), swipes < 8 {
+            app.swipeUp()
+            swipes += 1
+        }
+        XCTAssertTrue(element.isHittable, "\(element)")
     }
 
     @MainActor

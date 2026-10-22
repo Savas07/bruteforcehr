@@ -1,0 +1,21 @@
+{
+  "name": "@bfhr/core",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Domain types, zod schemas and the application status state machine (no platform dependencies).",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "vitest": "^5.0.5"
+  }
+}

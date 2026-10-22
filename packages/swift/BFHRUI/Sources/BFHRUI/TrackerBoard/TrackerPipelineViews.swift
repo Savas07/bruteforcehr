@@ -246,10 +246,23 @@ struct DropPanel: View {
     }
 }
 
-/// Loading: the real stage headers with "–" counts and two row-shaped placeholders each.
+/// Loading: the real scope tabs and stage headers (statuses are static) with "–" counts, and two
+/// row-shaped placeholders per stage. Only the data is skeleton.
 struct TrackerSkeleton: View {
     var body: some View {
         List {
+            Section {
+                Picker(selection: .constant(PipelineScope.active)) {
+                    ForEach(PipelineScope.allCases) { scope in Text(scope.label).tag(scope) }
+                } label: {
+                    Text(TrackerBoardStrings.scopeLabel)
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .disabled(true)
+                .unredacted()
+                .listRowSeparator(.hidden)
+            }
             ForEach([ApplicationStatus.applied, .screening, .interviewing], id: \.self) { status in
                 Section {
                     ForEach(0..<2, id: \.self) { index in
@@ -258,11 +271,14 @@ struct TrackerSkeleton: View {
                 } header: {
                     HStack(spacing: BFHRSpace.s2) {
                         ToneDot(tone: status.tone)
-                        Text(status.label).font(.bfhr(.subheadline, emphasized: true))
+                        Text(status.label)
+                            .font(.bfhr(.subheadline, emphasized: true))
+                            .foregroundStyle(BFHRColor.Fg.primary)
                         Text(verbatim: "–").foregroundStyle(BFHRColor.Fg.secondary)
                     }
                     .textCase(nil)
                     .frame(minHeight: BFHRHitTarget.minimum)
+                    .unredacted()
                 }
             }
         }

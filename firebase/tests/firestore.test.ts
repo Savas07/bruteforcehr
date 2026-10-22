@@ -1,0 +1,261 @@
+import { assertFails, assertSucceeds, type RulesTestEnvironment } from "@firebase/rules-unit-testing";
+import { afterAll, beforeAll, beforeEach, describe, it } from "vitest";
+import { createTestEnvironment } from "./env";
+
+let env: RulesTestEnvironment;
+
+beforeAll(async () => {
+  env = await createTestEnvironment();
+});
+afterAll(() => env.cleanup());
+beforeEach(() => env.clearFirestore());
+
+const client = (uid: string) => env.authenticatedContext(uid).firestore();
+const anonymous = () => env.unauthenticatedContext().firestore();
+
+async function seed(path: string, data: Record<string, unknown>): Promise<void> {
+  await env.withSecurityRulesDisabled(async (context) => {
+    await context.firestore().doc(path).set(data);
+  });
+}
+
+const OWNER_COLLECTIONS = [
+  "renderedFiles",
+  "coverLetters",
+  "jobMatches",
+  "savedSearches",
+  "applications",
+  "interviews",
+  "contacts",
+  "devices",
+];
+
+describe("users/{uid}: owner only", () => {
+  it("lets a user read and write their own profile", async () => {
+    await assertSucceeds(client("alice").doc("users/alice").set({ displayName: "Alice" }));
+    await assertSucceeds(client("alice").doc("users/alice").get());
+    await assertSucceeds(client("alice").doc("users/alice").delete());
+  });
+
+  it("keeps user A out of user B's profile", async () => {
+    await seed("users/bob", { displayName: "Bob" });
+    await assertFails(client("alice").doc("users/bob").get());
+    await assertFails(client("alice").doc("users/bob").set({ displayName: "Mallory" }));
+    await assertFails(client("alice").doc("users/bob").delete());
+    await assertFails(client("alice").collection("users").get());
+    await assertFails(anonymous().doc("users/bob").get());
+  });
+
+  it.each(OWNER_COLLECTIONS)("%s: owner CRUD, other users denied", async (collection) => {
+    const path = `users/alice/${collection}/doc1`;
+    await assertSucceeds(client("alice").doc(path).set({ schemaVersion: 1 }));
+    await assertSucceeds(client("alice").doc(path).update({ note: "updated" }));
+    await assertSucceeds(client("alice").collection(`users/alice/${collection}`).get());
+
+    await assertFails(client("bob").doc(path).get());
+    await assertFails(client("bob").collection(`users/alice/${collection}`).get());
+    await assertFails(client("bob").doc(path).update({ note: "hijacked" }));
+    await assertFails(client("bob").doc(`users/alice/${collection}/doc2`).set({ schemaVersion: 1 }));
+    await assertFails(client("bob").doc(path).delete());
+    await assertFails(anonymous().doc(path).get());
+
+    await assertSucceeds(client("alice").doc(path).delete());
+  });
+
+  it("denies collections that are not part of the layout", async () => {
+    await assertFails(client("alice").doc("users/alice/unknown/doc1").set({ any: true }));
+    await assertFails(client("alice").doc("users/alice/applications/a1/notes/n1").set({ any: true }));
+  });
+});
+
+describe("users/{uid}/jobs: embedding is server-written", () => {
+  it("lets the owner save and edit a job without an embedding", async () => {
+    await assertSucceeds(client("alice").doc("users/alice/jobs/j1").set({ title: "Engineer" }));
+    await assertSucceeds(client("alice").doc("users/alice/jobs/j1").update({ title: "Senior Engineer" }));
+    await assertSucceeds(client("alice").doc("users/alice/jobs/j1").get());
+    await assertFails(client("bob").doc("users/alice/jobs/j1").get());
+  });
+
+  it("rejects client writes to the embedding", async () => {
+    await assertFails(
+      client("alice")
+        .doc("users/alice/jobs/j1")
+        .set({ title: "Engineer", embedding: [0.1, 0.2] }),
+    );
+    await seed("users/alice/jobs/j2", { title: "Engineer", embedding: [0.1, 0.2] });
+    await assertFails(
+      client("alice")
+        .doc("users/alice/jobs/j2")
+        .update({ embedding: [0.3, 0.4] }),
+    );
+    await assertSucceeds(client("alice").doc("users/alice/jobs/j2").update({ title: "Staff Engineer" }));
+  });
+});
+
+describe("users/{uid}/cvs: optimistic concurrency", () => {
+  const cv = "users/alice/cvs/cv1";
+
+  it("creates a CV at version 1 only", async () => {
+    await assertFails(client("alice").doc(cv).set({ version: 2, basics: {} }));
+    await assertFails(client("alice").doc(cv).set({ basics: {} }));
+    await assertSucceeds(client("alice").doc(cv).set({ version: 1, basics: {} }));
+  });
+
+  it("requires every update to bump version by exactly one", async () => {
+    await seed(cv, { version: 3, basics: { name: "Alice" } });
+    await assertFails(client("alice").doc(cv).update({ "basics.name": "A." }));
+    await assertFails(client("alice").doc(cv).update({ version: 3, "basics.name": "A." }));
+    await assertFails(client("alice").doc(cv).update({ version: 5, "basics.name": "A." }));
+    await assertFails(client("alice").doc(cv).update({ version: 2, "basics.name": "A." }));
+    await assertFails(client("alice").doc(cv).update({ version: "4" }));
+    await assertSucceeds(client("alice").doc(cv).update({ version: 4, "basics.name": "A." }));
+  });
+
+  it("keeps other users out", async () => {
+    await seed(cv, { version: 1 });
+    await assertFails(client("bob").doc(cv).get());
+    await assertFails(client("bob").doc(cv).update({ version: 2 }));
+    await assertFails(client("bob").doc(cv).delete());
+  });
+});
+
+describe("users/{uid}/cvs/{cvId}/revisions: immutable", () => {
+  const revision = "users/alice/cvs/cv1/revisions/r1";
+
+  it("allows create and read by the owner", async () => {
+    await assertSucceeds(client("alice").doc(revision).set({ cvVersion: 1, content: {} }));
+    await assertSucceeds(client("alice").doc(revision).get());
+  });
+
+  it("forbids update and delete, even by the owner", async () => {
+    await seed(revision, { cvVersion: 1, content: {} });
+    await assertFails(
+      client("alice")
+        .doc(revision)
+        .update({ content: { changed: true } }),
+    );
+    await assertFails(client("alice").doc(revision).set({ cvVersion: 2, content: {} }));
+    await assertFails(client("alice").doc(revision).delete());
+  });
+
+  it("keeps other users out", async () => {
+    await seed(revision, { cvVersion: 1, content: {} });
+    await assertFails(client("bob").doc(revision).get());
+    await assertFails(client("bob").doc("users/alice/cvs/cv1/revisions/r2").set({ cvVersion: 1 }));
+  });
+});
+
+describe("users/{uid}/applicationEvents: append-only", () => {
+  const event = "users/alice/applicationEvents/e1";
+
+  it("lets the owner append user events", async () => {
+    await assertSucceeds(
+      client("alice").doc(event).set({ applicationId: "a1", actor: "user", toStatus: "applied" }),
+    );
+    await assertSucceeds(client("alice").doc(event).get());
+  });
+
+  it("leaves rule and AI events to the server", async () => {
+    await assertFails(
+      client("alice").doc(event).set({ applicationId: "a1", actor: "ai", toStatus: "rejected" }),
+    );
+    await assertFails(client("alice").doc(event).set({ applicationId: "a1", toStatus: "applied" }));
+  });
+
+  it("forbids changing or deleting history", async () => {
+    await seed(event, { applicationId: "a1", actor: "user", toStatus: "applied" });
+    await assertFails(client("alice").doc(event).update({ toStatus: "offer" }));
+    await assertFails(client("alice").doc(event).delete());
+    await assertFails(client("bob").doc(event).get());
+  });
+});
+
+describe("users/{uid}/mailAccounts: client read-only", () => {
+  const account = "users/alice/mailAccounts/m1";
+
+  it("lets the owner read status and nothing else", async () => {
+    await seed(account, { provider: "gmail", status: "connected" });
+    await assertSucceeds(client("alice").doc(account).get());
+    await assertFails(client("alice").doc(account).update({ status: "paused" }));
+    await assertFails(client("alice").doc(account).delete());
+    await assertFails(client("alice").doc("users/alice/mailAccounts/m2").set({ provider: "imap" }));
+    await assertFails(client("bob").doc(account).get());
+  });
+});
+
+describe("users/{uid}/mailMessages: review fields only", () => {
+  const message = "users/alice/mailMessages/msg1";
+
+  beforeEach(() =>
+    seed(message, { subject: "Your application", from: "jobs@acme.example", reviewState: "pending" }),
+  );
+
+  it("lets the owner review a message", async () => {
+    await assertSucceeds(client("alice").doc(message).get());
+    await assertSucceeds(client("alice").doc(message).update({ reviewState: "confirmed" }));
+    await assertSucceeds(
+      client("alice")
+        .doc(message)
+        .update({ applicationId: "a1", category: "interview", reviewedAt: new Date() }),
+    );
+    await assertSucceeds(
+      client("alice").doc(message).update({ reviewState: "dismissed", category: "other" }),
+    );
+  });
+
+  it("rejects changes to any other field", async () => {
+    await assertFails(client("alice").doc(message).update({ subject: "Edited" }));
+    await assertFails(
+      client("alice").doc(message).update({ reviewState: "confirmed", from: "spoof@example.com" }),
+    );
+    await assertFails(client("alice").doc(message).set({ reviewState: "confirmed" }));
+  });
+
+  it("rejects review states the client may not set", async () => {
+    await assertFails(client("alice").doc(message).update({ reviewState: "pending" }));
+    await assertFails(client("alice").doc(message).update({ reviewState: "auto_applied" }));
+  });
+
+  it("forbids create and delete, and other users", async () => {
+    await assertFails(client("alice").doc("users/alice/mailMessages/msg2").set({ reviewState: "confirmed" }));
+    await assertFails(client("alice").doc(message).delete());
+    await assertFails(client("bob").doc(message).get());
+    await assertFails(client("bob").doc(message).update({ reviewState: "confirmed" }));
+  });
+});
+
+describe("appConfig/{platform}: public read, server write", () => {
+  it("is readable without signing in", async () => {
+    await seed("appConfig/ios", { minimumVersion: "0.1.0" });
+    await assertSucceeds(anonymous().doc("appConfig/ios").get());
+    await assertSucceeds(client("alice").doc("appConfig/ios").get());
+  });
+
+  it("is not writable by clients", async () => {
+    await seed("appConfig/ios", { minimumVersion: "0.1.0" });
+    await assertFails(anonymous().doc("appConfig/ios").update({ minimumVersion: "0.0.1" }));
+    await assertFails(client("alice").doc("appConfig/ios").update({ minimumVersion: "0.0.1" }));
+    await assertFails(client("alice").doc("appConfig/desktop").set({ minimumVersion: "0.0.1" }));
+    await assertFails(client("alice").doc("appConfig/ios").delete());
+  });
+});
+
+describe("serverOnly/**: no client access", () => {
+  it.each(["serverOnly/otp/challenges/abc", "serverOnly/otp/sendLogs/abc", "serverOnly/mailTokens/alice"])(
+    "%s",
+    async (path) => {
+      await seed(path, { secret: true });
+      await assertFails(client("alice").doc(path).get());
+      await assertFails(client("alice").doc(path).set({ secret: false }));
+      await assertFails(client("alice").doc(path).delete());
+      await assertFails(anonymous().doc(path).get());
+    },
+  );
+});
+
+describe("unknown top-level paths", () => {
+  it("are denied", async () => {
+    await assertFails(client("alice").doc("jobs/j1").get());
+    await assertFails(client("alice").doc("jobs/j1").set({ title: "Engineer" }));
+  });
+});

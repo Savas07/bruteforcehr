@@ -1,0 +1,91 @@
+rules_version = '2';
+
+// Deny by default: a path is accessible only if a rule below allows it. Cloud Functions use the
+// Admin SDK, which bypasses these rules. Every invariant here is proven in firebase/tests.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isOwner(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    // Fields of an update that the client changed (added, removed or modified).
+    function changedKeys() {
+      return request.resource.data.diff(resource.data).affectedKeys();
+    }
+
+    match /users/{uid} {
+      // Profile.
+      allow read, write: if isOwner(uid);
+
+      // Owner-managed collections without extra invariants.
+      match /{collection}/{docId} {
+        allow read, write: if isOwner(uid)
+          && collection in [
+            'renderedFiles',
+            'coverLetters',
+            'jobMatches',
+            'savedSearches',
+            'applications',
+            'interviews',
+            'contacts',
+            'devices'
+          ];
+      }
+
+      // Jobs: the embedding vector is written by the server only.
+      match /jobs/{jobId} {
+        allow read, delete: if isOwner(uid);
+        allow create: if isOwner(uid) && !('embedding' in request.resource.data);
+        allow update: if isOwner(uid) && !changedKeys().hasAny(['embedding']);
+      }
+
+      // CVs: optimistic concurrency. Every write bumps `version` by exactly one, so a client
+      // holding a stale copy fails instead of overwriting a newer edit.
+      match /cvs/{cvId} {
+        allow read, delete: if isOwner(uid);
+        allow create: if isOwner(uid) && request.resource.data.version == 1;
+        allow update: if isOwner(uid)
+          && request.resource.data.version is int
+          && request.resource.data.version == resource.data.version + 1;
+
+        // Revisions are immutable snapshots.
+        match /revisions/{revisionId} {
+          allow read, create: if isOwner(uid);
+        }
+      }
+
+      // Append-only history. Clients write user actions; rule and AI events are server-written.
+      // Undo is a new event that points at the original (`revertsEventId`).
+      match /applicationEvents/{eventId} {
+        allow read: if isOwner(uid);
+        allow create: if isOwner(uid) && request.resource.data.actor == 'user';
+      }
+
+      // Mail connection status; credentials live under serverOnly/**.
+      match /mailAccounts/{accountId} {
+        allow read: if isOwner(uid);
+      }
+
+      // Created by the mail worker. Clients only review them.
+      match /mailMessages/{messageId} {
+        allow read: if isOwner(uid);
+        allow update: if isOwner(uid)
+          && changedKeys().hasOnly(['reviewState', 'applicationId', 'category', 'reviewedAt'])
+          && (!('reviewState' in changedKeys())
+            || request.resource.data.reviewState in ['confirmed', 'corrected', 'dismissed']);
+      }
+    }
+
+    // Per-platform client config (minimum version, feature flags). Server-written.
+    match /appConfig/{platform} {
+      allow read: if true;
+    }
+
+    // OTP challenges, encrypted mail tokens and other server state: no client access. No rule
+    // matches serverOnly/**, so the default deny applies; listed here for explicitness.
+    match /serverOnly/{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

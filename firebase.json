@@ -1,0 +1,48 @@
+{
+  "$schema": "./node_modules/firebase-tools/schema/firebase-config.json",
+  "firestore": {
+    "database": "(default)",
+    "location": "europe-west1",
+    "rules": "firebase/firestore.rules",
+    "indexes": "firebase/firestore.indexes.json"
+  },
+  "storage": {
+    "rules": "firebase/storage.rules"
+  },
+  "functions": [
+    {
+      "codebase": "default",
+      "source": "apps/functions/lib/default",
+      "runtime": "nodejs22",
+      "ignore": ["node_modules", "*.local"],
+      "predeploy": ["pnpm --filter @bfhr/functions run build"]
+    },
+    {
+      "codebase": "auth",
+      "source": "apps/functions/lib/auth",
+      "runtime": "nodejs22",
+      "ignore": ["node_modules", "*.local"],
+      "predeploy": ["pnpm --filter @bfhr/functions run build"]
+    }
+  ],
+  "hosting": {
+    "public": "apps/web/dist",
+    "cleanUrls": true,
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "rewrites": [
+      {
+        "source": "/api/health",
+        "function": { "functionId": "health", "region": "europe-west1" }
+      }
+    ]
+  },
+  "emulators": {
+    "singleProjectMode": true,
+    "auth": { "port": 9099 },
+    "firestore": { "port": 8080 },
+    "storage": { "port": 9199 },
+    "functions": { "port": 5001 },
+    "hosting": { "port": 5000 },
+    "ui": { "enabled": false }
+  }
+}

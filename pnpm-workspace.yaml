@@ -1,7 +1,16 @@
 packages:
   - apps/*
   - packages/*
+  - firebase/tests
 
 # Expo (Metro) and electron-builder both resolve dependencies most reliably from a
 # flat node_modules; see docs/adr/0001-stack.md.
 nodeLinker: hoisted
+
+# Install scripts are opt-in. esbuild needs its postinstall (binary check); the others are optional
+# (protobufjs version check, @firebase/util web-config autoinit, re2 native regex for firebase-tools).
+allowBuilds:
+  "@firebase/util": false
+  esbuild: true
+  protobufjs: false
+  re2: false

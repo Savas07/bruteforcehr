@@ -19,9 +19,12 @@ import { existsSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import AxeBuilder from "@axe-core/playwright";
-import { type BrowserType, chromium, type Page, webkit } from "playwright";
+import { type BrowserType, chromium, type LaunchOptions, type Page, webkit } from "playwright";
 import { createServer } from "vite";
 import {
+  CAPTURE_LOCALES,
+  CAPTURE_PIN,
+  type CaptureLanguage,
   captureFileName,
   captureSizes,
   type CaptureTheme,
@@ -40,9 +43,11 @@ const outputRoot = path.join(repoRoot, "artifacts/screens/desktop/harness");
 
 /** Engine → the desktop platform it stands in for. */
 const engines = {
-  webkit: { type: webkit, platform: "macos" },
-  chromium: { type: chromium, platform: "windows" },
-} as const satisfies Record<string, { type: BrowserType; platform: string }>;
+  webkit: { type: webkit, platform: "macos", launch: {} },
+  // Playwright's headless Chromium hides scrollbars (`--hide-scrollbars`); WebView2 draws them, so
+  // the Windows stand-in must too, or captures miss scrollbars taking layout width.
+  chromium: { type: chromium, platform: "windows", launch: { ignoreDefaultArgs: ["--hide-scrollbars"] } },
+} as const satisfies Record<string, { type: BrowserType; platform: string; launch: LaunchOptions }>;
 type EngineName = keyof typeof engines;
 
 function usage(message: string): never {
@@ -102,10 +107,10 @@ const sizes =
       });
 const scale = Number(options["scale"] ?? 1);
 const language = options["locale"] ?? "en";
-if (!["en", "tr", "de"].includes(language)) usage(`Unknown locale: ${language}`);
-/** The UI language goes in as the OS locale would (`?locale=`, src/i18n/locale.ts). */
-const browserLocale = { en: "en-GB", tr: "tr-TR", de: "de-DE" }[language] ?? "en-GB";
-const routeExtras = (platform: string) => ({ platform, locale: browserLocale });
+if (!Object.hasOwn(CAPTURE_LOCALES, language)) usage(`Unknown locale: ${language}`);
+/** The pinned locale + zone (`?locale=&tz=`, src/design/matrix.ts), same as the real-app capture. */
+const browserLocale = CAPTURE_LOCALES[language as CaptureLanguage];
+const routeExtras = (platform: string) => ({ platform, locale: browserLocale, tz: CAPTURE_PIN.tz });
 
 // The design build imports the tokens' generated CSS.
 if (!existsSync(path.join(repoRoot, "packages/ui-tokens/dist/tailwind.css")))
@@ -161,7 +166,7 @@ try {
     // English captures keep the flat layout; other languages get their own folder.
     const outputDir = path.join(outputRoot, engineName, ...(language === "en" ? [] : [language]));
     await mkdir(outputDir, { recursive: true });
-    const browser = await engine.type.launch();
+    const browser = await engine.type.launch(engine.launch);
     try {
       for (const theme of themes) {
         for (const [sizeIndex, size] of sizes.entries()) {
@@ -170,7 +175,7 @@ try {
             colorScheme: theme,
             deviceScaleFactor: scale,
             locale: browserLocale,
-            timezoneId: "Europe/Istanbul",
+            timezoneId: CAPTURE_PIN.tz,
           });
           const page = await context.newPage();
           page.on("pageerror", (error) => failures.push(`${engineName}: ${error.message}`));

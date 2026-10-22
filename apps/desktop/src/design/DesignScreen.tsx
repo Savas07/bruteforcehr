@@ -123,8 +123,9 @@ export function DesignScreen<Model>({
       case "ready":
       case "offline": {
         const offline = search.state === "offline";
-        const base = fixtureContext(data, [], intl);
-        const ctx = offline ? fixtureContext(data, spec.offlinePending(data, base), intl) : base;
+        const tz = search.tz ?? undefined;
+        const base = fixtureContext(data, [], intl, tz);
+        const ctx = offline ? fixtureContext(data, spec.offlinePending(data, base), intl, tz) : base;
         const updatedAt = new Date(FIXTURE_NOW.getTime() - cacheAge[search.state]);
         return {
           status: "ready",
@@ -135,7 +136,7 @@ export function DesignScreen<Model>({
         };
       }
     }
-  }, [search.fixture, search.state, spec, params, navigate, intl]);
+  }, [search.fixture, search.state, search.tz, spec, params, navigate, intl]);
 
   useDesignReady(`${spec.id}:${search.fixture}:${search.state}:${paramsKey}`, model.status === "loading");
 

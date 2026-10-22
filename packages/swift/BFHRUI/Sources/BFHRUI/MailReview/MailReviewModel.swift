@@ -117,6 +117,30 @@ public final class MailReviewModel: ScreenModel {
         draft?.applicationId.map { data.moveTargets(for: $0) } ?? []
     }
 
+    /// The draft differs from the email's proposal: Confirm writes a correction.
+    public var isDraftEdited: Bool {
+        guard let draft, let message = data.mailMessage(id: draft.messageId) else { return false }
+        return draft != initialDraft(for: message)
+    }
+
+    /// The open email as the review sheet shows it: the proposal with the draft's corrections
+    /// applied (category, application, status), so the sentence, the fields and Confirm's enabled
+    /// state always describe what Confirm will write. A corrected field is the user's, so it's no
+    /// longer hedged.
+    public var draftProposal: ReviewProposal? {
+        guard let draft, var proposal = reviewing else { return nil }
+        guard isDraftEdited else { return proposal }
+        if let category = draft.category { proposal.category = category }
+        let application = draft.applicationId.flatMap { data.application(id: $0) }
+        proposal.applicationId = application?.id
+        proposal.company = application.map { CompanyIdentity(name: $0.company, domain: $0.companyDomain) } ?? proposal.company
+        proposal.role = application?.role ?? proposal.role
+        proposal.currentStatus = application?.status
+        proposal.proposedStatus = draft.status
+        proposal.isHedged = false
+        return proposal
+    }
+
     // MARK: Private state
 
     private var selectedAccountId: String?
@@ -149,17 +173,28 @@ public final class MailReviewModel: ScreenModel {
     @discardableResult
     public func beginReview(_ messageId: String) -> ReviewDraft? {
         guard let message = data.mailMessage(id: messageId) else { return nil }
-        let linked = message.applicationId.flatMap { data.application(id: $0) }
-        draft = ReviewDraft(
-            messageId: message.id,
-            category: message.category == .notJob ? nil : message.category,
-            applicationId: linked?.id,
-            status: message.suggestedStatus
-        )
+        draft = initialDraft(for: message)
         return draft
     }
 
     public func endReview() { draft = nil }
+
+    /// Confirm in the review sheet: the proposal as is, or the draft when the user changed a field
+    /// (a correction, stored as a labeled example).
+    @discardableResult
+    public func confirmDraft() throws -> ToastItem {
+        guard let draft else { throw MailReviewError.noOpenReview }
+        return try confirm(draft.messageId, draft: isDraftEdited ? draft : nil)
+    }
+
+    private func initialDraft(for message: MailMessage) -> ReviewDraft {
+        ReviewDraft(
+            messageId: message.id,
+            category: message.category == .notJob ? nil : message.category,
+            applicationId: message.applicationId.flatMap { data.application(id: $0) }?.id,
+            status: message.suggestedStatus
+        )
+    }
 
     /// Every required field is set and the user may make the move.
     public func canConfirm(_ draft: ReviewDraft) -> Bool {

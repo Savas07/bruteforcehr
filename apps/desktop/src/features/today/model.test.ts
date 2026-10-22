@@ -2,7 +2,7 @@ import { emptyDataset, FIXTURE_NOW, type FixtureDataset, populatedDataset } from
 import { describe, expect, it } from "vitest";
 import { createAppIntl } from "../../i18n/intl";
 import { fixtureContext } from "../../shared/model/fixture-context";
-import { type AttentionItemVM, buildTodayModel, type TodayModel } from "./model";
+import { type AttentionItemVM, buildTodayModel, snoozeDateInstant, type TodayModel } from "./model";
 
 const HOUR_MS = 3_600_000;
 
@@ -348,5 +348,30 @@ describe("buildTodayModel — Turkish", () => {
     const titles = model.sections.map((section) => section.title);
     expect(titles).toHaveLength(english.sections.length);
     for (const title of english.sections.map((section) => section.title)) expect(titles).not.toContain(title);
+  });
+});
+
+describe("snooze to a picked date", () => {
+  it("starts the date field tomorrow in the user's zone, not the machine's", () => {
+    expect(build(populatedDataset).snoozeDate).toEqual({ min: "2026-10-23", timeZone: "Europe/Istanbul" });
+    // 22:30 UTC is already the 23rd in Istanbul but still the 22nd in New York.
+    const now = new Date("2026-10-22T22:30:00.000Z");
+    const at = (timeZone: string) =>
+      buildTodayModel(populatedDataset, { ...fixtureContext(populatedDataset), now, timeZone }, {}).snoozeDate
+        .min;
+    expect(at("Europe/Istanbul")).toBe("2026-10-24");
+    expect(at("America/New_York")).toBe("2026-10-23");
+  });
+
+  it("brings the item back at 09:00 on the picked day in the user's zone", () => {
+    expect(snoozeDateInstant("2026-10-27", "Europe/Istanbul")?.toISOString()).toBe(
+      "2026-10-27T06:00:00.000Z",
+    );
+    expect(snoozeDateInstant("2026-10-27", "Europe/Berlin")?.toISOString()).toBe("2026-10-27T08:00:00.000Z");
+    // New York leaves daylight saving on 1 November: 09:00 EST.
+    expect(snoozeDateInstant("2026-11-01", "America/New_York")?.toISOString()).toBe(
+      "2026-11-01T14:00:00.000Z",
+    );
+    expect(snoozeDateInstant("", "Europe/Istanbul")).toBeNull();
   });
 });

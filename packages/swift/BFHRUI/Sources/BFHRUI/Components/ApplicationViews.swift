@@ -60,10 +60,10 @@ public struct ApplicationSummaryBlock: View {
                 row(Strings.fieldApplied) { RelativeTimeText(appliedAt, style: .day) }
             }
             if let cv = content.cvTitle {
-                row(Strings.fieldCV) { Label { Text(verbatim: cv) } icon: { Image(systemName: "doc.text") } }
+                row(Strings.fieldCV) { Label { Text(verbatim: cv) } icon: { Image(systemName: "doc.text") }.labelStyle(.bfhrCompact) }
             }
             if let letter = content.coverLetterTitle {
-                row(Strings.fieldCoverLetter) { Label { Text(verbatim: letter) } icon: { Image(systemName: "doc.plaintext") } }
+                row(Strings.fieldCoverLetter) { Label { Text(verbatim: letter) } icon: { Image(systemName: "doc.plaintext") }.labelStyle(.bfhrCompact) }
             }
         }
     }

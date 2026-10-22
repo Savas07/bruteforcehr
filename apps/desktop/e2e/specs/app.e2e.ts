@@ -90,19 +90,27 @@ describe("BruteForceHR desktop", () => {
   });
 
   it("enforces the Content-Security-Policy", async () => {
-    const result = await browser.execute(() => {
+    const result = await browser.execute(async () => {
       const script = document.createElement("script");
       script.textContent = "document.body.dataset.injected = 'yes'";
       document.head.append(script);
       const style = document.createElement("style");
       style.textContent = "body { --injected: yes; }";
       document.head.append(style);
-      let evalBlocked = false;
-      try {
-        eval("1");
-      } catch {
-        evalBlocked = true;
-      }
+      // Probe eval from a timer, i.e. as page code: on Windows, a script injected through
+      // WebView2's ExecuteScript (the embedded WebDriver's execute) may call eval itself despite
+      // the CSP (seen on windows-latest), while a callback that runs later is checked like any
+      // page script.
+      const evalBlocked = await new Promise<boolean>((resolve) =>
+        setTimeout(() => {
+          try {
+            eval("1");
+            resolve(false);
+          } catch {
+            resolve(true);
+          }
+        }, 0),
+      );
       return {
         script: document.body.dataset["injected"] ?? "blocked",
         style: getComputedStyle(document.body).getPropertyValue("--injected") || "blocked",
@@ -140,6 +148,32 @@ describe("BruteForceHR desktop", () => {
     ];
     const results = await browser.tauri.execute(async ({ core }, urls: string[]) => {
       const settled = await Promise.allSettled(urls.map((url) => core.invoke("open_external", { url })));
+      return settled.map((result) => {
+        const reason: unknown = result.status === "rejected" ? result.reason : undefined;
+        return typeof reason === "object" && reason !== null && "kind" in reason ? reason.kind : "opened";
+      });
+    }, attempts);
+    expect(results).toEqual(attempts.map(() => "url-not-allowed"));
+  });
+
+  it("refuses job links that aren't public https addresses", async () => {
+    // Rejected before anything opens: no browser window appears during the test.
+    const attempts = [
+      "http://jobs.lever.co/acme/1",
+      "https://user:pass@jobs.lever.co/",
+      "https://jobs.lever.co:8443/",
+      "https://127.0.0.1/",
+      "https://169.254.169.254/latest/meta-data",
+      "https://[::1]/",
+      "https://localhost/",
+      "https://printer.local/",
+      "https://intranet/",
+      "file:///etc/passwd",
+      "javascript:alert(1)",
+      `https://jobs.lever.co/${"a".repeat(2048)}`,
+    ];
+    const results = await browser.tauri.execute(async ({ core }, urls: string[]) => {
+      const settled = await Promise.allSettled(urls.map((url) => core.invoke("open_job_url", { url })));
       return settled.map((result) => {
         const reason: unknown = result.status === "rejected" ? result.reason : undefined;
         return typeof reason === "object" && reason !== null && "kind" in reason ? reason.kind : "opened";

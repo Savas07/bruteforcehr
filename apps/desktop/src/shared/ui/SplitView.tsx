@@ -49,13 +49,19 @@ const messages = defineMessages({
 
 const RESIZE_STEP = 8;
 
-/** Keyboard- and pointer-resizable vertical splitter (`role="separator"`). */
+/**
+ * Keyboard- and pointer-resizable vertical splitter (`role="separator"`). `value` is the width of
+ * the pane it controls; `pane` says which side that pane is on, so moving the divider toward the
+ * pane (pointer or ← / →) always shrinks it: a list on the `left` shrinks with ←, a right-docked
+ * panel grows with ←. Home / End jump to the minimum / maximum width.
+ */
 function Splitter({
   controls,
   label,
   value,
   min,
   max,
+  pane,
   onChange,
 }: {
   controls: string;
@@ -63,9 +69,12 @@ function Splitter({
   value: number;
   min: number;
   max: number;
+  pane: "left" | "right";
   onChange: (width: number) => void;
 }) {
   const clamp = (width: number) => Math.min(max, Math.max(min, width));
+  /** +1 when moving the divider right widens the pane. */
+  const direction = pane === "left" ? 1 : -1;
   const drag = useRef<{ startX: number; startWidth: number } | null>(null);
   return (
     <div
@@ -79,7 +88,8 @@ function Splitter({
       aria-valuemax={max}
       className="group relative z-(--bfhr-layer-sticky) -mx-1 w-2 shrink-0 cursor-col-resize outline-offset-0 focus-visible:outline-2"
       onKeyDown={(event: ReactKeyboardEvent) => {
-        const delta = event.key === "ArrowLeft" ? -RESIZE_STEP : event.key === "ArrowRight" ? RESIZE_STEP : 0;
+        const step = event.key === "ArrowLeft" ? -RESIZE_STEP : event.key === "ArrowRight" ? RESIZE_STEP : 0;
+        const delta = step * direction;
         if (event.key === "Home") onChange(min);
         else if (event.key === "End") onChange(max);
         else if (delta !== 0) onChange(clamp(value + delta));
@@ -91,7 +101,8 @@ function Splitter({
         drag.current = { startX: event.clientX, startWidth: value };
       }}
       onPointerMove={(event: PointerEvent) => {
-        if (drag.current) onChange(clamp(drag.current.startWidth + event.clientX - drag.current.startX));
+        if (drag.current)
+          onChange(clamp(drag.current.startWidth + (event.clientX - drag.current.startX) * direction));
       }}
       onPointerUp={() => {
         drag.current = null;
@@ -185,6 +196,7 @@ export function SplitView({
       {!narrow && (
         <Splitter
           controls={listId}
+          pane="left"
           label={intl.formatMessage(messages.resize, { pane: listLabel })}
           value={listWidth}
           min={listPane.min}
@@ -239,9 +251,10 @@ export interface DetailPanelNav {
 }
 
 /**
- * Right-docked detail panel (Tracker Enter, Jobs pop-out source): 400–640 px (default 480),
- * resizable, Esc closes and returns focus, optional prev / next ("3 of 12 in Interviewing", K / J
- * while focus is in the panel). Below 980 px it covers the content area instead.
+ * Right-docked detail panel (Tracker Enter, Jobs pop-out source): resizable within `width`
+ * (default 400–640 px, starting at 400 below 1440 px windows and 480 from 1440, so a 1280 px
+ * Tracker keeps two board columns), Esc closes and returns focus, optional prev / next ("3 of 12
+ * in Interviewing", K / J while focus is in the panel). Below 980 px it covers the content area.
  */
 export function DetailSidePanel({
   open,
@@ -249,6 +262,7 @@ export function DetailSidePanel({
   onClose,
   nav,
   actions,
+  width: bounds,
   children,
 }: {
   open: boolean;
@@ -258,10 +272,17 @@ export function DetailSidePanel({
   nav?: DetailPanelNav;
   /** Extra header actions (pop-out, open full page). */
   actions?: ReactNode;
+  /** Panel bounds in px; the start is clamped into them. Default 400–640, start 400 (480 at ≥ 1440). */
+  width?: { readonly min: number; readonly default: number; readonly max: number };
   children: ReactNode;
 }) {
-  const { narrow } = useBreakpoints();
-  const [width, setWidth] = useState<number>(layout.sidePanel.default);
+  const { narrow, wide } = useBreakpoints();
+  // The breakpoint default applies until the user drags the splitter.
+  const [resized, setResized] = useState<number | null>(null);
+  const min = bounds?.min ?? layout.sidePanel.min;
+  const max = bounds?.max ?? layout.sidePanel.max;
+  const start = bounds?.default ?? (wide ? layout.sidePanel.default : layout.sidePanel.min);
+  const width = Math.min(max, Math.max(min, resized ?? start));
   const panelId = useId();
   const panelRef = useRef<HTMLElement>(null);
   useFocusOnMount(panelRef, open);
@@ -305,11 +326,12 @@ export function DetailSidePanel({
       {!narrow && (
         <Splitter
           controls={panelId}
+          pane="right"
           label={intl.formatMessage(messages.resize, { pane: label })}
           value={width}
-          min={layout.sidePanel.min}
-          max={layout.sidePanel.max}
-          onChange={(next) => setWidth(next)}
+          min={min}
+          max={max}
+          onChange={setResized}
         />
       )}
       <aside

@@ -34,10 +34,13 @@ import { Keycaps } from "./Keycaps";
  * - `undo`: an action the user just took or an automatic change; the action is its Undo.
  * - `info`: a result with at most one non-undo action (View, Edit, Why?).
  * - `undoSend`: an email about to go out; counts down to the server's `sendAt`, ✕ means "Send now".
+ *
+ * Any variant may add one `secondaryAction` after the main one, e.g. D19 "Hidden from your feed ·
+ * Undo · Why?". Never more: a toast is one result with at most two ways to respond.
  */
 export type ToastVariant = "undo" | "info" | "undoSend";
 
-/** The toast's single action. */
+/** A toast button. */
 export interface ToastAction {
   /** Short verb, sentence case: "Undo", "View", "Why?". */
   readonly label: string;
@@ -55,6 +58,12 @@ export interface ToastOptions {
   readonly message: string;
   /** Undo for `undo` / `undoSend` (also pushed on the undo history), any single action for `info`. */
   readonly action?: ToastAction;
+  /**
+   * One extra plain action after `action` ("Why?" next to Undo, D19). Never on the undo history,
+   * so Mod+Z still runs `action`. It is a real button in the toast's tab order (F6 reaches it) and
+   * Radix announces it with the toast through `altText`.
+   */
+  readonly secondaryAction?: ToastAction;
   /** Leading glyph by action type: clock = snoozed, arrow = moved. `undoSend` defaults to a paper plane. */
   readonly glyph?: LucideIcon;
   /** `undoSend` only: the server's dispatch time; the toast counts down to it and then closes. */
@@ -317,6 +326,9 @@ function ToastItem({
   const keys = action?.keys ?? (undoId !== null ? UNDO_KEYS : undefined);
   const seconds = useCountdown(sending ? options.sendAt : undefined, onClose);
   const spoken = keys === undefined ? null : spokenAlternatives(keys, chrome.platform, intl);
+  const secondary = options.secondaryAction;
+  const secondaryKeys =
+    secondary?.keys === undefined ? null : spokenAlternatives(secondary.keys, chrome.platform, intl);
 
   return (
     <Toast.Root
@@ -364,6 +376,28 @@ function ToastItem({
           >
             {action.label}
             {keys !== undefined && <Keycaps keys={keys} tone="onDark" />}
+          </button>
+        </Toast.Action>
+      )}
+      {secondary && (
+        <Toast.Action
+          altText={
+            secondaryKeys
+              ? intl.formatMessage(messages.actionWithKeys, { action: secondary.label, keys: secondaryKeys })
+              : secondary.label
+          }
+          asChild
+        >
+          <button
+            type="button"
+            className={cx(toastButton, "text-toast-action px-2")}
+            onClick={() => {
+              secondary.run();
+              onClose();
+            }}
+          >
+            {secondary.label}
+            {secondary.keys !== undefined && <Keycaps keys={secondary.keys} tone="onDark" />}
           </button>
         </Toast.Action>
       )}

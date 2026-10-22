@@ -105,6 +105,8 @@ export interface AutoUpdateItemVM extends AttentionItemBase {
 export interface FollowUpItemVM extends AttentionItemBase {
   readonly kind: "followUp";
   readonly nudge: NudgeVM;
+  /** The application's job: "Draft follow-up" opens its Apply panel (IA.md deep link `jobs/{id}/apply`). */
+  readonly jobId: string | null;
 }
 
 export type DeadlineKind = "assessment" | "offerReply" | "jobClosing";
@@ -274,8 +276,8 @@ const DEADLINE_MESSAGES: Readonly<Record<DeadlineKind, MessageDescriptor>> = def
   },
   offerReply: {
     id: "today.deadline.offerReply",
-    defaultMessage: "Reply to the offer by",
-    description: "Deadline row title, followed by a date chip",
+    defaultMessage: "Offer reply due",
+    description: "Deadline row title, next to a date chip: the date to answer a job offer by",
   },
   jobClosing: {
     id: "today.deadline.jobClosing",
@@ -524,6 +526,7 @@ function followUpItems(data: UserData, ctx: ModelContext): FollowUpItemVM[] {
     title: nudge.role,
     context: nudge.message,
     nudge,
+    jobId: data.applications.find((application) => application.id === nudge.applicationId)?.jobId ?? null,
     pendingSync: nudge.pendingSync,
   }));
 }

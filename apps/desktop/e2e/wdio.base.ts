@@ -2,9 +2,9 @@
  * Shared WebdriverIO setup for the E2E specs and the screenshot capture. Both drive the test
  * build from `pnpm build:e2e` (cargo feature `e2e`, src-tauri/tauri.e2e.conf.json).
  *
- * macOS has no WKWebView driver, so the app embeds its own WebDriver server
- * (tauri-plugin-wdio-webdriver). Windows uses tauri-driver with the msedgedriver matching the
- * installed WebView2; @wdio/tauri-service installs and starts both.
+ * The app embeds its own WebDriver server (tauri-plugin-wdio-webdriver) on every platform, the
+ * provider @wdio/tauri-service recommends: macOS has no WKWebView driver, and on Windows it
+ * avoids tauri-driver + msedgedriver, which must match the runner's WebView2 exactly.
  */
 import path from "node:path";
 
@@ -24,9 +24,7 @@ export function baseConfig(specs: string[], timeout: number): WebdriverIO.Config
         "@wdio/tauri-service",
         {
           appBinaryPath,
-          driverProvider: process.platform === "darwin" ? "embedded" : "official",
-          autoInstallTauriDriver: true,
-          autoDownloadEdgeDriver: true,
+          driverProvider: "embedded",
         },
       ],
     ],

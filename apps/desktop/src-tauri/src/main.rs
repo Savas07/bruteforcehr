@@ -3,28 +3,32 @@
 
 mod commands;
 mod external_url;
+mod job_url;
 mod menu;
 mod navigation;
 mod window;
 
 fn main() {
     let builder = tauri::Builder::default().plugin(
-        // Used from Rust only (commands::open_external); its JS commands are not granted, and it
+        // Used from Rust only (commands::open_external, open_job_url); its JS commands are not granted, and it
         // must not install its click handler that routes <a> clicks to the system browser.
         tauri_plugin_opener::Builder::new()
             .open_js_links_on_click(false)
             .build(),
     );
 
-    // Test builds only (`pnpm build:e2e`): WebdriverIO bridge and, on macOS, the embedded
-    // WebDriver server.
+    // Test builds only (`pnpm build:e2e`): WebdriverIO bridge and the embedded WebDriver server.
     #[cfg(feature = "e2e")]
-    let builder = builder.plugin(tauri_plugin_wdio::init());
-    #[cfg(all(feature = "e2e", target_os = "macos"))]
-    let builder = builder.plugin(tauri_plugin_wdio_webdriver::init());
+    let builder = builder
+        .plugin(tauri_plugin_wdio::init())
+        .plugin(tauri_plugin_wdio_webdriver::init());
 
     builder
-        .invoke_handler(tauri::generate_handler![commands::open_external])
+        .manage(job_url::RateLimiter::for_job_urls())
+        .invoke_handler(tauri::generate_handler![
+            commands::open_external,
+            commands::open_job_url
+        ])
         .menu(menu::build)
         .on_menu_event(|app, event| menu::handle_event(app, &event))
         .setup(|app| {

@@ -229,3 +229,24 @@ struct MailSkeletonRow: View {
         .padding(.vertical, BFHRSpace.s1)
     }
 }
+
+// iOS-only list / picker API the Mail tab uses (BFHRUI also compiles for macOS for `swift test`).
+extension View {
+    /// `.listSectionSpacing(.compact)` on iOS.
+    func mailCompactSectionSpacing() -> some View {
+        #if os(iOS)
+        listSectionSpacing(.compact)
+        #else
+        self
+        #endif
+    }
+
+    /// `.pickerStyle(.navigationLink)` on iOS: the choice list opens as a pushed page.
+    func mailNavigationLinkPicker() -> some View {
+        #if os(iOS)
+        pickerStyle(.navigationLink)
+        #else
+        pickerStyle(.menu)
+        #endif
+    }
+}

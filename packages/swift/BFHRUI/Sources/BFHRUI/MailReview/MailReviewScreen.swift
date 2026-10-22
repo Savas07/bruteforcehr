@@ -142,7 +142,7 @@ public struct MailReviewScreen: View {
             .listRowInsets(EdgeInsets(top: 0, leading: BFHRSpace.s1, bottom: BFHRSpace.s2, trailing: BFHRSpace.s1))
             .listRowBackground(Color.clear)
         }
-        .listSectionSpacing(.compact)
+        .mailCompactSectionSpacing()
     }
 
     @ViewBuilder private var syncLine: some View {

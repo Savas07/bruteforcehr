@@ -142,8 +142,6 @@ enum MailViewStrings {
     static let statusNeedsApplication = LocalizedStringResource.bfhr("mail.change.statusNeedsApplication", default: "Link an application first to change its status.", table: "MailReview")
     static let searchApplications = LocalizedStringResource.bfhr("mail.change.search", default: "Company or role", table: "MailReview", comment: "Search prompt in the application picker.")
     static let noMatchingApplications = LocalizedStringResource.bfhr("mail.change.noMatches", default: "No applications match", table: "MailReview")
-    static let notJobMailNote = LocalizedStringResource.bfhr("mail.sheet.notJobMailNote", default: "Not job mail removes the email from BruteForceHR. We don't keep it.", table: "MailReview")
-    static let cancel = LocalizedStringResource.bfhr("mail.action.cancel", default: "Cancel", table: "MailReview")
 
     // Errors
     static let actionFailed = LocalizedStringResource.bfhr("mail.toast.actionFailed", default: "That change didn't go through. Try again.", table: "MailReview")

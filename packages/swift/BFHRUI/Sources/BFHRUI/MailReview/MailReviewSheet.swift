@@ -95,7 +95,7 @@ private struct CorrectionForm: View {
                     } label: {
                         Text(Strings.fieldCategory)
                     }
-                    .pickerStyle(.navigationLink)
+                    .mailNavigationLinkPicker()
 
                     NavigationLink(value: MailReviewSheet.Step.application) {
                         LabeledContent {

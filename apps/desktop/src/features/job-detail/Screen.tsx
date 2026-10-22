@@ -414,6 +414,8 @@ export default function JobDetailScreen({ model, params }: ScreenProps<JobDetail
     </SidebarChildren>
   );
 
+  // Below 1440 px start at the narrow end so a 13" window gives the detail more room.
+  const listPane = { ...layout.listPane, default: wide ? layout.listPane.default : layout.listPane.min };
   const splitLabels = {
     listLabel: intl.formatMessage(messages.listLabel),
     detailLabel: intl.formatMessage(messages.detailLabel),
@@ -427,6 +429,7 @@ export default function JobDetailScreen({ model, params }: ScreenProps<JobDetail
         {header}
         <SplitView
           {...splitLabels}
+          listPane={listPane}
           detailOpen={false}
           onBack={() => undefined}
           list={
@@ -626,8 +629,7 @@ export default function JobDetailScreen({ model, params }: ScreenProps<JobDetail
       <div className="border-line-subtle flex min-h-0 flex-1 border-t">
         <SplitView
           {...splitLabels}
-          // Below 1440 px start at the narrow end so a 13" window gives the detail more room.
-          listPane={{ ...layout.listPane, default: wide ? layout.listPane.default : layout.listPane.min }}
+          listPane={listPane}
           list={list}
           detail={detailView}
           detailOpen={detailOpen && detail !== null}

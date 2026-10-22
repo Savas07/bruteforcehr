@@ -78,14 +78,6 @@ function Evidence({ evidence }: { evidence: EvidenceVM }) {
   );
 }
 
-function Tag({ children }: { children: string }) {
-  return (
-    <span className="border-line-subtle text-fg-secondary inline-flex h-5 shrink-0 items-center rounded-sm border px-1.5 text-caption1 whitespace-nowrap">
-      {children}
-    </span>
-  );
-}
-
 function Requirement({ item, copy }: { item: RequirementVM; copy: JobDetailCopyVM }) {
   const Icon = statusIcon[item.status];
   return (
@@ -136,10 +128,10 @@ function Factor({
           <p className={cx("text-callout min-w-0 flex-1", resolved && "text-fg-secondary line-through")}>
             {factor.text}
           </p>
-          <div className="flex shrink-0 gap-1">
-            <Tag>{factor.impactLabel}</Tag>
-            {factor.ai && <Tag>{copy.aiFactor}</Tag>}
-          </div>
+          <span className="text-fg-tertiary text-footnote shrink-0 whitespace-nowrap">
+            {factor.impactLabel}
+            {factor.ai && ` · ${copy.aiFactor}`}
+          </span>
         </div>
         {factor.evidence && <Evidence evidence={factor.evidence} />}
         {factor.correctable &&

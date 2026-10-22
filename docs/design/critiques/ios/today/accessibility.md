@@ -101,4 +101,4 @@ iOS screen; hardware-keyboard / Full Keyboard Access follows the VoiceOver order
 
 ## Resolution
 - `swift test` (packages/swift/BFHRUI): 96 tests in 11 suites passed.
-- `TodayAccessibilityAuditTests` on iPhone 17e: see the final run recorded in the IosToday report (empty default + AX, populated AX and ReviewSheet pass; populated default passes except the Prep flag if it reappears).
+- `xcodebuild test-without-building … -only-testing:BruteForceHRUITests/TodayAccessibilityAuditTests` on iPhone 17e (iOS 26, Xcode 26.6), final run 2026-10-22: **6 tests, 0 failures** — `testPopulatedDefaultSize`, `testPopulatedAccessibilitySize`, `testEmptyDefaultSize`, `testEmptyAccessibilitySize`, `testReviewSheet` pass (plus the capture helper `testCaptureBelowTheFold`). Every filtered issue is listed as an `IGNORED (…)` activity in the result bundle; the only screen-specific one is the Prep row (Robust #3).

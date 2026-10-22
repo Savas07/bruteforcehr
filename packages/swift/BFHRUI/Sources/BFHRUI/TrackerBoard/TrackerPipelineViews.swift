@@ -106,16 +106,39 @@ struct NextStepLine: View {
     }
 }
 
+/// Drop handling shared by the strip and the drop panel: which stage is under the finger, and
+/// what to do when it changes or a row lands.
+struct StageDrop {
+    var hovered: ApplicationStatus?
+    var onTarget: (ApplicationStatus, Bool) -> Void
+    var onDrop: ([String], ApplicationStatus) -> Bool
+}
+
+extension View {
+    /// Makes a stage chip a drop target for a dragged application id.
+    func stageDropTarget(_ status: ApplicationStatus, _ drop: StageDrop) -> some View {
+        dropDestination(for: String.self) { items, _ in
+            drop.onDrop(items, status)
+        } isTargeted: { targeted in
+            drop.onTarget(status, targeted)
+        }
+    }
+}
+
 /// The stage index strip (`StageIndexStrip`): one tab per section with its count. Empty stages
-/// are dimmed but still tappable; a tap scrolls to (and opens) that section.
+/// are dimmed but still tappable; a tap scrolls to (and opens) that section. While a row is
+/// dragged, each chip is a drop target: the one under the finger fills with the accent and grows.
 struct StageStrip: View {
     let stages: [StageCount]
+    let drop: StageDrop
     let onSelect: (ApplicationStatus) -> Void
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: BFHRSpace.s2) {
                 ForEach(stages) { stage in
+                    let isHovered = drop.hovered == stage.status
                     Button { onSelect(stage.status) } label: {
                         HStack(spacing: BFHRSpace.s1) {
                             ToneDot(tone: stage.status.tone)
@@ -131,22 +154,31 @@ struct StageStrip: View {
                         .padding(.horizontal, BFHRSpace.s3)
                         .frame(minHeight: BFHRHitTarget.minimum)
                         .background(
-                            stage.isEmpty ? Color.clear : BFHRColor.Surface.sunken,
+                            isHovered ? BFHRColor.Accent.subtle : stage.isEmpty ? Color.clear : BFHRColor.Surface.sunken,
                             in: Capsule()
                         )
-                        .overlay(Capsule().strokeBorder(BFHRColor.Line.subtle, lineWidth: BFHRBorderWidth.hairline))
+                        .overlay(
+                            Capsule().strokeBorder(
+                                isHovered ? BFHRColor.Accent.solid : BFHRColor.Line.subtle,
+                                lineWidth: isHovered ? BFHRBorderWidth.thick : BFHRBorderWidth.hairline
+                            )
+                        )
+                        .scaleEffect(isHovered && !reduceMotion ? 1.06 : 1)
                         .contentShape(Capsule())
                     }
                     .buttonStyle(.plain)
+                    .stageDropTarget(stage.status, drop)
                     .accessibilityElement(children: .combine)
                     .accessibilityHint(Text(TrackerBoardStrings.stageHint))
                 }
             }
             .padding(.horizontal, BFHRSpace.s4)
             .padding(.vertical, BFHRSpace.s1)
+            .animation(BFHRMotion.animation(.fast, easing: .standard, reduceMotion: reduceMotion), value: drop.hovered)
         }
         .accessibilityElement(children: .contain)
         .accessibilityLabel(Text(TrackerBoardStrings.stagesLabel))
+        .accessibilityIdentifier("tracker.stageStrip")
     }
 }
 
@@ -217,19 +249,18 @@ struct StageSectionHeader: View {
     }
 }
 
-/// While an application is dragged: every stage as a drop chip pinned over the top of the list,
-/// so a long move (Saved → Offer, or to an outcome) needs no scrolling. The title names the
-/// destination under the finger ("Move to Screening"); targets the state machine refuses are
-/// dimmed and explain themselves in a toast if dropped on.
+/// While an application is dragged and the strip has scrolled away: every stage as a drop chip
+/// pinned over the top of the list, so a long move (Saved → Offer, or to an outcome) needs no
+/// scrolling. The title names the destination under the finger ("Move to Screening"); targets the
+/// state machine refuses are dimmed and explain themselves in a toast if dropped on.
 struct DropPanel: View {
     let targets: [MoveTarget]
-    let hovered: ApplicationStatus?
-    let onTarget: (ApplicationStatus, Bool) -> Void
-    let onDrop: ([String], ApplicationStatus) -> Bool
+    let drop: StageDrop
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         VStack(alignment: .leading, spacing: BFHRSpace.s2) {
-            Text(hovered.map(TrackerBoardStrings.moveTo) ?? TrackerBoardStrings.dropHint)
+            Text(drop.hovered.map(TrackerBoardStrings.moveTo) ?? TrackerBoardStrings.dropHint)
                 .font(.bfhr(.subheadline, emphasized: true))
                 .foregroundStyle(BFHRColor.Fg.primary)
             ChipFlow(spacing: BFHRSpace.s2) {
@@ -245,10 +276,11 @@ struct DropPanel: View {
         .bfhrElevation(.overlay)
         .padding(.horizontal, BFHRSpace.s3)
         .padding(.top, BFHRSpace.s2)
+        .animation(BFHRMotion.animation(.fast, easing: .standard, reduceMotion: reduceMotion), value: drop.hovered)
     }
 
     private func chip(_ target: MoveTarget) -> some View {
-        let isHovered = hovered == target.status
+        let isHovered = drop.hovered == target.status
         return HStack(spacing: BFHRSpace.s1) {
             ToneDot(tone: target.status.tone)
             Text(target.status.label)
@@ -262,12 +294,8 @@ struct DropPanel: View {
         .frame(minHeight: BFHRHitTarget.minimum)
         .background(isHovered ? BFHRColor.Accent.subtle : BFHRColor.Surface.sunken, in: Capsule())
         .overlay(Capsule().strokeBorder(isHovered ? BFHRColor.Accent.solid : BFHRColor.Line.subtle, lineWidth: isHovered ? BFHRBorderWidth.thick : BFHRBorderWidth.hairline))
-        .scaleEffect(isHovered ? 1.05 : 1)
-        .dropDestination(for: String.self) { items, _ in
-            onDrop(items, target.status)
-        } isTargeted: { targeted in
-            onTarget(target.status, targeted)
-        }
+        .scaleEffect(isHovered && !reduceMotion ? 1.06 : 1)
+        .stageDropTarget(target.status, drop)
     }
 }
 

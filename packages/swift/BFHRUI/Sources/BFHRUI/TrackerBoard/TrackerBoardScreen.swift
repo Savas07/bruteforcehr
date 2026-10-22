@@ -5,9 +5,8 @@ import SwiftUI
 /// The Tracker tab's Pipeline (tracker.md "Decision — iOS"): one grouped list instead of a column
 /// pager. Scope tabs (Active · Closed · All), a scrolling stage strip with counts, sticky
 /// collapsible stage sections, and three equal ways to move an application: long-press → Move to…
-/// (also the VoiceOver action), swipe actions, and drag onto the drop panel's stage targets. Every
-/// move goes through BFHRCore's state machine as the user and offers Undo. Rows push the
-/// Application detail.
+/// (also the VoiceOver action), swipe actions, and drag onto a stage of the strip. Every move goes
+/// through BFHRCore's state machine as the user and offers Undo. Rows push the Application detail.
 public struct TrackerBoardScreen: View {
     @Bindable private var model: TrackerBoardModel
     @Environment(ToastCenter.self) private var toasts: ToastCenter?
@@ -16,9 +15,10 @@ public struct TrackerBoardScreen: View {
     /// Sections the user opened or closed; others follow `collapsedByDefault`.
     @State private var expansion: [ApplicationStatus: Bool] = [:]
     @State private var errorCount = 0
-    // Drag: the panel shows while any drop target (the list or a stage chip) is targeted.
+    // Drag: the strip's chips are the drop targets. When the strip has scrolled away, the same
+    // chips pin over the top of the list for the length of the drag (`DropPanel`).
     @State private var draggedId: String?
-    @State private var dropTargets: Set<String> = []
+    @State private var stripVisible = true
     @State private var dropPanelVisible = false
     @State private var hoveredStage: ApplicationStatus?
     @State private var hideDropPanel: Task<Void, Never>?
@@ -85,12 +85,16 @@ public struct TrackerBoardScreen: View {
                     .labelsHidden()
                     .accessibilityLabel(Text(TrackerBoardStrings.scopeLabel))
                     .listRowSeparator(.hidden)
-                    StageStrip(stages: model.stageStrip) { status in
+                    StageStrip(
+                        stages: model.stageStrip,
+                        drop: StageDrop(hovered: hoveredStage, onTarget: target, onDrop: drop)
+                    ) { status in
                         expansion[status] = true
                         withAnimation(BFHRMotion.animation(.base, easing: .standard, reduceMotion: reduceMotion)) {
                             proxy.scrollTo(status, anchor: .top)
                         }
                     }
+                    .onScrollVisibilityChange(threshold: 0.5) { visible in stripVisible = visible }
                     .listRowInsets(EdgeInsets())
                     .listRowSeparator(.hidden)
                 }
@@ -124,21 +128,11 @@ public struct TrackerBoardScreen: View {
                 }
             }
             .listStyle(.plain)
-            .dropDestination(for: String.self) { _, _ in
-                false
-            } isTargeted: { targeted in
-                setDropTarget("list", targeted)
-            }
             .overlay(alignment: .top) {
                 if dropPanelVisible {
                     DropPanel(
                         targets: draggedId.map(model.moveTargets(for:)) ?? [],
-                        hovered: hoveredStage,
-                        onTarget: { status, targeted in
-                            setDropTarget(status.rawValue, targeted)
-                            if targeted { hoveredStage = status } else if hoveredStage == status { hoveredStage = nil }
-                        },
-                        onDrop: drop
+                        drop: StageDrop(hovered: hoveredStage, onTarget: target, onDrop: drop)
                     )
                     .transition(.opacity)
                 }
@@ -193,35 +187,44 @@ public struct TrackerBoardScreen: View {
 
     // MARK: Drag
 
-    /// The drag payload; remembers which application is lifted so the panel can dim the targets
-    /// the state machine refuses.
+    /// The drag payload, evaluated when a drag starts: remembers the lifted application (the
+    /// panel dims targets the state machine refuses) and pins the panel if the strip is away.
     private func beginDrag(_ applicationId: String) -> String {
         draggedId = applicationId
+        if !stripVisible {
+            withAnimation(BFHRMotion.animation(.fast, easing: .enter, reduceMotion: reduceMotion)) { dropPanelVisible = true }
+            scheduleHidePanel(after: .seconds(8))
+        }
         return applicationId
     }
 
-    private func setDropTarget(_ key: String, _ targeted: Bool) {
-        if targeted { dropTargets.insert(key) } else { dropTargets.remove(key) }
+    /// A stage chip gained or lost the finger: name it ("Move to Screening") and tick.
+    private func target(_ status: ApplicationStatus, _ targeted: Bool) {
+        if targeted {
+            hoveredStage = status
+            hideDropPanel?.cancel()
+        } else if hoveredStage == status {
+            hoveredStage = nil
+            // SwiftUI reports no cancelled drag; a panel nobody hovers goes away on its own.
+            if dropPanelVisible { scheduleHidePanel(after: .seconds(3)) }
+        }
+    }
+
+    private func scheduleHidePanel(after delay: Duration) {
         hideDropPanel?.cancel()
-        if !dropTargets.isEmpty {
-            withAnimation(BFHRMotion.animation(.fast, easing: .enter, reduceMotion: reduceMotion)) { dropPanelVisible = true }
-        } else {
-            // Moving from the list onto a chip briefly targets neither; hide only once settled.
-            hideDropPanel = Task {
-                try? await Task.sleep(for: .milliseconds(350))
-                guard !Task.isCancelled, dropTargets.isEmpty else { return }
-                withAnimation(BFHRMotion.animation(.fast, easing: .exit, reduceMotion: reduceMotion)) { dropPanelVisible = false }
-                hoveredStage = nil
-            }
+        hideDropPanel = Task {
+            try? await Task.sleep(for: delay)
+            guard !Task.isCancelled, hoveredStage == nil else { return }
+            withAnimation(BFHRMotion.animation(.fast, easing: .exit, reduceMotion: reduceMotion)) { dropPanelVisible = false }
         }
     }
 
     private func drop(_ items: [String], on status: ApplicationStatus) -> Bool {
-        guard let id = items.first, model.data.application(id: id) != nil else { return false }
-        dropTargets.removeAll()
+        hideDropPanel?.cancel()
         dropPanelVisible = false
         hoveredStage = nil
-        guard model.data.application(id: id)?.status != status else { return false }
+        draggedId = nil
+        guard let id = items.first, let current = model.data.application(id: id)?.status, current != status else { return false }
         run { try model.move(id, to: status) }
         return true
     }
@@ -272,23 +275,9 @@ struct TrackerMoveSheet: View {
                 }
             }
             .navigationTitle(Text(title))
+            .modifier(SheetSubtitle(subtitle))
             .bfhrInlineTitle()
             .toolbar {
-                ToolbarItem(placement: .principal) {
-                    VStack(spacing: 0) {
-                        Text(title)
-                            .font(.bfhr(.headline))
-                            .foregroundStyle(BFHRColor.Fg.primary)
-                        if let application = model.data.application(id: sheet.applicationId) {
-                            Text(verbatim: "\(application.company) · \(application.role)")
-                                .font(.bfhr(.footnote))
-                                .foregroundStyle(BFHRColor.Fg.secondary)
-                                .lineLimit(1)
-                        }
-                    }
-                    .accessibilityElement(children: .combine)
-                    .accessibilityAddTraits(.isHeader)
-                }
                 ToolbarItem(placement: .cancellationAction) {
                     // The system ✕ (iOS 26): a "Close" text button would read like the
                     // Close… outcome action in this very sheet.
@@ -308,6 +297,28 @@ struct TrackerMoveSheet: View {
         switch sheet {
         case .move: Strings.moveTo
         case .close: TrackerBoardStrings.closeTitle
+        }
+    }
+
+    /// "Aire Digital Health · Frontend Engineer": which application the sheet moves.
+    private var subtitle: String? {
+        model.data.application(id: sheet.applicationId).map { "\($0.company) · \($0.role)" }
+    }
+}
+
+/// The system navigation subtitle (iOS 26) under the sheet's title.
+private struct SheetSubtitle: ViewModifier {
+    let subtitle: String?
+
+    init(_ subtitle: String?) {
+        self.subtitle = subtitle
+    }
+
+    func body(content: Content) -> some View {
+        if let subtitle, #available(iOS 26, macOS 11, *) {
+            content.navigationSubtitle(Text(verbatim: subtitle))
+        } else {
+            content
         }
     }
 }

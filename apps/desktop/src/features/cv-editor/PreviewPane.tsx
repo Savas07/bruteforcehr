@@ -213,7 +213,14 @@ export function PreviewPane({
           />
         </div>
       </header>
-      <div ref={canvasRef} className="relative min-h-0 flex-1 overflow-auto">
+      {/* Focusable so keyboard users can scroll the pages and zoom with Mod+= / Mod+-. */}
+      <div
+        ref={canvasRef}
+        tabIndex={0}
+        role="group"
+        aria-labelledby="cv-preview-title"
+        className="relative min-h-0 flex-1 overflow-auto outline-offset-[-2px]"
+      >
         {/* Off-screen measuring copy at the page's content width. */}
         <div
           ref={measureRef}

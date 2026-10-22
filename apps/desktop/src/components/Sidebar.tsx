@@ -89,12 +89,12 @@ export function Sidebar({
   return (
     <nav
       aria-label={intl.formatMessage(messages.sections)}
-      className="bg-(--chrome) flex w-(--sidebar-width) shrink-0 flex-col select-none narrow:w-(--rail-width)"
+      className="bg-(--chrome) flex min-h-0 w-(--sidebar-width) shrink-0 flex-col select-none narrow:w-(--rail-width)"
     >
       {/* macOS: the traffic lights sit in this row, aligned with the sidebar icons below. */}
       {isMac && <div data-tauri-drag-region className="h-(--chrome-height) shrink-0" />}
 
-      <div className={isMac ? "px-3" : "px-3 pt-2"}>
+      <div className={isMac ? "shrink-0 px-3" : "shrink-0 px-3 pt-2"}>
         <ActionRow
           icon={Search}
           label={intl.formatMessage(messages.jumpTo)}
@@ -104,7 +104,13 @@ export function Sidebar({
         />
       </div>
 
-      <ul className="mt-3 flex flex-col gap-0.5 px-3">
+      {/* Scrolls when a section's nested children overflow (Mail folders + categories + accounts
+          at 800 px); the footer below stays pinned. py-1 / px-3 keep focus rings inside the
+          scroll box, which clips at its padding edge. */}
+      <ul
+        data-sidebar-scroll=""
+        className="mt-2 flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto px-3 py-1"
+      >
         {destinations.map((destination) => {
           const Icon = destinationIcons[destination.id];
           const label = intl.formatMessage(destinationMessages[destination.id]);
@@ -129,7 +135,7 @@ export function Sidebar({
         })}
       </ul>
 
-      <div className="mt-auto px-3 pb-3">
+      <div data-sidebar-footer="" className="shrink-0 px-3 pt-2 pb-3">
         <ActionRow
           icon={Keyboard}
           label={intl.formatMessage(messages.keyboardShortcuts)}

@@ -42,6 +42,8 @@ const messages = defineMessages({
   },
   previous: { id: "job-detail.view.previousJob", defaultMessage: "Previous job" },
   next: { id: "job-detail.view.nextJob", defaultMessage: "Next job" },
+  firstInList: { id: "job-detail.view.firstInList", defaultMessage: "This is the first job in the list" },
+  lastInList: { id: "job-detail.view.lastInList", defaultMessage: "This is the last job in the list" },
   more: { id: "job-detail.view.moreActions", defaultMessage: "More actions" },
   notForMeWithReason: { id: "job-detail.view.notForMeWithReason", defaultMessage: "Not for me, with a reason…" },
   hideCompany: { id: "job-detail.view.hideCompany", defaultMessage: "Hide all jobs from {company}" },
@@ -160,20 +162,25 @@ export function DetailPane({
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="border-line-subtle flex h-11 shrink-0 items-center gap-1 border-b px-3">
-        <IconButton
-          icon={ChevronUp}
-          label={intl.formatMessage(messages.previous)}
-          shortcut="K"
-          disabledReason={detail.previousJobId === null ? copy.noSelectionHint : null}
-          onClick={actions.onPrevious}
-        />
-        <IconButton
-          icon={ChevronDown}
-          label={intl.formatMessage(messages.next)}
-          shortcut="J"
-          disabledReason={detail.nextJobId === null ? copy.noSelectionHint : null}
-          onClick={actions.onNext}
-        />
+{/* Not in the list (hidden, deep link): no prev / next to offer. */}
+        {position !== null && (
+          <>
+            <IconButton
+              icon={ChevronUp}
+              label={intl.formatMessage(messages.previous)}
+              shortcut="K"
+              disabledReason={detail.previousJobId === null ? intl.formatMessage(messages.firstInList) : null}
+              onClick={actions.onPrevious}
+            />
+            <IconButton
+              icon={ChevronDown}
+              label={intl.formatMessage(messages.next)}
+              shortcut="J"
+              disabledReason={detail.nextJobId === null ? intl.formatMessage(messages.lastInList) : null}
+              onClick={actions.onNext}
+            />
+          </>
+        )}
         {position !== null && (
           <span className="text-fg-secondary text-footnote ml-1 tabular-nums">
             {intl.formatMessage(messages.position, { position, total })}

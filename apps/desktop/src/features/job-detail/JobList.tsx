@@ -1,14 +1,14 @@
 /**
  * The Jobs list pane (job-feed-search.md "Decision — Desktop" 4–5): "37 jobs · Best match" with
  * the ranking note, rows in Glassdoor anatomy (title, company · place, salary with provenance,
- * band pill, age, saved / status, "3 sources"), row actions on hover and focus (Save, Not for me,
- * Open original), and the placeholder a hidden row leaves behind (Undo · Why?).
+ * band pill, age, saved / status, "3 sources"), and row actions on hover and focus (Save, Not for
+ * me, Open original). A hidden row leaves an anchor for the optional reason popover.
  */
 import { ArrowUpRight, Bookmark, BookmarkCheck, EyeOff, Info, Layers } from "lucide-react";
 import type { RefObject } from "react";
 import { defineMessages, useIntl } from "react-intl";
 import { cx } from "../../shared/cx";
-import { Button, IconButton } from "../../shared/ui/Button";
+import { IconButton } from "../../shared/ui/Button";
 import { Monogram } from "../../shared/ui/Company";
 import type { ListNavigation } from "../../shared/ui/focus";
 import { Hint } from "../../shared/ui/Hint";
@@ -21,16 +21,14 @@ import type { DismissReasonVM, JobDetailCopyVM, JobDetailModel, JobListRowVM } f
 
 const messages = defineMessages({
   sortedBy: { id: "job-detail.view.sortedBy", defaultMessage: "Sorted by {sort}" },
-  why: { id: "job-detail.view.why", defaultMessage: "Why?" },
-  hiddenRow: { id: "job-detail.view.hiddenRow", defaultMessage: "Hidden: {title}" },
   scoring: { id: "job-detail.view.scoring", defaultMessage: "Scoring…" },
   unsave: { id: "job-detail.view.unsave", defaultMessage: "Remove from Saved" },
 });
 
+/** The row just hidden with Not for me: where the reason popover anchors. */
 export interface HiddenPlaceholder {
   readonly jobId: string;
-  readonly title: string;
-  /** Index in the visible rows the placeholder takes. */
+  /** Index in the visible rows the hidden row had. */
   readonly index: number;
 }
 
@@ -146,44 +144,27 @@ function Row({
   );
 }
 
-function Placeholder({
-  placeholder,
-  copy,
+/** Zero-height anchor where the hidden row was, for the reason popover. */
+function HiddenAnchor({
   reasons,
   reasonsOpen,
   onReasonsOpenChange,
   onSaveReasons,
-  onUndo,
 }: {
-  placeholder: HiddenPlaceholder;
-  copy: JobDetailCopyVM;
   reasons: readonly DismissReasonVM[];
   reasonsOpen: boolean;
   onReasonsOpenChange: (open: boolean) => void;
   onSaveReasons: (keys: readonly DismissReasonVM["key"][]) => void;
-  onUndo: () => void;
 }) {
-  const intl = useIntl();
   return (
-    <li className="border-line-subtle text-fg-secondary my-1 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-md border border-dashed px-3 py-2">
-      <EyeOff aria-hidden="true" className="size-4 shrink-0" strokeWidth={1.75} />
-      <span className="text-callout min-w-0 flex-1 truncate">
-        {intl.formatMessage(messages.hiddenRow, { title: placeholder.title })}
-      </span>
-      <Button size="sm" variant="plain" onClick={onUndo}>
-        {copy.undo}
-      </Button>
-      <DismissReasonPopover
-        reasons={reasons}
-        open={reasonsOpen}
-        onOpenChange={onReasonsOpenChange}
-        onSave={onSaveReasons}
-      >
-        <Button size="sm" variant="plain">
-          {intl.formatMessage(messages.why)}
-        </Button>
-      </DismissReasonPopover>
-    </li>
+    <DismissReasonPopover
+      reasons={reasons}
+      open={reasonsOpen}
+      onOpenChange={onReasonsOpenChange}
+      onSave={onSaveReasons}
+    >
+      <li aria-hidden="true" className="h-0" />
+    </DismissReasonPopover>
   );
 }
 
@@ -198,7 +179,6 @@ export function JobList({
   reasonsOpen,
   onReasonsOpenChange,
   onSaveReasons,
-  onUndoHide,
   onSelect,
   onToggleSave,
   onNotForMe,
@@ -215,7 +195,6 @@ export function JobList({
   reasonsOpen: boolean;
   onReasonsOpenChange: (open: boolean) => void;
   onSaveReasons: (keys: readonly DismissReasonVM["key"][]) => void;
-  onUndoHide: () => void;
   onSelect: (jobId: string) => void;
   onToggleSave: (row: JobListRowVM) => void;
   onNotForMe: (row: JobListRowVM) => void;
@@ -242,15 +221,12 @@ export function JobList({
     items.splice(
       Math.min(placeholder.index, items.length),
       0,
-      <Placeholder
+      <HiddenAnchor
         key={`hidden-${placeholder.jobId}`}
-        placeholder={placeholder}
-        copy={copy}
         reasons={model.dismissReasons}
         reasonsOpen={reasonsOpen}
         onReasonsOpenChange={onReasonsOpenChange}
         onSaveReasons={onSaveReasons}
-        onUndo={onUndoHide}
       />,
     );
   return (

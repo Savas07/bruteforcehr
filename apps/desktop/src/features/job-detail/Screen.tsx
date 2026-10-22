@@ -11,7 +11,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { useRef, useState } from "react";
 import { defineMessages, useIntl } from "react-intl";
 import { destinationMessages } from "../../lib/destinations";
-import { openExternal } from "../../lib/desktop";
+import { openJobUrl } from "../../lib/desktop";
 import { useConnectivity } from "../../shared/connectivity";
 import { useKeyBindings } from "../../shared/keyboard/useKeyBindings";
 import type { ScreenProps } from "../../shared/screen";
@@ -59,6 +59,7 @@ const messages = defineMessages({
   keyNotForMeReason: { id: "job-detail.view.keyNotForMeReason", defaultMessage: "Not for me, with a reason" },
   keyApply: { id: "job-detail.view.keyApply", defaultMessage: "Apply" },
   keyOpen: { id: "job-detail.view.keyOpen", defaultMessage: "Open the original posting" },
+  why: { id: "job-detail.view.why", defaultMessage: "Why?" },
   hiddenToast: { id: "job-detail.view.hiddenToast", defaultMessage: "Hidden from your feed: {title}" },
   unhiddenToast: { id: "job-detail.view.unhiddenToast", defaultMessage: "Back in your feed: {title}" },
   companyHiddenToast: {
@@ -206,7 +207,7 @@ export default function JobDetailScreen({ model, params }: ScreenProps<JobDetail
     });
 
   const openUrl = (url: string) =>
-    void openExternal(url).catch(() => toast.show({ variant: "info", message: intl.formatMessage(messages.openFailed) }));
+    void openJobUrl(url).catch(() => toast.show({ variant: "info", message: intl.formatMessage(messages.openFailed) }));
 
   const toggleSave = (row: { jobId: string; saved: boolean; title: string }) => {
     const before = local.saved.get(row.jobId);
@@ -237,7 +238,7 @@ export default function JobDetailScreen({ model, params }: ScreenProps<JobDetail
     const index = visibleIds.indexOf(row.jobId);
     local.setHidden((set) => toggled(set, row.jobId, true));
     local.setUnhidden((set) => toggled(set, row.jobId, false));
-    if (index >= 0) local.setPlaceholder({ jobId: row.jobId, title: row.title, index });
+    if (index >= 0) local.setPlaceholder({ jobId: row.jobId, index });
     setReasonsOpen(withReason && index >= 0);
     if (selectedId === row.jobId) {
       const next = neighbour(row.jobId, new Set(jobIds));
@@ -247,6 +248,10 @@ export default function JobDetailScreen({ model, params }: ScreenProps<JobDetail
     toast.show({
       message: intl.formatMessage(messages.hiddenToast, { title: row.title }),
       action: { label: data?.copy.undo ?? "", run: () => undoHide(jobIds, row.jobId) },
+      // D19: "Hidden from your feed · Undo · Why?"; Why? opens the optional reason popover.
+      ...(index >= 0 && {
+        secondaryAction: { label: intl.formatMessage(messages.why), run: () => setReasonsOpen(true) },
+      }),
     });
   };
 
@@ -525,7 +530,6 @@ export default function JobDetailScreen({ model, params }: ScreenProps<JobDetail
       reasonsOpen={reasonsOpen}
       onReasonsOpenChange={setReasonsOpen}
       onSaveReasons={saveReasons}
-      onUndoHide={() => local.placeholder && undoHide([local.placeholder.jobId], local.placeholder.jobId)}
       onSelect={(jobId) => {
         select(jobId);
         if (narrow) setDetailOpen(true);

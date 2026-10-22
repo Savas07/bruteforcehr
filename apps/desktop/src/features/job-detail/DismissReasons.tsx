@@ -1,7 +1,8 @@
 /**
  * The optional "What didn't fit?" popover after Not for me (job-feed-search.md "Row actions",
- * D19): multi-select reasons, number keys 1–9 toggle, Enter saves, Esc skips. Skip and Save reason
- * carry equal weight; the job is already hidden either way.
+ * D19): opened by the toast's "Why?" or Shift+D, anchored where the hidden row was. Multi-select
+ * reasons, number keys 1–9 toggle, Enter saves, Esc skips. Skip and Save reason carry equal
+ * weight; the job is already hidden either way.
  */
 import { Popover } from "radix-ui";
 import { useState, type ReactNode } from "react";
@@ -37,7 +38,7 @@ export function DismissReasonPopover({
   onOpenChange: (open: boolean) => void;
   /** The picked reasons (at least one). */
   onSave: (keys: readonly DismissReasonVM["key"][]) => void;
-  /** The trigger ("Why?" on the hidden-row placeholder). */
+  /** The anchor: where the hidden row was (the toast's "Why?" and Shift+D open it). */
   children: ReactNode;
 }) {
   const intl = useIntl();
@@ -57,9 +58,14 @@ export function DismissReasonPopover({
         onOpenChange(next);
       }}
     >
-      <Popover.Trigger asChild>{children}</Popover.Trigger>
+      <Popover.Anchor asChild>{children}</Popover.Anchor>
       <Popover.Portal>
         <Popover.Content
+          // Back to the list (the row that took the hidden one's place), not the zero-height anchor.
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            document.querySelector<HTMLElement>('[data-nav-id][tabindex="0"]')?.focus();
+          }}
           side="bottom"
           align="start"
           sideOffset={8}

@@ -125,7 +125,7 @@ function Factor({
       />
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
-          <p className={cx("text-callout min-w-0 flex-1", resolved && "text-fg-secondary line-through")}>
+          <p className={cx("text-callout min-w-0 flex-1", resolved && "text-fg-secondary")}>
             {factor.text}
           </p>
           <span className="text-fg-tertiary text-footnote shrink-0 whitespace-nowrap">

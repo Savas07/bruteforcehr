@@ -17,6 +17,7 @@ struct CVItemEditorSheet: View {
     @State private var confirmDiscard = false
     @State private var appliedCount = 0
     @FocusState private var focusedBullet: UUID?
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dismiss) private var dismiss
     @Environment(ToastCenter.self) private var toasts: ToastCenter?
 
@@ -121,7 +122,7 @@ struct CVItemEditorSheet: View {
     private var dateRangeSection: some View {
         Section {
             CVMonthYearPicker(L.startLabel, iso: $draft.startDate)
-            Toggle(isOn: $draft.isCurrent.animation()) { Text(L.currentLabel(kind)) }
+            Toggle(isOn: $draft.isCurrent.animation(BFHRMotion.animation(.base, reduceMotion: reduceMotion))) { Text(L.currentLabel(kind)) }
             if !draft.isCurrent {
                 CVMonthYearPicker(L.endLabel, iso: $draft.endDate)
             }

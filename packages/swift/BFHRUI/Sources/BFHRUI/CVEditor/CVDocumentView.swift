@@ -41,6 +41,7 @@ struct CVDocumentView: View {
     @State private var segment: CVSegment = .edit
     @State private var sheet: CVEditorSheet?
     @State private var zoomed = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     #if os(iOS)
     @State private var editMode: EditMode = .inactive
     #endif
@@ -118,7 +119,7 @@ struct CVDocumentView: View {
                 case .edit:
                     #if os(iOS)
                     Button {
-                        withAnimation { editMode = editMode.isEditing ? .inactive : .active }
+                        withAnimation(BFHRMotion.animation(.base, reduceMotion: reduceMotion)) { editMode = editMode.isEditing ? .inactive : .active }
                     } label: {
                         if editMode.isEditing {
                             Text(L.done).fontWeight(.semibold)

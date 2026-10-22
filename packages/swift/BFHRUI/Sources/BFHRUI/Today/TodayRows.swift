@@ -107,6 +107,7 @@ struct NextUpCard: View {
             }
             .font(.bfhr(.subheadline))
             .foregroundStyle(BFHRColor.Fg.primary)
+            .accessibilityElement(children: .combine)
             if let url = next.meetingURL {
                 if next.isJoinable {
                     Button { open(url) } label: {

@@ -177,9 +177,11 @@ public struct TodayScreen: View {
                 DisclosureGroup {
                     NextUpPrep(next: next) { openURL(TodayLink.application(next.applicationId)) }
                 } label: {
-                    Label { Text(TodayStrings.prep) } icon: { Image(systemName: "list.bullet.clipboard") }
-                        .font(.bfhr(.body))
-                        .foregroundStyle(BFHRColor.Fg.primary)
+                    InlineLabel(systemImage: "list.bullet.clipboard") {
+                        Text(TodayStrings.prep)
+                            .font(.bfhr(.body))
+                            .foregroundStyle(BFHRColor.Fg.primary)
+                    }
                 }
             }
         case .toReview:

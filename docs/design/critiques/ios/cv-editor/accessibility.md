@@ -2,13 +2,13 @@
 
 Skill: `accessibility-review` (WCAG 2.1 AA, mapped to iOS). Backed by the XCUITest `apps/ios/BruteForceHRUITests/CVEditorAccessibilityAuditTests.swift`, which runs `performAccessibilityAudit()` in design mode on the populated CV (Edit and Preview) and the empty list at the default size and at AX5 (`UICTContentSizeCategoryAccessibilityXXXL`), plus the item edit sheet, ✦ Improve, Version history, Reorder sections and the DE variant, and drives the key interactions (swipe to remove + Undo, blank-filling before "Use suggestion", switching to the variant from "…").
 
-Runs: iPhone 17e light and iPhone 17 Pro Max dark (Xcode 26.6, iOS 26 simulators), 13 tests each. Every issue is logged to `artifacts/screens/ios/<device>/audit-issues.txt` with element, label and frame.
+Runs: iPhone 17e and iPhone 17 Pro Max, light (final), plus an earlier Pro Max dark run (Xcode 26.6, iOS 26 simulators), 13 tests each. Every issue is logged to `artifacts/screens/ios/<device>/audit-issues.txt` with element, label and frame.
 
 ## Accessibility Audit: CV editor (iOS)
-**Standard:** WCAG 2.1 AA | **Date:** 2026-10-22
+**Standard:** WCAG 2.1 AA | **Date:** 2026-10-22 (final run 2026-10-23)
 
 ### Summary
-**Issues found:** 15 in the screen's own UI (all fixed) + 1 shared-component finding with three parts (all fixed upstream on `m0/ios-shared`, pending Main's merge) | **Critical:** 1 | **Major:** 8 | **Minor:** 7
+**Issues found:** 15 in the screen's own UI (all fixed) + 1 shared-component finding with three parts (all fixed upstream on `m0/ios-shared`, now in main) | **Critical:** 1 | **Major:** 8 | **Minor:** 7
 
 ### Findings
 
@@ -20,8 +20,8 @@ Runs: iPhone 17e light and iPhone 17 Pro Max dark (Xcode 26.6, iOS 26 simulators
 | 3 | Suggestion diff in dark: added words had an accent fill behind accent text inside a primary-text run; the audit failed the run's contrast. | 1.4.3, 1.4.1 Use of color | 🟡 Major | Fixed: added words are underlined + bold + accent text, removed words struck through + secondary; one background. VoiceOver value spells the changes out ("replaced “Led” with “Drove”; added …"). |
 | 4 | Summary and first-bullet previews truncated at 4 / 2 lines ("Text clipped"). | 1.4.4 Resize text | 🟢 Minor | Fixed: full text shown. |
 | 5 | Edit-sheet text fields single-line: clipped values at AX5 and for accented capitals ("Text clipped" on Role / Location). | 1.4.4 | 🟢 Minor | Fixed: vertical-axis fields that grow; single-value fields drop line breaks. |
-| 6 | `EmptyState` message clipped at the default size; title contrast in dark; primary button label clipped on iPhone 17e (shared component). | 1.4.4, 1.4.3 | 🟢 Minor | Reported to IosFoundation: message + dark title fixed on `m0/ios-shared` (d2512b1, 350717c; pending Main's merge); button clipping fixed in 539a69d (verified by IosFoundation on a temp merge with f0bd0c8: `testEmptyDefaultSize` passes on iPhone 17e light). |
-| 7 | Preview page text is fixed-size print in paper colours, scaled to fit the width. | 1.4.4 | 🟢 Minor (by design) | Kept: it is the document, not UI. "Actual size" shows it 1:1, pinch/scroll both ways; VoiceOver reads the real text in page order ("Page 1 of 1" container); the editor itself scales to AX5. Audit exempts only static text inside `cv.page.N`. |
+| 6 | `EmptyState` message clipped at the default size; title contrast in dark; primary button label clipped on iPhone 17e (shared component). | 1.4.4, 1.4.3 | 🟢 Minor | Reported to IosFoundation; fixed in `m0/ios-shared` (d2512b1 message, 350717c dark title, 539a69d button label), merged to main. `testEmptyDefaultSize` passes on both devices. |
+| 7 | Preview page text is fixed-size print in paper colours, scaled to fit the width. | 1.4.4 | 🟢 Minor (by design) | Kept: it is the document, not UI. "Actual size" shows it 1:1 and scrolls both ways (pinch zoom comes with cv-render in M2); VoiceOver reads the real text in page order ("Page 1 of 1" container); the editor itself scales to AX5. Audit exempts only static text inside `cv.page.N`. |
 
 #### Operable
 | # | Issue | WCAG Criterion | Severity | Recommendation / status |
@@ -89,11 +89,13 @@ The test logs every issue and exempts only these, each tagged in the log:
 - **Printed page** (Preview only): text size, clipping and contrast of static text inside `cv.page.N` (see finding 7).
 
 ### Results
+Final run on `m0/ios-cv-editor` merged with main (ios-shared 539a69d and every iOS screen), built inside the capture lock into the shared DerivedData:
+
 | Run | Result |
 |---|---|
-| iPhone 17e, light (final, this branch) | 12 / 13 passed. The one failure is shared `EmptyState` (finding 6: message clipped at the default size). |
-| iPhone 17 Pro Max, dark (this branch, before the diff fix) | 11 / 13 passed: finding 3 (fixed afterwards in `CVAssistSheet`) and finding 6 (dark title). |
-| Verification with `m0/ios-shared` @ 350717c temporarily merged (not committed) | Pro Max dark: `testEmptyDefaultSize`, `testEmptyAccessibilitySize`, `testAssistSheetBlocksUntilBlankFilled` all pass. iPhone 17e light: empty AX passes; empty default still reports "Text clipped" on the shared `EmptyState` primary button ("Start from scratch", 178 × 44) — fixed upstream in 539a69d (IosFoundation verified `testEmptyDefaultSize` passes on iPhone 17e light with this branch). |
+| iPhone 17e, light | **13 / 13 passed**; no unexempted issue in `audit-issues.txt`. |
+| iPhone 17 Pro Max, light | **13 / 13 passed**; no unexempted issue in `audit-issues.txt`. |
+| Earlier: iPhone 17 Pro Max, dark (before the diff fix and the shared fixes) | 11 / 13: finding 3 (fixed in `CVAssistSheet`) and finding 6 (fixed upstream). With the shared fixes merged, the affected dark tests (`testEmptyDefaultSize`, `testEmptyAccessibilitySize`, `testAssistSheetBlocksUntilBlankFilled`) passed. |
 
 ### Priority Fixes
 1. **✦ Improve actions scroll at AX5** — done; affects low-vision users deciding on AI text.

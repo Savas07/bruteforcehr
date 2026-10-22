@@ -8,7 +8,7 @@ import type { ApplicationStatus, MailCategory } from "@bfhr/core";
 import { Command } from "cmdk";
 import { Check, Plus, Search } from "lucide-react";
 import { Popover } from "radix-ui";
-import { useId, useState, type KeyboardEvent, type ReactNode } from "react";
+import { useId, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { defineMessages, useIntl } from "react-intl";
 import { chrome } from "../../lib/desktop";
 import { cx } from "../../shared/cx";
@@ -101,6 +101,8 @@ export interface CorrectionPopoverProps {
 /** Renders the anchor (place it right before the review card) and the popover. */
 export function CorrectionPopover({ open, onOpenChange, ...form }: CorrectionPopoverProps) {
   const intl = useIntl();
+  // There's no trigger (M, the card's Change… and the row's ✎ all open it), so focus goes back by hand.
+  const opener = useRef<HTMLElement | null>(null);
   return (
     <Popover.Root open={open} onOpenChange={onOpenChange}>
       <Popover.Anchor className="h-0" />
@@ -113,6 +115,17 @@ export function CorrectionPopover({ open, onOpenChange, ...form }: CorrectionPop
           sideOffset={12}
           collisionPadding={16}
           aria-label={intl.formatMessage(messages.title)}
+          onOpenAutoFocus={() => {
+            opener.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+          }}
+          onCloseAutoFocus={(event) => {
+            event.preventDefault();
+            // After a save the opener's row may be gone: continue at the selected row.
+            const target = opener.current?.isConnected
+              ? opener.current
+              : document.querySelector<HTMLElement>('[data-nav-id][aria-current="true"]');
+            target?.focus();
+          }}
           className="bg-surface-elevated text-fg-primary border-line-subtle shadow-overlay z-(--bfhr-layer-popover) flex max-h-(--radix-popover-content-available-height) w-[min(400px,calc(100vw-32px))] flex-col overflow-hidden rounded-lg border"
         >
           <CorrectionForm {...form} onCancel={() => onOpenChange(false)} />

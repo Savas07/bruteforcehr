@@ -138,7 +138,11 @@ export default function MailReviewScreen({ model }: ScreenProps<MailReviewModel>
   const { compact, narrow, wide } = useBreakpoints();
   const outcomes = useMailOutcomes();
   const listRef = useRef<HTMLUListElement>(null);
-  const pendingFocus = useRef<string | null>(null);
+  /**
+   * Where keyboard focus goes after the next render that can satisfy it: a row (after a decision
+   * or the pushed detail closes), or the first row of a folder the keys 1–3 just opened.
+   */
+  const pendingFocus = useRef<{ readonly row: string } | { readonly firstOf: string } | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [correctionOpen, setCorrectionOpen] = useState(false);
   const [reviewLaterOpen, setReviewLaterOpen] = useState(false);
@@ -179,12 +183,20 @@ export default function MailReviewScreen({ model }: ScreenProps<MailReviewModel>
     setActiveBundle(null);
     setSearch({ messageId: messageId ?? undefined }, true);
   };
+  /** Focus follows into the new list when it was in the old one (or nowhere), never out of the sidebar. */
+  const keepFocusIn = (view: string) => {
+    const active = document.activeElement;
+    if (active === document.body || (active !== null && listRef.current?.contains(active)))
+      pendingFocus.current = { firstOf: view };
+  };
   const showFolder = (next: MailFolderId) => {
+    keepFocusIn(`${next}:`);
     setActiveBundle(null);
     setDetailOpen(false);
     setSearch({ folder: next, category: undefined, messageId: undefined });
   };
   const showCategory = (category: MailCategory) => {
+    keepFocusIn(`all:${category}`);
     setActiveBundle(null);
     setDetailOpen(false);
     setSearch({ folder: "all", category, messageId: undefined });
@@ -213,8 +225,14 @@ export default function MailReviewScreen({ model }: ScreenProps<MailReviewModel>
 
   // After a decision, focus follows the selection to the next email when it was in the list.
   useEffect(() => {
-    if (pendingFocus.current !== null && pendingFocus.current === activeId) {
+    const target = pendingFocus.current;
+    if (target === null) return;
+    if ("row" in target && target.row === activeId) {
       nav.focusItem(activeId);
+      pendingFocus.current = null;
+    } else if ("firstOf" in target && target.firstOf === `${folder}:${data?.category ?? ""}`) {
+      const first = rows[0];
+      if (first) nav.focusItem(navId(first));
       pendingFocus.current = null;
     }
   });
@@ -230,7 +248,8 @@ export default function MailReviewScreen({ model }: ScreenProps<MailReviewModel>
     const index = messageIds.indexOf(messageId);
     const next = messageIds[index + 1] ?? messageIds[index - 1] ?? null;
     const leaves = outcome === "notJobMail" || folder === "review";
-    if (leaves && listRef.current?.contains(document.activeElement)) pendingFocus.current = next;
+    if (leaves && next !== null && listRef.current?.contains(document.activeElement))
+      pendingFocus.current = { row: next };
     mailOutcomes.review(messageId, outcome, category);
     setCorrectionOpen(false);
     setReviewLaterOpen(false);
@@ -638,7 +657,10 @@ export default function MailReviewScreen({ model }: ScreenProps<MailReviewModel>
         backLabel={intl.formatMessage(messages.backToList)}
         listPane={{ min: 360, default: 360, max: 440 }}
         detailOpen={detailOpen && selection !== null}
-        onBack={() => setDetailOpen(false)}
+        onBack={() => {
+          if (selection) pendingFocus.current = { row: selection.messageId };
+          setDetailOpen(false);
+        }}
         list={list}
         detail={detail}
         {...(selection &&

@@ -360,7 +360,7 @@ struct HiddenBanner: View {
     let onTellUsWhy: () -> Void
 
     var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: BFHRSpace.s3) {
+        GlyphLayout {
             Image(systemName: "eye.slash")
                 .foregroundStyle(BFHRColor.Fg.secondary)
                 .accessibilityHidden(true)
@@ -397,6 +397,7 @@ struct HiddenBanner: View {
 struct DismissReasonSheet: View {
     let onSave: ([DismissReason]) -> Void
     @State private var selected: Set<DismissReason>
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.dismiss) private var dismiss
 
     /// job-feed-search.md "Reasons": the hard filters first, "Something else" last.
@@ -445,7 +446,8 @@ struct DismissReasonSheet: View {
                 }
             }
         }
-        .presentationDetents([.medium, .large])
+        // At AX sizes the medium detent shows little more than the title and subtitle.
+        .presentationDetents(dynamicTypeSize.isAccessibilitySize ? [.large] : [.medium, .large])
         .presentationDragIndicator(.visible)
     }
 

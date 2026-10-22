@@ -183,28 +183,29 @@ public struct JobDetailScreen: View {
                         subject: Text(verbatim: header.title),
                         message: Text(verbatim: "\(header.title) · \(header.company.name)")
                     )
+                    Button { openURL(url) } label: {
+                        Label { Text(JobDetailViewStrings.openOriginal) } icon: { Image(systemName: "safari") }
+                    }
+                    .accessibilityHint(Text(JobDetailViewStrings.opensInBrowser))
                 }
-                Menu {
-                    if let url = model.originalPostingURL {
-                        Button { openURL(url) } label: {
-                            Label { Text(JobDetailViewStrings.openOriginal) } icon: { Image(systemName: "safari") }
+                if model.canHide || model.isHidden {
+                    Menu {
+                        if model.canHide {
+                            Button(action: hideJob) {
+                                Label { Text(Strings.notForMe) } icon: { Image(systemName: "hand.thumbsdown") }
+                            }
                         }
+                        if model.isHidden {
+                            Button(action: model.unhide) {
+                                Label { Text(JobDetailViewStrings.showInFeed) } icon: { Image(systemName: "eye") }
+                            }
+                            Button { showsReasons = true } label: {
+                                Label { Text(JobDetailViewStrings.tellUsWhy) } icon: { Image(systemName: "text.bubble") }
+                            }
+                        }
+                    } label: {
+                        Label { Text(JobDetailViewStrings.more) } icon: { Image(systemName: "ellipsis") }
                     }
-                    if model.canHide {
-                        Button(action: hideJob) {
-                            Label { Text(Strings.notForMe) } icon: { Image(systemName: "hand.thumbsdown") }
-                        }
-                    }
-                    if model.isHidden {
-                        Button(action: model.unhide) {
-                            Label { Text(JobDetailViewStrings.showInFeed) } icon: { Image(systemName: "eye") }
-                        }
-                        Button { showsReasons = true } label: {
-                            Label { Text(JobDetailViewStrings.tellUsWhy) } icon: { Image(systemName: "text.bubble") }
-                        }
-                    }
-                } label: {
-                    Label { Text(JobDetailViewStrings.more) } icon: { Image(systemName: "ellipsis") }
                 }
             }
         }

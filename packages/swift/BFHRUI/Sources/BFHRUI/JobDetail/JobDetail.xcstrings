@@ -65,7 +65,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "CV'leri açın"
+            "value" : "CV'leri aç"
           }
         }
       }
@@ -88,7 +88,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Orijinal ilanı açın"
+            "value" : "Orijinal ilanı aç"
           }
         }
       }
@@ -157,7 +157,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Akışınızda yeniden gösterin"
+            "value" : "Akışınızda yeniden göster"
           }
         }
       }
@@ -180,7 +180,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "E-postayla başvurun"
+            "value" : "E-postayla başvur"
           }
         }
       }
@@ -228,7 +228,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ üzerinden başvurun"
+            "value" : "%@ üzerinden başvur"
           }
         }
       }
@@ -251,7 +251,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Şirket sitesinde başvurun"
+            "value" : "Şirket sitesinde başvur"
           }
         }
       }
@@ -274,7 +274,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Takipte görün"
+            "value" : "Takipte gör"
           }
         }
       }
@@ -343,7 +343,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tüm dökümü görün"
+            "value" : "Tüm dökümü gör"
           }
         }
       }
@@ -1245,7 +1245,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nedenini söyleyin"
+            "value" : "Nedenini belirt"
           }
         }
       }
@@ -2540,7 +2540,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld kaynağın tümünü gösterin"
+            "value" : "%lld kaynağın tümünü göster"
           }
         }
       }

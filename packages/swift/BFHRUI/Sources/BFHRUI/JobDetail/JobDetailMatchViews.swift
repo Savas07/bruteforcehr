@@ -31,7 +31,10 @@ struct MatchScoreCard: View {
                     .foregroundStyle(BFHRColor.Fg.secondary)
                     .monospacedDigit()
             }
+            // The segment labels are a legend under a decorative bar (the band is named above at
+            // full size); past xLarge four labels can't share the width without breaking words.
             MatchBandBar(score: match.score)
+                .dynamicTypeSize(...DynamicTypeSize.xLarge)
             Text(verbatim: basis)
                 .font(.bfhr(.footnote))
                 .foregroundStyle(BFHRColor.Fg.secondary)
@@ -53,6 +56,7 @@ struct MatchScoreCard: View {
 /// Evidence counts: "Requirements: 2 of 3 met · Skills: 5 of 6 match · Gaps to consider: 1".
 struct MatchCounts: View {
     let match: JobDetailModel.ScoredMatch
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         VStack(alignment: .leading, spacing: BFHRSpace.s2) {
@@ -73,13 +77,18 @@ struct MatchCounts: View {
         .accessibilityElement(children: .combine)
     }
 
-    private func row(_ text: LocalizedStringResource, systemImage: String) -> some View {
-        Label {
-            Text(text).foregroundStyle(BFHRColor.Fg.primary)
-        } icon: {
-            Image(systemName: systemImage).foregroundStyle(BFHRColor.Fg.secondary)
+    @ViewBuilder private func row(_ text: LocalizedStringResource, systemImage: String) -> some View {
+        if dynamicTypeSize.isAccessibilitySize {
+            // The icons are decorative; at AX sizes they'd take a quarter of the line.
+            Text(text).foregroundStyle(BFHRColor.Fg.primary).font(.bfhr(.subheadline))
+        } else {
+            Label {
+                Text(text).foregroundStyle(BFHRColor.Fg.primary)
+            } icon: {
+                Image(systemName: systemImage).foregroundStyle(BFHRColor.Fg.secondary)
+            }
+            .font(.bfhr(.subheadline))
         }
-        .font(.bfhr(.subheadline))
     }
 }
 
@@ -90,7 +99,7 @@ struct FactorRow: View {
     var showsStatus = false
 
     var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: BFHRSpace.s3) {
+        GlyphLayout {
             FactorGlyph(status: factor.status)
             VStack(alignment: .leading, spacing: BFHRSpace.s1) {
                 Text(verbatim: factor.label)
@@ -119,7 +128,7 @@ struct GapRow: View {
     let onAddToCV: () -> Void
 
     var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: BFHRSpace.s3) {
+        GlyphLayout {
             FactorGlyph(status: gap.status)
             VStack(alignment: .leading, spacing: BFHRSpace.s2) {
                 VStack(alignment: .leading, spacing: BFHRSpace.s1) {
@@ -206,7 +215,22 @@ private struct FactorTags: View {
             .foregroundStyle(BFHRColor.Fg.secondary)
             .padding(.horizontal, BFHRSpace.s2)
             .padding(.vertical, 2)
-            .background(BFHRColor.Surface.sunken, in: Capsule())
+            // A rounded rectangle, not a capsule: at AX sizes the tag wraps to two lines.
+            .background(BFHRColor.Surface.sunken, in: BFHRRadius.shape(BFHRRadius.sm))
+    }
+}
+
+/// A leading status glyph beside the content; at AX sizes the glyph sits above it so the text
+/// keeps the full row width.
+struct GlyphLayout<Content: View>: View {
+    @ViewBuilder let content: Content
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    var body: some View {
+        let layout = dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: BFHRSpace.s1))
+            : AnyLayout(HStackLayout(alignment: .firstTextBaseline, spacing: BFHRSpace.s3))
+        layout { content }
     }
 }
 

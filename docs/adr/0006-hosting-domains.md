@@ -36,7 +36,8 @@
 ```
 
 - `/` … static Astro website (Home, Features, Download, Changelog, Privacy, Terms, Support).
-- `/api/**` → `api` (HTTPS `onRequest`, gen2, `europe-west1`): app API (auth code start/verify, AI, render, send, job import). Calls must finish within Hosting's 60 s; longer work is enqueued to task-queue functions and reported through Firestore.
+- `/api/**` → `api` (HTTPS `onRequest`, gen2, `europe-west1`): app API (AI, render, send, job import). Calls must finish within Hosting's 60 s; longer work is enqueued to task-queue functions and reported through Firestore. Until `api` exists, `firebase.json` rewrites only `/api/health` → `health`; each rewrite is added with the function it targets.
+- Sign-in is **not** routed through Hosting: `authRequestCode` / `authVerifyCode` are callable functions (codebase `auth`, [0003-auth-email-otp.md](0003-auth-email-otp.md)) that clients reach through the Firebase SDK's `httpsCallable` at their Cloud Functions URL.
 - `/connect/**` → `connect`: mail-account OAuth start + callbacks.
 - Function names `api` and `connect` are the contract between Hosting and `apps/functions`.
 

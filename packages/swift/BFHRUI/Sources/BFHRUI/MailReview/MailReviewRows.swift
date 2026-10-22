@@ -14,22 +14,12 @@ struct ReviewQueueRow: View {
     let isPendingSync: Bool
 
     var body: some View {
-        HStack(alignment: .top, spacing: BFHRSpace.s3) {
+        MailRowLayout {
             CompanyMonogram(proposal.company ?? CompanyIdentity(name: senderName), badge: proposal.category.glyph)
+        } content: {
             VStack(alignment: .leading, spacing: BFHRSpace.s1) {
-                HStack(alignment: .firstTextBaseline, spacing: BFHRSpace.s2) {
-                    Text(verbatim: senderName)
-                        .font(.bfhr(.subheadline, emphasized: true))
-                        .foregroundStyle(BFHRColor.Fg.primary)
-                        .lineLimit(1)
-                    Spacer(minLength: BFHRSpace.s1)
-                    if isPendingSync { SyncGlyph() }
-                    MailTimeText(date: proposal.receivedAt)
-                }
-                Text(verbatim: proposal.subject)
-                    .font(.bfhr(.subheadline))
-                    .foregroundStyle(BFHRColor.Fg.secondary)
-                    .lineLimit(2)
+                SenderLine(sender: Text(verbatim: senderName), receivedAt: proposal.receivedAt, isPendingSync: isPendingSync)
+                SubjectText(subject: proposal.subject)
                 ProposalLine(proposal: proposal)
                     .padding(.top, BFHRSpace.s1)
                 ReasonLine(proposal.reason)
@@ -126,33 +116,13 @@ struct JobMailRow: View {
     let row: MailRow
 
     var body: some View {
-        HStack(alignment: .top, spacing: BFHRSpace.s3) {
+        MailRowLayout {
             CompanyMonogram(row.company ?? CompanyIdentity(name: senderName), badge: row.category.glyph)
+        } content: {
             VStack(alignment: .leading, spacing: BFHRSpace.s1) {
-                HStack(alignment: .firstTextBaseline, spacing: BFHRSpace.s2) {
-                    Text(verbatim: senderName)
-                        .font(.bfhr(.subheadline, emphasized: true))
-                        .foregroundStyle(BFHRColor.Fg.primary)
-                        .lineLimit(1)
-                    Spacer(minLength: BFHRSpace.s1)
-                    if row.isPendingSync { SyncGlyph() }
-                    MailTimeText(date: row.receivedAt)
-                }
-                Text(verbatim: row.subject)
-                    .font(.bfhr(.subheadline))
-                    .foregroundStyle(BFHRColor.Fg.secondary)
-                    .lineLimit(2)
-                HStack(alignment: .firstTextBaseline, spacing: BFHRSpace.s2) {
-                    Text(Strings.classification(row.category, hedged: false))
-                        .font(.bfhr(.footnote, emphasized: true))
-                        .foregroundStyle(BFHRColor.Fg.primary)
-                    if let filed {
-                        Text(verbatim: filed)
-                            .font(.bfhr(.footnote))
-                            .foregroundStyle(BFHRColor.Fg.secondary)
-                            .lineLimit(1)
-                    }
-                }
+                SenderLine(sender: Text(verbatim: senderName), receivedAt: row.receivedAt, isPendingSync: row.isPendingSync)
+                SubjectText(subject: row.subject)
+                FiledLine(category: row.category, filed: filed)
                 if let state = MailViewStrings.reviewState(row.reviewState) {
                     Text(state)
                         .font(.bfhr(.caption1))
@@ -177,16 +147,11 @@ struct JobAlertBundleRow: View {
     let bundle: JobAlertBundle
 
     var body: some View {
-        HStack(alignment: .top, spacing: BFHRSpace.s3) {
+        MailRowLayout {
             CompanyMonogram(CompanyIdentity(name: bundle.senders.first?.name ?? bundle.senders.first?.address ?? "?"), badge: MailCategory.jobAlert.glyph)
+        } content: {
             VStack(alignment: .leading, spacing: BFHRSpace.s1) {
-                HStack(alignment: .firstTextBaseline, spacing: BFHRSpace.s2) {
-                    Text(MailViewStrings.jobAlerts(bundle.count))
-                        .font(.bfhr(.subheadline, emphasized: true))
-                        .foregroundStyle(BFHRColor.Fg.primary)
-                    Spacer(minLength: BFHRSpace.s1)
-                    MailTimeText(date: bundle.latestReceivedAt)
-                }
+                SenderLine(sender: Text(MailViewStrings.jobAlerts(bundle.count)), receivedAt: bundle.latestReceivedAt, isPendingSync: false)
                 Text(verbatim: bundle.senders.map { $0.name ?? $0.address }.joined(separator: ", "))
                     .font(.bfhr(.subheadline))
                     .foregroundStyle(BFHRColor.Fg.secondary)
@@ -198,6 +163,98 @@ struct JobAlertBundleRow: View {
         }
         .padding(.vertical, BFHRSpace.s1)
         .accessibilityElement(children: .combine)
+    }
+}
+
+/// Monogram beside the text; above it at accessibility sizes, so the text gets the full width.
+private struct MailRowLayout<Leading: View, Content: View>: View {
+    @ViewBuilder let leading: Leading
+    @ViewBuilder let content: Content
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    var body: some View {
+        if dynamicTypeSize.isAccessibilitySize {
+            VStack(alignment: .leading, spacing: BFHRSpace.s2) {
+                leading
+                content
+            }
+        } else {
+            HStack(alignment: .top, spacing: BFHRSpace.s3) {
+                leading
+                content
+            }
+        }
+    }
+}
+
+/// Sender (one line) with the time on the trailing edge; at accessibility sizes the sender wraps
+/// in full and the time sits under it.
+private struct SenderLine: View {
+    let sender: Text
+    let receivedAt: Date
+    let isPendingSync: Bool
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    var body: some View {
+        if dynamicTypeSize.isAccessibilitySize {
+            VStack(alignment: .leading, spacing: 2) {
+                name
+                HStack(spacing: BFHRSpace.s2) {
+                    MailTimeText(date: receivedAt)
+                    if isPendingSync { SyncGlyph() }
+                }
+            }
+        } else {
+            HStack(alignment: .firstTextBaseline, spacing: BFHRSpace.s2) {
+                name.lineLimit(1)
+                Spacer(minLength: BFHRSpace.s1)
+                if isPendingSync { SyncGlyph() }
+                MailTimeText(date: receivedAt)
+            }
+        }
+    }
+
+    private var name: some View {
+        sender
+            .font(.bfhr(.subheadline, emphasized: true))
+            .foregroundStyle(BFHRColor.Fg.primary)
+    }
+}
+
+/// The subject: two lines in the list (the sheet has it in full); unlimited at accessibility sizes.
+private struct SubjectText: View {
+    let subject: String
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    var body: some View {
+        Text(verbatim: subject)
+            .font(.bfhr(.subheadline))
+            .foregroundStyle(BFHRColor.Fg.secondary)
+            .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 2)
+    }
+}
+
+/// "Interview invite  Nordlicht Mobility · Frontend Engineer": what it is and where it's filed.
+private struct FiledLine: View {
+    let category: MailCategory
+    let filed: String?
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    var body: some View {
+        let layout = dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: 2))
+            : AnyLayout(HStackLayout(alignment: .firstTextBaseline, spacing: BFHRSpace.s2))
+        layout {
+            Text(Strings.classification(category, hedged: false))
+                .font(.bfhr(.footnote, emphasized: true))
+                .foregroundStyle(BFHRColor.Fg.primary)
+            if let filed {
+                Text(verbatim: filed)
+                    .font(.bfhr(.footnote))
+                    .foregroundStyle(BFHRColor.Fg.secondary)
+                    .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)
+            }
+        }
     }
 }
 

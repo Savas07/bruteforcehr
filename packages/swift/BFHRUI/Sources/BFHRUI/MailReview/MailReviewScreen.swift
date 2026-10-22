@@ -79,6 +79,8 @@ public struct MailReviewScreen: View {
             )
             .presentationDetents([.medium, .large])
             .presentationDragIndicator(.visible)
+            // Opaque: text over the medium detent's glass would take its contrast from the list behind.
+            .presentationBackground(BFHRColor.Surface.base)
         }
     }
 
@@ -184,7 +186,7 @@ public struct MailReviewScreen: View {
                     if !stacked {
                         Text(verbatim: "·")
                             .font(.bfhr(.footnote))
-                            .foregroundStyle(BFHRColor.Fg.tertiary)
+                            .foregroundStyle(BFHRColor.Fg.secondary)
                             .accessibilityHidden(true)
                     }
                 }
@@ -264,8 +266,10 @@ public struct MailReviewScreen: View {
                 }
             } header: {
                 Text(MailViewStrings.queueHeader)
+                    .foregroundStyle(BFHRColor.Fg.secondary)
             } footer: {
                 Text(MailViewStrings.queueFooter)
+                    .foregroundStyle(BFHRColor.Fg.secondary)
             }
         }
     }
@@ -306,8 +310,10 @@ public struct MailReviewScreen: View {
             }
         } header: {
             Text(MailViewStrings.updatesHeader)
+                .foregroundStyle(BFHRColor.Fg.secondary)
         } footer: {
             Text(MailViewStrings.updatesFooter)
+                .foregroundStyle(BFHRColor.Fg.secondary)
         }
     }
 

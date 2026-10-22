@@ -6,7 +6,15 @@
  * Params: `messageId` (selected email), `folder` (`review` | `updates` | `all`, default
  * `review`), `category` (a mail category; filters All job mail).
  */
-import type { MailAccount, MailAccountStatus, MailCategory, MailMessage, MailProvider } from "@bfhr/core";
+import {
+  ACTIVE_STATUSES,
+  type MailAccount,
+  type MailAccountStatus,
+  type MailCategory,
+  type MailMessage,
+  type MailProvider,
+  TERMINAL_STATUSES,
+} from "@bfhr/core";
 import { defineMessages, type IntlShape, type MessageDescriptor } from "react-intl";
 import type {
   ApplicationSummaryVM,
@@ -30,7 +38,8 @@ import {
   relativeTime,
   shortDate,
 } from "../../shared/model/format";
-import type { CompanyVM, ModelContext, TimeVM, UserData } from "../../shared/model/types";
+import { statusVM } from "../../shared/model/vocabulary";
+import type { CompanyVM, ModelContext, StatusVM, TimeVM, UserData } from "../../shared/model/types";
 
 export type MailFolderId = "review" | "updates" | "all";
 
@@ -177,6 +186,25 @@ export interface MailSelectionVM {
   /** The linked application's latest events, newest first (Linear Activity). */
   readonly activity: readonly TimelineEventVM[];
   readonly details: MailDetailsVM;
+  /** "Create application" target in the correction popover: "Nordlicht Mobility · Frontend Engineer". */
+  readonly newApplicationLabel: string;
+}
+
+/**
+ * Options of the correction popover (Change…, `M`): Tab cycles Category → Application → Status.
+ * "Create application" and "No status change" are the view's fixed first options.
+ */
+export interface MailCorrectionVM {
+  readonly categories: readonly { readonly key: MailCategory; readonly label: string }[];
+  /** Open applications first (most recently updated), then closed ones. */
+  readonly applications: readonly {
+    readonly id: string;
+    /** "Brightwave · Frontend Engineer". */
+    readonly label: string;
+    readonly status: StatusVM;
+  }[];
+  /** Every status in progress order, then the closed outcomes: the user may move anywhere (§4.6). */
+  readonly statuses: readonly StatusVM[];
 }
 
 export type MailEmptyAction = "connectEmail" | "showUpdates" | "showAll";
@@ -227,7 +255,12 @@ export interface MailReviewModel {
     readonly notJobMailFootnote: string;
     /** Under the list while offline (states.md mail.offlineFootnote). */
     readonly offlineFootnote: string;
+    /** The quiet row chip after the user acted ("Confirmed", "Corrected"). */
+    readonly reviewedChips: { readonly confirmed: string; readonly corrected: string };
+    /** The queue after the user's last decision in this session ("Nothing to review", states.md mail.caughtUp). */
+    readonly caughtUp: MailNoSelectionVM;
   };
+  readonly correction: MailCorrectionVM;
 }
 
 const messages = defineMessages({
@@ -399,6 +432,35 @@ function copyVM(intl: IntlShape): MailReviewModel["copy"] {
     createApplication: intl.formatMessage(messages.createApplication),
     notJobMailFootnote: intl.formatMessage(messages.notJobMailFootnote),
     offlineFootnote: intl.formatMessage(messages.offlineFootnote),
+    reviewedChips: {
+      confirmed: intl.formatMessage(messages.reviewedConfirmed),
+      corrected: intl.formatMessage(messages.reviewedCorrected),
+    },
+    caughtUp: {
+      title: intl.formatMessage(messages.caughtUpTitle),
+      body: intl.formatMessage(messages.caughtUpBody),
+      action: seeUpdates(intl),
+    },
+  };
+}
+
+function correctionVM(data: Pick<UserData, "applications">, intl: IntlShape): MailCorrectionVM {
+  const applications = data.applications
+    .map((application) => ({
+      id: application.id,
+      label: applicationLabel(application),
+      status: statusVM(application.status, intl),
+      updatedAt: application.updatedAt.getTime(),
+    }))
+    .toSorted(
+      (a, b) =>
+        Number(a.status.phase === "closed") - Number(b.status.phase === "closed") || b.updatedAt - a.updatedAt,
+    )
+    .map(({ id, label, status }) => ({ id, label, status }));
+  return {
+    categories: CATEGORY_ORDER.map((key) => ({ key, label: intl.formatMessage(MAIL_CATEGORY_MESSAGES[key]) })),
+    applications,
+    statuses: [...ACTIVE_STATUSES, ...TERMINAL_STATUSES].map((status) => statusVM(status, intl)),
   };
 }
 
@@ -639,6 +701,9 @@ export function buildMailReviewModel(
         dates: proposal.dates,
         meetingUrl: message.extracted.meetingUrls[0] ?? null,
       },
+      newApplicationLabel: message.extracted.role
+        ? applicationLabel({ company: proposal.company.name, role: message.extracted.role })
+        : proposal.company.name,
     };
   };
 
@@ -726,6 +791,7 @@ export function buildMailReviewModel(
       }),
     lastChecked: lastCheckedVM(accounts, ctx),
     copy: copyVM(intl),
+    correction: correctionVM(data, intl),
   };
 }
 

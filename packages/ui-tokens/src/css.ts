@@ -1,4 +1,10 @@
-import { color, colorSchemes, type ColorScheme, type SemanticColors } from "./color.ts";
+import {
+  color,
+  colorSchemes,
+  type ColorScheme,
+  type IncreasedContrastColors,
+  type SemanticColors,
+} from "./color.ts";
 import {
   borderWidth,
   controlHeight,
@@ -41,9 +47,10 @@ const rem = (px: number) => `${px / 16}rem`;
 /**
  * Flattens semantic colors to `name → value` (`surface-canvas`, `fg-on-accent`,
  * `phase-in-progress-text`, `status-offer-solid`). The names are shared by the
- * CSS variables (`--bfhr-color-<name>`) and the Tailwind theme (`--color-<name>`).
+ * CSS variables (`--bfhr-color-<name>`), the Tailwind theme (`--color-<name>`)
+ * and the Swift asset catalog (`<name>.colorset`).
  */
-export function flattenColors(colors: SemanticColors): Record<string, string> {
+export function flattenColors(colors: SemanticColors | IncreasedContrastColors): Record<string, string> {
   const out: Record<string, string> = {};
   const walk = (node: object, path: string[]) => {
     for (const [key, value] of Object.entries(node)) {

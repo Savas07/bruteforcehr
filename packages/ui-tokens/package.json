@@ -2,16 +2,17 @@
   "name": "@bfhr/ui-tokens",
   "version": "0.0.0",
   "private": true,
-  "description": "Design tokens (color light/dark, type, spacing, radius, elevation, motion) as typed TS, CSS variables, a Tailwind 4 theme and a React Native theme.",
+  "description": "Design tokens (color light/dark, type, spacing, radius, elevation, motion) as typed TS, CSS variables, a Tailwind 4 theme and a committed Swift package (asset catalog + SwiftUI API) for iOS.",
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./native": "./src/native.ts",
     "./tokens.css": "./dist/tokens.css",
     "./tailwind.css": "./dist/tailwind.css"
   },
   "scripts": {
     "build": "node scripts/build.ts",
+    "generate:swift": "node scripts/generate-swift.ts",
+    "check:swift": "node scripts/check-swift.ts",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"

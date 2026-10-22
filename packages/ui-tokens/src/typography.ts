@@ -1,11 +1,12 @@
 /**
  * Type scale. Every style is named after its iOS Dynamic Type text style so a
  * design reads the same on both platforms:
- * - `ios`: Apple's default ("Large") content-size values in points. React Native
- *   scales them with Dynamic Type through `dynamicTypeRamp`, up to AX5.
- * - `desktop`: px for Electron (rendered as rem so OS/app zoom scales them).
- *   Body is 14 px, the shared desktop size of macOS list content and Windows
- *   Fluent body text.
+ * - `ios`: Apple's default ("Large") content-size values in points. The Swift
+ *   package maps each style to its SwiftUI `Font.TextStyle`, so Dynamic Type
+ *   scales it up to AX5.
+ * - `desktop`: px for the Tauri webview (rendered as rem so OS/app zoom scales
+ *   them). Body is 14 px, the shared desktop size of macOS list content and
+ *   Windows Fluent body text.
  * - `family`: `display` for large titles (SF Pro Display / Segoe UI Variable
  *   Display optical sizes), `sans` for everything else.
  */
@@ -107,9 +108,10 @@ export const textStyles: Record<TextStyleKey, TextStyle> = {
 
 /**
  * Website-only display sizes (Astro). Fluid between the 375 px and 1440 px
- * capture widths (BRIEF §5.5); `min`/`max` are px at those widths.
+ * capture widths (BRIEF §5.5); `min`/`max` are px at those widths. Keys must
+ * not reuse a `textStyleKeys` name: both share the `--bfhr-text-*` namespace.
  */
-export const marketingTextKeys = ["display", "headline", "lead", "prose"] as const;
+export const marketingTextKeys = ["display", "section", "lead", "prose"] as const;
 export type MarketingTextKey = (typeof marketingTextKeys)[number];
 
 export interface FluidTextStyle {
@@ -126,7 +128,7 @@ export const marketingTextStyles: Record<MarketingTextKey, FluidTextStyle> = {
     min: { size: 36, lineHeight: 44 },
     max: { size: 56, lineHeight: 64 },
   },
-  headline: {
+  section: {
     family: "display",
     weight: 600,
     min: { size: 26, lineHeight: 32 },
@@ -148,7 +150,7 @@ export const fluidViewport = { min: 375, max: 1440 } as const;
  * Font stacks. Apple platforms resolve `-apple-system` to SF Pro (Text/Display
  * optical sizes chosen automatically); Windows 11 gets Segoe UI Variable, with
  * Segoe UI as the Windows 10 fallback. iOS uses the system font directly
- * (no `fontFamily` in React Native). No web fonts are downloaded.
+ * (`Font.system(_:weight:)` in the Swift package). No web fonts are downloaded.
  */
 export const fontFamily = {
   sans: [

@@ -1,8 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { color, colorSchemes, statusKeys } from "./color.ts";
-import { contrastMinimum, contrastPairs, contrastRatio, type ContrastPair } from "./contrast.ts";
+import { iosReferenceBackgrounds } from "./apple.ts";
+import { color, colorSchemes, increasedContrast, statusKeys } from "./color.ts";
+import {
+  contrastMinimum,
+  contrastPairs,
+  contrastRatio,
+  increasedContrastPairs,
+  type ContrastPair,
+} from "./contrast.ts";
 import { flattenColors } from "./css.ts";
-import { iosReferenceBackgrounds } from "./native.ts";
 
 const failures = (pairs: ContrastPair[]) =>
   pairs
@@ -20,7 +26,7 @@ describe("contrastRatio", () => {
   it("matches the WCAG reference values", () => {
     expect(contrastRatio("#000000", "#FFFFFF")).toBeCloseTo(21, 5);
     expect(contrastRatio("#777777", "#FFFFFF")).toBeCloseTo(4.48, 2);
-    expect(contrastRatio("#2F54C8", "#2F54C8")).toBe(1);
+    expect(contrastRatio("#216863", "#216863")).toBe(1);
   });
 
   it("rejects colors with alpha", () => {
@@ -38,11 +44,45 @@ describe.each(colorSchemes)("%s scheme meets WCAG 2.1 AA", (scheme) => {
   it("for brand colors on iOS system backgrounds", () => {
     expect(failures(contrastPairs(color[scheme], iosReferenceBackgrounds[scheme]))).toEqual([]);
   });
+
+  it("keeps white text on every accent fill (primary button states)", () => {
+    const { accent, fg } = color[scheme];
+    for (const fill of [accent.solid, accent.hover, accent.pressed]) {
+      expect(contrastRatio(fg.onAccent, fill)).toBeGreaterThanOrEqual(contrastMinimum.text);
+    }
+  });
+});
+
+describe.each(colorSchemes)("%s increased-contrast overrides", (scheme) => {
+  const ic = increasedContrast[scheme];
+
+  it("reach 7:1 for text and 4.5:1 for control lines on token surfaces", () => {
+    const pairs = increasedContrastPairs(color[scheme], ic);
+    expect(pairs.length).toBe(6 * 6 + 1);
+    expect(failures(pairs)).toEqual([]);
+  });
+
+  it("reach the same minimums on iOS system backgrounds", () => {
+    expect(failures(increasedContrastPairs(color[scheme], ic, iosReferenceBackgrounds[scheme]))).toEqual([]);
+  });
+
+  it("only ever raise contrast against the base surface", () => {
+    const base = color[scheme].surface.base;
+    const defaults = flattenColors(color[scheme]);
+    for (const [name, value] of Object.entries(flattenColors(ic))) {
+      const original = defaults[name];
+      expect(original, name).toBeDefined();
+      expect(contrastRatio(value, base), name).toBeGreaterThan(contrastRatio(original ?? value, base));
+    }
+  });
 });
 
 describe("token structure", () => {
   it("defines the same tokens in light and dark", () => {
     expect(Object.keys(flattenColors(color.dark))).toEqual(Object.keys(flattenColors(color.light)));
+    expect(Object.keys(flattenColors(increasedContrast.dark))).toEqual(
+      Object.keys(flattenColors(increasedContrast.light)),
+    );
   });
 
   it("never colors a rejection like an error", () => {
@@ -53,6 +93,15 @@ describe("token structure", () => {
         expect(Object.values(warning)).not.toContain(value);
       }
       expect(status.rejected).toEqual(phase.closed);
+    }
+  });
+
+  it("keeps every closed outcome except Accepted on the neutral Closed tone", () => {
+    for (const scheme of colorSchemes) {
+      const { status, phase } = color[scheme];
+      for (const key of ["declined", "rejected", "withdrawn", "ghosted"] as const) {
+        expect(status[key]).toEqual(phase.closed);
+      }
     }
   });
 

@@ -1,7 +1,7 @@
-import type { SemanticColors, Tone } from "./color.ts";
+import type { IncreasedContrastColors, SemanticColors, Tone } from "./color.ts";
 import { phaseKeys, statusKeys } from "./color.ts";
 
-/** WCAG 2.1 AA minimums. */
+/** WCAG 2.1 minimums: AA for the default tokens, plus the increased-contrast floors. */
 export const contrastMinimum = {
   /** SC 1.4.3, normal text. */
   text: 4.5,
@@ -9,6 +9,10 @@ export const contrastMinimum = {
   largeText: 3,
   /** SC 1.4.11, UI components and meaningful graphics. */
   ui: 3,
+  /** SC 1.4.6 (AAA), text under Increase Contrast. */
+  enhancedText: 7,
+  /** Control borders and the focus ring under Increase Contrast (1.5 × SC 1.4.11). */
+  enhancedUi: 4.5,
 } as const;
 export type ContrastKind = keyof typeof contrastMinimum;
 
@@ -45,9 +49,21 @@ export interface ContrastPair {
   kind: ContrastKind;
 }
 
+/** The token surfaces a foreground may sit on. */
+export function tokenSurfaces(c: SemanticColors): Record<string, string> {
+  return {
+    "surface.canvas": c.surface.canvas,
+    "surface.base": c.surface.base,
+    "surface.sunken": c.surface.sunken,
+    "surface.elevated": c.surface.elevated,
+    "surface.hover": c.surface.hover,
+    "surface.selected": c.surface.selected,
+  };
+}
+
 /**
  * Every foreground/background combination the system allows (see
- * docs/design/system.md "Color usage"). A pairing not listed here is not
+ * docs/design/system.md "Allowed pairings"). A pairing not listed here is not
  * allowed in product UI.
  *
  * `surfaces` defaults to the token surfaces a foreground may sit on; pass
@@ -56,14 +72,7 @@ export interface ContrastPair {
  */
 export function contrastPairs(
   c: SemanticColors,
-  surfaces: Record<string, string> = {
-    "surface.canvas": c.surface.canvas,
-    "surface.base": c.surface.base,
-    "surface.sunken": c.surface.sunken,
-    "surface.elevated": c.surface.elevated,
-    "surface.hover": c.surface.hover,
-    "surface.selected": c.surface.selected,
-  },
+  surfaces: Record<string, string> = tokenSurfaces(c),
 ): ContrastPair[] {
   const pairs: ContrastPair[] = [];
   const add = (
@@ -115,5 +124,38 @@ export function contrastPairs(
   for (const key of phaseKeys) tone(`phase.${key}`, c.phase[key]);
   for (const key of statusKeys) tone(`status.${key}`, c.status[key]);
 
+  return pairs;
+}
+
+/**
+ * Pairs for the increased-contrast overrides (`increasedContrast` in color.ts):
+ * text reaches 7:1 on every surface and on `accent.subtle`, control borders and
+ * the focus ring 4.5:1. Backgrounds keep their default values under Increase
+ * Contrast. `line.subtle` stays decorative (no minimum).
+ */
+export function increasedContrastPairs(
+  c: SemanticColors,
+  ic: IncreasedContrastColors,
+  surfaces: Record<string, string> = tokenSurfaces(c),
+): ContrastPair[] {
+  const pairs: ContrastPair[] = [];
+  const onSurfaces = (foreground: string, foregroundValue: string, kind: ContrastKind) => {
+    for (const [background, backgroundValue] of Object.entries(surfaces)) {
+      pairs.push({ foreground, background, foregroundValue, backgroundValue, kind });
+    }
+  };
+  onSurfaces("fg.secondary", ic.fg.secondary, "enhancedText");
+  onSurfaces("fg.tertiary", ic.fg.tertiary, "enhancedText");
+  onSurfaces("fg.link", ic.fg.link, "enhancedText");
+  onSurfaces("accent.text", ic.accent.text, "enhancedText");
+  onSurfaces("line.control", ic.line.control, "enhancedUi");
+  onSurfaces("line.focus", ic.line.focus, "enhancedUi");
+  pairs.push({
+    foreground: "accent.text",
+    background: "accent.subtle",
+    foregroundValue: ic.accent.text,
+    backgroundValue: c.accent.subtle,
+    kind: "enhancedText",
+  });
   return pairs;
 }

@@ -43,6 +43,14 @@ describe("tokens.css", () => {
       /@media \(prefers-reduced-motion: reduce\) \{\n {2}:root \{[^}]*--bfhr-motion-distance: 0px;/,
     );
   });
+
+  it("declares each variable once per block (text styles and marketing styles don't collide)", () => {
+    const root = /^:root \{\n([^}]*)\n\}/m.exec(tokensCss)?.[1] ?? "";
+    const names = [...root.matchAll(/(--bfhr-[a-z0-9-]+):/g)].map((m) => m[1]);
+    expect(names.length).toBeGreaterThan(200);
+    expect(names.filter((name, index) => names.indexOf(name) !== index)).toEqual([]);
+    expect(root).toContain("--bfhr-text-headline-size: 0.875rem;");
+  });
 });
 
 describe("tailwind.css", () => {

@@ -71,7 +71,7 @@ Reduce Motion: chevron rotation, strip scroll and chip scale use `BFHRMotion`; h
 
 ### Priority Fixes
 1. **Drag path** (design gap; the other two move paths cover every user, including VoiceOver and Switch Control).
-2. **Shared `TimelineRow` Dynamic Type / inaccessible-text reports**: IosFoundation to check.
+2. ~~Shared `TimelineRow` Dynamic Type / inaccessible-text reports~~: resolved in `5c9e0ca` (see below).
 3. Re-run `testApplicationDetail*` after the InterviewRow fix.
 
 ### Follow-up after the final run
@@ -87,3 +87,6 @@ Drag was removed (D32), so its test is gone. **9 of 11 tests pass:**
 - Close… → Not selected
 
 The detail runs keep two element-less findings, both on the shared timeline automatic-change row: "Potentially inaccessible text" ×1 at the default size, and "Dynamic Type font sizes are unsupported" ×7 at AX5. They're reported to IosFoundation and not suppressed. The contact-row clip prediction at the default size is fixed (`fixedSize` vertical) and verified by the AX5 run.
+
+### Final run (2026-10-23, IosFoundation, `5c9e0ca`)
+The element-less detail reports came from list cells XCUITest can't resolve (kept off screen); the probe showed the same counts with `TimelineRow` reduced to a single `Text`. They are now logged as "no element" like every other iOS audit. Shared fixes landed at the same time: `TimelineRow` exposes View source / Undo as separate elements, `CompactLabelStyle` hides decorative icons from VoiceOver, `RelativeTimeText` overrides its label only for dates. **Result: `TrackerBoardAccessibilityAuditTests` passes in full on iPhone 17e (with Today and Mail review: 20 passed, 0 failed, 2 capture-only skipped).**

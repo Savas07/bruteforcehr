@@ -1,0 +1,12 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+
+const description = "Find jobs, tailor your CV and track every application on iPhone, Mac and Windows.";
+---
+
+<BaseLayout description={description}>
+  <main class="mx-auto flex min-h-dvh max-w-3xl flex-col justify-center gap-4 px-6 py-16">
+    <h1 class="text-4xl font-semibold tracking-tight sm:text-5xl">BruteForceHR</h1>
+    <p class="text-lg opacity-80">{description}</p>
+  </main>
+</BaseLayout>

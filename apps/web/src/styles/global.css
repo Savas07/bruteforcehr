@@ -1,0 +1,12 @@
+@import "tailwindcss";
+
+/*
+ * Light/dark follows the OS (`prefers-color-scheme`), matching Tailwind's default `dark:` variant.
+ * `--canvas-light` / `--canvas-dark` are set on <html> by BaseLayout from THEME_COLOR, so the page
+ * canvas and the browser UI colour (`<meta name="theme-color">`) always agree.
+ */
+:root {
+  color-scheme: light dark;
+  background-color: light-dark(var(--canvas-light), var(--canvas-dark));
+  color: CanvasText;
+}

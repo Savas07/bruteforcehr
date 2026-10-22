@@ -93,8 +93,12 @@ final class TrackerBoardAccessibilityAuditTests: XCTestCase {
         XCTAssertTrue(sheetTitle(app, "Move to…").waitForExistence(timeout: 5))
         try snapshot("move-sheet")
         app.swipeUp()
-        let accepted = app.buttons.containing(NSPredicate(format: "label CONTAINS %@", "come after an offer")).firstMatch
-        XCTAssertTrue(accepted.waitForExistence(timeout: 5))
+        // Accepted and Declined share one denial: the reason is the Closed section's footer, and
+        // each disabled row carries it as its VoiceOver hint.
+        let reason = app.staticTexts["Accepted and Declined come after an offer."]
+        XCTAssertTrue(reason.waitForExistence(timeout: 5))
+        let accepted = app.buttons.containing(NSPredicate(format: "label BEGINSWITH %@", "Accepted")).firstMatch
+        XCTAssertTrue(accepted.exists)
         XCTAssertFalse(accepted.isEnabled)
         try snapshot("move-sheet-large")
         try audit(app, "move sheet")

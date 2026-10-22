@@ -21,6 +21,7 @@ import { applicationLabel } from "../../shared/model/build-blocks";
 import { calendarDaysFromNow, clockTime, relativeTime, shortDate } from "../../shared/model/format";
 import type { CompanyVM, ModelContext, SourceVM, StatusVM, TimeVM, UserData } from "../../shared/model/types";
 import { companyVM, sourceVM, statusVM } from "../../shared/model/vocabulary";
+import type { CvDraft, CvDraftItem, CvDraftSection } from "./draft";
 
 /* ------------------------------------------------------------------------------------------------
  * View-model types.
@@ -34,6 +35,8 @@ export interface CvListRowVM {
   readonly cvId: string;
   readonly title: string;
   readonly kind: CvKind;
+  /** Upper-case language code for the icon-only list ("EN", "DE"). */
+  readonly languageCode: string;
   /** Kind / language pill: the language in its own language ("English", "Deutsch"), or "Role variant". */
   readonly pill: string;
   readonly isDefault: boolean;
@@ -295,6 +298,35 @@ export interface CvPersonalDetailsVM {
   readonly note: string;
 }
 
+/** Field labels of one list section's inline item form; null hides the field. */
+export interface CvItemFieldsVM {
+  /** Card title of an entry without one: "Untitled role". */
+  readonly untitled: string;
+  /** "Role", "Degree", "Skill group". */
+  readonly title: string;
+  /** "Company", "School"; null where the section has no organisation. */
+  readonly org: string | null;
+  readonly location: string | null;
+  /** Start / end month-year pickers. */
+  readonly dates: boolean;
+  /** "I currently work here"; null where an entry can't be ongoing. */
+  readonly current: string | null;
+  /** "Team or product", "Level", "Description". */
+  readonly detail: string | null;
+  /** "Achievements", "Highlights", "Courses". */
+  readonly bullets: string | null;
+  /** "Skills" (comma-separated). */
+  readonly keywords: string | null;
+}
+
+/** A job to check the CV against (Check tab): keywords extracted once per job, cached on it. */
+export interface CvCheckJobVM {
+  readonly jobId: string;
+  /** "Tannenbaum Software · Frontend-Entwickler:in (React)". */
+  readonly label: string;
+  readonly keywords: readonly string[];
+}
+
 /** The selected CV in the editor pane. */
 export interface CvEditorVM {
   readonly cvId: string;
@@ -323,6 +355,21 @@ export interface CvEditorVM {
   readonly pinnedLabel: string;
   readonly originalFile: CvOriginalFileVM | null;
   readonly pendingSync: boolean;
+  /** The working copy the form edits and the preview renders. */
+  readonly draft: CvDraft;
+  /** Item form labels by section key. */
+  readonly itemFields: Readonly<Record<string, CvItemFieldsVM>>;
+  /** "January" … "December" in the UI language, values "01" … "12". */
+  readonly months: readonly { readonly value: string; readonly label: string }[];
+  /** Jobs for the Check tab, best match first; `defaultJobId` is the CV's target or latest use. */
+  readonly check: { readonly jobs: readonly CvCheckJobVM[]; readonly defaultJobId: string | null };
+  /** Theme choices for the Design tab, in display order. */
+  readonly designOptions: {
+    readonly paper: readonly { readonly value: CvTheme["paperSize"]; readonly label: string }[];
+    readonly density: readonly { readonly value: CvTheme["density"]; readonly label: string }[];
+  };
+  /** The draft of each of this CV's revisions, for Restore (a restore writes a new revision). */
+  readonly revisionDrafts: Readonly<Record<string, CvDraft>>;
 }
 
 export interface CvEditorModel {
@@ -709,6 +756,81 @@ const TEMPLATE_MESSAGES: Readonly<Record<string, MessageDescriptor>> = defineMes
     description: "CV template name",
   },
 });
+
+const FIELD_MESSAGES = defineMessages({
+  role: { id: "cv-editor.field.role", defaultMessage: "Role" },
+  company: { id: "cv-editor.field.company", defaultMessage: "Company" },
+  location: { id: "cv-editor.field.location", defaultMessage: "Location" },
+  current: { id: "cv-editor.field.current", defaultMessage: "I currently work here" },
+  team: { id: "cv-editor.field.team", defaultMessage: "Team or product" },
+  achievements: { id: "cv-editor.field.achievements", defaultMessage: "Achievements" },
+  project: { id: "cv-editor.field.project", defaultMessage: "Project" },
+  description: { id: "cv-editor.field.description", defaultMessage: "Description" },
+  highlights: { id: "cv-editor.field.highlights", defaultMessage: "Highlights" },
+  degree: { id: "cv-editor.field.degree", defaultMessage: "Degree and subject" },
+  school: { id: "cv-editor.field.school", defaultMessage: "School" },
+  studying: { id: "cv-editor.field.studying", defaultMessage: "I'm studying here now" },
+  grade: { id: "cv-editor.field.grade", defaultMessage: "Grade" },
+  courses: { id: "cv-editor.field.courses", defaultMessage: "Courses" },
+  group: { id: "cv-editor.field.group", defaultMessage: "Group name" },
+  skills: { id: "cv-editor.field.skills", defaultMessage: "Skills, separated by commas" },
+  language: { id: "cv-editor.field.language", defaultMessage: "Language" },
+  level: { id: "cv-editor.field.level", defaultMessage: "Level" },
+  certificate: { id: "cv-editor.field.certificate", defaultMessage: "Certificate" },
+  issuer: { id: "cv-editor.field.issuer", defaultMessage: "Issued by" },
+  title: { id: "cv-editor.field.title", defaultMessage: "Title" },
+  organisation: { id: "cv-editor.field.organisation", defaultMessage: "Organisation" },
+  subtitle: { id: "cv-editor.field.subtitle", defaultMessage: "Where" },
+  interest: { id: "cv-editor.field.interest", defaultMessage: "Interest" },
+  name: { id: "cv-editor.field.name", defaultMessage: "Name" },
+  reference: { id: "cv-editor.field.reference", defaultMessage: "What they said" },
+});
+
+function itemFieldsVM(key: string, intl: IntlShape): Omit<CvItemFieldsVM, "untitled"> {
+  const t = (descriptor: MessageDescriptor) => intl.formatMessage(descriptor);
+  const m = FIELD_MESSAGES;
+  const none = { org: null, location: null, dates: false, current: null, detail: null, bullets: null, keywords: null };
+  switch (key) {
+    case "work":
+    case "volunteer":
+      return {
+        title: t(m.role),
+        org: t(key === "work" ? m.company : m.organisation),
+        location: t(m.location),
+        dates: true,
+        current: t(m.current),
+        detail: t(m.team),
+        bullets: t(m.achievements),
+        keywords: null,
+      };
+    case "projects":
+      return { ...none, title: t(m.project), dates: true, current: null, detail: t(m.description), bullets: t(m.highlights) };
+    case "education":
+      return {
+        ...none,
+        title: t(m.degree),
+        org: t(m.school),
+        dates: true,
+        current: t(m.studying),
+        detail: t(m.grade),
+        bullets: t(m.courses),
+      };
+    case "skills":
+      return { ...none, title: t(m.group), keywords: t(m.skills) };
+    case "interests":
+      return { ...none, title: t(m.interest), keywords: t(m.skills) };
+    case "languages":
+      return { ...none, title: t(m.language), detail: t(m.level) };
+    case "references":
+      return { ...none, title: t(m.name), detail: t(m.reference) };
+    case "certificates":
+    case "awards":
+    case "publications":
+      return { ...none, title: t(key === "certificates" ? m.certificate : m.title), org: t(m.issuer), dates: true };
+    default:
+      return { ...none, title: t(m.title), org: t(m.subtitle), dates: true, detail: t(m.description), bullets: t(m.highlights) };
+  }
+}
 
 /** Font pair ids from `@bfhr/cv-render` (M2); unknown ids fall back to the id. Font names stay as-is. */
 const FONT_PAIR_LABELS: Readonly<Record<string, string>> = {
@@ -1113,6 +1235,7 @@ function listRowVM(
     cvId: cv.id,
     title: cv.title,
     kind,
+    languageCode: (cv.language.split("-")[0] ?? cv.language).toLocaleUpperCase("en"),
     pill: kind === "role" ? ctx.intl.formatMessage(messages.roleVariant) : languageName(cv.language),
     isDefault: cv.isDefault,
     defaultLabel: cv.isDefault ? ctx.intl.formatMessage(messages.defaultCv) : null,
@@ -1381,6 +1504,108 @@ function personalDetailsVM(cv: Cv, content: CvContent, ctx: ModelContext): CvPer
   };
 }
 
+function draftItem(id: string, fields: ItemFields): CvDraftItem {
+  return {
+    id,
+    title: fields.title ?? "",
+    org: fields.org ?? "",
+    location: fields.location ?? "",
+    start: fields.start ?? null,
+    end: fields.end ?? null,
+    detail: fields.detail ?? "",
+    bullets: fields.bullets ?? [],
+    keywords: fields.keywords ?? [],
+    url: fields.url ?? "",
+  };
+}
+
+/** The editable working copy, in the editor's section order (`sections`). */
+function draftVM(cv: Cv, content: CvContent, sections: readonly CvSectionVM[], ctx: ModelContext): CvDraft {
+  const basics = content.basics;
+  const draftSections = sections.map((section): CvDraftSection => {
+    if (section.kind !== "list") {
+      return { key: section.key, kind: section.kind, visible: section.visible, customTitle: null, items: [] };
+    }
+    const custom = section.key.startsWith("custom:")
+      ? content.meta.customSections.find((candidate) => `custom:${candidate.id}` === section.key)
+      : undefined;
+    const fields: readonly ItemFields[] = custom
+      ? custom.items.map((item) => ({
+          title: item.title,
+          org: item.subtitle,
+          // One date is a point in time (a talk), not "– Present".
+          start: item.endDate === undefined ? undefined : item.startDate,
+          end: item.endDate ?? item.startDate,
+          detail: item.summary,
+          bullets: item.highlights,
+          url: item.url,
+        }))
+      : isListSectionKey(section.key)
+        ? (standardItems(section.key, content, ctx) ?? [])
+        : [];
+    return {
+      key: section.key,
+      kind: "list",
+      visible: section.visible,
+      customTitle: custom?.title ?? null,
+      items: fields.map((item, index) => draftItem(`${section.key}-${index}`, item)),
+    };
+  });
+  return {
+    cvId: cv.id,
+    language: cv.language,
+    header: {
+      name: basics?.name ?? "",
+      headline: basics?.label ?? "",
+      email: basics?.email ?? "",
+      phone: basics?.phone ?? "",
+      website: basics?.url ?? "",
+      location: joinPresent([basics?.location?.city, basics?.location?.region, basics?.location?.countryCode], ", ") ?? "",
+      links: (basics?.profiles ?? []).map((profile) => ({
+        label: present(profile.network) ?? ctx.intl.formatMessage(messages.linkFallback),
+        url: profile.url ?? "",
+      })),
+      dateOfBirth: "",
+      photoUrl: basics?.image ?? "",
+    },
+    summary: basics?.summary ?? "",
+    sections: draftSections,
+    paperSize: cv.theme.paperSize,
+    density: cv.theme.density,
+    accentColor: cv.theme.accentColor,
+    showPhoto: Boolean(present(basics?.image)),
+    showDateOfBirth: false,
+  };
+}
+
+function monthOptions(ctx: ModelContext): { readonly value: string; readonly label: string }[] {
+  const format = new Intl.DateTimeFormat(ctx.locale, { timeZone: "UTC", month: "long" });
+  return Array.from({ length: 12 }, (_, index) => ({
+    value: String(index + 1).padStart(2, "0"),
+    label: format.format(new Date(Date.UTC(2000, index, 1))),
+  }));
+}
+
+/** Jobs for the Check tab: the CV's tailoring target or latest use first, then the best matches. */
+function checkVM(cv: Cv, data: UserData): CvEditorVM["check"] {
+  const tailoredFor = data.cvRevisions
+    .filter((revision) => revision.cvId === cv.id && revision.jobId !== null)
+    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())[0]?.jobId;
+  const usedFor = pinnedApplications(cv, data.applications).find((application) => application.jobId !== null)?.jobId;
+  const ranked = [...data.jobMatches].sort((a, b) => b.score - a.score).map((match) => match.id);
+  const ids = [...new Set([tailoredFor, usedFor, ...ranked].filter((id): id is string => typeof id === "string"))];
+  const jobsById = new Map(data.jobs.map((job) => [job.id, job]));
+  const jobs = ids
+    .flatMap((id) => {
+      const job = jobsById.get(id);
+      return job && job.skills.length > 0
+        ? [{ jobId: job.id, label: `${job.company} · ${job.title}`, keywords: job.skills }]
+        : [];
+    })
+    .slice(0, 8);
+  return { jobs, defaultJobId: jobs[0]?.jobId ?? null };
+}
+
 function editorVM(cv: Cv, byId: ReadonlyMap<string, Cv>, data: UserData, ctx: ModelContext): CvEditorVM {
   const revisionsById = new Map(data.cvRevisions.map((revision) => [revision.id, revision]));
   const content: CvContent = revisionsById.get(cv.currentRevisionId)?.content ?? {
@@ -1390,6 +1615,7 @@ function editorVM(cv: Cv, byId: ReadonlyMap<string, Cv>, data: UserData, ctx: Mo
   const ownRevisionCount = data.cvRevisions.filter((revision) => revision.cvId === cv.id).length;
   const pendingSync = ctx.pendingWrites.has(cv.id) || ctx.pendingWrites.has(cv.currentRevisionId);
   const updatedAt = relativeTime(cv.updatedAt, ctx);
+  const sections = sectionVMs(content, ctx);
   return {
     cvId: cv.id,
     title: cv.title,
@@ -1408,7 +1634,7 @@ function editorVM(cv: Cv, byId: ReadonlyMap<string, Cv>, data: UserData, ctx: Mo
           time: updatedAt,
         },
     design: designVM(cv, ctx),
-    sections: sectionVMs(content, ctx),
+    sections,
     personalDetails: personalDetailsVM(cv, content, ctx),
     revisions: revisionGroupVMs(cv, data.cvRevisions, ctx),
     revisionCountLabel: ctx.intl.formatMessage(messages.revisionCount, { count: ownRevisionCount }),
@@ -1420,6 +1646,37 @@ function editorVM(cv: Cv, byId: ReadonlyMap<string, Cv>, data: UserData, ctx: Mo
         : ctx.intl.formatMessage(messages.notUsed),
     originalFile: originalFileVM(cv, data.cvRevisions, ctx),
     pendingSync,
+    draft: draftVM(cv, content, sections, ctx),
+    itemFields: Object.fromEntries(
+      sections
+        .filter((section) => section.kind === "list")
+        .map((section) => [
+          section.key,
+          {
+            ...itemFieldsVM(section.key, ctx.intl),
+            untitled: ctx.intl.formatMessage(
+              (isListSectionKey(section.key) ? LIST_SECTIONS[section.key] : CUSTOM_SECTION).untitled,
+            ),
+          },
+        ]),
+    ),
+    months: monthOptions(ctx),
+    check: checkVM(cv, data),
+    designOptions: {
+      paper: (["a4", "letter"] as const).map((value) => ({
+        value,
+        label: ctx.intl.formatMessage(PAPER_MESSAGES[value]),
+      })),
+      density: (["compact", "comfortable", "spacious"] as const).map((value) => ({
+        value,
+        label: ctx.intl.formatMessage(DENSITY_MESSAGES[value]),
+      })),
+    },
+    revisionDrafts: Object.fromEntries(
+      data.cvRevisions
+        .filter((revision) => revision.cvId === cv.id)
+        .map((revision) => [revision.id, draftVM(cv, revision.content, sectionVMs(revision.content, ctx), ctx)]),
+    ),
   };
 }
 

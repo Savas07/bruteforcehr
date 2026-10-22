@@ -1,8 +1,9 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "types": ["node"],
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "types": ["node", "mocha", "@wdio/globals/types", "@wdio/tauri-service"],
     "noEmit": true
   },
-  "include": ["electron.vite.config.ts", "src/main/**/*.ts", "src/preload/**/*.ts", "src/shared/**/*.ts"]
+  "include": ["vite.config.ts", "e2e/**/*.ts", "src/lib/**/*.ts"]
 }

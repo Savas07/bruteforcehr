@@ -1,0 +1,25 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "build": {
+    "beforeBuildCommand": "pnpm --filter @bfhr/ui-tokens build && pnpm exec vite build --mode e2e"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "security": {
+      "capabilities": [
+        "main",
+        {
+          "identifier": "e2e",
+          "description": "Test builds only (cargo feature `e2e`): WebdriverIO execute/log bridge, plus window theme, size and webview zoom for screenshots.",
+          "windows": ["main"],
+          "permissions": [
+            "wdio:default",
+            "core:window:allow-set-theme",
+            "core:window:allow-set-size",
+            "core:webview:allow-set-webview-zoom"
+          ]
+        }
+      ]
+    }
+  }
+}

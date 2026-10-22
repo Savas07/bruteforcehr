@@ -3,14 +3,14 @@ packages:
   - packages/*
   - firebase/tests
 
-# Install scripts are opt-in. esbuild needs its postinstall (binary check) and electron its binary
-# download (cached in ~/Library/Caches/electron). Optional, skipped: protobufjs version check,
-# @firebase/util web-config autoinit, re2 native regex for firebase-tools, electron-winstaller
-# (Squirrel.Windows, unused: the Windows target is NSIS) vendor-file copy.
+# Install scripts are opt-in. esbuild needs its postinstall (binary check). Optional, skipped:
+# protobufjs version check, @firebase/util web-config autoinit, re2 native regex for firebase-tools,
+# and the edgedriver/geckodriver driver downloads pulled in by WebdriverIO (the desktop E2E needs
+# neither at install time: @wdio/tauri-service fetches a matching msedgedriver on Windows itself).
 allowBuilds:
   "@firebase/util": false
-  electron: true
-  electron-winstaller: false
+  edgedriver: false
   esbuild: true
+  geckodriver: false
   protobufjs: false
   re2: false

@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <!-- Tauri replaces the token with a fresh nonce per load and adds it to style-src; Radix's
+         scroll lock reads it through get-nonce (src/main.tsx). -->
+    <meta property="csp-nonce" nonce="__TAURI_STYLE_NONCE__" />
+    <title>BruteForceHR</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

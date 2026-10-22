@@ -26,10 +26,18 @@ concurrency:
 
 env:
   COREPACK_ENABLE_DOWNLOAD_PROMPT: "0"
+  CARGO_TERM_COLOR: always
+  # Same toolchain as local development (docs: kickoff, Rust 1.99.1 stable).
+  RUST_TOOLCHAIN: "1.99.1"
+
+defaults:
+  run:
+    shell: bash
+    working-directory: apps/desktop
 
 jobs:
-  e2e:
-    name: E2E + screenshots (${{ matrix.os }})
+  desktop:
+    name: Build, E2E + screenshots (${{ matrix.os }})
     strategy:
       fail-fast: false
       matrix:
@@ -41,16 +49,57 @@ jobs:
         with:
           node-version-file: .nvmrc
       - run: corepack enable pnpm
+        working-directory: .
+      - name: pnpm store path
+        id: pnpm-store
+        run: echo "path=$(pnpm store path)" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v6
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: pnpm-${{ runner.os }}-
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @bfhr/desktop test:e2e
-      - run: pnpm --filter @bfhr/desktop capture
-        if: always()
+        working-directory: .
+
+      # Tauri's system dependencies: Xcode command-line tools (macOS) and MSVC + WebView2
+      # (Windows) are preinstalled on the hosted runners; the Tauri CLI downloads NSIS itself.
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+          components: clippy, rustfmt
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/desktop/src-tauri
+      - name: Install tauri-driver (WebDriver bridge to msedgedriver)
+        if: runner.os == 'Windows'
+        run: cargo install tauri-driver --version 2.1.0 --locked
+
+      - name: Rust format, lint, unit tests
+        run: |
+          pnpm format:rust
+          pnpm lint:rust
+          pnpm test:rust
+
+      # Production bundles: macOS .app + .dmg, Windows NSIS (x64). Unsigned until M1.
+      - run: pnpm bundle
+      - uses: actions/upload-artifact@v7
+        with:
+          name: desktop-bundle-${{ matrix.os }}
+          path: |
+            apps/desktop/src-tauri/target/release/bundle/dmg/*.dmg
+            apps/desktop/src-tauri/target/release/bundle/nsis/*.exe
+          if-no-files-found: error
+          retention-days: 14
+
+      # Test build (cargo feature `e2e`): replaces the release binary, after the bundles are built.
+      - run: pnpm build:e2e
+      - run: pnpm test:e2e
+      - run: pnpm capture
+        if: success() || failure()
       - uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: desktop-${{ matrix.os }}
-          path: |
-            artifacts/screens/desktop/
-            artifacts/playwright/desktop/
+          name: desktop-screens-${{ matrix.os }}
+          path: artifacts/screens/desktop/
           if-no-files-found: ignore
           retention-days: 14

@@ -4,11 +4,15 @@ import globals from "globals";
 import root from "../../eslint.config.js";
 
 export default [
-  { ignores: ["release/**"] },
+  { ignores: ["src-tauri/**"] },
   ...root,
   {
-    files: ["src/renderer/**/*.{ts,tsx}"],
+    files: ["src/**/*.{ts,tsx}"],
     ...reactHooks.configs.flat["recommended-latest"],
     languageOptions: { globals: { ...globals.browser } },
+  },
+  {
+    files: ["e2e/**/*.ts"],
+    languageOptions: { globals: { ...globals.mocha } },
   },
 ];

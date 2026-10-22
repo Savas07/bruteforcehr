@@ -1,0 +1,2 @@
+# Product names clippy::doc_markdown would otherwise want in backticks.
+doc-valid-idents = ["AppKit", "WebView2", "WebdriverIO", ".."]

@@ -252,7 +252,6 @@ public struct MailReviewScreen: View {
                     }
                     .buttonStyle(.plain)
                     .accessibilityHint(Text(MailViewStrings.review))
-                    .accessibilityIdentifier("mail.review.\(proposal.id)")
                     .bfhrRowActions(actions(for: proposal))
                 }
             } header: {

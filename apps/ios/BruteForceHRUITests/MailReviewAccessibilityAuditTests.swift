@@ -32,7 +32,7 @@ final class MailReviewAccessibilityAuditTests: XCTestCase {
     @MainActor
     func testReviewSheet() throws {
         let app = launch(dataset: "populated", contentSize: nil)
-        let row = app.descendants(matching: .any)["mail.review.mail-nordlicht-invite"]
+        let row = app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS[c] %@", "Lena Vogel")).firstMatch
         XCTAssertTrue(row.waitForExistence(timeout: 10))
         row.tap()
         XCTAssertTrue(app.buttons["Confirm"].waitForExistence(timeout: 10))
@@ -55,15 +55,16 @@ final class MailReviewAccessibilityAuditTests: XCTestCase {
         }
         app.swipeUp()
         try shot("queue-scrolled")
-        app.swipeDown()
-        app.swipeDown()
-        let row = app.descendants(matching: .any)["mail.review.mail-nordlicht-invite"]
+        let row = app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS[c] %@", "Lena Vogel")).firstMatch
+        if !row.waitForExistence(timeout: 5) { print(app.debugDescription) }
         row.tap()
         try shot("sheet-medium")
         app.buttons["Change…"].firstMatch.tap()
         try shot("sheet-change")
         app.buttons["Close"].firstMatch.tap()
         if app.buttons["Close"].exists { app.buttons["Close"].firstMatch.tap() }
+        app.swipeDown()
+        app.swipeDown()
         app.buttons["Updates"].firstMatch.tap()
         try shot("updates")
         app.buttons["All job mail"].firstMatch.tap()

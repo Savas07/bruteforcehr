@@ -147,6 +147,12 @@ describe("buildTodayModel — populated", () => {
       primaryLabel: "Draft follow-up",
       secondaryLabel: "Not needed",
     });
+    // "Draft follow-up" opens the job's Apply panel, so the row carries the application's job.
+    for (const item of itemsOf(model, "followUp"))
+      expect(item.jobId).toBe(
+        populatedDataset.applications.find((application) => application.id === item.nudge.applicationId)
+          ?.jobId ?? null,
+      );
   });
 
   it("lists the take-home and the offer reply date with relative chips", () => {
@@ -159,7 +165,7 @@ describe("buildTodayModel — populated", () => {
       ]),
     ).toEqual([
       ["Grachten Commerce", "assessment", "Assessment due", "In 5 days"],
-      ["Lumenpay", "offerReply", "Reply to the offer by", "29 Oct, 18:00"],
+      ["Lumenpay", "offerReply", "Offer reply due", "29 Oct, 18:00"],
     ]);
     // Tannenbaum's reply date sits in a pending email: it shows in the review proposal instead.
     expect(itemsOf(model, "deadline").some((item) => item.company.name === "Tannenbaum Software")).toBe(

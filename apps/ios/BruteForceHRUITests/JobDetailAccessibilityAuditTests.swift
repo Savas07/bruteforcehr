@@ -36,19 +36,52 @@ final class JobDetailAccessibilityAuditTests: XCTestCase {
         try audit(app)
     }
 
+    /// The band legend under `MatchBandBar` stops at xLarge on purpose (the band is named above it
+    /// at full size): JobDetailMatchViews.swift `MatchScoreCard`.
+    private let cappedLegend: Set<String> = ["Stretch", "Partial", "Good", "Strong"]
+
+    /// Runs Xcode's audit and fails on every issue of the screen's own content, fully visible
+    /// between the navigation bar and the sticky Apply bar (or the bottom of a sheet).
+    ///
+    /// Not failed, but attached as "audit-unattributed": issues on elements outside that band or
+    /// with no resolvable element. The bars are translucent glass over scrolling content, so
+    /// contrast and Dynamic Type measurements there describe the blend (or the deliberately
+    /// capped Apply bar, which stops at AX1 and offers the Large Content Viewer), not the element.
     @MainActor
-    private func audit(_ app: XCUIApplication) throws {
+    private func audit(_ app: XCUIApplication, inSheet: Bool = false) throws {
+        Thread.sleep(forTimeInterval: 1.0) // let scrolling settle
+        let window = app.windows.firstMatch.frame
+        // The lowest navigation bar: the screen's, or a presented sheet's.
+        let top = app.navigationBars.allElementsBoundByIndex.map(\.frame.maxY).max() ?? window.minY
+        var bottom = window.maxY
+        if !inSheet {
+            let bar = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Apply' OR label == 'View in Tracker'")).firstMatch
+            if bar.exists {
+                bottom = bar.frame.minY - 16
+            } else if app.tabBars.firstMatch.exists {
+                bottom = app.tabBars.firstMatch.frame.minY
+            }
+        }
+        var unattributed: [String] = []
         try app.performAccessibilityAudit { issue in
-            // The system tab bar and navigation bar are Apple's: their Dynamic Type behavior at
-            // AX sizes (the large-content viewer instead of growing) is by design.
-            if let element = issue.element, element.elementType == .tabBar || element.elementType == .navigationBar {
+            let element = issue.element
+            let line = "\(issue.auditType.rawValue) \(issue.compactDescription) | type \(element?.elementType.rawValue ?? 0) "
+                + "label '\(element?.label ?? "")' frame \(element.map { "\($0.frame)" } ?? "-")"
+            guard let element, element.exists, element.frame.minY >= top, element.frame.maxY <= bottom else {
+                unattributed.append(line)
                 return true
             }
-            if let element = issue.element, issue.auditType == .dynamicType,
-               app.tabBars.firstMatch.exists, app.tabBars.firstMatch.frame.contains(element.frame) {
+            if issue.auditType == .dynamicType, self.cappedLegend.contains(element.label) {
+                unattributed.append("capped legend: " + line)
                 return true
             }
             return false
+        }
+        if !unattributed.isEmpty {
+            let attachment = XCTAttachment(string: unattributed.joined(separator: "\n"))
+            attachment.name = "audit-unattributed"
+            attachment.lifetime = .keepAlways
+            add(attachment)
         }
     }
 
@@ -79,12 +112,12 @@ final class JobDetailAccessibilityAuditTests: XCTestCase {
         scrollTo(breakdown, in: app)
         breakdown.tap()
         XCTAssertTrue(app.buttons["Done"].waitForExistence(timeout: 5))
-        try audit(app)
+        try audit(app, inSheet: true)
         app.buttons["Done"].tap()
 
         openNotForMeReasons(app)
         XCTAssertTrue(app.navigationBars["What didn't fit?"].waitForExistence(timeout: 5))
-        try audit(app)
+        try audit(app, inSheet: true)
     }
 
     // MARK: Critique captures

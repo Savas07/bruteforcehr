@@ -162,12 +162,24 @@ final class JobDetailAccessibilityAuditTests: XCTestCase {
             .press(forDuration: 0.05, thenDragTo: window.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.9)), withVelocity: .fast, thenHoldForDuration: 0)
     }
 
+    /// Scrolls until `element` sits fully in the middle band of the screen: below the glass
+    /// navigation bar (where a tap would land on the toolbar) and above the sticky Apply bar.
     @MainActor
     private func scrollTo(_ element: XCUIElement, in app: XCUIApplication) {
         _ = app.collectionViews.firstMatch.waitForExistence(timeout: 5)
+        let height = app.windows.firstMatch.frame.height
+        func inBand() -> Bool {
+            element.exists && element.frame.minY > height * 0.15 && element.frame.maxY < height * 0.7
+        }
         var tries = 0
-        while !(element.exists && element.isHittable) && tries < 12 {
-            scrollDown(app)
+        while !inBand() && tries < 30 {
+            if element.exists && element.frame.minY <= height * 0.15 {
+                let window = app.windows.firstMatch
+                window.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.3))
+                    .press(forDuration: 0.05, thenDragTo: window.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)), withVelocity: .slow, thenHoldForDuration: 0.1)
+            } else {
+                scrollDown(app)
+            }
             tries += 1
         }
     }

@@ -27,15 +27,18 @@ final class TodayAccessibilityAuditTests: XCTestCase {
     /// Runs the audit on what's on screen. Filtered, with the reason logged in the test report:
     /// - system chrome (tab bar, status bar, navigation bar) is outside this screen;
     /// - elements that aren't fully inside the content area (between the navigation bar and the
-    ///   floating tab bar): the audit measures contrast and clipping from a screenshot, so text
-    ///   that's scrolled under the translucent bars or off screen reports false failures;
+    ///   floating tab bar, minus the 24 pt scroll-edge fade): the audit measures contrast and
+    ///   clipping from a screenshot, so text under the translucent bars or off screen reports
+    ///   false failures;
     /// - issues with no element (the audit can't say what they are; logged for review).
     /// Everything else fails the test.
     @MainActor
     private func audit(_ app: XCUIApplication, _ context: String) throws {
         let top = app.navigationBars.firstMatch.exists ? app.navigationBars.firstMatch.frame.maxY : 0
         let bottom = app.tabBars.firstMatch.exists ? app.tabBars.firstMatch.frame.minY : app.frame.maxY
-        let content = CGRect(x: app.frame.minX, y: top, width: app.frame.width, height: bottom - top)
+        // iOS 26 fades content into the bars (scroll edge effect); keep a band clear of both.
+        let edge: CGFloat = 24
+        let content = CGRect(x: app.frame.minX, y: top + edge, width: app.frame.width, height: bottom - top - 2 * edge)
         try app.performAccessibilityAudit { issue in
             guard let element = issue.element else {
                 XCTContext.runActivity(named: "IGNORED (no element) \(context): \(issue.compactDescription)") { _ in }
@@ -55,7 +58,7 @@ final class TodayAccessibilityAuditTests: XCTestCase {
     private func scrollAudit(_ app: XCUIApplication, _ context: String, pages: Int) throws {
         try audit(app, "\(context) top")
         for page in 1...pages {
-            app.swipeUp(velocity: .slow)
+            app.swipeUp() // a slow swipe starts as a long press and opens a row's context menu
             Thread.sleep(forTimeInterval: 1.5) // let the scroll settle before the audit's screenshot
             try audit(app, "\(context) page \(page)")
         }

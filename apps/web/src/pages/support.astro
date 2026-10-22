@@ -77,9 +77,9 @@ const topics = [
           <FaqItem id="windows-protected-your-pc" question="Windows shows “Windows protected your PC”. What should I do?">
             <p>
               The Windows app isn't code-signed yet, so Windows SmartScreen warns you before it opens. If you downloaded
-              it from the official
+              it from the official{" "}
               <a class="prose-link" href={`${RELEASES_REPO_URL}/releases`}>BruteForceHR releases page on GitHub</a>,
-              select <strong class="text-fg-primary">More info</strong>, then
+              select <strong class="text-fg-primary">More info</strong>, then{" "}
               <strong class="text-fg-primary">Run anyway</strong>.
             </p>
           </FaqItem>
@@ -130,9 +130,9 @@ const topics = [
           <FaqItem id="google-hasnt-verified" question="Google says it hasn't verified this app. Is it safe?">
             <p>
               BruteForceHR is a personal project and hasn't been through Google's app verification yet, so Google shows
-              “Google hasn't verified this app” when you connect Gmail. If you want to continue, select
-              <strong class="text-fg-primary">Advanced</strong>, then
-              <strong class="text-fg-primary">Go to BruteForceHR</strong>. Before you decide, you can read
+              “Google hasn't verified this app” when you connect Gmail. If you want to continue, select{" "}
+              <strong class="text-fg-primary">Advanced</strong>, then{" "}
+              <strong class="text-fg-primary">Go to BruteForceHR</strong>. Before you decide, you can read{" "}
               <a class="prose-link" href="/privacy/#your-email-accounts">what BruteForceHR does with your email</a>.
             </p>
           </FaqItem>
@@ -144,7 +144,7 @@ const topics = [
           </FaqItem>
           <FaqItem id="disconnect-email" question="How do I disconnect an email account?">
             <p>
-              Go to <strong class="text-fg-primary">Settings › Mail accounts</strong>, choose the account, then
+              Go to <strong class="text-fg-primary">Settings › Mail accounts</strong>, choose the account, then{" "}
               <strong class="text-fg-primary">Disconnect</strong>. BruteForceHR removes its access and deletes the email
               it stored from that account. Your applications stay in your tracker. For IMAP accounts, also delete the
               app password at your email provider.
@@ -162,7 +162,7 @@ const topics = [
           </FaqItem>
           <FaqItem id="email-and-ai" question="Is my email sent to AI?">
             <p>
-              Only if you turn on <strong class="text-fg-primary">Allow sending email text to AI</strong> in
+              Only if you turn on <strong class="text-fg-primary">Allow sending email text to AI</strong> in{" "}
               <strong class="text-fg-primary">Settings › AI & sending</strong>. Then only the text needed to sort a
               message is sent to Anthropic's Claude, and Anthropic doesn't use it to train its models.
             </p>

@@ -166,16 +166,56 @@ When you share a job link from another app, the link is sent to our servers so t
 
 </div>
 
-| Service | What it does | Data it receives | Where |
-| --- | --- | --- | --- |
-| Google Cloud (Firebase: Firestore, Cloud Storage, Cloud Functions, Cloud Tasks, Secret Manager) | Stores and processes your data | Everything described in [What we collect](#what-we-collect) | Belgium (europe-west1) |
-| Google (Firebase Authentication, Firebase Hosting) | Keeps you signed in; serves this website | Account ID, email address, IP address | Google's global network |
-| Brevo | Sends sign-in code emails | Your email address and the email with your code | European Union |
-| Anthropic | AI features, if on | The text a task needs (see [AI features](#ai-features)) | United States |
-| Google, Microsoft or your IMAP provider | Your email account | Requests made with the access you granted | Your provider's locations |
-| Apple | Delivers iPhone notifications; distributes the iPhone beta through TestFlight | Device push token and notification text | Apple's global network |
-| GitHub | Hosts app downloads and updates; hosts support issues | IP address and app version when the Mac or Windows app checks for updates (at launch and every 6 hours); anything you post in an issue | United States |
-| Job sources | Return job listings | Search terms only | Each source's own locations |
+<dl class="service-list">
+<div>
+<dt>Google Cloud</dt>
+<dd>Firebase: Firestore, Cloud Storage, Cloud Functions, Cloud Tasks and Secret Manager. Stores and processes your data.</dd>
+<dd><span>Receives:</span> everything described in <a href="#what-we-collect">What we collect</a>.</dd>
+<dd><span>Where:</span> Belgium (europe-west1).</dd>
+</div>
+<div>
+<dt>Google</dt>
+<dd>Firebase Authentication keeps you signed in; Firebase Hosting serves this website.</dd>
+<dd><span>Receives:</span> your account ID, email address and IP address.</dd>
+<dd><span>Where:</span> Google's global network.</dd>
+</div>
+<div>
+<dt>Brevo</dt>
+<dd>Sends the emails with your sign-in codes.</dd>
+<dd><span>Receives:</span> your email address and the email with your code.</dd>
+<dd><span>Where:</span> European Union.</dd>
+</div>
+<div>
+<dt>Anthropic</dt>
+<dd>Runs the AI features, if you've turned them on.</dd>
+<dd><span>Receives:</span> only the text a task needs (see <a href="#ai-features">AI features</a>).</dd>
+<dd><span>Where:</span> United States.</dd>
+</div>
+<div>
+<dt>Your email provider</dt>
+<dd>Google, Microsoft or your IMAP provider hosts your email account.</dd>
+<dd><span>Receives:</span> requests made with the access you granted.</dd>
+<dd><span>Where:</span> your provider's locations.</dd>
+</div>
+<div>
+<dt>Apple</dt>
+<dd>Delivers iPhone notifications and distributes the iPhone beta through TestFlight.</dd>
+<dd><span>Receives:</span> your device's push token and the notification text.</dd>
+<dd><span>Where:</span> Apple's global network.</dd>
+</div>
+<div>
+<dt>GitHub</dt>
+<dd>Hosts app downloads, app updates and support issues.</dd>
+<dd><span>Receives:</span> your IP address and app version when the Mac or Windows app checks for updates (at launch and every 6 hours), and anything you post in an issue.</dd>
+<dd><span>Where:</span> United States.</dd>
+</div>
+<div>
+<dt>Job sources</dt>
+<dd>Return job listings for your searches.</dd>
+<dd><span>Receives:</span> search terms only.</dd>
+<dd><span>Where:</span> each source's own locations.</dd>
+</div>
+</dl>
 
 When data leaves the European Economic Area (for example to Anthropic or GitHub in the United States), the transfer relies on the provider's safeguards, such as the EU Standard Contractual Clauses or the EU–US Data Privacy Framework.
 

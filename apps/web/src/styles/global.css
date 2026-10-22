@@ -17,10 +17,17 @@
     scroll-padding-top: calc(var(--spacing) * 24);
   }
 
-  /* German and Turkish compounds wrap instead of overflowing; `lang` on <html> drives the dictionary. */
   body {
-    hyphens: auto;
     overflow-wrap: break-word;
+  }
+
+  /*
+   * German and Turkish compounds hyphenate instead of overflowing (`lang` on the element picks the
+   * dictionary). English stays unhyphenated: broken words slow down skimming.
+   */
+  :lang(de),
+  :lang(tr) {
+    hyphens: auto;
   }
 
   h1,
@@ -79,8 +86,12 @@
     font-variant-numeric: tabular-nums;
   }
 
+  .toc li {
+    break-inside: avoid;
+  }
+
   .toc a {
-    display: inline-block;
+    display: block;
     padding-block: calc(var(--spacing) * 2.5);
     color: var(--bfhr-color-fg-primary);
     text-decoration-line: underline;
@@ -212,6 +223,48 @@
 
     & strong:first-child {
       color: var(--bfhr-color-accent-text);
+    }
+  }
+
+  /*
+   * Who processes data (Privacy Policy): one row per service. A description list instead of a
+   * four-column table, so it stays readable at 375 px; label column from 768 px.
+   */
+  .service-list {
+    border-top: var(--bfhr-border-thin) solid var(--bfhr-color-line-subtle);
+
+    & > div {
+      padding-block: calc(var(--spacing) * 4);
+      border-bottom: var(--bfhr-border-thin) solid var(--bfhr-color-line-subtle);
+    }
+
+    & dt {
+      font-weight: 600;
+    }
+
+    & dd + dd {
+      margin-top: calc(var(--spacing) * 1);
+    }
+
+    & dd > span:first-child {
+      color: var(--bfhr-color-fg-secondary);
+      font-weight: 600;
+    }
+
+    @media (width >= 48rem) {
+      & > div {
+        display: grid;
+        grid-template-columns: 11rem minmax(0, 1fr);
+        column-gap: calc(var(--spacing) * 6);
+      }
+
+      & dd {
+        grid-column: 2;
+      }
+
+      & dd:first-of-type {
+        grid-row: 1;
+      }
     }
   }
 }

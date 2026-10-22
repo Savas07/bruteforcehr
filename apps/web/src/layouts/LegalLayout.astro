@@ -40,7 +40,7 @@ const effectiveLabel = new Intl.DateTimeFormat("en-GB", { dateStyle: "long", tim
       class="mt-8 rounded-lg border border-line-subtle bg-surface-base p-5 xl:sticky xl:top-24 xl:col-start-1 xl:row-span-2 xl:row-start-1 xl:mt-0 xl:max-h-[calc(100dvh-7rem)] xl:self-start xl:overflow-y-auto xl:border-0 xl:bg-transparent xl:p-0"
     >
       <h2 id="toc-title" class="font-mono text-subheadline text-fg-tertiary">On this page</h2>
-      <ol class="toc mt-2">
+      <ol class="toc mt-2 gap-x-10 md:columns-2 xl:columns-1">
         {
           sections.map((section) => (
             <li>

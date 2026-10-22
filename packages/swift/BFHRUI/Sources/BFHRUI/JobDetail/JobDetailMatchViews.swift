@@ -136,7 +136,7 @@ struct GapRow: View {
                 }
                 .accessibilityElement(children: .combine)
                 ViewThatFits(in: .horizontal) {
-                    HStack(spacing: BFHRSpace.s2) { buttons }
+                    HStack(spacing: BFHRSpace.s2) { buttons }.fixedSize(horizontal: true, vertical: false)
                     VStack(alignment: .leading, spacing: BFHRSpace.s2) { buttons }
                 }
             }
@@ -156,14 +156,10 @@ struct GapRow: View {
 
     @ViewBuilder private var buttons: some View {
         if let skill = gap.skill {
-            Button { onHaveSkill(skill) } label: {
-                Label { Text(JobDetailViewStrings.haveThis) } icon: { Image(systemName: "checkmark") }
-            }
+            Button { onHaveSkill(skill) } label: { Text(JobDetailViewStrings.haveThis) }
             .buttonStyle(.bfhrSecondary)
         }
-        Button(action: onAddToCV) {
-            Label { Text(JobDetailViewStrings.addToCV) } icon: { Image(systemName: "doc.badge.plus") }
-        }
+        Button(action: onAddToCV) { Text(JobDetailViewStrings.addToCV) }
         .buttonStyle(.bfhrSecondary)
     }
 }
@@ -199,7 +195,7 @@ private struct FactorTags: View {
                 tag(JobDetailViewStrings.status(factor.status), emphasized: false)
             }
             if factor.source == .ai {
-                AiBadge()
+                AiBadge().labelStyle(CompactLabelStyle())
             }
         }
     }
@@ -222,7 +218,7 @@ struct AISummaryBlock: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: BFHRSpace.s3) {
-            AiBadge(Strings.aiSummaryLabel)
+            AiBadge(Strings.aiSummaryLabel).labelStyle(CompactLabelStyle())
             Text(verbatim: rationale)
                 .font(.bfhr(.body))
                 .foregroundStyle(BFHRColor.Fg.primary)
@@ -299,8 +295,8 @@ struct MatchBreakdownSheet: View {
             if match.skillsTotal > 0 {
                 Section {
                     ChipFlow(spacing: BFHRSpace.s2) {
-                        ForEach(match.matchedSkills, id: \.self) { SkillTag(name: $0, isMatched: true) }
-                        ForEach(match.unmatchedSkills, id: \.self) { SkillTag(name: $0, isMatched: false) }
+                        ForEach(match.matchedSkills, id: \.self) { SkillTag(name: match.label(forSkill: $0), isMatched: true) }
+                        ForEach(match.unmatchedSkills, id: \.self) { SkillTag(name: match.label(forSkill: $0), isMatched: false) }
                     }
                     .padding(.vertical, BFHRSpace.s2)
                 } header: {
@@ -364,11 +360,22 @@ private struct SkillTag: View {
         } icon: {
             Image(systemName: isMatched ? "checkmark" : "circle.dashed")
         }
-        .labelStyle(.titleAndIcon)
+        .labelStyle(CompactLabelStyle())
         .font(.bfhr(.subheadline, emphasized: isMatched))
         .foregroundStyle(isMatched ? BFHRColor.Accent.text : BFHRColor.Fg.secondary)
         .padding(.horizontal, BFHRSpace.s3)
         .padding(.vertical, BFHRSpace.s1)
         .background(isMatched ? BFHRColor.Accent.subtle : BFHRColor.Surface.sunken, in: Capsule())
+    }
+}
+
+/// Icon and title 4 pt apart. Inside a `List` row the default label style puts the title in the
+/// row's text column, far from its icon, which breaks capsule badges.
+struct CompactLabelStyle: LabelStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        HStack(spacing: BFHRSpace.s1) {
+            configuration.icon
+            configuration.title
+        }
     }
 }

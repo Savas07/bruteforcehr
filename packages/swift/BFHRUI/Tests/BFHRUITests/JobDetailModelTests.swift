@@ -313,6 +313,18 @@ struct JobDetailModelTests {
         #expect(pending.summaryFeedback == nil)
     }
 
+    @Test("Skill keys read as the gap or the posting spells them")
+    func skillLabels() throws {
+        let model = model()
+        let match = try #require(model.match.scored)
+        #expect(match.label(forSkill: "vue") == "Vue.js")
+        #expect(match.label(forSkill: "typescript") == "TypeScript")
+        #expect(match.label(forSkill: "design systems") == "design systems")
+        #expect(match.label(forSkill: "unknown-skill") == "unknown-skill")
+        _ = model.markHaveSkill("vue")
+        #expect(model.match.scored?.label(forSkill: "vue") == "Vue.js")
+    }
+
     @Test("Salary, relative time and source names format for display")
     func formatting() throws {
         let en = Locale(identifier: "en_US")

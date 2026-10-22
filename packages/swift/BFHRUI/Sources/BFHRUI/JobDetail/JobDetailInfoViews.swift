@@ -135,6 +135,7 @@ private struct FactRow: View {
         layout {
             Label {
                 Text(JobDetailViewStrings.fact(fact.kind))
+                    .fixedSize(horizontal: !dynamicTypeSize.isAccessibilitySize, vertical: false)
                     .foregroundStyle(BFHRColor.Fg.primary)
             } icon: {
                 Image(systemName: symbol).foregroundStyle(BFHRColor.Fg.secondary)
@@ -332,6 +333,7 @@ private struct SourceBadge: View {
 
     var body: some View {
         Label { Text(text) } icon: { Image(systemName: systemImage) }
+            .labelStyle(CompactLabelStyle())
             .font(.bfhr(.caption1, emphasized: true))
             .foregroundStyle(isAccent ? BFHRColor.Accent.text : BFHRColor.Fg.secondary)
             .padding(.horizontal, BFHRSpace.s2)
@@ -388,6 +390,11 @@ struct DismissReasonSheet: View {
     @State private var selected: Set<DismissReason>
     @Environment(\.dismiss) private var dismiss
 
+    /// job-feed-search.md "Reasons": the hard filters first, "Something else" last.
+    static let reasonOrder: [DismissReason] = [
+        .location, .salary, .seniority, .notRelevant, .company, .language, .visa, .alreadyApplied, .other,
+    ]
+
     init(initial: [DismissReason], onSave: @escaping ([DismissReason]) -> Void) {
         self.onSave = onSave
         _selected = State(initialValue: Set(initial))
@@ -398,7 +405,7 @@ struct DismissReasonSheet: View {
             List {
                 Section {
                     ChipFlow(spacing: BFHRSpace.s2) {
-                        ForEach(DismissReason.allCases, id: \.self) { reason in
+                        ForEach(Self.reasonOrder, id: \.self) { reason in
                             Toggle(isOn: binding(reason)) { Text(JobDetailViewStrings.reason(reason)) }
                                 .toggleStyle(.bfhrChip)
                         }
@@ -420,7 +427,7 @@ struct DismissReasonSheet: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button {
-                        onSave(DismissReason.allCases.filter(selected.contains))
+                        onSave(Self.reasonOrder.filter(selected.contains))
                         dismiss()
                     } label: {
                         Text(JobDetailViewStrings.reasonsSave)

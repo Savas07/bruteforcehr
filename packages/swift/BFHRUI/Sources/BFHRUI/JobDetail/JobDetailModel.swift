@@ -193,7 +193,7 @@ public final class JobDetailModel: ScreenModel {
             salary: statedSalary,
             salaryProvenance: statedSalary.map { $0.estimated ? .estimated : .statedByEmployer } ?? .notStated
         )
-        match = Self.summary(of: jobMatch, cvs: data.cvs)
+        match = Self.summary(of: jobMatch, cvs: data.cvs, posting: job.description)
         facts = Self.facts(of: job, salary: statedSalary)
         description = job.description
         isDelisted = job.expiresAt.map { $0 < now } ?? false
@@ -213,7 +213,7 @@ public final class JobDetailModel: ScreenModel {
         canHide = jobMatch != nil && !isHidden
     }
 
-    private static func summary(of jobMatch: JobMatch?, cvs: [Cv]) -> MatchSummary {
+    private static func summary(of jobMatch: JobMatch?, cvs: [Cv], posting: String) -> MatchSummary {
         guard let jobMatch else { return .pending }
         guard let cvId = jobMatch.basedOnCvId else { return .noCV }
         let reasons = jobMatch.reasons.enumerated().map { factor($1, origin: .reason, index: $0, unmatched: []) }
@@ -246,8 +246,26 @@ public final class JobDetailModel: ScreenModel {
             requirements: requirements,
             matchedSkills: skills.matched,
             unmatchedSkills: skills.unmatched,
+            skillLabels: skillLabels(skills.matched + skills.unmatched, gaps: jobMatch.gaps, posting: posting),
             rationale: jobMatch.rationale.flatMap { $0.isEmpty ? nil : $0 }
         ))
+    }
+
+    /// How each skill key ("vue", "typescript") reads: a skill gap's label ("Vue.js"), else the
+    /// posting's own spelling ("TypeScript"), else the key.
+    private static func skillLabels(_ keys: [String], gaps: [MatchFactor], posting: String) -> [String: String] {
+        var labels: [String: String] = [:]
+        for key in keys {
+            if let gap = gaps.first(where: { $0.kind == .skill && SkillKey($0.label) == SkillKey(key) }) {
+                labels[key] = gap.label
+                continue
+            }
+            let pattern = "(?<![\\p{L}\\p{N}])" + NSRegularExpression.escapedPattern(for: key) + "(\\.js)?(?![\\p{L}\\p{N}])"
+            if let range = posting.range(of: pattern, options: [.regularExpression, .caseInsensitive]) {
+                labels[key] = String(posting[range])
+            }
+        }
+        return labels
     }
 
     private static func factor(_ factor: MatchFactor, origin: Factor.Origin, index: Int, unmatched: [String]) -> Factor {

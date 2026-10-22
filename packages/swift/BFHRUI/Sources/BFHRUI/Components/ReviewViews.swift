@@ -36,7 +36,7 @@ public struct ProposalSentence: View {
         Group {
             if let target = proposal.proposedStatus, let from = proposal.currentStatus, target != from,
                let company = proposal.company {
-                Text(Strings.proposalMove(
+                Text(bfhrPlain: Strings.proposalMove(
                     application: Self.applicationName(company: company, role: proposal.role),
                     from: from,
                     to: target
@@ -65,7 +65,7 @@ public struct ReasonLine: View {
     }
 
     public var body: some View {
-        Text(text)
+        Text(bfhrPlain: text)
             .font(.bfhr(.subheadline))
             .foregroundStyle(BFHRColor.Fg.secondary)
     }
@@ -85,9 +85,11 @@ public struct ReasonLine: View {
 }
 
 /// The review sheet body shared by Today and Mail review (components.md `ReviewSheet`): proposal +
-/// reason, the evidence, the three fields, then Confirm (primary) / Change… (secondary) and the
-/// separate "Not job mail". Present it in `.sheet` with `.presentationDetents([.medium, .large])`;
-/// the correction pickers behind Change… belong to the presenting screen.
+/// reason, the evidence and the three fields scroll; Confirm (primary) / Change… (secondary) are
+/// pinned to the bottom, so they're visible at the medium detent too, with the separate "Not job
+/// mail" in the scrolling content. Present it in `.sheet` with
+/// `.presentationDetents([.medium, .large])`; the correction pickers behind Change… belong to the
+/// presenting screen.
 public struct ReviewSheet: View {
     private let proposal: ReviewProposal
     private let isOffline: Bool
@@ -121,28 +123,36 @@ public struct ReviewSheet: View {
                 }
                 evidence
                 fields
-                VStack(spacing: BFHRSpace.s2) {
-                    ButtonPair {
-                        Button {
-                            confirmCount += 1
-                            onConfirm()
-                        } label: { Text(Strings.confirm) }
-                        .disabled(!proposal.canConfirm)
-                    } secondary: {
-                        Button(action: onChange) { Text(Strings.change) }
-                    }
-                    if isOffline {
-                        Text(Strings.willSync)
-                            .font(.bfhr(.footnote))
-                            .foregroundStyle(BFHRColor.Fg.secondary)
-                    }
-                    Button(action: onNotJobMail) { Text(Strings.notJobMail) }
-                        .buttonStyle(.bfhrPlain)
-                }
+                Button(action: onNotJobMail) { Text(Strings.notJobMail) }
+                    .buttonStyle(.bfhrPlain)
+                    .frame(maxWidth: .infinity)
             }
             .padding(BFHRSpace.s4)
         }
+        .safeAreaInset(edge: .bottom, spacing: 0) { actions }
         .bfhrHaptic(.confirm, trigger: confirmCount)
+    }
+
+    private var actions: some View {
+        VStack(spacing: BFHRSpace.s2) {
+            ButtonPair {
+                Button {
+                    confirmCount += 1
+                    onConfirm()
+                } label: { Text(Strings.confirm) }
+                .disabled(!proposal.canConfirm)
+            } secondary: {
+                Button(action: onChange) { Text(Strings.change) }
+            }
+            if isOffline {
+                Text(Strings.willSync)
+                    .font(.bfhr(.footnote))
+                    .foregroundStyle(BFHRColor.Fg.secondary)
+            }
+        }
+        .padding(.horizontal, BFHRSpace.s4)
+        .padding(.vertical, BFHRSpace.s3)
+        .background(.bar)
     }
 
     private var evidence: some View {

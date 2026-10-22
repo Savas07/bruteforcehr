@@ -166,15 +166,16 @@ export function ReviewDetailPane({
         <dd className="text-fg-primary">{proposal.category.label}</dd>
         <dt className="text-fg-secondary">{intl.formatMessage(messages.application)}</dt>
         <dd className="text-fg-primary">
-          {move === null ? (
-            <span className="text-fg-tertiary">{intl.formatMessage(messages.noApplication)}</span>
-          ) : move.applicationId === null ? (
+          {move !== null && move.applicationId === null ? (
             <>
               {move.applicationLabel}{" "}
               <span className="text-fg-secondary">{intl.formatMessage(messages.newApplication)}</span>
             </>
           ) : (
-            move.applicationLabel
+            (move?.applicationLabel ??
+            proposal.application?.label ?? (
+              <span className="text-fg-tertiary">{intl.formatMessage(messages.noApplication)}</span>
+            ))
           )}
         </dd>
         <dt className="text-fg-secondary">{intl.formatMessage(messages.status)}</dt>

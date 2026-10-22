@@ -197,19 +197,22 @@ public struct TodayScreen: View {
                     withAnimation(BFHRMotion.spring(reduceMotion: reduceMotion)) { showsPrep.toggle() }
                 } label: {
                     HStack(spacing: BFHRSpace.s2) {
-                        Image(systemName: "list.bullet.clipboard")
-                            .foregroundStyle(BFHRColor.Fg.secondary)
-                            .accessibilityHidden(true)
-                        Text(TodayStrings.prep)
-                            .foregroundStyle(BFHRColor.Fg.primary)
+                        Label {
+                            Text(TodayStrings.prep)
+                                .font(.bfhr(.body))
+                                .foregroundStyle(BFHRColor.Fg.primary)
+                        } icon: {
+                            Image(systemName: "list.bullet.clipboard")
+                                .font(.bfhr(.body))
+                                .foregroundStyle(BFHRColor.Fg.secondary)
+                        }
+                        .labelStyle(.bfhrCompact)
                         Spacer(minLength: BFHRSpace.s2)
-                        Image(systemName: "chevron.right")
+                        Image(systemName: showsPrep ? "chevron.down" : "chevron.right")
                             .font(.bfhr(.footnote, emphasized: true))
                             .foregroundStyle(BFHRColor.Fg.tertiary)
-                            .rotationEffect(.degrees(showsPrep ? 90 : 0))
                             .accessibilityHidden(true)
                     }
-                    .font(.bfhr(.body))
                     .padding(.vertical, BFHRSpace.s2)
                     .contentShape(Rectangle())
                 }

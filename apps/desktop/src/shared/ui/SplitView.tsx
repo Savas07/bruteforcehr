@@ -49,13 +49,19 @@ const messages = defineMessages({
 
 const RESIZE_STEP = 8;
 
-/** Keyboard- and pointer-resizable vertical splitter (`role="separator"`). */
+/**
+ * Keyboard- and pointer-resizable vertical splitter (`role="separator"`). `value` is the width of
+ * the pane it controls; `pane` says which side that pane is on, so moving the divider toward the
+ * pane (pointer or ← / →) always shrinks it: a list on the `left` shrinks with ←, a right-docked
+ * panel grows with ←. Home / End jump to the minimum / maximum width.
+ */
 function Splitter({
   controls,
   label,
   value,
   min,
   max,
+  pane,
   onChange,
 }: {
   controls: string;
@@ -63,9 +69,12 @@ function Splitter({
   value: number;
   min: number;
   max: number;
+  pane: "left" | "right";
   onChange: (width: number) => void;
 }) {
   const clamp = (width: number) => Math.min(max, Math.max(min, width));
+  /** +1 when moving the divider right widens the pane. */
+  const direction = pane === "left" ? 1 : -1;
   const drag = useRef<{ startX: number; startWidth: number } | null>(null);
   return (
     <div
@@ -79,7 +88,8 @@ function Splitter({
       aria-valuemax={max}
       className="group relative z-(--bfhr-layer-sticky) -mx-1 w-2 shrink-0 cursor-col-resize outline-offset-0 focus-visible:outline-2"
       onKeyDown={(event: ReactKeyboardEvent) => {
-        const delta = event.key === "ArrowLeft" ? -RESIZE_STEP : event.key === "ArrowRight" ? RESIZE_STEP : 0;
+        const step = event.key === "ArrowLeft" ? -RESIZE_STEP : event.key === "ArrowRight" ? RESIZE_STEP : 0;
+        const delta = step * direction;
         if (event.key === "Home") onChange(min);
         else if (event.key === "End") onChange(max);
         else if (delta !== 0) onChange(clamp(value + delta));
@@ -91,7 +101,8 @@ function Splitter({
         drag.current = { startX: event.clientX, startWidth: value };
       }}
       onPointerMove={(event: PointerEvent) => {
-        if (drag.current) onChange(clamp(drag.current.startWidth + event.clientX - drag.current.startX));
+        if (drag.current)
+          onChange(clamp(drag.current.startWidth + (event.clientX - drag.current.startX) * direction));
       }}
       onPointerUp={() => {
         drag.current = null;
@@ -185,6 +196,7 @@ export function SplitView({
       {!narrow && (
         <Splitter
           controls={listId}
+          pane="left"
           label={intl.formatMessage(messages.resize, { pane: listLabel })}
           value={listWidth}
           min={listPane.min}
@@ -314,6 +326,7 @@ export function DetailSidePanel({
       {!narrow && (
         <Splitter
           controls={panelId}
+          pane="right"
           label={intl.formatMessage(messages.resize, { pane: label })}
           value={width}
           min={min}

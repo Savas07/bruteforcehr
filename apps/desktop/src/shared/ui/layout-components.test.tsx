@@ -118,6 +118,15 @@ describe("SplitView", () => {
     expect(splitter()?.getAttribute("aria-valuemax")).toBe("440");
   });
 
+  it("narrows the left list with ← and widens it with →", () => {
+    render(splitView());
+    act(() => {
+      splitter()?.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowLeft", bubbles: true }));
+    });
+    expect(section()?.style.width).toBe("392px");
+    expect(splitter()?.getAttribute("aria-valuenow")).toBe("392");
+  });
+
   it("takes a section's own bounds (Today 420–720) and clamps the start into them", () => {
     render(splitView({ min: 420, default: 480, max: 720 }));
     expect(section()?.style.width).toBe("480px");
@@ -151,6 +160,41 @@ describe("DetailSidePanel", () => {
     setWindowWidth(1920);
     render(panel());
     expect(panelWidth()).toBe("480px");
+  });
+
+  it("widens with ← and narrows with → (the divider moves toward the panel); aria-valuenow is its width", () => {
+    setWindowWidth(1280);
+    render(panel());
+    const separator = container.querySelector<HTMLElement>('[role="separator"]');
+    const press = (key: string) =>
+      act(() => {
+        separator?.dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true }));
+      });
+    press("ArrowLeft");
+    expect(panelWidth()).toBe("408px");
+    expect(separator?.getAttribute("aria-valuenow")).toBe("408");
+    press("ArrowRight");
+    press("ArrowRight");
+    expect(panelWidth()).toBe("400px");
+    expect(separator?.getAttribute("aria-valuenow")).toBe("400");
+    press("End");
+    expect(panelWidth()).toBe("640px");
+  });
+
+  it("follows the pointer: dragging the divider left widens the panel", () => {
+    setWindowWidth(1280);
+    render(panel());
+    const separator = container.querySelector<HTMLElement>('[role="separator"]');
+    if (!separator) throw new Error("no separator");
+    separator.setPointerCapture = () => undefined;
+    const pointer = (type: string, clientX: number) =>
+      act(() => {
+        separator.dispatchEvent(new PointerEvent(type, { clientX, pointerId: 1, bubbles: true }));
+      });
+    pointer("pointerdown", 800);
+    pointer("pointermove", 740);
+    pointer("pointerup", 740);
+    expect(panelWidth()).toBe("460px");
   });
 
   it("takes caller bounds and clamps the start into them", () => {

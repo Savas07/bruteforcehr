@@ -102,10 +102,11 @@ function RowMeta({ item }: { item: AttentionItemVM }) {
   }
 }
 
-function AutoBadge() {
+function AutoBadge({ id }: { id: string }) {
   const label = useIntl().formatMessage(messages.automatic);
   return (
     <span
+      id={id}
       role="img"
       aria-label={label}
       title={label}
@@ -120,6 +121,12 @@ function Row({ item, props, hero }: { item: AttentionItemVM; props: AttentionLis
   const intl = useIntl();
   const rowId = useId();
   const regionId = useId();
+  const titleId = useId();
+  const companyId = useId();
+  const contextId = useId();
+  const metaId = useId();
+  const autoId = useId();
+  const zoneId = useId();
   const { nav, selectedId, expandedId, inline, renderDetail, onRowClick, menuFor, metaFor } = props;
   const selected = item.id === selectedId;
   const expanded = inline && item.id === expandedId;
@@ -139,6 +146,16 @@ function Row({ item, props, hero }: { item: AttentionItemVM; props: AttentionLis
             type="button"
             id={rowId}
             {...nav.itemProps(item.id)}
+            // Name: title first, then company; the rest (context, auto glyph, time / status) as description.
+            aria-labelledby={`${titleId} ${companyId}`}
+            aria-describedby={[
+              item.context ? contextId : null,
+              item.kind === "autoUpdate" ? autoId : null,
+              interview?.interviewerTime ? zoneId : null,
+              metaId,
+            ]
+              .filter(Boolean)
+              .join(" ")}
             aria-expanded={inline ? expanded : undefined}
             aria-controls={expanded ? regionId : undefined}
             onClick={() => onRowClick(item.id)}
@@ -151,14 +168,14 @@ function Row({ item, props, hero }: { item: AttentionItemVM; props: AttentionLis
             <Monogram
               company={item.company}
               size="md"
-              {...(item.kind === "autoUpdate" && { badge: <AutoBadge /> })}
+              {...(item.kind === "autoUpdate" && { badge: <AutoBadge id={autoId} /> })}
             />
             <span className="flex min-w-0 flex-1 flex-col gap-0.5">
               <span className="flex items-baseline justify-between gap-3">
-                <span className="text-footnote text-fg-secondary min-w-0 break-words">
+                <span id={companyId} className="text-footnote text-fg-secondary min-w-0 break-words">
                   {item.company.name}
                 </span>
-                <span className="flex shrink-0 items-center gap-1.5">
+                <span id={metaId} className="flex shrink-0 items-center gap-1.5">
                   {item.pendingSync && <SyncGlyph />}
                   {meta !== undefined && meta !== null ? (
                     <span className="text-caption1 text-fg-secondary whitespace-nowrap">{meta}</span>
@@ -168,6 +185,7 @@ function Row({ item, props, hero }: { item: AttentionItemVM; props: AttentionLis
                 </span>
               </span>
               <span
+                id={titleId}
                 className={cx(
                   "text-fg-primary font-medium text-pretty",
                   hero ? "text-headline" : "text-callout",
@@ -176,10 +194,14 @@ function Row({ item, props, hero }: { item: AttentionItemVM; props: AttentionLis
                 {item.title}
               </span>
               {item.context && (
-                <span className="text-footnote text-fg-secondary text-pretty">{item.context}</span>
+                <span id={contextId} className="text-footnote text-fg-secondary text-pretty">
+                  {item.context}
+                </span>
               )}
               {interview?.interviewerTime && (
-                <span className="text-footnote text-fg-secondary">{interview.interviewerTime}</span>
+                <span id={zoneId} className="text-footnote text-fg-secondary">
+                  {interview.interviewerTime}
+                </span>
               )}
             </span>
           </button>
@@ -189,7 +211,7 @@ function Row({ item, props, hero }: { item: AttentionItemVM; props: AttentionLis
         </ContextMenuContent>
       </ContextMenu.Root>
       {interview?.join?.joinable && (
-        <div className="px-3 pb-3 pl-14">
+        <div className="px-3 pb-3 pl-3 lg:pl-14">
           <NeedsConnection>
             {(reason) => (
               <Button
@@ -208,7 +230,7 @@ function Row({ item, props, hero }: { item: AttentionItemVM; props: AttentionLis
         </div>
       )}
       {expanded && (
-        <div id={regionId} role="region" aria-labelledby={rowId} className="px-3 pt-2 pb-4 pl-14">
+        <div id={regionId} role="region" aria-labelledby={titleId} className="px-3 pt-2 pb-4 pl-3 lg:pl-14">
           {renderDetail(item)}
         </div>
       )}

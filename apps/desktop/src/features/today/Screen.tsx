@@ -691,7 +691,10 @@ export default function TodayScreen({ model }: ScreenProps<TodayModel>) {
       company={dateFor.company.name}
       open
       onOpenChange={(open) => {
-        if (!open) setDateFor(null);
+        if (open) return;
+        // Opened from a menu or a key, so there's no trigger to return to: back to the row.
+        setDateFor(null);
+        focusAfter.current = dateFor.id;
       }}
       onSnooze={(date) => {
         actions.snooze(dateFor, { preset: "pickDate", date });

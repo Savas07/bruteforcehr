@@ -58,6 +58,8 @@ public struct ReviewProposal: Identifiable, Hashable, Sendable {
     public var sender: MailAddress
     public var subject: String
     public var snippet: String
+    /// The stored body, nil once purged by retention (then only the snippet shows).
+    public var bodyText: String?
     public var receivedAt: Date
     public var category: MailCategory
     public var confidence: Double
@@ -208,6 +210,7 @@ extension UserData {
             sender: message.from,
             subject: message.subject,
             snippet: message.snippet,
+            bodyText: message.bodyText,
             receivedAt: message.receivedAt,
             category: message.category,
             confidence: message.confidence,

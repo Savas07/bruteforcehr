@@ -54,6 +54,7 @@ public struct EmptyState: View {
                     Text(bfhrPlain: title)
                         .font(.bfhr(.title3, emphasized: true))
                         .foregroundStyle(BFHRColor.Fg.primary)
+                        .fixedSize(horizontal: false, vertical: true)
                 } icon: {
                     if let glyph {
                         Image(systemName: glyph)
@@ -66,6 +67,7 @@ public struct EmptyState: View {
                     Text(bfhrPlain: message)
                         .font(.bfhr(.body))
                         .foregroundStyle(BFHRColor.Fg.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             } actions: {
                 actions
@@ -75,10 +77,12 @@ public struct EmptyState: View {
                 Text(bfhrPlain: title)
                     .font(.bfhr(.headline))
                     .foregroundStyle(BFHRColor.Fg.primary)
+                    .fixedSize(horizontal: false, vertical: true)
                 if let message {
                     Text(bfhrPlain: message)
                         .font(.bfhr(.subheadline))
                         .foregroundStyle(BFHRColor.Fg.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
                 if let primary {
                     Button(action: primary.perform) { Text(primary.title) }

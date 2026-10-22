@@ -131,13 +131,14 @@ public struct PaneError: View {
 
     public var body: some View {
         // Centered in the pane when it fits; scrolls at large text sizes instead of truncating.
-        ViewThatFits(in: .vertical) {
-            content
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        // Always the same scroll view (not ViewThatFits), so texts keep their identity when the
+        // text size changes.
+        GeometryReader { proxy in
             ScrollView {
                 content
-                    .frame(maxWidth: .infinity)
+                    .frame(maxWidth: .infinity, minHeight: proxy.size.height)
             }
+            .scrollBounceBehavior(.basedOnSize)
         }
         .onAppear { focusesAction = true }
     }

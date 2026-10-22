@@ -22,6 +22,7 @@ enum CVEditorViewStrings {
         .bfhr("cvEditor.list.filterArchived", default: "Archived (\(count))", table: "CVEditor")
     }
     static let nothingArchived = LocalizedStringResource.bfhr("cvEditor.list.nothingArchived", default: "No archived CVs.", table: "CVEditor")
+    static let allArchived = LocalizedStringResource.bfhr("cvEditor.list.allArchived", default: "All your CVs are archived. Choose Archived in the filter to see them.", table: "CVEditor")
     static let archive = LocalizedStringResource.bfhr("cvEditor.action.archive", default: "Archive", table: "CVEditor")
     static let restore = LocalizedStringResource.bfhr("cvEditor.action.restore", default: "Restore", table: "CVEditor")
     static let archiveCV = LocalizedStringResource.bfhr("cvEditor.action.archiveCV", default: "Archive CV", table: "CVEditor")

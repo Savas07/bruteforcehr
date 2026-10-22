@@ -3060,6 +3060,29 @@
         }
       }
     },
+    "cvEditor.list.allArchived" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alle deine Lebensläufe sind archiviert. Wähle im Filter „Archiviert“, um sie zu sehen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "All your CVs are archived. Choose Archived in the filter to see them."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tüm CV'leriniz arşivlendi. Görmek için filtrede Arşivlenenler'i seçin."
+          }
+        }
+      }
+    },
     "cvEditor.list.archivedOn" : {
       "extractionState" : "manual",
       "localizations" : {

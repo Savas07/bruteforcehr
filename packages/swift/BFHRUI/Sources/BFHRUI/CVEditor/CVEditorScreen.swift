@@ -17,7 +17,7 @@ public struct CVEditorScreen: View {
 
     public var body: some View {
         PhaseContainer(model.phase, loadingLabel: L.loading) {
-            if model.isEmpty && model.filter == .all {
+            if isFirstUse {
                 EmptyState(
                     .firstUse,
                     glyph: "doc.text",
@@ -44,13 +44,17 @@ public struct CVEditorScreen: View {
         .environment(\.bfhrNow, model.now)
     }
 
+    /// No CVs at all, archived ones included.
+    private var isFirstUse: Bool { model.isEmpty && model.archivedCount == 0 }
+
     private var selection: Binding<String?> {
         Binding(get: { model.selectedCvId }, set: { model.select(cvId: $0) })
     }
 
     @ToolbarContentBuilder
     private var toolbar: some ToolbarContent {
-        if model.isLoaded {
+        // First use: the empty state's "Start from scratch" is the one way in, so no "+" twin.
+        if model.isLoaded && !isFirstUse {
             ToolbarItem(placement: .bfhrTrailing) {
                 Menu {
                     Button { model.startFromScratch() } label: { Label { Text(L.startFromScratch) } icon: { Image(systemName: "doc.badge.plus") } }
@@ -80,8 +84,11 @@ public struct CVEditorScreen: View {
         List {
             ConnectionBannerSection(model.connection)
             if model.groups.isEmpty {
-                // Archived filter with nothing archived left (after Restore).
-                Section { Text(L.nothingArchived).foregroundStyle(BFHRColor.Fg.secondary) }
+                // Every CV archived (All), or nothing archived left after Restore (Archived).
+                Section {
+                    Text(model.filter == .archived ? L.nothingArchived : L.allArchived)
+                        .foregroundStyle(BFHRColor.Fg.secondary)
+                }
             }
             ForEach(model.groups) { group in
                 Section {

@@ -9,10 +9,12 @@ import { compareVersions } from "./version";
  * raising it is an explicit, reviewed commit and never a side effect of releasing.
  */
 
-export const MinSupportedVersionsSchema = z.record(PlatformSchema, z.string()).refine(
-  (value) => PlatformSchema.options.every((platform) => platform in value),
-  "Every platform needs a minimum supported version",
-);
+export const MinSupportedVersionsSchema = z
+  .record(PlatformSchema, z.string())
+  .refine(
+    (value) => PlatformSchema.options.every((platform) => platform in value),
+    "Every platform needs a minimum supported version",
+  );
 export type MinSupportedVersions = Record<Platform, string>;
 
 export function buildAppConfig(input: {

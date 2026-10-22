@@ -4,6 +4,8 @@ on:
   push:
     branches: [main]
   pull_request:
+  # release.yml's `verify` job: a release ships only what passes the full CI.
+  workflow_call:
 
 permissions:
   contents: read

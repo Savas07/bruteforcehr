@@ -12,7 +12,12 @@ const fixture = (name: string) => readFileSync(new URL(`fixtures/${name}`, impor
 
 describe("versions", () => {
   it("parses stable and beta tags", () => {
-    expect(parseTag("v0.1.0")).toEqual({ version: "0.1.0", tag: "v0.1.0", channel: "stable", marketingVersion: "0.1.0" });
+    expect(parseTag("v0.1.0")).toEqual({
+      version: "0.1.0",
+      tag: "v0.1.0",
+      channel: "stable",
+      marketingVersion: "0.1.0",
+    });
     expect(parseTag("v0.2.0-beta.3")).toMatchObject({ channel: "beta", marketingVersion: "0.2.0" });
   });
 
@@ -47,8 +52,9 @@ describe("updater signatures (vector signed by `tauri signer sign`)", () => {
   });
 
   it("rejects a signature from another key", () => {
-    const appKey = JSON.parse(readFileSync(new URL("../../../apps/desktop/src-tauri/tauri.conf.json", import.meta.url), "utf8"))
-      .plugins.updater.pubkey as string;
+    const appKey = JSON.parse(
+      readFileSync(new URL("../../../apps/desktop/src-tauri/tauri.conf.json", import.meta.url), "utf8"),
+    ).plugins.updater.pubkey as string;
     expect(() => verifySignature(appKey, payload, signature)).toThrow(/^Signed with key /);
   });
 
@@ -104,6 +110,8 @@ describe("release notes", () => {
     "",
     "- Updated dependencies [1a2b3c4]",
     "  - @bfhr/core@0.2.0",
+    "- @bfhr/ui-tokens@0.2.0",
+    "  - @bfhr/core@0.2.0",
     "",
     "## 0.1.0",
     "",
@@ -124,9 +132,11 @@ describe("release notes", () => {
   });
 
   it("reads pending changeset summaries", () => {
-    expect(releaseNotes([changesetSummary('---\n"@bfhr/desktop": minor\n---\n\nFirst release.\n\nSecond line.\n')])).toBe(
-      "- First release.\n  \n  Second line.",
-    );
+    expect(
+      releaseNotes([
+        changesetSummary('---\n"@bfhr/desktop": minor\n---\n\nFirst release.\n\nSecond line.\n'),
+      ]),
+    ).toBe("- First release.\n  \n  Second line.");
   });
 });
 
@@ -135,29 +145,50 @@ describe("appConfig", () => {
 
   it("advertises the release and keeps feature flags", () => {
     expect(
-      buildAppConfig({ platform: "macos", version: "0.2.0", minSupportedVersion: "0.1.0", featureFlags: { mail: true }, now }),
+      buildAppConfig({
+        platform: "macos",
+        version: "0.2.0",
+        minSupportedVersion: "0.1.0",
+        featureFlags: { mail: true },
+        now,
+      }),
     ).toEqual({
       id: "macos",
       latestVersion: "0.2.0",
       minSupportedVersion: "0.1.0",
-      downloadUrl: "https://github.com/Savas07/bruteforcehr/releases/download/v0.2.0/BruteForceHR_0.2.0_universal.dmg",
+      downloadUrl:
+        "https://github.com/Savas07/bruteforcehr/releases/download/v0.2.0/BruteForceHR_0.2.0_universal.dmg",
       releaseNotesUrl: "https://github.com/Savas07/bruteforcehr/releases/tag/v0.2.0",
       featureFlags: { mail: true },
       updatedAt: now,
     });
     expect(
-      buildAppConfig({ platform: "ios", version: "0.2.0", minSupportedVersion: "0.1.0", featureFlags: undefined, now }),
+      buildAppConfig({
+        platform: "ios",
+        version: "0.2.0",
+        minSupportedVersion: "0.1.0",
+        featureFlags: undefined,
+        now,
+      }),
     ).toMatchObject({ downloadUrl: null, featureFlags: {} });
   });
 
   it("refuses a minimum above the release", () => {
     expect(() =>
-      buildAppConfig({ platform: "windows", version: "0.1.0", minSupportedVersion: "0.2.0", featureFlags: undefined, now }),
+      buildAppConfig({
+        platform: "windows",
+        version: "0.1.0",
+        minSupportedVersion: "0.2.0",
+        featureFlags: undefined,
+        now,
+      }),
     ).toThrow(/above the released version/);
   });
 
   it("has a committed minimum for every platform", () => {
-    const committed = JSON.parse(readFileSync(new URL("../min-supported-versions.json", import.meta.url), "utf8")) as unknown;
+    const committed = JSON.parse(
+      readFileSync(new URL("../min-supported-versions.json", import.meta.url), "utf8"),
+    ) as unknown;
     expect(MinSupportedVersionsSchema.parse(committed)).toBeTruthy();
     expect(() => MinSupportedVersionsSchema.parse({ ios: "0.1.0" })).toThrow();
   });
@@ -173,7 +204,11 @@ describe("TestFlight What to Test", () => {
       now: new Date("2026-10-23T10:00:00Z"),
     });
     const [header = "", payload = "", signature = ""] = token.split(".");
-    expect(JSON.parse(Buffer.from(header, "base64url").toString())).toEqual({ alg: "ES256", kid: "KEY123", typ: "JWT" });
+    expect(JSON.parse(Buffer.from(header, "base64url").toString())).toEqual({
+      alg: "ES256",
+      kid: "KEY123",
+      typ: "JWT",
+    });
     expect(JSON.parse(Buffer.from(payload, "base64url").toString())).toEqual({
       iss: "issuer-uuid",
       iat: 1792749600,
@@ -181,7 +216,12 @@ describe("TestFlight What to Test", () => {
       aud: "appstoreconnect-v1",
     });
     expect(
-      verify("sha256", Buffer.from(`${header}.${payload}`), { key: publicKey, dsaEncoding: "ieee-p1363" }, Buffer.from(signature, "base64url")),
+      verify(
+        "sha256",
+        Buffer.from(`${header}.${payload}`),
+        { key: publicKey, dsaEncoding: "ieee-p1363" },
+        Buffer.from(signature, "base64url"),
+      ),
     ).toBe(true);
   });
 
@@ -197,7 +237,8 @@ describe("TestFlight What to Test", () => {
       async request(method, path, body) {
         calls.push({ method, path, body });
         if (path.startsWith("/v1/apps")) return { data: [{ id: "app1" }] };
-        if (path.startsWith("/v1/builds?")) return { data: [{ id: "build1", attributes: { processingState: states.shift() } }] };
+        if (path.startsWith("/v1/builds?"))
+          return { data: [{ id: "build1", attributes: { processingState: states.shift() } }] };
         if (path.endsWith("/betaBuildLocalizations")) return { data: [] };
         return { data: { id: "loc1" } };
       },

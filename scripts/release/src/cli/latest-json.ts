@@ -28,7 +28,9 @@ if (!versionArg || !dir || !notes || !tauriConfig || !out) {
 }
 const { version } = parseVersion(versionArg);
 
-const config = JSON.parse(readFileSync(tauriConfig, "utf8")) as { plugins?: { updater?: { pubkey?: string } } };
+const config = JSON.parse(readFileSync(tauriConfig, "utf8")) as {
+  plugins?: { updater?: { pubkey?: string } };
+};
 const pubkey = config.plugins?.updater?.pubkey;
 if (!pubkey) throw new Error(`${tauriConfig} has no plugins.updater.pubkey`);
 console.log(`Updater public key ${keyIdHex(parsePublicKey(pubkey).keyId)}`);

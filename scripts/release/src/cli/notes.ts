@@ -19,11 +19,17 @@ const { values } = parseArgs({
     pending: { type: "boolean", default: false },
   },
 });
-if (values.version === undefined || values.out === undefined) throw new Error("--version and --out are required");
+if (values.version === undefined || values.out === undefined)
+  throw new Error("--version and --out are required");
 const { version } = parseVersion(values.version);
 
 // Every workspace package (pnpm-workspace.yaml) has its own CHANGELOG.md once versioned.
-const changelogs = ["apps/*/CHANGELOG.md", "packages/*/CHANGELOG.md", "firebase/tests/CHANGELOG.md", "scripts/release/CHANGELOG.md"];
+const changelogs = [
+  "apps/*/CHANGELOG.md",
+  "packages/*/CHANGELOG.md",
+  "firebase/tests/CHANGELOG.md",
+  "scripts/release/CHANGELOG.md",
+];
 const entries = values.pending
   ? globSync(".changeset/*.md", { cwd: values.root })
       .filter((file) => !file.endsWith("README.md"))

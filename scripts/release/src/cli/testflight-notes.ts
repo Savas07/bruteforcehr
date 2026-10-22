@@ -18,10 +18,14 @@ const { values } = parseArgs({
 });
 const { ASC_KEY_ID: keyId, ASC_ISSUER_ID: issuerId, ASC_KEY_PATH: keyPath } = process.env;
 if (!values.version || !values["build-number"] || !values.notes || !keyId || !issuerId || !keyPath) {
-  throw new Error("--version, --build-number, --notes and ASC_KEY_ID, ASC_ISSUER_ID, ASC_KEY_PATH are required");
+  throw new Error(
+    "--version, --build-number, --notes and ASC_KEY_ID, ASC_ISSUER_ID, ASC_KEY_PATH are required",
+  );
 }
 const privateKeyPem = readFileSync(keyPath, "utf8");
-const client = createAscClient(() => appStoreConnectToken({ keyId, issuerId, privateKeyPem, now: new Date() }));
+const client = createAscClient(() =>
+  appStoreConnectToken({ keyId, issuerId, privateKeyPem, now: new Date() }),
+);
 const buildId = await setWhatToTest(client, {
   bundleId: values["bundle-id"],
   marketingVersion: values.version,

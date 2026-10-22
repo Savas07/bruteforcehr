@@ -24,7 +24,10 @@ export function appStoreConnectToken(input: {
     exp: iat + 15 * 60,
     aud: "appstoreconnect-v1",
   })}`;
-  const signature = sign("sha256", Buffer.from(unsigned), { key: input.privateKeyPem, dsaEncoding: "ieee-p1363" });
+  const signature = sign("sha256", Buffer.from(unsigned), {
+    key: input.privateKeyPem,
+    dsaEncoding: "ieee-p1363",
+  });
   return `${unsigned}.${signature.toString("base64url")}`;
 }
 
@@ -81,7 +84,9 @@ export async function setWhatToTest(
     timeoutMs: number;
   },
 ): Promise<string> {
-  const apps = list((await client.request("GET", `/v1/apps?filter[bundleId]=${encodeURIComponent(input.bundleId)}`)).data);
+  const apps = list(
+    (await client.request("GET", `/v1/apps?filter[bundleId]=${encodeURIComponent(input.bundleId)}`)).data,
+  );
   const app = apps[0];
   if (!app) throw new Error(`No App Store Connect app with bundle id ${input.bundleId}`);
 
@@ -98,7 +103,9 @@ export async function setWhatToTest(
       break;
     }
     if (state === "FAILED" || state === "INVALID") {
-      throw new Error(`Build ${input.marketingVersion} (${input.buildNumber}) processing ended in ${String(state)}`);
+      throw new Error(
+        `Build ${input.marketingVersion} (${input.buildNumber}) processing ended in ${String(state)}`,
+      );
     }
     if (Date.now() > deadline) {
       throw new Error(`Build ${input.marketingVersion} (${input.buildNumber}) was not processed in time`);
@@ -107,7 +114,9 @@ export async function setWhatToTest(
   }
 
   const whatsNew = whatToTest(input.notes);
-  const localizations = list((await client.request("GET", `/v1/builds/${build.id}/betaBuildLocalizations`)).data);
+  const localizations = list(
+    (await client.request("GET", `/v1/builds/${build.id}/betaBuildLocalizations`)).data,
+  );
   const english = localizations.find((item) => item.attributes?.["locale"] === "en-US");
   if (english) {
     await client.request("PATCH", `/v1/betaBuildLocalizations/${english.id}`, {

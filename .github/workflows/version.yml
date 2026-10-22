@@ -1,0 +1,67 @@
+name: Version
+
+# Changesets (docs/adr/0004-release-updates-signing.md §1): while changesets are pending, keep the
+# "Version packages" PR up to date. When that PR is merged (no changesets left and the version
+# has no tag yet), tag vX.Y.Z, create the draft GitHub Release with the notes and start
+# release.yml. A tag pushed with GITHUB_TOKEN doesn't trigger workflows, hence the dispatch.
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: version
+  cancel-in-progress: false
+
+env:
+  COREPACK_ENABLE_DOWNLOAD_PROMPT: "0"
+
+jobs:
+  version:
+    name: Version PR or release tag
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # version commit, tag, draft release
+      pull-requests: write # "Version packages" PR
+      actions: write # dispatch release.yml
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+      - run: corepack enable pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - id: changesets
+        uses: changesets/action@v2
+        with:
+          version-script: pnpm changeset version
+          commit-message: "chore: version packages"
+          pr-title: "chore: version packages"
+
+      - name: Tag, draft release, start release.yml
+        if: steps.changesets.outputs.has-changesets == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version=$(node -p 'require("./apps/desktop/package.json").version')
+          tag="v$version"
+          if [ "$version" = 0.0.0 ]; then
+            echo "No release yet (version 0.0.0)."
+            exit 0
+          fi
+          if git ls-remote --exit-code --tags origin "refs/tags/$tag" >/dev/null; then
+            echo "$tag exists; nothing to release."
+            exit 0
+          fi
+          pnpm --filter @bfhr/release-scripts -s release-info --tag "$tag" --package ../../apps/desktop/package.json
+          pnpm --filter @bfhr/release-scripts -s notes --root ../.. --version "$version" --out "$RUNNER_TEMP/notes.md"
+          git tag "$tag" "$GITHUB_SHA"
+          git push origin "refs/tags/$tag"
+          flags=(--draft --verify-tag --title "BruteForceHR $version" --notes-file "$RUNNER_TEMP/notes.md")
+          case "$version" in *-*) flags+=(--prerelease) ;; esac
+          gh release create "$tag" "${flags[@]}"
+          gh workflow run release.yml --ref "$tag" -f dry_run=false
+          echo "::notice::Tagged $tag, drafted its release and started release.yml."

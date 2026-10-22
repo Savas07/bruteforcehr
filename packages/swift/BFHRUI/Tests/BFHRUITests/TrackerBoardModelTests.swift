@@ -200,7 +200,7 @@ struct TrackerBoardModelTests {
         #expect(model.moveTargets(for: "app-kervan").first { $0.isCurrent }?.status == .interviewing)
 
         let toast = try model.close("app-kervan", outcome: .rejected)
-        #expect(toast.resolvedMessage == "Kervan Teknoloji · moved to Not selected")
+        #expect(toast.resolvedMessage == "Kervan Teknoloji · marked as not selected. Your notes stay here.")
         #expect(model.data.application(id: "app-kervan")?.status == .rejected)
         toast.action?.perform()
         #expect(model.data.application(id: "app-kervan")?.status == .interviewing)
@@ -220,6 +220,18 @@ struct TrackerBoardModelTests {
         #expect(error?.code == .outcomeRequiresOffer)
         #expect(model.data == before)
         #expect(throws: TransitionError.self) { try model.move("app-quill", to: .applied) }
+    }
+
+    @Test("Invalid move toasts carry the D16 reason")
+    func moveErrorReason() throws {
+        let model = try makeModel()
+        do {
+            try model.move("app-quill", to: .accepted)
+            Issue.record("expected a TransitionError")
+        } catch {
+            #expect(String(localized: TrackerBoardStrings.moveError(error)) == "Accepted and Declined come after an offer.")
+        }
+        #expect(String(localized: TrackerBoardStrings.moveError(TrackerBoardError.notAnOutcome(.applied))) == "That move isn't available from this stage.")
     }
 
     @Test("Timeline Undo of an automatic change restores the status and corrects the email")

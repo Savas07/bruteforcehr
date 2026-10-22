@@ -105,11 +105,11 @@ public struct TrackerBoardScreen: View {
                                 NavigationLink {
                                     TrackerApplicationDetailScreen(model: model, applicationId: row.id)
                                 } label: {
+                                    // On the content, not the row: SwiftUI then adds its own drag
+                                    // interaction instead of the list's, which iPhone disables.
                                     PipelineRowView(row: row)
+                                        .draggable(beginDrag(row.id))
                                 }
-                                // `onDrag` is List's row drag (the collection view's drag
-                                // delegate), so the lift coexists with the long-press menu.
-                                .onDrag { NSItemProvider(object: beginDrag(row.id) as NSString) }
                                 .bfhrRowActions(actions(for: row))
                             }
                         }

@@ -79,7 +79,7 @@ flowchart TB
   M -->|row| RS
   M -->|bundle row| BR[Backfill review]
   M -->|empty state| CE
-  classDef tab fill:#E3EAFB,stroke:#2F54C8,color:#161A22
+  classDef tab fill:#DDF1EE,stroke:#216863,color:#161A22
 ```
 
 ### Per-tab contents

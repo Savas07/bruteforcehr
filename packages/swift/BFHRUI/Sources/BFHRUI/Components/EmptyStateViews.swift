@@ -1,8 +1,9 @@
 import BFHRDesignTokens
 import SwiftUI
 
-/// The four empty-state kinds (system.md "Empty states"). `firstUse` and `caughtUp` are a
-/// `ContentUnavailableView` with a monochrome ≤ 48 pt glyph; `noResults` is text only with
+/// The four empty-state kinds (system.md "Empty states"). `firstUse` and `caughtUp` follow the
+/// `ContentUnavailableView` layout (centered glyph, title, message, actions) with a monochrome
+/// ≤ 48 pt glyph; `noResults` is text only with
 /// "Clear filters"; `subArea` is one muted line (or use `GhostRow`). Copy says what arrives here
 /// and how to start, never praise.
 public struct EmptyState: View {
@@ -49,36 +50,45 @@ public struct EmptyState: View {
     public var body: some View {
         switch kind {
         case .firstUse, .caughtUp:
-            ContentUnavailableView {
-                Label {
+            // ContentUnavailableView's layout with our own colors: inside its label slot the system
+            // styles glyph and title as one element, which failed the contrast audit in dark mode.
+            VStack(spacing: BFHRSpace.s4) {
+                if let glyph {
+                    Image(systemName: glyph)
+                        .font(.system(size: BFHRIconSize.empty * 0.8))
+                        .foregroundStyle(BFHRColor.Fg.tertiary)
+                        .accessibilityHidden(true)
+                }
+                VStack(spacing: BFHRSpace.s2) {
                     Text(bfhrPlain: title)
                         .font(.bfhr(.title3, emphasized: true))
                         .foregroundStyle(BFHRColor.Fg.primary)
-                } icon: {
-                    if let glyph {
-                        Image(systemName: glyph)
-                            .font(.system(size: BFHRIconSize.empty * 0.8))
-                            .foregroundStyle(BFHRColor.Fg.tertiary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityAddTraits(.isHeader)
+                    if let message {
+                        Text(bfhrPlain: message)
+                            .font(.bfhr(.body))
+                            .foregroundStyle(BFHRColor.Fg.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                 }
-            } description: {
-                if let message {
-                    Text(bfhrPlain: message)
-                        .font(.bfhr(.body))
-                        .foregroundStyle(BFHRColor.Fg.secondary)
-                }
-            } actions: {
+                .multilineTextAlignment(.center)
                 actions
             }
+            .padding(BFHRSpace.s6)
+            .frame(maxWidth: 480)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         case .noResults:
             VStack(spacing: BFHRSpace.s2) {
                 Text(bfhrPlain: title)
                     .font(.bfhr(.headline))
                     .foregroundStyle(BFHRColor.Fg.primary)
+                    .fixedSize(horizontal: false, vertical: true)
                 if let message {
                     Text(bfhrPlain: message)
                         .font(.bfhr(.subheadline))
                         .foregroundStyle(BFHRColor.Fg.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
                 if let primary {
                     Button(action: primary.perform) { Text(primary.title) }

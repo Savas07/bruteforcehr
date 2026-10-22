@@ -95,9 +95,15 @@ extension JobDetailModel {
         public var requirements: [Factor]
         public var matchedSkills: [String]
         public var unmatchedSkills: [String]
+        /// Display names by skill key ("vue" → "Vue.js"): the gap's label or the posting's
+        /// spelling. Keys without one are missing; use `label(forSkill:)`.
+        public var skillLabels: [String: String]
         /// The LLM summary (top N matches only). Nil: "A written summary is created for your top
         /// matches."
         public var rationale: String?
+
+        /// "Vue.js" for "vue"; the key itself when neither the gaps nor the posting name it.
+        public func label(forSkill key: String) -> String { skillLabels[key] ?? key }
     }
 
     /// The match card's state.
@@ -185,5 +191,11 @@ extension JobDetailModel {
         case board(name: String, url: URL)
         /// An application exists at Applied or beyond: "Applied {date} · View in Tracker".
         case applied(date: Date, applicationId: String)
+    }
+
+    /// 👍 / 👎 on the AI summary (`AISummaryBlock`).
+    public enum SummaryFeedback: Hashable, Sendable {
+        case helpful
+        case notHelpful
     }
 }

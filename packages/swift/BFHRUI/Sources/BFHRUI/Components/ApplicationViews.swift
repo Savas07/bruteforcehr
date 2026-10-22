@@ -69,19 +69,60 @@ public struct ApplicationSummaryBlock: View {
     }
 
     private func row(_ title: LocalizedStringResource, @ViewBuilder value: () -> some View) -> some View {
-        ViewThatFits(in: .horizontal) {
-            HStack(alignment: .firstTextBaseline) {
-                Text(title).foregroundStyle(BFHRColor.Fg.secondary)
-                Spacer(minLength: BFHRSpace.s4)
-                value().foregroundStyle(BFHRColor.Fg.primary)
-            }
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title).foregroundStyle(BFHRColor.Fg.secondary)
-                value().foregroundStyle(BFHRColor.Fg.primary)
-            }
+        LabeledValueLayout(spacing: BFHRSpace.s4) {
+            Text(title).foregroundStyle(BFHRColor.Fg.secondary)
+            value().foregroundStyle(BFHRColor.Fg.primary)
         }
         .font(.bfhr(.subheadline))
         .accessibilityElement(children: .combine)
+    }
+}
+
+/// [title, value]: title leading and value trailing on one line when both fit at their ideal
+/// widths, else the value under the title (wrapping). A layout rather than `ViewThatFits`, so the
+/// texts keep their identity when the text size changes (the accessibility audit flags
+/// switching branches as unsupported Dynamic Type).
+struct LabeledValueLayout: Layout {
+    var spacing: CGFloat
+    var lineSpacing: CGFloat = 2
+
+    static func fitsOnOneLine(titleWidth: CGFloat, valueWidth: CGFloat, available: CGFloat, spacing: CGFloat) -> Bool {
+        !available.isFinite || titleWidth + spacing + valueWidth <= available
+    }
+
+    private func oneLine(_ subviews: Subviews, width: CGFloat) -> Bool {
+        Self.fitsOnOneLine(
+            titleWidth: subviews[0].sizeThatFits(.unspecified).width,
+            valueWidth: subviews[1].sizeThatFits(.unspecified).width,
+            available: width,
+            spacing: spacing
+        )
+    }
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        guard subviews.count == 2 else { return .zero }
+        let ideal = subviews.map { $0.sizeThatFits(.unspecified) }
+        let width = proposal.width ?? (ideal[0].width + spacing + ideal[1].width)
+        if oneLine(subviews, width: width) {
+            return CGSize(width: width, height: max(ideal[0].height, ideal[1].height))
+        }
+        let full = ProposedViewSize(width: width, height: nil)
+        return CGSize(width: width, height: subviews.map { $0.sizeThatFits(full).height }.reduce(lineSpacing, +))
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        guard subviews.count == 2 else { return }
+        let title = subviews[0], value = subviews[1]
+        if oneLine(subviews, width: bounds.width) {
+            let valueSize = value.sizeThatFits(.unspecified)
+            title.place(at: CGPoint(x: bounds.minX, y: bounds.minY), proposal: .unspecified)
+            value.place(at: CGPoint(x: bounds.maxX - valueSize.width, y: bounds.minY), proposal: .unspecified)
+        } else {
+            let full = ProposedViewSize(width: bounds.width, height: nil)
+            let titleHeight = title.sizeThatFits(full).height
+            title.place(at: CGPoint(x: bounds.minX, y: bounds.minY), proposal: full)
+            value.place(at: CGPoint(x: bounds.minX, y: bounds.minY + titleHeight + lineSpacing), proposal: full)
+        }
     }
 }
 

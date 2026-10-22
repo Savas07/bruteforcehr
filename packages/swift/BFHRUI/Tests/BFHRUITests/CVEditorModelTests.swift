@@ -124,7 +124,7 @@ struct CVEditorModelTests {
 
         let talk = try #require(try section("custom:talks").items.first)
         #expect(talk.title == "Design systems that survive seven teams" && talk.subtitle == "Frontend Istanbul meetup")
-        #expect(talk.startDate == "2025-04")
+        #expect(talk.date == "2025-04" && talk.startDate == nil && !talk.isCurrent)
     }
 
     @Test("cv-de shows the variant banner data with the base's changes since the translation")

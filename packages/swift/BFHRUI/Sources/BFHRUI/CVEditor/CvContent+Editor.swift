@@ -125,7 +125,10 @@ extension CvContent {
         case .custom(let id, _):
             let section = meta.customSections.first { $0.id == id }
             return (section?.items ?? []).enumerated().map { i, c in
-                item(i, title: c.title, subtitle: c.subtitle, start: c.startDate, end: c.endDate, highlights: c.highlights, fallback: c.summary)
+                // A start date alone is a one-off (a talk on a day), not something ongoing.
+                c.endDate.nonBlank == nil
+                    ? item(i, title: c.title, subtitle: c.subtitle, date: c.startDate, highlights: c.highlights, fallback: c.summary)
+                    : item(i, title: c.title, subtitle: c.subtitle, start: c.startDate, end: c.endDate, highlights: c.highlights, fallback: c.summary)
             }
         }
     }

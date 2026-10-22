@@ -88,6 +88,12 @@ All release credentials are **CI-only** GitHub Actions secrets on `Savas07/brute
 - macOS CI needs paid-minute macOS runners (private repo): two macOS jobs per release (`desktop-mac`, `ios`).
 - A Ruby/fastlane toolchain is no longer needed for iOS. `xcodebuild` handles API-key auth, cloud signing and upload natively.
 
+## Amendment — 2026-10-22: Linux-only automatic CI
+
+GitHub Actions stopped starting jobs on the private repo (free minutes / spending limit). The owner chose to **keep the repo private and run automatic CI on Linux only** (`ci.yml`: lint, typecheck, tests, BFHRCore `swift test` in the Swift container, security-rules emulator tests, gitleaks, audit). `desktop.yml` (macOS + Windows build, E2E, real-app captures) is **manual-only** (`workflow_dispatch`).
+
+Consequences for M1, to be decided at M1 kickoff: the `desktop-mac`, `desktop-win` and `ios` release jobs above need macOS/Windows runner minutes. Options: (a) owner funds minutes for release runs only; (b) build, sign and notarize the macOS app and the iOS archive locally on the owner's Mac with a scripted, reproducible release command, and build Windows only via a manually triggered run; (c) make the repo public (free runners). Until then the release flow above is the target design, not an automatic one.
+
 ## Alternatives considered
 
 | Alternative | Why rejected |

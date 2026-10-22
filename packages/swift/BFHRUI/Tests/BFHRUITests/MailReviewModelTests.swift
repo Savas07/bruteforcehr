@@ -214,6 +214,50 @@ struct MailReviewModelTests {
         #expect(model.data.mailMessage(id: "mail-nordlicht-invite")?.reviewState == .pending)
     }
 
+    @Test("The sheet shows the draft: corrections update the proposal and confirmDraft writes them")
+    func draftProposal() throws {
+        let model = try model()
+        #expect(model.draftProposal == nil)
+        #expect(throws: MailReviewError.noOpenReview) { try model.confirmDraft() }
+
+        model.beginReview("mail-nordlicht-invite")
+        #expect(!model.isDraftEdited)
+        #expect(model.draftProposal == model.reviewing)
+
+        model.draft?.status = .interviewing
+        model.draft?.category = .assessment
+        #expect(model.isDraftEdited)
+        let edited = try #require(model.draftProposal)
+        #expect(edited.proposedStatus == .interviewing)
+        #expect(edited.category == .assessment)
+        #expect(!edited.isHedged)
+        #expect(edited.canConfirm)
+
+        let toast = try model.confirmDraft()
+        #expect(toast.resolvedMessage == "Confirmed: Nordlicht Mobility moved to Interviewing")
+        #expect(model.data.mailMessage(id: "mail-nordlicht-invite")?.reviewState == .corrected)
+        #expect(model.draft == nil)
+    }
+
+    @Test("Without an application the sheet can't confirm; linking one makes it confirmable")
+    func linkApplication() throws {
+        let model = try model()
+        model.beginReview("mail-sail-outreach")
+        model.draft?.applicationId = nil
+        let unlinked = try #require(model.draftProposal)
+        #expect(unlinked.applicationId == nil && unlinked.currentStatus == nil)
+        #expect(!unlinked.canConfirm && !model.canConfirm)
+
+        let option = try #require(model.applicationOptions.first)
+        model.draft?.applicationId = option.id
+        model.draft?.status = nil
+        let linked = try #require(model.draftProposal)
+        #expect(linked.applicationId == option.id)
+        #expect(linked.company == option.company)
+        #expect(linked.currentStatus == option.status)
+        #expect(linked.canConfirm && model.canConfirm)
+    }
+
     @Test("Confirm without a status move files the email; an incomplete draft throws")
     func confirmWithoutMove() throws {
         let model = try model()

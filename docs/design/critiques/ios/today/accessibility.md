@@ -18,6 +18,7 @@ Run: `apps/ios` scheme `BruteForceHR`, `-only-testing:BruteForceHRUITests/TodayA
 2. Elements not fully inside the content area (below the navigation bar, above the floating tab bar, minus a 24 pt scroll-edge fade) — the audit reads contrast and clipping from a screenshot, and iOS 26 blurs content under the bars.
 3. Contrast, Dynamic Type and clipping on **scrolled** pages — after a scroll, SwiftUI `List` cells keep stale accessibility frames that point at other content. Verified with the screenshot the test saves before each audit (`today-audit-*.png`): e.g. "Reply requested · Tannenbaum Software" reported at y = 368 pt when that row had scrolled off screen. These checks run on the first viewport of every state and size; contrast is also covered by the token table below and clipping / scaling by the AX5 captures of every page (`today-populated-scroll{1…8}-light-ax.png`).
 4. Issues with no element — the audit can't say what they refer to (logged: mostly "Text clipped" / "Dynamic Type unsupported" during scrolled pages).
+5. "Dynamic Type partially unsupported" on the Prep row, matched by its label only — a known false positive (Robust #3).
 
 ### Summary
 **Issues found:** 11 | **Critical:** 1 | **Major:** 6 | **Minor:** 4 — all fixed except two logged Minors (see Priority Fixes) and one audit finding judged a false positive (Robust #3).

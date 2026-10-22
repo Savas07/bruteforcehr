@@ -1,7 +1,9 @@
 rules_version = '2';
 
-// Deny by default. Users read and delete only their own files and upload only CV documents of the
-// allowed types and sizes. Cloud Functions use the Admin SDK, which bypasses these rules.
+// Deny by default. Users read only their own files and upload only CV documents of the allowed
+// types and sizes. Uploads are immutable (no overwrite, no client delete): renderedFiles and CV
+// imports reference exact bytes (docs/adr/0002-data-model.md); deletion is server-side (account
+// delete, purge). Cloud Functions use the Admin SDK, which bypasses these rules.
 service firebase.storage {
   match /b/{bucket}/o {
 
@@ -23,13 +25,13 @@ service firebase.storage {
     }
 
     match /users/{uid}/{allPaths=**} {
-      allow read, delete: if isOwner(uid);
+      allow read: if isOwner(uid);
     }
 
     // CV import sources: PDF, DOCX, JSON Resume, LinkedIn data-export ZIP (Windows browsers report
     // ZIP files as application/x-zip-compressed).
     match /users/{uid}/cv-imports/{fileId} {
-      allow create, update: if isOwner(uid)
+      allow create: if isOwner(uid)
         && isUpload(20 * 1024 * 1024, pdfOrDocx().concat([
           'application/json',
           'application/zip',
@@ -39,7 +41,7 @@ service firebase.storage {
 
     // CVs and cover letters rendered on the desktop (printToPDF / DOCX export).
     match /users/{uid}/rendered/{fileId} {
-      allow create, update: if isOwner(uid) && isUpload(10 * 1024 * 1024, pdfOrDocx());
+      allow create: if isOwner(uid) && isUpload(10 * 1024 * 1024, pdfOrDocx());
     }
   }
 }

@@ -30,10 +30,11 @@ async function seed(path: string): Promise<void> {
 describe("users/{uid}/**: owner only", () => {
   const file = "users/alice/cv-imports/cv.pdf";
 
-  it("lets the owner upload, read and delete", async () => {
+  it("lets the owner upload and read, but not overwrite or delete", async () => {
     await assertSucceeds(client("alice").ref(file).put(bytes(1024), { contentType: PDF }).then());
     await assertSucceeds(client("alice").ref(file).getMetadata());
-    await assertSucceeds(client("alice").ref(file).delete());
+    await assertFails(client("alice").ref(file).put(bytes(2048), { contentType: PDF }).then());
+    await assertFails(client("alice").ref(file).delete());
   });
 
   it("keeps user A out of user B's files", async () => {
@@ -79,10 +80,11 @@ describe("users/{uid}/cv-imports: CV sources up to 20 MiB", () => {
   );
 
   it("enforces the size limit", async () => {
-    const ref = client("alice").ref("users/alice/cv-imports/f1");
-    await assertSucceeds(ref.put(bytes(20 * MiB), { contentType: PDF }).then());
-    await assertFails(ref.put(bytes(20 * MiB + 1), { contentType: PDF }).then());
-    await assertFails(ref.put(bytes(0), { contentType: PDF }).then());
+    const put = (name: string, size: number) =>
+      client("alice").ref(`users/alice/cv-imports/${name}`).put(bytes(size), { contentType: PDF }).then();
+    await assertSucceeds(put("max", 20 * MiB));
+    await assertFails(put("too-big", 20 * MiB + 1));
+    await assertFails(put("empty", 0));
   });
 });
 
@@ -97,8 +99,17 @@ describe("users/{uid}/rendered: PDF or DOCX up to 10 MiB", () => {
   });
 
   it("rejects other types and oversized files", async () => {
-    const ref = client("alice").ref("users/alice/rendered/cv");
-    await assertFails(ref.put(bytes(1024), { contentType: "application/zip" }).then());
-    await assertFails(ref.put(bytes(10 * MiB + 1), { contentType: PDF }).then());
+    await assertFails(
+      client("alice")
+        .ref("users/alice/rendered/a")
+        .put(bytes(1024), { contentType: "application/zip" })
+        .then(),
+    );
+    await assertFails(
+      client("alice")
+        .ref("users/alice/rendered/b")
+        .put(bytes(10 * MiB + 1), { contentType: PDF })
+        .then(),
+    );
   });
 });

@@ -3,14 +3,17 @@ name: Release
 # One tag ships every platform (docs/adr/0004-release-updates-signing.md, docs/runbooks/release.md).
 # - Tag `vX.Y.Z` / `vX.Y.Z-beta.N`: version.yml dispatches this after the "Version packages" PR is
 #   merged; a tag pushed by the owner (betas) starts it directly.
-# - Dry run (`gh workflow run release.yml --ref <branch-or-tag> -f dry_run=true -f version=X.Y.Z`):
-#   builds and signs everything and assembles latest.json + SHA256SUMS.txt as a workflow artifact,
-#   but publishes and deploys nothing (`firebase deploy --dry-run`, appConfig read-only).
+# - Dry run: builds and signs everything and assembles latest.json + SHA256SUMS.txt as a workflow
+#   artifact, but publishes and deploys nothing (`firebase deploy --dry-run`, appConfig read-only).
+#   Start it with `gh workflow run release.yml --ref <ref> -f dry_run=true -f version=X.Y.Z`, or by
+#   pushing a branch `release-dry-run/X.Y.Z`. The branch form tests pipeline changes before they
+#   reach main (workflow_dispatch only sees workflows that exist on the default branch).
 # Optional credentials (Apple Developer ID, App Store Connect) are detected per job: a missing
 # secret logs "skipped: …" and the job takes its documented fallback.
 on:
   push:
     tags: ["v*"]
+    branches: ["release-dry-run/**"]
   workflow_dispatch:
     inputs:
       dry_run:
@@ -62,7 +65,7 @@ jobs:
       - name: Mode
         id: mode
         env:
-          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+          DRY_RUN: ${{ (github.event_name == 'workflow_dispatch' && inputs.dry_run) || (github.event_name == 'push' && github.ref_type == 'branch') }}
         run: |
           if [ "$DRY_RUN" = true ]; then
             echo "dry_run=true" >> "$GITHUB_OUTPUT"
@@ -77,13 +80,14 @@ jobs:
       - name: Version
         id: info
         env:
-          DRY_RUN: ${{ steps.mode.outputs.dry_run }}
           INPUT_VERSION: ${{ inputs.version }}
         run: |
           if [ "$GITHUB_REF_TYPE" = tag ]; then
             args=(--tag "$GITHUB_REF_NAME" --package ../../apps/desktop/package.json)
           elif [ -n "$INPUT_VERSION" ]; then
             args=(--version "$INPUT_VERSION")
+          elif [[ "$GITHUB_REF_NAME" == release-dry-run/* ]]; then
+            args=(--version "${GITHUB_REF_NAME#release-dry-run/}")
           else
             echo "::error::A dry run from a branch needs the version input."
             exit 1

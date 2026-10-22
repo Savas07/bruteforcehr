@@ -239,9 +239,10 @@ export interface DetailPanelNav {
 }
 
 /**
- * Right-docked detail panel (Tracker Enter, Jobs pop-out source): 400–640 px (default 480),
- * resizable, Esc closes and returns focus, optional prev / next ("3 of 12 in Interviewing", K / J
- * while focus is in the panel). Below 980 px it covers the content area instead.
+ * Right-docked detail panel (Tracker Enter, Jobs pop-out source): resizable within `width`
+ * (default 400–640 px, starting at 400 below 1440 px windows and 480 from 1440, so a 1280 px
+ * Tracker keeps two board columns), Esc closes and returns focus, optional prev / next ("3 of 12
+ * in Interviewing", K / J while focus is in the panel). Below 980 px it covers the content area.
  */
 export function DetailSidePanel({
   open,
@@ -249,6 +250,7 @@ export function DetailSidePanel({
   onClose,
   nav,
   actions,
+  width: bounds,
   children,
 }: {
   open: boolean;
@@ -258,10 +260,17 @@ export function DetailSidePanel({
   nav?: DetailPanelNav;
   /** Extra header actions (pop-out, open full page). */
   actions?: ReactNode;
+  /** Panel bounds in px; the start is clamped into them. Default 400–640, start 400 (480 at ≥ 1440). */
+  width?: { readonly min: number; readonly default: number; readonly max: number };
   children: ReactNode;
 }) {
-  const { narrow } = useBreakpoints();
-  const [width, setWidth] = useState<number>(layout.sidePanel.default);
+  const { narrow, wide } = useBreakpoints();
+  // The breakpoint default applies until the user drags the splitter.
+  const [resized, setResized] = useState<number | null>(null);
+  const min = bounds?.min ?? layout.sidePanel.min;
+  const max = bounds?.max ?? layout.sidePanel.max;
+  const start = bounds?.default ?? (wide ? layout.sidePanel.default : layout.sidePanel.min);
+  const width = Math.min(max, Math.max(min, resized ?? start));
   const panelId = useId();
   const panelRef = useRef<HTMLElement>(null);
   useFocusOnMount(panelRef, open);
@@ -307,9 +316,9 @@ export function DetailSidePanel({
           controls={panelId}
           label={intl.formatMessage(messages.resize, { pane: label })}
           value={width}
-          min={layout.sidePanel.min}
-          max={layout.sidePanel.max}
-          onChange={(next) => setWidth(next)}
+          min={min}
+          max={max}
+          onChange={setResized}
         />
       )}
       <aside

@@ -92,11 +92,16 @@ final class TrackerBoardAccessibilityAuditTests: XCTestCase {
         move.tap()
         XCTAssertTrue(sheetTitle(app, "Move to…").waitForExistence(timeout: 5))
         try snapshot("move-sheet")
-        app.swipeUp()
+        // The first swipe expands the sheet to the large detent; the next scroll to Closed.
         // Accepted and Declined share one denial: the reason is the Closed section's footer, and
         // each disabled row carries it as its VoiceOver hint.
         let reason = app.staticTexts["Accepted and Declined come after an offer."]
-        XCTAssertTrue(reason.waitForExistence(timeout: 5))
+        var swipes = 0
+        while !(reason.exists && reason.isHittable), swipes < 4 {
+            app.swipeUp()
+            swipes += 1
+        }
+        XCTAssertTrue(reason.exists)
         let accepted = app.buttons.containing(NSPredicate(format: "label BEGINSWITH %@", "Accepted")).firstMatch
         XCTAssertTrue(accepted.exists)
         XCTAssertFalse(accepted.isEnabled)
@@ -214,6 +219,9 @@ final class TrackerBoardAccessibilityAuditTests: XCTestCase {
                    frame.minY < navBottom || frame.maxY > edgeTop || frame.intersects(toast) { return "under a bar, the edge band or the toast" }
                 if issue.auditType == .dynamicType, defaultSize { return "default size; AX run covers scaling" }
                 if issue.auditType == .textClipped, element == nil { return "viewport / strip peek" }
+                // A prediction ("may be clipped at larger Dynamic Type sizes") at the default size;
+                // the AX5 run of the same screen measures the real thing.
+                if issue.auditType == .textClipped, defaultSize, issue.detailedDescription.contains("larger Dynamic Type") { return "prediction; AX run measures it" }
                 if issue.auditType == .textClipped, let label = element?.label, self.sharedComponentLabels.contains(label) { return "shared component copy" }
                 if isSheet, element == nil, issue.compactDescription.contains("inaccessible text") { return "shared StatusMenu" }
                 return nil

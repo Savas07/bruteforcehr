@@ -134,6 +134,26 @@ describe("buildJobDetailModel — search and reasons", () => {
   });
 });
 
+describe("buildJobDetailModel — scopes", () => {
+  it("shows only saved jobs in Saved and only hidden ones in Hidden jobs", () => {
+    const saved = buildJobDetailModel(populatedDataset, ctx, { scope: "saved" });
+    expect(saved.scope).toBe("saved");
+    expect(saved.list.rows.length).toBeGreaterThan(0);
+    expect(saved.list.rows.every((row) => row.saved)).toBe(true);
+    const hidden = buildJobDetailModel(populatedDataset, ctx, { scope: "hidden" });
+    const ids = hidden.list.rows.map((row) => row.jobId);
+    for (const dismissed of ["job-spinach-angular", "job-hollowpine-unity", "job-bergmann-frontend"])
+      expect(ids).toContain(dismissed);
+    expect(hidden.detail?.hidden).toBe(true);
+    expect(buildJobDetailModel(populatedDataset, ctx, { scope: "bogus" }).scope).toBe("all");
+  });
+
+  it("words an empty scope by what arrives there", () => {
+    const model = buildJobDetailModel(emptyDataset, fixtureContext(emptyDataset), { scope: "saved" });
+    expect(model.list.empty?.kind).toBe("firstUse");
+  });
+});
+
 describe("buildJobDetailModel — selection", () => {
   it("selects the top row when no job is in the route", () => {
     const model = buildJobDetailModel(populatedDataset, ctx, {});
@@ -297,7 +317,7 @@ describe("buildJobDetailModel — detail", () => {
     expect(fernweh.gaps.some((gap) => gap.correctable)).toBe(true);
 
     const tidewater = ready(detailOf("job-tidewater-product").match);
-    expect(tidewater.outsidePreferences).toMatch(/^Outside your preferences: Remote for US residents only/u);
+    expect(tidewater.outsidePreferences).toMatch(/^Outside your preferences: Remote for US residents only.* and No visa sponsorship$/u);
     const remote = tidewater.requirements.find((item) => item.facet === "remote");
     expect(remote).toMatchObject({
       status: "outside_prefs",

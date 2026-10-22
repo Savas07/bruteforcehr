@@ -223,7 +223,7 @@ const messages = defineMessages({
   caughtUpTitle: { id: "job-detail.empty.caughtUpTitle", defaultMessage: "No jobs to show" },
   caughtUpBody: {
     id: "job-detail.empty.caughtUpBody",
-    defaultMessage: "Jobs you marked Not for me are in Hidden. New matches will show up here.",
+    defaultMessage: "Jobs you marked Not for me are in Hidden jobs. New matches will show up here.",
   },
 });
 
@@ -264,6 +264,34 @@ const DISMISS_REASON_MESSAGES: Readonly<Record<DismissReason, MessageDescriptor>
   already_applied: { id: "job-detail.dismissReason.alreadyApplied", defaultMessage: "Already applied" },
   other: { id: "job-detail.dismissReason.other", defaultMessage: "Something else" },
 });
+
+/** The list's scope (IA.md: Jobs › Saved · Hidden jobs, nested in the sidebar), from `?scope=`. */
+export const JOBS_SCOPES = ["all", "saved", "hidden"] as const;
+export type JobsScope = (typeof JOBS_SCOPES)[number];
+
+export const SCOPE_MESSAGES: Readonly<Record<JobsScope, MessageDescriptor>> = defineMessages({
+  all: { id: "job-detail.scope.all", defaultMessage: "All jobs" },
+  saved: { id: "job-detail.scope.saved", defaultMessage: "Saved" },
+  hidden: { id: "job-detail.scope.hidden", defaultMessage: "Hidden jobs" },
+});
+
+const CAUGHT_UP_MESSAGES: Readonly<Record<JobsScope, { title: MessageDescriptor; body: MessageDescriptor }>> = {
+  all: { title: messages.caughtUpTitle, body: messages.caughtUpBody },
+  saved: defineMessages({
+    title: { id: "job-detail.empty.savedTitle", defaultMessage: "No saved jobs" },
+    body: {
+      id: "job-detail.empty.savedBody",
+      defaultMessage: "Save a job with S or the bookmark and it stays here while you decide.",
+    },
+  }),
+  hidden: defineMessages({
+    title: { id: "job-detail.empty.hiddenTitle", defaultMessage: "No hidden jobs" },
+    body: {
+      id: "job-detail.empty.hiddenBody",
+      defaultMessage: "Jobs you mark Not for me move here, so you can bring one back any time.",
+    },
+  }),
+};
 
 /** "Best match" order: band first, so 1–2 point differences don't reorder results. */
 const BAND_RANK: Readonly<Record<MatchBand, number>> = { strong: 0, good: 1, partial: 2, stretch: 3 };
@@ -351,6 +379,8 @@ export interface JobListRowVM {
   readonly sourceNames: readonly string[];
   /** The job's match or application is waiting to sync (`SyncGlyph`). */
   readonly pendingSync: boolean;
+  /** The primary listing, for the row's Open original (`O`). */
+  readonly originalUrl: string;
 }
 
 /** One Q&A fact in the Details card (`FactsList`). */
@@ -584,6 +614,8 @@ export interface JobDetailModel {
     readonly query: string;
     readonly empty: JobsEmptyVM | null;
   };
+  /** The scope the list shows (sidebar children under Jobs: `SCOPE_MESSAGES`). */
+  readonly scope: JobsScope;
   /** Multi-select reasons for Not for me, in the core enum's order (numbered 1–9 on desktop). */
   readonly dismissReasons: readonly DismissReasonVM[];
   /** `jobId` when it names a job, else the first row, else null. */
@@ -696,6 +728,7 @@ function rowVM(
     sourceNames: job.sources.map(sourceName),
     pendingSync:
       ctx.pendingWrites.has(job.id) || (application !== undefined && ctx.pendingWrites.has(application.id)),
+    originalUrl: job.sources[0]?.url ?? job.applyUrl ?? "",
   };
 }
 
@@ -805,7 +838,17 @@ function matchSectionVM(
       .filter((part) => part !== null)
       .join(" "),
     defaultOpen: vm.band === "strong" || vm.band === "good",
-    outsidePreferences: outside.length > 0 ? outside.map((item) => item.text).join(" · ") : null,
+    outsidePreferences:
+      outside.length > 0
+        ? intl.formatMessage(messages.outsidePrefs, {
+            detail: intl.formatList(
+              factors
+                .filter((factor) => factor.facet && factor.status === "outside_prefs")
+                .map((factor) => factor.label),
+              { type: "conjunction" },
+            ),
+          })
+        : null,
     requirements,
     skills: { matched: match.skills.matched, unmatched: match.skills.unmatched },
     whyItMatches: match.reasons
@@ -1010,13 +1053,15 @@ export function buildJobDetailModel(
   const { intl } = ctx;
   const query = (params.q ?? "").trim();
   const needle = query.toLocaleLowerCase(ctx.locale);
+  const scope: JobsScope = JOBS_SCOPES.find((candidate) => candidate === params.scope) ?? "all";
   const feed = data.jobs
-    .filter((job) => !isHiddenCompany(job, data))
     .flatMap((job) => {
       const match = data.jobMatches.find((candidate) => candidate.id === job.id);
-      if (match?.state === "dismissed") return [];
+      const hidden = match?.state === "dismissed" || isHiddenCompany(job, data);
+      if ((scope === "hidden") !== hidden) return [];
       const application = data.applications.find((candidate) => candidate.jobId === job.id);
-      return [rowVM(job, match, application, ctx)];
+      const row = rowVM(job, match, application, ctx);
+      return scope === "saved" && !row.saved ? [] : [row];
     })
     .sort(compareRows);
   // Title, company or place contains the search text (case-insensitive in the UI locale).
@@ -1045,13 +1090,15 @@ export function buildJobDetailModel(
       body: intl.formatMessage(messages.noResultsBody),
       action: intl.formatMessage(messages.noResultsAction),
     };
-  else if (rows.length === 0)
+  else if (rows.length === 0) {
+    const caughtUp = CAUGHT_UP_MESSAGES[scope];
     empty = {
       kind: "caughtUp",
-      title: intl.formatMessage(messages.caughtUpTitle),
-      body: intl.formatMessage(messages.caughtUpBody),
+      title: intl.formatMessage(caughtUp.title),
+      body: intl.formatMessage(caughtUp.body),
       action: null,
     };
+  }
 
   const copyEntries = Object.entries(COPY_MESSAGES) as [keyof JobDetailCopyVM, MessageDescriptor][];
   const copy = Object.fromEntries(
@@ -1067,6 +1114,7 @@ export function buildJobDetailModel(
       query,
       empty,
     },
+    scope,
     dismissReasons: DismissReasonSchema.options.map((key) => ({
       key,
       label: intl.formatMessage(DISMISS_REASON_MESSAGES[key]),

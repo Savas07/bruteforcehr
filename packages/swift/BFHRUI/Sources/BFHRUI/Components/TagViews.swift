@@ -36,6 +36,9 @@ public struct SourceTag: View {
         self.source = source
     }
 
+    /// Hugs its label on one line when it fits. Next to other items, lay it out in `ChipFlow`
+    /// (not an `HStack`), so neighbors move to the next line instead of squeezing the tag; it only
+    /// wraps when it alone is wider than the row (AX sizes).
     public var body: some View {
         Label { Text(source.label) } icon: { Image(systemName: source.glyph) }
             .labelStyle(.titleAndIcon)
@@ -44,6 +47,7 @@ public struct SourceTag: View {
             .padding(.horizontal, BFHRSpace.s2)
             .padding(.vertical, 2)
             .background(BFHRColor.Surface.sunken, in: Capsule())
+            .fixedSize(horizontal: false, vertical: true)
     }
 }
 

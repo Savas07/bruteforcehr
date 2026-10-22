@@ -766,19 +766,19 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld E-Mails"
+            "value" : "Job-Alerts (%lld)"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld emails"
+            "value" : "Job alerts (%lld)"
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld e-posta"
+            "value" : "İş ilanı bildirimleri (%lld)"
           }
         }
       }
@@ -802,29 +802,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bu e-postalardaki yeni ilanlar İşler bölümüne eklenir."
-          }
-        }
-      }
-    },
-    "mail.jobAlerts.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Job-Alerts"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Job alerts"
-          }
-        },
-        "tr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "İş ilanı bildirimleri"
           }
         }
       }
@@ -1013,48 +990,25 @@
         }
       }
     },
-    "mail.reconnect.body" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bis du dich erneut anmeldest, können wir dieses Postfach nicht prüfen."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "We can't check this inbox until you sign in again."
-          }
-        },
-        "tr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Yeniden giriş yapana kadar bu gelen kutusunu kontrol edemiyoruz."
-          }
-        }
-      }
-    },
     "mail.reconnect.title" : {
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ neu verbinden"
+            "value" : "Bis du dich neu anmeldest, können wir %@ nicht prüfen."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Reconnect %@"
+            "value" : "We can't check %@ until you sign in again."
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ hesabını yeniden bağlayın"
+            "value" : "Yeniden giriş yapana kadar %@ hesabını kontrol edemiyoruz."
           }
         }
       }

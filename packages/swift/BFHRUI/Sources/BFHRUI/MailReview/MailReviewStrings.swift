@@ -55,11 +55,10 @@ enum MailViewStrings {
     }
 
     // Account health
-    static let reconnectBody = LocalizedStringResource.bfhr("mail.reconnect.body", default: "We can't check this inbox until you sign in again.", table: "MailReview")
     static let reconnectAction = LocalizedStringResource.bfhr("mail.reconnect.action", default: "Reconnect", table: "MailReview")
 
     static func reconnect(_ address: String) -> LocalizedStringResource {
-        .bfhr("mail.reconnect.title", default: "Reconnect \(address)", table: "MailReview")
+        .bfhr("mail.reconnect.title", default: "We can't check \(address) until you sign in again.", table: "MailReview", comment: "Account-health card title. %@ = address. The card's button is Reconnect.")
     }
 
     // Chips
@@ -99,11 +98,10 @@ enum MailViewStrings {
     static let allEmpty = LocalizedStringResource.bfhr("mail.all.empty", default: "No job mail yet. Replies about your applications will show up here.", table: "MailReview")
     static let categoryEmpty = LocalizedStringResource.bfhr("mail.all.categoryEmpty", default: "No emails in this category", table: "MailReview")
     static let showAllCategories = LocalizedStringResource.bfhr("mail.all.showAllCategories", default: "Show all categories", table: "MailReview")
-    static let jobAlertsTitle = LocalizedStringResource.bfhr("mail.jobAlerts.title", default: "Job alerts", table: "MailReview")
     static let jobAlertsDetail = LocalizedStringResource.bfhr("mail.jobAlerts.detail", default: "New postings from these emails go to Jobs.", table: "MailReview")
 
     static func jobAlerts(_ count: Int) -> LocalizedStringResource {
-        .bfhr("mail.jobAlerts", default: "\(count) emails", table: "MailReview", comment: "Job-alert bundle row count.")
+        .bfhr("mail.jobAlerts", default: "Job alerts (\(count))", table: "MailReview", comment: "Job-alert bundle row title. %lld = number of alert emails.")
     }
 
     static func reviewState(_ state: ReviewState) -> LocalizedStringResource? {

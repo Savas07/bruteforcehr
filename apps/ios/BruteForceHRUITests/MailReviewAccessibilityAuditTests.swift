@@ -32,11 +32,12 @@ final class MailReviewAccessibilityAuditTests: XCTestCase {
     @MainActor
     func testReviewSheet() throws {
         let app = launch(dataset: "populated", contentSize: nil)
+        app.swipeUp()
         let row = app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS[c] %@", "Lena Vogel")).firstMatch
         XCTAssertTrue(row.waitForExistence(timeout: 10))
         row.tap()
         XCTAssertTrue(app.buttons["Confirm"].waitForExistence(timeout: 10))
-        try app.performAccessibilityAudit()
+        try runAudit(app)
     }
 
     /// Not an audit: saves the screens behind interactions (the scrolled queue, the review sheet,
@@ -81,7 +82,16 @@ final class MailReviewAccessibilityAuditTests: XCTestCase {
     @MainActor
     private func audit(dataset: String, contentSize: String?) throws {
         let app = launch(dataset: dataset, contentSize: contentSize)
-        try app.performAccessibilityAudit()
+        try runAudit(app)
+    }
+
+    /// Every issue fails the test; each is logged with its element so the report can name it.
+    @MainActor
+    private func runAudit(_ app: XCUIApplication) throws {
+        try app.performAccessibilityAudit { issue in
+            print("AUDIT \(issue.auditType) | \(issue.compactDescription) | \(issue.element.map { "\($0.elementType.rawValue) '\($0.label)' \($0.frame)" } ?? "no element")")
+            return false
+        }
     }
 
     @MainActor

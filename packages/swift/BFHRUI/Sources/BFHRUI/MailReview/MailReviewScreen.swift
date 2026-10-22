@@ -84,6 +84,7 @@ public struct MailReviewScreen: View {
 
     @Environment(\.openURL) private var openURLAction
     @Environment(\.bfhrReload) private var reload
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private func openURL(_ link: MailLink) {
@@ -101,7 +102,6 @@ public struct MailReviewScreen: View {
                     InlineAlert(
                         .warning,
                         title: MailViewStrings.reconnect(account.address),
-                        message: MailViewStrings.reconnectBody,
                         actionTitle: MailViewStrings.reconnectAction,
                         action: { openURL(.mailAccount(account.id)) }
                     )
@@ -155,10 +155,15 @@ public struct MailReviewScreen: View {
         .accessibilityLabel(Text(MailViewStrings.chipFilters))
     }
 
-    /// "All accounts ▾ · Checked 6m ago"; offline: "Last checked 07:24" + when new email arrives.
+    /// "All accounts ▾ · Checked 6 min. ago"; offline: "Last checked 07:24" + when new email
+    /// arrives. At accessibility sizes the scope and the time stack instead of squeezing.
     private var syncLine: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            HStack(alignment: .firstTextBaseline, spacing: BFHRSpace.s1) {
+        let stacked = dynamicTypeSize.isAccessibilitySize
+        let layout = stacked
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: 0))
+            : AnyLayout(HStackLayout(alignment: .firstTextBaseline, spacing: BFHRSpace.s1))
+        return VStack(alignment: .leading, spacing: 2) {
+            layout {
                 if model.accounts.count > 1 {
                     Menu { accountPicker } label: {
                         HStack(spacing: 2) {
@@ -173,12 +178,15 @@ public struct MailReviewScreen: View {
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
+                    .fixedSize(horizontal: !stacked, vertical: false)
                     .accessibilityLabel(Text(MailViewStrings.scopeMenu))
                     .accessibilityValue(scopeText)
-                    Text(verbatim: "·")
-                        .font(.bfhr(.footnote))
-                        .foregroundStyle(BFHRColor.Fg.tertiary)
-                        .accessibilityHidden(true)
+                    if !stacked {
+                        Text(verbatim: "·")
+                            .font(.bfhr(.footnote))
+                            .foregroundStyle(BFHRColor.Fg.tertiary)
+                            .accessibilityHidden(true)
+                    }
                 }
                 if model.connection.isOffline, let checked = model.lastChecked {
                     StaleStamp(checked, kind: .lastChecked)

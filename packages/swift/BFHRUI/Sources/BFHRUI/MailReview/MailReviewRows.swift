@@ -181,7 +181,7 @@ struct JobAlertBundleRow: View {
             CompanyMonogram(CompanyIdentity(name: bundle.senders.first?.name ?? bundle.senders.first?.address ?? "?"), badge: MailCategory.jobAlert.glyph)
             VStack(alignment: .leading, spacing: BFHRSpace.s1) {
                 HStack(alignment: .firstTextBaseline, spacing: BFHRSpace.s2) {
-                    Text(MailViewStrings.jobAlertsTitle)
+                    Text(MailViewStrings.jobAlerts(bundle.count))
                         .font(.bfhr(.subheadline, emphasized: true))
                         .foregroundStyle(BFHRColor.Fg.primary)
                     Spacer(minLength: BFHRSpace.s1)
@@ -191,9 +191,6 @@ struct JobAlertBundleRow: View {
                     .font(.bfhr(.subheadline))
                     .foregroundStyle(BFHRColor.Fg.secondary)
                     .lineLimit(2)
-                Text(MailViewStrings.jobAlerts(bundle.count))
-                    .font(.bfhr(.footnote, emphasized: true))
-                    .foregroundStyle(BFHRColor.Fg.primary)
                 Text(MailViewStrings.jobAlertsDetail)
                     .font(.bfhr(.footnote))
                     .foregroundStyle(BFHRColor.Fg.secondary)

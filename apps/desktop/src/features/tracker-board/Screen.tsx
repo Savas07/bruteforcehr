@@ -18,7 +18,7 @@ import {
 } from "@dnd-kit/core";
 import { useNavigate } from "@tanstack/react-router";
 import { ArrowRight, Inbox } from "lucide-react";
-import { useId, useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { defineMessages, useIntl } from "react-intl";
 import { destinationMessages } from "../../lib/destinations";
 import { useConnectivity } from "../../shared/connectivity";
@@ -269,6 +269,11 @@ function ReadyBoard({ model }: { model: TrackerBoardModel }) {
       }),
     });
   const selected = board.selected;
+  // The panel's record (deep link, J / K in the panel) stays visible on the board beside it.
+  const selectedId = selected?.applicationId ?? null;
+  useEffect(() => {
+    if (selectedId) cardRefs.current.get(selectedId)?.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }, [selectedId]);
 
   const commitMove = (
     card: TrackerCardVM,

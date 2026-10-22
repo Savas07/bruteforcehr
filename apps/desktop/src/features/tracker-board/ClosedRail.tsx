@@ -60,14 +60,11 @@ function DropZone({
         <span className="text-fg-primary text-callout font-medium">{status.label}</span>
         <span className="text-fg-secondary ms-auto text-footnote tabular-nums">{countLabel}</span>
       </span>
-      {reason !== null
-        ? // The reason only under the pointer: two identical sentences in a row read as noise.
-          over && <span className="text-fg-secondary text-footnote">{reason}</span>
-        : over && (
-            <span className="text-accent-text text-footnote font-medium">
-              {intl.formatMessage(messages.transition, { from: card.status.label, to: status.label })}
-            </span>
-          )}
+      {reason === null && over && (
+        <span className="text-accent-text text-footnote font-medium">
+          {intl.formatMessage(messages.transition, { from: card.status.label, to: status.label })}
+        </span>
+      )}
     </div>
   );
 }
@@ -94,6 +91,10 @@ export function ClosedRail({
 }: ClosedRailProps) {
   const intl = useIntl();
   const label = rail?.label ?? fallbackLabel;
+  // A refused zone's reason sits above the zones: the dragged card covers the zone itself.
+  const hoveredReason = rail?.outcomes.some((outcome) => outcome.status.key === overId)
+    ? (dragging?.moves.find((move) => move.status.key === overId)?.disabledReason ?? null)
+    : null;
   const zones =
     dragging && rail && !expanded ? (
       // Overlays the board's right edge instead of widening the rail, so no column shifts under
@@ -105,6 +106,7 @@ export function ClosedRail({
         <h2 className="text-fg-primary px-1 pt-0.5 text-callout font-semibold">
           {intl.formatMessage(messages.zonesLabel)}
         </h2>
+        <p className="text-fg-secondary min-h-9 px-1 text-footnote">{hoveredReason}</p>
         {rail.outcomes.map((outcome) => (
           <DropZone
             key={outcome.status.key}

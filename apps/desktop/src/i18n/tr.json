@@ -1049,6 +1049,7 @@
   "today.snoozeDate.pickFirst": "Önce bir tarih seçin.",
   "today.snoozeDate.snooze": "Ertele",
   "today.snoozeDate.title": "Şu tarihe ertele…",
+  "today.snoozeDate.tooEarly": "Yarını veya daha sonraki bir günü seçin. Bugün için Bugün daha sonra seçeneğini kullanın.",
   "today.title": "Bugün",
   "today.toast.confirmed": "Onaylandı · {company}",
   "today.toast.confirmedMove": "Onaylandı · {company} · yeni durum: {status}",

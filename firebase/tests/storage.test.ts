@@ -61,11 +61,14 @@ describe("users/{uid}/**: owner only", () => {
 });
 
 describe("users/{uid}/cv-imports: CV sources up to 20 MiB", () => {
+  // One object per case: uploads may never overwrite, so cases must not share a path.
+  const importPath = (contentType: string) => `users/alice/cv-imports/${contentType.replaceAll("/", "_")}`;
+
   it.each([PDF, DOCX, "application/json", "application/zip", "application/x-zip-compressed"])(
     "accepts %s",
     async (contentType) => {
       await assertSucceeds(
-        client("alice").ref("users/alice/cv-imports/f1").put(bytes(1024), { contentType }).then(),
+        client("alice").ref(importPath(contentType)).put(bytes(1024), { contentType }).then(),
       );
     },
   );
@@ -74,7 +77,7 @@ describe("users/{uid}/cv-imports: CV sources up to 20 MiB", () => {
     "rejects %s",
     async (contentType) => {
       await assertFails(
-        client("alice").ref("users/alice/cv-imports/f1").put(bytes(1024), { contentType }).then(),
+        client("alice").ref(importPath(contentType)).put(bytes(1024), { contentType }).then(),
       );
     },
   );

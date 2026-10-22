@@ -120,6 +120,7 @@ public struct NeedsConnectionNote: View {
 
     public var body: some View {
         Label { Text(Strings.needsConnection) } icon: { Image(systemName: "wifi.slash") }
+            .labelStyle(.bfhrCompact)
             .font(.bfhr(.footnote))
             .foregroundStyle(BFHRColor.Fg.secondary)
     }

@@ -3,7 +3,14 @@ import { describe, expect, it } from "vitest";
 import { createAppIntl } from "../../i18n/intl";
 import { nudgeVMs } from "../../shared/model/build-blocks";
 import { fixtureContext } from "../../shared/model/fixture-context";
-import { buildTrackerBoardModel, type TrackerBoardModel, type TrackerCardVM } from "./model";
+import {
+  applyBoardMoves,
+  type BoardMove,
+  buildTrackerBoardModel,
+  checkBoardMove,
+  type TrackerBoardModel,
+  type TrackerCardVM,
+} from "./model";
 
 const ctx = fixtureContext(populatedDataset);
 const board = buildTrackerBoardModel(populatedDataset, ctx, {});
@@ -245,5 +252,109 @@ describe("buildTrackerBoardModel · Turkish", () => {
     const rail = buildTrackerBoardModel(populatedDataset, turkish, {}).closedRail;
     expect(rail.accessibleLabel).not.toMatch(/Closed|applications|Accepted/);
     expect(rail.accessibleLabel).toContain("Kabul edildi 1");
+  });
+});
+
+describe("applyBoardMoves", () => {
+  const intl = ctx.intl;
+  const selectedBoard = buildTrackerBoardModel(populatedDataset, ctx, { applicationId: "app-lumenpay" });
+  const move = (
+    applicationId: string,
+    from: BoardMove["from"],
+    to: BoardMove["to"],
+    revertsEventId: string | null = null,
+  ): BoardMove => ({
+    id: `local-${applicationId}-${to}`,
+    applicationId,
+    from,
+    to,
+    revertsEventId,
+  });
+
+  it("moves a card into its board-order slot and recounts both columns", () => {
+    const next = applyBoardMoves(board, [move("app-quill", "applied", "screening")], intl, {
+      pendingSync: false,
+    });
+    expect(next.columns[2]?.cards.map((entry) => entry.applicationId)).toEqual([
+      "app-tannenbaum",
+      "app-halden",
+      "app-kumsal",
+    ]);
+    expect(next.columns[2]?.accessibleLabel).toBe("Applied, 3 applications");
+    expect(next.columns[4]?.countLabel).toBe("3");
+    const quill = card(next, "app-quill");
+    expect(quill.status.key).toBe("screening");
+    expect(quill.age.label).toBe("New today");
+    expect(quill.staleness).toBeNull();
+    expect(quill.stepForward?.key).toBe("interviewing");
+    expect(quill.moves.find((target) => target.current)?.status.key).toBe("screening");
+    expect(quill.pendingSync).toBe(false);
+    // The untouched board is unchanged.
+    expect(card(board, "app-quill").status.key).toBe("applied");
+  });
+
+  it("recounts the Closed rail and marks offline moves as waiting to sync", () => {
+    const next = applyBoardMoves(board, [move("app-quill", "applied", "rejected")], intl, {
+      pendingSync: true,
+    });
+    expect(next.closedRail.countLabel).toBe("8");
+    expect(next.closedRail.outcomes[2]?.count).toBe(4);
+    expect(card(next, "app-quill").pendingSync).toBe(true);
+    expect(next.nudges.some((nudge) => nudge.applicationId === "app-quill")).toBe(false);
+  });
+
+  it("skips moves the state machine refuses and stale moves", () => {
+    expect(checkBoardMove("applied", "accepted", intl)).toEqual({
+      allowed: false,
+      reason: "Accepted and Declined come after an offer.",
+    });
+    expect(checkBoardMove("offer", "accepted", intl)).toEqual({ allowed: true });
+    expect(
+      applyBoardMoves(board, [move("app-quill", "applied", "accepted")], intl, { pendingSync: false }),
+    ).toBe(board);
+    expect(
+      applyBoardMoves(board, [move("app-quill", "offer", "accepted")], intl, { pendingSync: false }),
+    ).toBe(board);
+  });
+
+  it("collapses a column its last card leaves", () => {
+    const next = applyBoardMoves(board, [move("app-lumenpay", "offer", "accepted")], intl, {
+      pendingSync: false,
+    });
+    expect(next.columns[6]).toMatchObject({
+      count: 0,
+      collapsedByDefault: true,
+      emptyLine: "No applications",
+    });
+  });
+
+  it("adds the timeline row to the selected record and tags an undone automatic move", () => {
+    const next = applyBoardMoves(
+      selectedBoard,
+      [move("app-lumenpay", "offer", "acknowledged", "evt-lumenpay-offer")],
+      intl,
+      { pendingSync: false },
+    );
+    const selected = next.selected;
+    expect(selected?.status.key).toBe("acknowledged");
+    expect(selected?.timeline[0]).toMatchObject({
+      title: "Undid a move · back to Acknowledged",
+      source: { kind: "you", label: "You" },
+      move: { from: { key: "offer" }, to: { key: "acknowledged" } },
+    });
+    expect(selected?.timeline.find((event) => event.id === "evt-lumenpay-offer")?.reverted).toBe(true);
+    expect(selected?.summary.nextStep).toBe(selected?.nextStepByStatus.acknowledged);
+    expect(selected?.position.label).toBe("1 of 4 in Acknowledged");
+  });
+
+  it("supersedes earlier Undo offers after a plain move", () => {
+    const next = applyBoardMoves(selectedBoard, [move("app-lumenpay", "offer", "accepted")], intl, {
+      pendingSync: false,
+    });
+    expect(next.selected?.timeline[0]?.title).toBe("Moved to Accepted");
+    expect(next.selected?.timeline.find((event) => event.id === "evt-lumenpay-offer")?.undo).toEqual({
+      available: false,
+      reason: "Can't undo — the status changed since.",
+    });
   });
 });

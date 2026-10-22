@@ -16,6 +16,11 @@ on:
       - packages/**
       - pnpm-lock.yaml
   workflow_dispatch:
+    inputs:
+      design_capture:
+        description: "Only capture the design build in the real Windows app (final critique rounds)"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -39,6 +44,7 @@ defaults:
 jobs:
   desktop:
     name: Build, E2E + screenshots (${{ matrix.os }})
+    if: ${{ !inputs.design_capture }}
     strategy:
       fail-fast: false
       matrix:
@@ -71,9 +77,6 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: apps/desktop/src-tauri
-      - name: Install tauri-driver (WebDriver bridge to msedgedriver)
-        if: runner.os == 'Windows'
-        run: cargo install tauri-driver --version 2.1.0 --locked
 
       - name: Rust format, lint, unit tests
         run: |
@@ -95,6 +98,8 @@ jobs:
       # Test build (cargo feature `e2e`): replaces the release binary, after the bundles are built.
       - run: pnpm build:e2e
       - run: pnpm test:e2e
+      # windows-latest has a 1024×768 display that Set-DisplayResolution can't change (run
+      # 39797339032), so Windows captures are zoomed out to 75 % / 50 % (e2e/capture/capture.e2e.ts).
       - run: pnpm capture
         if: success() || failure()
       - uses: actions/upload-artifact@v7
@@ -103,4 +108,47 @@ jobs:
           name: desktop-screens-${{ matrix.os }}
           path: artifacts/screens/desktop/
           if-no-files-found: ignore
+          retention-days: 14
+
+  # On demand (`gh workflow run desktop.yml -f design_capture=true`): the design build (fixtures,
+  # forced states) in the real Windows app, for the final critique rounds. macOS runs it locally.
+  design-capture:
+    name: Design captures (windows-latest)
+    if: ${{ inputs.design_capture }}
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+      - run: corepack enable pnpm
+        working-directory: .
+      - name: pnpm store path
+        id: pnpm-store
+        run: echo "path=$(pnpm store path)" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v6
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: pnpm-${{ runner.os }}-
+      - run: pnpm install --frozen-lockfile
+        working-directory: .
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/desktop/src-tauri
+      - run: pnpm build:e2e:design
+      # 1024×768 display: 1280×800 is captured at 75 % zoom and 1920×1080 at 50 % (e2e/capture/helpers.ts).
+      - run: pnpm capture:app:design
+        env:
+          BFHR_SCREENS: today,job-detail,cv-editor,tracker-board,mail-review
+          BFHR_STATES: populated,empty
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: desktop-design-screens-windows
+          path: artifacts/screens/desktop/windows/design/
+          if-no-files-found: error
           retention-days: 14

@@ -388,7 +388,7 @@ Voice per `skill://ux-copy`: errors are empathetic and helpful, warnings clear a
 
 ## Open questions
 
-1. **CV version conflict UI.** The banner copy and actions are decided here, but the *Compare* view (side-by-side diff of two CV versions) has no Mobbin reference in this doc. It belongs in the CV editor research (`cv-editor.md`). Please confirm that owner picks it up.
+1. **CV version conflict UI (resolved 2026-10-22):** `cv-editor.md` defines the Compare view (`ConflictCompare`, under "Version conflict → Compare" in both Decision sections) and reuses this doc's `cv.conflict` banner copy, actions and `save.*` strings. Desktop adds a third footer action after per-field picks: "Save merged version" (DE "Zusammengeführte Version speichern"). See `cv-editor.md` for its references and TR copy.
 2. **Desktop Undo toast position:** bottom center of the content area (Proton, chosen) vs. bottom left (Todoist). Bottom left keeps it near the sidebar sync line but far from the list being acted on. Revisit in the desktop critique round.
 3. **Stale-cache threshold:** after how long should cached data show an explicit "Updated {time}" stamp even while online (proposal: when `fromCache` is true, or data is older than 15 min)?
 4. **Queued-change retention:** if the app stays offline for days, should queued Tracker moves warn ("3 changes from Monday are still waiting") or sync silently whenever the connection returns? The proposal is silent sync plus the existing sidebar count.

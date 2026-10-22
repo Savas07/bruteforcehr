@@ -145,7 +145,7 @@ Product requirements:
 - **Offline:** the list stays readable from the Firestore cache. Confirm/Change are queued with a small "Will sync when you're back online" line.
 - **Error:** an inline retry row, never a blocking alert.
 
-**Badge:** the Mail tab badge equals the To review count. This depends on Open question 1, because Today currently proposes the same badge.
+**Badge:** the Mail tab badge equals the To review count. It's the only badge for review items; Today shows the count as plain header text ("To review · 3"), as agreed in Open question 1.
 
 ## Decision — Desktop (macOS + Windows)
 
@@ -219,15 +219,15 @@ Tone: calm, hedged when unsure, factual when sure. Never write "unfortunately", 
 | Proposal (review) | Move Acme · Frontend Engineer to Interviewing? | Acme · Frontend Engineer mülakat aşamasına taşınsın mı? | Acme · Frontend Engineer zu „Vorstellungsgespräch" verschieben? | DE runs ~+40 %. The sentence must wrap, and the application name must never be truncated before the status. |
 | Hedged classification | Looks like an interview invite | Mülakat daveti gibi görünüyor | Sieht nach einer Einladung zum Gespräch aus | Only used when confidence is < 0.9. |
 | Reason: thread | Same email thread as your application of 3 Oct | 3 Eki tarihli başvurunla aynı e-posta dizisi | Gleicher E-Mail-Verlauf wie deine Bewerbung vom 3. Okt. | Dates come from `Intl.DateTimeFormat`. |
-| Reason: ATS | Sent from greenhouse.io and mentions this role | greenhouse.io'dan gönderilmiş ve bu pozisyondan bahsediyor | Von greenhouse.io gesendet, nennt diese Stelle | |
+| Reason: ATS | Sent from greenhouse.io and mentions this role | Gönderen: greenhouse.io · bu pozisyondan bahsediyor | Von greenhouse.io gesendet, nennt diese Stelle | TR uses a "Gönderen:" label instead of a suffix on the domain placeholder, matching `today-home.md`. |
 | Reason: rules only | Sorted by rules (AI is off) | Kurallarla sıralandı (yapay zekâ kapalı) | Nach Regeln sortiert (KI ist aus) | |
 | Confirm | Confirm | Onayla | Bestätigen | |
 | Change | Change… | Değiştir… | Ändern… | |
 | Not job mail | Not job mail | İşle ilgili değil | Keine Job-Mail | Footnote in the sheet: "We'll forget this email." / "Bu e-postayı saklamayacağız." / "Wir speichern diese E-Mail nicht." |
 | No application found | No application found | Eşleşen başvuru yok | Keine passende Bewerbung | |
 | Create application | Create application | Başvuru oluştur | Bewerbung anlegen | |
-| Auto-applied row | Moved to Interviewing: email from interviews@acme.com, 22 Oct · Undo | Mülakat aşamasına taşındı: interviews@acme.com'dan e-posta, 22 Eki · Geri al | Zu „Vorstellungsgespräch" verschoben: E-Mail von interviews@acme.com, 22. Okt. · Rückgängig | Matches the §2.6 example format exactly. |
-| Decision (rejection) | Acme decided not to move forward. We updated the application. | Acme süreci ilerletmemeye karar verdi. Başvuruyu güncelledik. | Acme hat sich gegen eine weitere Runde entschieden. Wir haben die Bewerbung aktualisiert. | Same string as the Today doc. Notifications for decisions can be muted. |
+| Auto-applied row | Moved to Interviewing: email from interviews@acme.com, 22 Oct · Undo | Mülakat aşamasına taşındı. Kaynak: interviews@acme.com e-postası, 22 Eki · Geri al | Zu „Vorstellungsgespräch" verschoben: E-Mail von interviews@acme.com, 22. Okt. · Rückgängig | Matches the §2.6 example format. TR uses the "Kaynak: … e-postası" pattern from `today-home.md`, so no suffix attaches to the address. |
+| Decision (rejection) | Acme has decided not to move forward. We've updated the application. | Acme süreci ilerletmemeye karar verdi. Başvuruyu güncelledik. | Acme hat sich gegen eine weitere Runde entschieden. Wir haben die Bewerbung aktualisiert. | Same string as the Today doc. Notifications for decisions can be muted. |
 | Undo toast | Confirmed: Acme moved to Interviewing · Undo | Onaylandı: Acme mülakat aşamasına taşındı · Geri al | Bestätigt: Acme ist jetzt bei „Vorstellungsgespräch" · Rückgängig | |
 | Queue empty | Nothing to review. When we're unsure how to sort an email, it shows up here. | İncelenecek bir şey yok. Bir e-postayı nasıl sıralayacağımızdan emin olmadığımızda burada görünür. | Nichts zu prüfen. Wenn wir bei einer E-Mail unsicher sind, erscheint sie hier. | |
 | No selection (desktop) | 4 emails to review. Select one to see what we found. | İncelenecek 4 e-posta var. Ne bulduğumuzu görmek için birini seç. | 4 E-Mails zu prüfen. Wähle eine aus, um zu sehen, was wir gefunden haben. | Uses ICU plural rules. TR has no plural noun change. |
@@ -239,7 +239,7 @@ Layout rules from length expansion: buttons have no fixed widths. The iOS review
 
 ## Open questions
 
-1. **One badge, one place.** Today (see `today-home.md`) and the Mail tab both propose a badge with the To review count. Showing the same number twice is noise. *Recommendation:* the badge goes on the Mail tab only, because that's where the queue lives. Today shows the count as plain section text.
+1. **One badge, one place. Resolved with `today-home.md`:** the To review count badge sits on the Mail tab only. Today shows the count as plain header text.
 2. **Corrections as sender rules.** Should a correction offer "Apply to future mail from this sender" (Revolut / Commons pattern)? It would cut down on repeated reviews of the same recruiter newsletter, but it adds a rules-management screen to Settings. *Recommendation:* not in v1. Corrections are stored only as labeled examples (§4.7.6). Revisit after the fixture set exists.
 3. **Undo window for auto-applied changes.** Is Undo available forever (it writes a reverse event) or only for N days? *Recommendation:* forever from the application's timeline. The Updates chip lists the last 14 days.
 4. **"Open in Gmail/Outlook" deep links** need the provider message ID on the client. Is the ID acceptable in `mailMessages` (it isn't a secret), or should the link be resolved by a function?

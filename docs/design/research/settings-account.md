@@ -346,7 +346,7 @@ Tone: plain and reassuring. Destructive copy says exactly what happens, with no 
 | Account status ok | Checked 4 min ago | 4 dk önce kontrol edildi | Vor 4 Min. geprüft | Same string as Mail. |
 | Needs reconnecting | Needs reconnecting | Yeniden bağlanması gerekiyor | Muss neu verbunden werden | |
 | Disconnect title | Disconnect savas@gmail.com? | savas@gmail.com bağlantısı kesilsin mi? | savas@gmail.com trennen? | |
-| Disconnect body | We'll stop checking this inbox, remove our access at Google, and delete the 23 job emails we stored from it. Your applications and their history stay. | Bu gelen kutusunu kontrol etmeyi bırakacağız, Google'daki erişimimizi kaldıracağız ve buradan sakladığımız 23 iş e-postasını sileceğiz. Başvuruların ve geçmişleri kalır. | Wir prüfen dieses Postfach nicht mehr, entfernen unseren Zugriff bei Google und löschen die 23 gespeicherten Job-Mails daraus. Deine Bewerbungen und ihr Verlauf bleiben erhalten. | Uses ICU plurals. The provider name comes from the account. |
+| Disconnect body | We'll stop checking this inbox, remove our access at Google, and delete the 23 job emails we stored from it. Your applications and their history stay. | Bu gelen kutusunu kontrol etmeyi bırakacağız, Google erişimimizi kaldıracağız ve buradan sakladığımız 23 iş e-postasını sileceğiz. Başvuruların ve geçmişleri kalır. | Wir prüfen dieses Postfach nicht mehr, entfernen unseren Zugriff bei Google und löschen die 23 gespeicherten Job-Mails daraus. Deine Bewerbungen und ihr Verlauf bleiben erhalten. | Uses ICU plurals. The provider name comes from the account. TR uses a compound ("Google erişimimizi") so no suffix attaches to the provider placeholder (vowel harmony varies by name; see `today-home.md`). |
 | Disconnect confirm | Disconnect and delete email data | Bağlantıyı kes ve e-posta verilerini sil | Trennen und E-Mail-Daten löschen | The longest destructive label. Buttons must wrap or stack. |
 | Keep connected | Keep connected | Bağlı kalsın | Verbunden lassen | |
 | Job sources | Job sources | İş kaynakları | Jobquellen | |
@@ -367,7 +367,7 @@ Tone: plain and reassuring. Destructive copy says exactly what happens, with no 
 | Up to date | Up to date · checked 5 min ago | Güncel · 5 dk önce kontrol edildi | Aktuell · vor 5 Min. geprüft | |
 | Restart to update | Restart to update | Güncellemek için yeniden başlat | Zum Aktualisieren neu starten | |
 | Export button | Create export | Dışa aktarma oluştur | Export erstellen | |
-| Export ready | Export ready · 14 MB · available until 29 Oct | Dışa aktarma hazır · 14 MB · 29 Eki'ye kadar | Export bereit · 14 MB · verfügbar bis 29. Okt. | |
+| Export ready | Export ready · 14 MB · available until 29 Oct | Dışa aktarma hazır · 14 MB · son gün: 29 Eki | Export bereit · 14 MB · verfügbar bis 29. Okt. | TR uses a "son gün:" label instead of a suffix on the formatted date. |
 | Not included | Not included: passwords and keys we hold for you, and emails that weren't job-related (we never stored them). | Dahil değil: senin için sakladığımız parolalar ve anahtarlar ile işle ilgili olmayan e-postalar (bunları hiç saklamadık). | Nicht enthalten: Passwörter und Schlüssel, die wir für dich verwahren, und E-Mails ohne Jobbezug (die haben wir nie gespeichert). | |
 | Delete title | Delete your account | Hesabını sil | Konto löschen | |
 | Delete irreversible | This can't be undone. | Bu işlem geri alınamaz. | Das lässt sich nicht rückgängig machen. | |

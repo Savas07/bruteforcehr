@@ -88,19 +88,27 @@ describe("BruteForceHR desktop", () => {
   });
 
   it("enforces the Content-Security-Policy", async () => {
-    const result = await browser.execute(() => {
+    const result = await browser.execute(async () => {
       const script = document.createElement("script");
       script.textContent = "document.body.dataset.injected = 'yes'";
       document.head.append(script);
       const style = document.createElement("style");
       style.textContent = "body { --injected: yes; }";
       document.head.append(style);
-      let evalBlocked = false;
-      try {
-        eval("1");
-      } catch {
-        evalBlocked = true;
-      }
+      // Probe eval from a timer, i.e. as page code: on Windows, a script injected through
+      // WebView2's ExecuteScript (the embedded WebDriver's execute) may call eval itself despite
+      // the CSP (seen on windows-latest), while a callback that runs later is checked like any
+      // page script.
+      const evalBlocked = await new Promise<boolean>((resolve) =>
+        setTimeout(() => {
+          try {
+            eval("1");
+            resolve(false);
+          } catch {
+            resolve(true);
+          }
+        }, 0),
+      );
       return {
         script: document.body.dataset["injected"] ?? "blocked",
         style: getComputedStyle(document.body).getPropertyValue("--injected") || "blocked",

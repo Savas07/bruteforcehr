@@ -91,6 +91,16 @@ jobs:
 
       # Test build (cargo feature `e2e`): replaces the release binary, after the bundles are built.
       - run: pnpm build:e2e
+      # The Windows runner's display is smaller than 1280×800 plus the window frame, which makes the
+      # capture zoom the window out (e2e/capture/capture.e2e.ts). Best effort: a larger mode keeps
+      # screenshots sharp.
+      - name: Enlarge the Windows display for screenshots
+        if: runner.os == 'Windows'
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          Set-DisplayResolution -Width 1920 -Height 1200 -Force
+          Get-CimInstance Win32_VideoController | Select-Object CurrentHorizontalResolution, CurrentVerticalResolution
       - run: pnpm test:e2e
       - run: pnpm capture
         if: success() || failure()

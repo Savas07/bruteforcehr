@@ -143,7 +143,7 @@ function Row({ item, props, hero }: { item: AttentionItemVM; props: AttentionLis
             aria-controls={expanded ? regionId : undefined}
             onClick={() => onRowClick(item.id)}
             className={cx(
-              "group flex w-full items-start gap-3 rounded-lg px-3 text-left transition-colors duration-(--bfhr-duration-fast)",
+              "group flex w-full items-start gap-3 rounded-lg px-3 text-left transition-colors duration-(--bfhr-duration-fast) select-none",
               hero ? "py-3.5" : "py-2.5",
               selected ? "bg-surface-selected" : "hover:bg-surface-hover",
             )}
@@ -279,7 +279,9 @@ export function AttentionList(props: AttentionListProps & { done: readonly DoneE
   const intl = useIntl();
   const { sections, containerRef, done, empty } = props;
   return (
-    <div ref={containerRef} className="flex flex-col gap-7 px-4 pb-10">
+    // Bottom padding clears the Undo toast (bottom-left of the content area), so the last rows
+    // and "Done today" can always scroll above it.
+    <div ref={containerRef} className="flex flex-col gap-7 px-4 pb-28">
       {sections.length === 0 && empty}
       {sections.map((section) => (
         <section key={section.id} aria-labelledby={`today-${section.id}`} className="flex flex-col gap-1.5">

@@ -90,6 +90,16 @@ const messages = defineMessages({
     defaultMessage: "No notes yet. Add them from the application.",
     description: "Empty prep notes",
   },
+  autoKicker: {
+    id: "today.detail.autoKicker",
+    defaultMessage: "Updated automatically",
+    description: "Heading above an automatic status change in the detail pane",
+  },
+  followUpKicker: {
+    id: "today.detail.followUpKicker",
+    defaultMessage: "Suggested follow-up",
+    description: "Heading above a follow-up or no-response suggestion in the detail pane",
+  },
   markDone: { id: "today.detail.markDone", defaultMessage: "Mark as done", description: "Button" },
   markSeen: { id: "today.detail.markSeen", defaultMessage: "Mark as seen", description: "Button" },
   snooze: {
@@ -482,20 +492,32 @@ export function ItemDetail(props: ItemDetailProps) {
       break;
     case "autoUpdate":
       body = (
-        <AutoChangeRow
-          change={item.change}
-          className="border-line-subtle border p-4"
-          onUndo={() => actions.undoAutoChange(item)}
-          onViewSource={() => {
-            if (item.change.mailMessageId) links.mail(item.change.mailMessageId);
-          }}
-          onAcknowledge={() => actions.acknowledge(item)}
-        />
+        <>
+          {headingLevel === 2 && (
+            <h2 className="text-footnote text-fg-secondary font-medium">
+              {intl.formatMessage(messages.autoKicker)}
+            </h2>
+          )}
+          <AutoChangeRow
+            change={item.change}
+            className="border-line-subtle border p-4"
+            onUndo={() => actions.undoAutoChange(item)}
+            onViewSource={() => {
+              if (item.change.mailMessageId) links.mail(item.change.mailMessageId);
+            }}
+            onAcknowledge={() => actions.acknowledge(item)}
+          />
+        </>
       );
       break;
     case "followUp":
       body = (
         <>
+          {headingLevel === 2 && (
+            <h2 className="text-footnote text-fg-secondary font-medium">
+              {intl.formatMessage(messages.followUpKicker)}
+            </h2>
+          )}
           <NudgeCard
             nudge={item.nudge}
             className="p-4"

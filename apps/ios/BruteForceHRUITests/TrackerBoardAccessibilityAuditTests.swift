@@ -91,7 +91,7 @@ final class TrackerBoardAccessibilityAuditTests: XCTestCase {
     /// Saves a screenshot for the design critique when run with `TEST_RUNNER_BFHR_TRACKER_SHOTS`.
     @MainActor
     private func snapshot(_ name: String) throws {
-        guard let directory = ProcessInfo.processInfo.environment["BFHR_TRACKER_SHOTS"] else { return }
+        guard let directory = ProcessInfo.processInfo.environment["BFHR_TRACKER_SHOTS"], !directory.isEmpty else { return }
         Thread.sleep(forTimeInterval: 0.6)
         let suffix = ProcessInfo.processInfo.environment["BFHR_TRACKER_SHOTS_SUFFIX"] ?? ""
         let file = URL(fileURLWithPath: directory).appendingPathComponent("tracker-board-\(name)\(suffix).png")

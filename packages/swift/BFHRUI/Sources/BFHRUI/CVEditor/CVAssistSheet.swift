@@ -22,7 +22,7 @@ struct CVAssistSheet: View {
                         .font(.bfhr(.subheadline))
                         .foregroundStyle(BFHRColor.Fg.secondary)
                 } header: {
-                    Text(L.yourText)
+                    Text(L.yourText).cvListHeader()
                 }
                 Section {
                     ChipFlow {
@@ -44,7 +44,7 @@ struct CVAssistSheet: View {
                         }
                     }
                 } header: {
-                    Text(L.howToImprove)
+                    Text(L.howToImprove).cvListHeader()
                 }
                 suggestionsSection
                 if let selected = session.selected, !selected.placeholders.isEmpty {
@@ -54,9 +54,9 @@ struct CVAssistSheet: View {
                                 .accessibilityIdentifier("cv.assist.blank.\(index)")
                         }
                     } header: {
-                        Text(L.fillInHeader)
+                        Text(L.fillInHeader).cvListHeader()
                     } footer: {
-                        Text(L.fillInFooter)
+                        Text(L.fillInFooter).cvListFooter()
                     }
                 }
                 Section {
@@ -109,7 +109,7 @@ struct CVAssistSheet: View {
                 }
             }
         } header: {
-            Text(L.suggestionsHeader)
+            Text(L.suggestionsHeader).cvListHeader()
         }
     }
 

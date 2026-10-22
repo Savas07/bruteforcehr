@@ -37,7 +37,9 @@ final class CVEditorAccessibilityAuditTests: XCTestCase {
 
     @MainActor
     func testEmptyAccessibilitySize() throws {
-        try launch(dataset: "empty", contentSize: largestSize).performAccessibilityAudit()
+        let app = launch(dataset: "empty", contentSize: largestSize)
+        try snapshot("empty-ax")
+        try audit(app)
     }
 
     /// Preview: real text on the page, so the audit and VoiceOver see the CV itself. The page is
@@ -111,12 +113,29 @@ final class CVEditorAccessibilityAuditTests: XCTestCase {
     @MainActor
     func testAssistSheetAccessibilitySize() throws {
         let app = launch(dataset: "populated", contentSize: largestSize, pane: "assist")
-        XCTAssertTrue(app.buttons["cv.assist.suggestion.1"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.navigationBars["Improve with AI"].waitForExistence(timeout: 10))
+        Thread.sleep(forTimeInterval: 1)
         try snapshot("assist-ax")
         try audit(app)
         // The actions scroll with the content at this size.
         scroll(app, to: app.buttons["cv.assist.keepMine"])
         try snapshot("assist-ax-actions")
+        try audit(app)
+    }
+
+    @MainActor
+    func testItemSheetAccessibilitySize() throws {
+        let app = launch(dataset: "populated", contentSize: largestSize, pane: "item")
+        XCTAssertTrue(app.navigationBars["Experience"].waitForExistence(timeout: 10))
+        try snapshot("item-sheet-ax")
+        try audit(app)
+    }
+
+    @MainActor
+    func testHistoryAccessibilitySize() throws {
+        let app = launch(dataset: "populated", contentSize: largestSize, pane: "history")
+        XCTAssertTrue(app.navigationBars["Version history"].waitForExistence(timeout: 10))
+        try snapshot("history-ax")
         try audit(app)
     }
 

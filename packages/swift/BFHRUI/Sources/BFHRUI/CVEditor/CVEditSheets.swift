@@ -64,7 +64,7 @@ struct CVItemEditorSheet: View {
                     Section {
                         CVLabeledField(L.keywordsLabel, text: keywordsText, multiline: true)
                     } footer: {
-                        Text(L.keywordsFooter)
+                        Text(L.keywordsFooter).cvListFooter()
                     }
                 }
                 if fields.contains(.url) {
@@ -129,9 +129,10 @@ struct CVItemEditorSheet: View {
         } footer: {
             if draft.endsBeforeStart {
                 Label { Text(L.endBeforeStart) } icon: { Image(systemName: "exclamationmark.circle") }
+                    .font(.bfhr(.footnote))
                     .foregroundStyle(BFHRTone.warning.text)
             } else if let duration {
-                Text(duration)
+                Text(verbatim: duration).cvListFooter()
             }
         }
     }
@@ -198,7 +199,7 @@ struct CVItemEditorSheet: View {
                 Label { Text(L.addBullet) } icon: { Image(systemName: "plus") }
             }
         } header: {
-            Text(L.bulletsHeader(kind))
+            Text(L.bulletsHeader(kind)).cvListHeader()
         } footer: {
             if model.offersSuggestions && !model.canRequestSuggestions {
                 NeedsConnectionNote()
@@ -256,7 +257,7 @@ struct CVHeaderSheet: View {
                     CVLabeledField(L.nameLabel, text: $draft.name, kind: .name)
                     CVLabeledField(L.headlineLabel, text: $draft.headline)
                 } footer: {
-                    Text(L.headlineFooter)
+                    Text(L.headlineFooter).cvListFooter()
                 }
                 Section {
                     CVLabeledField(L.emailLabel, text: $draft.email, kind: .email)
@@ -264,7 +265,7 @@ struct CVHeaderSheet: View {
                     CVLabeledField(L.websiteLabel, text: $draft.website, kind: .url)
                     CVLabeledField(L.cityLabel, text: $draft.city)
                 } header: {
-                    Text(L.contactHeader)
+                    Text(L.contactHeader).cvListHeader()
                 }
             }
             .navigationTitle(Text(L.sectionTitle(.header)))
@@ -324,7 +325,7 @@ struct CVSummarySheet: View {
                         .font(.bfhr(.body))
                         .lineLimit(6...)
                 } footer: {
-                    Text(L.summaryFooter)
+                    Text(L.summaryFooter).cvListFooter()
                 }
                 if model.offersSuggestions {
                     Section {
@@ -408,6 +409,7 @@ struct CVLabeledField: View {
                 .accessibilityHidden(true)
             field
                 .font(.bfhr(.body))
+                .fixedSize(horizontal: false, vertical: true)
         }
         .padding(.vertical, 2)
     }

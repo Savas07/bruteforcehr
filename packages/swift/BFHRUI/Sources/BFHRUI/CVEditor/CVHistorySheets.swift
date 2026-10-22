@@ -27,7 +27,7 @@ struct CVHistorySheet: View {
                             CVRevisionRowView(revision: revision)
                         }
                     } header: {
-                        Text(day.day, format: .dateTime.day().month(.wide).year())
+                        Text(day.day, format: .dateTime.day().month(.wide).year()).cvListHeader()
                     }
                 }
             }
@@ -104,7 +104,7 @@ struct CVReorderSectionsSheet: View {
                             .moveDisabled(true)
                     }
                 } footer: {
-                    Text(L.pinnedFooter)
+                    Text(L.pinnedFooter).cvListFooter()
                 }
                 Section {
                     ForEach(movable) { section in
@@ -125,7 +125,7 @@ struct CVReorderSectionsSheet: View {
                         model.moveSection(from: pinned.count + from, to: pinned.count + to)
                     }
                 } footer: {
-                    Text(L.reorderFooter)
+                    Text(L.reorderFooter).cvListFooter()
                 }
             }
             .bfhrInsetGroupedList()

@@ -30,7 +30,7 @@ struct CVEditSegment: View {
                             .accessibilityIdentifier("cv.header")
                     }
                 } header: {
-                    Text(L.sectionTitle(.header))
+                    Text(L.sectionTitle(.header)).cvListHeader()
                 }
             }
             if let summary = model.sections.first(where: { $0.kind == .summary }) {
@@ -48,7 +48,7 @@ struct CVEditSegment: View {
                         GhostRow(L.addSummary) { sheet = .summary }
                     }
                 } header: {
-                    Text(L.sectionTitle(.summary))
+                    Text(L.sectionTitle(.summary)).cvListHeader()
                 }
             }
             ForEach(model.sections.filter { !$0.isPinned }) { section in
@@ -94,7 +94,7 @@ struct CVEditSegment: View {
                             .frame(minHeight: BFHRHitTarget.minimum)
                     }
                 } footer: {
-                    Text(L.addSectionFooter)
+                    Text(L.addSectionFooter).cvListFooter()
                 }
             }
         }
@@ -141,6 +141,7 @@ private struct CVSectionHeader: View {
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: BFHRSpace.s2) {
             Text(title)
+                .cvListHeader()
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .accessibilityAddTraits(.isHeader)
             Button(action: add) {
@@ -274,5 +275,20 @@ enum CVDateText {
         let style = Date.FormatStyle(date: .omitted, time: .omitted, locale: locale, calendar: calendar, timeZone: calendar.timeZone)
             .month(.abbreviated).year()
         return date.formatted(style)
+    }
+}
+
+extension View {
+    /// List section header text: Dynamic Type subheadline in the secondary token colour (the
+    /// system header grey misses 4.5:1 on the grouped background).
+    func cvListHeader() -> some View {
+        font(.bfhr(.subheadline, emphasized: true))
+            .foregroundStyle(BFHRColor.Fg.secondary)
+    }
+
+    /// List section footer text: Dynamic Type footnote in the secondary token colour.
+    func cvListFooter() -> some View {
+        font(.bfhr(.footnote))
+            .foregroundStyle(BFHRColor.Fg.secondary)
     }
 }

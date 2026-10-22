@@ -11,8 +11,11 @@ service firebase.storage {
       return request.auth != null && request.auth.uid == uid;
     }
 
+    // `resource == null`: the object must not exist yet, so a client can never overwrite bytes that a
+    // renderedFile or import already references.
     function isUpload(maxBytes, contentTypes) {
-      return request.resource.size > 0
+      return resource == null
+        && request.resource.size > 0
         && request.resource.size <= maxBytes
         && request.resource.contentType in contentTypes;
     }
@@ -39,7 +42,7 @@ service firebase.storage {
         ]));
     }
 
-    // CVs and cover letters rendered on the desktop (printToPDF / DOCX export).
+    // CVs and cover letters rendered on the desktop (DOCX/PDF export).
     match /users/{uid}/rendered/{fileId} {
       allow create: if isOwner(uid) && isUpload(10 * 1024 * 1024, pdfOrDocx());
     }

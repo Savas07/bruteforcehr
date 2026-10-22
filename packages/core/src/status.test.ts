@@ -185,6 +185,24 @@ describe("transition", () => {
     ).not.toHaveProperty("appliedAt");
   });
 
+  it("never clears appliedAt on backward moves or reverts", () => {
+    const back = transition({ application: app, to: "saved", actor: "user", at: day(1) });
+    expect(back.applicationPatch).toEqual({ status: "saved", statusChangedAt: day(1) });
+    const intoApplied = event({
+      type: "status_changed",
+      fromStatus: "preparing",
+      toStatus: "applied",
+      occurredAt: day(1),
+    });
+    const undo = revert({
+      application: { id: "app1", status: "applied" },
+      event: intoApplied,
+      events: [intoApplied],
+      at: day(2),
+    });
+    expect(undo.applicationPatch).not.toHaveProperty("appliedAt");
+  });
+
   it("drops confidence for user moves and keeps optional user evidence", () => {
     const result = transition({
       application: app,

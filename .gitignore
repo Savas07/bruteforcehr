@@ -15,10 +15,11 @@ coverage/
 target/
 apps/desktop/src-tauri/gen/
 
-# Expo / React Native
-.expo/
-apps/ios/ios/
-apps/ios/android/
+# Xcode / SwiftPM (apps/ios DerivedData goes to the ignored apps/ios/build/)
+xcuserdata/
+*.xcresult
+.build/
+.swiftpm/
 *.ipa
 *.dSYM.zip
 

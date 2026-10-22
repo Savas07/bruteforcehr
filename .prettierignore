@@ -1,0 +1,2 @@
+# Generated conformance vectors (pnpm --filter @bfhr/core conformance, @bfhr/fixtures conformance)
+packages/*/conformance/

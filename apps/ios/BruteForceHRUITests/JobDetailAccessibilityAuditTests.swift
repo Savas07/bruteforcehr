@@ -31,7 +31,7 @@ final class JobDetailAccessibilityAuditTests: XCTestCase {
         XCTAssertTrue(list.waitForExistence(timeout: 10))
         for _ in 0..<pages {
             try audit(app)
-            list.swipeUp(velocity: .slow)
+            scrollDown(app)
         }
         try audit(app)
     }
@@ -106,9 +106,9 @@ final class JobDetailAccessibilityAuditTests: XCTestCase {
         for design in ["populated", "empty"] {
             let app = launch(design, ax: ax)
             Thread.sleep(forTimeInterval: 1.5)
-            let list = app.collectionViews.firstMatch
-            for page in 1...(ax ? 12 : 5) {
-                list.swipeUp(velocity: .slow)
+            try shot("\(design)-scroll0")
+            for page in 1...(ax ? 14 : 5) {
+                scrollDown(app)
                 Thread.sleep(forTimeInterval: 0.6)
                 try shot("\(design)-scroll\(page)")
             }
@@ -122,22 +122,23 @@ final class JobDetailAccessibilityAuditTests: XCTestCase {
         XCTAssertTrue(app.buttons["Done"].waitForExistence(timeout: 5))
         Thread.sleep(forTimeInterval: 0.8)
         try shot("breakdown1")
-        app.collectionViews.firstMatch.swipeUp(velocity: .slow)
+        scrollDown(app)
         Thread.sleep(forTimeInterval: 0.6)
         try shot("breakdown2")
-        app.collectionViews.firstMatch.swipeUp(velocity: .slow)
+        scrollDown(app)
         Thread.sleep(forTimeInterval: 0.6)
         try shot("breakdown3")
         app.buttons["Done"].tap()
 
         // Not for me from the More menu: hidden banner + toast, then the reason sheet.
-        app.collectionViews.firstMatch.swipeDown(velocity: .fast)
-        app.collectionViews.firstMatch.swipeDown(velocity: .fast)
+        for _ in 0..<(ax ? 8 : 3) { scrollUp(app) }
         app.buttons["More"].tap()
         app.buttons["Not for me"].firstMatch.tap()
         Thread.sleep(forTimeInterval: 0.8)
         try shot("hidden")
-        app.buttons["Tell us why"].firstMatch.tap()
+        let tellUsWhy = app.buttons["Tell us why"].firstMatch
+        if !tellUsWhy.isHittable { scrollUp(app) }
+        tellUsWhy.tap()
         Thread.sleep(forTimeInterval: 0.8)
         try shot("reasons")
         app.terminate()
@@ -145,12 +146,28 @@ final class JobDetailAccessibilityAuditTests: XCTestCase {
 
     // MARK: Helpers
 
+    /// Drags the content up by about a third of the screen, starting above the sticky Apply bar
+    /// (a centered swipe lands on the bar at AX sizes and doesn't scroll).
+    @MainActor
+    private func scrollDown(_ app: XCUIApplication) {
+        let window = app.windows.firstMatch
+        window.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.55))
+            .press(forDuration: 0.05, thenDragTo: window.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.2)), withVelocity: .slow, thenHoldForDuration: 0.1)
+    }
+
+    @MainActor
+    private func scrollUp(_ app: XCUIApplication) {
+        let window = app.windows.firstMatch
+        window.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.2))
+            .press(forDuration: 0.05, thenDragTo: window.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.9)), withVelocity: .fast, thenHoldForDuration: 0)
+    }
+
     @MainActor
     private func scrollTo(_ element: XCUIElement, in app: XCUIApplication) {
-        let list = app.collectionViews.firstMatch
+        _ = app.collectionViews.firstMatch.waitForExistence(timeout: 5)
         var tries = 0
         while !(element.exists && element.isHittable) && tries < 12 {
-            list.swipeUp(velocity: .slow)
+            scrollDown(app)
             tries += 1
         }
     }
@@ -161,7 +178,7 @@ final class JobDetailAccessibilityAuditTests: XCTestCase {
         app.buttons["Not for me"].firstMatch.tap()
         let tellUsWhy = app.buttons["Tell us why"].firstMatch
         if !tellUsWhy.waitForExistence(timeout: 3) || !tellUsWhy.isHittable {
-            app.collectionViews.firstMatch.swipeDown(velocity: .fast)
+            scrollUp(app)
         }
         tellUsWhy.tap()
     }

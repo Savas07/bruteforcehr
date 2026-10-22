@@ -235,6 +235,10 @@ public struct JobDetailScreen: View {
                 .padding(.vertical, BFHRSpace.s2)
             }
             .background(.bar)
+            // A sticky bar can't grow with AX5 text without hiding the content it serves (it took
+            // half of an iPhone 17e screen): like the system bars it stops at AX1 and offers the
+            // Large Content Viewer.
+            .dynamicTypeSize(...DynamicTypeSize.accessibility1)
         }
     }
 
@@ -246,6 +250,10 @@ public struct JobDetailScreen: View {
         }
         .buttonStyle(.bfhrSecondary)
         .accessibilityLabel(Text(model.isSaved ? JobDetailViewStrings.saved : JobDetailViewStrings.save))
+        .accessibilityShowsLargeContentViewer {
+            Image(systemName: model.isSaved ? "bookmark.fill" : "bookmark")
+            Text(model.isSaved ? JobDetailViewStrings.saved : JobDetailViewStrings.save)
+        }
         .accessibilityAddTraits(model.isSaved ? .isSelected : [])
     }
 
@@ -260,6 +268,9 @@ public struct JobDetailScreen: View {
             }
         }
         .buttonStyle(.bfhr(.primary, fullWidth: true))
+        .accessibilityShowsLargeContentViewer {
+            Text(JobDetailViewStrings.apply(route))
+        }
         .accessibilityHint(isExternal ? Text(JobDetailViewStrings.opensInBrowser) : Text(verbatim: ""))
     }
 

@@ -10,6 +10,7 @@ struct JobDetailHeaderSection: View {
     let header: JobDetailModel.Header
     let isDelisted: Bool
     let isPendingSync: Bool
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.bfhrNow) private var now
     @Environment(\.locale) private var locale
     @Environment(\.calendar) private var calendar
@@ -21,7 +22,15 @@ struct JobDetailHeaderSection: View {
                     InlineAlert(.info, title: JobDetailViewStrings.delisted, message: JobDetailViewStrings.delistedMessage)
                 }
                 HStack(spacing: BFHRSpace.s2) {
-                    CompanyChip(header.company)
+                    if dynamicTypeSize.isAccessibilitySize {
+                        // The monogram is decorative; at AX sizes it would squeeze the name into
+                        // hyphenated fragments.
+                        Text(verbatim: header.company.name)
+                            .font(.bfhr(.subheadline, emphasized: true))
+                            .foregroundStyle(BFHRColor.Fg.primary)
+                    } else {
+                        CompanyChip(header.company)
+                    }
                     if isPendingSync { SyncGlyph() }
                 }
                 Text(verbatim: header.title)
@@ -333,7 +342,7 @@ private struct SourceBadge: View {
 
     var body: some View {
         Label { Text(text) } icon: { Image(systemName: systemImage) }
-            .labelStyle(CompactLabelStyle())
+            .labelStyle(.bfhrCompact)
             .font(.bfhr(.caption1, emphasized: true))
             .foregroundStyle(isAccent ? BFHRColor.Accent.text : BFHRColor.Fg.secondary)
             .padding(.horizontal, BFHRSpace.s2)

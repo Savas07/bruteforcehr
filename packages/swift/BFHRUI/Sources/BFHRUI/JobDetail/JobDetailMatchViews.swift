@@ -195,7 +195,7 @@ private struct FactorTags: View {
                 tag(JobDetailViewStrings.status(factor.status), emphasized: false)
             }
             if factor.source == .ai {
-                AiBadge().labelStyle(CompactLabelStyle())
+                AiBadge()
             }
         }
     }
@@ -218,7 +218,7 @@ struct AISummaryBlock: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: BFHRSpace.s3) {
-            AiBadge(Strings.aiSummaryLabel).labelStyle(CompactLabelStyle())
+            AiBadge(Strings.aiSummaryLabel)
             Text(verbatim: rationale)
                 .font(.bfhr(.body))
                 .foregroundStyle(BFHRColor.Fg.primary)
@@ -360,22 +360,11 @@ private struct SkillTag: View {
         } icon: {
             Image(systemName: isMatched ? "checkmark" : "circle.dashed")
         }
-        .labelStyle(CompactLabelStyle())
+        .labelStyle(.bfhrCompact)
         .font(.bfhr(.subheadline, emphasized: isMatched))
         .foregroundStyle(isMatched ? BFHRColor.Accent.text : BFHRColor.Fg.secondary)
         .padding(.horizontal, BFHRSpace.s3)
         .padding(.vertical, BFHRSpace.s1)
         .background(isMatched ? BFHRColor.Accent.subtle : BFHRColor.Surface.sunken, in: Capsule())
-    }
-}
-
-/// Icon and title 4 pt apart. Inside a `List` row the default label style puts the title in the
-/// row's text column, far from its icon, which breaks capsule badges.
-struct CompactLabelStyle: LabelStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        HStack(spacing: BFHRSpace.s1) {
-            configuration.icon
-            configuration.title
-        }
     }
 }

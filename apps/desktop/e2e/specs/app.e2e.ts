@@ -77,10 +77,12 @@ describe("BruteForceHR desktop", () => {
       "Go to Mail",
       "Open command palette",
       "Show keyboard shortcuts",
+      // Registered by the toast host (src/shared/ui/Toast.tsx): Mod+Z undoes the latest change.
+      "Undo the last change",
     ]);
     const modifier = isMac ? "⌘" : "Ctrl";
     expect(await sheet.$$("dd").map((keycap) => keycap.getText())).toEqual(
-      ["1", "2", "3", "4", "5", "K", "/"].map((key) => expect.stringMatching(`${modifier}\\s*${key}`)),
+      ["1", "2", "3", "4", "5", "K", "/", "Z"].map((key) => expect.stringMatching(`${modifier}\\s*${key}`)),
     );
 
     await browser.keys(Key.Escape);

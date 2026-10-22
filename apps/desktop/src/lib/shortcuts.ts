@@ -1,3 +1,4 @@
+import { defineMessages, type MessageDescriptor } from "react-intl";
 import type { Platform } from "./desktop";
 import { destinations, type DestinationId } from "./destinations";
 
@@ -15,8 +16,22 @@ export interface Shortcut {
   readonly label: string;
   /** Key pressed together with ⌘ (macOS) or Ctrl (Windows). */
   readonly key: string;
+  /**
+   * Other keys for the same command, in keymap syntax (src/shared/keyboard/keymap.ts): the
+   * go-to sequence `G T` and `?` for the shortcuts sheet (IA.md § Keyboard map, D28).
+   */
+  readonly alternates: readonly string[];
   readonly command: MenuCommand;
 }
+
+/** Second key of the `G` go-to sequence per destination (IA.md: Today, Jobs, tRacker, CVs, Mail). */
+const goToLetters: Record<DestinationId, string> = {
+  today: "T",
+  jobs: "J",
+  tracker: "R",
+  cvs: "C",
+  mail: "M",
+};
 
 /**
  * Single source for the keyboard handler, the shortcuts sheet and the palette hints. The native
@@ -28,6 +43,7 @@ export const shortcuts: readonly Shortcut[] = [
     group: "Navigation",
     label: `Go to ${destination.label}`,
     key: String(index + 1),
+    alternates: [`G ${goToLetters[destination.id]}`],
     command: { type: "navigate", destination: destination.id },
   })),
   {
@@ -35,6 +51,7 @@ export const shortcuts: readonly Shortcut[] = [
     group: "General",
     label: "Open command palette",
     key: "K",
+    alternates: [],
     command: { type: "open-palette" },
   },
   {
@@ -42,9 +59,31 @@ export const shortcuts: readonly Shortcut[] = [
     group: "General",
     label: "Show keyboard shortcuts",
     key: "/",
+    alternates: ["?"],
     command: { type: "open-shortcuts" },
   },
 ];
+
+/**
+ * What the UI shows for each shortcut, by shortcut id. `label` above stays English for the native
+ * menu tests; the webview renders these.
+ */
+export const shortcutMessages: Readonly<Record<string, MessageDescriptor>> = defineMessages({
+  "go-today": { id: "shell.shortcut.goToday", defaultMessage: "Go to Today" },
+  "go-jobs": { id: "shell.shortcut.goJobs", defaultMessage: "Go to Jobs" },
+  "go-tracker": { id: "shell.shortcut.goTracker", defaultMessage: "Go to Tracker" },
+  "go-cvs": { id: "shell.shortcut.goCvs", defaultMessage: "Go to CVs" },
+  "go-mail": { id: "shell.shortcut.goMail", defaultMessage: "Go to Mail" },
+  "command-palette": { id: "shell.shortcut.commandPalette", defaultMessage: "Open command palette" },
+  "keyboard-shortcuts": { id: "shell.shortcut.keyboardShortcuts", defaultMessage: "Show keyboard shortcuts" },
+});
+
+/** The UI label of a shortcut. */
+export function shortcutMessage(shortcut: Shortcut): MessageDescriptor {
+  const message = shortcutMessages[shortcut.id];
+  if (!message) throw new Error(`No message for shortcut: ${shortcut.id}`);
+  return message;
+}
 
 export const shortcutGroups: readonly ShortcutGroup[] = ["Navigation", "General"];
 
@@ -54,16 +93,9 @@ export function shortcutById(id: string): Shortcut {
   return shortcut;
 }
 
-/** Keycap labels in platform convention: `["⌘", "K"]` on macOS, `["Ctrl", "K"]` elsewhere. */
-export function keycaps(shortcut: Shortcut, platform: Platform): readonly string[] {
-  return [platform === "macos" ? "⌘" : "Ctrl", shortcut.key];
-}
-
-/** Spoken form for assistive tech, e.g. "Command K". */
-export function spokenShortcut(shortcut: Shortcut, platform: Platform): string {
-  const modifier = platform === "macos" ? "Command" : "Control";
-  const key = shortcut.key === "/" ? "Slash" : shortcut.key;
-  return `${modifier} ${key}`;
+/** All keys of a shortcut in keymap syntax, for `Keycaps`: `["Mod+/", "?"]`. */
+export function shortcutKeys(shortcut: Shortcut): readonly string[] {
+  return [`Mod+${shortcut.key}`, ...shortcut.alternates];
 }
 
 /**

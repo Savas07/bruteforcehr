@@ -1,12 +1,25 @@
 import { useEffect } from "react";
+import { defineMessages, useIntl } from "react-intl";
+import { destinationMessages, type DestinationId } from "../lib/destinations";
 
 export const ROUTE_TITLE_ID = "route-title";
 
+const messages = defineMessages({
+  documentTitle: {
+    id: "shell.routeContainer.documentTitle",
+    defaultMessage: "{section} · BruteForceHR",
+    description: "Window title; {section} is the sidebar section name",
+  },
+});
+
 /** Container for one sidebar destination; the window title follows the section. */
-export function RouteContainer({ title }: { title: string }) {
+export function RouteContainer({ destination }: { destination: DestinationId }) {
+  const intl = useIntl();
+  const title = intl.formatMessage(destinationMessages[destination]);
+  const documentTitle = intl.formatMessage(messages.documentTitle, { section: title });
   useEffect(() => {
-    document.title = `${title} · BruteForceHR`;
-  }, [title]);
+    document.title = documentTitle;
+  }, [documentTitle]);
 
   return (
     <section aria-labelledby={ROUTE_TITLE_ID} className="min-h-0 flex-1 overflow-y-auto px-8 pt-5 pb-8">

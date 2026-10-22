@@ -2,10 +2,43 @@ import { Command } from "cmdk";
 import { Keyboard, Search } from "lucide-react";
 import { Dialog } from "radix-ui";
 import { useRef, type ReactNode } from "react";
-import { destinations, type DestinationId } from "../lib/destinations";
-import { shortcutById } from "../lib/shortcuts";
+import { defineMessages, useIntl } from "react-intl";
+import { destinationMessages, destinations, type DestinationId } from "../lib/destinations";
+import { shortcutById, shortcutKeys } from "../lib/shortcuts";
+import { Keycaps } from "../shared/ui/Keycaps";
 import { destinationIcons } from "./icons";
-import { Keycaps } from "./Keycaps";
+
+const messages = defineMessages({
+  title: { id: "shell.commandPalette.title", defaultMessage: "Command palette" },
+  placeholder: { id: "shell.commandPalette.placeholder", defaultMessage: "Jump to a section or command…" },
+  empty: {
+    id: "shell.commandPalette.empty",
+    defaultMessage: "Nothing matches that yet. Try a section name, like “{example}”.",
+    description: "{example} is a section name (Jobs)",
+  },
+  goTo: {
+    id: "shell.commandPalette.goTo",
+    defaultMessage: "Go to",
+    description: "Group heading above the sections",
+  },
+  help: { id: "shell.commandPalette.help", defaultMessage: "Help", description: "Group heading" },
+  keyboardShortcuts: { id: "shell.commandPalette.keyboardShortcuts", defaultMessage: "Keyboard shortcuts" },
+  move: {
+    id: "shell.commandPalette.move",
+    defaultMessage: "to move",
+    description: "Footer hint after the ↑↓ keys",
+  },
+  open: {
+    id: "shell.commandPalette.open",
+    defaultMessage: "to open",
+    description: "Footer hint after the ↵ key",
+  },
+  close: {
+    id: "shell.commandPalette.close",
+    defaultMessage: "to close",
+    description: "Footer hint after the esc key",
+  },
+});
 
 const itemClass =
   "flex h-9 cursor-default items-center gap-2.5 rounded-md px-2.5 text-callout text-fg-primary data-[selected=true]:bg-surface-selected";
@@ -42,6 +75,7 @@ export function CommandPalette({
   onOpenShortcuts: () => void;
 }) {
   // After choosing a command, focus moves to its target instead of back to the opener.
+  const intl = useIntl();
   const handledCommand = useRef(false);
   const run = (command: () => void): void => {
     handledCommand.current = true;
@@ -63,26 +97,29 @@ export function CommandPalette({
           }}
           className="bg-surface-elevated shadow-modal fixed top-[14vh] left-1/2 z-(--bfhr-layer-palette) w-[min(560px,calc(100vw-32px))] -translate-x-1/2 overflow-hidden rounded-lg"
         >
-          <Dialog.Title className="sr-only">Command palette</Dialog.Title>
-          <Command label="Command palette" loop>
+          <Dialog.Title className="sr-only">{intl.formatMessage(messages.title)}</Dialog.Title>
+          <Command label={intl.formatMessage(messages.title)} loop>
             <div className="border-line-subtle flex items-center gap-2.5 border-b px-4">
               <Search aria-hidden="true" className="text-fg-secondary size-4 shrink-0" strokeWidth={1.75} />
               <Command.Input
-                placeholder="Jump to a section or command…"
+                placeholder={intl.formatMessage(messages.placeholder)}
                 className="placeholder:text-fg-secondary h-12 flex-1 bg-transparent text-body outline-none"
               />
             </div>
             <Command.List className="max-h-[min(360px,50vh)] overflow-y-auto p-2">
               <Command.Empty className="text-fg-secondary px-2.5 py-6 text-center text-callout">
-                Nothing matches that yet. Try a section name, like “Jobs”.
+                {intl.formatMessage(messages.empty, {
+                  example: intl.formatMessage(destinationMessages.jobs),
+                })}
               </Command.Empty>
-              <Command.Group heading="Go to" className={groupClass}>
+              <Command.Group heading={intl.formatMessage(messages.goTo)} className={groupClass}>
                 {destinations.map((destination) => {
                   const Icon = destinationIcons[destination.id];
+                  const label = intl.formatMessage(destinationMessages[destination.id]);
                   return (
                     <Command.Item
                       key={destination.id}
-                      value={destination.label}
+                      value={label}
                       onSelect={() => run(() => onNavigate(destination.id))}
                       className={itemClass}
                     >
@@ -91,15 +128,15 @@ export function CommandPalette({
                         className="text-fg-secondary size-4 shrink-0"
                         strokeWidth={1.75}
                       />
-                      <span className="flex-1 truncate">{destination.label}</span>
-                      <Keycaps shortcut={shortcutById(`go-${destination.id}`)} />
+                      <span className="flex-1 truncate">{label}</span>
+                      <Keycaps keys={shortcutKeys(shortcutById(`go-${destination.id}`))} />
                     </Command.Item>
                   );
                 })}
               </Command.Group>
-              <Command.Group heading="Help" className={groupClass}>
+              <Command.Group heading={intl.formatMessage(messages.help)} className={groupClass}>
                 <Command.Item
-                  value="Keyboard shortcuts"
+                  value={intl.formatMessage(messages.keyboardShortcuts)}
                   onSelect={() => run(onOpenShortcuts)}
                   className={itemClass}
                 >
@@ -108,8 +145,8 @@ export function CommandPalette({
                     className="text-fg-secondary size-4 shrink-0"
                     strokeWidth={1.75}
                   />
-                  <span className="flex-1 truncate">Keyboard shortcuts</span>
-                  <Keycaps shortcut={shortcutById("keyboard-shortcuts")} />
+                  <span className="flex-1 truncate">{intl.formatMessage(messages.keyboardShortcuts)}</span>
+                  <Keycaps keys={shortcutKeys(shortcutById("keyboard-shortcuts"))} />
                 </Command.Item>
               </Command.Group>
             </Command.List>
@@ -118,9 +155,9 @@ export function CommandPalette({
               aria-hidden="true"
               className="border-line-subtle text-fg-secondary flex gap-4 border-t px-4 py-2 text-caption2"
             >
-              <FooterHint keys={["↑", "↓"]}>to move</FooterHint>
-              <FooterHint keys={["↵"]}>to open</FooterHint>
-              <FooterHint keys={["esc"]}>to close</FooterHint>
+              <FooterHint keys={["↑", "↓"]}>{intl.formatMessage(messages.move)}</FooterHint>
+              <FooterHint keys={["↵"]}>{intl.formatMessage(messages.open)}</FooterHint>
+              <FooterHint keys={["esc"]}>{intl.formatMessage(messages.close)}</FooterHint>
             </div>
           </Command>
         </Dialog.Content>

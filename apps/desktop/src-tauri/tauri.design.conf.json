@@ -1,0 +1,6 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "build": {
+    "beforeBuildCommand": "pnpm --filter @bfhr/ui-tokens build && pnpm exec vite build --mode design-e2e"
+  }
+}

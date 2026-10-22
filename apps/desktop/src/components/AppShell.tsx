@@ -1,8 +1,13 @@
 import { Outlet, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
+import { useIntl } from "react-intl";
 import { chrome, onMenuCommand } from "../lib/desktop";
 import { destinations, type DestinationId } from "../lib/destinations";
-import { shortcutForKey, type MenuCommand } from "../lib/shortcuts";
+import { shortcutForKey, shortcutMessage, shortcuts, type MenuCommand } from "../lib/shortcuts";
+import { keymap } from "../shared/keyboard/keymap";
+import { useKeyBindings } from "../shared/keyboard/useKeyBindings";
+import { ConnectionBanner } from "../shared/ui/ConnectionBanner";
+import { ToastProvider, ToastViewport } from "../shared/ui/Toast";
 import { CommandPalette } from "./CommandPalette";
 import { ROUTE_TITLE_ID } from "./RouteContainer";
 import { ShortcutsSheet } from "./ShortcutsSheet";
@@ -10,6 +15,7 @@ import { Sidebar } from "./Sidebar";
 
 export function AppShell() {
   const navigate = useNavigate();
+  const intl = useIntl();
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
 
@@ -67,28 +73,63 @@ export function AppShell() {
     return () => window.removeEventListener("keydown", onKeyDown, { capture: true });
   }, [runCommand]);
 
+  // The alternates of the static shortcuts (`G T` go-to sequences, `?`). Listed on the static
+  // rows of the shortcuts sheet already, so hidden here.
+  useKeyBindings(
+    shortcuts.flatMap((shortcut) =>
+      shortcut.alternates.length === 0
+        ? []
+        : [
+            {
+              id: `${shortcut.id}.alternates`,
+              keys: shortcut.alternates,
+              label: intl.formatMessage(shortcutMessage(shortcut)),
+              group: shortcut.group,
+              hidden: true,
+              run: () => runCommand(shortcut.command),
+            },
+          ],
+    ),
+  );
+
+  // Every other key goes through the keymap (src/shared/keyboard/keymap.ts), in the bubble phase
+  // so menus, comboboxes and dialogs that handle a key themselves (and preventDefault) win.
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      keymap.dispatch(event, chrome.platform);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
+
   const isMac = chrome.platform === "macos";
   return (
-    <div className="text-fg-primary flex h-full flex-col">
-      <div className="flex min-h-0 flex-1">
-        <Sidebar onOpenPalette={() => setPaletteOpen(true)} onOpenShortcuts={openShortcuts} />
-        <main
-          className={`bg-surface-base border-line-subtle flex min-w-0 flex-1 flex-col border-l ${
-            isMac ? "" : "rounded-tl-md border-t"
-          }`}
-        >
-          {/* macOS: the toolbar row under the hidden title bar moves the window. */}
-          {isMac && <div data-tauri-drag-region className="h-(--chrome-height) shrink-0" />}
-          <Outlet />
-        </main>
+    <ToastProvider>
+      <div className="text-fg-primary flex h-full flex-col">
+        <div className="flex min-h-0 flex-1">
+          <Sidebar onOpenPalette={() => setPaletteOpen(true)} onOpenShortcuts={openShortcuts} />
+          <main
+            className={`bg-surface-base border-line-subtle relative flex min-w-0 flex-1 flex-col border-l ${
+              isMac ? "" : "rounded-tl-md border-t"
+            }`}
+          >
+            {/* macOS: the toolbar row under the hidden title bar moves the window. */}
+            {isMac && <div data-tauri-drag-region className="h-(--chrome-height) shrink-0" />}
+            {/* 28 px offline strip across the content (states.md); renders nothing while online. */}
+            <ConnectionBanner />
+            <Outlet />
+            {/* Toasts sit bottom-left of the content area, not the window (D12). */}
+            <ToastViewport />
+          </main>
+        </div>
+        <CommandPalette
+          open={paletteOpen}
+          onOpenChange={setPaletteOpen}
+          onNavigate={(id) => void goTo(id)}
+          onOpenShortcuts={openShortcuts}
+        />
+        <ShortcutsSheet open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
       </div>
-      <CommandPalette
-        open={paletteOpen}
-        onOpenChange={setPaletteOpen}
-        onNavigate={(id) => void goTo(id)}
-        onOpenShortcuts={openShortcuts}
-      />
-      <ShortcutsSheet open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
-    </div>
+    </ToastProvider>
   );
 }

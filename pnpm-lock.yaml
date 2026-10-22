@@ -190,6 +190,9 @@ importers:
 
   apps/desktop:
     dependencies:
+      '@bfhr/core':
+        specifier: workspace:*
+        version: link:../../packages/core
       '@bfhr/ui-tokens':
         specifier: workspace:*
         version: link:../../packages/ui-tokens
@@ -217,7 +220,19 @@ importers:
       react-dom:
         specifier: 19.3.1
         version: 19.3.1(react@19.3.1)
+      react-intl:
+        specifier: ^11.0.1
+        version: 11.0.1(@types/react@19.3.0)(react@19.3.1)
     devDependencies:
+      '@bfhr/fixtures':
+        specifier: workspace:*
+        version: link:../../packages/fixtures
+      '@formatjs/cli':
+        specifier: ^6.16.35
+        version: 6.16.35
+      '@formatjs/icu-messageformat-parser':
+        specifier: ^3.5.22
+        version: 3.5.22
       '@tailwindcss/vite':
         specifier: ^4.3.3
         version: 4.3.3(vite@8.3.5(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))
@@ -263,12 +278,21 @@ importers:
       eslint-plugin-react-hooks:
         specifier: ^7.1.1
         version: 7.1.1(eslint@10.13.0(jiti@2.7.0)(supports-color@8.1.1))(supports-color@8.1.1)
+      happy-dom:
+        specifier: ^21.0.4
+        version: 21.0.4
+      playwright:
+        specifier: ^1.64.1
+        version: 1.64.1
       tailwindcss:
         specifier: ^4.3.3
         version: 4.3.3
       vite:
         specifier: ^8.3.5
         version: 8.3.5(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1)
+      vitest:
+        specifier: ^5.0.5
+        version: 5.0.5(@opentelemetry/api@1.10.0)(@types/node@24.19.2)(happy-dom@21.0.4)(vite@8.3.5(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))
       webdriverio:
         specifier: ^9.32.0
         version: 9.32.0(supports-color@8.1.1)
@@ -293,7 +317,7 @@ importers:
         version: 0.28.2
       vitest:
         specifier: ^5.0.5
-        version: 5.0.5(@opentelemetry/api@1.10.0)(@types/node@22.20.5)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))
+        version: 5.0.5(@opentelemetry/api@1.10.0)(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))
 
   apps/web:
     dependencies:
@@ -355,7 +379,7 @@ importers:
         version: link:../fixtures
       vitest:
         specifier: ^5.0.5
-        version: 5.0.5(@opentelemetry/api@1.10.0)(@types/node@22.20.5)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))
+        version: 5.0.5(@opentelemetry/api@1.10.0)(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))
 
   packages/core:
     dependencies:
@@ -399,7 +423,7 @@ importers:
         version: 22.20.5
       vitest:
         specifier: ^5.0.5
-        version: 5.0.5(@opentelemetry/api@1.10.0)(@types/node@22.20.5)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))
+        version: 5.0.5(@opentelemetry/api@1.10.0)(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))
 
 packages:
 
@@ -1161,6 +1185,83 @@ packages:
 
   '@floating-ui/utils@0.2.12':
     resolution: {integrity: sha512-HpCo8tmWzLVad5s2d19EhAz5zqrrQ6s69qd6moPMQvkOuSwDT1YgRfWSVuc4ennqrgv3OHppiOGMQ7oC13yIww==}
+
+  '@formatjs/cli-native-darwin-arm64@1.1.29':
+    resolution: {integrity: sha512-kh+l/SZGTpDEH/aLjwbH9CqHaSW7htGiwljZ4vOobhtQbJXriQRRHzA/LAgJ+798QMflP6HjR74hK0BJPucqAw==}
+    cpu: [arm64]
+    os: [darwin]
+
+  '@formatjs/cli-native-linux-arm64-musl@1.0.27':
+    resolution: {integrity: sha512-HZtqjqJrTHJt5lvhFoz0Ak5TpsYYxgIdkyh5IJYlyCpcGzCC89bb8Bq4N8K+tqsJ+p/eN0ewsLuQA9T0gT+y/w==}
+    cpu: [arm64]
+    os: [linux]
+    libc: [musl]
+
+  '@formatjs/cli-native-linux-arm64@1.2.29':
+    resolution: {integrity: sha512-vSTXe5IXETlf1cMCRqUHuOREM5zpF1dCk542zOHv388F71LWIWz/Hdu6pEdI4oFxdkqEM3tcKFMWB306JOOAaQ==}
+    cpu: [arm64]
+    os: [linux]
+    libc: [glibc]
+
+  '@formatjs/cli-native-linux-x64-musl@1.0.27':
+    resolution: {integrity: sha512-bv8thdLdTeYG0jcAMBAXb27tc4BiLvwa/v8US3kHLhkq7arDM5Dmvsf1+XSMNzXLuqdCU5p+OI/2m/qOb44Jqg==}
+    cpu: [x64]
+    os: [linux]
+    libc: [musl]
+
+  '@formatjs/cli-native-linux-x64@1.1.29':
+    resolution: {integrity: sha512-GuF20VE1eqz6u5ndmYNbiIO7g/WJaKSFNAWlhLBMCWS/8ggyw5bqvFfZMgR1VUTa/oMVWfJp+5q+oi0DMc89Sw==}
+    cpu: [x64]
+    os: [linux]
+    libc: [glibc]
+
+  '@formatjs/cli-native-win32-x64@1.1.30':
+    resolution: {integrity: sha512-iP5Qd7mTRu5Rn69bWnP1AgzdQ640TQQlkhiZGCGoUYSLEZ/bGTgDgzYvI4LRFIQYoS9niKDXAOETjwWAEPGoCw==}
+    cpu: [x64]
+    os: [win32]
+
+  '@formatjs/cli@6.16.35':
+    resolution: {integrity: sha512-JeTpErAlJ0br8uaUII4uINrfldnp6C6eIYNaR+Tj4YJTGAUtxjItUPsP8fY9cc/zMDXf8SuDL6NFle4VzgY1TA==}
+    engines: {node: '>= 20.12.0'}
+    hasBin: true
+    peerDependencies:
+      '@glimmer/env': '*'
+      '@glimmer/reference': '*'
+      '@glimmer/syntax': ^0.84.3 || ^0.95.0
+      '@glimmer/validator': '*'
+      '@vue/compiler-core': '3'
+      content-tag: '4'
+      vue: '3'
+    peerDependenciesMeta:
+      '@glimmer/env':
+        optional: true
+      '@glimmer/reference':
+        optional: true
+      '@glimmer/syntax':
+        optional: true
+      '@glimmer/validator':
+        optional: true
+      '@vue/compiler-core':
+        optional: true
+      content-tag:
+        optional: true
+      vue:
+        optional: true
+
+  '@formatjs/fast-memoize@3.1.7':
+    resolution: {integrity: sha512-zXfhLpvA6T7+efdt9JLbBwZ00tT7NsBMDVnDu8rpHeNNv8KfRZAMo2gkG0k9lK/Nzc//3kJ9pImsfuJxk3KhUA==}
+
+  '@formatjs/icu-messageformat-parser@3.5.19':
+    resolution: {integrity: sha512-a5PAqgd3QPUge635SxrjPLIlTErcGwm3AMyTdmZXl0IqWXTdCx9AnuioEmvEZAV2HpeFdynLPXMvHv7dXGEWWw==}
+
+  '@formatjs/icu-messageformat-parser@3.5.22':
+    resolution: {integrity: sha512-YuwN+dDKgssfuYwtOyGQD0CSn7K46g9cv1Fp0VgKpjZDDFvv8b8crzP990IcJhRPWHhKzCGsbUSJVIguyyFA5A==}
+
+  '@formatjs/icu-skeleton-parser@2.1.12':
+    resolution: {integrity: sha512-ca7tZMLpfHX3sUD7hP6gE/qr6Iq89EDd3ZLeRhbsB7r0UD55DGJq+tmFLzrGrnx5StahUevQmQQVtbDRHsfDHA==}
+
+  '@formatjs/intl@5.0.0':
+    resolution: {integrity: sha512-U1K3WkydjyV2D6hb7FA2bvSMH125TGPdW1wFtBZl9L+7KzG56EosBazOZgbRv2xDeMlaR2zoq/pqMXoLHEganw==}
 
   '@google-cloud/cloud-sql-connector@1.12.1':
     resolution: {integrity: sha512-Vilc4J0L+rU+4yjxZpBFn8+bvPoibfcnP4cAAFUsON/GiT0p9qwqLKh7J2q4DaG8WnAgesfn/F2Hb+CkEZn3VA==}
@@ -2914,6 +3015,9 @@ packages:
   '@types/unist@3.0.3':
     resolution: {integrity: sha512-ko/gIFJRv177XgZsZcBwnqJN5x/Gien8qNOn0D5bQU/zAzVf9Zt3BlcUiLqhV9y4ARk0GbT3tnUiPNgnTXzc/Q==}
 
+  '@types/whatwg-mimetype@3.0.2':
+    resolution: {integrity: sha512-c2AKvDT8ToxLIOUlN51gTiHXflsfIFisS4pO7pDPoKouJCESkhZnEy623gwP9laCy5lnLDAw1vAzu2vM2YLOrA==}
+
   '@types/which@2.0.2':
     resolution: {integrity: sha512-113D3mDkZDjo+EeUEHCFy0qniNc1ZpecGiAU7WSo7YDoSzolZIQKpYFHrPpjkB2nuyahcKfrmLXeQlh7gqJYdw==}
 
@@ -3500,6 +3604,10 @@ packages:
 
   buffer-equal-constant-time@1.0.1:
     resolution: {integrity: sha512-zRpUiDwd/xk6ADqPMATG8vc9VPrkck7T07OIx0gnjmJAnHnTVXNQG3vfvWNuiZIkwu9KrKdA1iJKfsfTVxE6NA==}
+
+  buffer-image-size@0.6.4:
+    resolution: {integrity: sha512-nEh+kZOPY1w+gcCMobZ6ETUp9WfibndnosbpwB1iJk/8Gt5ZF2bhS6+B6bPYz424KtwsR6Rflc3tCz1/ghX2dQ==}
+    engines: {node: '>=4.0'}
 
   buffer@5.7.1:
     resolution: {integrity: sha512-EHcyIPBQ4BSGlvjB16k5KgAJ27CIsHY/2JBmCRReo48y9rQ3MaUzWX3KVlBa4U7MyX02HdVj0K7C3WaB3ju7FQ==}
@@ -4689,6 +4797,10 @@ packages:
   h3@1.15.11:
     resolution: {integrity: sha512-L3THSe2MPeBwgIZVSH5zLdBBU90TOxarvhK9d04IDY2AmVS8j2Jz2LIWtwsGOU3lu2I5jCN7FNvVfY2+XyF+mg==}
 
+  happy-dom@21.0.4:
+    resolution: {integrity: sha512-tFm+GaLBgo6o0awHnvHaNoraVo27qJ+2tZEtZ+cIa08hXbeitrxAJajLI05hsUy/2/YTKcUjQYzHe5mCcraLBw==}
+    engines: {node: '>=20.0.0'}
+
   has-flag@4.0.0:
     resolution: {integrity: sha512-EykJT/Q1KjTWctppgIAgfSO0tKVuZUjhgMr17kqTumMl6Afv3EISleU7qZUzoXDFTAHTDC4NOoG/ZxU3EvlMPQ==}
     engines: {node: '>=8'}
@@ -4858,6 +4970,9 @@ packages:
     resolution: {integrity: sha512-lV8dRlR/3i6Tk4X9agaqhMRY6ScVU3YOuKse0VRnP9+rUWfImeCjo1TeAefXEauNVF3a8QgOb6jW3CZJetVopw==}
     engines: {node: '>=18'}
     hasBin: true
+
+  intl-messageformat@12.0.0:
+    resolution: {integrity: sha512-DHF7YkwmXutmmcZg3hG7pizhjbznSMLM6Sb3frzmmNcW6VPGiiPtItHbP+wbZjbRiX0fIn5yuP31pXuPhbAt2Q==}
 
   ip-address@10.7.4:
     resolution: {integrity: sha512-DWBMKyeM25D70nrIiTkgQth59/G+naKOTep6huF9j+GmeK3DMD60Zvxg5d5qQnz+38AHgou6ean2LECX+lrKDg==}
@@ -6112,6 +6227,12 @@ packages:
     peerDependencies:
       react: ^19.3.1
 
+  react-intl@11.0.1:
+    resolution: {integrity: sha512-YskmHMW/J2lG5umBMsPy9usXlJyE+NzXAmVGO+mxnRwO+WUBydtBmQe0UrMwSFgpTTA9FmCgDAzhZtJWEepqHQ==}
+    peerDependencies:
+      '@types/react': '>=18.0.0'
+      react: '>=18.0.0'
+
   react-is@18.3.1:
     resolution: {integrity: sha512-/LLMVyas0ljjAtoYiPqYiL8VWXzUUdThrmU5+n20DZv+a+ClRoevUzw5JxU+Ieh5/c87ytoTBV9G1FiKfNJdmg==}
 
@@ -7216,6 +7337,10 @@ packages:
   whatwg-fetch@3.6.20:
     resolution: {integrity: sha512-EqhiFU6daOA8kpjOWTL0olhVOF3i7OrFzSYiGsEMB8GcXS+RrzauAERX65xMeNWVqxA6HXH2m69Z9LaKKdisfg==}
 
+  whatwg-mimetype@3.0.0:
+    resolution: {integrity: sha512-nt+N2dzIutVRxARx1nghPKGv1xHikU7HKdfafKkLNLindmPU/ch3U31NOCGGA/dmPcmb1VlofO0vnKAcsm0o/Q==}
+    engines: {node: '>=12'}
+
   whatwg-mimetype@4.0.0:
     resolution: {integrity: sha512-QaKxh0eNIi2mE9p2vEdzfagOKHCcj1pJ56EEHGQOVxp8r9/iszLUUV7v89x9O1p/T+NlTM5W7jW6+cz4Fq1YVg==}
     engines: {node: '>=18'}
@@ -8242,6 +8367,51 @@ snapshots:
       react-dom: 19.3.1(react@19.3.1)
 
   '@floating-ui/utils@0.2.12': {}
+
+  '@formatjs/cli-native-darwin-arm64@1.1.29':
+    optional: true
+
+  '@formatjs/cli-native-linux-arm64-musl@1.0.27':
+    optional: true
+
+  '@formatjs/cli-native-linux-arm64@1.2.29':
+    optional: true
+
+  '@formatjs/cli-native-linux-x64-musl@1.0.27':
+    optional: true
+
+  '@formatjs/cli-native-linux-x64@1.1.29':
+    optional: true
+
+  '@formatjs/cli-native-win32-x64@1.1.30':
+    optional: true
+
+  '@formatjs/cli@6.16.35':
+    optionalDependencies:
+      '@formatjs/cli-native-darwin-arm64': 1.1.29
+      '@formatjs/cli-native-linux-arm64': 1.2.29
+      '@formatjs/cli-native-linux-arm64-musl': 1.0.27
+      '@formatjs/cli-native-linux-x64': 1.1.29
+      '@formatjs/cli-native-linux-x64-musl': 1.0.27
+      '@formatjs/cli-native-win32-x64': 1.1.30
+
+  '@formatjs/fast-memoize@3.1.7': {}
+
+  '@formatjs/icu-messageformat-parser@3.5.19':
+    dependencies:
+      '@formatjs/icu-skeleton-parser': 2.1.12
+
+  '@formatjs/icu-messageformat-parser@3.5.22':
+    dependencies:
+      '@formatjs/icu-skeleton-parser': 2.1.12
+
+  '@formatjs/icu-skeleton-parser@2.1.12': {}
+
+  '@formatjs/intl@5.0.0':
+    dependencies:
+      '@formatjs/fast-memoize': 3.1.7
+      '@formatjs/icu-messageformat-parser': 3.5.19
+      intl-messageformat: 12.0.0
 
   '@google-cloud/cloud-sql-connector@1.12.1(supports-color@7.2.0)':
     dependencies:
@@ -10087,6 +10257,8 @@ snapshots:
 
   '@types/unist@3.0.3': {}
 
+  '@types/whatwg-mimetype@3.0.2': {}
+
   '@types/which@2.0.2': {}
 
   '@types/ws@8.18.2':
@@ -10210,6 +10382,15 @@ snapshots:
       magic-string: 1.4.3
     optionalDependencies:
       vite: 8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1)
+
+  '@vitest/mocker@5.0.5(vite@8.3.5(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))':
+    dependencies:
+      '@jridgewell/trace-mapping': 0.3.31
+      '@vitest/spy': 5.0.5
+      estree-walker: 3.0.3
+      magic-string: 1.4.3
+    optionalDependencies:
+      vite: 8.3.5(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1)
 
   '@vitest/pretty-format@3.2.7':
     dependencies:
@@ -10959,6 +11140,10 @@ snapshots:
   buffer-crc32@1.0.0: {}
 
   buffer-equal-constant-time@1.0.1: {}
+
+  buffer-image-size@0.6.4:
+    dependencies:
+      '@types/node': 24.19.2
 
   buffer@5.7.1:
     dependencies:
@@ -12568,6 +12753,19 @@ snapshots:
       ufo: 1.6.4
       uncrypto: 0.1.3
 
+  happy-dom@21.0.4:
+    dependencies:
+      '@types/node': 24.19.2
+      '@types/whatwg-mimetype': 3.0.2
+      '@types/ws': 8.18.2
+      buffer-image-size: 0.6.4
+      entities: 7.0.1
+      whatwg-mimetype: 3.0.0
+      ws: 8.22.0
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
+
   has-flag@4.0.0: {}
 
   has-symbols@1.1.0: {}
@@ -12741,6 +12939,11 @@ snapshots:
 
   install-artifact-from-github@1.8.1:
     optional: true
+
+  intl-messageformat@12.0.0:
+    dependencies:
+      '@formatjs/fast-memoize': 3.1.7
+      '@formatjs/icu-messageformat-parser': 3.5.19
 
   ip-address@10.7.4: {}
 
@@ -13973,6 +14176,14 @@ snapshots:
       react: 19.3.1
       scheduler: 0.28.0
 
+  react-intl@11.0.1(@types/react@19.3.0)(react@19.3.1):
+    dependencies:
+      '@formatjs/icu-messageformat-parser': 3.5.19
+      '@formatjs/intl': 5.0.0
+      '@types/react': 19.3.0
+      intl-messageformat: 12.0.0
+      react: 19.3.1
+
   react-is@18.3.1: {}
 
   react-is@19.3.1: {}
@@ -14952,7 +15163,7 @@ snapshots:
     optionalDependencies:
       vite: 8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1)
 
-  vitest@5.0.5(@opentelemetry/api@1.10.0)(@types/node@22.20.5)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1)):
+  vitest@5.0.5(@opentelemetry/api@1.10.0)(@types/node@22.20.5)(happy-dom@21.0.4)(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1)):
     dependencies:
       '@types/chai': 5.2.3
       '@vitest/mocker': 5.0.5(vite@8.3.5(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))
@@ -14971,6 +15182,30 @@ snapshots:
     optionalDependencies:
       '@opentelemetry/api': 1.10.0
       '@types/node': 22.20.5
+      happy-dom: 21.0.4
+    transitivePeerDependencies:
+      - msw
+
+  vitest@5.0.5(@opentelemetry/api@1.10.0)(@types/node@24.19.2)(happy-dom@21.0.4)(vite@8.3.5(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1)):
+    dependencies:
+      '@types/chai': 5.2.3
+      '@vitest/mocker': 5.0.5(vite@8.3.5(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))
+      chai: 6.3.0
+      es-module-lexer: 2.3.2
+      expect-type: 1.4.0
+      magic-string: 1.4.3
+      obug: 3.0.0
+      picomatch: 4.0.7
+      std-env: 4.3.0
+      tinybench: 6.2.2
+      tinyexec: 1.3.1
+      tinyglobby: 0.2.17
+      vite: 8.3.5(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1)
+      why-is-node-running: 3.2.1
+    optionalDependencies:
+      '@opentelemetry/api': 1.10.0
+      '@types/node': 24.19.2
+      happy-dom: 21.0.4
     transitivePeerDependencies:
       - msw
 
@@ -15191,6 +15426,8 @@ snapshots:
       iconv-lite: 0.6.3
 
   whatwg-fetch@3.6.20: {}
+
+  whatwg-mimetype@3.0.0: {}
 
   whatwg-mimetype@4.0.0: {}
 

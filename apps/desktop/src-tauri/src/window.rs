@@ -33,6 +33,9 @@ enum Material {
 struct ChromeInfo {
     platform: Platform,
     material: Material,
+    /// The OS's preferred locale as a BCP 47 tag ("tr-TR"); the UI picks its language from it
+    /// (src/i18n/locale.ts). Null when the OS doesn't report one.
+    locale: Option<String>,
 }
 
 const PLATFORM: Platform = if cfg!(target_os = "macos") {
@@ -112,6 +115,7 @@ pub fn create_main<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
     let chrome = ChromeInfo {
         platform: PLATFORM,
         material: material(),
+        locale: sys_locale::get_locale(),
     };
     let dev_url = if tauri::is_dev() {
         app.config().build.dev_url.clone()
@@ -148,10 +152,11 @@ mod tests {
         let script = chrome_script(&ChromeInfo {
             platform: Platform::Windows,
             material: Material::Mica,
+            locale: Some("tr-TR".to_owned()),
         });
         assert_eq!(
             script,
-            r#"Object.defineProperty(window, "__BFHR_CHROME__", { value: Object.freeze({"platform":"windows","material":"mica"}) });"#
+            r#"Object.defineProperty(window, "__BFHR_CHROME__", { value: Object.freeze({"platform":"windows","material":"mica","locale":"tr-TR"}) });"#
         );
     }
 

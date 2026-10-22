@@ -2,12 +2,27 @@ import { Link } from "@tanstack/react-router";
 import { Keyboard, Search, type LucideIcon } from "lucide-react";
 import { Tooltip } from "radix-ui";
 import type { ReactNode } from "react";
+import { defineMessages, useIntl } from "react-intl";
 import { chrome } from "../lib/desktop";
-import { destinations } from "../lib/destinations";
+import { destinationMessages, destinations } from "../lib/destinations";
 import { shortcutById, shortcutKeys, type Shortcut } from "../lib/shortcuts";
 import { Keycaps } from "../shared/ui/Keycaps";
 import { SyncStatus } from "../shared/ui/SyncStatus";
 import { destinationIcons } from "./icons";
+
+const messages = defineMessages({
+  sections: {
+    id: "shell.sidebar.sections",
+    defaultMessage: "Sections",
+    description: "Accessible name of the sidebar navigation",
+  },
+  jumpTo: {
+    id: "shell.sidebar.jumpTo",
+    defaultMessage: "Jump to…",
+    description: "Opens the command palette",
+  },
+  keyboardShortcuts: { id: "shell.sidebar.keyboardShortcuts", defaultMessage: "Keyboard shortcuts" },
+});
 
 const rowClass =
   "flex h-8 w-full items-center gap-2.5 rounded-md px-2 text-callout text-fg-primary outline-offset-0 hover:bg-surface-hover narrow:justify-center narrow:px-0";
@@ -67,10 +82,11 @@ export function Sidebar({
   onOpenPalette: () => void;
   onOpenShortcuts: () => void;
 }) {
+  const intl = useIntl();
   const isMac = chrome.platform === "macos";
   return (
     <nav
-      aria-label="Sections"
+      aria-label={intl.formatMessage(messages.sections)}
       className="bg-(--chrome) flex w-(--sidebar-width) shrink-0 flex-col select-none narrow:w-(--rail-width)"
     >
       {/* macOS: the traffic lights sit in this row, aligned with the sidebar icons below. */}
@@ -79,7 +95,7 @@ export function Sidebar({
       <div className={isMac ? "px-3" : "px-3 pt-2"}>
         <ActionRow
           icon={Search}
-          label="Jump to…"
+          label={intl.formatMessage(messages.jumpTo)}
           shortcut={shortcutById("command-palette")}
           showKeycaps
           onClick={onOpenPalette}
@@ -89,16 +105,17 @@ export function Sidebar({
       <ul className="mt-3 flex flex-col gap-0.5 px-3">
         {destinations.map((destination) => {
           const Icon = destinationIcons[destination.id];
+          const label = intl.formatMessage(destinationMessages[destination.id]);
           return (
             <li key={destination.id}>
-              <WithHint label={destination.label} shortcut={shortcutById(`go-${destination.id}`)}>
+              <WithHint label={label} shortcut={shortcutById(`go-${destination.id}`)}>
                 <Link
                   to={destination.path}
                   className={`${rowClass} aria-[current=page]:bg-surface-selected aria-[current=page]:font-medium`}
                   activeProps={{ "aria-current": "page" }}
                 >
                   <Icon aria-hidden="true" className="size-4 shrink-0" strokeWidth={1.75} />
-                  <span className={labelClass}>{destination.label}</span>
+                  <span className={labelClass}>{label}</span>
                 </Link>
               </WithHint>
             </li>
@@ -109,7 +126,7 @@ export function Sidebar({
       <div className="mt-auto px-3 pb-3">
         <ActionRow
           icon={Keyboard}
-          label="Keyboard shortcuts"
+          label={intl.formatMessage(messages.keyboardShortcuts)}
           shortcut={shortcutById("keyboard-shortcuts")}
           showKeycaps={false}
           onClick={onOpenShortcuts}

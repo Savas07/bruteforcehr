@@ -15,13 +15,42 @@ import {
 import { ChevronDown } from "lucide-react";
 import { DropdownMenu } from "radix-ui";
 import { Fragment } from "react";
+import { defineMessages, type IntlShape, useIntl } from "react-intl";
 import { cx } from "../cx";
-import { MOVE_DENIAL_REASONS, PHASE_LABELS, STATUS_LABELS } from "../model/vocabulary";
+import { MOVE_DENIAL_MESSAGES, PHASE_MESSAGES, STATUS_MESSAGES } from "../model/vocabulary";
 import type { StatusVM } from "../model/types";
 import { Hint } from "./Hint";
 import { Keycaps } from "./Keycaps";
 import { MenuContent, MenuLabel, MenuRadioGroup, MenuRadioItem, MenuSeparator } from "./Menu";
 import { SyncGlyph } from "./SyncGlyph";
+
+const messages = defineMessages({
+  status: {
+    id: "shared.ui.statusPill.status",
+    defaultMessage: "Status: {status}",
+    description: "Screen-reader name of a status pill",
+  },
+  interactiveStatus: {
+    id: "shared.ui.statusPill.interactiveStatus",
+    defaultMessage: "Status: {status}, changes status",
+    description: "Screen-reader name of a status pill button that opens the Move to menu",
+  },
+  changeStatus: {
+    id: "shared.ui.statusPill.changeStatus",
+    defaultMessage: "Change status",
+    description: "Tooltip of the status pill button",
+  },
+  moveToMenu: {
+    id: "shared.ui.statusPill.moveToMenu",
+    defaultMessage: "Move to",
+    description: "Accessible name of the status menu",
+  },
+  moveToHeading: {
+    id: "shared.ui.statusPill.moveToHeading",
+    defaultMessage: "Move to…",
+    description: "Visible heading of the status menu",
+  },
+});
 
 /** Pill background and label color per status (system.md "Status and phase tones"). */
 const toneClass: Record<ApplicationStatus, string> = {
@@ -78,12 +107,13 @@ export interface StatusPillProps {
 
 /** Static status pill: dot + label in the status tone. Screen readers hear "Status: Interviewing". */
 export function StatusPill({ status, size = "md", pendingSync = false }: StatusPillProps) {
+  const intl = useIntl();
   return (
     <span className={cx(pillClass, toneClass[status.key], sizeClass[size])}>
       <StatusDot status={status.key} />
       <span>
-        <span className="sr-only">Status: </span>
-        {status.label}
+        <span aria-hidden="true">{status.label}</span>
+        <span className="sr-only">{intl.formatMessage(messages.status, { status: status.label })}</span>
       </span>
       {pendingSync && <SyncGlyph />}
     </span>
@@ -112,12 +142,13 @@ export function InteractiveStatusPill({
   open,
   onOpenChange,
 }: InteractiveStatusPillProps) {
+  const intl = useIntl();
   return (
     <DropdownMenu.Root
       {...(open === undefined ? {} : { open })}
       {...(onOpenChange === undefined ? {} : { onOpenChange })}
     >
-      <Hint label="Change status" keys="M">
+      <Hint label={intl.formatMessage(messages.changeStatus)} keys="M">
         <DropdownMenu.Trigger asChild>
           <button
             type="button"
@@ -130,9 +161,10 @@ export function InteractiveStatusPill({
           >
             <StatusDot status={status.key} />
             <span>
-              <span className="sr-only">Status: </span>
-              {status.label}
-              <span className="sr-only">, changes status</span>
+              <span aria-hidden="true">{status.label}</span>
+              <span className="sr-only">
+                {intl.formatMessage(messages.interactiveStatus, { status: status.label })}
+              </span>
             </span>
             {pendingSync && <SyncGlyph />}
             <ChevronDown aria-hidden="true" className="size-3.5 shrink-0" strokeWidth={1.75} />
@@ -148,10 +180,10 @@ const PHASES: readonly StatusPhase[] = ["shortlist", "in_progress", "closed"];
 const ALL_STATUSES: readonly ApplicationStatus[] = [...ACTIVE_STATUSES, ...TERMINAL_STATUSES];
 
 /** Why the user can't pick `to` from `current`, or null when they can (or it's the current one). */
-function denialReason(current: ApplicationStatus, to: ApplicationStatus): string | null {
+function denialReason(current: ApplicationStatus, to: ApplicationStatus, intl: IntlShape): string | null {
   const check = canTransition(current, to, "user");
   return !check.allowed && check.reason === "outcome_requires_offer"
-    ? MOVE_DENIAL_REASONS[check.reason]
+    ? intl.formatMessage(MOVE_DENIAL_MESSAGES[check.reason])
     : null;
 }
 
@@ -168,28 +200,33 @@ export interface StatusMenuProps {
  * current one checked; targets `canTransition` refuses stay visible, greyed, with the D16 reason.
  */
 export function StatusMenu({ current, onSelect }: StatusMenuProps) {
+  const intl = useIntl();
   const choose = (value: string) => {
     const to = ALL_STATUSES.find((status) => status === value);
     if (to !== undefined && to !== current) onSelect(to);
   };
   return (
-    <MenuContent aria-label="Move to">
+    <MenuContent aria-label={intl.formatMessage(messages.moveToMenu)}>
       <MenuLabel>
-        <span>Move to…</span>
+        <span>{intl.formatMessage(messages.moveToHeading)}</span>
         <Keycaps keys="M" />
       </MenuLabel>
       {PHASES.map((phase, index) => (
         <Fragment key={phase}>
           {index > 0 && <MenuSeparator />}
-          <MenuRadioGroup value={current} onValueChange={choose} label={PHASE_LABELS[phase]}>
+          <MenuRadioGroup
+            value={current}
+            onValueChange={choose}
+            label={intl.formatMessage(PHASE_MESSAGES[phase])}
+          >
             {ALL_STATUSES.filter((status) => statusPhase(status) === phase).map((status) => (
               <MenuRadioItem
                 key={status}
                 value={status}
                 leading={<StatusDot status={status} />}
-                disabledReason={denialReason(current, status)}
+                disabledReason={denialReason(current, status, intl)}
               >
-                {STATUS_LABELS[status]}
+                {intl.formatMessage(STATUS_MESSAGES[status])}
               </MenuRadioItem>
             ))}
           </MenuRadioGroup>

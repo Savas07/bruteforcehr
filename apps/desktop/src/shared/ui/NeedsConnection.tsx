@@ -1,7 +1,14 @@
 import type { ReactNode } from "react";
+import { defineMessages, useIntl } from "react-intl";
 import { useConnectivity } from "../connectivity";
 
-const NEEDS_CONNECTION = "Needs a connection";
+const messages = defineMessages({
+  needsConnection: {
+    id: "shared.ui.needsConnection.reason",
+    defaultMessage: "Needs a connection",
+    description: "Tooltip on a server-only action disabled while offline",
+  },
+});
 
 /**
  * Disables a server-only action in place while offline (states.md rule 6): never hidden, always
@@ -26,6 +33,9 @@ export function NeedsConnection({
   /** Renders the action; `reason` is null online and the disabled reason offline. */
   children: (reason: string | null) => ReactNode;
 }) {
+  const intl = useIntl();
   const { status } = useConnectivity();
-  return children(status === "offline" ? (explanation ?? NEEDS_CONNECTION) : null);
+  return children(
+    status === "offline" ? (explanation ?? intl.formatMessage(messages.needsConnection)) : null,
+  );
 }

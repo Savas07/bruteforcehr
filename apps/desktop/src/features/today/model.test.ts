@@ -1,5 +1,6 @@
 import { emptyDataset, FIXTURE_NOW, type FixtureDataset, populatedDataset } from "@bfhr/fixtures";
 import { describe, expect, it } from "vitest";
+import { createAppIntl } from "../../i18n/intl";
 import { fixtureContext } from "../../shared/model/fixture-context";
 import { type AttentionItemVM, buildTodayModel, type TodayModel } from "./model";
 
@@ -31,7 +32,8 @@ describe("buildTodayModel — populated", () => {
   it("lists the five sections in the fixed order with plain-text counts", () => {
     expect(model.sections.map(({ id, title, countLabel }) => [id, title, countLabel])).toEqual([
       ["nextUp", "Next up", null],
-      ["toReview", "To review", "6"],
+      // Only the 3 emails waiting for confirmation count (D01); the 3 automatic changes don't.
+      ["toReview", "To review", "3"],
       ["followUps", "Follow-ups", "2"],
       ["deadlines", "Deadlines", "2"],
       ["newMatches", "New matches", "3"],
@@ -39,6 +41,16 @@ describe("buildTodayModel — populated", () => {
     expect(model.sections.find((section) => section.id === "newMatches")?.seeAllLabel).toBe(
       "See all in Jobs",
     );
+  });
+
+  it("leaves the To review count out when only automatic changes are listed (D01)", () => {
+    const data: FixtureDataset = {
+      ...populatedDataset,
+      mailMessages: populatedDataset.mailMessages.filter((message) => message.reviewState !== "pending"),
+    };
+    const section = build(data).sections.find((candidate) => candidate.id === "toReview");
+    expect(section?.items.every((item) => item.kind === "autoUpdate")).toBe(true);
+    expect(section?.countLabel).toBeNull();
   });
 
   it("flattens the items in display order and selects the first by default", () => {
@@ -318,5 +330,17 @@ describe("buildTodayModel — empty", () => {
     });
     expect(noMail.caughtUp).toBeNull();
     expect(noMail.sections.map((section) => section.id)).toContain("nextUp");
+  });
+});
+
+describe("buildTodayModel — Turkish", () => {
+  it("takes its copy from the catalog of the UI language", () => {
+    const intl = createAppIntl({ language: "tr", locale: "tr-TR" });
+    const model = buildTodayModel(populatedDataset, fixtureContext(populatedDataset, [], intl), {});
+    const english = build(populatedDataset);
+    expect(model.title).not.toBe(english.title);
+    const titles = model.sections.map((section) => section.title);
+    expect(titles).toHaveLength(english.sections.length);
+    for (const title of english.sections.map((section) => section.title)) expect(titles).not.toContain(title);
   });
 });

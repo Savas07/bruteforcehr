@@ -1,9 +1,28 @@
 import { Download } from "lucide-react";
 import { DropdownMenu } from "radix-ui";
 import { useState } from "react";
+import { defineMessages, useIntl } from "react-intl";
 import { useKeyBindings } from "../keyboard/useKeyBindings";
 import { Button } from "./Button";
 import { MenuContent, MenuItem } from "./Menu";
+
+const messages = defineMessages({
+  export: {
+    id: "shared.ui.exportButton.export",
+    defaultMessage: "Export…",
+    description: "Button and shortcut that open the export format menu",
+  },
+  exporting: {
+    id: "shared.ui.exportButton.exporting",
+    defaultMessage: "Exporting…",
+    description: "Button label while an export runs",
+  },
+  formatMenu: {
+    id: "shared.ui.exportButton.formatMenu",
+    defaultMessage: "Export format",
+    description: "Accessible name of the export format menu",
+  },
+});
 
 export interface ExportFormat {
   /** Reported to `onExport` ("pdf", "csv"). */
@@ -29,6 +48,8 @@ export interface ExportButtonProps {
  * enabled; the tooltip shows the shortcut.
  */
 export function ExportButton({ formats, onExport, exporting = false, disabledReason }: ExportButtonProps) {
+  const intl = useIntl();
+  const exportLabel = intl.formatMessage(messages.export);
   const [open, setOpen] = useState(false);
   const inert = exporting || Boolean(disabledReason);
 
@@ -36,7 +57,7 @@ export function ExportButton({ formats, onExport, exporting = false, disabledRea
     {
       id: "view.export",
       keys: "Mod+E",
-      label: "Export…",
+      label: exportLabel,
       group: "General",
       enabled: !inert,
       run: () => setOpen(true),
@@ -45,8 +66,13 @@ export function ExportButton({ formats, onExport, exporting = false, disabledRea
 
   if (inert)
     return (
-      <Button icon={Download} loading={exporting} loadingLabel="Exporting…" disabledReason={disabledReason}>
-        Export…
+      <Button
+        icon={Download}
+        loading={exporting}
+        loadingLabel={intl.formatMessage(messages.exporting)}
+        disabledReason={disabledReason}
+      >
+        {exportLabel}
       </Button>
     );
 
@@ -54,10 +80,10 @@ export function ExportButton({ formats, onExport, exporting = false, disabledRea
     <DropdownMenu.Root open={open} onOpenChange={setOpen}>
       <DropdownMenu.Trigger asChild>
         <Button icon={Download} shortcut="Mod+E">
-          Export…
+          {exportLabel}
         </Button>
       </DropdownMenu.Trigger>
-      <MenuContent align="end" aria-label="Export format">
+      <MenuContent align="end" aria-label={intl.formatMessage(messages.formatMenu)}>
         {formats.map((format) => (
           <MenuItem key={format.id} onSelect={() => onExport(format.id)}>
             {format.label}

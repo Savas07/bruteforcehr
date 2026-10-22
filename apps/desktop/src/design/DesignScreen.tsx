@@ -2,9 +2,11 @@ import { emptyDataset, FIXTURE_NOW, populatedDataset } from "@bfhr/fixtures";
 import { timing } from "@bfhr/ui-tokens";
 import { useNavigate, useParams, useSearch } from "@tanstack/react-router";
 import { useEffect, useMemo, type ComponentType } from "react";
+import { defineMessages, useIntl } from "react-intl";
 import { fixtureContext } from "../shared/model/fixture-context";
 import { clockTime, relativeTime } from "../shared/model/format";
 import type { Loadable, ModelContext, UserData } from "../shared/model/types";
+import { destinationMessages, type DestinationId } from "../lib/destinations";
 import type { ScreenId, ScreenProps } from "../shared/screen";
 import { ScreenTitle } from "../shared/ui/ScreenTitle";
 import { DESIGN_READY_ATTRIBUTE } from "./matrix";
@@ -13,8 +15,8 @@ import { readDesignParams } from "./search";
 /** How the design build feeds one core screen. */
 export interface DesignScreenSpec<Model> {
   readonly id: ScreenId;
-  /** Section title for the placeholder shown until the screen's view exists. */
-  readonly title: string;
+  /** Section whose title the placeholder shows until the screen's view exists. */
+  readonly destination: DestinationId;
   readonly build: (
     data: UserData,
     ctx: ModelContext,
@@ -34,14 +36,25 @@ const views = import.meta.glob<{ default: ComponentType<ScreenProps<never>> }>("
   eager: true,
 });
 
+const messages = defineMessages({
+  noView: {
+    id: "design.screen.noView",
+    defaultMessage:
+      "Design harness: add <code>src/features/{id}/Screen.tsx</code> to render this screen. Its model is ready in <code>src/features/{id}/model.ts</code>.",
+  },
+});
+
 /** Shown until `src/features/<id>/Screen.tsx` exists (design builds only). */
 function NoViewYet({ spec }: { spec: DesignScreenSpec<unknown> }) {
+  const intl = useIntl();
   return (
     <section className="min-h-0 flex-1 overflow-y-auto px-8 pt-5 pb-8">
-      <ScreenTitle title={spec.title} />
+      <ScreenTitle title={intl.formatMessage(destinationMessages[spec.destination])} />
       <p className="text-fg-secondary mt-2 text-callout">
-        Design harness: add <code className="font-mono">src/features/{spec.id}/Screen.tsx</code> to render
-        this screen. Its model is ready in <code className="font-mono">src/features/{spec.id}/model.ts</code>.
+        {intl.formatMessage(messages.noView, {
+          id: spec.id,
+          code: (chunks) => <code className="font-mono">{chunks}</code>,
+        })}
       </p>
     </section>
   );
@@ -85,6 +98,7 @@ export function DesignScreen<Model>({
   const search = readDesignParams(useSearch({ strict: false }));
   const routeParams: Readonly<Record<string, string | undefined>> = useParams({ strict: false });
   const navigate = useNavigate();
+  const intl = useIntl();
   // Search and route params are fresh objects every render: key the memo on their content.
   const paramsKey = JSON.stringify({ ...search.rest, ...routeParams });
   const params = useMemo(
@@ -109,8 +123,8 @@ export function DesignScreen<Model>({
       case "ready":
       case "offline": {
         const offline = search.state === "offline";
-        const base = fixtureContext(data);
-        const ctx = offline ? fixtureContext(data, spec.offlinePending(data, base)) : base;
+        const base = fixtureContext(data, [], intl);
+        const ctx = offline ? fixtureContext(data, spec.offlinePending(data, base), intl) : base;
         const updatedAt = new Date(FIXTURE_NOW.getTime() - cacheAge[search.state]);
         return {
           status: "ready",
@@ -121,7 +135,7 @@ export function DesignScreen<Model>({
         };
       }
     }
-  }, [search.fixture, search.state, spec, params, navigate]);
+  }, [search.fixture, search.state, spec, params, navigate, intl]);
 
   useDesignReady(`${spec.id}:${search.fixture}:${search.state}:${paramsKey}`, model.status === "loading");
 

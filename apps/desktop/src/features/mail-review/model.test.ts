@@ -1,6 +1,7 @@
 import type { MailMessage } from "@bfhr/core";
 import { emptyDataset, type FixtureDataset, populatedDataset } from "@bfhr/fixtures";
 import { describe, expect, it } from "vitest";
+import { createAppIntl } from "../../i18n/intl";
 import { fixtureContext } from "../../shared/model/fixture-context";
 import { buildMailReviewModel, type MailRowVM } from "./model";
 
@@ -316,5 +317,13 @@ describe("buildMailReviewModel — empty and no selection", () => {
         .noSelection?.title,
     ).toBe("1 email to review. Select one to see what we found.");
     expect(build({ folder: "updates" }, empty).empty?.kind).toBe("noUpdates");
+  });
+});
+
+describe("buildMailReviewModel — Turkish", () => {
+  it("labels folders from the Turkish catalog", () => {
+    const intl = createAppIntl({ language: "tr", locale: "tr-TR" });
+    const model = buildMailReviewModel(populatedDataset, fixtureContext(populatedDataset, [], intl), {});
+    expect(model.folders[0]?.label).toBe("İncelenecek");
   });
 });

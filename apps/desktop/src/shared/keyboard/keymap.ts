@@ -9,6 +9,7 @@
  * `Mod+Shift+D`, `Alt+ArrowUp`, `Shift+F8`. `Mod` is ⌘ on macOS and Ctrl on Windows. A space
  * separates the steps of a sequence: `G T`.
  */
+import { defineMessages, type IntlShape, type MessageDescriptor } from "react-intl";
 import type { Platform } from "../../lib/desktop";
 
 export interface Chord {
@@ -144,31 +145,74 @@ const KEY_GLYPHS: Readonly<Record<string, readonly [string, string]>> = {
   " ": ["Space", "Space"],
 };
 
-const SPOKEN_KEYS: Readonly<Record<string, string>> = {
-  "/": "Slash",
-  "?": "Question mark",
-  ",": "Comma",
-  " ": "Space",
-  ArrowUp: "Up arrow",
-  ArrowDown: "Down arrow",
-  ArrowLeft: "Left arrow",
-  ArrowRight: "Right arrow",
-};
+const messages = defineMessages({
+  command: {
+    id: "shared.keyboard.command",
+    defaultMessage: "Command",
+    description: "Spoken name of the ⌘ key",
+  },
+  control: {
+    id: "shared.keyboard.control",
+    defaultMessage: "Control",
+    description: "Spoken name of the Ctrl key",
+  },
+  option: { id: "shared.keyboard.option", defaultMessage: "Option", description: "Spoken name of the ⌥ key" },
+  alt: { id: "shared.keyboard.alt", defaultMessage: "Alt", description: "Spoken name of the Alt key" },
+  shift: {
+    id: "shared.keyboard.shift",
+    defaultMessage: "Shift",
+    description: "Spoken name of the Shift key",
+  },
+  sequence: {
+    id: "shared.keyboard.sequence",
+    defaultMessage: "{first} then {next}",
+    description: "Key sequence for screen readers: first chord, then the following one(s)",
+  },
+  alternatives: {
+    id: "shared.keyboard.alternatives",
+    defaultMessage: "{first} or {next}",
+    description: "Alternative shortcuts for screen readers",
+  },
+});
+
+const SPOKEN_KEYS: Readonly<Record<string, MessageDescriptor>> = defineMessages({
+  "/": { id: "shared.keyboard.slash", defaultMessage: "Slash" },
+  "?": { id: "shared.keyboard.questionMark", defaultMessage: "Question mark" },
+  ",": { id: "shared.keyboard.comma", defaultMessage: "Comma" },
+  " ": { id: "shared.keyboard.space", defaultMessage: "Space" },
+  ArrowUp: { id: "shared.keyboard.arrowUp", defaultMessage: "Up arrow" },
+  ArrowDown: { id: "shared.keyboard.arrowDown", defaultMessage: "Down arrow" },
+  ArrowLeft: { id: "shared.keyboard.arrowLeft", defaultMessage: "Left arrow" },
+  ArrowRight: { id: "shared.keyboard.arrowRight", defaultMessage: "Right arrow" },
+});
 
 /** Spoken form for assistive tech: "Command Shift D", "G then T". */
-export function spokenKeys(steps: readonly Chord[], platform: Platform): string {
+export function spokenKeys(steps: readonly Chord[], platform: Platform, intl: IntlShape): string {
+  const mac = platform === "macos";
   return steps
-    .map((chord) =>
-      [
-        chord.mod && (platform === "macos" ? "Command" : "Control"),
-        chord.alt && (platform === "macos" ? "Option" : "Alt"),
-        chord.shift && "Shift",
-        SPOKEN_KEYS[chord.key] ?? (isLetter(chord.key) ? chord.key.toUpperCase() : chord.key),
+    .map((chord) => {
+      const spoken = SPOKEN_KEYS[chord.key];
+      return [
+        chord.mod && intl.formatMessage(mac ? messages.command : messages.control),
+        chord.alt && intl.formatMessage(mac ? messages.option : messages.alt),
+        chord.shift && intl.formatMessage(messages.shift),
+        spoken !== undefined
+          ? intl.formatMessage(spoken)
+          : isLetter(chord.key)
+            ? chord.key.toUpperCase()
+            : chord.key,
       ]
         .filter(Boolean)
-        .join(" "),
-    )
-    .join(" then ");
+        .join(" ");
+    })
+    .reduce((first, next) => intl.formatMessage(messages.sequence, { first, next }));
+}
+
+/** Spoken form of every alternative of a binding: "G then T or Command 1". */
+export function spokenAlternatives(keys: KeyBinding["keys"], platform: Platform, intl: IntlShape): string {
+  return parseKeys(keys)
+    .map((steps) => spokenKeys(steps, platform, intl))
+    .reduce((first, next) => intl.formatMessage(messages.alternatives, { first, next }));
 }
 
 /** How long the second key of a sequence (`G` then `T`) may follow the first. */

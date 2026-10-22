@@ -7,7 +7,37 @@
 import { ChevronRight, CircleAlert, type LucideIcon } from "lucide-react";
 import { Collapsible } from "radix-ui";
 import { useEffect, useRef, useState } from "react";
+import { defineMessages, useIntl } from "react-intl";
 import { Button } from "./Button";
+
+const messages = defineMessages({
+  tryAgain: {
+    id: "shared.ui.paneError.tryAgain",
+    defaultMessage: "Try again",
+    description: "Retries loading the pane",
+  },
+  showDetails: {
+    id: "shared.ui.paneError.showDetails",
+    defaultMessage: "Show details",
+    description: "Opens technical error details",
+  },
+  hideDetails: { id: "shared.ui.paneError.hideDetails", defaultMessage: "Hide details" },
+  copyDetails: {
+    id: "shared.ui.paneError.copyDetails",
+    defaultMessage: "Copy details",
+    description: "Copies error details for support",
+  },
+  copied: {
+    id: "shared.ui.paneError.copied",
+    defaultMessage: "Copied",
+    description: "Button label after copying",
+  },
+  detailsCopied: {
+    id: "shared.ui.paneError.detailsCopied",
+    defaultMessage: "Details copied",
+    description: "Screen reader announcement after copying",
+  },
+});
 
 /** A pane-sized error with "Try again" (focused on mount) and an optional second way out. */
 export function PaneError({
@@ -31,6 +61,7 @@ export function PaneError({
   /** Monochrome line glyph (`fg-tertiary`, 32 px). Default: a circled exclamation mark. */
   glyph?: LucideIcon;
 }) {
+  const intl = useIntl();
   const focusTarget = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     focusTarget.current?.focus();
@@ -46,7 +77,7 @@ export function PaneError({
       <div className="flex flex-wrap items-center justify-center gap-2">
         {onRetry && (
           <Button ref={focusTarget} variant="primary" onClick={onRetry}>
-            Try again
+            {intl.formatMessage(messages.tryAgain)}
           </Button>
         )}
         {secondary && (
@@ -62,6 +93,7 @@ export function PaneError({
 
 function ErrorDetails({ details }: { details: string }) {
   const [open, setOpen] = useState(false);
+  const intl = useIntl();
   const [copied, setCopied] = useState(false);
   return (
     <Collapsible.Root
@@ -75,7 +107,7 @@ function ErrorDetails({ details }: { details: string }) {
           className="size-3.5 transition-transform duration-(--bfhr-duration-fast) ease-standard group-data-[state=open]:rotate-90"
           strokeWidth={1.75}
         />
-        {open ? "Hide details" : "Show details"}
+        {intl.formatMessage(open ? messages.hideDetails : messages.showDetails)}
       </Collapsible.Trigger>
       <Collapsible.Content className="flex w-full flex-col items-start gap-2 text-left">
         <pre className="bg-surface-sunken text-fg-secondary w-full overflow-x-auto rounded-sm p-2 font-mono text-caption1 break-all whitespace-pre-wrap select-text">
@@ -88,10 +120,10 @@ function ErrorDetails({ details }: { details: string }) {
             void navigator.clipboard.writeText(details).then(() => setCopied(true));
           }}
         >
-          {copied ? "Copied" : "Copy details"}
+          {intl.formatMessage(copied ? messages.copied : messages.copyDetails)}
         </Button>
         <span role="status" className="sr-only">
-          {copied ? "Details copied" : ""}
+          {copied ? intl.formatMessage(messages.detailsCopied) : ""}
         </span>
       </Collapsible.Content>
     </Collapsible.Root>

@@ -1,10 +1,21 @@
 /**
  * Date, time and number formatting for view-models. Everything goes through `Intl` with the
  * context's locale and time zone (system.md "Typography": 24 h in TR/DE, `Intl.*` always).
+ * Counted nouns are ICU plurals in the messages (`{count, plural, one {# application} other {…}}`),
+ * never assembled here.
  */
+import { defineMessages } from "react-intl";
 import type { ModelContext, TimeVM } from "./types";
 
-type FormatContext = Pick<ModelContext, "now" | "locale" | "timeZone">;
+type FormatContext = Pick<ModelContext, "now" | "locale" | "timeZone" | "intl">;
+
+const messages = defineMessages({
+  dayAndTime: {
+    id: "shared.format.dayAndTime",
+    defaultMessage: "{day}, {time}",
+    description: "An appointment's day and clock time: 'Tomorrow, 17:00'",
+  },
+});
 
 const DAY_MS = 86_400_000;
 
@@ -92,7 +103,11 @@ export function dayAndTime(date: Date, ctx: FormatContext): TimeVM {
   } else {
     day = shortDate(date, ctx);
   }
-  return { iso: date.toISOString(), label: `${day}, ${time}`, absolute: absoluteDateTime(date, ctx) };
+  return {
+    iso: date.toISOString(),
+    label: ctx.intl.formatMessage(messages.dayAndTime, { day, time }),
+    absolute: absoluteDateTime(date, ctx),
+  };
 }
 
 /** "€55,000" / "55.000 €": whole units, the locale's grouping. */
@@ -100,10 +115,4 @@ export function money(amount: number, currency: string, locale: string): string 
   return new Intl.NumberFormat(locale, { style: "currency", currency, maximumFractionDigits: 0 }).format(
     amount,
   );
-}
-
-/** "3 applications" / "1 application": EN plural via `Intl.PluralRules`. */
-export function countLabel(count: number, one: string, other: string, locale: string): string {
-  const form = new Intl.PluralRules(locale).select(count) === "one" ? one : other;
-  return `${new Intl.NumberFormat(locale).format(count)} ${form}`;
 }

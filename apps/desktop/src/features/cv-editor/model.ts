@@ -16,14 +16,9 @@ import type {
   CvStandardSection,
   CvTheme,
 } from "@bfhr/core";
+import { defineMessages, type IntlShape, type MessageDescriptor } from "react-intl";
 import { applicationLabel } from "../../shared/model/build-blocks";
-import {
-  calendarDaysFromNow,
-  clockTime,
-  countLabel,
-  relativeTime,
-  shortDate,
-} from "../../shared/model/format";
+import { calendarDaysFromNow, clockTime, relativeTime, shortDate } from "../../shared/model/format";
 import type { CompanyVM, ModelContext, SourceVM, StatusVM, TimeVM, UserData } from "../../shared/model/types";
 import { companyVM, sourceVM, statusVM } from "../../shared/model/vocabulary";
 
@@ -343,187 +338,410 @@ export interface CvEditorModel {
  * Copy.
  * ---------------------------------------------------------------------------------------------- */
 
-const FIRST_USE: CvFirstUseVM = {
-  title: "No CVs yet",
-  body: "Import the CV you already have and we'll make it editable, or start from a blank page.",
-  choices: [
-    {
-      id: "import",
-      label: "Import a CV",
-      description: "PDF, DOCX, JSON Resume or the LinkedIn ZIP",
-      primary: true,
-    },
-    {
-      id: "scratch",
-      label: "Start from scratch",
-      description: "Build it step by step (about 10 min)",
-      primary: false,
-    },
-  ],
-};
+const messages = defineMessages({
+  firstUseTitle: { id: "cv-editor.firstUse.title", defaultMessage: "No CVs yet" },
+  firstUseBody: {
+    id: "cv-editor.firstUse.body",
+    defaultMessage: "Import the CV you already have and we'll make it editable, or start from a blank page.",
+  },
+  firstUseImport: { id: "cv-editor.firstUse.import", defaultMessage: "Import a CV" },
+  firstUseImportDescription: {
+    id: "cv-editor.firstUse.importDescription",
+    defaultMessage: "PDF, DOCX, JSON Resume or the LinkedIn ZIP",
+  },
+  firstUseScratch: { id: "cv-editor.firstUse.scratch", defaultMessage: "Start from scratch" },
+  firstUseScratchDescription: {
+    id: "cv-editor.firstUse.scratchDescription",
+    defaultMessage: "Build it step by step (about 10 min)",
+  },
+  roleVariant: {
+    id: "cv-editor.list.roleVariant",
+    defaultMessage: "Role variant",
+    description: "Pill on a same-language variant of a base CV (language variants show the language)",
+  },
+  defaultCv: {
+    id: "cv-editor.list.default",
+    defaultMessage: "Default",
+    description: "Tag on the default CV",
+  },
+  filterAll: { id: "cv-editor.list.filterAll", defaultMessage: "All" },
+  filterArchived: { id: "cv-editor.list.filterArchived", defaultMessage: "Archived" },
+  usedIn: {
+    id: "cv-editor.usedIn",
+    defaultMessage: "Used in {count, plural, one {# application} other {# applications}}",
+  },
+  notUsed: { id: "cv-editor.pinned.notUsed", defaultMessage: "Not used in an application yet" },
+  variantText: {
+    id: "cv-editor.variant.text",
+    defaultMessage: "Variant of {base} · {language}",
+    description:
+      "{base}: the base CV's title; {language}: the variant's language in its own language ('Deutsch')",
+  },
+  baseChanged: {
+    id: "cv-editor.variant.baseChanged",
+    defaultMessage: "The base changed in {count, plural, one {# place} other {# places}}",
+    description: "Sections of the base CV that changed since the variant was made",
+  },
+  baseChangeReview: { id: "cv-editor.variant.review", defaultMessage: "Review" },
+  saved: {
+    id: "cv-editor.save.saved",
+    defaultMessage: "Saved · {relative}",
+    description: "{relative}: relative time of the last save ('last week')",
+  },
+  savedLocal: { id: "cv-editor.save.local", defaultMessage: "Saved on this device" },
+  designSummary: {
+    id: "cv-editor.design.summary",
+    defaultMessage: "{template} · {fontPair} · {density} · {paper}",
+    description: "Template button summary: 'Classic · Inter / Source Serif · Comfortable · A4'",
+  },
+  paperDimensions: {
+    id: "cv-editor.design.paperDimensions",
+    defaultMessage: "{width, number} × {height, number} {unit, select, mm {mm} other {in}}",
+    description: "Page size: '210 × 297 mm' (A4), '8.5 × 11 in' (Letter; unit 'in' = inches)",
+  },
+  headerTitle: {
+    id: "cv-editor.section.header.title",
+    defaultMessage: "Header",
+    description: "CV section with the name, headline and contact details",
+  },
+  headerGhostLabel: {
+    id: "cv-editor.section.header.ghostLabel",
+    defaultMessage: "Add your name and contact details",
+  },
+  headerGhostHint: {
+    id: "cv-editor.section.header.ghostHint",
+    defaultMessage: "Name, headline, email and links.",
+  },
+  summaryTitle: {
+    id: "cv-editor.section.summary.title",
+    defaultMessage: "Summary",
+    description: "CV section",
+  },
+  summaryGhostLabel: { id: "cv-editor.section.summary.ghostLabel", defaultMessage: "Write a summary" },
+  summaryGhostHint: {
+    id: "cv-editor.section.summary.ghostHint",
+    defaultMessage: "2–3 sentences about what you do and what you're looking for.",
+  },
+  hiddenNote: { id: "cv-editor.section.hiddenNote", defaultMessage: "Not shown on your CV" },
+  linkFallback: {
+    id: "cv-editor.header.linkFallback",
+    defaultMessage: "Link",
+    description: "Label of a profile link without a network name",
+  },
+  dateRange: {
+    id: "cv-editor.item.dateRange",
+    defaultMessage: "{start} – {end}",
+    description: "Dates of a CV entry: 'Feb 2020 – Feb 2022'",
+  },
+  dateRangeOngoing: {
+    id: "cv-editor.item.dateRangeOngoing",
+    defaultMessage: "{start} – Present",
+    description: "Dates of a CV entry that hasn't ended: 'Mar 2022 – Present'",
+  },
+  skillsSummary: {
+    id: "cv-editor.section.skills.summary",
+    defaultMessage:
+      "{skills, plural, one {# skill} other {# skills}} in {groups, plural, one {# group} other {# groups}}",
+  },
+  sourceImport: {
+    id: "cv-editor.revision.source.import",
+    defaultMessage: "Import",
+    description: "Source of a CV revision created by importing a file",
+  },
+  sourceAiTailor: {
+    id: "cv-editor.revision.source.aiTailor",
+    defaultMessage: "AI tailor",
+    description: "Source of a CV revision tailored to a job by AI",
+  },
+  revisionLatest: { id: "cv-editor.revision.latest", defaultMessage: "Latest" },
+  revisionRestore: { id: "cv-editor.revision.restore", defaultMessage: "Restore this version" },
+  revisionToday: { id: "cv-editor.revision.today", defaultMessage: "Today" },
+  revisionYesterday: { id: "cv-editor.revision.yesterday", defaultMessage: "Yesterday" },
+  revisionCount: {
+    id: "cv-editor.revision.count",
+    defaultMessage: "{count, plural, one {# version} other {# versions}}",
+  },
+  pinnedLatest: { id: "cv-editor.pinned.latestVersion", defaultMessage: "Latest version" },
+  pinnedVersionFrom: {
+    id: "cv-editor.pinned.versionFrom",
+    defaultMessage: "Version from {date}",
+    description: "{date}: short date the pinned revision was saved ('2 Sept')",
+  },
+  pinnedEarlier: { id: "cv-editor.pinned.earlierVersion", defaultMessage: "Earlier version" },
+  uploadedOn: {
+    id: "cv-editor.originalFile.uploadedOn",
+    defaultMessage: "Uploaded on {date}",
+    description: "{date}: short date ('13 Aug')",
+  },
+  renderingPreview: { id: "cv-editor.preview.rendering", defaultMessage: "Rendering preview…" },
+  exportFileWord: {
+    id: "cv-editor.preview.exportFileWord",
+    defaultMessage: "CV",
+    description: "Last part of the default export file name 'Deniz-Aksoy-CV.pdf'; one word, no spaces",
+  },
+  photo: { id: "cv-editor.personalDetails.photo", defaultMessage: "Photo" },
+  dateOfBirth: { id: "cv-editor.personalDetails.dateOfBirth", defaultMessage: "Date of birth" },
+  personalDetailsNote: {
+    id: "cv-editor.personalDetails.note",
+    defaultMessage:
+      "German and Turkish employers may expect a photo and date of birth. UK and US employers usually don't.",
+  },
+});
 
 type ListSectionKey = Exclude<CvStandardSection, "basics">;
 
-interface ListSectionCopy {
-  readonly title: string;
-  readonly one: string;
-  readonly other: string;
-  readonly add: string;
-  readonly ghost: CvGhostVM;
-  readonly untitled: string;
+interface ListSectionMessages {
+  /** ICU plural over `{count}`: "3 roles". */
+  readonly count: MessageDescriptor;
+  readonly add: MessageDescriptor;
+  readonly ghostLabel: MessageDescriptor;
+  readonly ghostHint: MessageDescriptor;
+  readonly untitled: MessageDescriptor;
 }
 
-const LIST_SECTIONS: Readonly<Record<ListSectionKey, ListSectionCopy>> = {
-  work: {
-    title: "Experience",
-    one: "role",
-    other: "roles",
-    add: "Add role",
-    ghost: { label: "Add your first role", hint: "Start with the most recent." },
-    untitled: "Untitled role",
-  },
-  projects: {
-    title: "Projects",
-    one: "project",
-    other: "projects",
-    add: "Add project",
-    ghost: { label: "Add your first project", hint: "Side projects and open source count too." },
-    untitled: "Untitled project",
-  },
-  education: {
-    title: "Education",
-    one: "entry",
-    other: "entries",
-    add: "Add education",
-    ghost: { label: "Add your education", hint: "Degrees, schools or courses, most recent first." },
-    untitled: "Untitled education",
-  },
-  skills: {
-    title: "Skills",
-    one: "group",
-    other: "groups",
-    add: "Add skill group",
-    ghost: { label: "Add your skills", hint: "Group them, for example Frontend or Tools." },
-    untitled: "Untitled group",
-  },
-  languages: {
-    title: "Languages",
-    one: "language",
-    other: "languages",
-    add: "Add language",
-    ghost: { label: "Add a language", hint: "Include how well you speak it." },
-    untitled: "Untitled language",
-  },
-  certificates: {
-    title: "Certificates",
-    one: "certificate",
-    other: "certificates",
-    add: "Add certificate",
-    ghost: { label: "Add a certificate", hint: "Include who issued it and when." },
-    untitled: "Untitled certificate",
-  },
-  awards: {
-    title: "Awards",
-    one: "award",
-    other: "awards",
-    add: "Add award",
-    ghost: { label: "Add an award", hint: "Include who gave it and when." },
-    untitled: "Untitled award",
-  },
-  publications: {
-    title: "Publications",
-    one: "publication",
-    other: "publications",
-    add: "Add publication",
-    ghost: { label: "Add a publication", hint: "Articles, papers or talks with a link." },
-    untitled: "Untitled publication",
-  },
-  volunteer: {
-    title: "Volunteering",
-    one: "role",
-    other: "roles",
-    add: "Add volunteer role",
-    ghost: { label: "Add volunteer work", hint: "Start with the most recent." },
-    untitled: "Untitled role",
-  },
-  interests: {
-    title: "Interests",
-    one: "interest",
-    other: "interests",
-    add: "Add interest",
-    ghost: { label: "Add an interest", hint: "Keep it short and specific." },
-    untitled: "Untitled interest",
-  },
-  references: {
-    title: "References",
-    one: "reference",
-    other: "references",
-    add: "Add reference",
-    ghost: { label: "Add a reference", hint: "Ask the person before you list them." },
-    untitled: "Untitled reference",
-  },
+interface StandardSectionMessages extends ListSectionMessages {
+  readonly title: MessageDescriptor;
+}
+
+const LIST_SECTIONS: Readonly<Record<ListSectionKey, StandardSectionMessages>> = {
+  work: defineMessages({
+    title: { id: "cv-editor.section.work.title", defaultMessage: "Experience" },
+    count: {
+      id: "cv-editor.section.work.count",
+      defaultMessage: "{count, plural, one {# role} other {# roles}}",
+    },
+    add: { id: "cv-editor.section.work.add", defaultMessage: "Add role" },
+    ghostLabel: { id: "cv-editor.section.work.ghostLabel", defaultMessage: "Add your first role" },
+    ghostHint: { id: "cv-editor.section.work.ghostHint", defaultMessage: "Start with the most recent." },
+    untitled: { id: "cv-editor.section.work.untitled", defaultMessage: "Untitled role" },
+  }),
+  projects: defineMessages({
+    title: { id: "cv-editor.section.projects.title", defaultMessage: "Projects" },
+    count: {
+      id: "cv-editor.section.projects.count",
+      defaultMessage: "{count, plural, one {# project} other {# projects}}",
+    },
+    add: { id: "cv-editor.section.projects.add", defaultMessage: "Add project" },
+    ghostLabel: { id: "cv-editor.section.projects.ghostLabel", defaultMessage: "Add your first project" },
+    ghostHint: {
+      id: "cv-editor.section.projects.ghostHint",
+      defaultMessage: "Side projects and open source count too.",
+    },
+    untitled: { id: "cv-editor.section.projects.untitled", defaultMessage: "Untitled project" },
+  }),
+  education: defineMessages({
+    title: { id: "cv-editor.section.education.title", defaultMessage: "Education" },
+    count: {
+      id: "cv-editor.section.education.count",
+      defaultMessage: "{count, plural, one {# entry} other {# entries}}",
+    },
+    add: { id: "cv-editor.section.education.add", defaultMessage: "Add education" },
+    ghostLabel: { id: "cv-editor.section.education.ghostLabel", defaultMessage: "Add your education" },
+    ghostHint: {
+      id: "cv-editor.section.education.ghostHint",
+      defaultMessage: "Degrees, schools or courses, most recent first.",
+    },
+    untitled: { id: "cv-editor.section.education.untitled", defaultMessage: "Untitled education" },
+  }),
+  skills: defineMessages({
+    title: { id: "cv-editor.section.skills.title", defaultMessage: "Skills" },
+    count: {
+      id: "cv-editor.section.skills.count",
+      defaultMessage: "{count, plural, one {# group} other {# groups}}",
+    },
+    add: { id: "cv-editor.section.skills.add", defaultMessage: "Add skill group" },
+    ghostLabel: { id: "cv-editor.section.skills.ghostLabel", defaultMessage: "Add your skills" },
+    ghostHint: {
+      id: "cv-editor.section.skills.ghostHint",
+      defaultMessage: "Group them, for example Frontend or Tools.",
+    },
+    untitled: { id: "cv-editor.section.skills.untitled", defaultMessage: "Untitled group" },
+  }),
+  languages: defineMessages({
+    title: { id: "cv-editor.section.languages.title", defaultMessage: "Languages" },
+    count: {
+      id: "cv-editor.section.languages.count",
+      defaultMessage: "{count, plural, one {# language} other {# languages}}",
+    },
+    add: { id: "cv-editor.section.languages.add", defaultMessage: "Add language" },
+    ghostLabel: { id: "cv-editor.section.languages.ghostLabel", defaultMessage: "Add a language" },
+    ghostHint: {
+      id: "cv-editor.section.languages.ghostHint",
+      defaultMessage: "Include how well you speak it.",
+    },
+    untitled: { id: "cv-editor.section.languages.untitled", defaultMessage: "Untitled language" },
+  }),
+  certificates: defineMessages({
+    title: { id: "cv-editor.section.certificates.title", defaultMessage: "Certificates" },
+    count: {
+      id: "cv-editor.section.certificates.count",
+      defaultMessage: "{count, plural, one {# certificate} other {# certificates}}",
+    },
+    add: { id: "cv-editor.section.certificates.add", defaultMessage: "Add certificate" },
+    ghostLabel: { id: "cv-editor.section.certificates.ghostLabel", defaultMessage: "Add a certificate" },
+    ghostHint: {
+      id: "cv-editor.section.certificates.ghostHint",
+      defaultMessage: "Include who issued it and when.",
+    },
+    untitled: { id: "cv-editor.section.certificates.untitled", defaultMessage: "Untitled certificate" },
+  }),
+  awards: defineMessages({
+    title: { id: "cv-editor.section.awards.title", defaultMessage: "Awards" },
+    count: {
+      id: "cv-editor.section.awards.count",
+      defaultMessage: "{count, plural, one {# award} other {# awards}}",
+    },
+    add: { id: "cv-editor.section.awards.add", defaultMessage: "Add award" },
+    ghostLabel: { id: "cv-editor.section.awards.ghostLabel", defaultMessage: "Add an award" },
+    ghostHint: { id: "cv-editor.section.awards.ghostHint", defaultMessage: "Include who gave it and when." },
+    untitled: { id: "cv-editor.section.awards.untitled", defaultMessage: "Untitled award" },
+  }),
+  publications: defineMessages({
+    title: { id: "cv-editor.section.publications.title", defaultMessage: "Publications" },
+    count: {
+      id: "cv-editor.section.publications.count",
+      defaultMessage: "{count, plural, one {# publication} other {# publications}}",
+    },
+    add: { id: "cv-editor.section.publications.add", defaultMessage: "Add publication" },
+    ghostLabel: { id: "cv-editor.section.publications.ghostLabel", defaultMessage: "Add a publication" },
+    ghostHint: {
+      id: "cv-editor.section.publications.ghostHint",
+      defaultMessage: "Articles, papers or talks with a link.",
+    },
+    untitled: { id: "cv-editor.section.publications.untitled", defaultMessage: "Untitled publication" },
+  }),
+  volunteer: defineMessages({
+    title: { id: "cv-editor.section.volunteer.title", defaultMessage: "Volunteering" },
+    count: {
+      id: "cv-editor.section.volunteer.count",
+      defaultMessage: "{count, plural, one {# role} other {# roles}}",
+    },
+    add: { id: "cv-editor.section.volunteer.add", defaultMessage: "Add volunteer role" },
+    ghostLabel: { id: "cv-editor.section.volunteer.ghostLabel", defaultMessage: "Add volunteer work" },
+    ghostHint: { id: "cv-editor.section.volunteer.ghostHint", defaultMessage: "Start with the most recent." },
+    untitled: { id: "cv-editor.section.volunteer.untitled", defaultMessage: "Untitled role" },
+  }),
+  interests: defineMessages({
+    title: { id: "cv-editor.section.interests.title", defaultMessage: "Interests" },
+    count: {
+      id: "cv-editor.section.interests.count",
+      defaultMessage: "{count, plural, one {# interest} other {# interests}}",
+    },
+    add: { id: "cv-editor.section.interests.add", defaultMessage: "Add interest" },
+    ghostLabel: { id: "cv-editor.section.interests.ghostLabel", defaultMessage: "Add an interest" },
+    ghostHint: { id: "cv-editor.section.interests.ghostHint", defaultMessage: "Keep it short and specific." },
+    untitled: { id: "cv-editor.section.interests.untitled", defaultMessage: "Untitled interest" },
+  }),
+  references: defineMessages({
+    title: { id: "cv-editor.section.references.title", defaultMessage: "References" },
+    count: {
+      id: "cv-editor.section.references.count",
+      defaultMessage: "{count, plural, one {# reference} other {# references}}",
+    },
+    add: { id: "cv-editor.section.references.add", defaultMessage: "Add reference" },
+    ghostLabel: { id: "cv-editor.section.references.ghostLabel", defaultMessage: "Add a reference" },
+    ghostHint: {
+      id: "cv-editor.section.references.ghostHint",
+      defaultMessage: "Ask the person before you list them.",
+    },
+    untitled: { id: "cv-editor.section.references.untitled", defaultMessage: "Untitled reference" },
+  }),
 };
 
-const CUSTOM_SECTION: Omit<ListSectionCopy, "title"> = {
-  one: "entry",
-  other: "entries",
-  add: "Add entry",
-  ghost: { label: "Add your first entry", hint: "Give it a title, dates and a few bullets." },
-  untitled: "Untitled entry",
-};
+/** User-defined sections (`meta.customSections`) carry their own title. */
+const CUSTOM_SECTION: ListSectionMessages = defineMessages({
+  count: {
+    id: "cv-editor.section.custom.count",
+    defaultMessage: "{count, plural, one {# entry} other {# entries}}",
+  },
+  add: { id: "cv-editor.section.custom.add", defaultMessage: "Add entry" },
+  ghostLabel: { id: "cv-editor.section.custom.ghostLabel", defaultMessage: "Add your first entry" },
+  ghostHint: {
+    id: "cv-editor.section.custom.ghostHint",
+    defaultMessage: "Give it a title, dates and a few bullets.",
+  },
+  untitled: { id: "cv-editor.section.custom.untitled", defaultMessage: "Untitled entry" },
+});
 
-const HEADER_GHOST: CvGhostVM = {
-  label: "Add your name and contact details",
-  hint: "Name, headline, email and links.",
-};
-const SUMMARY_GHOST: CvGhostVM = {
-  label: "Write a summary",
-  hint: "2–3 sentences about what you do and what you're looking for.",
-};
-const HIDDEN_NOTE = "Not shown on your CV";
+const REVISION_FALLBACK_MESSAGES: Readonly<Record<CvRevisionSource, MessageDescriptor>> = defineMessages({
+  manual: { id: "cv-editor.revision.fallback.manual", defaultMessage: "Edited" },
+  import: { id: "cv-editor.revision.fallback.import", defaultMessage: "Imported" },
+  ai_tailor: { id: "cv-editor.revision.fallback.aiTailor", defaultMessage: "Tailored for a job" },
+});
 
-const REVISION_SOURCES: Readonly<Record<CvRevisionSource, SourceVM>> = {
-  manual: sourceVM("you"),
-  import: sourceVM("cv", "Import"),
-  ai_tailor: sourceVM("ai", "AI tailor"),
-};
+const IMPORT_KIND_MESSAGES: Readonly<Record<CvImportKind, MessageDescriptor>> = defineMessages({
+  pdf: { id: "cv-editor.importKind.pdf", defaultMessage: "PDF" },
+  docx: { id: "cv-editor.importKind.docx", defaultMessage: "DOCX" },
+  json_resume: { id: "cv-editor.importKind.jsonResume", defaultMessage: "JSON Resume" },
+  linkedin_zip: { id: "cv-editor.importKind.linkedinZip", defaultMessage: "LinkedIn export" },
+});
 
-const REVISION_FALLBACK_SENTENCES: Readonly<Record<CvRevisionSource, string>> = {
-  manual: "Edited",
-  import: "Imported",
-  ai_tailor: "Tailored for a job",
-};
+const DENSITY_MESSAGES: Readonly<Record<CvTheme["density"], MessageDescriptor>> = defineMessages({
+  compact: { id: "cv-editor.design.density.compact", defaultMessage: "Compact" },
+  comfortable: { id: "cv-editor.design.density.comfortable", defaultMessage: "Comfortable" },
+  spacious: { id: "cv-editor.design.density.spacious", defaultMessage: "Spacious" },
+});
 
-const IMPORT_KIND_LABELS: Readonly<Record<CvImportKind, string>> = {
-  pdf: "PDF",
-  docx: "DOCX",
-  json_resume: "JSON Resume",
-  linkedin_zip: "LinkedIn export",
-};
-
-const DENSITY_LABELS: Readonly<Record<CvTheme["density"], string>> = {
-  compact: "Compact",
-  comfortable: "Comfortable",
-  spacious: "Spacious",
-};
+const PAPER_MESSAGES: Readonly<Record<CvTheme["paperSize"], MessageDescriptor>> = defineMessages({
+  a4: { id: "cv-editor.design.paper.a4", defaultMessage: "A4" },
+  letter: {
+    id: "cv-editor.design.paper.letter",
+    defaultMessage: "Letter",
+    description: "US Letter paper size",
+  },
+});
 
 const PAPER: Readonly<
   Record<
     CvTheme["paperSize"],
-    { readonly label: string; readonly dimensions: string; readonly aspectRatio: number }
+    { readonly width: number; readonly height: number; readonly unit: "mm" | "in" }
   >
 > = {
-  a4: { label: "A4", dimensions: "210 × 297 mm", aspectRatio: 210 / 297 },
-  letter: { label: "Letter", dimensions: "8.5 × 11 in", aspectRatio: 8.5 / 11 },
+  a4: { width: 210, height: 297, unit: "mm" },
+  letter: { width: 8.5, height: 11, unit: "in" },
 };
 
-/** Font pair ids from `@bfhr/cv-render` (M2); unknown ids fall back to the id. */
+/** Template ids from `@bfhr/cv-render` (M2); unknown ids fall back to the title-cased id. */
+const TEMPLATE_MESSAGES: Readonly<Record<string, MessageDescriptor>> = defineMessages({
+  classic: {
+    id: "cv-editor.design.template.classic",
+    defaultMessage: "Classic",
+    description: "CV template name",
+  },
+});
+
+/** Font pair ids from `@bfhr/cv-render` (M2); unknown ids fall back to the id. Font names stay as-is. */
 const FONT_PAIR_LABELS: Readonly<Record<string, string>> = {
   "inter-source-serif": "Inter / Source Serif",
 };
 
 /** Markets where U6's photo / date-of-birth toggles apply. */
 const PERSONAL_DETAILS_LANGUAGES: Readonly<Record<string, true>> = { de: true, tr: true };
+
+function firstUseVM(intl: IntlShape): CvFirstUseVM {
+  return {
+    title: intl.formatMessage(messages.firstUseTitle),
+    body: intl.formatMessage(messages.firstUseBody),
+    choices: [
+      {
+        id: "import",
+        label: intl.formatMessage(messages.firstUseImport),
+        description: intl.formatMessage(messages.firstUseImportDescription),
+        primary: true,
+      },
+      {
+        id: "scratch",
+        label: intl.formatMessage(messages.firstUseScratch),
+        description: intl.formatMessage(messages.firstUseScratchDescription),
+        primary: false,
+      },
+    ],
+  };
+}
+
+function ghostVM(label: MessageDescriptor, hint: MessageDescriptor, intl: IntlShape): CvGhostVM {
+  return { label: intl.formatMessage(label), hint: intl.formatMessage(hint) };
+}
 
 /* ------------------------------------------------------------------------------------------------
  * Formatting helpers (CV-only; ctx.locale, never the ambient locale).
@@ -541,7 +759,12 @@ function resumeDate(value: string, ctx: ModelContext): string {
 /** "Mar 2022 – Present", "Feb 2020 – Feb 2022", "Apr 2025". */
 function dateRange(start: string | undefined, end: string | undefined, ctx: ModelContext): string | null {
   if (start === undefined) return end === undefined ? null : resumeDate(end, ctx);
-  return `${resumeDate(start, ctx)} – ${end === undefined ? "Present" : resumeDate(end, ctx)}`;
+  return end === undefined
+    ? ctx.intl.formatMessage(messages.dateRangeOngoing, { start: resumeDate(start, ctx) })
+    : ctx.intl.formatMessage(messages.dateRange, {
+        start: resumeDate(start, ctx),
+        end: resumeDate(end, ctx),
+      });
 }
 
 /** "Pazarbox, Kuzey Labs and Mavi Yazılım". */
@@ -722,7 +945,7 @@ function standardItems(
 function listSummary(key: string, items: readonly CvItemVM[], ctx: ModelContext): string | null {
   if (key === "skills") {
     const keywordCount = items.reduce((total, item) => total + item.keywords.length, 0);
-    return `${countLabel(keywordCount, "skill", "skills", ctx.locale)} in ${countLabel(items.length, "group", "groups", ctx.locale)}`;
+    return ctx.intl.formatMessage(messages.skillsSummary, { skills: keywordCount, groups: items.length });
   }
   const names = items.map((item) =>
     key === "work" || key === "education" || key === "volunteer" ? (item.org ?? item.title) : item.title,
@@ -733,29 +956,31 @@ function listSummary(key: string, items: readonly CvItemVM[], ctx: ModelContext)
 function listSection(
   key: string,
   title: string,
-  copy: Omit<ListSectionCopy, "title">,
+  copy: ListSectionMessages,
   fields: readonly ItemFields[],
   visible: boolean,
   ctx: ModelContext,
 ): CvListSectionVM {
-  const items = fields.map((item, index) => itemVM(key, index, item, copy.untitled, ctx));
+  const untitled = ctx.intl.formatMessage(copy.untitled);
+  const items = fields.map((item, index) => itemVM(key, index, item, untitled, ctx));
+  const ghost = items.length > 0 ? null : ghostVM(copy.ghostLabel, copy.ghostHint, ctx.intl);
   return {
     kind: "list",
     key,
     anchorId: `cv-section-${key.replace(":", "-")}`,
     title,
-    summary: items.length > 0 ? listSummary(key, items, ctx) : copy.ghost.label,
+    summary: ghost ? ghost.label : listSummary(key, items, ctx),
     visible,
-    hiddenNote: visible ? null : HIDDEN_NOTE,
-    ghost: items.length > 0 ? null : copy.ghost,
+    hiddenNote: visible ? null : ctx.intl.formatMessage(messages.hiddenNote),
+    ghost,
     movable: true,
     items,
-    countLabel: countLabel(items.length, copy.one, copy.other, ctx.locale),
-    addLabel: copy.add,
+    countLabel: ctx.intl.formatMessage(copy.count, { count: items.length }),
+    addLabel: ctx.intl.formatMessage(copy.add),
   };
 }
 
-function headerVM(basics: CvContent["basics"]): CvHeaderVM {
+function headerVM(basics: CvContent["basics"], ctx: ModelContext): CvHeaderVM {
   return {
     name: present(basics?.name),
     headline: present(basics?.label),
@@ -767,7 +992,7 @@ function headerVM(basics: CvContent["basics"]): CvHeaderVM {
     phone: present(basics?.phone),
     website: basics?.url ? displayUrl(basics.url) : null,
     links: (basics?.profiles ?? []).map((profile) => ({
-      label: present(profile.network) ?? "Link",
+      label: present(profile.network) ?? ctx.intl.formatMessage(messages.linkFallback),
       value: present(profile.username) ?? (profile.url ? displayUrl(profile.url) : ""),
       url: present(profile.url),
     })),
@@ -781,18 +1006,21 @@ function isListSectionKey(key: string): key is ListSectionKey {
 function sectionVMs(content: CvContent, ctx: ModelContext): CvSectionVM[] {
   const order = content.meta.sectionOrder;
   const basicsVisible = order.includes("basics");
-  const header = headerVM(content.basics);
+  const header = headerVM(content.basics, ctx);
   const summaryText = present(content.basics?.summary);
+  const headerGhost = ghostVM(messages.headerGhostLabel, messages.headerGhostHint, ctx.intl);
+  const summaryGhost = ghostVM(messages.summaryGhostLabel, messages.summaryGhostHint, ctx.intl);
+  const basicsHiddenNote = basicsVisible ? null : ctx.intl.formatMessage(messages.hiddenNote);
   const sections: CvSectionVM[] = [
     {
       kind: "header",
       key: "header",
       anchorId: "cv-section-header",
-      title: "Header",
-      summary: joinPresent([header.name, header.headline], " · ") ?? HEADER_GHOST.label,
+      title: ctx.intl.formatMessage(messages.headerTitle),
+      summary: joinPresent([header.name, header.headline], " · ") ?? headerGhost.label,
       visible: basicsVisible,
-      hiddenNote: basicsVisible ? null : HIDDEN_NOTE,
-      ghost: header.name ? null : HEADER_GHOST,
+      hiddenNote: basicsHiddenNote,
+      ghost: header.name ? null : headerGhost,
       movable: false,
       header,
     },
@@ -800,11 +1028,11 @@ function sectionVMs(content: CvContent, ctx: ModelContext): CvSectionVM[] {
       kind: "text",
       key: "summary",
       anchorId: "cv-section-summary",
-      title: "Summary",
-      summary: summaryText ? firstSentence(summaryText) : SUMMARY_GHOST.label,
+      title: ctx.intl.formatMessage(messages.summaryTitle),
+      summary: summaryText ? firstSentence(summaryText) : summaryGhost.label,
       visible: basicsVisible,
-      hiddenNote: basicsVisible ? null : HIDDEN_NOTE,
-      ghost: summaryText ? null : SUMMARY_GHOST,
+      hiddenNote: basicsHiddenNote,
+      ghost: summaryText ? null : summaryGhost,
       movable: true,
       text: summaryText,
     },
@@ -831,7 +1059,8 @@ function sectionVMs(content: CvContent, ctx: ModelContext): CvSectionVM[] {
     listed.add(key);
     if (isListSectionKey(key)) {
       const copy = LIST_SECTIONS[key];
-      sections.push(listSection(key, copy.title, copy, standardItems(key, content, ctx) ?? [], true, ctx));
+      const title = ctx.intl.formatMessage(copy.title);
+      sections.push(listSection(key, title, copy, standardItems(key, content, ctx) ?? [], true, ctx));
     } else {
       const custom = customSections.find((section) => section.key === key);
       if (custom) sections.push(custom);
@@ -844,7 +1073,7 @@ function sectionVMs(content: CvContent, ctx: ModelContext): CvSectionVM[] {
     const fields = standardItems(key, content, ctx);
     if (fields && fields.length > 0) {
       const copy = LIST_SECTIONS[key];
-      sections.push(listSection(key, copy.title, copy, fields, false, ctx));
+      sections.push(listSection(key, ctx.intl.formatMessage(copy.title), copy, fields, false, ctx));
     }
   }
   sections.push(...customSections.filter((section) => !section.visible));
@@ -884,12 +1113,11 @@ function listRowVM(
     cvId: cv.id,
     title: cv.title,
     kind,
-    pill: kind === "role" ? "Role variant" : languageName(cv.language),
+    pill: kind === "role" ? ctx.intl.formatMessage(messages.roleVariant) : languageName(cv.language),
     isDefault: cv.isDefault,
-    defaultLabel: cv.isDefault ? "Default" : null,
+    defaultLabel: cv.isDefault ? ctx.intl.formatMessage(messages.defaultCv) : null,
     lastEdited: relativeTime(cv.updatedAt, ctx),
-    usedIn:
-      usedCount > 0 ? `Used in ${countLabel(usedCount, "application", "applications", ctx.locale)}` : null,
+    usedIn: usedCount > 0 ? ctx.intl.formatMessage(messages.usedIn, { count: usedCount }) : null,
     archived: cv.archivedAt !== null,
     selected: cv.id === selectedCvId,
     pendingSync: ctx.pendingWrites.has(cv.id),
@@ -973,16 +1201,30 @@ function variantBannerVM(
   return {
     baseCvId: parent.id,
     baseTitle: parent.title,
-    text: `Variant of ${parent.title} · ${languageName(cv.language)}`,
+    text: ctx.intl.formatMessage(messages.variantText, {
+      base: parent.title,
+      language: languageName(cv.language),
+    }),
     baseChange:
       count > 0
         ? {
             count,
-            label: `The base changed in ${countLabel(count, "place", "places", ctx.locale)}`,
-            action: "Review",
+            label: ctx.intl.formatMessage(messages.baseChanged, { count }),
+            action: ctx.intl.formatMessage(messages.baseChangeReview),
           }
         : null,
   };
+}
+
+function revisionSourceVM(source: CvRevisionSource, intl: IntlShape): SourceVM {
+  switch (source) {
+    case "manual":
+      return sourceVM("you", intl);
+    case "import":
+      return sourceVM("cv", intl, intl.formatMessage(messages.sourceImport));
+    case "ai_tailor":
+      return sourceVM("ai", intl, intl.formatMessage(messages.sourceAiTailor));
+  }
 }
 
 function revisionGroupVMs(cv: Cv, revisions: readonly CvRevision[], ctx: ModelContext): CvRevisionGroupVM[] {
@@ -995,35 +1237,45 @@ function revisionGroupVMs(cv: Cv, revisions: readonly CvRevision[], ctx: ModelCo
     const isLatest = revision.id === cv.currentRevisionId;
     const row: CvRevisionVM = {
       revisionId: revision.id,
-      sentence: present(revision.diffSummary ?? undefined) ?? REVISION_FALLBACK_SENTENCES[revision.source],
+      sentence:
+        present(revision.diffSummary ?? undefined) ??
+        ctx.intl.formatMessage(REVISION_FALLBACK_MESSAGES[revision.source]),
       sourceKind: revision.source,
-      source: REVISION_SOURCES[revision.source],
+      source: revisionSourceVM(revision.source, ctx.intl),
       time: relativeTime(revision.createdAt, ctx),
       clock: clockTime(revision.createdAt, ctx),
       isLatest,
-      latestLabel: isLatest ? "Latest" : null,
-      restoreLabel: isLatest ? null : "Restore this version",
+      latestLabel: isLatest ? ctx.intl.formatMessage(messages.revisionLatest) : null,
+      restoreLabel: isLatest ? null : ctx.intl.formatMessage(messages.revisionRestore),
       jobId: revision.jobId,
       pendingSync: ctx.pendingWrites.has(revision.id),
     };
     const last = groups.at(-1);
     if (last?.day === day) last.revisions.push(row);
     else {
-      const label = day === 0 ? "Today" : day === -1 ? "Yesterday" : shortDate(revision.createdAt, ctx);
+      const label =
+        day === 0
+          ? ctx.intl.formatMessage(messages.revisionToday)
+          : day === -1
+            ? ctx.intl.formatMessage(messages.revisionYesterday)
+            : shortDate(revision.createdAt, ctx);
       groups.push({ label, day, revisions: [row] });
     }
   }
   return groups.map(({ label, revisions: rows }) => ({ label, revisions: rows }));
 }
 
-function designVM(cv: Cv): CvDesignVM {
-  const templateLabel = cv.templateId
-    .split(/[-_]/u)
-    .map((word) => word.charAt(0).toLocaleUpperCase("en") + word.slice(1))
-    .join(" ");
+function designVM(cv: Cv, ctx: ModelContext): CvDesignVM {
+  const templateMessage = TEMPLATE_MESSAGES[cv.templateId];
+  const templateLabel = templateMessage
+    ? ctx.intl.formatMessage(templateMessage)
+    : cv.templateId
+        .split(/[-_]/u)
+        .map((word) => word.charAt(0).toLocaleUpperCase("en") + word.slice(1))
+        .join(" ");
   const fontPairLabel = FONT_PAIR_LABELS[cv.theme.fontPair] ?? cv.theme.fontPair;
-  const densityLabel = DENSITY_LABELS[cv.theme.density];
-  const paperLabel = PAPER[cv.theme.paperSize].label;
+  const densityLabel = ctx.intl.formatMessage(DENSITY_MESSAGES[cv.theme.density]);
+  const paperLabel = ctx.intl.formatMessage(PAPER_MESSAGES[cv.theme.paperSize]);
   return {
     templateId: cv.templateId,
     templateLabel,
@@ -1031,7 +1283,12 @@ function designVM(cv: Cv): CvDesignVM {
     fontPairLabel,
     densityLabel,
     paperLabel,
-    summary: [templateLabel, fontPairLabel, densityLabel, paperLabel].join(" · "),
+    summary: ctx.intl.formatMessage(messages.designSummary, {
+      template: templateLabel,
+      fontPair: fontPairLabel,
+      density: densityLabel,
+      paper: paperLabel,
+    }),
   };
 }
 
@@ -1048,11 +1305,11 @@ function previewVM(
     .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())[0];
   return {
     paperSize: cv.theme.paperSize,
-    paperLabel: paper.label,
-    dimensions: paper.dimensions,
-    aspectRatio: paper.aspectRatio,
-    renderingLabel: "Rendering preview…",
-    exportFileName: `${[...nameParts, "CV"].join("-")}.pdf`,
+    paperLabel: ctx.intl.formatMessage(PAPER_MESSAGES[cv.theme.paperSize]),
+    dimensions: ctx.intl.formatMessage(messages.paperDimensions, paper),
+    aspectRatio: paper.width / paper.height,
+    renderingLabel: ctx.intl.formatMessage(messages.renderingPreview),
+    exportFileName: `${[...nameParts, ctx.intl.formatMessage(messages.exportFileWord)].join("-")}.pdf`,
     latestExport: latest
       ? {
           fileId: latest.id,
@@ -1082,13 +1339,13 @@ function pinnedApplicationVMs(
       applicationId: application.id,
       label: applicationLabel(application),
       company: companyVM(application.company, application.companyDomain),
-      status: statusVM(application.status),
+      status: statusVM(application.status, ctx.intl),
       appliedAt: application.appliedAt ? relativeTime(application.appliedAt, ctx) : null,
       versionLabel: usesLatest
-        ? "Latest version"
+        ? ctx.intl.formatMessage(messages.pinnedLatest)
         : revision
-          ? `Version from ${shortDate(revision.createdAt, ctx)}`
-          : "Earlier version",
+          ? ctx.intl.formatMessage(messages.pinnedVersionFrom, { date: shortDate(revision.createdAt, ctx) })
+          : ctx.intl.formatMessage(messages.pinnedEarlier),
       usesLatest,
       pendingSync: ctx.pendingWrites.has(application.id),
     };
@@ -1107,20 +1364,20 @@ function originalFileVM(
       .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime())[0]?.createdAt ?? cv.createdAt;
   return {
     fileName: cv.importedFrom.fileName,
-    kindLabel: IMPORT_KIND_LABELS[cv.importedFrom.kind],
+    kindLabel: ctx.intl.formatMessage(IMPORT_KIND_MESSAGES[cv.importedFrom.kind]),
     storagePath: cv.importedFrom.storagePath,
     uploadedAt: relativeTime(importedAt, ctx),
-    uploadedLabel: `Uploaded on ${shortDate(importedAt, ctx)}`,
+    uploadedLabel: ctx.intl.formatMessage(messages.uploadedOn, { date: shortDate(importedAt, ctx) }),
   };
 }
 
-function personalDetailsVM(cv: Cv, content: CvContent): CvPersonalDetailsVM | null {
+function personalDetailsVM(cv: Cv, content: CvContent, ctx: ModelContext): CvPersonalDetailsVM | null {
   if (!PERSONAL_DETAILS_LANGUAGES[cv.language.split("-")[0] ?? cv.language]) return null;
   return {
-    photo: { label: "Photo", on: Boolean(present(content.basics?.image)) },
+    photo: { label: ctx.intl.formatMessage(messages.photo), on: Boolean(present(content.basics?.image)) },
     // JSON Resume has no date-of-birth field yet, so it is off until the variant turns it on.
-    dateOfBirth: { label: "Date of birth", on: false },
-    note: "German and Turkish employers may expect a photo and date of birth. UK and US employers usually don't.",
+    dateOfBirth: { label: ctx.intl.formatMessage(messages.dateOfBirth), on: false },
+    note: ctx.intl.formatMessage(messages.personalDetailsNote),
   };
 }
 
@@ -1144,19 +1401,23 @@ function editorVM(cv: Cv, byId: ReadonlyMap<string, Cv>, data: UserData, ctx: Mo
     currentRevisionId: cv.currentRevisionId,
     variant: variantBannerVM(cv, byId, revisionsById, ctx),
     saveStatus: pendingSync
-      ? { state: "local", label: "Saved on this device", time: updatedAt }
-      : { state: "saved", label: `Saved · ${updatedAt.label}`, time: updatedAt },
-    design: designVM(cv),
+      ? { state: "local", label: ctx.intl.formatMessage(messages.savedLocal), time: updatedAt }
+      : {
+          state: "saved",
+          label: ctx.intl.formatMessage(messages.saved, { relative: updatedAt.label }),
+          time: updatedAt,
+        },
+    design: designVM(cv, ctx),
     sections: sectionVMs(content, ctx),
-    personalDetails: personalDetailsVM(cv, content),
+    personalDetails: personalDetailsVM(cv, content, ctx),
     revisions: revisionGroupVMs(cv, data.cvRevisions, ctx),
-    revisionCountLabel: countLabel(ownRevisionCount, "version", "versions", ctx.locale),
+    revisionCountLabel: ctx.intl.formatMessage(messages.revisionCount, { count: ownRevisionCount }),
     preview: previewVM(cv, content, data, ctx),
     pinnedApplications: pinned,
     pinnedLabel:
       pinned.length > 0
-        ? `Used in ${countLabel(pinned.length, "application", "applications", ctx.locale)}`
-        : "Not used in an application yet",
+        ? ctx.intl.formatMessage(messages.usedIn, { count: pinned.length })
+        : ctx.intl.formatMessage(messages.notUsed),
     originalFile: originalFileVM(cv, data.cvRevisions, ctx),
     pendingSync,
   };
@@ -1178,7 +1439,7 @@ export function buildCvEditorModel(
   const activeCount = data.cvs.length - archived.length;
   const selected = selectedCvId === null ? undefined : byId.get(selectedCvId);
   return {
-    firstUse: data.cvs.length === 0 ? FIRST_USE : null,
+    firstUse: data.cvs.length === 0 ? firstUseVM(ctx.intl) : null,
     list: {
       groups: activeGroups(data.cvs).map((group) => ({
         base: row(group.base),
@@ -1186,8 +1447,8 @@ export function buildCvEditorModel(
       })),
       archived: archived.map(row),
       filters: [
-        { id: "all", label: "All", count: activeCount },
-        { id: "archived", label: "Archived", count: archived.length },
+        { id: "all", label: ctx.intl.formatMessage(messages.filterAll), count: activeCount },
+        { id: "archived", label: ctx.intl.formatMessage(messages.filterArchived), count: archived.length },
       ],
     },
     selectedCvId,

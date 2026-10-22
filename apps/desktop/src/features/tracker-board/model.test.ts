@@ -1,5 +1,6 @@
 import { emptyDataset, populatedDataset } from "@bfhr/fixtures";
 import { describe, expect, it } from "vitest";
+import { createAppIntl } from "../../i18n/intl";
 import { nudgeVMs } from "../../shared/model/build-blocks";
 import { fixtureContext } from "../../shared/model/fixture-context";
 import { buildTrackerBoardModel, type TrackerBoardModel, type TrackerCardVM } from "./model";
@@ -224,7 +225,7 @@ describe("buildTrackerBoardModel · empty", () => {
       title: "No applications yet",
       body: "Add a job you've applied to, or save one from Jobs to track it here.",
       primary: { label: "Add application", shortcut: "Mod+N" },
-      secondary: { label: "Find jobs" },
+      secondary: { label: "Import CSV" },
       columnAddLabel: "Add",
     });
   });
@@ -235,5 +236,14 @@ describe("buildTrackerBoardModel · empty", () => {
     expect(empty.closedRail.emptyLine).toBe("Closed applications will appear here.");
     expect(empty.nudges).toEqual([]);
     expect(empty.selected).toBeNull();
+  });
+});
+
+describe("buildTrackerBoardModel · Turkish", () => {
+  it("words the Closed rail from the Turkish catalog", () => {
+    const turkish = fixtureContext(populatedDataset, [], createAppIntl({ language: "tr", locale: "tr-TR" }));
+    const rail = buildTrackerBoardModel(populatedDataset, turkish, {}).closedRail;
+    expect(rail.accessibleLabel).not.toMatch(/Closed|applications|Accepted/);
+    expect(rail.accessibleLabel).toContain("Kabul edildi 1");
   });
 });

@@ -19,11 +19,13 @@
     "capture:design": "node scripts/capture-design.ts",
     "tauri": "tauri",
     "lint": "eslint .",
-    "test": "vitest run",
+    "test": "vitest run && node scripts/i18n.ts check",
     "lint:rust": "cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets --all-features -- -D warnings",
     "format:rust": "cargo fmt --manifest-path src-tauri/Cargo.toml --check",
     "test:rust": "cargo test --manifest-path src-tauri/Cargo.toml",
-    "typecheck": "tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p tsconfig.node.json"
+    "typecheck": "tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p tsconfig.node.json",
+    "i18n:extract": "node scripts/i18n.ts extract",
+    "i18n:check": "node scripts/i18n.ts check"
   },
   "dependencies": {
     "@bfhr/core": "workspace:*",
@@ -35,10 +37,13 @@
     "lucide-react": "^1.61.0",
     "radix-ui": "^1.8.1",
     "react": "19.3.1",
-    "react-dom": "19.3.1"
+    "react-dom": "19.3.1",
+    "react-intl": "^11.0.1"
   },
   "devDependencies": {
     "@bfhr/fixtures": "workspace:*",
+    "@formatjs/cli": "^6.16.35",
+    "@formatjs/icu-messageformat-parser": "^3.5.22",
     "@tailwindcss/vite": "^4.3.3",
     "@tauri-apps/cli": "^2.12.4",
     "@types/mocha": "^10.0.10",

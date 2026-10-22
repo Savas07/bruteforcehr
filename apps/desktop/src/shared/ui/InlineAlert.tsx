@@ -6,8 +6,17 @@
  */
 import { CircleAlert, Info, TriangleAlert, X, type LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
+import { defineMessages, useIntl } from "react-intl";
 import { cx } from "../cx";
 import { Button, IconButton } from "./Button";
+
+const messages = defineMessages({
+  dismiss: {
+    id: "shared.ui.inlineAlert.dismiss",
+    defaultMessage: "Dismiss",
+    description: "Closes an inline alert",
+  },
+});
 
 export type InlineAlertTone = "info" | "warning" | "error";
 
@@ -58,6 +67,7 @@ export function InlineAlert({
   /** Layout classes (margins, width). */
   className?: string;
 }) {
+  const intl = useIntl();
   const Icon = toneIcon[tone];
   return (
     <div
@@ -78,7 +88,15 @@ export function InlineAlert({
           {action.label}
         </Button>
       )}
-      {onDismiss && <IconButton icon={X} label="Dismiss" size="sm" className="mt-0.5" onClick={onDismiss} />}
+      {onDismiss && (
+        <IconButton
+          icon={X}
+          label={intl.formatMessage(messages.dismiss)}
+          size="sm"
+          className="mt-0.5"
+          onClick={onDismiss}
+        />
+      )}
     </div>
   );
 }

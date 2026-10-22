@@ -1,6 +1,7 @@
 import { CalendarClock, CalendarDays, Clock, Sunrise, type LucideIcon } from "lucide-react";
 import { DropdownMenu } from "radix-ui";
 import { useState, type ReactElement } from "react";
+import { defineMessages, type MessageDescriptor, useIntl } from "react-intl";
 import { MenuContent, MenuItem } from "./Menu";
 
 /** The four snooze presets (decisions.md D19), in menu order. */
@@ -9,12 +10,32 @@ export type SnoozePreset = "laterToday" | "tomorrow" | "nextWeek" | "pickDate";
 const PRESETS: readonly SnoozePreset[] = ["laterToday", "tomorrow", "nextWeek", "pickDate"];
 
 /** Menu labels for the presets (D19). */
-export const SNOOZE_PRESET_LABELS: Readonly<Record<SnoozePreset, string>> = {
-  laterToday: "Later today",
-  tomorrow: "Tomorrow",
-  nextWeek: "Next week",
-  pickDate: "Pick a date…",
-};
+export const SNOOZE_PRESET_MESSAGES: Readonly<Record<SnoozePreset, MessageDescriptor>> = defineMessages({
+  laterToday: {
+    id: "shared.ui.snoozeMenu.laterToday",
+    defaultMessage: "Later today",
+    description: "Snooze preset",
+  },
+  tomorrow: { id: "shared.ui.snoozeMenu.tomorrow", defaultMessage: "Tomorrow", description: "Snooze preset" },
+  nextWeek: {
+    id: "shared.ui.snoozeMenu.nextWeek",
+    defaultMessage: "Next week",
+    description: "Snooze preset",
+  },
+  pickDate: {
+    id: "shared.ui.snoozeMenu.pickDate",
+    defaultMessage: "Pick a date…",
+    description: "Snooze preset that opens a date picker",
+  },
+});
+
+const messages = defineMessages({
+  menu: {
+    id: "shared.ui.snoozeMenu.menu",
+    defaultMessage: "Snooze until",
+    description: "Accessible name of the snooze menu",
+  },
+});
 
 const presetIcon: Record<SnoozePreset, LucideIcon> = {
   laterToday: Clock,
@@ -45,6 +66,7 @@ export interface SnoozeMenuProps {
  * Enter and typeahead work as in any menu.
  */
 export function SnoozeMenu({ trigger, onSnooze, align = "start", open, onOpenChange }: SnoozeMenuProps) {
+  const intl = useIntl();
   const [innerOpen, setInnerOpen] = useState(false);
   const setOpen = (next: boolean) => {
     setInnerOpen(next);
@@ -55,7 +77,7 @@ export function SnoozeMenu({ trigger, onSnooze, align = "start", open, onOpenCha
       <DropdownMenu.Trigger asChild>{trigger}</DropdownMenu.Trigger>
       <MenuContent
         align={align}
-        aria-label="Snooze until"
+        aria-label={intl.formatMessage(messages.menu)}
         onKeyDown={(event) => {
           if (event.metaKey || event.ctrlKey || event.altKey) return;
           const preset = PRESETS[Number(event.key) - 1];
@@ -72,7 +94,7 @@ export function SnoozeMenu({ trigger, onSnooze, align = "start", open, onOpenCha
             shortcut={String(index + 1)}
             onSelect={() => onSnooze(preset)}
           >
-            {SNOOZE_PRESET_LABELS[preset]}
+            {intl.formatMessage(SNOOZE_PRESET_MESSAGES[preset])}
           </MenuItem>
         ))}
       </MenuContent>

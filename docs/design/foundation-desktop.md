@@ -8,6 +8,7 @@ Status: M0, 2026-10-22. The shared layer the five desktop core screens are built
 | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `apps/desktop/src/features/<your-screen>/**`: `Screen.tsx` (the view), sub-components, view-only hooks, plus additions to your own `model.ts` and `model.test.ts` | `src/shared/**`, `src/design/**`, `src/components/**`, `src/lib/**`, `src/router.tsx`, `src/main.tsx`, `scripts/**`, `e2e/**`, `src-tauri/**`, other screens' folders, `packages/**` |
 | `docs/design/critiques/desktop/<your-screen>/r<N>.md`                                                                                                             | Every other doc, including this one                                                                                                                                                  |
+| Your own ids (`<screen>.*`) in `src/i18n/en.json` (via `pnpm i18n:extract`), `tr.json` and `de.json`                                                              | Other ids in the catalogs                                                                                                                                                            |
 
 If you need a change in a shared file (a new prop, a fix, a new shared component), send DesktopFoundation (or Main) one short message with the exact change. Don't fork shared components into your folder.
 
@@ -70,7 +71,30 @@ Every builder has the signature `(data: UserData, ctx: ModelContext, params) => 
 - **Tracker board:** `columns` (7 active stages, cards with age, staleness, auto glyph, next action, move targets), `closedRail` ("Not selected" and "No response" labels), `nudges`, `selected` (record header with "n of N", summary, timeline, moves with D16 reasons), `firstUse`.
 - **Mail review:** `folders`, `categories`, `accounts` (health), `folder`, `rows` (review / update / plain / bundle), `selectedMessageId`, `selected` (proposal, body, retention line, recent activity, details rail), `noSelection`, `empty` (noAccount / caughtUp / …), `reauth`, `lastChecked`, `copy`.
 
-Shared blocks (`shared/model/blocks.ts`), built once in `build-blocks.ts` so every screen words them the same: `ReviewProposalVM` (Today + Mail), `AutoChangeVM` (Today + Mail Updates), `NudgeVM` (Today + Tracker), `TimelineEventVM` (Tracker + Mail activity), `ApplicationSummaryVM` (Job detail + Tracker), `StatusMoveVM` and `UndoVM`. Atoms (`types.ts`): `TimeVM { iso, label, absolute }`, `StatusVM`, `CompanyVM`, `SourceVM`, `MatchVM`. Vocabulary (`vocabulary.ts`): `STATUS_LABELS` (rejected → "Not selected", ghosted → "No response"), `MATCH_BAND_PILL_LABELS`, `MOVE_DENIAL_REASONS`, `MAIL_CATEGORY_LABELS` (rejection → "Decision").
+Shared blocks (`shared/model/blocks.ts`), built once in `build-blocks.ts` so every screen words them the same: `ReviewProposalVM` (Today + Mail), `AutoChangeVM` (Today + Mail Updates), `NudgeVM` (Today + Tracker), `TimelineEventVM` (Tracker + Mail activity), `ApplicationSummaryVM` (Job detail + Tracker), `StatusMoveVM` and `UndoVM`. Atoms (`types.ts`): `TimeVM { iso, label, absolute }`, `StatusVM`, `CompanyVM`, `SourceVM`, `MatchVM`. Vocabulary (`vocabulary.ts`): `STATUS_MESSAGES` (rejected → "Not selected", ghosted → "No response"), `MATCH_BAND_PILL_MESSAGES`, `MOVE_DENIAL_MESSAGES`, and `MAIL_CATEGORY_MESSAGES` in `build-blocks.ts` (rejection → "Decision").
+
+## Strings and languages
+
+Every user-facing string goes through react-intl (ICU MessageFormat). No hard-coded copy in views or models.
+
+- **Language:** the OS locale from the shell (`sys-locale` in `src-tauri/src/window.rs` → `__BFHR_CHROME__.locale`), then the browser languages, mapped to `en` / `tr` / `de` with English as the fallback (`src/i18n/locale.ts`). The formatting locale is the OS tag when its language matches ("de-AT"), else `en-GB` / `tr-TR` / `de-DE`. In the design build, `?locale=tr` overrides it (reload to switch); the harness takes `--locale tr`.
+- **Catalogs:** `src/i18n/{en,tr,de}.json`, flat `id → message`.
+  - `en.json` is generated from the code's `defaultMessage`s (`pnpm --filter @bfhr/desktop i18n:extract`). Never edit it by hand.
+  - `tr.json` and `de.json` are hand-translated. TR uses formal **siz**, DE uses informal **du** (decisions.md U1). Missing keys fall back to English at runtime.
+- **Convention:** one module-level `const messages = defineMessages({ key: { id: "<area>.<module>.<key>", defaultMessage: "…", description?: "…" } })` per file.
+  - Areas: your screen id, or `shared`, `shell`, `design`.
+  - Literal ids and messages only (the extractor reads them statically).
+- **Where messages are formatted:**
+  - Views: `useIntl().formatMessage(messages.key, values)`, or `<FormattedMessage>` for rich text.
+  - Builders: `ctx.intl.formatMessage(…)`. `ModelContext.intl` is the app's `IntlShape`, `ctx.locale` its tag.
+  - Shared vocabulary: `statusVM(status, intl)`, `matchVM(score, intl)`, `sourceVM(kind, intl, label?)`, plus `STATUS_MESSAGES`, `PHASE_MESSAGES`, `MATCH_BAND_*_MESSAGES`, `SOURCE_MESSAGES`, `MOVE_DENIAL_MESSAGES`, `MAIL_CATEGORY_MESSAGES` and `CHANNEL_MESSAGES` (`src/shared/model/vocabulary.ts`, `build-blocks.ts`).
+- **Whole sentences only:** use arguments (`{company}`), plurals (`{count, plural, one {# application} other {# applications}}`) and `select`. Never concatenate fragments or pick plural forms in code. Turkish: keep case suffixes off placeholders (states.md "TR placeholder suffixes"). Dates and numbers come from `format.ts` and are passed in as arguments.
+- **Data stays data:** company, people, role, subject and CV content are never translated.
+- **When you add strings:** run `pnpm --filter @bfhr/desktop i18n:extract`, add the same ids to `tr.json` and `de.json`, then run `pnpm --filter @bfhr/desktop i18n:check`.
+  - The check is part of `pnpm test`. It fails when `en.json` is missing or stale against the code, when a message isn't valid ICU, when tr/de have unknown ids, or when their `{arguments}` differ from English.
+  - It reports untranslated ids; `--strict` makes them fail.
+  - Ship your screen with zero untranslated ids.
+- **Tests:** `fixtureContext(data, pendingWrites?, intl?)` defaults to English (en-GB). Pass `createAppIntl({ language: "tr", locale: "tr-TR" })` to test Turkish.
 
 ## Design build and state forcing
 
@@ -84,14 +108,14 @@ Shared blocks (`shared/model/blocks.ts`), built once in `build-blocks.ts` so eve
 | error     | `?state=error`       | Load failed, nothing cached (`model.retry()` goes back to ready)                                                                                                        |
 | offline   | `?state=offline`     | Cached populated data (`fromCache`, "Updated 10:05"). The 28 px strip and sidebar "2 changes waiting to sync" come from the shell; two of your rows carry `pendingSync` |
 
-`?state=` combines with `?fixture=empty`. The design code and fixtures exist only when Vite runs in mode `design` / `design-e2e`: `__BFHR_DESIGN__` is a compile-time constant, so production builds keep the title-only shell. `pnpm --filter @bfhr/desktop check:bundle` builds production and fails if any of the 67 fixture strings (companies, names, emails, fixture ids) appear. Running the same script on a design build with `--expect-fixtures` is the control: it shows the check can see them.
+`?state=` combines with `?fixture=empty`, and `&locale=tr|de` switches the language (a plain browser reads it at load). The design code and fixtures exist only when Vite runs in mode `design` / `design-e2e`: `__BFHR_DESIGN__` is a compile-time constant, so production builds keep the title-only shell. `pnpm --filter @bfhr/desktop check:bundle` builds production and fails if any of the 67 fixture strings (companies, names, emails, fixture ids) appear. Running the same script on a design build with `--expect-fixtures` is the control: it shows the check can see them.
 
 ## Capture
 
-| Command                                                                                                                                                                           | Output                                                                                      |
-| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| `pnpm --filter @bfhr/desktop capture:design <screen…\|all> [--states populated,empty] [--engines webkit,chromium] [--themes light,dark] [--sizes 1280x800,1920x1080] [--scale 2]` | `artifacts/screens/desktop/harness/<webkit\|chromium>/<screen>-<state>-<theme>-<w>x<h>.png` |
-| `pnpm --filter @bfhr/desktop build:e2e:design`, then `capture:app:design` (narrow with `BFHR_SCREENS=today` and `BFHR_STATES=populated,offline`)                                  | `artifacts/screens/desktop/<macos\|windows>/design/<same name>`                             |
+| Command                                                                                                                                                                                         | Output                                                                                               |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `pnpm --filter @bfhr/desktop capture:design <screen…\|all> [--states populated,empty] [--engines webkit,chromium] [--themes light,dark] [--sizes 1280x800,1920x1080] [--scale 2] [--locale tr]` | `artifacts/screens/desktop/harness/<webkit\|chromium>/[tr\|de/]<screen>-<state>-<theme>-<w>x<h>.png` |
+| `pnpm --filter @bfhr/desktop build:e2e:design`, then `capture:app:design` (narrow with `BFHR_SCREENS=today` and `BFHR_STATES=populated,offline`)                                                | `artifacts/screens/desktop/<macos\|windows>/design/<same name>`                                      |
 
 - The browser harness needs no Rust build. WebKit stands in for macOS WKWebView (macOS chrome) and Chromium for Windows WebView2 (Windows chrome). It runs the Vite dev server in design mode, waits for `html[data-design-ready]`, and fails if the page logs an error.
 - Use it for every iteration round. Use the real-app capture for final rounds: on macOS, and on the Windows CI runner.

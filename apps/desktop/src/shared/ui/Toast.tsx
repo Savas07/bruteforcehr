@@ -12,6 +12,7 @@
 import { timing } from "@bfhr/ui-tokens";
 import { Send, X, type LucideIcon } from "lucide-react";
 import { Toast } from "radix-ui";
+import { defineMessages, useIntl } from "react-intl";
 import {
   createContext,
   useCallback,
@@ -23,7 +24,7 @@ import {
   type ReactNode,
 } from "react";
 import { chrome } from "../../lib/desktop";
-import { parseKeys, spokenKeys } from "../keyboard/keymap";
+import { spokenAlternatives } from "../keyboard/keymap";
 import { useKeyBindings } from "../keyboard/useKeyBindings";
 import { cx } from "../cx";
 import { Hint } from "./Hint";
@@ -85,8 +86,40 @@ interface ShownToast {
   readonly undoId: number | null;
 }
 
-const RESTORED = "Restored";
-const OPEN = "Open";
+const messages = defineMessages({
+  restored: {
+    id: "shared.ui.toast.restored",
+    defaultMessage: "Restored",
+    description: "Follow-up toast after Undo",
+  },
+  open: {
+    id: "shared.ui.toast.open",
+    defaultMessage: "Open",
+    description: "Action on the Restored toast: jump to the restored item",
+  },
+  undoLast: {
+    id: "shared.ui.toast.undoLast",
+    defaultMessage: "Undo the last change",
+    description: "Keyboard shortcut list entry for Mod+Z",
+  },
+  viewport: {
+    id: "shared.ui.toast.viewport",
+    defaultMessage: "Notifications ({hotkey})",
+    description: "Screen reader label of the toast region; {hotkey} is the shortcut (F6)",
+  },
+  sendsIn: {
+    id: "shared.ui.toast.sendsIn",
+    defaultMessage: "Sends in {seconds} s",
+    description: "Send countdown on the undo-send toast",
+  },
+  actionWithKeys: {
+    id: "shared.ui.toast.actionWithKeys",
+    defaultMessage: "{action}, {keys}",
+    description: "Spoken toast action: label, then its shortcut",
+  },
+  sendNow: { id: "shared.ui.toast.sendNow", defaultMessage: "Send now" },
+  close: { id: "shared.ui.toast.close", defaultMessage: "Close" },
+});
 const UNDO_KEYS = "Mod+Z";
 const LONG_MESSAGE = 60;
 
@@ -110,6 +143,7 @@ export function ToastProvider({
   /** The app; `ToastViewport` goes somewhere inside. */
   children: ReactNode;
 }) {
+  const intl = useIntl();
   const [current, setCurrent] = useState<ShownToast | null>(null);
   const [historySize, setHistorySize] = useState(0);
   const history = useRef<UndoEntry[]>([]);
@@ -153,9 +187,13 @@ export function ToastProvider({
       removeEntry(entryId);
       entry.run();
       const open = entry.openAfterUndo;
-      show({ variant: "info", message: RESTORED, ...(open ? { action: { label: OPEN, run: open } } : {}) });
+      show({
+        variant: "info",
+        message: intl.formatMessage(messages.restored),
+        ...(open ? { action: { label: intl.formatMessage(messages.open), run: open } } : {}),
+      });
     },
-    [removeEntry, show],
+    [intl, removeEntry, show],
   );
 
   const close = useCallback((id: number) => {
@@ -182,7 +220,7 @@ export function ToastProvider({
     {
       id: "toast.undo",
       keys: UNDO_KEYS,
-      label: "Undo the last change",
+      label: intl.formatMessage(messages.undoLast),
       group: "General",
       enabled: historySize > 0,
       inTextFields: false,
@@ -220,10 +258,12 @@ export function ToastProvider({
  * from its edges, at most 480 px wide, above content (`--bfhr-layer-toast`). F6 focuses it.
  */
 export function ToastViewport() {
+  const intl = useIntl();
   return (
     <Toast.Viewport
       hotkey={["F6"]}
-      label="Notifications ({hotkey})"
+      // Radix substitutes its own `{hotkey}` placeholder, so the message keeps it literally.
+      label={intl.formatMessage(messages.viewport, { hotkey: "{hotkey}" })}
       className="absolute bottom-4 left-4 z-(--bfhr-layer-toast) m-0 flex max-w-[min(30rem,calc(100%-2rem))] list-none flex-col gap-2 p-0 outline-none"
     />
   );
@@ -268,6 +308,7 @@ function ToastItem({
   onUndo: (entryId: number) => void;
   onSendNow: () => void;
 }) {
+  const intl = useIntl();
   const { options, undoId } = shown;
   const variant = options.variant ?? "undo";
   const sending = variant === "undoSend";
@@ -275,12 +316,7 @@ function ToastItem({
   const action = options.action;
   const keys = action?.keys ?? (undoId !== null ? UNDO_KEYS : undefined);
   const seconds = useCountdown(sending ? options.sendAt : undefined, onClose);
-  const spoken =
-    keys === undefined
-      ? null
-      : parseKeys(keys)
-          .map((steps) => spokenKeys(steps, chrome.platform))
-          .join(" or ");
+  const spoken = keys === undefined ? null : spokenAlternatives(keys, chrome.platform, intl);
 
   return (
     <Toast.Root
@@ -308,12 +344,19 @@ function ToastItem({
         <span>{options.message}</span>
         {sending && (
           <span role="timer" className="tabular-nums" data-radix-toast-announce-exclude="">
-            Sends in {seconds} s
+            {intl.formatMessage(messages.sendsIn, { seconds })}
           </span>
         )}
       </Toast.Description>
       {action && (
-        <Toast.Action altText={spoken ? `${action.label}, ${spoken}` : action.label} asChild>
+        <Toast.Action
+          altText={
+            spoken
+              ? intl.formatMessage(messages.actionWithKeys, { action: action.label, keys: spoken })
+              : action.label
+          }
+          asChild
+        >
           <button
             type="button"
             className={cx(toastButton, "text-toast-action px-2")}
@@ -324,11 +367,11 @@ function ToastItem({
           </button>
         </Toast.Action>
       )}
-      <Hint label={sending ? "Send now" : "Close"}>
+      <Hint label={intl.formatMessage(sending ? messages.sendNow : messages.close)}>
         {sending ? (
           <button
             type="button"
-            aria-label="Send now"
+            aria-label={intl.formatMessage(messages.sendNow)}
             className={cx(toastButton, "justify-center px-0 size-8")}
             onClick={onSendNow}
           >
@@ -338,7 +381,7 @@ function ToastItem({
           <Toast.Close asChild>
             <button
               type="button"
-              aria-label="Close"
+              aria-label={intl.formatMessage(messages.close)}
               className={cx(toastButton, "justify-center px-0 size-8")}
             >
               <X aria-hidden="true" className="size-4" strokeWidth={1.75} />

@@ -1,6 +1,15 @@
 import { useEffect, type ReactNode } from "react";
+import { defineMessages, useIntl } from "react-intl";
 import { ROUTE_TITLE_ID } from "../../components/RouteContainer";
 import { cx } from "../cx";
+
+const messages = defineMessages({
+  documentTitle: {
+    id: "shared.ui.screenTitle.documentTitle",
+    defaultMessage: "{title} · BruteForceHR",
+    description: "Window title; {title} is the screen or record name",
+  },
+});
 
 /**
  * A screen's `h1` (components.md `RouteContainer`): sets the window title and is the focus target
@@ -20,9 +29,11 @@ export function ScreenTitle({
   /** Trailing content on the title line (date, counts). */
   children?: ReactNode;
 }) {
+  const intl = useIntl();
+  const windowTitle = intl.formatMessage(messages.documentTitle, { title: documentTitle });
   useEffect(() => {
-    document.title = `${documentTitle} · BruteForceHR`;
-  }, [documentTitle]);
+    document.title = windowTitle;
+  }, [windowTitle]);
   return (
     <h1
       id={ROUTE_TITLE_ID}

@@ -5,6 +5,7 @@
  * the date only. Pure: everything time- and locale-dependent comes from `ctx`.
  */
 import { type Application, type Interview, isActiveStatus, revertedBy, type ReviewState } from "@bfhr/core";
+import { defineMessages, type MessageDescriptor } from "react-intl";
 import type { AutoChangeVM, NudgeVM, ReviewProposalVM } from "../../shared/model/blocks";
 import {
   applicationSummaryVM,
@@ -14,7 +15,7 @@ import {
 } from "../../shared/model/build-blocks";
 import { calendarDaysFromNow, clockTime, dayAndTime, relativeTime } from "../../shared/model/format";
 import type { CompanyVM, MatchVM, ModelContext, TimeVM, UserData } from "../../shared/model/types";
-import { companyVM, matchVM, STATUS_LABELS } from "../../shared/model/vocabulary";
+import { companyVM, matchVM, STATUS_MESSAGES } from "../../shared/model/vocabulary";
 
 const HOUR_MS = 3_600_000;
 const DAY_MS = 86_400_000;
@@ -141,7 +142,11 @@ export interface TodaySectionVM {
   readonly id: TodaySectionId;
   /** "Next up", "To review", "Follow-ups", "Deadlines", "New matches". */
   readonly title: string;
-  /** Plain-text count for the header ("To review · 6"); null for Next up (one hero card). */
+  /**
+   * Plain-text count for the header ("To review · 3"); null for Next up (one hero card) and when
+   * nothing in the section is counted. To review counts only emails waiting for confirmation, the
+   * same number as the Mail badge (D01); automatic changes are listed but not counted.
+   */
   readonly countLabel: string | null;
   /** Footer link label ("See all in Jobs"); null when the section has none. */
   readonly seeAllLabel: string | null;
@@ -237,41 +242,141 @@ export interface TodayModel {
 }
 
 /* ------------------------------------------------------------------------------------------------
- * Copy (today-home.md "Copy notes", D18, D19, states.md)
+ * Messages (today-home.md "Copy notes", D18, D19, states.md)
  * ---------------------------------------------------------------------------------------------- */
 
-const SECTION_TITLES: Readonly<Record<TodaySectionId, string>> = {
-  nextUp: "Next up",
-  toReview: "To review",
-  followUps: "Follow-ups",
-  deadlines: "Deadlines",
-  newMatches: "New matches",
-};
+const SECTION_TITLE_MESSAGES: Readonly<Record<TodaySectionId, MessageDescriptor>> = defineMessages({
+  nextUp: {
+    id: "today.section.nextUp",
+    defaultMessage: "Next up",
+    description: "Section title: the next interview",
+  },
+  toReview: {
+    id: "today.section.toReview",
+    defaultMessage: "To review",
+    description:
+      "Section title: emails waiting for confirmation and automatic changes. Same term as the Mail chip",
+  },
+  followUps: { id: "today.section.followUps", defaultMessage: "Follow-ups", description: "Section title" },
+  deadlines: { id: "today.section.deadlines", defaultMessage: "Deadlines", description: "Section title" },
+  newMatches: {
+    id: "today.section.newMatches",
+    defaultMessage: "New matches",
+    description: "Section title: new top jobs",
+  },
+});
 
-const DEADLINE_LABELS: Readonly<Record<DeadlineKind, string>> = {
-  assessment: "Assessment due",
-  offerReply: "Reply to the offer by",
-  jobClosing: "Posting closes",
-};
+const DEADLINE_MESSAGES: Readonly<Record<DeadlineKind, MessageDescriptor>> = defineMessages({
+  assessment: {
+    id: "today.deadline.assessment",
+    defaultMessage: "Assessment due",
+    description: "Deadline row title, followed by a date chip: a take-home assessment",
+  },
+  offerReply: {
+    id: "today.deadline.offerReply",
+    defaultMessage: "Reply to the offer by",
+    description: "Deadline row title, followed by a date chip",
+  },
+  jobClosing: {
+    id: "today.deadline.jobClosing",
+    defaultMessage: "Posting closes",
+    description: "Deadline row title, followed by a date chip: a saved job's closing date",
+  },
+});
 
-const REVIEW_OUTCOMES: Readonly<Partial<Record<ReviewState, string>>> = {
-  confirmed: "Confirmed",
-  corrected: "Changed",
-  dismissed: "Marked as not job mail",
-};
+const REVIEW_OUTCOME_MESSAGES: Readonly<Partial<Record<ReviewState, MessageDescriptor>>> = defineMessages({
+  confirmed: {
+    id: "today.done.confirmed",
+    defaultMessage: "Confirmed",
+    description: "Done today: the user confirmed an email",
+  },
+  corrected: {
+    id: "today.done.corrected",
+    defaultMessage: "Changed",
+    description: "Done today: the user changed what we found",
+  },
+  dismissed: {
+    id: "today.done.dismissed",
+    defaultMessage: "Marked as not job mail",
+    description: "Done today",
+  },
+});
 
-const COPY = {
-  title: "Today",
-  caughtUp: "You're all caught up. New updates will show up here.",
-  connectMail: "Connect your email to see interview invites and replies here.",
-  connectEstimate: "About 2 minutes.",
-  connectAction: "Connect email",
-  findJobs: "Find jobs",
-  seeAllMatches: "See all in Jobs",
-  doneToday: "Done today",
-  agendaTitle: "Next 7 days",
-  agendaEmpty: "No interviews this week",
-} as const;
+const messages = defineMessages({
+  title: { id: "today.title", defaultMessage: "Today", description: "Screen title" },
+  caughtUp: { id: "today.caughtUp", defaultMessage: "You're all caught up. New updates will show up here." },
+  connectMail: {
+    id: "today.firstUse.connectMail",
+    defaultMessage: "Connect your email to see interview invites and replies here.",
+  },
+  connectEstimate: {
+    id: "today.firstUse.connectEstimate",
+    defaultMessage: "About 2 minutes.",
+    description: "How long connecting an email account takes",
+  },
+  connectAction: {
+    id: "today.firstUse.connectAction",
+    defaultMessage: "Connect email",
+    description: "Button",
+  },
+  findJobs: {
+    id: "today.firstUse.findJobs",
+    defaultMessage: "Find jobs",
+    description: "Button: goes to Jobs",
+  },
+  seeAllMatches: {
+    id: "today.matches.seeAll",
+    defaultMessage: "See all in Jobs",
+    description: "Link under New matches. 'Jobs' is the sidebar item",
+  },
+  doneToday: {
+    id: "today.done.title",
+    defaultMessage: "Done today",
+    description: "Collapsed group of items handled today",
+  },
+  undone: {
+    id: "today.done.undone",
+    defaultMessage: "Undone · back to {status}",
+    description: "Done today: the user undid an automatic change. {status} is a status name",
+  },
+  agendaTitle: {
+    id: "today.agenda.title",
+    defaultMessage: "{days, plural, one {Next # day} other {Next # days}}",
+    description: "Title of the agenda rail",
+  },
+  agendaEmpty: { id: "today.agenda.empty", defaultMessage: "No interviews this week" },
+  round: {
+    id: "today.interview.round",
+    defaultMessage: "Round {round}",
+    description: "Interview round number",
+  },
+  interviewContext: {
+    id: "today.interview.context",
+    defaultMessage: "{role} · {round}",
+    description: "Interview row context: job title and the round ('Round 2')",
+  },
+  interviewerTime: {
+    id: "today.interview.interviewerTime",
+    defaultMessage: "{time} {city} time",
+    description:
+      "The interview time in the interviewer's zone: '10:00 New York time'. {time} may be 'Tomorrow, 10:00'",
+  },
+  autoRejected: {
+    id: "today.autoUpdate.rejected",
+    defaultMessage: "{company} decided not to move forward. We updated the application.",
+    description: "An automatic rejection from an email (D18): neutral, no 'unfortunately'",
+  },
+  autoFromEmail: {
+    id: "today.autoUpdate.fromEmail",
+    defaultMessage: "Moved to {status} — from an email by {company}",
+    description: "An automatic status change. {status} is a status name, {company} the sender's company",
+  },
+  autoMoved: {
+    id: "today.autoUpdate.automatic",
+    defaultMessage: "Moved to {status} automatically",
+    description: "An automatic status change without an email. {status} is a status name",
+  },
+});
 
 /* ------------------------------------------------------------------------------------------------
  * Builders
@@ -294,8 +399,8 @@ function interviewerTime(interview: Interview, ctx: ModelContext): string | null
     calendarDaysFromNow(interview.startsAt, theirs) === calendarDaysFromNow(interview.startsAt, ctx);
   const theirClock = clockTime(interview.startsAt, theirs);
   if (sameDay && theirClock === clockTime(interview.startsAt, ctx)) return null;
-  const when = sameDay ? theirClock : dayAndTime(interview.startsAt, theirs).label;
-  return `${when} ${city} time`;
+  const time = sameDay ? theirClock : dayAndTime(interview.startsAt, theirs).label;
+  return ctx.intl.formatMessage(messages.interviewerTime, { time, city });
 }
 
 /** Interviews of open applications that haven't ended, soonest first. */
@@ -324,7 +429,7 @@ function interviewItem(
   const end = new Date(start + interview.durationMinutes * 60_000);
   const joinableAt = new Date(start - JOIN_LEAD_MINUTES * 60_000);
   const job = data.jobs.find((candidate) => candidate.id === application.jobId);
-  const round = `Round ${interview.round}`;
+  const round = ctx.intl.formatMessage(messages.round, { round: interview.round });
   return {
     kind: "interview",
     id: `interview:${interview.id}`,
@@ -332,7 +437,7 @@ function interviewItem(
     applicationId: application.id,
     company: companyVM(application.company, application.companyDomain),
     title: interview.title,
-    context: `${application.role} · ${round}`,
+    context: ctx.intl.formatMessage(messages.interviewContext, { role: application.role, round }),
     role: application.role,
     round,
     startsAt: dayAndTime(interview.startsAt, ctx),
@@ -375,12 +480,12 @@ function reviewItems(data: UserData, ctx: ModelContext): ReviewItemVM[] {
 }
 
 /** "Moved to Interviewing — from an email by Acme" / D18 wording for decisions. */
-function autoUpdateTitle(change: AutoChangeVM): string {
-  if (change.to.key === "rejected")
-    return `${change.company.name} decided not to move forward. We updated the application.`;
+function autoUpdateTitle(change: AutoChangeVM, ctx: ModelContext): string {
+  const company = change.company.name;
+  if (change.to.key === "rejected") return ctx.intl.formatMessage(messages.autoRejected, { company });
   return change.mailMessageId
-    ? `Moved to ${change.to.label} — from an email by ${change.company.name}`
-    : `Moved to ${change.to.label} automatically`;
+    ? ctx.intl.formatMessage(messages.autoFromEmail, { status: change.to.label, company })
+    : ctx.intl.formatMessage(messages.autoMoved, { status: change.to.label });
 }
 
 /** Automatic status changes of the last `AUTO_UPDATE_WINDOW_DAYS` days that weren't undone, newest first. */
@@ -402,7 +507,7 @@ function autoUpdateItems(data: UserData, ctx: ModelContext): AutoUpdateItemVM[] 
           kind: "autoUpdate",
           id: `autoUpdate:${event.id}`,
           company: change.company,
-          title: autoUpdateTitle(change),
+          title: autoUpdateTitle(change, ctx),
           context: change.role,
           change,
           pendingSync: change.pendingSync,
@@ -470,7 +575,7 @@ function deadlineItems(data: UserData, ctx: ModelContext): DeadlineItemVM[] {
           id: `deadline:${message.id}:${index}`,
           deadlineKind,
           company: companyVM(application.company, application.companyDomain),
-          title: DEADLINE_LABELS[deadlineKind],
+          title: ctx.intl.formatMessage(DEADLINE_MESSAGES[deadlineKind]),
           context: application.role,
           due: deadlineChip(date.at, ctx),
           applicationId: application.id,
@@ -496,7 +601,7 @@ function deadlineItems(data: UserData, ctx: ModelContext): DeadlineItemVM[] {
         id: `deadline:job:${job.id}`,
         deadlineKind: "jobClosing",
         company: companyVM(job.company, job.companyDomain),
-        title: DEADLINE_LABELS.jobClosing,
+        title: ctx.intl.formatMessage(DEADLINE_MESSAGES.jobClosing),
         context: job.title,
         due: deadlineChip(job.expiresAt, ctx),
         applicationId: application?.id ?? null,
@@ -550,7 +655,7 @@ function matchItems(data: UserData, ctx: ModelContext): MatchItemVM[] {
         company: companyVM(job.company, job.companyDomain),
         title: job.title,
         context: reason,
-        match: matchVM(match.score),
+        match: matchVM(match.score, ctx.intl),
         reason,
         saved: match.state === "saved",
         pendingSync: ctx.pendingWrites.has(match.id),
@@ -562,7 +667,7 @@ function doneToday(data: UserData, ctx: ModelContext): DoneTodayVM | null {
   const today = (date: Date) => calendarDaysFromNow(date, ctx) === 0 && date <= ctx.now;
   const done: { at: Date; item: DoneItemVM }[] = [];
   for (const message of data.mailMessages) {
-    const outcome = REVIEW_OUTCOMES[message.reviewState];
+    const outcome = REVIEW_OUTCOME_MESSAGES[message.reviewState];
     if (!outcome || !message.reviewedAt || !today(message.reviewedAt)) continue;
     const proposal = reviewProposalVM(message, data, ctx);
     done.push({
@@ -572,7 +677,7 @@ function doneToday(data: UserData, ctx: ModelContext): DoneTodayVM | null {
         kind: "review",
         company: proposal.company,
         title: proposal.subject,
-        outcome,
+        outcome: ctx.intl.formatMessage(outcome),
         doneAt: relativeTime(message.reviewedAt, ctx),
       },
     });
@@ -588,14 +693,20 @@ function doneToday(data: UserData, ctx: ModelContext): DoneTodayVM | null {
         kind: "autoUpdate",
         company: companyVM(application.company, application.companyDomain),
         title: application.role,
-        outcome: `Undone · back to ${STATUS_LABELS[event.toStatus]}`,
+        outcome: ctx.intl.formatMessage(messages.undone, {
+          status: ctx.intl.formatMessage(STATUS_MESSAGES[event.toStatus]),
+        }),
         doneAt: relativeTime(event.occurredAt, ctx),
       },
     });
   }
   if (done.length === 0) return null;
   const items = done.sort((a, b) => b.at.getTime() - a.at.getTime()).map(({ item }) => item);
-  return { title: COPY.doneToday, countLabel: new Intl.NumberFormat(ctx.locale).format(items.length), items };
+  return {
+    title: ctx.intl.formatMessage(messages.doneToday),
+    countLabel: ctx.intl.formatNumber(items.length),
+    items,
+  };
 }
 
 function agenda(
@@ -654,13 +765,13 @@ function agenda(
   }
 
   return {
-    title: COPY.agendaTitle,
+    title: ctx.intl.formatMessage(messages.agendaTitle, { days: AGENDA_DAYS }),
     days: days.map(({ offset, label, entries: dayEntries }) => ({
       id: `day+${offset}`,
       label,
       entries: dayEntries,
     })),
-    emptyLabel: days.length === 0 ? COPY.agendaEmpty : null,
+    emptyLabel: days.length === 0 ? ctx.intl.formatMessage(messages.agendaEmpty) : null,
   };
 }
 
@@ -675,37 +786,45 @@ export function buildTodayModel(
   );
   const nextUp = next ? [interviewItem(next.interview, next.application, data, ctx)] : [];
   const deadlines = deadlineItems(data, ctx);
+  const reviews = reviewItems(data, ctx);
+  const followUps = followUpItems(data, ctx);
+  const matches = matchItems(data, ctx);
 
+  // The third entry is the header count: To review counts only emails waiting for confirmation (D01).
   const sections = (
     [
-      ["nextUp", nextUp],
-      ["toReview", [...reviewItems(data, ctx), ...autoUpdateItems(data, ctx)]],
-      ["followUps", followUpItems(data, ctx)],
-      ["deadlines", deadlines],
-      ["newMatches", matchItems(data, ctx)],
+      ["nextUp", nextUp, null],
+      ["toReview", [...reviews, ...autoUpdateItems(data, ctx)], reviews.length],
+      ["followUps", followUps, followUps.length],
+      ["deadlines", deadlines, deadlines.length],
+      ["newMatches", matches, matches.length],
     ] as const
   )
     .filter(([, items]) => items.length > 0)
-    .map(([id, items]): TodaySectionVM => ({
+    .map(([id, items, count]): TodaySectionVM => ({
       id,
-      title: SECTION_TITLES[id],
-      countLabel: id === "nextUp" ? null : new Intl.NumberFormat(ctx.locale).format(items.length),
-      seeAllLabel: id === "newMatches" ? COPY.seeAllMatches : null,
+      title: ctx.intl.formatMessage(SECTION_TITLE_MESSAGES[id]),
+      countLabel: count === null || count === 0 ? null : ctx.intl.formatNumber(count),
+      seeAllLabel: id === "newMatches" ? ctx.intl.formatMessage(messages.seeAllMatches) : null,
       items,
     }));
   const items = sections.flatMap((candidate) => candidate.items);
 
   const connectMail =
     data.mailAccounts.length === 0
-      ? { message: COPY.connectMail, estimate: COPY.connectEstimate, actionLabel: COPY.connectAction }
+      ? {
+          message: ctx.intl.formatMessage(messages.connectMail),
+          estimate: ctx.intl.formatMessage(messages.connectEstimate),
+          actionLabel: ctx.intl.formatMessage(messages.connectAction),
+        }
       : null;
   const findJobs =
     connectMail && data.jobs.length === 0 && data.applications.length === 0
-      ? { actionLabel: COPY.findJobs }
+      ? { actionLabel: ctx.intl.formatMessage(messages.findJobs) }
       : null;
 
   return {
-    title: COPY.title,
+    title: ctx.intl.formatMessage(messages.title),
     dateLabel: longDate(ctx.now, ctx),
     sections,
     items,
@@ -713,6 +832,7 @@ export function buildTodayModel(
     doneToday: doneToday(data, ctx),
     agenda: agenda(data, deadlines, nextUp[0]?.id ?? null, ctx),
     firstUse: connectMail ? { connectMail, findJobs } : null,
-    caughtUp: items.length === 0 && !connectMail ? { message: COPY.caughtUp } : null,
+    caughtUp:
+      items.length === 0 && !connectMail ? { message: ctx.intl.formatMessage(messages.caughtUp) } : null,
   };
 }

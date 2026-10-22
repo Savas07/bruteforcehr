@@ -3,6 +3,7 @@
  * View-models are plain data: strings already formatted for display, status keys for tones, ids
  * for actions. Views never touch `@bfhr/core` entities or format dates themselves.
  */
+import type { IntlShape } from "react-intl";
 import type {
   Application,
   ApplicationEvent,
@@ -52,8 +53,13 @@ export interface UserData {
 export interface ModelContext {
   /** The clock. Fixtures use `FIXTURE_NOW`, so screenshots are deterministic. */
   readonly now: Date;
-  /** BCP 47 locale for `Intl` formatting ("en-GB": 24 h clock, day-month order). */
+  /** BCP 47 locale for `Intl` formatting ("en-GB": 24 h clock, day-month order) = `intl.locale`. */
   readonly locale: string;
+  /**
+   * Messages in the UI language (src/i18n). Every user-facing string a builder returns goes
+   * through `intl.formatMessage(messages.key, values)` with a module-level `defineMessages`.
+   */
+  readonly intl: IntlShape;
   /** IANA zone for wall-clock times (the profile's `timezone`). */
   readonly timeZone: string;
   /**

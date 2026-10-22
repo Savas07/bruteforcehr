@@ -3,10 +3,56 @@
  * editor toolbar's save status. Text carries the meaning; icons only support it.
  */
 import { Check, CircleAlert, CloudCheck, CloudOff, HardDrive, History, LoaderCircle } from "lucide-react";
+import { defineMessages, FormattedMessage, useIntl } from "react-intl";
 import { useConnectivity } from "../connectivity";
-import { countLabel } from "../model/format";
 import type { TimeVM } from "../model/types";
 import { Button } from "./Button";
+
+const messages = defineMessages({
+  waiting: {
+    id: "shared.ui.syncStatus.waiting",
+    defaultMessage: "{count, plural, one {# change waiting to sync} other {# changes waiting to sync}}",
+    description: "Sidebar sync line: writes queued for the server",
+  },
+  offlineWaiting: {
+    id: "shared.ui.syncStatus.offlineWaiting",
+    defaultMessage:
+      "Offline · {count, plural, one {# change waiting to sync} other {# changes waiting to sync}}",
+    description: "Sidebar sync line while offline with queued writes",
+  },
+  offline: {
+    id: "shared.ui.syncStatus.offline",
+    defaultMessage: "Offline",
+    description: "Sidebar sync line while offline",
+  },
+  synced: {
+    id: "shared.ui.syncStatus.synced",
+    defaultMessage: "Synced · {time}",
+    description: "Sidebar sync line; {time} is a relative time like 'just now'",
+  },
+  saved: { id: "shared.ui.syncStatus.saved", defaultMessage: "Saved", description: "Editor save status" },
+  savedAt: {
+    id: "shared.ui.syncStatus.savedAt",
+    defaultMessage: "Saved · {time}",
+    description: "Editor save status; {time} is a relative time like 'just now'",
+  },
+  saving: { id: "shared.ui.syncStatus.saving", defaultMessage: "Saving…", description: "Editor save status" },
+  local: {
+    id: "shared.ui.syncStatus.local",
+    defaultMessage: "Saved on this device",
+    description: "Editor save status while offline",
+  },
+  failed: {
+    id: "shared.ui.syncStatus.failed",
+    defaultMessage: "Couldn't save",
+    description: "Editor save status",
+  },
+  tryAgain: {
+    id: "shared.ui.syncStatus.tryAgain",
+    defaultMessage: "Try again",
+    description: "Retries a failed save",
+  },
+});
 
 /** Editor save state: `local` = saved on this device while offline, `failed` = the write failed. */
 export type SaveState = "saved" | "saving" | "local" | "failed";
@@ -37,22 +83,23 @@ export function SyncStatus(props: SyncStatusSidebarProps | SyncStatusEditorProps
 }
 
 function SidebarSync() {
+  const intl = useIntl();
   const { status, pendingWrites, lastSyncedAt } = useConnectivity();
-  const waiting =
-    pendingWrites > 0 ? `${countLabel(pendingWrites, "change", "changes", "en-GB")} waiting to sync` : null;
 
   if (status === "offline")
     return (
       <p className="text-footnote text-fg-secondary flex items-center gap-2 tabular-nums">
         <CloudOff aria-hidden="true" className={iconClass} strokeWidth={1.75} />
-        {waiting ? `Offline · ${waiting}` : "Offline"}
+        {pendingWrites > 0
+          ? intl.formatMessage(messages.offlineWaiting, { count: pendingWrites })
+          : intl.formatMessage(messages.offline)}
       </p>
     );
-  if (waiting)
+  if (pendingWrites > 0)
     return (
       <p className="text-footnote text-fg-secondary flex items-center gap-2 tabular-nums">
         <History aria-hidden="true" className={iconClass} strokeWidth={1.75} />
-        {waiting}
+        {intl.formatMessage(messages.waiting, { count: pendingWrites })}
       </p>
     );
   if (lastSyncedAt === null) return null;
@@ -60,31 +107,44 @@ function SidebarSync() {
     <p className="text-footnote text-fg-tertiary flex items-center gap-2">
       <CloudCheck aria-hidden="true" className={iconClass} strokeWidth={1.75} />
       <span>
-        Synced ·{" "}
-        <time dateTime={lastSyncedAt.iso} title={lastSyncedAt.absolute}>
-          {lastSyncedAt.label}
-        </time>
+        <FormattedMessage
+          {...messages.synced}
+          values={{
+            time: (
+              <time dateTime={lastSyncedAt.iso} title={lastSyncedAt.absolute}>
+                {lastSyncedAt.label}
+              </time>
+            ),
+          }}
+        />
       </span>
     </p>
   );
 }
 
 function EditorSave({ state, savedAt, onRetry }: SyncStatusEditorProps) {
+  const intl = useIntl();
   return (
     <div role="status" className="text-footnote text-fg-secondary flex items-center gap-2">
       {state === "saved" && (
         <>
           <Check aria-hidden="true" className={iconClass} strokeWidth={1.75} />
-          {savedAt ? (
-            <span>
-              Saved ·{" "}
-              <time dateTime={savedAt.iso} title={savedAt.absolute}>
-                {savedAt.label}
-              </time>
-            </span>
-          ) : (
-            <span>Saved</span>
-          )}
+          <span>
+            {savedAt ? (
+              <FormattedMessage
+                {...messages.savedAt}
+                values={{
+                  time: (
+                    <time dateTime={savedAt.iso} title={savedAt.absolute}>
+                      {savedAt.label}
+                    </time>
+                  ),
+                }}
+              />
+            ) : (
+              intl.formatMessage(messages.saved)
+            )}
+          </span>
         </>
       )}
       {state === "saving" && (
@@ -94,24 +154,24 @@ function EditorSave({ state, savedAt, onRetry }: SyncStatusEditorProps) {
             className={`${iconClass} motion-safe:animate-spin`}
             strokeWidth={1.75}
           />
-          <span>Saving…</span>
+          <span>{intl.formatMessage(messages.saving)}</span>
         </>
       )}
       {state === "local" && (
         <>
           <HardDrive aria-hidden="true" className={iconClass} strokeWidth={1.75} />
-          <span>Saved on this device</span>
+          <span>{intl.formatMessage(messages.local)}</span>
         </>
       )}
       {state === "failed" && (
         <>
           <CircleAlert aria-hidden="true" className={`${iconClass} text-danger-text`} strokeWidth={1.75} />
-          <span className="text-fg-primary">Couldn't save</span>
+          <span className="text-fg-primary">{intl.formatMessage(messages.failed)}</span>
           {onRetry && (
             <>
               <span aria-hidden="true">·</span>
               <Button size="sm" variant="plain" onClick={onRetry}>
-                Try again
+                {intl.formatMessage(messages.tryAgain)}
               </Button>
             </>
           )}

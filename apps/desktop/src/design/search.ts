@@ -7,7 +7,13 @@ export interface DesignParams extends DesignSearch {
   readonly rest: Readonly<Record<string, string>>;
 }
 
-const RESERVED: Readonly<Record<string, true>> = { fixture: true, state: true, theme: true, platform: true };
+const RESERVED: Readonly<Record<string, true>> = {
+  fixture: true,
+  state: true,
+  theme: true,
+  platform: true,
+  locale: true,
+};
 
 /** Reads `?fixture=populated|empty&state=ready|loading|error|offline&theme=light|dark`. */
 export function readDesignParams(search: Readonly<Record<string, unknown>>): DesignParams {

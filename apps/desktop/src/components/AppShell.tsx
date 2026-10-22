@@ -1,8 +1,9 @@
 import { Outlet, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
+import { useIntl } from "react-intl";
 import { chrome, onMenuCommand } from "../lib/desktop";
 import { destinations, type DestinationId } from "../lib/destinations";
-import { shortcutForKey, shortcuts, type MenuCommand } from "../lib/shortcuts";
+import { shortcutForKey, shortcutMessage, shortcuts, type MenuCommand } from "../lib/shortcuts";
 import { keymap } from "../shared/keyboard/keymap";
 import { useKeyBindings } from "../shared/keyboard/useKeyBindings";
 import { ConnectionBanner } from "../shared/ui/ConnectionBanner";
@@ -14,6 +15,7 @@ import { Sidebar } from "./Sidebar";
 
 export function AppShell() {
   const navigate = useNavigate();
+  const intl = useIntl();
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
 
@@ -81,7 +83,7 @@ export function AppShell() {
             {
               id: `${shortcut.id}.alternates`,
               keys: shortcut.alternates,
-              label: shortcut.label,
+              label: intl.formatMessage(shortcutMessage(shortcut)),
               group: shortcut.group,
               hidden: true,
               run: () => runCommand(shortcut.command),

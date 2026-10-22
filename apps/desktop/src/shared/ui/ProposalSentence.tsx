@@ -4,10 +4,38 @@
  * `ReviewDetailPane` (Today + Mail), `AutoChangeRow` and `TimelineRow`, so every surface keeps
  * one grammar (system.md "Trust is visible").
  */
+import type { ReactNode } from "react";
+import { defineMessages, FormattedMessage } from "react-intl";
 import type { StatusMoveVM } from "../model/blocks";
 import type { SourceVM } from "../model/types";
 import { cx } from "../cx";
 import { SourceTag } from "./SourceTag";
+
+const messages = defineMessages({
+  addQuestion: {
+    id: "shared.ui.proposalSentence.addQuestion",
+    defaultMessage: "Add {application} to Tracker as <b>{to}</b>?",
+    description:
+      "Review proposal creating a new application; {application} = 'Company · Role', {to} = status",
+  },
+  addStatement: {
+    id: "shared.ui.proposalSentence.addStatement",
+    defaultMessage: "{application} is added to Tracker as <b>{to}</b>.",
+    description: "Decided/applied creation of a new application; {to} = status",
+  },
+  moveQuestion: {
+    id: "shared.ui.proposalSentence.moveQuestion",
+    defaultMessage: "Move {application} from {from} to <b>{to}</b>?",
+    description: "Review proposal moving an existing application between statuses",
+  },
+  moveStatement: {
+    id: "shared.ui.proposalSentence.moveStatement",
+    defaultMessage: "{application} moves from {from} to <b>{to}</b>.",
+    description: "Decided/applied status move of an existing application",
+  },
+});
+
+const bold = (chunks: ReactNode[]) => <strong className="font-semibold text-fg-primary">{chunks}</strong>;
 
 export interface ProposalSentenceProps {
   /** The proposed move; `from: null` means the email would create the application. */
@@ -26,29 +54,21 @@ export interface ProposalSentenceProps {
  * creates the application: "Add Acme · Frontend Engineer to Tracker as **Applied**?".
  */
 export function ProposalSentence({ move, mode, className }: ProposalSentenceProps) {
-  const target = <strong className="font-semibold text-fg-primary">{move.to.label}</strong>;
   const question = mode === "question";
+  const message =
+    move.from === null
+      ? question
+        ? messages.addQuestion
+        : messages.addStatement
+      : question
+        ? messages.moveQuestion
+        : messages.moveStatement;
   return (
     <p className={cx("text-body text-fg-primary text-pretty", className)}>
-      {move.from === null ? (
-        question ? (
-          <>
-            Add {move.applicationLabel} to Tracker as {target}?
-          </>
-        ) : (
-          <>
-            {move.applicationLabel} is added to Tracker as {target}.
-          </>
-        )
-      ) : question ? (
-        <>
-          Move {move.applicationLabel} from {move.from.label} to {target}?
-        </>
-      ) : (
-        <>
-          {move.applicationLabel} moves from {move.from.label} to {target}.
-        </>
-      )}
+      <FormattedMessage
+        {...message}
+        values={{ application: move.applicationLabel, from: move.from?.label, to: move.to.label, b: bold }}
+      />
     </p>
   );
 }

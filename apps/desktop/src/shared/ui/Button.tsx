@@ -5,8 +5,17 @@
 import { LoaderCircle, type LucideIcon } from "lucide-react";
 import { Slot } from "radix-ui";
 import { forwardRef, useId, type ButtonHTMLAttributes, type MouseEvent, type ReactNode } from "react";
+import { defineMessages, useIntl } from "react-intl";
 import { cx } from "../cx";
 import { Hint } from "./Hint";
+
+const messages = defineMessages({
+  disabledName: {
+    id: "shared.ui.button.disabledName",
+    defaultMessage: "{label}. {reason}",
+    description: "Accessible name of a disabled icon button: its label, then why it is disabled",
+  },
+});
 
 export type ButtonVariant = "primary" | "secondary" | "plain" | "destructive";
 export type ButtonSize = "sm" | "md" | "lg";
@@ -159,13 +168,16 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(functio
   ref,
 ) {
   const disabled = Boolean(disabledReason);
+  const intl = useIntl();
   return (
     <Hint label={disabledReason ?? label} keys={disabled ? undefined : shortcut}>
       <button
         {...rest}
         ref={ref}
         type={type}
-        aria-label={disabled ? `${label}. ${disabledReason}` : label}
+        aria-label={
+          disabled ? intl.formatMessage(messages.disabledName, { label, reason: disabledReason }) : label
+        }
         aria-disabled={disabled || undefined}
         aria-pressed={pressed}
         className={cx(

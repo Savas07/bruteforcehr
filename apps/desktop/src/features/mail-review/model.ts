@@ -7,6 +7,7 @@
  * `review`), `category` (a mail category; filters All job mail).
  */
 import type { MailAccount, MailAccountStatus, MailCategory, MailMessage, MailProvider } from "@bfhr/core";
+import { defineMessages, type IntlShape, type MessageDescriptor } from "react-intl";
 import type {
   ApplicationSummaryVM,
   AutoChangeVM,
@@ -17,7 +18,7 @@ import {
   applicationLabel,
   applicationSummaryVM,
   autoChangeVM,
-  MAIL_CATEGORY_LABELS,
+  MAIL_CATEGORY_MESSAGES,
   reviewProposalVM,
   timelineVMs,
 } from "../../shared/model/build-blocks";
@@ -25,7 +26,6 @@ import {
   absoluteDateTime,
   calendarDaysFromNow,
   clockTime,
-  countLabel,
   dayAndTime,
   relativeTime,
   shortDate,
@@ -230,10 +230,118 @@ export interface MailReviewModel {
   };
 }
 
-const FOLDER_LABELS: Readonly<Record<MailFolderId, string>> = {
-  review: "To review",
-  updates: "Updates",
-  all: "All job mail",
+const messages = defineMessages({
+  title: { id: "mail-review.title", defaultMessage: "Mail", description: "Screen title" },
+  folderReview: { id: "mail-review.folder.review", defaultMessage: "To review" },
+  folderUpdates: { id: "mail-review.folder.updates", defaultMessage: "Updates" },
+  folderAll: { id: "mail-review.folder.all", defaultMessage: "All job mail" },
+  folderAccessible: {
+    id: "mail-review.folder.accessibleLabel",
+    defaultMessage: "{folder}, {count, number}",
+    description: "Screen-reader label of a sidebar folder: folder name and its count",
+  },
+  providerEmail: {
+    id: "mail-review.provider.imap",
+    defaultMessage: "Email",
+    description: "Name shown for an IMAP inbox without a display name",
+  },
+  openGmail: { id: "mail-review.openOriginal.gmail", defaultMessage: "Open in Gmail" },
+  openOutlook: { id: "mail-review.openOriginal.microsoft", defaultMessage: "Open in Outlook" },
+  openMailApp: { id: "mail-review.openOriginal.imap", defaultMessage: "Open in your mail app" },
+  healthOk: { id: "mail-review.health.ok", defaultMessage: "Connected" },
+  healthReauth: { id: "mail-review.health.reauth", defaultMessage: "Needs reconnecting" },
+  healthError: { id: "mail-review.health.error", defaultMessage: "Can't connect" },
+  accountAccessible: {
+    id: "mail-review.account.accessibleLabel",
+    defaultMessage: "{address}, {health}",
+    description: "Screen-reader label of a sidebar inbox: address and connection health",
+  },
+  unclassified: {
+    id: "mail-review.unclassified",
+    defaultMessage: "We couldn't tell what this email means. Open it to sort it yourself.",
+  },
+  caughtUpTitle: { id: "mail-review.caughtUp.title", defaultMessage: "Nothing to review" },
+  caughtUpBody: {
+    id: "mail-review.caughtUp.body",
+    defaultMessage: "When we're not sure what an email means, we'll ask you here.",
+  },
+  seeUpdates: { id: "mail-review.caughtUp.action", defaultMessage: "See recent updates" },
+  activityHeading: { id: "mail-review.copy.activityHeading", defaultMessage: "Recent activity" },
+  detailsHeading: { id: "mail-review.copy.detailsHeading", defaultMessage: "Details" },
+  openApplication: { id: "mail-review.copy.openApplication", defaultMessage: "Open in Tracker" },
+  noApplication: { id: "mail-review.copy.noApplication", defaultMessage: "No application found" },
+  createApplication: { id: "mail-review.copy.createApplication", defaultMessage: "Create application" },
+  notJobMailFootnote: {
+    id: "mail-review.copy.notJobMailFootnote",
+    defaultMessage: "We'll forget this email.",
+  },
+  offlineFootnote: {
+    id: "mail-review.copy.offlineFootnote",
+    defaultMessage: "New emails will appear when you're back online.",
+  },
+  reviewedConfirmed: { id: "mail-review.reviewed.confirmed", defaultMessage: "Confirmed" },
+  reviewedCorrected: { id: "mail-review.reviewed.corrected", defaultMessage: "Corrected" },
+  lastChecked: {
+    id: "mail-review.lastChecked",
+    defaultMessage: "Last checked {time}",
+    description: "{time} is a clock time today, or a day and time",
+  },
+  bodyGone: { id: "mail-review.body.gone", defaultMessage: "We no longer keep the text of this email." },
+  bodyKeptUntil: { id: "mail-review.body.keptUntil", defaultMessage: "Email text kept until {date}" },
+  confirm: { id: "mail-review.confirm", defaultMessage: "Confirm" },
+  confirmMove: {
+    id: "mail-review.confirmMove",
+    defaultMessage: "Confirm: move to {status}",
+    description: "Tooltip of Confirm; {status} is an application status name",
+  },
+  backfillBundle: {
+    id: "mail-review.bundle.backfill",
+    defaultMessage: "Inbox scan · {count, plural, one {# application} other {# applications}} to review",
+  },
+  jobAlertsPostings: {
+    id: "mail-review.bundle.jobAlertsPostings",
+    defaultMessage: "Job alerts · {count, plural, one {# posting} other {# postings}} sent to Jobs",
+  },
+  jobAlertsEmails: {
+    id: "mail-review.bundle.jobAlertsEmails",
+    defaultMessage: "Job alerts · {count, plural, one {# email} other {# emails}}",
+  },
+  noSelection: {
+    id: "mail-review.noSelection.title",
+    defaultMessage:
+      "{count, plural, one {# email} other {# emails}} to review. Select one to see what we found.",
+  },
+  reauth: {
+    id: "mail-review.reauth.message",
+    defaultMessage:
+      "{provider} needs you to sign in again. We paused checking {account} on {date}. Reconnect to pick up where we left off.",
+  },
+  reconnect: { id: "mail-review.reauth.action", defaultMessage: "Reconnect" },
+  noAccountTitle: { id: "mail-review.noAccount.title", defaultMessage: "Connect your email" },
+  noAccountBody: {
+    id: "mail-review.noAccount.body",
+    defaultMessage:
+      "Connect your email and we'll find replies about your applications. When we're not sure what an email means, we'll ask you first.",
+  },
+  connectEmail: { id: "mail-review.noAccount.action", defaultMessage: "Connect email" },
+  noUpdatesTitle: { id: "mail-review.noUpdates.title", defaultMessage: "No automatic updates" },
+  noUpdatesBody: {
+    id: "mail-review.noUpdates.body",
+    defaultMessage: "Changes we make from your email in the last {days} days show up here, each with Undo.",
+  },
+  noCategoryTitle: { id: "mail-review.noCategoryMail.title", defaultMessage: "No emails in {category}" },
+  showAll: { id: "mail-review.noCategoryMail.action", defaultMessage: "Show all job mail" },
+  noMailTitle: { id: "mail-review.noMail.title", defaultMessage: "No job emails yet" },
+  noMailBody: {
+    id: "mail-review.noMail.body",
+    defaultMessage: "Replies about your applications show up here after we check your inbox.",
+  },
+});
+
+const FOLDER_MESSAGES: Readonly<Record<MailFolderId, MessageDescriptor>> = {
+  review: messages.folderReview,
+  updates: messages.folderUpdates,
+  all: messages.folderAll,
 };
 
 /** Sidebar order (mail-review.md "Sidebar"). `not_job` is never stored (§8). */
@@ -249,16 +357,16 @@ const CATEGORY_ORDER: readonly Exclude<MailCategory, "not_job">[] = [
   "other_job",
 ];
 
-const PROVIDER_LABELS: Readonly<Record<MailProvider, string>> = {
+/** Brand names stay as data; only the generic IMAP name is translated. */
+const PROVIDER_LABELS: Readonly<Record<Exclude<MailProvider, "imap">, string>> = {
   gmail: "Gmail",
   microsoft: "Outlook",
-  imap: "Email",
 };
 
-const OPEN_ORIGINAL_LABELS: Readonly<Record<MailProvider, string>> = {
-  gmail: "Open in Gmail",
-  microsoft: "Open in Outlook",
-  imap: "Open in your mail app",
+const OPEN_ORIGINAL_MESSAGES: Readonly<Record<MailProvider, MessageDescriptor>> = {
+  gmail: messages.openGmail,
+  microsoft: messages.openOutlook,
+  imap: messages.openMailApp,
 };
 
 /** `disconnected` accounts are gone from the user's point of view. */
@@ -269,27 +377,30 @@ const ACCOUNT_HEALTH: Readonly<Record<Exclude<MailAccountStatus, "disconnected">
   error: "error",
 };
 
-const HEALTH_LABELS: Readonly<Record<MailAccountHealth, string>> = {
-  ok: "Connected",
-  reauth: "Needs reconnecting",
-  error: "Can't connect",
+const HEALTH_MESSAGES: Readonly<Record<MailAccountHealth, MessageDescriptor>> = {
+  ok: messages.healthOk,
+  reauth: messages.healthReauth,
+  error: messages.healthError,
 };
 
 const UPDATES_WINDOW_DAYS = 14;
 const ACTIVITY_LIMIT = 5;
-const UNCLASSIFIED = "We couldn't tell what this email means. Open it to sort it yourself.";
-const CAUGHT_UP_BODY = "When we're not sure what an email means, we'll ask you here.";
-const SEE_UPDATES = { label: "See recent updates", target: "showUpdates" } as const;
 
-const COPY: MailReviewModel["copy"] = {
-  activityHeading: "Recent activity",
-  detailsHeading: "Details",
-  openApplication: "Open in Tracker",
-  noApplication: "No application found",
-  createApplication: "Create application",
-  notJobMailFootnote: "We'll forget this email.",
-  offlineFootnote: "New emails will appear when you're back online.",
-};
+function seeUpdates(intl: IntlShape): MailEmptyVM["action"] {
+  return { label: intl.formatMessage(messages.seeUpdates), target: "showUpdates" };
+}
+
+function copyVM(intl: IntlShape): MailReviewModel["copy"] {
+  return {
+    activityHeading: intl.formatMessage(messages.activityHeading),
+    detailsHeading: intl.formatMessage(messages.detailsHeading),
+    openApplication: intl.formatMessage(messages.openApplication),
+    noApplication: intl.formatMessage(messages.noApplication),
+    createApplication: intl.formatMessage(messages.createApplication),
+    notJobMailFootnote: intl.formatMessage(messages.notJobMailFootnote),
+    offlineFootnote: intl.formatMessage(messages.offlineFootnote),
+  };
+}
 
 function isFolder(value: string | undefined): value is MailFolderId {
   return value === "review" || value === "updates" || value === "all";
@@ -305,8 +416,11 @@ function liveAccount(
   return account.status !== "disconnected";
 }
 
-function providerLabel(account: MailAccount): string {
-  return account.displayName ?? PROVIDER_LABELS[account.provider];
+function providerLabel(account: MailAccount, intl: IntlShape): string {
+  if (account.displayName) return account.displayName;
+  return account.provider === "imap"
+    ? intl.formatMessage(messages.providerEmail)
+    : PROVIDER_LABELS[account.provider];
 }
 
 /**
@@ -320,9 +434,9 @@ function isBackfillProposal(message: MailMessage, accounts: readonly MailAccount
   );
 }
 
-const REVIEWED_CHIPS: Partial<Readonly<Record<MailMessage["reviewState"], string>>> = {
-  confirmed: "Confirmed",
-  corrected: "Corrected",
+const REVIEWED_CHIPS: Partial<Readonly<Record<MailMessage["reviewState"], MessageDescriptor>>> = {
+  confirmed: messages.reviewedConfirmed,
+  corrected: messages.reviewedCorrected,
 };
 
 function lastCheckedVM(accounts: readonly MailAccount[], ctx: ModelContext): MailReviewModel["lastChecked"] {
@@ -333,14 +447,16 @@ function lastCheckedVM(accounts: readonly MailAccount[], ctx: ModelContext): Mai
   const label =
     calendarDaysFromNow(latest, ctx) === 0 ? clockTime(latest, ctx) : dayAndTime(latest, ctx).label;
   return {
-    label: `Last checked ${label}`,
+    label: ctx.intl.formatMessage(messages.lastChecked, { time: label }),
     at: { iso: latest.toISOString(), label, absolute: absoluteDateTime(latest, ctx) },
   };
 }
 
 function bodyNote(message: MailMessage, ctx: ModelContext): string | null {
-  if (message.bodyText === null) return "We no longer keep the text of this email.";
-  return message.bodyPurgeAt ? `Email text kept until ${shortDate(message.bodyPurgeAt, ctx)}` : null;
+  if (message.bodyText === null) return ctx.intl.formatMessage(messages.bodyGone);
+  return message.bodyPurgeAt
+    ? ctx.intl.formatMessage(messages.bodyKeptUntil, { date: shortDate(message.bodyPurgeAt, ctx) })
+    : null;
 }
 
 export function buildMailReviewModel(
@@ -349,10 +465,10 @@ export function buildMailReviewModel(
   params: Readonly<Record<string, string | undefined>>,
 ): MailReviewModel {
   const accounts = data.mailAccounts.filter(liveAccount);
-  const messages = data.mailMessages
+  const mails = data.mailMessages
     .filter((message) => message.reviewState !== "dismissed")
     .toSorted((a, b) => b.receivedAt.getTime() - a.receivedAt.getTime());
-  const proposals = new Map(messages.map((message) => [message.id, reviewProposalVM(message, data, ctx)]));
+  const proposals = new Map(mails.map((message) => [message.id, reviewProposalVM(message, data, ctx)]));
   const proposalOf = (message: MailMessage): ReviewProposalVM => {
     const proposal = proposals.get(message.id);
     if (proposal === undefined) throw new Error(`No proposal for ${message.id}`);
@@ -361,22 +477,30 @@ export function buildMailReviewModel(
 
   // Automatic changes behind each email, kept while the event exists.
   const changes = new Map<string, { change: AutoChangeVM; at: Date }>();
-  for (const message of messages) {
+  for (const message of mails) {
     const event = data.applicationEvents.find((candidate) => candidate.id === message.appliedEventId);
     const change = event ? autoChangeVM(event, data, ctx) : null;
     if (event && change) changes.set(message.id, { change, at: event.occurredAt });
   }
 
+  const { intl } = ctx;
   const accountDot = accounts.length > 1;
   const reviewInfo = (message: MailMessage) => {
     const proposal = proposalOf(message);
-    const unclassified = message.category === "other_job" ? UNCLASSIFIED : null;
+    const unclassified = message.category === "other_job" ? intl.formatMessage(messages.unclassified) : null;
     return {
       proposal,
       unclassified,
       canConfirm: unclassified === null,
-      confirmHint: proposal.move ? `Confirm: move to ${proposal.move.to.label}` : "Confirm",
+      confirmHint: proposal.move
+        ? intl.formatMessage(messages.confirmMove, { status: proposal.move.to.label })
+        : intl.formatMessage(messages.confirm),
     };
+  };
+
+  const chipOf = (state: MailMessage["reviewState"]): string | null => {
+    const chip = REVIEWED_CHIPS[state];
+    return chip ? intl.formatMessage(chip) : null;
   };
 
   const rowOf = (message: MailMessage): MailReviewRowVM | MailUpdateRowVM | MailPlainRowVM => {
@@ -389,8 +513,9 @@ export function buildMailReviewModel(
       category: proposal.category,
       subject: proposal.subject,
       receivedAt: proposal.receivedAt,
-      account: accountDot && account ? { address: account.address, provider: providerLabel(account) } : null,
-      reviewedChip: REVIEWED_CHIPS[message.reviewState] ?? null,
+      account:
+        accountDot && account ? { address: account.address, provider: providerLabel(account, intl) } : null,
+      reviewedChip: chipOf(message.reviewState),
       pendingSync: proposal.pendingSync,
     };
     if (message.reviewState === "pending") return { ...base, kind: "review", ...reviewInfo(message) };
@@ -399,7 +524,7 @@ export function buildMailReviewModel(
   };
 
   // To review: single emails, plus the inbox scan as one bundle (D17).
-  const pending = messages.filter((message) => message.reviewState === "pending");
+  const pending = mails.filter((message) => message.reviewState === "pending");
   const backfill = pending.filter((message) => isBackfillProposal(message, accounts));
   const singles = pending.filter((message) => !isBackfillProposal(message, accounts));
   // Proposals for the same application count once (D17).
@@ -418,7 +543,7 @@ export function buildMailReviewModel(
       : {
           kind: "bundle",
           id: "backfill",
-          label: `Inbox scan · ${countLabel(backfillGroups, "application", "applications", ctx.locale)} to review`,
+          label: intl.formatMessage(messages.backfillBundle, { count: backfillGroups }),
           target: "backfillReview",
           messageIds: backfill.map((message) => message.id),
           latestAt: relativeTime(latestBackfill.receivedAt, ctx),
@@ -426,7 +551,7 @@ export function buildMailReviewModel(
         };
 
   const updatesSince = ctx.now.getTime() - UPDATES_WINDOW_DAYS * 86_400_000;
-  const updates = messages
+  const updates = mails
     .filter((message) => (changes.get(message.id)?.at.getTime() ?? -Infinity) >= updatesSince)
     .toSorted((a, b) => (changes.get(b.id)?.at.getTime() ?? 0) - (changes.get(a.id)?.at.getTime() ?? 0));
 
@@ -439,14 +564,14 @@ export function buildMailReviewModel(
   } else if (folder === "updates") {
     rows = updates.map(rowOf);
   } else if (category) {
-    rows = messages.filter((message) => message.category === category).map(rowOf);
+    rows = mails.filter((message) => message.category === category).map(rowOf);
   } else {
     // Job alerts collapse into one bundle row where the newest alert would be.
-    const alerts = messages.filter((message) => message.category === "job_alert");
+    const alerts = mails.filter((message) => message.category === "job_alert");
     const postings = data.jobs.filter((job) =>
       job.sources.some((source) => source.source === "alert_email"),
     ).length;
-    rows = messages.flatMap((message): MailRowVM[] => {
+    rows = mails.flatMap((message): MailRowVM[] => {
       if (message.category !== "job_alert") return [rowOf(message)];
       if (message !== alerts[0]) return [];
       return [
@@ -455,8 +580,8 @@ export function buildMailReviewModel(
           id: "jobAlerts",
           label:
             postings > 0
-              ? `Job alerts · ${countLabel(postings, "posting", "postings", ctx.locale)} sent to Jobs`
-              : `Job alerts · ${countLabel(alerts.length, "email", "emails", ctx.locale)}`,
+              ? intl.formatMessage(messages.jobAlertsPostings, { count: postings })
+              : intl.formatMessage(messages.jobAlertsEmails, { count: alerts.length }),
           target: "jobs",
           messageIds: alerts.map((alert) => alert.id),
           latestAt: relativeTime(message.receivedAt, ctx),
@@ -466,12 +591,10 @@ export function buildMailReviewModel(
     });
   }
 
-  const requested = messages.find((message) => message.id === params.messageId);
+  const requested = mails.find((message) => message.id === params.messageId);
   const firstRow = rows.find((row): row is Exclude<MailRowVM, MailBundleRowVM> => row.kind !== "bundle");
   const selectedMessage =
-    requested ??
-    (firstRow ? messages.find((message) => message.id === firstRow.messageId) : undefined) ??
-    null;
+    requested ?? (firstRow ? mails.find((message) => message.id === firstRow.messageId) : undefined) ?? null;
 
   const selectionVM = (message: MailMessage): MailSelectionVM => {
     const row = rowOf(message);
@@ -491,12 +614,12 @@ export function buildMailReviewModel(
       proposal,
       unclassified: review?.unclassified ?? null,
       canConfirm: review?.canConfirm ?? false,
-      confirmHint: review?.confirmHint ?? "Confirm",
+      confirmHint: review?.confirmHint ?? intl.formatMessage(messages.confirm),
       change: row.kind === "update" ? row.change : null,
       reviewedChip: row.reviewedChip,
       body: message.bodyText,
       bodyNote: bodyNote(message, ctx),
-      openOriginalLabel: OPEN_ORIGINAL_LABELS[account?.provider ?? "imap"],
+      openOriginalLabel: intl.formatMessage(OPEN_ORIGINAL_MESSAGES[account?.provider ?? "imap"]),
       activity: application ? timelineVMs(application, data, ctx).slice(0, ACTIVITY_LIMIT) : [],
       details: {
         company: proposal.company,
@@ -522,37 +645,48 @@ export function buildMailReviewModel(
   const counts: Readonly<Record<MailFolderId, number>> = {
     review: reviewCount,
     updates: updates.length,
-    all: messages.length,
+    all: mails.length,
   };
-  const number = new Intl.NumberFormat(ctx.locale);
-
-  const empty = emptyVM({ accounts: accounts.length, rows: rows.length, folder, category, reviewCount });
+  const empty = emptyVM(intl, {
+    accounts: accounts.length,
+    rows: rows.length,
+    folder,
+    category,
+    reviewCount,
+  });
 
   return {
-    title: "Mail",
-    folders: (["review", "updates", "all"] as const).map((id) => ({
-      id,
-      label: FOLDER_LABELS[id],
-      count: counts[id],
-      accessibleLabel: `${FOLDER_LABELS[id]}, ${number.format(counts[id])}`,
-      selected: id === folder && (id !== "all" || category === null),
-    })),
+    title: intl.formatMessage(messages.title),
+    folders: (["review", "updates", "all"] as const).map((id) => {
+      const label = intl.formatMessage(FOLDER_MESSAGES[id]);
+      return {
+        id,
+        label,
+        count: counts[id],
+        accessibleLabel: intl.formatMessage(messages.folderAccessible, { folder: label, count: counts[id] }),
+        selected: id === folder && (id !== "all" || category === null),
+      };
+    }),
     categories: CATEGORY_ORDER.map((key) => ({
       key,
-      label: MAIL_CATEGORY_LABELS[key],
-      count: messages.filter((message) => message.category === key).length,
+      label: intl.formatMessage(MAIL_CATEGORY_MESSAGES[key]),
+      count: mails.filter((message) => message.category === key).length,
       selected: folder === "all" && category === key,
     })),
     accounts: accounts.map((account) => {
       const health = ACCOUNT_HEALTH[account.status];
+      const healthLabel = intl.formatMessage(HEALTH_MESSAGES[health]);
       return {
         id: account.id,
         address: account.address,
-        provider: providerLabel(account),
+        provider: providerLabel(account, intl),
         health,
-        healthLabel: HEALTH_LABELS[health],
+        healthLabel,
         dot: health === "ok" ? "none" : "warning",
-        accessibleLabel: `${account.address}, ${HEALTH_LABELS[health]}`,
+        accessibleLabel: intl.formatMessage(messages.accountAccessible, {
+          address: account.address,
+          health: healthLabel,
+        }),
       };
     }),
     folder,
@@ -565,11 +699,15 @@ export function buildMailReviewModel(
         ? null
         : reviewCount > 0
           ? {
-              title: `${countLabel(reviewCount, "email", "emails", ctx.locale)} to review. Select one to see what we found.`,
+              title: intl.formatMessage(messages.noSelection, { count: reviewCount }),
               body: null,
               action: null,
             }
-          : { title: "Nothing to review", body: CAUGHT_UP_BODY, action: SEE_UPDATES },
+          : {
+              title: intl.formatMessage(messages.caughtUpTitle),
+              body: intl.formatMessage(messages.caughtUpBody),
+              action: seeUpdates(intl),
+            },
     empty,
     reauth: accounts
       .filter((account) => account.status === "needs_reauth")
@@ -578,53 +716,67 @@ export function buildMailReviewModel(
         return {
           accountId: account.id,
           address: account.address,
-          message: `${providerLabel(account)} needs you to sign in again. We paused checking ${account.address} on ${shortDate(pausedAt, ctx)}. Reconnect to pick up where we left off.`,
-          actionLabel: "Reconnect",
+          message: intl.formatMessage(messages.reauth, {
+            provider: providerLabel(account, intl),
+            account: account.address,
+            date: shortDate(pausedAt, ctx),
+          }),
+          actionLabel: intl.formatMessage(messages.reconnect),
         };
       }),
     lastChecked: lastCheckedVM(accounts, ctx),
-    copy: COPY,
+    copy: copyVM(intl),
   };
 }
 
-function emptyVM(state: {
-  readonly accounts: number;
-  readonly rows: number;
-  readonly folder: MailFolderId;
-  readonly category: MailCategory | null;
-  readonly reviewCount: number;
-}): MailEmptyVM | null {
+function emptyVM(
+  intl: IntlShape,
+  state: {
+    readonly accounts: number;
+    readonly rows: number;
+    readonly folder: MailFolderId;
+    readonly category: MailCategory | null;
+    readonly reviewCount: number;
+  },
+): MailEmptyVM | null {
   if (state.accounts === 0) {
     return {
       kind: "noAccount",
-      title: "Connect your email",
-      body: "Connect your email and we'll find replies about your applications. When we're not sure what an email means, we'll ask you first.",
-      action: { label: "Connect email", target: "connectEmail" },
+      title: intl.formatMessage(messages.noAccountTitle),
+      body: intl.formatMessage(messages.noAccountBody),
+      action: { label: intl.formatMessage(messages.connectEmail), target: "connectEmail" },
     };
   }
   if (state.rows > 0) return null;
   switch (state.folder) {
     case "review":
-      return { kind: "caughtUp", title: "Nothing to review", body: CAUGHT_UP_BODY, action: SEE_UPDATES };
+      return {
+        kind: "caughtUp",
+        title: intl.formatMessage(messages.caughtUpTitle),
+        body: intl.formatMessage(messages.caughtUpBody),
+        action: seeUpdates(intl),
+      };
     case "updates":
       return {
         kind: "noUpdates",
-        title: "No automatic updates",
-        body: `Changes we make from your email in the last ${UPDATES_WINDOW_DAYS} days show up here, each with Undo.`,
+        title: intl.formatMessage(messages.noUpdatesTitle),
+        body: intl.formatMessage(messages.noUpdatesBody, { days: UPDATES_WINDOW_DAYS }),
         action: null,
       };
     case "all":
       return state.category
         ? {
             kind: "noCategoryMail",
-            title: `No emails in ${MAIL_CATEGORY_LABELS[state.category]}`,
+            title: intl.formatMessage(messages.noCategoryTitle, {
+              category: intl.formatMessage(MAIL_CATEGORY_MESSAGES[state.category]),
+            }),
             body: null,
-            action: { label: "Show all job mail", target: "showAll" },
+            action: { label: intl.formatMessage(messages.showAll), target: "showAll" },
           }
         : {
             kind: "noMail",
-            title: "No job emails yet",
-            body: "Replies about your applications show up here after we check your inbox.",
+            title: intl.formatMessage(messages.noMailTitle),
+            body: intl.formatMessage(messages.noMailBody),
             action: null,
           };
   }

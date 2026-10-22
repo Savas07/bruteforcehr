@@ -23,7 +23,7 @@ const TODAY_PENDING_KINDS: Readonly<Record<string, true>> = {
 
 export const todayScreen: DesignScreenSpec<TodayModel> = {
   id: "today",
-  title: "Today",
+  destination: "today",
   build: buildTodayModel,
   offlinePending: (data, ctx) =>
     buildTodayModel(data, ctx, {})
@@ -34,7 +34,7 @@ export const todayScreen: DesignScreenSpec<TodayModel> = {
 
 export const jobDetailScreen: DesignScreenSpec<JobDetailModel> = {
   id: "job-detail",
-  title: "Jobs",
+  destination: "jobs",
   build: buildJobDetailModel,
   offlinePending: (data, ctx) =>
     buildJobDetailModel(data, ctx, {})
@@ -44,7 +44,7 @@ export const jobDetailScreen: DesignScreenSpec<JobDetailModel> = {
 
 export const cvEditorScreen: DesignScreenSpec<CvEditorModel> = {
   id: "cv-editor",
-  title: "CVs",
+  destination: "cvs",
   build: buildCvEditorModel,
   // An edit writes the CV and its new revision.
   offlinePending: (data, ctx) => {
@@ -55,7 +55,7 @@ export const cvEditorScreen: DesignScreenSpec<CvEditorModel> = {
 
 export const trackerBoardScreen: DesignScreenSpec<TrackerBoardModel> = {
   id: "tracker-board",
-  title: "Tracker",
+  destination: "tracker",
   build: buildTrackerBoardModel,
   offlinePending: (data, ctx) =>
     buildTrackerBoardModel(data, ctx, {})
@@ -65,7 +65,7 @@ export const trackerBoardScreen: DesignScreenSpec<TrackerBoardModel> = {
 
 export const mailReviewScreen: DesignScreenSpec<MailReviewModel> = {
   id: "mail-review",
-  title: "Mail",
+  destination: "mail",
   build: buildMailReviewModel,
   offlinePending: (data, ctx) =>
     buildMailReviewModel(data, ctx, {})

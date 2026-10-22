@@ -1,6 +1,15 @@
 import { Fragment } from "react";
+import { defineMessages, useIntl } from "react-intl";
 import { chrome } from "../../lib/desktop";
-import { chordKeycaps, parseKeys, spokenKeys } from "../keyboard/keymap";
+import { chordKeycaps, parseKeys, spokenAlternatives } from "../keyboard/keymap";
+
+const messages = defineMessages({
+  or: {
+    id: "shared.ui.keycaps.or",
+    defaultMessage: "or",
+    description: "Between alternative shortcuts: ⌘ / or ?",
+  },
+});
 
 /**
  * Shortcut glyphs in platform convention (`⌘ ⇧ D` / `Ctrl Shift D`) with a spoken label for
@@ -15,15 +24,16 @@ export function Keycaps({
   tone?: "default" | "onDark";
 }) {
   const { platform } = chrome;
+  const intl = useIntl();
   const alternatives = parseKeys(keys);
   return (
     <span className="inline-flex shrink-0 items-center gap-1">
-      <span className="sr-only">{alternatives.map((steps) => spokenKeys(steps, platform)).join(" or ")}</span>
+      <span className="sr-only">{spokenAlternatives(keys, platform, intl)}</span>
       {alternatives.map((steps, index) => (
         <Fragment key={index}>
           {index > 0 && (
             <span aria-hidden="true" className="text-fg-tertiary text-caption1">
-              or
+              {intl.formatMessage(messages.or)}
             </span>
           )}
           <span aria-hidden="true" className="inline-flex items-center gap-0.5">

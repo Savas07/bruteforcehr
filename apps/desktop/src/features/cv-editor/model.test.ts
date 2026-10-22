@@ -1,6 +1,7 @@
 import type { CvRevision } from "@bfhr/core";
 import { emptyDataset, FIXTURE_NOW, populatedDataset } from "@bfhr/fixtures";
 import { describe, expect, it } from "vitest";
+import { createAppIntl } from "../../i18n/intl";
 import { fixtureContext } from "../../shared/model/fixture-context";
 import { buildCvEditorModel, type CvEditorVM, type CvListSectionVM } from "./model";
 
@@ -299,5 +300,16 @@ describe("buildCvEditorModel: empty", () => {
         ],
       });
     }
+  });
+});
+
+describe("buildCvEditorModel: Turkish UI", () => {
+  it("formats its copy from the Turkish catalog", () => {
+    const tr = fixtureContext(populatedDataset, [], createAppIntl({ language: "tr", locale: "tr-TR" }));
+    const editor = editorFor("cv-en", populatedDataset, tr);
+    const work = listSection(editor, "work");
+    expect(work.title).not.toBe("Experience");
+    expect(work.countLabel).not.toBe("3 roles");
+    expect(editor.revisionCountLabel).not.toBe("3 versions");
   });
 });

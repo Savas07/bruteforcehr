@@ -21,14 +21,14 @@ import {
   type MatchImpact,
   type MatchRequirementFacet,
   type RemoteType,
-  type SalaryPeriod,
   type SalaryRange,
   type Seniority,
   statusPhase,
 } from "@bfhr/core";
+import { defineMessages, type IntlShape, type MessageDescriptor } from "react-intl";
 import type { ApplicationSummaryVM } from "../../shared/model/blocks";
 import { applicationSummaryVM } from "../../shared/model/build-blocks";
-import { calendarDaysFromNow, countLabel, money, relativeTime, shortDate } from "../../shared/model/format";
+import { calendarDaysFromNow, money, relativeTime, shortDate } from "../../shared/model/format";
 import type {
   CompanyVM,
   MatchVM,
@@ -52,109 +52,226 @@ const SOURCES_COLLAPSED = 3;
 const DESCRIPTION_COLLAPSED_LINES = 12;
 
 /** Static copy of the Jobs list and detail (job-detail.md, job-feed-search.md, states.md). */
-export const JOB_DETAIL_COPY = {
-  sortLabel: "Best match",
-  rankingInfo: "Sorted by match, then newest. Scores are a rough guide, not a prediction.",
-  save: "Save",
-  saved: "Saved",
-  notForMe: "Not for me",
-  openOriginal: "Open original",
-  viewInTracker: "View in Tracker",
-  needsConnection: "Needs a connection",
-  hidden: "Hidden from your feed",
-  undo: "Undo",
-  whyItMatches: "Why it matches",
-  gapsToConsider: "Gaps to consider",
-  requirements: "Requirements",
-  skills: "Skills",
-  haveThis: "I have this",
-  addToCv: "Add to CV…",
-  changeCv: "Change",
-  explainerLink: "What goes into this score?",
-  explainer:
-    "A rough guide to how this job fits your CV and preferences. It isn't a prediction of your chances.",
-  aiSummary: "AI summary · can be wrong",
-  aiFactor: "AI · can be wrong",
-  notTopMatch: "A written summary is created for your top matches.",
-  matchPending: "Working out your match…",
-  noCv: "Pick a CV to see how this fits",
-  details: "Details",
-  foundOnDirect: "Direct from employer",
-  foundOnBoards: "Job boards",
-  sourcesFootnote: "Collected from public job sites. Details can differ between sources.",
-  usedForApply: "Used for Apply",
-  showMore: "Show more",
-  showLess: "Show less",
-  noDescription: "This posting has no description.",
-  openOriginalPosting: "Open the original posting",
-  noSelection: "Select a job to see the details",
-  noSelectionHint: "↑ ↓ to move · Enter to open",
-  notStated: "Not stated",
-} as const;
+const COPY_MESSAGES = defineMessages({
+  sortLabel: { id: "job-detail.copy.sortLabel", defaultMessage: "Best match" },
+  rankingInfo: {
+    id: "job-detail.copy.rankingInfo",
+    defaultMessage: "Sorted by match, then newest. Scores are a rough guide, not a prediction.",
+  },
+  save: { id: "job-detail.copy.save", defaultMessage: "Save" },
+  saved: { id: "job-detail.copy.saved", defaultMessage: "Saved" },
+  notForMe: { id: "job-detail.copy.notForMe", defaultMessage: "Not for me" },
+  openOriginal: { id: "job-detail.copy.openOriginal", defaultMessage: "Open original" },
+  viewInTracker: { id: "job-detail.copy.viewInTracker", defaultMessage: "View in Tracker" },
+  needsConnection: { id: "job-detail.copy.needsConnection", defaultMessage: "Needs a connection" },
+  hidden: { id: "job-detail.copy.hidden", defaultMessage: "Hidden from your feed" },
+  undo: { id: "job-detail.copy.undo", defaultMessage: "Undo" },
+  whyItMatches: { id: "job-detail.copy.whyItMatches", defaultMessage: "Why it matches" },
+  gapsToConsider: { id: "job-detail.copy.gapsToConsider", defaultMessage: "Gaps to consider" },
+  requirements: { id: "job-detail.copy.requirements", defaultMessage: "Requirements" },
+  skills: { id: "job-detail.copy.skills", defaultMessage: "Skills" },
+  haveThis: { id: "job-detail.copy.haveThis", defaultMessage: "I have this" },
+  addToCv: { id: "job-detail.copy.addToCv", defaultMessage: "Add to CV…" },
+  changeCv: {
+    id: "job-detail.copy.changeCv",
+    defaultMessage: "Change",
+    description: "Button after the CV basis line",
+  },
+  explainerLink: { id: "job-detail.copy.explainerLink", defaultMessage: "What goes into this score?" },
+  explainer: {
+    id: "job-detail.copy.explainer",
+    defaultMessage:
+      "A rough guide to how this job fits your CV and preferences. It isn't a prediction of your chances.",
+  },
+  aiSummary: { id: "job-detail.copy.aiSummary", defaultMessage: "AI summary · can be wrong" },
+  aiFactor: { id: "job-detail.copy.aiFactor", defaultMessage: "AI · can be wrong" },
+  notTopMatch: {
+    id: "job-detail.copy.notTopMatch",
+    defaultMessage: "A written summary is created for your top matches.",
+  },
+  matchPending: { id: "job-detail.copy.matchPending", defaultMessage: "Working out your match…" },
+  noCv: { id: "job-detail.copy.noCv", defaultMessage: "Pick a CV to see how this fits" },
+  details: { id: "job-detail.copy.details", defaultMessage: "Details" },
+  foundOnDirect: { id: "job-detail.copy.foundOnDirect", defaultMessage: "Direct from employer" },
+  foundOnBoards: { id: "job-detail.copy.foundOnBoards", defaultMessage: "Job boards" },
+  sourcesFootnote: {
+    id: "job-detail.copy.sourcesFootnote",
+    defaultMessage: "Collected from public job sites. Details can differ between sources.",
+  },
+  usedForApply: { id: "job-detail.copy.usedForApply", defaultMessage: "Used for Apply" },
+  showMore: { id: "job-detail.copy.showMore", defaultMessage: "Show more" },
+  showLess: { id: "job-detail.copy.showLess", defaultMessage: "Show less" },
+  noDescription: { id: "job-detail.copy.noDescription", defaultMessage: "This posting has no description." },
+  openOriginalPosting: {
+    id: "job-detail.copy.openOriginalPosting",
+    defaultMessage: "Open the original posting",
+  },
+  noSelection: { id: "job-detail.copy.noSelection", defaultMessage: "Select a job to see the details" },
+  noSelectionHint: { id: "job-detail.copy.noSelectionHint", defaultMessage: "↑ ↓ to move · Enter to open" },
+  notStated: { id: "job-detail.copy.notStated", defaultMessage: "Not stated" },
+});
 
-const REMOTE_LABELS: Readonly<Record<RemoteType, string>> = {
-  onsite: "On-site",
-  hybrid: "Hybrid",
-  remote: "Remote",
-};
+/** The static copy of the Jobs list and detail, formatted for the current locale. */
+export type JobDetailCopyVM = Readonly<Record<keyof typeof COPY_MESSAGES, string>>;
 
-const EMPLOYMENT_LABELS: Readonly<Record<EmploymentType, string>> = {
-  full_time: "Full-time",
-  part_time: "Part-time",
-  contract: "Contract",
-  internship: "Internship",
-  temporary: "Temporary",
-};
+const messages = defineMessages({
+  salaryRange: { id: "job-detail.salary.range", defaultMessage: "{min}–{max}" },
+  salaryFrom: { id: "job-detail.salary.from", defaultMessage: "From {min}" },
+  salaryUpTo: { id: "job-detail.salary.upTo", defaultMessage: "Up to {max}" },
+  salaryPeriod: {
+    id: "job-detail.salary.period",
+    defaultMessage:
+      "{period, select, year {{range} a year} month {{range} a month} day {{range} a day} other {{range} an hour}}",
+  },
+  salaryNotStated: { id: "job-detail.salary.notStated", defaultMessage: "Salary not stated" },
+  salaryEstimate: { id: "job-detail.salary.estimate", defaultMessage: "{amount} · estimate" },
+  salaryFromEmployer: { id: "job-detail.salary.fromEmployer", defaultMessage: "{amount} · from employer" },
+  scoreCaption: { id: "job-detail.match.scoreCaption", defaultMessage: "{score} of 100" },
+  sourceCount: {
+    id: "job-detail.list.sourceCount",
+    defaultMessage: "{count, plural, one {# source} other {# sources}}",
+  },
+  jobCount: { id: "job-detail.list.jobCount", defaultMessage: "{count, plural, one {# job} other {# jobs}}" },
+  outsidePrefs: { id: "job-detail.match.outsidePrefs", defaultMessage: "Outside your preferences: {detail}" },
+  notInCv: { id: "job-detail.match.notInCv", defaultMessage: "Not in your CV yet: {skill}" },
+  requirementNotStated: {
+    id: "job-detail.match.requirementNotStated",
+    defaultMessage: "{label}: Not stated",
+  },
+  requirementsMet: {
+    id: "job-detail.match.requirementsMet",
+    defaultMessage: "{met} of {total} requirements met",
+  },
+  requirementsMetSentence: {
+    id: "job-detail.match.requirementsMetSentence",
+    defaultMessage: "{met} of {total} requirements met.",
+  },
+  countNotStated: {
+    id: "job-detail.match.countNotStated",
+    defaultMessage: "{count, plural, other {# not stated}}",
+  },
+  countSkills: { id: "job-detail.match.countSkills", defaultMessage: "{matched} of {total} skills" },
+  countGaps: {
+    id: "job-detail.match.countGaps",
+    defaultMessage: "{count, plural, one {# gap} other {# gaps}}",
+  },
+  countGapsSentence: {
+    id: "job-detail.match.countGapsSentence",
+    defaultMessage: "{count, plural, one {# gap.} other {# gaps.}}",
+  },
+  summaryHead: { id: "job-detail.match.summaryHead", defaultMessage: "{band}, {caption}." },
+  basisLine: {
+    id: "job-detail.match.basisLine",
+    defaultMessage: 'Based on CV "{name}" · updated {time}',
+    description: "{time} is a relative time such as “3 hours ago”",
+  },
+  offered: { id: "job-detail.facts.offered", defaultMessage: "Offered" },
+  notOffered: { id: "job-detail.facts.notOffered", defaultMessage: "Not offered" },
+  factSalary: { id: "job-detail.facts.salary", defaultMessage: "Salary" },
+  factWorkMode: { id: "job-detail.facts.workMode", defaultMessage: "Work mode" },
+  factWhereTheyHire: { id: "job-detail.facts.whereTheyHire", defaultMessage: "Where they hire" },
+  factVisa: { id: "job-detail.facts.visa", defaultMessage: "Visa sponsorship" },
+  factRelocation: { id: "job-detail.facts.relocation", defaultMessage: "Relocation" },
+  factEmploymentType: { id: "job-detail.facts.employmentType", defaultMessage: "Employment type" },
+  factLastSeen: { id: "job-detail.facts.lastSeen", defaultMessage: "Last seen" },
+  applyByEmail: { id: "job-detail.apply.byEmail", defaultMessage: "Apply by email" },
+  applyCompanySite: { id: "job-detail.apply.companySite", defaultMessage: "Apply on company site" },
+  applyOnBoard: { id: "job-detail.apply.onBoard", defaultMessage: "Apply on {board}" },
+  differenceTitle: { id: "job-detail.sources.differenceTitle", defaultMessage: "Title: {value}" },
+  differenceLocation: { id: "job-detail.sources.differenceLocation", defaultMessage: "Location: {value}" },
+  differenceSalary: { id: "job-detail.sources.differenceSalary", defaultMessage: "Salary: {value}" },
+  unreachable: {
+    id: "job-detail.sources.unreachable",
+    defaultMessage: "Not seen on this site since {date}. The listing may have closed.",
+  },
+  foundOn: {
+    id: "job-detail.sources.foundOn",
+    defaultMessage: "{count, plural, one {Found on # site} other {Found on # sites}}",
+  },
+  showAll: {
+    id: "job-detail.sources.showAll",
+    defaultMessage: "{count, plural, other {Show all # sources}}",
+  },
+  delisted: {
+    id: "job-detail.detail.delisted",
+    defaultMessage: "This job is no longer listed. {source} removed it on {date}. Your saved copy is below.",
+  },
+  appliedOn: { id: "job-detail.detail.appliedOn", defaultMessage: "Applied {date}" },
+  applied: { id: "job-detail.detail.applied", defaultMessage: "Applied" },
+  submitQuestion: {
+    id: "job-detail.detail.submitQuestion",
+    defaultMessage: "Did you submit your application to {company}?",
+  },
+  firstUseTitle: { id: "job-detail.empty.firstUseTitle", defaultMessage: "No jobs yet" },
+  firstUseBody: {
+    id: "job-detail.empty.firstUseBody",
+    defaultMessage:
+      "Search for a role and save the search. We'll collect matching jobs here and rank them against your CV.",
+  },
+  firstUseAction: { id: "job-detail.empty.firstUseAction", defaultMessage: "Search jobs" },
+  caughtUpTitle: { id: "job-detail.empty.caughtUpTitle", defaultMessage: "No jobs to show" },
+  caughtUpBody: {
+    id: "job-detail.empty.caughtUpBody",
+    defaultMessage: "Jobs you marked Not for me are in Hidden. New matches will show up here.",
+  },
+});
 
-const SENIORITY_LABELS: Readonly<Record<Seniority, string>> = {
-  intern: "Intern",
-  junior: "Junior",
-  mid: "Mid-level",
-  senior: "Senior",
-  staff: "Staff",
-  principal: "Principal",
-  lead: "Lead",
-  manager: "Manager",
-  director: "Director",
-};
+const REMOTE_MESSAGES: Readonly<Record<RemoteType, MessageDescriptor>> = defineMessages({
+  onsite: { id: "job-detail.remote.onsite", defaultMessage: "On-site" },
+  hybrid: { id: "job-detail.remote.hybrid", defaultMessage: "Hybrid" },
+  remote: { id: "job-detail.remote.remote", defaultMessage: "Remote" },
+});
 
-const PERIOD_SUFFIXES: Readonly<Record<SalaryPeriod, string>> = {
-  year: "a year",
-  month: "a month",
-  day: "a day",
-  hour: "an hour",
-};
+const EMPLOYMENT_MESSAGES: Readonly<Record<EmploymentType, MessageDescriptor>> = defineMessages({
+  full_time: { id: "job-detail.employment.fullTime", defaultMessage: "Full-time" },
+  part_time: { id: "job-detail.employment.partTime", defaultMessage: "Part-time" },
+  contract: { id: "job-detail.employment.contract", defaultMessage: "Contract" },
+  internship: { id: "job-detail.employment.internship", defaultMessage: "Internship" },
+  temporary: { id: "job-detail.employment.temporary", defaultMessage: "Temporary" },
+});
+
+const SENIORITY_MESSAGES: Readonly<Record<Seniority, MessageDescriptor>> = defineMessages({
+  intern: { id: "job-detail.seniority.intern", defaultMessage: "Intern" },
+  junior: { id: "job-detail.seniority.junior", defaultMessage: "Junior" },
+  mid: { id: "job-detail.seniority.mid", defaultMessage: "Mid-level" },
+  senior: { id: "job-detail.seniority.senior", defaultMessage: "Senior" },
+  staff: { id: "job-detail.seniority.staff", defaultMessage: "Staff" },
+  principal: { id: "job-detail.seniority.principal", defaultMessage: "Principal" },
+  lead: { id: "job-detail.seniority.lead", defaultMessage: "Lead" },
+  manager: { id: "job-detail.seniority.manager", defaultMessage: "Manager" },
+  director: { id: "job-detail.seniority.director", defaultMessage: "Director" },
+});
 
 /** "Best match" order: band first, so 1–2 point differences don't reorder results. */
 const BAND_RANK: Readonly<Record<MatchBand, number>> = { strong: 0, good: 1, partial: 2, stretch: 3 };
 
-const FACET_LABELS: Readonly<Record<MatchRequirementFacet, string>> = {
-  location: "Location",
-  remote: "Remote",
-  authorization: "Work authorization",
-  salary: "Salary",
-  seniority: "Seniority",
-  language: "Language",
-};
+const FACET_MESSAGES: Readonly<Record<MatchRequirementFacet, MessageDescriptor>> = defineMessages({
+  location: { id: "job-detail.facet.location", defaultMessage: "Location" },
+  remote: { id: "job-detail.facet.remote", defaultMessage: "Remote" },
+  authorization: { id: "job-detail.facet.authorization", defaultMessage: "Work authorization" },
+  salary: { id: "job-detail.facet.salary", defaultMessage: "Salary" },
+  seniority: { id: "job-detail.facet.seniority", defaultMessage: "Seniority" },
+  language: { id: "job-detail.facet.language", defaultMessage: "Language" },
+});
 
-const FACTOR_STATUS_LABELS: Readonly<Record<MatchFactorStatus, string>> = {
-  met: "Met",
-  partial: "Partly met",
-  missing: "Not in your CV yet",
-  outside_prefs: "Outside your preferences",
-  not_stated: "Not stated",
-};
+const FACTOR_STATUS_MESSAGES: Readonly<Record<MatchFactorStatus, MessageDescriptor>> = defineMessages({
+  met: { id: "job-detail.factorStatus.met", defaultMessage: "Met" },
+  partial: { id: "job-detail.factorStatus.partial", defaultMessage: "Partly met" },
+  missing: { id: "job-detail.factorStatus.missing", defaultMessage: "Not in your CV yet" },
+  outside_prefs: { id: "job-detail.factorStatus.outsidePrefs", defaultMessage: "Outside your preferences" },
+  not_stated: { id: "job-detail.factorStatus.notStated", defaultMessage: "Not stated" },
+});
 
-const IMPACT_LABELS: Readonly<Record<MatchImpact, string>> = {
-  most: "Matters most",
-  some: "Matters some",
-};
+const IMPACT_MESSAGES: Readonly<Record<MatchImpact, MessageDescriptor>> = defineMessages({
+  most: { id: "job-detail.impact.most", defaultMessage: "Matters most" },
+  some: { id: "job-detail.impact.some", defaultMessage: "Matters some" },
+});
 
-const EVIDENCE_FROM_LABELS: Readonly<Record<MatchEvidence["from"], string>> = {
-  posting: "From the posting",
-  cv: "From your CV",
-  profile: "From your profile",
-};
+const EVIDENCE_FROM_MESSAGES: Readonly<Record<MatchEvidence["from"], MessageDescriptor>> = defineMessages({
+  posting: { id: "job-detail.evidence.posting", defaultMessage: "From the posting" },
+  cv: { id: "job-detail.evidence.cv", defaultMessage: "From your CV" },
+  profile: { id: "job-detail.evidence.profile", defaultMessage: "From your profile" },
+});
 
 /** Display names of the job sources the app knows; null = name the site by its host. */
 const SOURCE_NAMES: Readonly<Record<KnownJobSource, string | null>> = {
@@ -246,7 +363,7 @@ export interface RequirementVM {
   /** "Matters most" / "Matters some". */
   readonly impactLabel: string;
   readonly evidence: EvidenceVM | null;
-  /** AI-derived: show `JOB_DETAIL_COPY.aiFactor`. */
+  /** AI-derived: show `copy.aiFactor`. */
   readonly ai: boolean;
 }
 
@@ -293,9 +410,9 @@ export type MatchSectionVM =
       readonly skills: { readonly matched: readonly string[]; readonly unmatched: readonly string[] };
       readonly whyItMatches: readonly FactorVM[];
       readonly gaps: readonly FactorVM[];
-      /** The AI rationale (top N only), labelled `JOB_DETAIL_COPY.aiSummary`; null below the top N. */
+      /** The AI rationale (top N only), labelled `copy.aiSummary`; null below the top N. */
       readonly aiSummary: string | null;
-      /** `JOB_DETAIL_COPY.notTopMatch` when there is no AI summary; else null. */
+      /** `copy.notTopMatch` when there is no AI summary; else null. */
       readonly summaryNote: string | null;
     };
 
@@ -339,7 +456,7 @@ export interface SourcesVM {
 /** `ApplyButton`: label from the route (decisions.md D23: direct ATS → company site → apply email → aggregator). */
 export interface ApplyVM {
   readonly route: "companySite" | "jobBoard" | "email";
-  /** "Apply on company site", "Apply on Reed", "Apply". */
+  /** "Apply on company site", "Apply on Reed", "Apply by email". */
   readonly label: string;
   /** Leaves the app: show ↗ and open in the default browser. */
   readonly external: boolean;
@@ -392,7 +509,7 @@ export interface JobDetailVM {
   readonly description: readonly string[];
   /** Lines shown before "Show more". */
   readonly descriptionCollapsedLines: number;
-  /** "This posting has no description." + `JOB_DETAIL_COPY.openOriginalPosting`; null when there is one. */
+  /** "This posting has no description." + `copy.openOriginalPosting`; null when there is one. */
   readonly noDescription: string | null;
   /** "This job is no longer listed. Greenhouse removed it on 22 Sept. Your saved copy is below."; else null. */
   readonly delisted: string | null;
@@ -423,6 +540,8 @@ export interface JobsEmptyVM {
 }
 
 export interface JobDetailModel {
+  /** Static labels of the list and detail panes (buttons, headings, notes). */
+  readonly copy: JobDetailCopyVM;
   readonly list: {
     readonly rows: readonly JobListRowVM[];
     /** "37 jobs". */
@@ -450,37 +569,50 @@ function sourceName(link: JobSourceLink): string {
   return (isKnownSource(link.source) ? SOURCE_NAMES[link.source] : null) ?? sourceHost(link.url);
 }
 
-function salaryAmount(salary: SalaryRange, locale: string): string {
+function salaryAmount(salary: SalaryRange, ctx: ModelContext): string {
   const { min, max, currency, period } = salary;
+  const { intl, locale } = ctx;
   let range: string;
   if (min !== null && max !== null && min !== max)
-    range = `${money(min, currency, locale)}–${money(max, currency, locale)}`;
-  else if (min !== null && max === null) range = `From ${money(min, currency, locale)}`;
-  else if (min === null && max !== null) range = `Up to ${money(max, currency, locale)}`;
+    range = intl.formatMessage(messages.salaryRange, {
+      min: money(min, currency, locale),
+      max: money(max, currency, locale),
+    });
+  else if (min !== null && max === null)
+    range = intl.formatMessage(messages.salaryFrom, { min: money(min, currency, locale) });
+  else if (min === null && max !== null)
+    range = intl.formatMessage(messages.salaryUpTo, { max: money(max, currency, locale) });
   else range = money(min ?? 0, currency, locale);
-  return `${range} ${PERIOD_SUFFIXES[period]}`;
+  return intl.formatMessage(messages.salaryPeriod, { period, range });
 }
 
 function salaryVM(salary: SalaryRange | null, ctx: ModelContext): SalaryVM {
-  if (!salary) return { provenance: "notStated", amount: null, text: "Salary not stated" };
-  const amount = salaryAmount(salary, ctx.locale);
+  const { intl } = ctx;
+  if (!salary)
+    return { provenance: "notStated", amount: null, text: intl.formatMessage(messages.salaryNotStated) };
+  const amount = salaryAmount(salary, ctx);
   return salary.estimated
-    ? { provenance: "estimated", amount, text: `${amount} · estimate` }
-    : { provenance: "stated", amount, text: `${amount} · from employer` };
+    ? { provenance: "estimated", amount, text: intl.formatMessage(messages.salaryEstimate, { amount }) }
+    : { provenance: "stated", amount, text: intl.formatMessage(messages.salaryFromEmployer, { amount }) };
 }
 
 function locationLabel(job: Job): string | null {
   return job.locations.length > 0 ? job.locations.map((location) => location.label).join(" · ") : null;
 }
 
+/** The work mode ("Hybrid"); null when the posting doesn't say. */
+function remoteLabel(job: Job, intl: IntlShape): string | null {
+  return job.remoteType ? intl.formatMessage(REMOTE_MESSAGES[job.remoteType]) : null;
+}
+
 /** "Remote · EU only" for remote roles; otherwise the place plus the work mode unless the label already says it. */
-function whereLine(job: Job): string | null {
-  if (job.remoteType === "remote")
-    return [REMOTE_LABELS.remote, job.remoteEligibility].filter(Boolean).join(" · ");
+function whereLine(job: Job, ctx: ModelContext): string | null {
+  const mode = remoteLabel(job, ctx.intl);
+  if (job.remoteType === "remote") return [mode, job.remoteEligibility].filter(Boolean).join(" · ");
   const place = locationLabel(job);
-  const mode = job.remoteType ? REMOTE_LABELS[job.remoteType] : null;
   if (place === null) return mode;
-  if (mode === null || place.toLocaleLowerCase("en").includes(mode.toLocaleLowerCase("en"))) return place;
+  if (mode === null || place.toLocaleLowerCase(ctx.locale).includes(mode.toLocaleLowerCase(ctx.locale)))
+    return place;
   return `${place} · ${mode}`;
 }
 
@@ -511,19 +643,20 @@ function rowVM(
   application: Application | undefined,
   ctx: ModelContext,
 ): JobListRowVM {
+  const { intl } = ctx;
   return {
     jobId: job.id,
     title: job.title,
     company: companyVM(job.company, job.companyDomain),
-    where: whereLine(job),
+    where: whereLine(job, ctx),
     salary: salaryVM(job.salary, ctx),
-    match: match ? matchVM(match.score) : null,
-    scoreCaption: match ? `${match.score} of 100` : null,
+    match: match ? matchVM(match.score, intl) : null,
+    scoreCaption: match ? intl.formatMessage(messages.scoreCaption, { score: match.score }) : null,
     posted: job.postedAt ? relativeTime(job.postedAt, ctx) : null,
     saved: match?.state === "saved" || application?.status === "saved",
-    status: hasApplied(application) ? statusVM(application.status) : null,
+    status: hasApplied(application) ? statusVM(application.status, intl) : null,
     sourceCount:
-      job.sources.length > 1 ? countLabel(job.sources.length, "source", "sources", ctx.locale) : null,
+      job.sources.length > 1 ? intl.formatMessage(messages.sourceCount, { count: job.sources.length }) : null,
     sourceNames: job.sources.map(sourceName),
     pendingSync:
       ctx.pendingWrites.has(job.id) || (application !== undefined && ctx.pendingWrites.has(application.id)),
@@ -542,37 +675,41 @@ function compareRows(a: JobListRowVM, b: JobListRowVM): number {
   );
 }
 
-function factorText(factor: MatchFactor): string {
-  if (factor.status === "outside_prefs") return `Outside your preferences: ${factor.label}`;
-  if (factor.status === "missing" && factor.kind === "skill") return `Not in your CV yet: ${factor.label}`;
+function factorText(factor: MatchFactor, intl: IntlShape): string {
+  if (factor.status === "outside_prefs")
+    return intl.formatMessage(messages.outsidePrefs, { detail: factor.label });
+  if (factor.status === "missing" && factor.kind === "skill")
+    return intl.formatMessage(messages.notInCv, { skill: factor.label });
   return factor.label;
 }
 
-function requirementVM(factor: MatchFactor, facet: MatchRequirementFacet): RequirementVM {
+function requirementVM(factor: MatchFactor, facet: MatchRequirementFacet, intl: IntlShape): RequirementVM {
   return {
     facet,
-    facetLabel: FACET_LABELS[facet],
+    facetLabel: intl.formatMessage(FACET_MESSAGES[facet]),
     status: factor.status,
-    statusLabel: FACTOR_STATUS_LABELS[factor.status],
+    statusLabel: intl.formatMessage(FACTOR_STATUS_MESSAGES[factor.status]),
     text:
-      factor.status === "not_stated" ? `${factor.label}: ${JOB_DETAIL_COPY.notStated}` : factorText(factor),
-    impactLabel: IMPACT_LABELS[factor.impact],
+      factor.status === "not_stated"
+        ? intl.formatMessage(messages.requirementNotStated, { label: factor.label })
+        : factorText(factor, intl),
+    impactLabel: intl.formatMessage(IMPACT_MESSAGES[factor.impact]),
     evidence: factor.evidence && {
-      fromLabel: EVIDENCE_FROM_LABELS[factor.evidence.from],
+      fromLabel: intl.formatMessage(EVIDENCE_FROM_MESSAGES[factor.evidence.from]),
       quote: factor.evidence.quote,
     },
     ai: factor.source === "ai",
   };
 }
 
-function factorVM(factor: MatchFactor): FactorVM {
+function factorVM(factor: MatchFactor, intl: IntlShape): FactorVM {
   return {
     kind: factor.kind,
     status: factor.status,
-    text: factorText(factor),
-    impactLabel: IMPACT_LABELS[factor.impact],
+    text: factorText(factor, intl),
+    impactLabel: intl.formatMessage(IMPACT_MESSAGES[factor.impact]),
     evidence: factor.evidence && {
-      fromLabel: EVIDENCE_FROM_LABELS[factor.evidence.from],
+      fromLabel: intl.formatMessage(EVIDENCE_FROM_MESSAGES[factor.evidence.from]),
       quote: factor.evidence.quote,
     },
     ai: factor.source === "ai",
@@ -585,27 +722,29 @@ function matchSectionVM(
   data: Pick<UserData, "cvs">,
   ctx: ModelContext,
 ): MatchSectionVM {
-  if (!match) return { state: "pending", label: JOB_DETAIL_COPY.matchPending };
+  const { intl } = ctx;
+  if (!match) return { state: "pending", label: intl.formatMessage(COPY_MESSAGES.matchPending) };
   const cv = data.cvs.find((candidate) => candidate.id === match.basedOnCvId);
-  if (!cv) return { state: "noCv", label: JOB_DETAIL_COPY.noCv };
+  if (!cv) return { state: "noCv", label: intl.formatMessage(COPY_MESSAGES.noCv) };
   const factors = [...match.reasons, ...match.gaps];
   const requirements = factors.flatMap((factor) =>
-    factor.facet ? [requirementVM(factor, factor.facet)] : [],
+    factor.facet ? [requirementVM(factor, factor.facet, intl)] : [],
   );
   const stated = requirements.filter((item) => item.status !== "not_stated");
   const met = stated.filter((item) => item.status === "met").length;
   const notStated = requirements.length - stated.length;
   const skillTotal = match.skills.matched.length + match.skills.unmatched.length;
-  const requirementsCount = stated.length > 0 ? `${met} of ${stated.length} requirements met` : null;
-  const gapsCount = match.gaps.length > 0 ? countLabel(match.gaps.length, "gap", "gaps", ctx.locale) : null;
+  const gaps = match.gaps.length;
   const counts = [
-    requirementsCount,
-    notStated > 0 ? `${notStated} not stated` : null,
-    skillTotal > 0 ? `${match.skills.matched.length} of ${skillTotal} skills` : null,
-    gapsCount,
+    stated.length > 0 ? intl.formatMessage(messages.requirementsMet, { met, total: stated.length }) : null,
+    notStated > 0 ? intl.formatMessage(messages.countNotStated, { count: notStated }) : null,
+    skillTotal > 0
+      ? intl.formatMessage(messages.countSkills, { matched: match.skills.matched.length, total: skillTotal })
+      : null,
+    gaps > 0 ? intl.formatMessage(messages.countGaps, { count: gaps }) : null,
   ].filter((part) => part !== null);
-  const vm = matchVM(match.score);
-  const caption = `${match.score} of 100`;
+  const vm = matchVM(match.score, intl);
+  const caption = intl.formatMessage(messages.scoreCaption, { score: match.score });
   const outside = requirements.filter((item) => item.status === "outside_prefs");
   const computedAt = relativeTime(match.computedAt, ctx);
   return {
@@ -613,57 +752,62 @@ function matchSectionVM(
     match: vm,
     bandText: vm.pillLabel,
     scoreCaption: caption,
-    basisLine: `Based on CV "${cv.title}" · updated ${computedAt.label}`,
+    basisLine: intl.formatMessage(messages.basisLine, { name: cv.title, time: computedAt.label }),
     basedOnCvId: cv.id,
     computedAt,
     countsLine: counts.join(" · "),
     accessibleSummary: [
-      `${vm.pillLabel}, ${caption}.`,
-      requirementsCount && `${requirementsCount}.`,
-      gapsCount && `${gapsCount}.`,
+      intl.formatMessage(messages.summaryHead, { band: vm.pillLabel, caption }),
+      stated.length > 0
+        ? intl.formatMessage(messages.requirementsMetSentence, { met, total: stated.length })
+        : null,
+      gaps > 0 ? intl.formatMessage(messages.countGapsSentence, { count: gaps }) : null,
     ]
-      .filter(Boolean)
+      .filter((part) => part !== null)
       .join(" "),
     defaultOpen: vm.band === "strong" || vm.band === "good",
     outsidePreferences: outside.length > 0 ? outside.map((item) => item.text).join(" · ") : null,
     requirements,
     skills: { matched: match.skills.matched, unmatched: match.skills.unmatched },
-    whyItMatches: match.reasons.filter((factor) => factor.kind !== "requirement").map(factorVM),
-    gaps: match.gaps.map(factorVM),
+    whyItMatches: match.reasons
+      .filter((factor) => factor.kind !== "requirement")
+      .map((factor) => factorVM(factor, intl)),
+    gaps: match.gaps.map((factor) => factorVM(factor, intl)),
     aiSummary: match.rationale,
-    summaryNote: match.rationale === null ? JOB_DETAIL_COPY.notTopMatch : null,
-  };
-}
-
-function yesNo(value: boolean | null): string {
-  if (value === null) return JOB_DETAIL_COPY.notStated;
-  return value ? "Offered" : "Not offered";
-}
-
-function factVM(key: FactVM["key"], label: string, value: string | null, time: TimeVM | null = null): FactVM {
-  return {
-    key,
-    label,
-    value: value ?? JOB_DETAIL_COPY.notStated,
-    notStated: value === null || value === JOB_DETAIL_COPY.notStated,
-    time,
+    summaryNote: match.rationale === null ? intl.formatMessage(COPY_MESSAGES.notTopMatch) : null,
   };
 }
 
 function factsVM(job: Job, salary: SalaryVM, ctx: ModelContext): FactVM[] {
+  const { intl } = ctx;
+  const notStated = intl.formatMessage(COPY_MESSAGES.notStated);
+  const fact = (
+    key: FactVM["key"],
+    label: MessageDescriptor,
+    value: string | null,
+    time: TimeVM | null = null,
+  ): FactVM => ({
+    key,
+    label: intl.formatMessage(label),
+    value: value ?? notStated,
+    notStated: value === null,
+    time,
+  });
+  const offered = (value: boolean | null) =>
+    value === null ? null : intl.formatMessage(value ? messages.offered : messages.notOffered);
   const seen = relativeTime(lastSeen(job), ctx);
   return [
-    factVM("salary", "Salary", salary.amount === null ? null : salary.text),
-    factVM("workMode", "Work mode", job.remoteType ? REMOTE_LABELS[job.remoteType] : null),
-    factVM("whereTheyHire", "Where they hire", whereLine(job)),
-    factVM("visa", "Visa sponsorship", yesNo(job.visaSponsorship)),
-    factVM("relocation", "Relocation", yesNo(job.relocationSupport)),
-    factVM(
+    fact("salary", messages.factSalary, salary.amount === null ? null : salary.text),
+    fact("workMode", messages.factWorkMode, remoteLabel(job, intl)),
+    fact("whereTheyHire", messages.factWhereTheyHire, whereLine(job, ctx)),
+    fact("visa", messages.factVisa, offered(job.visaSponsorship)),
+    fact("relocation", messages.factRelocation, offered(job.relocationSupport)),
+    fact(
       "employmentType",
-      "Employment type",
-      job.employmentType ? EMPLOYMENT_LABELS[job.employmentType] : null,
+      messages.factEmploymentType,
+      job.employmentType ? intl.formatMessage(EMPLOYMENT_MESSAGES[job.employmentType]) : null,
     ),
-    factVM("lastSeen", "Last seen", seen.label, seen),
+    fact("lastSeen", messages.factLastSeen, seen.label, seen),
   ];
 }
 
@@ -676,68 +820,91 @@ function applySource(job: Job): JobSourceLink | undefined {
   );
 }
 
-function applyVM(job: Job, source: JobSourceLink | undefined): ApplyVM {
-  const offlineReason = JOB_DETAIL_COPY.needsConnection;
+function applyVM(job: Job, source: JobSourceLink | undefined, intl: IntlShape): ApplyVM {
+  const offlineReason = intl.formatMessage(COPY_MESSAGES.needsConnection);
   if (job.applyUrl === null && job.applyEmail !== null)
-    return { route: "email", label: "Apply", external: false, target: job.applyEmail, offlineReason };
+    return {
+      route: "email",
+      label: intl.formatMessage(messages.applyByEmail),
+      external: false,
+      target: job.applyEmail,
+      offlineReason,
+    };
   const target = job.applyUrl ?? source?.url ?? "";
   if (source?.isDirectFromEmployer)
-    return { route: "companySite", label: "Apply on company site", external: true, target, offlineReason };
+    return {
+      route: "companySite",
+      label: intl.formatMessage(messages.applyCompanySite),
+      external: true,
+      target,
+      offlineReason,
+    };
   const board = source ? sourceName(source) : sourceHost(target);
-  return { route: "jobBoard", label: `Apply on ${board}`, external: true, target, offlineReason };
+  return {
+    route: "jobBoard",
+    label: intl.formatMessage(messages.applyOnBoard, { board }),
+    external: true,
+    target,
+    offlineReason,
+  };
 }
 
 function differencesOf(source: JobSourceLink, job: Job, ctx: ModelContext): string[] {
+  const { intl } = ctx;
   const differences: string[] = [];
-  if (source.title !== job.title) differences.push(`Title: ${source.title}`);
+  if (source.title !== job.title)
+    differences.push(intl.formatMessage(messages.differenceTitle, { value: source.title }));
   const canonicalPlace = locationLabel(job);
   if (source.locationText !== null && canonicalPlace !== null && source.locationText !== canonicalPlace)
-    differences.push(`Location: ${source.locationText}`);
-  const salary = source.salary ? salaryAmount(source.salary, ctx.locale) : null;
-  const canonicalSalary = job.salary ? salaryAmount(job.salary, ctx.locale) : null;
-  if (salary !== null && salary !== canonicalSalary) differences.push(`Salary: ${salary}`);
+    differences.push(intl.formatMessage(messages.differenceLocation, { value: source.locationText }));
+  const salary = source.salary ? salaryAmount(source.salary, ctx) : null;
+  const canonicalSalary = job.salary ? salaryAmount(job.salary, ctx) : null;
+  if (salary !== null && salary !== canonicalSalary)
+    differences.push(intl.formatMessage(messages.differenceSalary, { value: salary }));
   return differences;
 }
 
 function sourcesVM(job: Job, used: JobSourceLink | undefined, ctx: ModelContext): SourcesVM {
+  const { intl } = ctx;
   const row = (source: JobSourceLink): SourceRowVM => ({
     key: jobSourceKey(source),
     name: sourceName(source),
     url: source.url,
-    badge: source.isDirectFromEmployer ? sourceVM("employer") : null,
+    badge: source.isDirectFromEmployer ? sourceVM("employer", intl) : null,
     posted: source.postedAt ? relativeTime(source.postedAt, ctx) : null,
     differences: differencesOf(source, job, ctx),
     usedForApply: source === used,
     unreachable: isStale(source.lastSeenAt, ctx)
-      ? `Not seen on this site since ${shortDate(source.lastSeenAt, ctx)}. The listing may have closed.`
+      ? intl.formatMessage(messages.unreachable, { date: shortDate(source.lastSeenAt, ctx) })
       : null,
   });
   const groups: SourceGroupVM[] = [
     {
-      label: JOB_DETAIL_COPY.foundOnDirect,
+      label: intl.formatMessage(COPY_MESSAGES.foundOnDirect),
       rows: job.sources.filter((source) => source.isDirectFromEmployer).map(row),
     },
     {
-      label: JOB_DETAIL_COPY.foundOnBoards,
+      label: intl.formatMessage(COPY_MESSAGES.foundOnBoards),
       rows: job.sources.filter((source) => !source.isDirectFromEmployer).map(row),
     },
   ].filter((group) => group.rows.length > 0);
   const total = job.sources.length;
   return {
-    title: `Found on ${countLabel(total, "site", "sites", ctx.locale)}`,
+    title: intl.formatMessage(messages.foundOn, { count: total }),
     groups,
     total,
     collapsedCount: Math.min(total, SOURCES_COLLAPSED),
-    showAllLabel: total > SOURCES_COLLAPSED ? `Show all ${total} sources` : null,
+    showAllLabel: total > SOURCES_COLLAPSED ? intl.formatMessage(messages.showAll, { count: total }) : null,
   };
 }
 
 function detailVM(job: Job, data: UserData, ctx: ModelContext, rows: readonly JobListRowVM[]): JobDetailVM {
+  const { intl } = ctx;
   const match = data.jobMatches.find((candidate) => candidate.id === job.id);
   const application = data.applications.find((candidate) => candidate.jobId === job.id);
   const salary = salaryVM(job.salary, ctx);
   const used = applySource(job);
-  const apply = applyVM(job, used);
+  const apply = applyVM(job, used, intl);
   const index = rows.findIndex((row) => row.jobId === job.id);
   const primary = job.sources[0];
   const seen = lastSeen(job);
@@ -750,11 +917,11 @@ function detailVM(job: Job, data: UserData, ctx: ModelContext, rows: readonly Jo
     title: job.title,
     company: companyVM(job.company, job.companyDomain),
     location: locationLabel(job),
-    workMode: job.remoteType ? REMOTE_LABELS[job.remoteType] : null,
+    workMode: remoteLabel(job, intl),
     remoteEligibility: job.remoteEligibility,
-    where: whereLine(job),
-    employmentType: job.employmentType ? EMPLOYMENT_LABELS[job.employmentType] : null,
-    seniority: job.seniority ? SENIORITY_LABELS[job.seniority] : null,
+    where: whereLine(job, ctx),
+    employmentType: job.employmentType ? intl.formatMessage(EMPLOYMENT_MESSAGES[job.employmentType]) : null,
+    seniority: job.seniority ? intl.formatMessage(SENIORITY_MESSAGES[job.seniority]) : null,
     posted: job.postedAt ? relativeTime(job.postedAt, ctx) : null,
     salary,
     previousJobId: index > 0 ? (rows[index - 1]?.jobId ?? null) : null,
@@ -764,10 +931,10 @@ function detailVM(job: Job, data: UserData, ctx: ModelContext, rows: readonly Jo
     descriptionLanguage: job.language,
     description: paragraphs,
     descriptionCollapsedLines: DESCRIPTION_COLLAPSED_LINES,
-    noDescription: paragraphs.length === 0 ? JOB_DETAIL_COPY.noDescription : null,
+    noDescription: paragraphs.length === 0 ? intl.formatMessage(COPY_MESSAGES.noDescription) : null,
     delisted:
       primary && isStale(seen, ctx)
-        ? `This job is no longer listed. ${sourceName(primary)} removed it on ${shortDate(seen, ctx)}. Your saved copy is below.`
+        ? intl.formatMessage(messages.delisted, { source: sourceName(primary), date: shortDate(seen, ctx) })
         : null,
     sources: sourcesVM(job, used, ctx),
     originalUrl: primary?.url ?? apply.target,
@@ -775,8 +942,10 @@ function detailVM(job: Job, data: UserData, ctx: ModelContext, rows: readonly Jo
     applied: hasApplied(application)
       ? {
           applicationId: application.id,
-          label: application.appliedAt ? `Applied ${shortDate(application.appliedAt, ctx)}` : "Applied",
-          linkLabel: JOB_DETAIL_COPY.viewInTracker,
+          label: application.appliedAt
+            ? intl.formatMessage(messages.appliedOn, { date: shortDate(application.appliedAt, ctx) })
+            : intl.formatMessage(messages.applied),
+          linkLabel: intl.formatMessage(COPY_MESSAGES.viewInTracker),
         }
       : null,
     saved: match?.state === "saved" || application?.status === "saved",
@@ -784,7 +953,10 @@ function detailVM(job: Job, data: UserData, ctx: ModelContext, rows: readonly Jo
     application: hasApplied(application) ? applicationSummaryVM(application, data, ctx) : null,
     submitPrompt:
       application?.status === "preparing" && apply.external
-        ? { applicationId: application.id, question: `Did you submit your application to ${job.company}?` }
+        ? {
+            applicationId: application.id,
+            question: intl.formatMessage(messages.submitQuestion, { company: job.company }),
+          }
         : null,
     pendingSync:
       ctx.pendingWrites.has(job.id) || (application !== undefined && ctx.pendingWrites.has(application.id)),
@@ -796,6 +968,7 @@ export function buildJobDetailModel(
   ctx: ModelContext,
   params: Readonly<Record<string, string | undefined>>,
 ): JobDetailModel {
+  const { intl } = ctx;
   const rows = data.jobs
     .filter((job) => !isHiddenCompany(job, data))
     .flatMap((job) => {
@@ -814,28 +987,33 @@ export function buildJobDetailModel(
   if (data.jobs.length === 0)
     empty = {
       kind: "firstUse",
-      title: "No jobs yet",
-      body: "Search for a role and save the search. We'll collect matching jobs here and rank them against your CV.",
-      action: "Search jobs",
+      title: intl.formatMessage(messages.firstUseTitle),
+      body: intl.formatMessage(messages.firstUseBody),
+      action: intl.formatMessage(messages.firstUseAction),
     };
   else if (rows.length === 0)
     empty = {
       kind: "caughtUp",
-      title: "No jobs to show",
-      body: "Jobs you marked Not for me are in Hidden. New matches will show up here.",
+      title: intl.formatMessage(messages.caughtUpTitle),
+      body: intl.formatMessage(messages.caughtUpBody),
       action: null,
     };
 
+  const copyEntries = Object.entries(COPY_MESSAGES) as [keyof JobDetailCopyVM, MessageDescriptor][];
+  const copy = Object.fromEntries(
+    copyEntries.map(([key, descriptor]) => [key, intl.formatMessage(descriptor)]),
+  ) as Record<keyof JobDetailCopyVM, string>;
   return {
+    copy,
     list: {
       rows,
-      countLabel: countLabel(rows.length, "job", "jobs", ctx.locale),
-      sortLabel: JOB_DETAIL_COPY.sortLabel,
-      rankingInfo: JOB_DETAIL_COPY.rankingInfo,
+      countLabel: intl.formatMessage(messages.jobCount, { count: rows.length }),
+      sortLabel: copy.sortLabel,
+      rankingInfo: copy.rankingInfo,
       empty,
     },
     selectedJobId,
-    noSelection: { title: JOB_DETAIL_COPY.noSelection, hint: JOB_DETAIL_COPY.noSelectionHint },
+    noSelection: { title: copy.noSelection, hint: copy.noSelectionHint },
     detail: selected ? detailVM(selected, data, ctx, rows) : null,
   };
 }

@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 import { describe, expect, it, vi } from "vitest";
-import { chordKeycaps, Keymap, matchesChord, parseChord, spokenKeys } from "./keymap";
+import { createAppIntl } from "../../i18n/intl";
+import { chordKeycaps, Keymap, matchesChord, parseChord, spokenAlternatives, spokenKeys } from "./keymap";
 
 function press(
   key: string,
@@ -44,8 +45,10 @@ describe("chords", () => {
   it("renders keycaps and spoken names per platform", () => {
     expect(chordKeycaps(parseChord("Mod+Shift+D"), "macos")).toEqual(["⌘", "⇧", "D"]);
     expect(chordKeycaps(parseChord("Mod+Enter"), "windows")).toEqual(["Ctrl", "Enter"]);
-    expect(spokenKeys([parseChord("G"), parseChord("T")], "macos")).toBe("G then T");
-    expect(spokenKeys([parseChord("Mod+/")], "windows")).toBe("Control Slash");
+    const intl = createAppIntl({ language: "en", locale: "en-US" });
+    expect(spokenKeys([parseChord("G"), parseChord("T")], "macos", intl)).toBe("G then T");
+    expect(spokenKeys([parseChord("Mod+/")], "windows", intl)).toBe("Control Slash");
+    expect(spokenAlternatives(["G T", "Mod+1"], "macos", intl)).toBe("G then T or Command 1");
   });
 });
 

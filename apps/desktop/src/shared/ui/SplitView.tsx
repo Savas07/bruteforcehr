@@ -14,11 +14,38 @@ import {
   type PointerEvent,
   type ReactNode,
 } from "react";
+import { defineMessages, useIntl } from "react-intl";
 import { useKeyBindings } from "../keyboard/useKeyBindings";
 import { cx } from "../cx";
 import { Button, IconButton } from "./Button";
-import { useFocusOnMount, useReturnFocus } from "./focus";
+import { LIST_GROUP, useFocusOnMount, useReturnFocus } from "./focus";
 import { useBreakpoints } from "./layout";
+
+const messages = defineMessages({
+  resize: {
+    id: "shared.ui.splitView.resize",
+    defaultMessage: "Resize {pane}",
+    description: "Splitter name; {pane} is the pane's name",
+  },
+  backToList: {
+    id: "shared.ui.splitView.backToList",
+    defaultMessage: "Back to the list",
+    description: "Shortcut label (Esc)",
+  },
+  closePanel: {
+    id: "shared.ui.splitView.closePanel",
+    defaultMessage: "Close the details panel",
+    description: "Shortcut label (Esc)",
+  },
+  nextRecord: { id: "shared.ui.splitView.nextRecord", defaultMessage: "Next record" },
+  previousRecord: { id: "shared.ui.splitView.previousRecord", defaultMessage: "Previous record" },
+  position: {
+    id: "shared.ui.splitView.position",
+    defaultMessage: "{position} of {total} in {scope}",
+    description: "Record position in the details panel, e.g. '3 of 12 in Applied'",
+  },
+  close: { id: "shared.ui.splitView.close", defaultMessage: "Close" },
+});
 
 const RESIZE_STEP = 8;
 
@@ -121,12 +148,13 @@ export function SplitView({
   const detailRef = useRef<HTMLElement>(null);
   useFocusOnMount(detailRef, pushed);
   useReturnFocus(pushed);
+  const intl = useIntl();
   useKeyBindings([
     {
       id: "split.back",
       keys: "Escape",
-      label: "Back to the list",
-      group: "Lists",
+      label: intl.formatMessage(messages.backToList),
+      group: intl.formatMessage(LIST_GROUP),
       enabled: pushed,
       run: onBack,
     },
@@ -147,7 +175,7 @@ export function SplitView({
       {!narrow && (
         <Splitter
           controls={listId}
-          label={`Resize ${listLabel}`}
+          label={intl.formatMessage(messages.resize, { pane: listLabel })}
           value={listWidth}
           min={layout.listPane.min}
           max={layout.listPane.max}
@@ -228,22 +256,24 @@ export function DetailSidePanel({
   const panelRef = useRef<HTMLElement>(null);
   useFocusOnMount(panelRef, open);
   useReturnFocus(open);
+  const intl = useIntl();
+  const group = intl.formatMessage(LIST_GROUP);
   const inPanel = (event: KeyboardEvent) =>
     event.target instanceof Node && panelRef.current?.contains(event.target) === true;
   useKeyBindings([
     {
       id: "panel.close",
       keys: "Escape",
-      label: "Close the details panel",
-      group: "Lists",
+      label: intl.formatMessage(messages.closePanel),
+      group,
       enabled: open,
       run: onClose,
     },
     {
       id: "panel.next",
       keys: "J",
-      label: "Next record",
-      group: "Lists",
+      label: intl.formatMessage(messages.nextRecord),
+      group,
       enabled: open && nav !== undefined,
       when: inPanel,
       run: () => nav?.onNext(),
@@ -251,8 +281,8 @@ export function DetailSidePanel({
     {
       id: "panel.previous",
       keys: "K",
-      label: "Previous record",
-      group: "Lists",
+      label: intl.formatMessage(messages.previousRecord),
+      group,
       enabled: open && nav !== undefined,
       when: inPanel,
       run: () => nav?.onPrevious(),
@@ -265,7 +295,7 @@ export function DetailSidePanel({
       {!narrow && (
         <Splitter
           controls={panelId}
-          label={`Resize ${label}`}
+          label={intl.formatMessage(messages.resize, { pane: label })}
           value={width}
           min={layout.sidePanel.min}
           max={layout.sidePanel.max}
@@ -289,25 +319,35 @@ export function DetailSidePanel({
               <IconButton
                 icon={ChevronUp}
                 size="sm"
-                label="Previous record"
+                label={intl.formatMessage(messages.previousRecord)}
                 shortcut="K"
                 onClick={nav.onPrevious}
               />
               <IconButton
                 icon={ChevronDown}
                 size="sm"
-                label="Next record"
+                label={intl.formatMessage(messages.nextRecord)}
                 shortcut="J"
                 onClick={nav.onNext}
               />
               <span className="text-fg-secondary px-1 text-footnote tabular-nums">
-                {nav.position} of {nav.total} in {nav.scopeLabel}
+                {intl.formatMessage(messages.position, {
+                  position: nav.position,
+                  total: nav.total,
+                  scope: nav.scopeLabel,
+                })}
               </span>
             </>
           )}
           <span className="ml-auto flex items-center gap-1">
             {actions}
-            <IconButton icon={X} size="sm" label="Close" shortcut="Escape" onClick={onClose} />
+            <IconButton
+              icon={X}
+              size="sm"
+              label={intl.formatMessage(messages.close)}
+              shortcut="Escape"
+              onClick={onClose}
+            />
           </span>
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto">{children}</div>

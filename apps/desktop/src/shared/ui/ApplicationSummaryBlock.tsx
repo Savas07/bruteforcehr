@@ -4,10 +4,28 @@
  */
 import { FileText } from "lucide-react";
 import { useId } from "react";
+import { defineMessages, useIntl } from "react-intl";
 import type { ApplicationSummaryVM } from "../model/blocks";
 import { cx } from "../cx";
 import { RelativeTimeChip } from "./RelativeTimeChip";
 import { StatusPill } from "./StatusPill";
+
+const messages = defineMessages({
+  heading: { id: "shared.ui.applicationSummaryBlock.heading", defaultMessage: "Application" },
+  status: { id: "shared.ui.applicationSummaryBlock.status", defaultMessage: "Status" },
+  appliedVia: { id: "shared.ui.applicationSummaryBlock.appliedVia", defaultMessage: "Applied via" },
+  notRecorded: { id: "shared.ui.applicationSummaryBlock.notRecorded", defaultMessage: "Not recorded" },
+  applied: {
+    id: "shared.ui.applicationSummaryBlock.applied",
+    defaultMessage: "Applied",
+    description: "Row label: date the application was sent",
+  },
+  notYet: { id: "shared.ui.applicationSummaryBlock.notYet", defaultMessage: "Not yet" },
+  cv: { id: "shared.ui.applicationSummaryBlock.cv", defaultMessage: "CV" },
+  coverLetter: { id: "shared.ui.applicationSummaryBlock.coverLetter", defaultMessage: "Cover letter" },
+  noneAttached: { id: "shared.ui.applicationSummaryBlock.noneAttached", defaultMessage: "None attached" },
+  nextStep: { id: "shared.ui.applicationSummaryBlock.nextStep", defaultMessage: "What usually happens next" },
+});
 
 export interface ApplicationSummaryBlockProps {
   /** Status, channel, date, pinned documents and next step (`applicationSummaryVM`). */
@@ -35,39 +53,45 @@ export function ApplicationSummaryBlock({
 }: ApplicationSummaryBlockProps) {
   const headingId = useId();
   const Heading = headingLevel === 2 ? "h2" : "h3";
+  const intl = useIntl();
   const { cv, coverLetter } = summary;
   const documents = [
-    { term: "CV", doc: cv, open: onOpenCv },
-    { term: "Cover letter", doc: coverLetter, open: onOpenCoverLetter },
+    { key: "cv", term: intl.formatMessage(messages.cv), doc: cv, open: onOpenCv },
+    {
+      key: "coverLetter",
+      term: intl.formatMessage(messages.coverLetter),
+      doc: coverLetter,
+      open: onOpenCoverLetter,
+    },
   ];
   return (
     <section aria-labelledby={headingId} className={cx("flex flex-col gap-3", className)}>
       <Heading id={headingId} className="text-headline text-fg-primary">
-        Application
+        {intl.formatMessage(messages.heading)}
       </Heading>
       <dl className="text-callout grid grid-cols-[max-content_1fr] items-baseline gap-x-4 gap-y-2">
-        <dt className="text-fg-secondary">Status</dt>
+        <dt className="text-fg-secondary">{intl.formatMessage(messages.status)}</dt>
         <dd>
           <StatusPill status={summary.status} size="sm" />
         </dd>
-        <dt className="text-fg-secondary">Applied via</dt>
+        <dt className="text-fg-secondary">{intl.formatMessage(messages.appliedVia)}</dt>
         <dd className={summary.channel === null ? "text-fg-tertiary" : "text-fg-primary"}>
-          {summary.channel ?? "Not recorded"}
+          {summary.channel ?? intl.formatMessage(messages.notRecorded)}
         </dd>
-        <dt className="text-fg-secondary">Applied</dt>
+        <dt className="text-fg-secondary">{intl.formatMessage(messages.applied)}</dt>
         <dd className="text-fg-primary">
           {summary.appliedAt ? (
             <RelativeTimeChip time={summary.appliedAt} />
           ) : (
-            <span className="text-fg-tertiary">Not yet</span>
+            <span className="text-fg-tertiary">{intl.formatMessage(messages.notYet)}</span>
           )}
         </dd>
-        {documents.map(({ term, doc, open }) => (
-          <div key={term} className="contents">
+        {documents.map(({ key, term, doc, open }) => (
+          <div key={key} className="contents">
             <dt className="text-fg-secondary">{term}</dt>
             <dd className="min-w-0">
               {doc === null ? (
-                <span className="text-fg-tertiary">None attached</span>
+                <span className="text-fg-tertiary">{intl.formatMessage(messages.noneAttached)}</span>
               ) : open ? (
                 <button
                   type="button"
@@ -86,7 +110,9 @@ export function ApplicationSummaryBlock({
       </dl>
       {summary.nextStep !== null && (
         <div className="bg-surface-sunken rounded-md px-3 py-2">
-          <p className="text-footnote text-fg-secondary font-medium">What usually happens next</p>
+          <p className="text-footnote text-fg-secondary font-medium">
+            {intl.formatMessage(messages.nextStep)}
+          </p>
           <p className="text-callout text-fg-primary text-pretty">{summary.nextStep}</p>
         </div>
       )}

@@ -5,11 +5,28 @@
  * Undo (system.md "Trust is visible"). The screen registers `Y` / `N`; the prompt only shows them.
  */
 import { MailCheck, Undo2 } from "lucide-react";
-import { useId } from "react";
+import { useId, type ReactNode } from "react";
+import { defineMessages, FormattedMessage, useIntl } from "react-intl";
 import type { TimeVM } from "../model/types";
 import { cx } from "../cx";
 import { Button } from "./Button";
 import { RelativeTimeChip } from "./RelativeTimeChip";
+
+const messages = defineMessages({
+  question: {
+    id: "shared.ui.submitPrompt.question",
+    defaultMessage: "Did you submit your application to {company}?",
+  },
+  yes: { id: "shared.ui.submitPrompt.yes", defaultMessage: "Yes, I applied" },
+  notYet: { id: "shared.ui.submitPrompt.notYet", defaultMessage: "Not yet" },
+  notApplying: { id: "shared.ui.submitPrompt.notApplying", defaultMessage: "I'm not applying" },
+  confirmedBy: {
+    id: "shared.ui.submitPrompt.confirmedBy",
+    defaultMessage: "Confirmed by an email from <address>{sender}</address>",
+    description: "{sender} is an email address or company name",
+  },
+  undo: { id: "shared.ui.submitPrompt.undo", defaultMessage: "Undo" },
+});
 
 export interface SubmitPromptProps {
   /** Company name as shown on the job ("Acme"). */
@@ -45,6 +62,7 @@ export function SubmitPrompt({
   className,
 }: SubmitPromptProps) {
   const titleId = useId();
+  const intl = useIntl();
   return (
     <section
       aria-labelledby={titleId}
@@ -56,17 +74,17 @@ export function SubmitPrompt({
       {variant === "asking" ? (
         <>
           <h2 id={titleId} className="text-headline text-fg-primary min-w-0 flex-1 text-pretty">
-            Did you submit your application to {company}?
+            {intl.formatMessage(messages.question, { company })}
           </h2>
           <div className="flex flex-wrap items-center gap-2">
             <Button variant="primary" shortcut="Y" onClick={onYes}>
-              Yes, I applied
+              {intl.formatMessage(messages.yes)}
             </Button>
             <Button shortcut="N" onClick={onNotYet}>
-              Not yet
+              {intl.formatMessage(messages.notYet)}
             </Button>
             <Button variant="plain" onClick={onNotApplying}>
-              I'm not applying
+              {intl.formatMessage(messages.notApplying)}
             </Button>
           </div>
         </>
@@ -79,7 +97,13 @@ export function SubmitPrompt({
               strokeWidth={1.75}
             />
             <h2 id={titleId} className="text-callout text-fg-primary text-pretty">
-              Confirmed by an email from <span className="break-all">{confirmedBy?.sender ?? company}</span>
+              <FormattedMessage
+                {...messages.confirmedBy}
+                values={{
+                  sender: confirmedBy?.sender ?? company,
+                  address: (chunks: ReactNode[]) => <span className="break-all">{chunks}</span>,
+                }}
+              />
               {confirmedBy && (
                 <>
                   <span aria-hidden="true"> · </span>
@@ -90,7 +114,7 @@ export function SubmitPrompt({
           </div>
           {onUndo && (
             <Button size="sm" icon={Undo2} onClick={onUndo}>
-              Undo
+              {intl.formatMessage(messages.undo)}
             </Button>
           )}
         </>

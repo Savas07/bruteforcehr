@@ -14,6 +14,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useId } from "react";
+import { defineMessages, useIntl } from "react-intl";
 import type { TimelineEventKind, TimelineEventVM } from "../model/blocks";
 import { cx } from "../cx";
 import { Button } from "./Button";
@@ -22,6 +23,22 @@ import { RelativeTimeChip } from "./RelativeTimeChip";
 import { SourceTag } from "./SourceTag";
 import { StatusPill } from "./StatusPill";
 import { SyncGlyph } from "./SyncGlyph";
+
+const messages = defineMessages({
+  undone: {
+    id: "shared.ui.timelineRow.undone",
+    defaultMessage: "Undone",
+    description: "Badge on a reverted event",
+  },
+  statusTo: {
+    id: "shared.ui.timelineRow.statusTo",
+    defaultMessage: "to",
+    description: "Screen reader word between the two status pills (Applied → Interviewing)",
+  },
+  undoHint: { id: "shared.ui.timelineRow.undoHint", defaultMessage: "Move back to {status}" },
+  undo: { id: "shared.ui.timelineRow.undo", defaultMessage: "Undo" },
+  viewSource: { id: "shared.ui.timelineRow.viewSource", defaultMessage: "View source" },
+});
 
 const KIND_ICONS: Readonly<Record<TimelineEventKind, LucideIcon>> = {
   created: Plus,
@@ -53,6 +70,7 @@ export interface TimelineRowProps {
 export function TimelineRow({ event, onUndo, onViewSource, last = false, className }: TimelineRowProps) {
   const titleId = useId();
   const Icon = KIND_ICONS[event.kind];
+  const intl = useIntl();
   const muted = event.reverted;
   const viewSource = event.mailMessageId !== null ? onViewSource : undefined;
   return (
@@ -79,7 +97,7 @@ export function TimelineRow({ event, onUndo, onViewSource, last = false, classNa
           </p>
           {event.reverted && (
             <span className="border-line-control text-fg-secondary text-caption1 rounded-xs border px-1.5 font-medium">
-              Undone
+              {intl.formatMessage(messages.undone)}
             </span>
           )}
           <SourceTag source={event.source} />
@@ -93,7 +111,7 @@ export function TimelineRow({ event, onUndo, onViewSource, last = false, classNa
             <span aria-hidden="true" className="text-fg-tertiary text-footnote">
               →
             </span>
-            <span className="sr-only">to</span>
+            <span className="sr-only">{intl.formatMessage(messages.statusTo)}</span>
             <StatusPill status={event.move.to} size="sm" />
           </div>
         )}
@@ -120,11 +138,15 @@ export function TimelineRow({ event, onUndo, onViewSource, last = false, classNa
                   <Button
                     size="sm"
                     icon={Undo2}
-                    hint={event.move ? `Move back to ${event.move.from.label}` : undefined}
+                    hint={
+                      event.move
+                        ? intl.formatMessage(messages.undoHint, { status: event.move.from.label })
+                        : undefined
+                    }
                     aria-describedby={titleId}
                     onClick={onUndo}
                   >
-                    Undo
+                    {intl.formatMessage(messages.undo)}
                   </Button>
                 )
               ) : (
@@ -132,7 +154,7 @@ export function TimelineRow({ event, onUndo, onViewSource, last = false, classNa
               ))}
             {viewSource && (
               <Button size="sm" variant="plain" aria-describedby={titleId} onClick={viewSource}>
-                View source
+                {intl.formatMessage(messages.viewSource)}
               </Button>
             )}
           </div>

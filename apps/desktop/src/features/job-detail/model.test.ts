@@ -1,5 +1,6 @@
 import { emptyDataset, populatedDataset } from "@bfhr/fixtures";
 import { describe, expect, it } from "vitest";
+import { createAppIntl } from "../../i18n/intl";
 import { fixtureContext } from "../../shared/model/fixture-context";
 import { shortDate } from "../../shared/model/format";
 import { buildJobDetailModel, type JobDetailVM, type MatchSectionVM } from "./model";
@@ -226,7 +227,7 @@ describe("buildJobDetailModel — detail", () => {
     const halden = detailOf("job-halden-product");
     expect(halden.apply).toEqual({
       route: "email",
-      label: "Apply",
+      label: "Apply by email",
       external: false,
       target: "careers@haldenfreight.co.uk",
       offlineReason: "Needs a connection",
@@ -292,6 +293,16 @@ describe("buildJobDetailModel — detail", () => {
     expect(northstar.applied).toBeNull();
     expect(northstar.application).toBeNull();
     expect(northstar.pendingSync).toBe(true);
+  });
+});
+
+describe("buildJobDetailModel — Turkish", () => {
+  it("formats labels with the Turkish catalog", () => {
+    const turkish = fixtureContext(populatedDataset, [], createAppIntl({ language: "tr", locale: "tr-TR" }));
+    const model = buildJobDetailModel(populatedDataset, turkish, { jobId: "job-brisk-frontend" });
+    expect(model.list.sortLabel).not.toBe("Best match");
+    expect(model.detail?.apply.label).not.toBe("Apply on company site");
+    expect(model.detail?.sources.title).not.toBe("Found on 3 sites");
   });
 });
 

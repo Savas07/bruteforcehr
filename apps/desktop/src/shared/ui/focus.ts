@@ -5,7 +5,26 @@
  * pane or panel closes.
  */
 import { useCallback, useEffect, useRef, type RefObject } from "react";
+import { defineMessages, useIntl } from "react-intl";
 import { useKeyBindings } from "../keyboard/useKeyBindings";
+
+const messages = defineMessages({
+  lists: { id: "shared.ui.focus.lists", defaultMessage: "Lists", description: "Shortcuts-sheet group name" },
+  next: { id: "shared.ui.focus.next", defaultMessage: "Next item", description: "Shortcut label (J / ↓)" },
+  previous: {
+    id: "shared.ui.focus.previous",
+    defaultMessage: "Previous item",
+    description: "Shortcut label (K / ↑)",
+  },
+  open: {
+    id: "shared.ui.focus.open",
+    defaultMessage: "Open in detail pane",
+    description: "Shortcut label (Enter)",
+  },
+});
+
+/** Shortcuts-sheet group of list and pane navigation keys ("Lists"). */
+export const LIST_GROUP = messages.lists;
 
 /** Moves focus to `ref` when it mounts (or when `when` turns true). */
 export function useFocusOnMount(ref: RefObject<HTMLElement | null>, when = true): void {
@@ -58,7 +77,7 @@ export function useListNavigation({
   activeId,
   onActivate,
   onOpen,
-  group = "Lists",
+  group: groupProp,
   enabled = true,
 }: {
   containerRef: RefObject<HTMLElement | null>;
@@ -71,6 +90,10 @@ export function useListNavigation({
   group?: string;
   enabled?: boolean;
 }): ListNavigation {
+  const intl = useIntl();
+  // Binding ids stay locale-independent; only the sheet label is translated.
+  const idPrefix = groupProp ?? "Lists";
+  const group = groupProp ?? intl.formatMessage(LIST_GROUP);
   const focusItem = useCallback(
     (id: string) => {
       containerRef.current?.querySelector<HTMLElement>(`[data-nav-id="${CSS.escape(id)}"]`)?.focus();
@@ -94,27 +117,27 @@ export function useListNavigation({
     (event.target instanceof Node && containerRef.current?.contains(event.target) === true);
   useKeyBindings([
     {
-      id: `${group}.next`,
+      id: `${idPrefix}.next`,
       keys: ["J", "ArrowDown"],
-      label: "Next item",
+      label: intl.formatMessage(messages.next),
       group,
       enabled,
       when: (event) => event.key !== "ArrowDown" || fromList(event),
       run: () => step(1),
     },
     {
-      id: `${group}.previous`,
+      id: `${idPrefix}.previous`,
       keys: ["K", "ArrowUp"],
-      label: "Previous item",
+      label: intl.formatMessage(messages.previous),
       group,
       enabled,
       when: (event) => event.key !== "ArrowUp" || fromList(event),
       run: () => step(-1),
     },
     {
-      id: `${group}.open`,
+      id: `${idPrefix}.open`,
       keys: "Enter",
-      label: "Open in detail pane",
+      label: intl.formatMessage(messages.open),
       group,
       enabled: enabled && onOpen !== undefined && activeId !== null,
       when: fromList,

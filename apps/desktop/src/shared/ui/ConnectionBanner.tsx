@@ -1,6 +1,23 @@
 import { Wifi, WifiOff } from "lucide-react";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
+import { defineMessages, FormattedMessage } from "react-intl";
 import { useConnectivity } from "../connectivity";
+
+const messages = defineMessages({
+  offline: {
+    id: "shared.ui.connectionBanner.offline",
+    defaultMessage:
+      "<b>You're offline.</b> Your changes are saved on this device and will sync when you're back online.",
+    description: "Desktop connection strip while offline; <b> marks the bold status",
+  },
+  backOnline: {
+    id: "shared.ui.connectionBanner.backOnline",
+    defaultMessage: "<b>Back online.</b>{synced, select, yes { All changes synced.} other {}}",
+    description: "Strip after reconnecting; the second sentence only when something was queued",
+  },
+});
+
+const bold = (chunks: ReactNode[]) => <span className="text-fg-primary font-semibold">{chunks}</span>;
 
 /**
  * The desktop connection strip (states.md "Decision — Desktop"): a 28 px neutral strip across the
@@ -23,16 +40,17 @@ export function ConnectionBanner() {
             <>
               <WifiOff aria-hidden="true" className="size-3.5 shrink-0" strokeWidth={1.75} />
               <p>
-                <span className="text-fg-primary font-semibold">You're offline.</span> Your changes are saved
-                on this device and will sync when you're back online.
+                <FormattedMessage {...messages.offline} values={{ b: bold }} />
               </p>
             </>
           ) : (
             <>
               <Wifi aria-hidden="true" className="size-3.5 shrink-0" strokeWidth={1.75} />
               <p>
-                <span className="text-fg-primary font-semibold">Back online.</span>
-                {synced && " All changes synced."}
+                <FormattedMessage
+                  {...messages.backOnline}
+                  values={{ b: bold, synced: synced ? "yes" : "no" }}
+                />
               </p>
             </>
           )}

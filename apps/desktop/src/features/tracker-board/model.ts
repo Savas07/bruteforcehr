@@ -14,12 +14,80 @@ import {
 } from "@bfhr/core";
 import type { ApplicationSummaryVM, NudgeVM, TimelineEventVM } from "../../shared/model/blocks";
 import { applicationSummaryVM, nudgeVMs, timelineVMs } from "../../shared/model/build-blocks";
-import { calendarDaysFromNow, countLabel, dayAndTime, relativeTime } from "../../shared/model/format";
+import { defineMessages } from "react-intl";
+import { calendarDaysFromNow, dayAndTime, relativeTime } from "../../shared/model/format";
 import type { CompanyVM, ModelContext, StatusVM, TimeVM, UserData } from "../../shared/model/types";
-import { companyVM, MOVE_DENIAL_REASONS, STATUS_LABELS, statusVM } from "../../shared/model/vocabulary";
+import { companyVM, MOVE_DENIAL_MESSAGES, statusVM } from "../../shared/model/vocabulary";
 
 /** Saved is the backlog: its column starts collapsed above this many cards (tracker.md). */
 const SAVED_COLLAPSE_ABOVE = 5;
+
+const messages = defineMessages({
+  ageNew: { id: "tracker-board.card.ageNew", defaultMessage: "New today" },
+  ageDays: {
+    id: "tracker-board.card.ageDays",
+    defaultMessage: "{days} d in stage",
+    description: "Card meta: whole days in the current stage, abbreviated",
+  },
+  ageNewAccessible: { id: "tracker-board.card.ageNewAccessible", defaultMessage: "In {status} since today" },
+  ageDaysAccessible: {
+    id: "tracker-board.card.ageDaysAccessible",
+    defaultMessage: "{days, plural, one {# day} other {# days}} in {status}",
+  },
+  staleness: {
+    id: "tracker-board.card.staleness",
+    defaultMessage: "No reply in {days, plural, one {# day} other {# days}}",
+  },
+  autoMoveMail: {
+    id: "tracker-board.card.autoMoveMail",
+    defaultMessage: "Moved automatically from an email",
+  },
+  autoMove: { id: "tracker-board.card.autoMove", defaultMessage: "Moved automatically" },
+  columnAccessible: {
+    id: "tracker-board.column.accessibleLabel",
+    defaultMessage: "{status}, {count, plural, one {# application} other {# applications}}",
+  },
+  oldestToday: { id: "tracker-board.column.oldestToday", defaultMessage: "oldest today" },
+  oldestDays: {
+    id: "tracker-board.column.oldestDays",
+    defaultMessage: "oldest {days} d",
+    description: "Column sub-line: age of the longest-waiting card, abbreviated days",
+  },
+  oldestTodayAccessible: {
+    id: "tracker-board.column.oldestTodayAccessible",
+    defaultMessage: "Oldest: in this stage since today",
+  },
+  oldestDaysAccessible: {
+    id: "tracker-board.column.oldestDaysAccessible",
+    defaultMessage: "Oldest: {days, plural, one {# day} other {# days}} in this stage",
+  },
+  columnEmpty: { id: "tracker-board.column.empty", defaultMessage: "No applications" },
+  position: {
+    id: "tracker-board.selection.position",
+    defaultMessage: "{position} of {total} in {status}",
+    description: "Detail top bar: the card's place in its column",
+  },
+  closed: { id: "tracker-board.closed.label", defaultMessage: "Closed" },
+  closedAccessible: {
+    id: "tracker-board.closed.accessibleLabel",
+    defaultMessage:
+      "Closed, {count, plural, one {# application} other {# applications}}: {accepted} {acceptedCount}, {declined} {declinedCount}, {rejected} {rejectedCount}, {withdrawn} {withdrawnCount}, {ghosted} {ghostedCount}",
+    description: "Closed rail screen-reader label; each outcome status name followed by its count",
+  },
+  closedEmpty: { id: "tracker-board.closed.empty", defaultMessage: "Closed applications will appear here." },
+  firstUseTitle: { id: "tracker-board.firstUse.title", defaultMessage: "No applications yet" },
+  firstUseBody: {
+    id: "tracker-board.firstUse.body",
+    defaultMessage: "Add a job you've applied to, or save one from Jobs to track it here.",
+  },
+  firstUsePrimary: { id: "tracker-board.firstUse.primary", defaultMessage: "Add application" },
+  firstUseSecondary: { id: "tracker-board.firstUse.secondary", defaultMessage: "Import CSV" },
+  columnAdd: {
+    id: "tracker-board.column.add",
+    defaultMessage: "Add",
+    description: "Column footer button that adds an application to that status",
+  },
+});
 
 /** One status in "Move to…" / the status menu / a drop target (D16: disabled, never hidden). */
 export interface MoveTargetVM {
@@ -142,7 +210,7 @@ export interface TrackerFirstUseVM {
   readonly body: string;
   /** Primary: "Add application", Mod+N. */
   readonly primary: { readonly label: string; readonly shortcut: string };
-  /** Secondary: "Find jobs" (→ Jobs). */
+  /** Secondary: "Import CSV" (brief §4.6). */
   readonly secondary: { readonly label: string };
   /** Each column's "+ Add" footer label: "Add". */
   readonly columnAddLabel: string;
@@ -165,25 +233,25 @@ type BoardData = Pick<
   "applications" | "applicationEvents" | "interviews" | "profile" | "cvs" | "coverLetters"
 >;
 
-function moveTargets(from: ApplicationStatus): MoveTargetVM[] {
+function moveTargets(from: ApplicationStatus, ctx: ModelContext): MoveTargetVM[] {
   return [...ACTIVE_STATUSES, ...TERMINAL_STATUSES].map((to) => {
     const check = canTransition(from, to, "user");
     return {
-      status: statusVM(to),
+      status: statusVM(to, ctx.intl),
       current: to === from,
       disabledReason:
         !check.allowed && check.reason === "outcome_requires_offer"
-          ? MOVE_DENIAL_REASONS.outcome_requires_offer
+          ? ctx.intl.formatMessage(MOVE_DENIAL_MESSAGES.outcome_requires_offer)
           : null,
     };
   });
 }
 
-function activeStep(status: ApplicationStatus, offset: 1 | -1): StatusVM | null {
+function activeStep(status: ApplicationStatus, offset: 1 | -1, ctx: ModelContext): StatusVM | null {
   const index = ACTIVE_STATUSES.findIndex((candidate) => candidate === status);
   if (index === -1) return null;
   const target = ACTIVE_STATUSES[index + offset];
-  return target ? statusVM(target) : null;
+  return target ? statusVM(target, ctx.intl) : null;
 }
 
 function daysInStage(application: Application, ctx: ModelContext): number {
@@ -199,8 +267,7 @@ function cardVM(application: Application, data: BoardData, ctx: ModelContext): T
       null,
     );
   const days = daysInStage(application, ctx);
-  const statusLabel = STATUS_LABELS[application.status];
-  const numbers = new Intl.NumberFormat(ctx.locale);
+  const status = statusVM(application.status, ctx.intl);
   const interviewAhead = data.interviews.some(
     (interview) => interview.applicationId === application.id && interview.startsAt > ctx.now,
   );
@@ -213,13 +280,13 @@ function cardVM(application: Application, data: BoardData, ctx: ModelContext): T
     company: companyVM(application.company, application.companyDomain),
     role: application.role,
     location: application.location,
-    status: statusVM(application.status),
+    status,
     age: {
-      label: days === 0 ? "New today" : `${numbers.format(days)} d in stage`,
-      accessibleLabel:
-        days === 0
-          ? `In ${statusLabel} since today`
-          : `${countLabel(days, "day", "days", ctx.locale)} in ${statusLabel}`,
+      label: ctx.intl.formatMessage(days === 0 ? messages.ageNew : messages.ageDays, { days }),
+      accessibleLabel: ctx.intl.formatMessage(
+        days === 0 ? messages.ageNewAccessible : messages.ageDaysAccessible,
+        { days, status: status.label },
+      ),
       since: relativeTime(application.statusChangedAt, ctx),
     },
     nextAction:
@@ -229,16 +296,16 @@ function cardVM(application: Application, data: BoardData, ctx: ModelContext): T
             label: application.nextAction,
             due: application.nextActionAt ? dayAndTime(application.nextActionAt, ctx) : null,
           },
-    staleness: silence ? `No reply in ${countLabel(silence.silentDays, "day", "days", ctx.locale)}` : null,
+    staleness: silence ? ctx.intl.formatMessage(messages.staleness, { days: silence.silentDays }) : null,
     autoMove:
       latestMove === null || latestMove.actor === "user"
         ? null
         : latestMove.evidence?.mailMessageId
-          ? "Moved automatically from an email"
-          : "Moved automatically",
-    stepForward: activeStep(application.status, 1),
-    stepBack: activeStep(application.status, -1),
-    moves: moveTargets(application.status),
+          ? ctx.intl.formatMessage(messages.autoMoveMail)
+          : ctx.intl.formatMessage(messages.autoMove),
+    stepForward: activeStep(application.status, 1, ctx),
+    stepBack: activeStep(application.status, -1, ctx),
+    moves: moveTargets(application.status, ctx),
     pendingSync:
       ctx.pendingWrites.has(application.id) || events.some((event) => ctx.pendingWrites.has(event.id)),
   };
@@ -261,23 +328,29 @@ function columnVM(
   const members = data.applications
     .filter((application) => application.status === status)
     .toSorted(boardOrder);
-  const label = STATUS_LABELS[status];
-  const numbers = new Intl.NumberFormat(ctx.locale);
+  const vm = statusVM(status, ctx.intl);
   const oldest = members.reduce((max, application) => Math.max(max, daysInStage(application, ctx)), -1);
   return {
-    status: statusVM(status),
+    status: vm,
     count: members.length,
-    countLabel: numbers.format(members.length),
-    accessibleLabel: `${label}, ${countLabel(members.length, "application", "applications", ctx.locale)}`,
-    oldestLabel: oldest === -1 ? null : oldest === 0 ? "oldest today" : `oldest ${numbers.format(oldest)} d`,
+    countLabel: ctx.intl.formatNumber(members.length),
+    accessibleLabel: ctx.intl.formatMessage(messages.columnAccessible, {
+      status: vm.label,
+      count: members.length,
+    }),
+    oldestLabel:
+      oldest === -1
+        ? null
+        : ctx.intl.formatMessage(oldest === 0 ? messages.oldestToday : messages.oldestDays, { days: oldest }),
     oldestAccessibleLabel:
       oldest === -1
         ? null
-        : oldest === 0
-          ? "Oldest: in this stage since today"
-          : `Oldest: ${countLabel(oldest, "day", "days", ctx.locale)} in this stage`,
+        : ctx.intl.formatMessage(
+            oldest === 0 ? messages.oldestTodayAccessible : messages.oldestDaysAccessible,
+            { days: oldest },
+          ),
     cards: members.map((application) => cardVM(application, data, ctx)),
-    emptyLine: members.length === 0 && !firstUse ? "No applications" : null,
+    emptyLine: members.length === 0 && !firstUse ? ctx.intl.formatMessage(messages.columnEmpty) : null,
     collapsedByDefault:
       !firstUse && (members.length === 0 || (status === "saved" && members.length > SAVED_COLLAPSE_ABOVE)),
   };
@@ -289,7 +362,6 @@ export function buildTrackerBoardModel(
   params: Readonly<Record<string, string | undefined>>,
 ): TrackerBoardModel {
   const firstUse = data.applications.length === 0;
-  const numbers = new Intl.NumberFormat(ctx.locale);
   const columns = ACTIVE_STATUSES.map((status) => columnVM(status, data, ctx, firstUse));
   const outcomes = TERMINAL_STATUSES.map((status) => columnVM(status, data, ctx, firstUse));
   const closedCount = outcomes.reduce((sum, outcome) => sum + outcome.count, 0);
@@ -310,7 +382,11 @@ export function buildTrackerBoardModel(
           location: card.location,
           status: card.status,
           position: {
-            label: `${numbers.format(index + 1)} of ${numbers.format(siblings.length)} in ${card.status.label}`,
+            label: ctx.intl.formatMessage(messages.position, {
+              position: index + 1,
+              total: siblings.length,
+              status: card.status.label,
+            }),
             previousId: siblings[index - 1]?.applicationId ?? null,
             nextId: siblings[index + 1]?.applicationId ?? null,
           },
@@ -323,27 +399,36 @@ export function buildTrackerBoardModel(
         }
       : null;
 
+  // Outcome names and counts as ICU arguments ({accepted} {acceptedCount}, …) in core order.
+  const outcomeValues = Object.fromEntries(
+    outcomes.flatMap((outcome) => [
+      [outcome.status.key, outcome.status.label],
+      [`${outcome.status.key}Count`, outcome.count],
+    ]),
+  );
+
   return {
     columns,
     closedRail: {
-      label: "Closed",
+      label: ctx.intl.formatMessage(messages.closed),
       count: closedCount,
-      countLabel: numbers.format(closedCount),
-      accessibleLabel: `Closed, ${countLabel(closedCount, "application", "applications", ctx.locale)}: ${outcomes
-        .map((outcome) => `${outcome.status.label} ${outcome.countLabel}`)
-        .join(", ")}`,
+      countLabel: ctx.intl.formatNumber(closedCount),
+      accessibleLabel: ctx.intl.formatMessage(messages.closedAccessible, {
+        ...outcomeValues,
+        count: closedCount,
+      }),
       outcomes,
-      emptyLine: closedCount === 0 ? "Closed applications will appear here." : null,
+      emptyLine: closedCount === 0 ? ctx.intl.formatMessage(messages.closedEmpty) : null,
     },
     nudges,
     selected,
     firstUse: firstUse
       ? {
-          title: "No applications yet",
-          body: "Add a job you've applied to, or save one from Jobs to track it here.",
-          primary: { label: "Add application", shortcut: "Mod+N" },
-          secondary: { label: "Find jobs" },
-          columnAddLabel: "Add",
+          title: ctx.intl.formatMessage(messages.firstUseTitle),
+          body: ctx.intl.formatMessage(messages.firstUseBody),
+          primary: { label: ctx.intl.formatMessage(messages.firstUsePrimary), shortcut: "Mod+N" },
+          secondary: { label: ctx.intl.formatMessage(messages.firstUseSecondary) },
+          columnAddLabel: ctx.intl.formatMessage(messages.columnAdd),
         }
       : null,
   };

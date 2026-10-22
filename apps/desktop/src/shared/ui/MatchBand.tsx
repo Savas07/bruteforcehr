@@ -5,9 +5,18 @@
  * label next to it carries the meaning.
  */
 import { MATCH_BAND_THRESHOLDS, type MatchBand } from "@bfhr/core";
+import { defineMessages, useIntl } from "react-intl";
 import { cx } from "../cx";
-import { MATCH_BAND_LABELS } from "../model/vocabulary";
+import { MATCH_BAND_MESSAGES } from "../model/vocabulary";
 import type { MatchVM } from "../model/types";
+
+const messages = defineMessages({
+  score: {
+    id: "shared.ui.matchBand.score",
+    defaultMessage: ", {score} of 100",
+    description: "Screen-reader suffix after the match band pill label, e.g. 'Good match, 72 of 100'",
+  },
+});
 
 /** Accent for the bands worth acting on, neutral below; the label always carries the meaning. */
 const pillTone: Record<MatchBand, string> = {
@@ -26,6 +35,8 @@ export interface MatchBandPillProps {
 
 /** Band pill for rows and headers ("Good match"); screen readers hear "Good match, 72 of 100". */
 export function MatchBandPill({ match, showScore = false }: MatchBandPillProps) {
+  const intl = useIntl();
+  const scoreText = intl.formatMessage(messages.score, { score: match.score });
   return (
     <span
       className={cx(
@@ -37,10 +48,10 @@ export function MatchBandPill({ match, showScore = false }: MatchBandPillProps) 
       {showScore ? (
         <span className="tabular-nums">
           <span aria-hidden="true">{match.score}</span>
-          <span className="sr-only">, {match.score} of 100</span>
+          <span className="sr-only">{scoreText}</span>
         </span>
       ) : (
-        <span className="sr-only">, {match.score} of 100</span>
+        <span className="sr-only">{scoreText}</span>
       )}
     </span>
   );
@@ -65,6 +76,7 @@ export interface MatchBandBarProps {
  * color). The whole bar is `aria-hidden`; pair it with `MatchBandPill` or the "72 of 100" caption.
  */
 export function MatchBandBar({ match }: MatchBandBarProps) {
+  const intl = useIntl();
   const position = Math.min(100, Math.max(0, match.score));
   return (
     <div aria-hidden="true" className="flex w-full min-w-48 flex-col gap-1">
@@ -94,7 +106,7 @@ export function MatchBandBar({ match }: MatchBandBarProps) {
               band === match.band ? "text-fg-primary font-semibold" : "text-fg-tertiary",
             )}
           >
-            {MATCH_BAND_LABELS[band]}
+            {intl.formatMessage(MATCH_BAND_MESSAGES[band])}
           </span>
         ))}
       </div>

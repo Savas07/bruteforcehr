@@ -5,6 +5,7 @@
  */
 import { CalendarClock, Inbox, Mail, Video } from "lucide-react";
 import { useRef, useState } from "react";
+import { defineMessages, useIntl } from "react-intl";
 import type { AttentionItemVM, TodayModel } from "../features/today/model";
 import { useConnectivity } from "../shared/connectivity";
 import { useKeyBindings } from "../shared/keyboard/useKeyBindings";
@@ -30,6 +31,42 @@ import { useToast } from "../shared/ui/Toast";
 import { DesignScreen } from "./DesignScreen";
 import { todayScreen } from "./screens";
 
+const messages = defineMessages({
+  confirmedMove: {
+    id: "design.demo.confirmedMove",
+    defaultMessage: "Confirmed: {company} moved to {status}",
+  },
+  confirmed: { id: "design.demo.confirmed", defaultMessage: "Confirmed: {company}" },
+  undo: { id: "design.demo.undo", defaultMessage: "Undo" },
+  restored: { id: "design.demo.restored", defaultMessage: "Restored" },
+  restoredCompany: { id: "design.demo.restoredCompany", defaultMessage: "Restored: {company}" },
+  changeHint: { id: "design.demo.changeHint", defaultMessage: "Change… opens the correction popover" },
+  notJobMail: { id: "design.demo.notJobMail", defaultMessage: "Marked as not job mail: {subject}" },
+  draftFollowUp: { id: "design.demo.draftFollowUp", defaultMessage: "Draft follow-up opens the Apply panel" },
+  notNeeded: { id: "design.demo.notNeeded", defaultMessage: "Not needed: {company}" },
+  snoozed: { id: "design.demo.snoozed", defaultMessage: "Snoozed: {company}" },
+  joinOpensAt: { id: "design.demo.joinOpensAt", defaultMessage: "Join opens at {time}" },
+  join: { id: "design.demo.join", defaultMessage: "Join" },
+  confirmReviewItem: { id: "design.demo.confirmReviewItem", defaultMessage: "Confirm review item" },
+  today: { id: "design.demo.today", defaultMessage: "Today" },
+  documentTitle: { id: "design.demo.documentTitle", defaultMessage: "Component demo" },
+  note: {
+    id: "design.demo.note",
+    defaultMessage:
+      "Foundation demo: the Today view-model as a plain list. Today's design comes from its screen.",
+  },
+  loading: { id: "design.demo.loading", defaultMessage: "Loading Today" },
+  errorTitle: { id: "design.demo.errorTitle", defaultMessage: "We couldn't load Today" },
+  errorBody: {
+    id: "design.demo.errorBody",
+    defaultMessage: "Our server didn't respond. Your saved data is safe. Try again in a moment.",
+  },
+  errorDetails: { id: "design.demo.errorDetails", defaultMessage: "design build: forced ?state=error" },
+  details: { id: "design.demo.details", defaultMessage: "Details" },
+  backToToday: { id: "design.demo.backToToday", defaultMessage: "Back to Today" },
+  selectItem: { id: "design.demo.selectItem", defaultMessage: "Select an item to see the details." },
+});
+
 /** The trailing fact of a row, by kind. */
 function RowMeta({ item }: { item: AttentionItemVM }) {
   switch (item.kind) {
@@ -50,8 +87,14 @@ function RowMeta({ item }: { item: AttentionItemVM }) {
 
 /** The selected item in the detail pane, with the shared pattern component for its kind. */
 function Detail({ item, offline }: { item: AttentionItemVM; offline: boolean }) {
+  const intl = useIntl();
   const toast = useToast();
   const restore = (message: string) => toast.show({ variant: "info", message });
+  const undo = {
+    label: intl.formatMessage(messages.undo),
+    run: () => restore(intl.formatMessage(messages.restored)),
+    keys: "Mod+Z",
+  };
   switch (item.kind) {
     case "review":
       return (
@@ -61,16 +104,19 @@ function Detail({ item, offline }: { item: AttentionItemVM; offline: boolean }) 
           onConfirm={() =>
             toast.show({
               message: item.proposal.move
-                ? `Confirmed: ${item.proposal.company.name} moved to ${item.proposal.move.to.label}`
-                : `Confirmed: ${item.proposal.company.name}`,
-              action: { label: "Undo", run: () => restore("Restored"), keys: "Mod+Z" },
+                ? intl.formatMessage(messages.confirmedMove, {
+                    company: item.proposal.company.name,
+                    status: item.proposal.move.to.label,
+                  })
+                : intl.formatMessage(messages.confirmed, { company: item.proposal.company.name }),
+              action: undo,
             })
           }
-          onChange={() => toast.show({ variant: "info", message: "Change… opens the correction popover" })}
+          onChange={() => toast.show({ variant: "info", message: intl.formatMessage(messages.changeHint) })}
           onNotJobMail={() =>
             toast.show({
-              message: `Marked as not job mail: ${item.proposal.subject}`,
-              action: { label: "Undo", run: () => restore("Restored"), keys: "Mod+Z" },
+              message: intl.formatMessage(messages.notJobMail, { subject: item.proposal.subject }),
+              action: undo,
             })
           }
         />
@@ -78,7 +124,12 @@ function Detail({ item, offline }: { item: AttentionItemVM; offline: boolean }) 
     case "autoUpdate":
       return (
         <div className="p-6">
-          <AutoChangeRow change={item.change} onUndo={() => restore(`Restored: ${item.company.name}`)} />
+          <AutoChangeRow
+            change={item.change}
+            onUndo={() =>
+              restore(intl.formatMessage(messages.restoredCompany, { company: item.company.name }))
+            }
+          />
         </div>
       );
     case "followUp":
@@ -87,19 +138,19 @@ function Detail({ item, offline }: { item: AttentionItemVM; offline: boolean }) 
           <NudgeCard
             nudge={item.nudge}
             onPrimary={() =>
-              toast.show({ variant: "info", message: "Draft follow-up opens the Apply panel" })
+              toast.show({ variant: "info", message: intl.formatMessage(messages.draftFollowUp) })
             }
             onSecondary={() =>
               toast.show({
-                message: `Not needed: ${item.company.name}`,
-                action: { label: "Undo", run: () => restore("Restored"), keys: "Mod+Z" },
+                message: intl.formatMessage(messages.notNeeded, { company: item.company.name }),
+                action: undo,
               })
             }
             onSnooze={() =>
               toast.show({
-                message: `Snoozed: ${item.company.name}`,
+                message: intl.formatMessage(messages.snoozed, { company: item.company.name }),
                 glyph: CalendarClock,
-                action: { label: "Undo", run: () => restore("Restored"), keys: "Mod+Z" },
+                action: undo,
               })
             }
           />
@@ -119,10 +170,13 @@ function Detail({ item, offline }: { item: AttentionItemVM; offline: boolean }) 
                   variant="primary"
                   icon={Video}
                   disabledReason={
-                    reason ?? (item.join?.joinable ? null : `Join opens at ${item.join?.joinableAt.label}`)
+                    reason ??
+                    (item.join?.joinable
+                      ? null
+                      : intl.formatMessage(messages.joinOpensAt, { time: item.join?.joinableAt.label }))
                   }
                 >
-                  Join
+                  {intl.formatMessage(messages.join)}
                 </Button>
               )}
             </NeedsConnection>
@@ -133,6 +187,7 @@ function Detail({ item, offline }: { item: AttentionItemVM; offline: boolean }) 
 }
 
 function TodayDemo({ model }: ScreenProps<TodayModel>) {
+  const intl = useIntl();
   const { status } = useConnectivity();
   const offline = status === "offline";
   const listRef = useRef<HTMLDivElement>(null);
@@ -155,28 +210,32 @@ function TodayDemo({ model }: ScreenProps<TodayModel>) {
     {
       id: "today.confirm",
       keys: "C",
-      label: "Confirm review item",
+      label: intl.formatMessage(messages.confirmReviewItem),
       group: "Today",
       enabled: selected?.kind === "review",
-      run: () => toast.show({ message: `Confirmed: ${selected?.company.name ?? ""}` }),
+      run: () =>
+        toast.show({
+          message: intl.formatMessage(messages.confirmed, { company: selected?.company.name ?? "" }),
+        }),
     },
   ]);
 
   const header = (
     <header className="px-6 pt-5 pb-3">
-      <ScreenTitle title={ready?.title ?? "Today"} documentTitle="Component demo" />
+      <ScreenTitle
+        title={ready?.title ?? intl.formatMessage(messages.today)}
+        documentTitle={intl.formatMessage(messages.documentTitle)}
+      />
       <p className="text-fg-secondary mt-1 text-callout">
         {ready?.dateLabel}
         {model.status === "ready" && model.fromCache && (
           <>
             {" · "}
-            <StaleStamp prefix="Updated" time={model.updatedAt} clock={model.updatedClock} />
+            <StaleStamp prefix="updated" time={model.updatedAt} clock={model.updatedClock} />
           </>
         )}
       </p>
-      <p className="text-fg-tertiary mt-1 text-footnote">
-        Foundation demo: the Today view-model as a plain list. Today&apos;s design comes from its screen.
-      </p>
+      <p className="text-fg-tertiary mt-1 text-footnote">{intl.formatMessage(messages.note)}</p>
     </header>
   );
 
@@ -185,7 +244,7 @@ function TodayDemo({ model }: ScreenProps<TodayModel>) {
     list = (
       <SkeletonRegion
         loading
-        label="Loading Today"
+        label={intl.formatMessage(messages.loading)}
         skeleton={
           <div className="flex flex-col gap-1 px-6">
             <AttentionRowSkeleton />
@@ -200,10 +259,10 @@ function TodayDemo({ model }: ScreenProps<TodayModel>) {
   } else if (model.status === "error") {
     list = (
       <PaneError
-        title="We couldn't load Today"
-        body="Our server didn't respond. Your saved data is safe. Try again in a moment."
+        title={intl.formatMessage(messages.errorTitle)}
+        body={intl.formatMessage(messages.errorBody)}
         onRetry={model.retry}
-        details="design build: forced ?state=error"
+        details={intl.formatMessage(messages.errorDetails)}
       />
     );
   } else if (ready && ready.items.length === 0) {
@@ -268,9 +327,9 @@ function TodayDemo({ model }: ScreenProps<TodayModel>) {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <SplitView
-        listLabel="Today"
-        detailLabel="Details"
-        backLabel="Back to Today"
+        listLabel={intl.formatMessage(messages.today)}
+        detailLabel={intl.formatMessage(messages.details)}
+        backLabel={intl.formatMessage(messages.backToToday)}
         detailOpen={detailOpen}
         onBack={() => setDetailOpen(false)}
         list={
@@ -284,7 +343,7 @@ function TodayDemo({ model }: ScreenProps<TodayModel>) {
             {selected ? (
               <Detail item={selected} offline={offline} />
             ) : (
-              <EmptyState kind="subArea" body="Select an item to see the details." className="p-6" />
+              <EmptyState kind="subArea" body={intl.formatMessage(messages.selectItem)} className="p-6" />
             )}
           </div>
         }

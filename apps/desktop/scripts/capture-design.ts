@@ -2,6 +2,7 @@
 //
 //   pnpm --filter @bfhr/desktop capture:design <screen…|all> [--states populated,empty,…]
 //     [--engines webkit,chromium] [--themes light,dark] [--sizes 1280x800,1920x1080] [--scale 1]
+//     [--locale en|tr|de]
 //
 // Starts the Vite dev server in `design` mode, opens every screen × state in Playwright WebKit
 // (≈ macOS WKWebView, rendered with the macOS chrome) and Chromium (≈ Windows WebView2, rendered
@@ -43,7 +44,7 @@ function usage(message: string): never {
   console.error(`${message}
 
 Usage: pnpm --filter @bfhr/desktop capture:design <screen…|all> [--states a,b] [--engines webkit,chromium]
-       [--themes light,dark] [--sizes 1280x800,1920x1080] [--scale 1]
+       [--themes light,dark] [--sizes 1280x800,1920x1080] [--scale 1] [--locale en|tr|de]
 Screens: ${Object.keys(designScreenPaths).join(", ")}
 States:  ${designStates.join(", ")}`);
   process.exit(2);
@@ -90,6 +91,11 @@ const sizes =
         return { width, height };
       });
 const scale = Number(options["scale"] ?? 1);
+const language = options["locale"] ?? "en";
+if (!["en", "tr", "de"].includes(language)) usage(`Unknown locale: ${language}`);
+/** The UI language goes in as the OS locale would (`?locale=`, src/i18n/locale.ts). */
+const browserLocale = { en: "en-GB", tr: "tr-TR", de: "de-DE" }[language] ?? "en-GB";
+const routeExtras = (platform: string) => ({ platform, locale: browserLocale });
 
 // The design build imports the tokens' generated CSS.
 if (!existsSync(path.join(repoRoot, "packages/ui-tokens/dist/tailwind.css")))
@@ -111,7 +117,8 @@ const failures: string[] = [];
 try {
   for (const engineName of engineNames) {
     const engine = engines[engineName];
-    const outputDir = path.join(outputRoot, engineName);
+    // English captures keep the flat layout; other languages get their own folder.
+    const outputDir = path.join(outputRoot, engineName, ...(language === "en" ? [] : [language]));
     await mkdir(outputDir, { recursive: true });
     const browser = await engine.type.launch();
     try {
@@ -121,7 +128,7 @@ try {
             viewport: size,
             colorScheme: theme,
             deviceScaleFactor: scale,
-            locale: "en-GB",
+            locale: browserLocale,
             timezoneId: "Europe/Istanbul",
           });
           const page = await context.newPage();
@@ -131,7 +138,7 @@ try {
           });
           // The platform is read once at load, so load the app per context with its platform.
           await page.goto(
-            `${baseUrl}${designHash(screens[0] ?? "demo", "populated", { platform: engine.platform })}`,
+            `${baseUrl}${designHash(screens[0] ?? "demo", "populated", routeExtras(engine.platform))}`,
           );
           for (const screen of screens) {
             for (const state of states) {
@@ -142,7 +149,7 @@ try {
                 },
                 {
                   attribute: DESIGN_READY_ATTRIBUTE,
-                  hash: designHash(screen, state, { platform: engine.platform }),
+                  hash: designHash(screen, state, routeExtras(engine.platform)),
                 },
               );
               await page.waitForSelector(`html[${DESIGN_READY_ATTRIBUTE}="true"]`, { state: "attached" });

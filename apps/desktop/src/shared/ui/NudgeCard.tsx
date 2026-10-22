@@ -5,12 +5,17 @@
  */
 import { AlarmClock } from "lucide-react";
 import { useId } from "react";
+import { defineMessages, useIntl } from "react-intl";
 import type { NudgeVM } from "../model/blocks";
 import { cx } from "../cx";
 import { Button, IconButton } from "./Button";
 import { Monogram } from "./Company";
 import { SnoozeMenu, type SnoozePreset } from "./SnoozeMenu";
 import { SyncGlyph } from "./SyncGlyph";
+
+const messages = defineMessages({
+  snooze: { id: "shared.ui.nudgeCard.snooze", defaultMessage: "Snooze" },
+});
 
 export interface NudgeCardProps {
   /** The suggestion (`nudgeVMs`): labels and message are display-ready. */
@@ -32,6 +37,7 @@ export interface NudgeCardProps {
 export function NudgeCard({ nudge, onPrimary, onSecondary, onSnooze, className }: NudgeCardProps) {
   const titleId = useId();
   const messageId = useId();
+  const intl = useIntl();
   return (
     <article
       aria-labelledby={titleId}
@@ -61,7 +67,13 @@ export function NudgeCard({ nudge, onPrimary, onSecondary, onSnooze, className }
               align="end"
               onSnooze={onSnooze}
               trigger={
-                <IconButton icon={AlarmClock} label="Snooze" size="sm" shortcut="H" className="ms-auto" />
+                <IconButton
+                  icon={AlarmClock}
+                  label={intl.formatMessage(messages.snooze)}
+                  size="sm"
+                  shortcut="H"
+                  className="ms-auto"
+                />
               }
             />
           )}

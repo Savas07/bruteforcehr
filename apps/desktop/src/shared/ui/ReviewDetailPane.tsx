@@ -6,6 +6,7 @@
  */
 import { Check, CloudOff, ExternalLink, PencilLine } from "lucide-react";
 import { useId } from "react";
+import { defineMessages, useIntl } from "react-intl";
 import type { ReviewProposalVM } from "../model/blocks";
 import { cx } from "../cx";
 import { Button } from "./Button";
@@ -14,6 +15,54 @@ import { ProposalSentence, ReasonLine } from "./ProposalSentence";
 import { RelativeTimeChip } from "./RelativeTimeChip";
 import { StatusPill } from "./StatusPill";
 import { SyncGlyph } from "./SyncGlyph";
+
+const messages = defineMessages({
+  subject: {
+    id: "shared.ui.reviewDetailPane.subject",
+    defaultMessage: "Subject:",
+    description: "Screen-reader prefix before the email subject",
+  },
+  noStatusChange: {
+    id: "shared.ui.reviewDetailPane.noStatusChange",
+    defaultMessage: "This email doesn't change a status.",
+  },
+  evidence: {
+    id: "shared.ui.reviewDetailPane.evidence",
+    defaultMessage: "“{evidence}”",
+    description: "Quoted excerpt from the email; use the language's quotation marks",
+  },
+  fromTheEmail: {
+    id: "shared.ui.reviewDetailPane.fromTheEmail",
+    defaultMessage: "From the email",
+    description: "Caption under the quoted excerpt",
+  },
+  category: { id: "shared.ui.reviewDetailPane.category", defaultMessage: "Category" },
+  application: { id: "shared.ui.reviewDetailPane.application", defaultMessage: "Application" },
+  noApplication: { id: "shared.ui.reviewDetailPane.noApplication", defaultMessage: "No application found" },
+  newApplication: {
+    id: "shared.ui.reviewDetailPane.newApplication",
+    defaultMessage: "(new)",
+    description: "After an application label the email would create",
+  },
+  status: { id: "shared.ui.reviewDetailPane.status", defaultMessage: "Status" },
+  statusTo: {
+    id: "shared.ui.reviewDetailPane.statusTo",
+    defaultMessage: "to",
+    description: "Screen reader word between the two status pills (Applied → Interviewing)",
+  },
+  noChange: { id: "shared.ui.reviewDetailPane.noChange", defaultMessage: "No change" },
+  confirmHint: { id: "shared.ui.reviewDetailPane.confirmHint", defaultMessage: "Confirm: move to {status}" },
+  confirm: { id: "shared.ui.reviewDetailPane.confirm", defaultMessage: "Confirm" },
+  change: { id: "shared.ui.reviewDetailPane.change", defaultMessage: "Change…" },
+  notJobMail: { id: "shared.ui.reviewDetailPane.notJobMail", defaultMessage: "Not job mail" },
+  reviewLater: { id: "shared.ui.reviewDetailPane.reviewLater", defaultMessage: "Review later" },
+  openOriginal: { id: "shared.ui.reviewDetailPane.openOriginal", defaultMessage: "Open original" },
+  forget: { id: "shared.ui.reviewDetailPane.forget", defaultMessage: "We'll forget this email." },
+  offline: {
+    id: "shared.ui.reviewDetailPane.offline",
+    defaultMessage: "You're offline. Your choice is saved and will sync when you're back online.",
+  },
+});
 
 export interface ReviewDetailPaneProps {
   /** The email under review (`reviewProposalVM`). */
@@ -61,6 +110,7 @@ export function ReviewDetailPane({
   const headlineId = useId();
   const forgetId = useId();
   const Heading = headingLevel === 2 ? "h2" : "h3";
+  const intl = useIntl();
   const { move } = proposal;
   return (
     <section
@@ -85,7 +135,7 @@ export function ReviewDetailPane({
             <RelativeTimeChip time={proposal.receivedAt} />
           </p>
           <p className="text-footnote text-fg-tertiary">
-            <span className="sr-only">Subject: </span>
+            <span className="sr-only">{intl.formatMessage(messages.subject)} </span>
             {proposal.subject}
           </p>
         </div>
@@ -95,7 +145,7 @@ export function ReviewDetailPane({
         {move ? (
           <ProposalSentence move={move} mode="question" />
         ) : (
-          <p className="text-body text-fg-primary">This email doesn't change a status.</p>
+          <p className="text-body text-fg-primary">{intl.formatMessage(messages.noStatusChange)}</p>
         )}
         <ReasonLine reason={proposal.reason} source={proposal.source} />
       </div>
@@ -103,28 +153,31 @@ export function ReviewDetailPane({
       {proposal.evidence !== null && (
         <figure className="border-line-control border-s-2 ps-3">
           <blockquote className="text-callout text-fg-secondary text-pretty">
-            “{proposal.evidence}”
+            {intl.formatMessage(messages.evidence, { evidence: proposal.evidence })}
           </blockquote>
-          <figcaption className="text-caption1 text-fg-tertiary mt-1">From the email</figcaption>
+          <figcaption className="text-caption1 text-fg-tertiary mt-1">
+            {intl.formatMessage(messages.fromTheEmail)}
+          </figcaption>
         </figure>
       )}
 
       <dl className="text-callout grid grid-cols-[max-content_1fr] items-baseline gap-x-4 gap-y-2">
-        <dt className="text-fg-secondary">Category</dt>
+        <dt className="text-fg-secondary">{intl.formatMessage(messages.category)}</dt>
         <dd className="text-fg-primary">{proposal.category.label}</dd>
-        <dt className="text-fg-secondary">Application</dt>
+        <dt className="text-fg-secondary">{intl.formatMessage(messages.application)}</dt>
         <dd className="text-fg-primary">
           {move === null ? (
-            <span className="text-fg-tertiary">No application found</span>
+            <span className="text-fg-tertiary">{intl.formatMessage(messages.noApplication)}</span>
           ) : move.applicationId === null ? (
             <>
-              {move.applicationLabel} <span className="text-fg-secondary">(new)</span>
+              {move.applicationLabel}{" "}
+              <span className="text-fg-secondary">{intl.formatMessage(messages.newApplication)}</span>
             </>
           ) : (
             move.applicationLabel
           )}
         </dd>
-        <dt className="text-fg-secondary">Status</dt>
+        <dt className="text-fg-secondary">{intl.formatMessage(messages.status)}</dt>
         <dd className="flex flex-wrap items-center gap-1.5">
           {move ? (
             <>
@@ -134,13 +187,13 @@ export function ReviewDetailPane({
                   <span aria-hidden="true" className="text-fg-tertiary">
                     →
                   </span>
-                  <span className="sr-only">to</span>
+                  <span className="sr-only">{intl.formatMessage(messages.statusTo)}</span>
                 </>
               )}
               <StatusPill status={move.to} size="sm" />
             </>
           ) : (
-            <span className="text-fg-tertiary">No change</span>
+            <span className="text-fg-tertiary">{intl.formatMessage(messages.noChange)}</span>
           )}
         </dd>
         {proposal.dates.map((date, index) => (
@@ -159,40 +212,44 @@ export function ReviewDetailPane({
             variant="primary"
             icon={Check}
             shortcut="C"
-            hint={move ? `Confirm: move to ${move.to.label}` : "Confirm"}
+            hint={
+              move
+                ? intl.formatMessage(messages.confirmHint, { status: move.to.label })
+                : intl.formatMessage(messages.confirm)
+            }
             disabledReason={confirmDisabledReason}
             onClick={onConfirm}
           >
-            Confirm
+            {intl.formatMessage(messages.confirm)}
           </Button>
           <Button icon={PencilLine} shortcut="M" onClick={onChange}>
-            Change…
+            {intl.formatMessage(messages.change)}
           </Button>
           <Button variant="plain" shortcut="N" aria-describedby={forgetId} onClick={onNotJobMail}>
-            Not job mail
+            {intl.formatMessage(messages.notJobMail)}
           </Button>
           {(onReviewLater || onOpenOriginal) && (
             <span className="ms-auto flex flex-wrap items-center gap-2">
               {onReviewLater && (
                 <Button variant="plain" shortcut="H" onClick={onReviewLater}>
-                  Review later
+                  {intl.formatMessage(messages.reviewLater)}
                 </Button>
               )}
               {onOpenOriginal && (
                 <Button variant="plain" icon={ExternalLink} shortcut="O" onClick={onOpenOriginal}>
-                  Open original
+                  {intl.formatMessage(messages.openOriginal)}
                 </Button>
               )}
             </span>
           )}
         </div>
         <p id={forgetId} className="text-footnote text-fg-tertiary">
-          We'll forget this email.
+          {intl.formatMessage(messages.forget)}
         </p>
         {offline && (
           <p className="text-footnote text-fg-secondary flex items-center gap-1.5">
             <CloudOff aria-hidden="true" className="size-3.5 shrink-0" strokeWidth={1.75} />
-            You're offline. Your choice is saved and will sync when you're back online.
+            {intl.formatMessage(messages.offline)}
           </p>
         )}
       </div>

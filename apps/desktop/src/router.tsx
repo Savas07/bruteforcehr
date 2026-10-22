@@ -42,10 +42,10 @@ export interface RouteViews {
 const RedirectToStart = () => <Navigate to={startPath} replace />;
 
 function sectionTitle(id: AppRouteId): ComponentType {
-  const label = destinations.find((candidate) => candidate.id === appRoutes[id].destination)?.label;
-  if (label === undefined) return RedirectToStart;
+  const destination = appRoutes[id].destination;
+  if (destination === null) return RedirectToStart;
   return function Section() {
-    return <RouteContainer title={label} />;
+    return <RouteContainer destination={destination} />;
   };
 }
 

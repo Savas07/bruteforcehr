@@ -5,6 +5,9 @@ import { Tooltip } from "radix-ui";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./app.css";
+import { RawIntlProvider } from "react-intl";
+import { createAppIntl } from "./i18n/intl";
+import { resolveAppLocale } from "./i18n/locale";
 import { chrome } from "./lib/desktop";
 import { productionViews, router, RouteViewsContext } from "./router";
 
@@ -24,15 +27,23 @@ if (nonce) setNonce(nonce);
 document.documentElement.dataset["platform"] = chrome.platform;
 document.documentElement.dataset["material"] = chrome.material;
 
+// UI language from the OS locale (English fallback); profile.uiLanguage overrides it once the
+// data layer lands.
+const appLocale = resolveAppLocale([chrome.locale, ...navigator.languages]);
+document.documentElement.lang = appLocale.locale;
+const intl = createAppIntl(appLocale);
+
 const container = document.getElementById("root");
 if (!container) throw new Error("#root is missing from index.html");
 
 createRoot(container).render(
   <StrictMode>
-    <Tooltip.Provider delayDuration={timing.tooltipDelay}>
-      <RouteViewsContext.Provider value={views}>
-        <RouterProvider router={router} />
-      </RouteViewsContext.Provider>
-    </Tooltip.Provider>
+    <RawIntlProvider value={intl}>
+      <Tooltip.Provider delayDuration={timing.tooltipDelay}>
+        <RouteViewsContext.Provider value={views}>
+          <RouterProvider router={router} />
+        </RouteViewsContext.Provider>
+      </Tooltip.Provider>
+    </RawIntlProvider>
   </StrictMode>,
 );

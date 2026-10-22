@@ -14,6 +14,8 @@ export type Material = "vibrancy" | "mica" | "none";
 export interface ChromeInfo {
   readonly platform: Platform;
   readonly material: Material;
+  /** The OS's preferred locale ("tr-TR"), null when unknown (src/i18n/locale.ts picks the UI language). */
+  readonly locale: string | null;
 }
 
 declare global {
@@ -25,18 +27,20 @@ declare global {
 
 /**
  * Design builds (`__BFHR_DESIGN__`) also run in a plain browser for the capture harness: there
- * is no Tauri shell, so the platform comes from the `platform` route param (`#/today?platform=
- * windows`) or the user agent, and the material is opaque. Production builds compile this out.
+ * is no Tauri shell, so the platform and locale come from the route params (`#/today?platform=
+ * windows&locale=tr`) or the browser, and the material is opaque. Production builds compile this
+ * out.
  */
 function designChrome(): ChromeInfo {
-  const param = new URLSearchParams(window.location.hash.split("?")[1] ?? "").get("platform");
+  const params = new URLSearchParams(window.location.hash.split("?")[1] ?? "");
+  const param = params.get("platform");
   const platform: Platform =
     param === "macos" || param === "windows" || param === "linux"
       ? param
       : navigator.userAgent.includes("Mac OS X")
         ? "macos"
         : "windows";
-  return { platform, material: "none" };
+  return { platform, material: "none", locale: params.get("locale") ?? navigator.language };
 }
 
 function readChrome(): ChromeInfo {

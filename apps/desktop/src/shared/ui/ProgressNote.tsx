@@ -6,9 +6,21 @@
 import { timing } from "@bfhr/ui-tokens";
 import { Check, Circle, LoaderCircle } from "lucide-react";
 import { useEffect, useState } from "react";
+import { defineMessages, useIntl } from "react-intl";
 import { cx } from "../cx";
 
-const LONG_WAIT = "This can take up to a minute. You can keep working; we'll show it here.";
+const messages = defineMessages({
+  longWait: {
+    id: "shared.ui.progressNote.longWait",
+    defaultMessage: "This can take up to a minute. You can keep working; we'll show it here.",
+    description: "Added under a labelled wait after 10 s",
+  },
+  done: {
+    id: "shared.ui.progressNote.done",
+    defaultMessage: "Done:",
+    description: "Screen reader prefix before a finished step's label",
+  },
+});
 
 /** One step of a multi-step wait. */
 export interface ProgressStep {
@@ -33,6 +45,7 @@ export function ProgressNote({
   /** Layout classes. */
   className?: string;
 }) {
+  const intl = useIntl();
   const [long, setLong] = useState(false);
   useEffect(() => {
     const started = startedAt?.getTime() ?? Date.now();
@@ -76,13 +89,13 @@ export function ProgressNote({
               ) : (
                 <Circle aria-hidden="true" className="size-3.5 shrink-0" strokeWidth={1.75} />
               )}
-              {step.state === "done" && <span className="sr-only">Done: </span>}
+              {step.state === "done" && <span className="sr-only">{intl.formatMessage(messages.done)} </span>}
               {step.label}
             </li>
           ))}
         </ol>
       )}
-      {long && <p className="text-footnote text-fg-secondary">{LONG_WAIT}</p>}
+      {long && <p className="text-footnote text-fg-secondary">{intl.formatMessage(messages.longWait)}</p>}
     </div>
   );
 }

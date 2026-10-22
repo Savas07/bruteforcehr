@@ -277,19 +277,19 @@ private struct StageProgressStrip: View {
 
 private struct InterviewRow: View {
     let interview: Interview
+    @Environment(\.bfhrNow) private var now
+    @Environment(\.locale) private var locale
+    @Environment(\.calendar) private var calendar
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(verbatim: interview.title)
                 .font(.bfhr(.body))
                 .foregroundStyle(BFHRColor.Fg.primary)
-            HStack(spacing: BFHRSpace.s1) {
-                Text(TrackerBoardStrings.round(interview.round))
-                Text(verbatim: "·").accessibilityHidden(true)
-                RelativeTimeText(interview.startsAt, style: .dayAndTime)
-            }
-            .font(.bfhr(.footnote))
-            .foregroundStyle(BFHRColor.Fg.secondary)
+            // One Text, so it wraps as a sentence and the "·" isn't a lone glyph.
+            Text("\(Text(TrackerBoardStrings.round(interview.round))) · \(DateText.dayAndTime(interview.startsAt, now: now, locale: locale, calendar: calendar))")
+                .font(.bfhr(.footnote))
+                .foregroundStyle(BFHRColor.Fg.secondary)
         }
         .padding(.vertical, 2)
         .accessibilityElement(children: .combine)

@@ -1,0 +1,23 @@
+{
+  "name": "@bfhr/api",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Typed Firestore paths and SDK-agnostic converters for BruteForceHR data.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@bfhr/core": "workspace:*",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@bfhr/fixtures": "workspace:*",
+    "vitest": "^5.0.5"
+  }
+}

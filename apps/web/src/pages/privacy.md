@@ -229,15 +229,15 @@ Notifications on iPhone pass through Apple. They contain a short summary, such a
 
 </div>
 
-| Data | How long |
-| --- | --- |
-| Your account, profile, CVs, jobs, applications and contacts | Until you delete them or your account |
-| Job-related email text and snippet | While the application is active, then 180 days (adjustable) |
-| Other details of job-related email | Until you delete the application, disconnect the account, or delete your account |
-| Email that isn't job-related | Never stored; its ID and hash are kept only for the look-back window |
-| Sign-in codes | Stored only as a hash; expire after 10 minutes and are deleted within about a day |
-| Data exports | The ZIP file is deleted 7 days after it's created |
-| Server logs | Up to 30 days |
+| Data                                                        | How long                                                                          |
+| ----------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| Your account, profile, CVs, jobs, applications and contacts | Until you delete them or your account                                             |
+| Job-related email text and snippet                          | While the application is active, then 180 days (adjustable)                       |
+| Other details of job-related email                          | Until you delete the application, disconnect the account, or delete your account  |
+| Email that isn't job-related                                | Never stored; its ID and hash are kept only for the look-back window              |
+| Sign-in codes                                               | Stored only as a hash; expire after 10 minutes and are deleted within about a day |
+| Data exports                                                | The ZIP file is deleted 7 days after it's created                                 |
+| Server logs                                                 | Up to 30 days                                                                     |
 
 We don't keep separate backups of your data, so deleted data can't be restored.
 

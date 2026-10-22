@@ -152,7 +152,10 @@ export interface TransitionInput {
 export interface ApplicationStatusPatch {
   readonly status: ApplicationStatus;
   readonly statusChangedAt: Date;
-  /** Set when the application first reaches applied (or beyond) without an `appliedAt`. */
+  /**
+   * Set when the application first reaches applied (or beyond) without an `appliedAt`. Never
+   * cleared: backward moves and reverts omit it (the rules reject `appliedAt → null`).
+   */
   readonly appliedAt?: Date;
 }
 

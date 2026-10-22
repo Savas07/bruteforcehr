@@ -391,32 +391,40 @@ private struct DetailSectionTitle: View {
 private struct ContactRow: View {
     let contact: Contact
 
+    // Texts take their full height (`fixedSize` vertical), so the row grows with Dynamic Type
+    // instead of clipping; the audit flagged the last list row as clippable.
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(verbatim: contact.name)
                     .font(.bfhr(.body))
                     .foregroundStyle(BFHRColor.Fg.primary)
+                    .fixedSize(horizontal: false, vertical: true)
                 if let role = contact.role {
                     Text(verbatim: role)
                         .font(.bfhr(.footnote))
                         .foregroundStyle(BFHRColor.Fg.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
             .accessibilityElement(children: .combine)
             if let email = contact.email, let url = URL(string: "mailto:\(email)") {
                 Link(destination: url) {
-                    Label { Text(verbatim: email) } icon: { Image(systemName: "envelope") }
-                        .labelStyle(.bfhrCompact)
-                        .font(.bfhr(.subheadline))
-                        .frame(minHeight: BFHRHitTarget.minimum, alignment: .leading)
-                        .contentShape(Rectangle())
+                    Label {
+                        Text(verbatim: email).fixedSize(horizontal: false, vertical: true)
+                    } icon: {
+                        Image(systemName: "envelope")
+                    }
+                    .labelStyle(.bfhrCompact)
+                    .font(.bfhr(.subheadline))
+                    .frame(minHeight: BFHRHitTarget.minimum, alignment: .leading)
+                    .contentShape(Rectangle())
                 }
                 .foregroundStyle(BFHRColor.Fg.link)
                 .accessibilityLabel(Text(TrackerBoardStrings.emailContact(contact.name)))
                 .accessibilityHint(Text(verbatim: email))
             }
         }
-        .padding(.top, BFHRSpace.s1)
+        .padding(.vertical, BFHRSpace.s1)
     }
 }

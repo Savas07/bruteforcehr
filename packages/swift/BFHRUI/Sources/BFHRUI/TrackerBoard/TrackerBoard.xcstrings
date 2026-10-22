@@ -415,29 +415,6 @@
         }
       }
     },
-    "tracker.drop.hint" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zum Verschieben auf eine Phase ziehen"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Drop on a stage to move it"
-          }
-        },
-        "tr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Taşımak için bir aşamaya bırakın"
-          }
-        }
-      }
-    },
     "tracker.empty.body" : {
       "extractionState" : "manual",
       "localizations" : {

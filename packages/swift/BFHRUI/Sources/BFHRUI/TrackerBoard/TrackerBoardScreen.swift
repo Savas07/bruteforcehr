@@ -4,9 +4,10 @@ import SwiftUI
 
 /// The Tracker tab's Pipeline (tracker.md "Decision — iOS"): one grouped list instead of a column
 /// pager. Scope tabs (Active · Closed · All), a scrolling stage strip with counts, sticky
-/// collapsible stage sections, and three equal ways to move an application: long-press → Move to…
-/// (also the VoiceOver action), swipe actions, and drag onto a stage of the strip. Every move goes
-/// through BFHRCore's state machine as the user and offers Undo. Rows push the Application detail.
+/// collapsible stage sections, and two equal ways to move an application: long-press → Move to…
+/// (also the VoiceOver action) and swipe actions. Drag is not offered on iPhone in M0 (decisions.md
+/// D28). Every move goes through BFHRCore's state machine as the user and offers Undo. Rows push
+/// the Application detail.
 public struct TrackerBoardScreen: View {
     @Bindable private var model: TrackerBoardModel
     @Environment(ToastCenter.self) private var toasts: ToastCenter?
@@ -15,13 +16,6 @@ public struct TrackerBoardScreen: View {
     /// Sections the user opened or closed; others follow `collapsedByDefault`.
     @State private var expansion: [ApplicationStatus: Bool] = [:]
     @State private var errorCount = 0
-    // Drag: the strip's chips are the drop targets. When the strip has scrolled away, the same
-    // chips pin over the top of the list for the length of the drag (`DropPanel`).
-    @State private var draggedId: String?
-    @State private var stripVisible = true
-    @State private var dropPanelVisible = false
-    @State private var hoveredStage: ApplicationStatus?
-    @State private var hideDropPanel: Task<Void, Never>?
 
     public init(model: TrackerBoardModel) {
         self.model = model
@@ -85,16 +79,12 @@ public struct TrackerBoardScreen: View {
                     .labelsHidden()
                     .accessibilityLabel(Text(TrackerBoardStrings.scopeLabel))
                     .listRowSeparator(.hidden)
-                    StageStrip(
-                        stages: model.stageStrip,
-                        drop: StageDrop(hovered: hoveredStage, onTarget: target, onDrop: drop)
-                    ) { status in
+                    StageStrip(stages: model.stageStrip) { status in
                         expansion[status] = true
                         withAnimation(BFHRMotion.animation(.base, easing: .standard, reduceMotion: reduceMotion)) {
                             proxy.scrollTo(status, anchor: .top)
                         }
                     }
-                    .onScrollVisibilityChange(threshold: 0.5) { visible in stripVisible = visible }
                     .listRowInsets(EdgeInsets())
                     .listRowSeparator(.hidden)
                 }
@@ -105,10 +95,7 @@ public struct TrackerBoardScreen: View {
                                 NavigationLink {
                                     TrackerApplicationDetailScreen(model: model, applicationId: row.id)
                                 } label: {
-                                    // On the content, not the row: SwiftUI then adds its own drag
-                                    // interaction instead of the list's, which iPhone disables.
                                     PipelineRowView(row: row)
-                                        .draggable(beginDrag(row.id))
                                 }
                                 .bfhrRowActions(actions(for: row))
                             }
@@ -130,16 +117,6 @@ public struct TrackerBoardScreen: View {
                 }
             }
             .listStyle(.plain)
-            .overlay(alignment: .top) {
-                if dropPanelVisible {
-                    DropPanel(
-                        targets: draggedId.map(model.moveTargets(for:)) ?? [],
-                        drop: StageDrop(hovered: hoveredStage, onTarget: target, onDrop: drop)
-                    )
-                    .transition(.opacity)
-                }
-            }
-            .sensoryFeedback(BFHRHaptic.dragTargetChange.feedback, trigger: hoveredStage) { _, new in new != nil }
         }
     }
 
@@ -185,50 +162,6 @@ public struct TrackerBoardScreen: View {
             errorCount += 1
             toasts?.show(ToastItem(glyph: ToastGlyph.info, message: TrackerBoardStrings.moveError(error)))
         }
-    }
-
-    // MARK: Drag
-
-    /// The drag payload, evaluated when a drag starts: remembers the lifted application (the
-    /// panel dims targets the state machine refuses) and pins the panel if the strip is away.
-    private func beginDrag(_ applicationId: String) -> String {
-        draggedId = applicationId
-        if !stripVisible {
-            withAnimation(BFHRMotion.animation(.fast, easing: .enter, reduceMotion: reduceMotion)) { dropPanelVisible = true }
-            scheduleHidePanel(after: .seconds(8))
-        }
-        return applicationId
-    }
-
-    /// A stage chip gained or lost the finger: name it ("Move to Screening") and tick.
-    private func target(_ status: ApplicationStatus, _ targeted: Bool) {
-        if targeted {
-            hoveredStage = status
-            hideDropPanel?.cancel()
-        } else if hoveredStage == status {
-            hoveredStage = nil
-            // SwiftUI reports no cancelled drag; a panel nobody hovers goes away on its own.
-            if dropPanelVisible { scheduleHidePanel(after: .seconds(3)) }
-        }
-    }
-
-    private func scheduleHidePanel(after delay: Duration) {
-        hideDropPanel?.cancel()
-        hideDropPanel = Task {
-            try? await Task.sleep(for: delay)
-            guard !Task.isCancelled, hoveredStage == nil else { return }
-            withAnimation(BFHRMotion.animation(.fast, easing: .exit, reduceMotion: reduceMotion)) { dropPanelVisible = false }
-        }
-    }
-
-    private func drop(_ items: [String], on status: ApplicationStatus) -> Bool {
-        hideDropPanel?.cancel()
-        dropPanelVisible = false
-        hoveredStage = nil
-        draggedId = nil
-        guard let id = items.first, let current = model.data.application(id: id)?.status, current != status else { return false }
-        run { try model.move(id, to: status) }
-        return true
     }
 }
 

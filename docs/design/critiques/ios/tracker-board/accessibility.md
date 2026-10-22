@@ -76,3 +76,14 @@ Reduce Motion: chevron rotation, strip scroll and chip scale use `BFHRMotion`; h
 
 ### Follow-up after the final run
 IosFoundation traced the element-less AX5 "Dynamic Type unsupported" reports to `ViewThatFits`, which the audit flags when a view switches branches as the text size changes. The detail's status line and `FactRow` now choose their layout by `dynamicTypeSize.isAccessibilitySize` (commit "tracker detail picks row layouts by text size instead of ViewThatFits"). The shared fixes are on `m0/ios-shared` (`d2512b1`: `RelativeTimeText` labels and `EmptyState` clipping; `444836e`: `StatusMenu` footer reasons) and haven't reached main yet. Re-run `testApplicationDetail*`, `testMoveToSheet` and `testEmptyDefaultSize` once they land.
+
+### Re-run after main merged ios-shared (2026-10-23, see r4.md)
+Drag was removed (D32), so its test is gone. **9 of 11 tests pass:**
+- Pipeline populated (default and AX5, all pages)
+- empty (default and AX5)
+- Closed scope
+- Move to… sheet
+- swipe → Undo → "Restored"
+- Close… → Not selected
+
+The detail runs keep two element-less findings, both on the shared timeline automatic-change row: "Potentially inaccessible text" ×1 at the default size, and "Dynamic Type font sizes are unsupported" ×7 at AX5. They're reported to IosFoundation and not suppressed. The contact-row clip prediction at the default size is fixed (`fixedSize` vertical) and verified by the AX5 run.

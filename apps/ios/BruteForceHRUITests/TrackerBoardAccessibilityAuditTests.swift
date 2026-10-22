@@ -92,9 +92,18 @@ final class TrackerBoardAccessibilityAuditTests: XCTestCase {
         move.tap()
         XCTAssertTrue(sheetTitle(app, "Move to…").waitForExistence(timeout: 5))
         try snapshot("move-sheet")
-        app.swipeUp()
-        let accepted = app.buttons.containing(NSPredicate(format: "label CONTAINS %@", "come after an offer")).firstMatch
-        XCTAssertTrue(accepted.waitForExistence(timeout: 5))
+        // The first swipe expands the sheet to the large detent; the next scroll to Closed.
+        // Accepted and Declined share one denial: the reason is the Closed section's footer, and
+        // each disabled row carries it as its VoiceOver hint.
+        let reason = app.staticTexts["Accepted and Declined come after an offer."]
+        var swipes = 0
+        while !(reason.exists && reason.isHittable), swipes < 4 {
+            app.swipeUp()
+            swipes += 1
+        }
+        XCTAssertTrue(reason.exists)
+        let accepted = app.buttons.containing(NSPredicate(format: "label BEGINSWITH %@", "Accepted")).firstMatch
+        XCTAssertTrue(accepted.exists)
         XCTAssertFalse(accepted.isEnabled)
         try snapshot("move-sheet-large")
         try audit(app, "move sheet")
@@ -140,28 +149,6 @@ final class TrackerBoardAccessibilityAuditTests: XCTestCase {
         app.buttons.containing(NSPredicate(format: "label CONTAINS %@", "Not selected")).firstMatch.tap()
         XCTAssertTrue(app.staticTexts["Aire Digital Health · marked as not selected. Your notes stay here."].waitForExistence(timeout: 5))
         try snapshot("not-selected-toast")
-    }
-
-    /// Drag a row onto a stage of the strip: the chip under the finger takes the drop, the move
-    /// goes through the state machine and the Undo toast names it.
-    @MainActor
-    func testDragOntoStageStrip() throws {
-        let app = launch(dataset: "populated", contentSize: nil)
-        let row = app.buttons.containing(NSPredicate(format: "label CONTAINS %@", "Aire Digital Health")).firstMatch
-        let chip = app.buttons.containing(NSPredicate(format: "label BEGINSWITH %@", "Preparing")).firstMatch
-        XCTAssertTrue(row.waitForExistence(timeout: 10))
-        XCTAssertTrue(chip.waitForExistence(timeout: 10))
-        let toast = app.staticTexts["Aire Digital Health · moved to Preparing"]
-        // The lift starts before the context menu settles; a longer press shows the menu first.
-        for press in [0.5, 0.8, 1.2] where !toast.exists {
-            row.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
-                .press(forDuration: press, thenDragTo: chip.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)), withVelocity: .slow, thenHoldForDuration: 0.8)
-            _ = toast.waitForExistence(timeout: 3)
-            log("drag: press \(press) s → \(toast.exists ? "dropped" : "no drop")")
-            if !toast.exists, app.buttons["Move to…"].exists { app.tap() }
-        }
-        XCTAssertTrue(toast.exists)
-        try snapshot("drag-dropped")
     }
 
     // MARK: Helpers
@@ -232,6 +219,9 @@ final class TrackerBoardAccessibilityAuditTests: XCTestCase {
                    frame.minY < navBottom || frame.maxY > edgeTop || frame.intersects(toast) { return "under a bar, the edge band or the toast" }
                 if issue.auditType == .dynamicType, defaultSize { return "default size; AX run covers scaling" }
                 if issue.auditType == .textClipped, element == nil { return "viewport / strip peek" }
+                // A prediction ("may be clipped at larger Dynamic Type sizes") at the default size;
+                // the AX5 run of the same screen measures the real thing.
+                if issue.auditType == .textClipped, defaultSize, issue.detailedDescription.contains("larger Dynamic Type") { return "prediction; AX run measures it" }
                 if issue.auditType == .textClipped, let label = element?.label, self.sharedComponentLabels.contains(label) { return "shared component copy" }
                 if isSheet, element == nil, issue.compactDescription.contains("inaccessible text") { return "shared StatusMenu" }
                 return nil

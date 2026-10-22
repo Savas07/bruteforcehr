@@ -288,7 +288,7 @@ Saved starts collapsed when it has more than 5 items (it's the backlog). Section
 
 - **Long-press → context menu → "Move to…" sheet** (monday): all valid stages listed, current stage checked, invalid ones disabled with a reason ("Offer comes before Accepted"). This is the primary path and the accessibility path (VoiceOver custom action "Move to…").
 - **Swipe actions:** leading swipe = **"Advance to {next stage}"**. Trailing = **Close…**, which opens an outcome sheet: Not selected / Withdrawn / Ghosted, plus Accepted/Declined only from Offer.
-- **Drag:** long-press-lift then drag across section headers (Asana reordering). While lifted, the stage strip pins to the top as drop chips, and a floating label names the destination ("Move to Screening", Obsidian), so long moves don't need scrolling. Haptic tick on target change.
+- **Drag:** ~~long-press-lift then drag across section headers (Asana reordering). While lifted, the stage strip pins to the top as drop chips, and a floating label names the destination ("Move to Screening", Obsidian), so long moves don't need scrolling. Haptic tick on target change.~~ Not on iPhone in M0 (decisions.md D32); Move to… and swipe actions remain.
 
 **Undo:** bottom toast above the tab bar (Outlook, My BMW) naming item + destination: **"Acme · moved to Screening · Undo"**, with a countdown ring (Amie). It stays 6 s, extended while VoiceOver focus is on it. Undo writes a compensating event; it never deletes one.
 
@@ -435,6 +435,6 @@ Layout implications: DE "Vorstellungsgespräch" (20) must fit a 272 px column he
 2. **Saved on the Tracker vs Jobs:** should *Saved* applications appear on the Tracker by default, or only once the user starts *Preparing*, with Saved living in Jobs → Saved? This affects default collapse and counts. Coordinate with Jobs research.
 3. **Undo window for automatic changes:** proposal is that Undo is available while the automatic event is the latest transition, with no time limit; toast 6 s. Needs confirmation with `@bfhr/core` transition rules (is the reverse of an automatic forward move a user "backward" move? It should be allowed, since only the user triggers it).
 4. **Allowed user transitions:** can a user move Saved → Rejected directly, and Accepted/Declined only from Offer? The disabled-target reasons in the UI depend on the final state machine (CoreDomain).
-5. **iPhone drag distance:** is the drop-chip strip enough, or should drag be dropped entirely on iPhone in favour of Move to… + swipe? Validate in the exploration-stage critique.
+5. **iPhone drag distance:** ~~is the drop-chip strip enough, or should drag be dropped entirely on iPhone in favour of Move to… + swipe?~~ **Resolved (D32):** no drag on iPhone for now; Move to… + swipe. Revisit with real usage in M3.
 6. **Calendar on iPhone:** a view inside Tracker (decided here), or should upcoming interviews also surface on Today? Coordinate with Today research to avoid two calendars.
 7. **Column width and DE:** confirm 272 px with DE strings in the exploration prototype at 1280 px windows on Windows (125 % scaling).

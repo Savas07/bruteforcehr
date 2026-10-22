@@ -143,8 +143,8 @@ struct CVAssistSheet: View {
         .accessibilityIdentifier("cv.assist.suggestion.\(number)")
     }
 
-    /// Removed words struck through and dimmed, added words underlined and tinted: never colour
-    /// alone.
+    /// Removed words struck through and dimmed, added words underlined, bold and tinted: never
+    /// colour alone. No highlight fill, so the text keeps one background (contrast in dark mode).
     private func diffText(_ segments: [CVDiffSegment]) -> AttributedString {
         var result = AttributedString()
         for (index, segment) in segments.enumerated() {
@@ -159,7 +159,7 @@ struct CVAssistSheet: View {
             case .added:
                 run.underlineStyle = .single
                 run.foregroundColor = BFHRColor.Accent.text
-                run.backgroundColor = BFHRColor.Accent.subtle
+                run.inlinePresentationIntent = .stronglyEmphasized
             }
             result += run
         }

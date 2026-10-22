@@ -54,7 +54,9 @@ struct CVDocumentView: View {
                 PaneError(LoadFailure(.notFound), goBack: { model.select(cvId: nil) })
             }
         } skeleton: {
+            // The real Edit · Preview bar sits over the skeleton, so nothing jumps when data lands.
             CVFormSkeleton()
+                .modifier(CVTopBar { segmentBar.disabled(true) })
         } failure: { failure in
             PaneError(failure, title: L.errorTitleCV, retry: reload, goBack: { model.select(cvId: nil) })
         }

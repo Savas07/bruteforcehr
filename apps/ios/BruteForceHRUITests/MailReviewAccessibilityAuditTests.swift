@@ -61,8 +61,9 @@ final class MailReviewAccessibilityAuditTests: XCTestCase {
         try shot("sheet-medium")
         app.buttons["Change…"].firstMatch.tap()
         try shot("sheet-change")
+        app.navigationBars["Change"].buttons.element(boundBy: 0).tap()
+        XCTAssertTrue(app.buttons["Close"].waitForExistence(timeout: 5))
         app.buttons["Close"].firstMatch.tap()
-        if app.buttons["Close"].exists { app.buttons["Close"].firstMatch.tap() }
         app.swipeDown()
         app.swipeDown()
         app.buttons["Updates"].firstMatch.tap()

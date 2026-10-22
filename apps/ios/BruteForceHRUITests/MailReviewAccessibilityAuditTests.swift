@@ -39,39 +39,43 @@ final class MailReviewAccessibilityAuditTests: XCTestCase {
         try app.performAccessibilityAudit()
     }
 
-    /// Not an audit: saves the screens behind interactions (Updates, All job mail, the review sheet,
-    /// Change…) for the design critique. Runs only with `TEST_RUNNER_BFHR_MAIL_SHOTS=<dir>`.
+    /// Not an audit: saves the screens behind interactions (the scrolled queue, the review sheet,
+    /// Change…, Updates, All job mail) at the default and the largest text size for the design
+    /// critique. Runs only with `TEST_RUNNER_BFHR_MAIL_SHOTS=<dir>`.
     @MainActor
     func testCaptureInteractionScreens() throws {
         guard let directory = ProcessInfo.processInfo.environment["BFHR_MAIL_SHOTS"] else {
             throw XCTSkip("Critique screenshots only")
         }
-        let ax = ProcessInfo.processInfo.environment["BFHR_MAIL_SHOTS_AX"] != nil
-        let app = launch(dataset: "populated", contentSize: ax ? "UICTContentSizeCategoryAccessibilityXXXL" : nil)
-        func shot(_ name: String) throws {
-            Thread.sleep(forTimeInterval: 0.8)
-            let file = URL(fileURLWithPath: directory).appendingPathComponent("\(name)\(ax ? "-ax" : "").png")
-            try XCUIScreen.main.screenshot().pngRepresentation.write(to: file)
+        for ax in [false, true] {
+            let app = launch(dataset: "populated", contentSize: ax ? "UICTContentSizeCategoryAccessibilityXXXL" : nil)
+            func shot(_ name: String) throws {
+                Thread.sleep(forTimeInterval: 0.8)
+                let file = URL(fileURLWithPath: directory).appendingPathComponent("\(name)\(ax ? "-ax" : "").png")
+                try XCUIScreen.main.screenshot().pngRepresentation.write(to: file)
+            }
+            func element(_ label: String) -> XCUIElement {
+                app.descendants(matching: .any).matching(NSPredicate(format: "label == %@", label)).firstMatch
+            }
+            element("Updates").tap()
+            try shot("updates")
+            element("All job mail").tap()
+            try shot("all-job-mail")
+            app.swipeUp()
+            try shot("all-job-mail-scrolled")
+            app.terminate()
+
+            let queue = launch(dataset: "populated", contentSize: ax ? "UICTContentSizeCategoryAccessibilityXXXL" : nil)
+            queue.swipeUp()
+            try shot("queue-scrolled")
+            let row = queue.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS[c] %@", "Lena Vogel")).firstMatch
+            guard row.waitForExistence(timeout: 5) else { continue }
+            row.tap()
+            try shot("sheet-medium")
+            queue.descendants(matching: .any).matching(NSPredicate(format: "label == %@", "Change…")).firstMatch.tap()
+            try shot("sheet-change")
+            queue.terminate()
         }
-        app.swipeUp()
-        try shot("queue-scrolled")
-        let row = app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS[c] %@", "Lena Vogel")).firstMatch
-        if !row.waitForExistence(timeout: 5) { print(app.debugDescription) }
-        row.tap()
-        try shot("sheet-medium")
-        app.buttons["Change…"].firstMatch.tap()
-        try shot("sheet-change")
-        app.navigationBars["Change"].buttons.element(boundBy: 0).tap()
-        XCTAssertTrue(app.buttons["Close"].waitForExistence(timeout: 5))
-        app.buttons["Close"].firstMatch.tap()
-        app.swipeDown()
-        app.swipeDown()
-        app.buttons["Updates"].firstMatch.tap()
-        try shot("updates")
-        app.buttons["All job mail"].firstMatch.tap()
-        try shot("all-job-mail")
-        app.swipeUp()
-        try shot("all-job-mail-scrolled")
     }
 
     @MainActor

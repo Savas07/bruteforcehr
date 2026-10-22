@@ -123,6 +123,26 @@ export function wordDiff(before: string, after: string): DiffToken[] {
       i++;
     }
   }
+  // A kept run of one or two words between two changes reads better as part of the change
+  // ("~~a b~~ x y" instead of "~~a~~ x ~~b~~ y"): it moves into both the deletion and the insertion.
+  const absorbed: DiffToken[] = [];
+  for (let index = 0; index < raw.length; index++) {
+    const token = raw[index];
+    if (!token) continue;
+    if (token.kind !== "same") {
+      absorbed.push(token);
+      continue;
+    }
+    let end = index;
+    while (raw[end + 1]?.kind === "same") end++;
+    // Kept runs are maximal, so one starting after index 0 always follows a change.
+    const absorb = end - index < 2 && index > 0 && end + 1 < raw.length;
+    for (const kept of raw.slice(index, end + 1)) {
+      if (absorb) absorbed.push({ kind: "del", text: kept.text }, { kind: "ins", text: kept.text });
+      else absorbed.push(kept);
+    }
+    index = end;
+  }
   // Deletions before insertions within a changed run reads as "old → new".
   const ordered: DiffToken[] = [];
   let run: DiffToken[] = [];
@@ -130,7 +150,7 @@ export function wordDiff(before: string, after: string): DiffToken[] {
     ordered.push(...run.filter((token) => token.kind === "del"), ...run.filter((token) => token.kind === "ins"));
     run = [];
   };
-  for (const token of raw) {
+  for (const token of absorbed) {
     if (token.kind === "same") {
       flush();
       ordered.push(token);

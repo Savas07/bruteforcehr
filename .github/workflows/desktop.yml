@@ -71,9 +71,6 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: apps/desktop/src-tauri
-      - name: Install tauri-driver (WebDriver bridge to msedgedriver)
-        if: runner.os == 'Windows'
-        run: cargo install tauri-driver --version 2.1.0 --locked
 
       - name: Rust format, lint, unit tests
         run: |
@@ -95,6 +92,8 @@ jobs:
       # Test build (cargo feature `e2e`): replaces the release binary, after the bundles are built.
       - run: pnpm build:e2e
       - run: pnpm test:e2e
+      # windows-latest has a 1024×768 display that Set-DisplayResolution can't change (run
+      # 39797339032), so Windows captures are zoomed out to 75 % / 50 % (e2e/capture/capture.e2e.ts).
       - run: pnpm capture
         if: success() || failure()
       - uses: actions/upload-artifact@v7

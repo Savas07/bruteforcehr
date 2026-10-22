@@ -73,3 +73,6 @@ Reduce Motion: chevron rotation, strip scroll and chip scale use `BFHRMotion`; h
 1. **Drag path** (design gap; the other two move paths cover every user, including VoiceOver and Switch Control).
 2. **Shared `TimelineRow` Dynamic Type / inaccessible-text reports**: IosFoundation to check.
 3. Re-run `testApplicationDetail*` after the InterviewRow fix.
+
+### Follow-up after the final run
+IosFoundation traced the element-less AX5 "Dynamic Type unsupported" reports to `ViewThatFits`, which the audit flags when a view switches branches as the text size changes. The detail's status line and `FactRow` now choose their layout by `dynamicTypeSize.isAccessibilitySize` (commit "tracker detail picks row layouts by text size instead of ViewThatFits"). The shared fixes are on `m0/ios-shared` (`d2512b1`: `RelativeTimeText` labels and `EmptyState` clipping; `444836e`: `StatusMenu` footer reasons) and haven't reached main yet. Re-run `testApplicationDetail*`, `testMoveToSheet` and `testEmptyDefaultSize` once they land.

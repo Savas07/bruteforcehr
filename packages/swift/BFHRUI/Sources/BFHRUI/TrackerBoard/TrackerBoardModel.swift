@@ -49,6 +49,17 @@ public final class TrackerBoardModel: ScreenModel {
         phase = .loaded
     }
 
+    /// Reloads from the data layer after a failed cold load (`PaneError`'s Try again). Nil hides
+    /// Try again; the data layer (and design mode) sets it.
+    public var reload: (() -> Void)?
+
+    /// Try again on the pane error: back to the skeleton, then `reload`.
+    public func retry() {
+        guard let reload else { return }
+        phase = .loading
+        reload()
+    }
+
     // MARK: Pipeline
 
     /// No applications at all: the empty Pipeline ("No applications yet").
@@ -95,7 +106,7 @@ public final class TrackerBoardModel: ScreenModel {
     // MARK: Actions
 
     /// Moves an application as the user. Throws `TransitionError` for a move the state machine
-    /// denies (e.g. Applied → Accepted).
+    /// denies (e.g. Applied → Accepted). Not selected gets the calm "your notes stay" toast.
     @discardableResult
     public func move(_ applicationId: String, to status: ApplicationStatus) throws -> ToastItem {
         let event = try data.moveApplication(applicationId, to: status, actor: .user, at: now)
@@ -103,7 +114,9 @@ public final class TrackerBoardModel: ScreenModel {
         let company = data.application(id: applicationId)?.company ?? ""
         return ToastItem(
             glyph: ToastGlyph.moved,
-            message: Strings.moved(company, to: status),
+            message: status == .rejected
+                ? TrackerBoardStrings.markedNotSelected(company)
+                : Strings.moved(company, to: status),
             action: .undo { [weak self] in self?.revertSilently(event.id) }
         )
     }
@@ -326,16 +339,5 @@ public final class TrackerBoardModel: ScreenModel {
         let reached = lastActive.flatMap { active.firstIndex(of: $0) }.map { Array(active[...$0]) } ?? []
         return reached.map { ApplicationDetail.StageStep(status: $0, state: .done) }
             + [ApplicationDetail.StageStep(status: status, state: .current)]
-    }
-}
-
-enum TrackerBoardStrings {
-    static func suggestionDismissed(_ company: String) -> LocalizedStringResource {
-        .bfhr(
-            "tracker.toast.suggestionDismissed",
-            default: "\(company) · suggestion dismissed",
-            table: "TrackerBoard",
-            comment: "Toast after Not needed / Keep waiting on a follow-up or no-response suggestion. %@ = company."
-        )
     }
 }

@@ -66,43 +66,44 @@ struct PipelineRowView: View {
 
 /// What comes next for an application, one glyph + line: the interview ("Interview · Today,
 /// 14:00", accent), the user's next action with its day, or the calm staleness hint. Nothing for
-/// `.none`. At large sizes the day moves under the text instead of truncating.
+/// `.none`. One `Text`, so it wraps as a sentence at large sizes instead of truncating the day.
 struct NextStepLine: View {
     let step: ApplicationNextStep
+    @Environment(\.bfhrNow) private var now
+    @Environment(\.locale) private var locale
+    @Environment(\.calendar) private var calendar
 
     var body: some View {
         switch step {
         case .interview(let startsAt, _):
-            line(glyph: "calendar", tone: BFHRColor.Accent.text, text: Text(TrackerBoardStrings.interview), date: startsAt, style: .dayAndTime)
+            line(glyph: "calendar", tone: BFHRColor.Accent.text, text: Text(TrackerBoardStrings.interview), day: dayAndTime(startsAt))
         case .nextAction(let text, let dueAt):
-            line(glyph: "checklist", tone: BFHRColor.Fg.secondary, text: Text(verbatim: text), date: dueAt, style: .day)
+            line(glyph: "checklist", tone: BFHRColor.Fg.secondary, text: Text(verbatim: text), day: dueAt.map(day))
         case .stale(let days):
-            line(glyph: "hourglass", tone: BFHRColor.Fg.secondary, text: Text(TrackerBoardStrings.noReply(days)), date: nil, style: .day)
+            line(glyph: "hourglass", tone: BFHRColor.Fg.secondary, text: Text(TrackerBoardStrings.noReply(days)), day: nil)
         case .none:
             EmptyView()
         }
     }
 
-    private func line(glyph: String, tone: Color, text: Text, date: Date?, style: RelativeTimeText.Style) -> some View {
+    private func line(glyph: String, tone: Color, text: Text, day: String?) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: BFHRSpace.s1) {
             Image(systemName: glyph).accessibilityHidden(true)
-            if let date {
-                ViewThatFits(in: .horizontal) {
-                    HStack(alignment: .firstTextBaseline, spacing: BFHRSpace.s1) {
-                        text
-                        Text(verbatim: "·").accessibilityHidden(true)
-                        RelativeTimeText(date, style: style)
-                    }
-                    VStack(alignment: .leading, spacing: 0) {
-                        text
-                        RelativeTimeText(date, style: style)
-                    }
-                }
+            if let day {
+                Text("\(text) · \(day)")
             } else {
                 text
             }
         }
         .foregroundStyle(tone)
+    }
+
+    private func day(_ date: Date) -> String {
+        DateText.relativeDay(date, now: now, locale: locale, calendar: calendar)
+    }
+
+    private func dayAndTime(_ date: Date) -> String {
+        DateText.dayAndTime(date, now: now, locale: locale, calendar: calendar)
     }
 }
 

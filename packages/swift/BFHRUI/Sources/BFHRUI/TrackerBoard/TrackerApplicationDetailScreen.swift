@@ -53,7 +53,7 @@ struct TrackerApplicationDetailScreen: View {
             Section {
                 StageProgressStrip(steps: detail.progress)
             } header: {
-                Text(TrackerBoardStrings.progress)
+                DetailSectionTitle(TrackerBoardStrings.progress)
             }
             // Follow-ups live on Today with their draft; the Tracker asks only about no response.
             let noResponse = detail.nudges.filter { if case .noResponse = $0.kind { true } else { false } }
@@ -67,7 +67,7 @@ struct TrackerApplicationDetailScreen: View {
                         }
                     }
                 } header: {
-                    Text(TrackerBoardStrings.suggestion)
+                    DetailSectionTitle(TrackerBoardStrings.suggestion)
                 }
             }
             if !detail.interviews.isEmpty {
@@ -76,7 +76,7 @@ struct TrackerApplicationDetailScreen: View {
                         InterviewRow(interview: interview)
                     }
                 } header: {
-                    Text(TrackerBoardStrings.interviews)
+                    DetailSectionTitle(TrackerBoardStrings.interviews)
                 }
             }
             ForEach(Array(detail.timeline.enumerated()), id: \.element.id) { index, day in
@@ -93,8 +93,7 @@ struct TrackerApplicationDetailScreen: View {
                 } header: {
                     VStack(alignment: .leading, spacing: BFHRSpace.s1) {
                         if index == 0 {
-                            Text(TrackerBoardStrings.activity)
-                                .accessibilityAddTraits(.isHeader)
+                            DetailSectionTitle(TrackerBoardStrings.activity)
                         }
                         TimelineDayHeader(day.day)
                     }
@@ -107,7 +106,7 @@ struct TrackerApplicationDetailScreen: View {
                         ContactRow(contact: contact)
                     }
                 } header: {
-                    Text(TrackerBoardStrings.contacts)
+                    DetailSectionTitle(TrackerBoardStrings.contacts)
                 }
             }
         }
@@ -154,12 +153,16 @@ private struct DetailHeader: View {
     let onStatusTap: () -> Void
     @Environment(\.locale) private var locale
     @Environment(\.calendar) private var calendar
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         let header = detail.header
         VStack(alignment: .leading, spacing: BFHRSpace.s3) {
             HStack(alignment: .top, spacing: BFHRSpace.s3) {
-                CompanyMonogram(header.company, badge: header.lastMoveAutomatic ? "envelope.fill" : nil)
+                // Decorative: at accessibility sizes it would squeeze the role into syllables.
+                if !dynamicTypeSize.isAccessibilitySize {
+                    CompanyMonogram(header.company)
+                }
                 VStack(alignment: .leading, spacing: 2) {
                     Text(verbatim: header.role)
                         .font(.bfhr(.title3, emphasized: true))
@@ -170,9 +173,19 @@ private struct DetailHeader: View {
                         .foregroundStyle(BFHRColor.Fg.secondary)
                 }
             }
-            ViewThatFits(in: .horizontal) {
-                HStack(spacing: BFHRSpace.s2) { pill; lastMoved }
-                VStack(alignment: .leading, spacing: BFHRSpace.s1) { pill; lastMoved }
+            VStack(alignment: .leading, spacing: BFHRSpace.s1) {
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: BFHRSpace.s2) { pill; lastMoved }
+                    VStack(alignment: .leading, spacing: BFHRSpace.s1) { pill; lastMoved }
+                }
+                if header.lastMoveAutomatic {
+                    // The source of an automatic move, up front (trust principle); the timeline
+                    // below has the reason and Undo.
+                    Label { Text(TrackerBoardStrings.autoMoved) } icon: { Image(systemName: "envelope") }
+                        .labelStyle(.bfhrCompact)
+                        .font(.bfhr(.footnote))
+                        .foregroundStyle(BFHRColor.Fg.secondary)
+                }
             }
             if detail.nextStep != .none {
                 VStack(alignment: .leading, spacing: 2) {
@@ -283,34 +296,86 @@ private struct InterviewRow: View {
     }
 }
 
-/// Applied via, Applied, CV, Cover letter, Found on: only the facts that exist.
+/// Applied via, Applied, CV, Cover letter, Found on: only the facts that exist. Label and value
+/// sit side by side and stack when they don't fit (German, AX sizes).
 private struct DetailFacts: View {
     let detail: ApplicationDetail
+    @Environment(\.bfhrNow) private var now
+    @Environment(\.locale) private var locale
+    @Environment(\.calendar) private var calendar
 
     var body: some View {
         let header = detail.header
         if header.channel != nil || header.appliedAt != nil || detail.cv != nil || detail.coverLetter != nil || header.source != nil {
             Section {
                 if let channel = header.channel {
-                    LabeledContent { Text(channel.label) } label: { Text(Strings.fieldChannel) }
+                    FactRow(Strings.fieldChannel, value: Text(channel.label))
                 }
                 if let appliedAt = header.appliedAt {
-                    LabeledContent { RelativeTimeText(appliedAt, style: .day) } label: { Text(Strings.fieldApplied) }
+                    FactRow(Strings.fieldApplied, value: Text(verbatim: DateText.relativeDay(appliedAt, now: now, locale: locale, calendar: calendar)))
                 }
                 if let cv = detail.cv {
-                    LabeledContent { Text(verbatim: cv.title) } label: { Text(Strings.fieldCV) }
+                    FactRow(Strings.fieldCV, value: Text(verbatim: cv.title))
                 }
                 if let coverLetter = detail.coverLetter {
-                    LabeledContent { Text(verbatim: coverLetter.title) } label: { Text(Strings.fieldCoverLetter) }
+                    FactRow(Strings.fieldCoverLetter, value: Text(verbatim: coverLetter.title))
                 }
                 if let source = header.source {
-                    LabeledContent { Text(verbatim: source.capitalized) } label: { Text(TrackerBoardStrings.foundOn) }
+                    FactRow(TrackerBoardStrings.foundOn, value: Text(verbatim: source.capitalized))
                 }
             } header: {
-                Text(TrackerBoardStrings.details)
+                DetailSectionTitle(TrackerBoardStrings.details)
             }
-            .font(.bfhr(.body))
         }
+    }
+}
+
+private struct FactRow: View {
+    let label: LocalizedStringResource
+    let value: Text
+
+    init(_ label: LocalizedStringResource, value: Text) {
+        self.label = label
+        self.value = value
+    }
+
+    var body: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(alignment: .firstTextBaseline, spacing: BFHRSpace.s3) {
+                title
+                Spacer(minLength: BFHRSpace.s2)
+                value.foregroundStyle(BFHRColor.Fg.secondary).multilineTextAlignment(.trailing)
+            }
+            VStack(alignment: .leading, spacing: 2) {
+                title
+                value.foregroundStyle(BFHRColor.Fg.secondary)
+            }
+        }
+        .font(.bfhr(.body))
+        .frame(minHeight: BFHRHitTarget.minimum)
+        .accessibilityElement(children: .combine)
+    }
+
+    private var title: some View {
+        Text(label).foregroundStyle(BFHRColor.Fg.primary)
+    }
+}
+
+/// A detail section title: the same weight and color as the timeline's day headers, so the
+/// grouped list reads as one hierarchy (the system header grey is lighter than our secondary).
+private struct DetailSectionTitle: View {
+    let title: LocalizedStringResource
+
+    init(_ title: LocalizedStringResource) {
+        self.title = title
+    }
+
+    var body: some View {
+        Text(title)
+            .font(.bfhr(.subheadline, emphasized: true))
+            .foregroundStyle(BFHRColor.Fg.secondary)
+            .textCase(nil)
+            .accessibilityAddTraits(.isHeader)
     }
 }
 
@@ -319,20 +384,30 @@ private struct ContactRow: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(verbatim: contact.name)
-                .font(.bfhr(.body))
-                .foregroundStyle(BFHRColor.Fg.primary)
-            if let role = contact.role {
-                Text(verbatim: role)
-                    .font(.bfhr(.footnote))
-                    .foregroundStyle(BFHRColor.Fg.secondary)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(verbatim: contact.name)
+                    .font(.bfhr(.body))
+                    .foregroundStyle(BFHRColor.Fg.primary)
+                if let role = contact.role {
+                    Text(verbatim: role)
+                        .font(.bfhr(.footnote))
+                        .foregroundStyle(BFHRColor.Fg.secondary)
+                }
             }
+            .accessibilityElement(children: .combine)
             if let email = contact.email, let url = URL(string: "mailto:\(email)") {
-                Link(destination: url) { Text(verbatim: email) }
-                    .font(.bfhr(.footnote))
-                    .foregroundStyle(BFHRColor.Fg.link)
+                Link(destination: url) {
+                    Label { Text(verbatim: email) } icon: { Image(systemName: "envelope") }
+                        .labelStyle(.bfhrCompact)
+                        .font(.bfhr(.subheadline))
+                        .frame(minHeight: BFHRHitTarget.minimum, alignment: .leading)
+                        .contentShape(Rectangle())
+                }
+                .foregroundStyle(BFHRColor.Fg.link)
+                .accessibilityLabel(Text(TrackerBoardStrings.emailContact(contact.name)))
+                .accessibilityHint(Text(verbatim: email))
             }
         }
-        .padding(.vertical, 2)
+        .padding(.top, BFHRSpace.s1)
     }
 }

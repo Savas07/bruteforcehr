@@ -162,6 +162,29 @@
         }
       }
     },
+    "tracker.detail.emailContact" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "E-Mail an %@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Email %@"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ kişisine e-posta gönder"
+          }
+        }
+      }
+    },
     "tracker.detail.foundOn" : {
       "extractionState" : "manual",
       "localizations" : {

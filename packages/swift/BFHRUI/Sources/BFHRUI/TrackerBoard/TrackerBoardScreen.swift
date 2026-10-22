@@ -107,8 +107,10 @@ public struct TrackerBoardScreen: View {
                                 } label: {
                                     PipelineRowView(row: row)
                                 }
+                                // `onDrag` is List's row drag (the collection view's drag
+                                // delegate), so the lift coexists with the long-press menu.
+                                .onDrag { NSItemProvider(object: beginDrag(row.id) as NSString) }
                                 .bfhrRowActions(actions(for: row))
-                                .draggable(beginDrag(row.id))
                             }
                         }
                     } header: {

@@ -98,4 +98,8 @@ enum TrackerBoardStrings {
     static func round(_ number: Int) -> LocalizedStringResource {
         .bfhr("tracker.detail.round", default: "Round \(number)", table: "TrackerBoard", comment: "Interview round. %lld = round number.")
     }
+
+    static func emailContact(_ name: String) -> LocalizedStringResource {
+        .bfhr("tracker.detail.emailContact", default: "Email \(name)", table: "TrackerBoard", comment: "VoiceOver label of a contact's email link. %@ = contact name.")
+    }
 }

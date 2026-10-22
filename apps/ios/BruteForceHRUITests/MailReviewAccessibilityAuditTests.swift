@@ -32,7 +32,7 @@ final class MailReviewAccessibilityAuditTests: XCTestCase {
     @MainActor
     func testReviewSheet() throws {
         let app = launch(dataset: "populated", contentSize: nil)
-        let row = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] %@", "Nordlicht")).firstMatch
+        let row = app.descendants(matching: .any)["mail.review.mail-nordlicht-invite"]
         XCTAssertTrue(row.waitForExistence(timeout: 10))
         row.tap()
         XCTAssertTrue(app.buttons["Confirm"].waitForExistence(timeout: 10))
@@ -57,7 +57,7 @@ final class MailReviewAccessibilityAuditTests: XCTestCase {
         try shot("queue-scrolled")
         app.swipeDown()
         app.swipeDown()
-        let row = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] %@", "Nordlicht")).firstMatch
+        let row = app.descendants(matching: .any)["mail.review.mail-nordlicht-invite"]
         row.tap()
         try shot("sheet-medium")
         app.buttons["Change…"].firstMatch.tap()

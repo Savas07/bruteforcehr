@@ -622,6 +622,29 @@
         }
       }
     },
+    "mail.chip.toReviewPlain" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zu prüfen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "To review"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "İncelenecek"
+          }
+        }
+      }
+    },
     "mail.chip.updates" : {
       "extractionState" : "manual",
       "localizations" : {

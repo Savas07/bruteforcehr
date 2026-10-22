@@ -23,15 +23,13 @@ struct MailReviewSheet: View {
         NavigationStack(path: $path) {
             Group {
                 if let proposal = model.draftProposal {
-                    VStack(spacing: 0) {
-                        ReviewSheet(
-                            proposal,
-                            isOffline: model.connection.isOffline,
-                            onConfirm: onConfirm,
-                            onChange: { path.append(.change) },
-                            onNotJobMail: onNotJobMail
-                        )
-                    }
+                    ReviewSheet(
+                        proposal,
+                        isOffline: model.connection.isOffline,
+                        onConfirm: onConfirm,
+                        onChange: { path.append(.change) },
+                        onNotJobMail: onNotJobMail
+                    )
                 }
             }
             .navigationTitle(Text(MailViewStrings.sheetTitle))

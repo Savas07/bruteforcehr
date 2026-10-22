@@ -69,6 +69,8 @@ enum MailViewStrings {
     static let chipCategory = LocalizedStringResource.bfhr("mail.chip.category", default: "Category", table: "MailReview")
     static let allCategories = LocalizedStringResource.bfhr("mail.category.all", default: "All categories", table: "MailReview")
 
+    static let chipToReviewPlain = LocalizedStringResource.bfhr("mail.chip.toReviewPlain", default: "To review", table: "MailReview", comment: "The To review chip while the count isn't known yet (loading, error).")
+
     static func chipToReview(_ count: Int) -> LocalizedStringResource {
         .bfhr("mail.chip.toReview", default: "To review (\(count))", table: "MailReview")
     }

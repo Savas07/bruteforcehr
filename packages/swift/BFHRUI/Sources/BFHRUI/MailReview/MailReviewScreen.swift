@@ -30,13 +30,22 @@ public struct MailReviewScreen: View {
             }
         } skeleton: {
             List {
+                chipsOnlyHeader
                 Section {
                     ForEach(0..<5, id: \.self) { _ in MailSkeletonRow() }
                 }
             }
             .bfhrInsetGroupedList()
         } failure: { failure in
-            PaneError(failure, title: MailViewStrings.errorTitle, retry: reload)
+            // The chips stay (states.md: chrome always renders); the pane error replaces the list.
+            List {
+                chipsOnlyHeader
+                Section {
+                    PaneError(failure, title: MailViewStrings.errorTitle, retry: reload)
+                        .listRowBackground(Color.clear)
+                }
+            }
+            .bfhrInsetGroupedList()
         }
         .toolbar {
             if model.filter == .updates && !model.updates.isEmpty {
@@ -115,21 +124,35 @@ public struct MailReviewScreen: View {
         Section {
             VStack(alignment: .leading, spacing: BFHRSpace.s3) {
                 syncLine
-                ChipFlow {
-                    chip(.toReview, title: MailViewStrings.chipToReview(model.counts.toReview))
-                    chip(.updates, title: MailViewStrings.chipUpdates)
-                    chip(.allJobMail(), title: MailViewStrings.chipAll)
-                    if model.filter.chip == .allJobMail {
-                        CategoryChip(model: model)
-                    }
-                }
-                .accessibilityElement(children: .contain)
-                .accessibilityLabel(Text(MailViewStrings.chipFilters))
+                chips(showsCount: true)
             }
             .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: BFHRSpace.s2, trailing: 0))
             .listRowBackground(Color.clear)
         }
         .mailCompactSectionSpacing()
+    }
+
+    /// The chips without counts or sync line, while nothing is loaded (skeleton, pane error).
+    private var chipsOnlyHeader: some View {
+        Section {
+            chips(showsCount: false)
+                .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: BFHRSpace.s2, trailing: 0))
+                .listRowBackground(Color.clear)
+        }
+        .mailCompactSectionSpacing()
+    }
+
+    private func chips(showsCount: Bool) -> some View {
+        ChipFlow {
+            chip(.toReview, title: showsCount ? MailViewStrings.chipToReview(model.counts.toReview) : MailViewStrings.chipToReviewPlain)
+            chip(.updates, title: MailViewStrings.chipUpdates)
+            chip(.allJobMail(), title: MailViewStrings.chipAll)
+            if model.filter.chip == .allJobMail {
+                CategoryChip(model: model)
+            }
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(Text(MailViewStrings.chipFilters))
     }
 
     /// "All accounts ▾ · Checked 6m ago"; offline: "Last checked 07:24" + when new email arrives.
@@ -229,6 +252,7 @@ public struct MailReviewScreen: View {
                     }
                     .buttonStyle(.plain)
                     .accessibilityHint(Text(MailViewStrings.review))
+                    .accessibilityIdentifier("mail.review.\(proposal.id)")
                     .bfhrRowActions(actions(for: proposal))
                 }
             } header: {

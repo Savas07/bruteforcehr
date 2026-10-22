@@ -197,11 +197,11 @@ public struct TodayScreen: View {
                     withAnimation(BFHRMotion.spring(reduceMotion: reduceMotion)) { showsPrep.toggle() }
                 } label: {
                     HStack(spacing: BFHRSpace.s2) {
-                        InlineLabel(systemImage: "list.bullet.clipboard") {
-                            Text(TodayStrings.prep)
-                                .font(.bfhr(.body))
-                                .foregroundStyle(BFHRColor.Fg.primary)
-                        }
+                        Image(systemName: "list.bullet.clipboard")
+                            .foregroundStyle(BFHRColor.Fg.secondary)
+                            .accessibilityHidden(true)
+                        Text(TodayStrings.prep)
+                            .foregroundStyle(BFHRColor.Fg.primary)
                         Spacer(minLength: BFHRSpace.s2)
                         Image(systemName: "chevron.right")
                             .font(.bfhr(.footnote, emphasized: true))
@@ -209,6 +209,7 @@ public struct TodayScreen: View {
                             .rotationEffect(.degrees(showsPrep ? 90 : 0))
                             .accessibilityHidden(true)
                     }
+                    .font(.bfhr(.body))
                     .padding(.vertical, BFHRSpace.s2)
                     .contentShape(Rectangle())
                 }

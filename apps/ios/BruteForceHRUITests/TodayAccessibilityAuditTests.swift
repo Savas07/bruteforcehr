@@ -30,9 +30,10 @@ final class TodayAccessibilityAuditTests: XCTestCase {
     ///   floating tab bar, minus the 24 pt scroll-edge fade): the audit measures contrast and
     ///   clipping from a screenshot, so text under the translucent bars or off screen reports
     ///   false failures;
-    /// - contrast on scrolled pages: List cells keep stale accessibility frames after a scroll, so
-    ///   the audit measures the wrong pixels. Contrast is checked on the first viewport of every
-    ///   state and size, and by token ratios (docs/design/critiques/ios/today/accessibility.md);
+    /// - contrast, Dynamic Type and clipping on scrolled pages: List cells keep stale accessibility
+    ///   frames after a scroll, so these screenshot-based checks measure the wrong pixels. They run
+    ///   on the first viewport of every state and size; contrast is also covered by token ratios
+    ///   and the rest by the scrolled AX captures (docs/design/critiques/ios/today/accessibility.md);
     /// - issues with no element (the audit can't say what they are; logged for review).
     /// Everything else fails the test.
     @MainActor
@@ -63,10 +64,11 @@ final class TodayAccessibilityAuditTests: XCTestCase {
             }
             if [.tabBar, .statusBar, .navigationBar].contains(element.elementType) { return true }
             // After a scroll, SwiftUI List cells keep stale accessibility frames that point at other
-            // content (verified with the audit's own screenshots), so contrast is only measured on
-            // the unscrolled viewport; scrolled pages check every other audit type.
-            if scrolled, issue.auditType == .contrast {
-                XCTContext.runActivity(named: "IGNORED (contrast after scroll) \(context): \(element.label)") { _ in }
+            // content (verified with the audit's own screenshots), so the screenshot-based checks
+            // (contrast, Dynamic Type, clipping) only run on the unscrolled viewport; scrolled pages
+            // check every other audit type.
+            if scrolled, [.contrast, .dynamicType, .textClipped].contains(issue.auditType) {
+                XCTContext.runActivity(named: "IGNORED (visual check after scroll) \(context): \(issue.compactDescription) — \(element.label)") { _ in }
                 return true
             }
             if !content.contains(element.frame) {

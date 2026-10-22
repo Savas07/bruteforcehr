@@ -17,6 +17,7 @@ public struct TodayScreen: View {
     @State private var pickingDate: SnoozeRequest?
     @State private var showsOlderFollowUps = false
     @State private var showsDone = false
+    @State private var reviewDetent: PresentationDetent = .large
 
     public init(model: TodayModel) {
         self.model = model
@@ -48,7 +49,9 @@ public struct TodayScreen: View {
                 onChange: { reviewing = nil; openURL(TodayLink.mailReview(proposal.id)) },
                 onNotJobMail: { reviewing = nil; run { try model.notJobMail(proposal.id) } }
             )
-            .presentationDetents([.medium, .large])
+            // Opens at large so Confirm / Change… are in view without scrolling; medium stays
+            // available to glance back at the list.
+            .presentationDetents([.medium, .large], selection: $reviewDetent)
             .presentationDragIndicator(.visible)
         }
         .confirmationDialog(
@@ -181,12 +184,14 @@ public struct TodayScreen: View {
                 .accessibilityHint(Text(TodayStrings.reviewHint))
                 .bfhrRowActions(reviewActions(proposal))
             }
+            if !model.autoChanges.isEmpty {
+                AutoChangeCaption()
+            }
             ForEach(model.autoChanges) { item in
-                AutoChangeRow(item) { run { try model.undoAutoChange(item.id) } }
-                    .overlay(alignment: .topTrailing) {
-                        if model.pendingSyncIDs.contains(item.id) { SyncGlyph() }
-                    }
-                    .bfhrRowActions(autoChangeActions(item))
+                AutoChangeTodayRow(item: item, isPendingSync: model.pendingSyncIDs.contains(item.id)) {
+                    run { try model.undoAutoChange(item.id) }
+                }
+                .bfhrRowActions(autoChangeActions(item))
             }
         case .followUps:
             ForEach(model.followUps) { nudge in

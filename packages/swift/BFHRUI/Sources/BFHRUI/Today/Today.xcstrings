@@ -231,6 +231,52 @@
         }
       }
     },
+    "today.autoChange.fromEmail" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Laut E-Mail von %@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "From an email by %@"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kaynak: %@ e-postası"
+          }
+        }
+      }
+    },
+    "today.autoChange.movedTo" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verschoben zu „%@“"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Moved to %@"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ aşamasına taşındı"
+          }
+        }
+      }
+    },
     "today.caughtUp.body" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1170,6 +1216,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Şu zamana kadar ertele"
+          }
+        }
+      }
+    },
+    "today.toReview.automatic" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Automatisch aktualisiert"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Updated automatically"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Otomatik güncellendi"
           }
         }
       }

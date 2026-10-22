@@ -37,6 +37,23 @@ private struct MetaLine<Content: View>: View {
     }
 }
 
+/// An icon + text line inside a row: a small secondary glyph, not the list's wide icon column.
+struct InlineLabel<Content: View>: View {
+    let systemImage: String
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: BFHRSpace.s2) {
+            Image(systemName: systemImage)
+                .font(.bfhr(.footnote))
+                .foregroundStyle(BFHRColor.Fg.secondary)
+                .accessibilityHidden(true)
+            content
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+}
+
 // MARK: Next up
 
 /// The next interview within 48 h (Tana "Next Up" + Fireflies prep): what, who, when (with the
@@ -60,6 +77,7 @@ struct NextUpCard: View {
                     Text(verbatim: "\(next.company.name) · \(next.role)")
                         .font(.bfhr(.subheadline))
                         .foregroundStyle(BFHRColor.Fg.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 if isPendingSync { SyncGlyph() }
@@ -68,9 +86,9 @@ struct NextUpCard: View {
             VStack(alignment: .leading, spacing: BFHRSpace.s2) {
                 NextUpTimes(next: next)
                 if let location = next.location, !location.isEmpty {
-                    Label { Text(verbatim: location) } icon: { Image(systemName: "mappin.and.ellipse") }
+                    InlineLabel(systemImage: "mappin") { Text(verbatim: location) }
                 } else if next.meetingURL != nil {
-                    Label { Text(TodayStrings.videoCall) } icon: { Image(systemName: "video") }
+                    InlineLabel(systemImage: "video") { Text(TodayStrings.videoCall) }
                 }
             }
             .font(.bfhr(.subheadline))
@@ -118,7 +136,7 @@ private struct NextUpTimes: View {
                     .font(.bfhr(.footnote))
                     .foregroundStyle(BFHRColor.Fg.secondary)
                     .monospacedDigit()
-                    .padding(.leading, BFHRSpace.s6 + BFHRSpace.s1)
+                    .padding(.leading, BFHRSpace.s5)
             }
         }
     }
@@ -202,6 +220,69 @@ struct ReviewRow: View {
     }
 }
 
+/// An automatic change, led by what changed ("Moved to Offer"), then the application, the
+/// evidence (source + reason) and Undo; "Can't undo" once a later move superseded it.
+struct AutoChangeTodayRow: View {
+    let item: AutoChangeItem
+    let isPendingSync: Bool
+    let onUndo: () -> Void
+
+    var body: some View {
+        HStack(alignment: .top, spacing: BFHRSpace.s3) {
+            CompanyMonogram(item.company, badge: "envelope.badge")
+            VStack(alignment: .leading, spacing: BFHRSpace.s1) {
+                Text(TodayStrings.movedTo(item.to))
+                    .font(.bfhr(.headline))
+                    .foregroundStyle(BFHRColor.Fg.primary)
+                Text(verbatim: "\(item.company.name) · \(item.role)")
+                    .font(.bfhr(.subheadline))
+                    .foregroundStyle(BFHRColor.Fg.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                if let reason = item.reason, !reason.isEmpty {
+                    InlineLabel(systemImage: "text.quote") {
+                        Text(verbatim: reason)
+                            .font(.bfhr(.footnote))
+                            .foregroundStyle(BFHRColor.Fg.secondary)
+                    }
+                } else if let sender = item.sender {
+                    InlineLabel(systemImage: "envelope") {
+                        Text(TodayStrings.fromEmailBy(sender))
+                            .font(.bfhr(.footnote))
+                            .foregroundStyle(BFHRColor.Fg.secondary)
+                    }
+                }
+                MetaLine {
+                    SourceTag(.automatic(item.actor))
+                    RelativeTimeText(item.occurredAt, style: .day)
+                    if isPendingSync { SyncGlyph() }
+                }
+                if !item.canUndo {
+                    Text(Strings.cantUndo)
+                        .font(.bfhr(.footnote))
+                        .foregroundStyle(BFHRColor.Fg.tertiary)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .accessibilityElement(children: .combine)
+            if item.canUndo {
+                Button(action: onUndo) { Text(Strings.undo) }
+                    .buttonStyle(.bfhrPlain)
+            }
+        }
+        .padding(.vertical, BFHRSpace.s1)
+    }
+}
+
+/// The quiet caption between the decisions and the automatic changes in To review.
+struct AutoChangeCaption: View {
+    var body: some View {
+        Text(TodayStrings.updatedAutomatically)
+            .font(.bfhr(.footnote, emphasized: true))
+            .foregroundStyle(BFHRColor.Fg.secondary)
+            .accessibilityAddTraits(.isHeader)
+    }
+}
+
 // MARK: Follow-ups
 
 /// "Brightwave · Frontend Engineer — Applied 8 days ago · no reply yet", with Draft follow-up.
@@ -254,7 +335,7 @@ struct DeadlineRow: View {
                 Text(TodayStrings.deadlineContext(deadline))
                     .font(.bfhr(.subheadline))
                     .foregroundStyle(BFHRColor.Fg.secondary)
-                Label { RelativeTimeText(deadline.dueAt, style: .dayAndTime) } icon: { Image(systemName: "clock") }
+                InlineLabel(systemImage: "clock") { RelativeTimeText(deadline.dueAt, style: .dayAndTime) }
                     .font(.bfhr(.subheadline))
                     .foregroundStyle(BFHRColor.Fg.primary)
             }
@@ -308,7 +389,7 @@ struct MatchRow: View {
             if !dynamicTypeSize.isAccessibilitySize {
                 VStack(spacing: 0) {
                     IconButton(TodayStrings.save, systemImage: "bookmark", action: onSave)
-                    IconButton(Strings.notForMe, systemImage: "hand.thumbsdown", action: onNotForMe)
+                    IconButton(Strings.notForMe, systemImage: "xmark", action: onNotForMe)
                         .foregroundStyle(BFHRColor.Fg.secondary)
                 }
             }

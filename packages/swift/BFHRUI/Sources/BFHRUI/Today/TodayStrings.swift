@@ -34,6 +34,16 @@ enum TodayStrings {
     static let joinLater = LocalizedStringResource.bfhr("today.nextUp.joinLater", default: "Join appears here 10 minutes before the start.", table: "Today")
     static let couldntSave = LocalizedStringResource.bfhr("today.toast.couldntSave", default: "That change didn't go through. Try again.", table: "Today")
 
+    static let updatedAutomatically = LocalizedStringResource.bfhr("today.toReview.automatic", default: "Updated automatically", table: "Today", comment: "Caption above automatic changes in To review.")
+
+    static func movedTo(_ status: ApplicationStatus) -> LocalizedStringResource {
+        .bfhr("today.autoChange.movedTo", default: "Moved to \(status.label)", table: "Today")
+    }
+
+    static func fromEmailBy(_ sender: String) -> LocalizedStringResource {
+        .bfhr("today.autoChange.fromEmail", default: "From an email by \(sender)", table: "Today")
+    }
+
     static func doneToday(_ count: Int) -> LocalizedStringResource {
         .bfhr("today.doneToday", default: "Done today (\(count))", table: "Today")
     }

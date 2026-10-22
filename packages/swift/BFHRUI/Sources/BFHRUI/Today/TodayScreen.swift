@@ -11,6 +11,7 @@ public struct TodayScreen: View {
     @Bindable private var model: TodayModel
     @Environment(ToastCenter.self) private var toasts: ToastCenter?
     @Environment(\.openURL) private var openURL
+    @Environment(\.bfhrReload) private var reload
     @Environment(\.locale) private var locale
     @State private var reviewing: ReviewProposal?
     @State private var snoozing: SnoozeRequest?
@@ -29,7 +30,7 @@ public struct TodayScreen: View {
         } skeleton: {
             TodaySkeleton()
         } failure: { failure in
-            PaneError(failure, title: TodayStrings.errorTitle, message: TodayStrings.errorBody, retry: model.retry)
+            PaneError(failure, title: TodayStrings.errorTitle, message: TodayStrings.errorBody, retry: reload)
         }
         .bfhrToastHost()
         .environment(\.bfhrNow, model.now)
@@ -188,10 +189,11 @@ public struct TodayScreen: View {
                 AutoChangeCaption()
             }
             ForEach(model.autoChanges) { item in
-                AutoChangeTodayRow(item: item, isPendingSync: model.pendingSyncIDs.contains(item.id)) {
-                    run { try model.undoAutoChange(item.id) }
-                }
-                .bfhrRowActions(autoChangeActions(item))
+                AutoChangeRow(item) { run { try model.undoAutoChange(item.id) } }
+                    .overlay(alignment: .bottomTrailing) {
+                        if model.pendingSyncIDs.contains(item.id) { SyncGlyph() }
+                    }
+                    .bfhrRowActions(autoChangeActions(item))
             }
         case .followUps:
             ForEach(model.followUps) { nudge in

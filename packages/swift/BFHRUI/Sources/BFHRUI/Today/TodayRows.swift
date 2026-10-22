@@ -126,7 +126,7 @@ private struct NextUpTimes: View {
         let start = DateText.dayAndTime(next.startsAt, now: now, locale: locale, calendar: local)
         let end = DateText.time(next.endsAt, locale: locale, calendar: local)
         return VStack(alignment: .leading, spacing: 2) {
-            Label { Text(verbatim: "\(start)–\(end)").monospacedDigit() } icon: { Image(systemName: "clock") }
+            InlineLabel(systemImage: "clock") { Text(verbatim: "\(start)–\(end)").monospacedDigit() }
                 .accessibilityLabel(Text(verbatim: "\(DateText.full(next.startsAt, locale: locale, calendar: local))–\(end)"))
             if let theirs = next.timeZone, theirs.secondsFromGMT(for: next.startsAt) != timeZone.secondsFromGMT(for: next.startsAt) {
                 let their = { () -> Calendar in var c = calendar; c.timeZone = theirs; return c }()
@@ -217,59 +217,6 @@ struct ReviewRow: View {
         .padding(.vertical, BFHRSpace.s1)
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
-    }
-}
-
-/// An automatic change, led by what changed ("Moved to Offer"), then the application, the
-/// evidence (source + reason) and Undo; "Can't undo" once a later move superseded it.
-struct AutoChangeTodayRow: View {
-    let item: AutoChangeItem
-    let isPendingSync: Bool
-    let onUndo: () -> Void
-
-    var body: some View {
-        HStack(alignment: .top, spacing: BFHRSpace.s3) {
-            CompanyMonogram(item.company, badge: "envelope.badge")
-            VStack(alignment: .leading, spacing: BFHRSpace.s1) {
-                Text(TodayStrings.movedTo(item.to))
-                    .font(.bfhr(.headline))
-                    .foregroundStyle(BFHRColor.Fg.primary)
-                Text(verbatim: "\(item.company.name) · \(item.role)")
-                    .font(.bfhr(.subheadline))
-                    .foregroundStyle(BFHRColor.Fg.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                if let reason = item.reason, !reason.isEmpty {
-                    InlineLabel(systemImage: "text.quote") {
-                        Text(verbatim: reason)
-                            .font(.bfhr(.footnote))
-                            .foregroundStyle(BFHRColor.Fg.secondary)
-                    }
-                } else if let sender = item.sender {
-                    InlineLabel(systemImage: "envelope") {
-                        Text(bfhrPlain: TodayStrings.fromEmailBy(sender))
-                            .font(.bfhr(.footnote))
-                            .foregroundStyle(BFHRColor.Fg.secondary)
-                    }
-                }
-                MetaLine {
-                    SourceTag(.automatic(item.actor))
-                    RelativeTimeText(item.occurredAt, style: .day)
-                    if isPendingSync { SyncGlyph() }
-                }
-                if !item.canUndo {
-                    Text(Strings.cantUndo)
-                        .font(.bfhr(.footnote))
-                        .foregroundStyle(BFHRColor.Fg.tertiary)
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .accessibilityElement(children: .combine)
-            if item.canUndo {
-                Button(action: onUndo) { Text(Strings.undo) }
-                    .buttonStyle(.bfhrPlain)
-            }
-        }
-        .padding(.vertical, BFHRSpace.s1)
     }
 }
 

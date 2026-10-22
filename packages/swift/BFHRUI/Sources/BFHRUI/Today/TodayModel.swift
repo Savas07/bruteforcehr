@@ -100,10 +100,6 @@ public final class TodayModel: ScreenModel {
     private var snoozedUntil: [String: Date] = [:]
     private var dismissed: Set<String> = []
 
-    /// Reloads after a failed cold load ("Try again"). The data layer sets it; while it's nil the
-    /// pane error offers no retry.
-    public var retry: (() -> Void)?
-
     public init(now: Date = .now, calendar: Calendar = .current) {
         self.now = now
         self.calendar = calendar

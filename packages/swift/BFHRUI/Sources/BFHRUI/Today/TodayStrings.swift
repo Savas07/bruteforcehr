@@ -36,13 +36,7 @@ enum TodayStrings {
 
     static let updatedAutomatically = LocalizedStringResource.bfhr("today.toReview.automatic", default: "Updated automatically", table: "Today", comment: "Caption above automatic changes in To review.")
 
-    static func movedTo(_ status: ApplicationStatus) -> LocalizedStringResource {
-        .bfhr("today.autoChange.movedTo", default: "Moved to \(status.label)", table: "Today")
-    }
 
-    static func fromEmailBy(_ sender: String) -> LocalizedStringResource {
-        .bfhr("today.autoChange.fromEmail", default: "From an email by \(sender)", table: "Today")
-    }
 
     static func doneToday(_ count: Int) -> LocalizedStringResource {
         .bfhr("today.doneToday", default: "Done today (\(count))", table: "Today")

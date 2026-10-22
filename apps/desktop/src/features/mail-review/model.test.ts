@@ -82,8 +82,8 @@ describe("buildMailReviewModel — folders and accounts", () => {
       {
         accountId: "acc-icloud",
         address: "deniz.aksoy@example.net",
-        message:
-          "iCloud needs you to sign in again. We paused checking deniz.aksoy@example.net on 21 Oct. Reconnect to pick up where we left off.",
+        title: "iCloud needs you to sign in again",
+        body: "We paused checking deniz.aksoy@example.net on 21 Oct. Reconnect to pick up where we left off.",
         actionLabel: "Reconnect",
       },
     ]);
@@ -273,6 +273,59 @@ describe("buildMailReviewModel — Updates and All job mail", () => {
     expect(messageIds(model.rows)).toEqual(["mail-cadence-rejection", "mail-fjordline-rejection"]);
     expect(model.categories.find((category) => category.selected)?.label).toBe("Decision");
     expect(model.folders.some((folder) => folder.selected)).toBe(false);
+  });
+});
+
+describe("buildMailReviewModel — correction popover", () => {
+  const model = build();
+
+  it("offers every stored category, never not_job", () => {
+    expect(model.correction.categories.map((category) => category.key)).toEqual(
+      model.categories.map((category) => category.key),
+    );
+    expect(model.correction.categories.find((category) => category.key === "rejection")?.label).toBe(
+      "Decision",
+    );
+  });
+
+  it("lists open applications before closed ones, most recently updated first", () => {
+    const phases = model.correction.applications.map((application) => application.status.phase);
+    expect(phases.length).toBe(populatedDataset.applications.length);
+    expect(phases.indexOf("closed")).toBeGreaterThan(0);
+    expect(phases.slice(phases.indexOf("closed")).every((phase) => phase === "closed")).toBe(true);
+    expect(model.correction.applications.find((application) => application.id === "app-tannenbaum")).toEqual({
+      id: "app-tannenbaum",
+      label: "Tannenbaum Software · Frontend-Entwickler:in (React)",
+      status: { key: "applied", label: "Applied", phase: "in_progress" },
+    });
+  });
+
+  it("offers every status in progress order with the shared labels", () => {
+    expect(model.correction.statuses.map((status) => status.label)).toEqual([
+      "Saved",
+      "Preparing",
+      "Applied",
+      "Acknowledged",
+      "Screening",
+      "Interviewing",
+      "Offer",
+      "Accepted",
+      "Declined",
+      "Not selected",
+      "Withdrawn",
+      "No response",
+    ]);
+  });
+
+  it("names the application a correction would create", () => {
+    expect(build({ messageId: "mail-nordlicht-invite" }).selected?.newApplicationLabel).toBe(
+      "Nordlicht Mobility · Frontend Engineer",
+    );
+    expect(model.copy.reviewedChips).toEqual({ confirmed: "Confirmed", corrected: "Corrected" });
+  });
+
+  it("offers Review later dates from tomorrow in the user's zone", () => {
+    expect(model.reviewLaterMinDate).toBe("2026-10-23");
   });
 });
 

@@ -21,7 +21,8 @@ export type SpaceKey = keyof typeof space;
 export const gridUnit = 4;
 
 /**
- * Corner radius (px / pt). On iOS, pair `lg`/`xl` with `borderCurve: "continuous"`.
+ * Corner radius (px / pt). On Apple platforms, draw `lg`/`xl` with a continuous
+ * corner curve (`BFHRRadius.shape(_:)` in the Swift package).
  * - `xs` checkboxes, keycaps · `sm` chips in dense tables, tooltips
  * - `md` buttons, inputs, menu items · `lg` cards, popovers, toasts
  * - `xl` dialogs, sheets, palette · `full` pills, avatars, status dots
@@ -43,18 +44,22 @@ export const borderWidth = { hairline: 0.5, thin: 1, thick: 2 } as const;
 export const elevationKeys = ["raised", "overlay", "modal", "drag"] as const;
 export type ElevationKey = (typeof elevationKeys)[number];
 
-export interface NativeShadow {
-  shadowColor: string;
-  shadowOpacity: number;
-  shadowRadius: number;
-  shadowOffset: { width: number; height: number };
+/** Apple-platform shadow (SwiftUI `.shadow(color:radius:x:y:)`, CALayer). */
+export interface AppleShadow {
+  /** Opaque `#RRGGBB`; `opacity` applies on top. */
+  color: string;
+  opacity: number;
+  /** Blur radius (pt). */
+  radius: number;
+  x: number;
+  y: number;
 }
 
 export interface Elevation {
   /** CSS `box-shadow`. Dark mode adds a 1 px light ring because shadows read poorly on dark canvases. */
   shadow: string;
-  /** iOS shadow props (React Native). */
-  native: NativeShadow;
+  /** iOS / macOS shadow (Swift package). */
+  apple: AppleShadow;
 }
 
 /**
@@ -69,77 +74,37 @@ export const elevation: Record<ColorScheme, Record<ElevationKey, Elevation>> = {
   light: {
     raised: {
       shadow: "0 1px 2px rgb(16 24 40 / 0.06), 0 1px 3px rgb(16 24 40 / 0.10)",
-      native: {
-        shadowColor: "#101828",
-        shadowOpacity: 0.1,
-        shadowRadius: 3,
-        shadowOffset: { width: 0, height: 1 },
-      },
+      apple: { color: "#101828", opacity: 0.1, radius: 3, x: 0, y: 1 },
     },
     overlay: {
       shadow: "0 4px 6px -2px rgb(16 24 40 / 0.05), 0 12px 16px -4px rgb(16 24 40 / 0.10)",
-      native: {
-        shadowColor: "#101828",
-        shadowOpacity: 0.12,
-        shadowRadius: 12,
-        shadowOffset: { width: 0, height: 6 },
-      },
+      apple: { color: "#101828", opacity: 0.12, radius: 12, x: 0, y: 6 },
     },
     modal: {
       shadow: "0 8px 8px -4px rgb(16 24 40 / 0.04), 0 20px 24px -4px rgb(16 24 40 / 0.12)",
-      native: {
-        shadowColor: "#101828",
-        shadowOpacity: 0.16,
-        shadowRadius: 20,
-        shadowOffset: { width: 0, height: 12 },
-      },
+      apple: { color: "#101828", opacity: 0.16, radius: 20, x: 0, y: 12 },
     },
     drag: {
       shadow: "0 12px 24px -6px rgb(16 24 40 / 0.18), 0 2px 4px rgb(16 24 40 / 0.06)",
-      native: {
-        shadowColor: "#101828",
-        shadowOpacity: 0.2,
-        shadowRadius: 16,
-        shadowOffset: { width: 0, height: 8 },
-      },
+      apple: { color: "#101828", opacity: 0.2, radius: 16, x: 0, y: 8 },
     },
   },
   dark: {
     raised: {
       shadow: "0 0 0 1px rgb(255 255 255 / 0.05), 0 1px 3px rgb(0 0 0 / 0.40)",
-      native: {
-        shadowColor: "#000000",
-        shadowOpacity: 0.4,
-        shadowRadius: 3,
-        shadowOffset: { width: 0, height: 1 },
-      },
+      apple: { color: "#000000", opacity: 0.4, radius: 3, x: 0, y: 1 },
     },
     overlay: {
       shadow: "0 0 0 1px rgb(255 255 255 / 0.07), 0 12px 24px -4px rgb(0 0 0 / 0.55)",
-      native: {
-        shadowColor: "#000000",
-        shadowOpacity: 0.5,
-        shadowRadius: 12,
-        shadowOffset: { width: 0, height: 6 },
-      },
+      apple: { color: "#000000", opacity: 0.5, radius: 12, x: 0, y: 6 },
     },
     modal: {
       shadow: "0 0 0 1px rgb(255 255 255 / 0.08), 0 24px 48px -8px rgb(0 0 0 / 0.65)",
-      native: {
-        shadowColor: "#000000",
-        shadowOpacity: 0.6,
-        shadowRadius: 24,
-        shadowOffset: { width: 0, height: 12 },
-      },
+      apple: { color: "#000000", opacity: 0.6, radius: 24, x: 0, y: 12 },
     },
     drag: {
       shadow: "0 0 0 1px rgb(255 255 255 / 0.08), 0 16px 32px -8px rgb(0 0 0 / 0.70)",
-      native: {
-        shadowColor: "#000000",
-        shadowOpacity: 0.6,
-        shadowRadius: 16,
-        shadowOffset: { width: 0, height: 8 },
-      },
+      apple: { color: "#000000", opacity: 0.6, radius: 16, x: 0, y: 8 },
     },
   },
 };
@@ -166,15 +131,16 @@ export const easing = {
 export type EasingKey = keyof typeof easing;
 
 /**
- * Spring for iOS gestures (Reanimated `withSpring`): critically damped, no
- * overshoot, so drags and sheets settle calmly.
+ * Spring for iOS gestures (SwiftUI `.interpolatingSpring(mass:stiffness:damping:)`):
+ * critically damped (damping ≈ 2·√(stiffness·mass)), no overshoot, so drags and
+ * sheets settle calmly.
  */
 export const spring = {
   standard: { damping: 35, stiffness: 300, mass: 1 },
 } as const;
 
 /**
- * Reduced motion (iOS Reduce Motion, `prefers-reduced-motion: reduce`):
+ * Reduced motion (iOS / macOS Reduce Motion, `prefers-reduced-motion: reduce`):
  * movement is replaced by a cross-fade; nothing slides, scales or shimmers.
  */
 export const reducedMotion = {
@@ -186,6 +152,22 @@ export const reducedMotion = {
 
 /** Default slide distance (px) for entering toasts, popovers and rows. */
 export const motionDistance = 8;
+
+/**
+ * Haptics by meaning (iOS, SwiftUI `sensoryFeedback`). Only these moments
+ * vibrate; dismissals, hides and rejections stay silent.
+ */
+export const haptics = {
+  /** Confirm a review item, save a job, mark applied. */
+  confirm: "impactLight",
+  /** Drag target changes while moving a tracker row. */
+  dragTargetChange: "selection",
+  /** Long-press value callout on a chart. */
+  reveal: "impactLight",
+  /** Wrong sign-in code, failed send. */
+  error: "error",
+} as const satisfies Record<string, "impactLight" | "selection" | "error">;
+export type HapticKey = keyof typeof haptics;
 
 /**
  * Behavioral timings shared by every client (ms). Sources: states.md,

@@ -36,12 +36,11 @@ export function calendarDaysFromNow(date: Date, ctx: FormatContext): number {
   return dayNumber(date, ctx.timeZone) - dayNumber(ctx.now, ctx.timeZone);
 }
 
-/** "10:30" (24 h in en-GB, tr, de). */
+/** Locale-native short time: "10:30" in en-GB, tr, de; "3:00 PM" in en-US (no forced leading zero). */
 export function clockTime(date: Date, ctx: FormatContext): string {
   return new Intl.DateTimeFormat(ctx.locale, {
     timeZone: ctx.timeZone,
-    hour: "2-digit",
-    minute: "2-digit",
+    timeStyle: "short",
   }).format(date);
 }
 

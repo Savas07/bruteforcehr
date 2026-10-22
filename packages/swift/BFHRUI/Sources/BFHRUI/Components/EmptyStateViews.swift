@@ -123,6 +123,7 @@ public struct GhostRow: View {
     public var body: some View {
         Button(action: action) {
             Label { Text(title) } icon: { Image(systemName: "plus") }
+                .labelStyle(.bfhrCompact)
                 .font(.bfhr(.body))
                 .foregroundStyle(BFHRColor.Accent.text)
                 .frame(maxWidth: .infinity, minHeight: BFHRHitTarget.minimum, alignment: .leading)

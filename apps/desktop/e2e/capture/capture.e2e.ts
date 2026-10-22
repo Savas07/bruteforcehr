@@ -11,7 +11,7 @@ import { $, browser, expect } from "@wdio/globals";
 import { Key } from "webdriverio";
 import { captureSizes, captureThemes } from "../../src/design/matrix.ts";
 import { destinations } from "../../src/lib/destinations";
-import { osName, repoRoot, saveScreenshot, setTheme, setViewport, useOpaqueMaterial } from "./helpers";
+import { osName, repoRoot, saveScreenshot, setTheme, setViewport, prepareCapture } from "./helpers";
 
 /** Overlays and the key that opens them with ⌘/Ctrl. */
 const overlays = [
@@ -32,7 +32,7 @@ async function showRoute(routePath: string): Promise<void> {
 describe("design-critique screenshots", () => {
   it("captures every destination and overlay in light and dark at both sizes", async () => {
     await mkdir(outputDir, { recursive: true });
-    await useOpaqueMaterial();
+    await prepareCapture();
 
     const written: string[] = [];
     for (const theme of captureThemes) {

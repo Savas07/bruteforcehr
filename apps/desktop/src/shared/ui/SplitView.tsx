@@ -123,11 +123,18 @@ export interface SplitViewProps {
   /** Right rail from 1440 px (Today agenda, Mail details); hidden below. */
   rail?: ReactNode;
   railLabel?: string;
+  /**
+   * List pane bounds in px when the section's IA differs from the 340–440 default (400): Mail
+   * `{ min: 360, default: 360, max: 440 }`, Today's centre column `{ min: 420, default: 480,
+   * max: 720 }`. The user can still resize within them.
+   */
+  listPane?: { readonly min: number; readonly default: number; readonly max: number };
 }
 
 /**
- * List | detail panes. The list is resizable (340–440 px, default 400, ← / → on the splitter);
- * below `narrow` (980 px) the detail is pushed over the list with a back button and Esc, and focus
+ * List | detail panes. The list is resizable within `listPane` (default 340–440 px, starting at
+ * 400; ← / → on the splitter); below `narrow` (980 px) the detail is pushed over the list with a
+ * back button and Esc, and focus
  * moves into it, then back to the list row on return.
  */
 export function SplitView({
@@ -140,9 +147,12 @@ export function SplitView({
   backLabel,
   rail,
   railLabel,
+  listPane = layout.listPane,
 }: SplitViewProps) {
   const { narrow, wide } = useBreakpoints();
-  const [listWidth, setListWidth] = useState<number>(layout.listPane.default);
+  const [listWidth, setListWidth] = useState<number>(() =>
+    Math.min(listPane.max, Math.max(listPane.min, listPane.default)),
+  );
   const listId = useId();
   const pushed = narrow && detailOpen;
   const detailRef = useRef<HTMLElement>(null);
@@ -177,8 +187,8 @@ export function SplitView({
           controls={listId}
           label={intl.formatMessage(messages.resize, { pane: listLabel })}
           value={listWidth}
-          min={layout.listPane.min}
-          max={layout.listPane.max}
+          min={listPane.min}
+          max={listPane.max}
           onChange={setListWidth}
         />
       )}

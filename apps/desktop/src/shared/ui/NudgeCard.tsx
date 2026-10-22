@@ -26,6 +26,9 @@ export interface NudgeCardProps {
   onSecondary: () => void;
   /** Shows the Snooze menu (Later today · Tomorrow · Next week · Pick a date…) when given. */
   onSnooze?: (preset: SnoozePreset) => void;
+  /** Controls the Snooze menu, so the screen can open it with `H` on the selected item. */
+  snoozeOpen?: boolean;
+  onSnoozeOpenChange?: (open: boolean) => void;
   className?: string;
 }
 
@@ -34,7 +37,15 @@ export interface NudgeCardProps {
  * the suggested action, the decline verb and Snooze. The suggested action is a secondary button:
  * Today and Tracker keep their single primary action elsewhere (system.md).
  */
-export function NudgeCard({ nudge, onPrimary, onSecondary, onSnooze, className }: NudgeCardProps) {
+export function NudgeCard({
+  nudge,
+  onPrimary,
+  onSecondary,
+  onSnooze,
+  snoozeOpen,
+  onSnoozeOpenChange,
+  className,
+}: NudgeCardProps) {
   const titleId = useId();
   const messageId = useId();
   const intl = useIntl();
@@ -66,6 +77,8 @@ export function NudgeCard({ nudge, onPrimary, onSecondary, onSnooze, className }
             <SnoozeMenu
               align="end"
               onSnooze={onSnooze}
+              {...(snoozeOpen !== undefined && { open: snoozeOpen })}
+              {...(onSnoozeOpenChange && { onOpenChange: onSnoozeOpenChange })}
               trigger={
                 <IconButton
                   icon={AlarmClock}

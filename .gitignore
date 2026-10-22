@@ -10,6 +10,10 @@ release/
 .turbo/
 coverage/
 *.tsbuildinfo
+# Tauri: Cargo build output and tauri-build's generated capability schemas (listed here, not in
+# a nested .gitignore, so Prettier skips them too)
+target/
+apps/desktop/src-tauri/gen/
 
 # Expo / React Native
 .expo/

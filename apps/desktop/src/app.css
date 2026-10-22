@@ -1,0 +1,58 @@
+@import "tailwindcss";
+@import "@bfhr/ui-tokens/tailwind.css";
+
+/*
+ * Desktop chrome. Sizes follow the `layout` tokens (docs/design/system.md); the native material
+ * (macOS sidebar vibrancy, Windows 11 Mica) shows through the sidebar, the content pane stays
+ * opaque so text contrast never depends on the wallpaper.
+ */
+:root {
+  /* macOS toolbar row under the hidden title bar; the traffic lights are centred in it
+     (TRAFFIC_LIGHTS in src-tauri/src/window.rs). */
+  --chrome-height: 52px;
+  --sidebar-width: 232px;
+  --rail-width: 60px;
+  --chrome: var(--bfhr-color-surface-canvas);
+}
+
+:root[data-material="vibrancy"],
+:root[data-material="mica"] {
+  --chrome: transparent;
+}
+
+/* Narrow windows (Snap thirds/quadrants) collapse the sidebar to an icon rail. */
+@custom-variant narrow (@media (width < 640px));
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    margin: 0;
+    /* Transparent windows (vibrancy, Mica) let the material through; opaque ones use the canvas. */
+    background: var(--chrome);
+    color: var(--bfhr-color-fg-primary);
+    font-family: var(--bfhr-font-sans);
+    font-size: var(--bfhr-text-body-size);
+    line-height: var(--bfhr-text-body-line-height);
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--bfhr-color-line-focus);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}

@@ -1,0 +1,94 @@
+import { Outlet, useNavigate } from "@tanstack/react-router";
+import { useCallback, useEffect, useState } from "react";
+import { chrome, onMenuCommand } from "../lib/desktop";
+import { destinations, type DestinationId } from "../lib/destinations";
+import { shortcutForKey, type MenuCommand } from "../lib/shortcuts";
+import { CommandPalette } from "./CommandPalette";
+import { ROUTE_TITLE_ID } from "./RouteContainer";
+import { ShortcutsSheet } from "./ShortcutsSheet";
+import { Sidebar } from "./Sidebar";
+
+export function AppShell() {
+  const navigate = useNavigate();
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
+
+  /** Keyboard-driven navigation moves focus to the new section's heading. */
+  const goTo = useCallback(
+    async (id: DestinationId) => {
+      const destination = destinations.find((candidate) => candidate.id === id);
+      if (!destination) return;
+      setPaletteOpen(false);
+      setShortcutsOpen(false);
+      await navigate({ to: destination.path });
+      document.getElementById(ROUTE_TITLE_ID)?.focus({ preventScroll: true });
+    },
+    [navigate],
+  );
+
+  const openShortcuts = useCallback(() => {
+    setPaletteOpen(false);
+    setShortcutsOpen(true);
+  }, []);
+
+  const runCommand = useCallback(
+    (command: MenuCommand) => {
+      switch (command.type) {
+        case "navigate":
+          void goTo(command.destination);
+          break;
+        case "open-palette":
+          setShortcutsOpen(false);
+          setPaletteOpen((open) => !open);
+          break;
+        case "open-shortcuts":
+          openShortcuts();
+          break;
+      }
+    },
+    [goTo, openShortcuts],
+  );
+
+  // Native menu clicks (src-tauri/src/menu.rs).
+  useEffect(() => onMenuCommand(runCommand), [runCommand]);
+
+  // ⌘1–5, ⌘K and ⌘/ (Ctrl on Windows) while the webview has focus. Handling them here, in the
+  // capture phase and with preventDefault, makes each press fire exactly once: WebView2 never
+  // passes them to the menu (tauri-apps/wry#451) and WebKit skips the menu for handled keys.
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      const shortcut = shortcutForKey(event, chrome.platform);
+      if (!shortcut) return;
+      event.preventDefault();
+      event.stopPropagation();
+      runCommand(shortcut.command);
+    };
+    window.addEventListener("keydown", onKeyDown, { capture: true });
+    return () => window.removeEventListener("keydown", onKeyDown, { capture: true });
+  }, [runCommand]);
+
+  const isMac = chrome.platform === "macos";
+  return (
+    <div className="text-fg-primary flex h-full flex-col">
+      <div className="flex min-h-0 flex-1">
+        <Sidebar onOpenPalette={() => setPaletteOpen(true)} onOpenShortcuts={openShortcuts} />
+        <main
+          className={`bg-surface-base border-line-subtle flex min-w-0 flex-1 flex-col border-l ${
+            isMac ? "" : "rounded-tl-md border-t"
+          }`}
+        >
+          {/* macOS: the toolbar row under the hidden title bar moves the window. */}
+          {isMac && <div data-tauri-drag-region className="h-(--chrome-height) shrink-0" />}
+          <Outlet />
+        </main>
+      </div>
+      <CommandPalette
+        open={paletteOpen}
+        onOpenChange={setPaletteOpen}
+        onNavigate={(id) => void goTo(id)}
+        onOpenShortcuts={openShortcuts}
+      />
+      <ShortcutsSheet open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
+    </div>
+  );
+}

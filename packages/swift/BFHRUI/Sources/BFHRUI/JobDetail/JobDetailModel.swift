@@ -47,6 +47,12 @@ public final class JobDetailModel: ScreenModel {
     public private(set) var canToggleSave = false
     /// "Not for me" needs a match document to write to.
     public private(set) var canHide = false
+    /// 👍 / 👎 on the AI summary; nil until the user rates it. Kept per job for this session
+    /// until the feedback write lands with the matching pipeline (M4).
+    public private(set) var summaryFeedback: SummaryFeedback?
+    /// Re-fetches the job after a failed load (`PaneError`'s Try again); nil hides Try again.
+    /// The data layer sets it (design mode reloads the fixture).
+    public var reload: (() -> Void)?
 
     public var hasDescription: Bool { !description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
     /// The job's match changed offline and hasn't synced (`SyncGlyph`).
@@ -106,6 +112,23 @@ public final class JobDetailModel: ScreenModel {
         guard isHidden else { return }
         data.setMatchState(jobId, to: .new, at: now)
         commit()
+    }
+
+    /// The reason sheet's Save reason on a hidden job: replaces the hidden job's reasons
+    /// (empty = none given). Returns "Thanks. We'll use this to tune your matches."; nil when the
+    /// job isn't hidden.
+    @discardableResult
+    public func setHiddenReasons(_ reasons: [DismissReason]) -> ToastItem? {
+        guard isHidden else { return nil }
+        data.setMatchState(jobId, to: .dismissed, reasons: reasons, at: now)
+        commit()
+        return ToastItem(glyph: ToastGlyph.confirmed, message: JobDetailStrings.reasonsSavedToast)
+    }
+
+    /// Rates the AI summary; rating it the same way again clears the rating.
+    public func rateSummary(_ feedback: SummaryFeedback) {
+        guard match.scored?.rationale != nil else { return }
+        summaryFeedback = summaryFeedback == feedback ? nil : feedback
     }
 
     /// "I have this" on a skill gap: moves `skill` (an unmatched skill or a skill gap's label) to

@@ -1,6 +1,98 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "jobDetail.action.done" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fertig"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Done"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bitti"
+          }
+        }
+      }
+    },
+    "jobDetail.action.more" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mehr"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "More"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diğer"
+          }
+        }
+      }
+    },
+    "jobDetail.action.openCVs" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lebensläufe öffnen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open CVs"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CV'leri açın"
+          }
+        }
+      }
+    },
+    "jobDetail.action.openOriginal" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Originalanzeige öffnen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open original posting"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Orijinal ilanı açın"
+          }
+        }
+      }
+    },
     "jobDetail.action.save" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -47,53 +139,78 @@
         }
       }
     },
+    "jobDetail.action.showInFeed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wieder in deinem Feed zeigen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show in your feed again"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Akışınızda yeniden gösterin"
+          }
+        }
+      }
+    },
     "jobDetail.apply" : {
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Bewerben"
+            "value" : "Per E-Mail bewerben"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Apply"
+            "value" : "Apply by email"
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Başvur"
+            "value" : "E-postayla başvurun"
           }
         }
       }
     },
     "jobDetail.apply.applied" : {
+      "comment" : "%@ = date, e.g. 12 Oct.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Beworben · Im Tracker ansehen"
+            "value" : "Beworben am %@"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Applied · View in Tracker"
+            "value" : "Applied %@"
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Başvuruldu · Takipte gör"
+            "value" : "Başvuru: %@"
           }
         }
       }
     },
     "jobDetail.apply.board" : {
+      "comment" : "%@ = job board name, e.g. Remotive.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -111,7 +228,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ üzerinden başvur"
+            "value" : "%@ üzerinden başvurun"
           }
         }
       }
@@ -134,7 +251,260 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Şirket sitesinde başvur"
+            "value" : "Şirket sitesinde başvurun"
+          }
+        }
+      }
+    },
+    "jobDetail.apply.viewInTracker" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Im Tracker ansehen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "View in Tracker"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Takipte görün"
+          }
+        }
+      }
+    },
+    "jobDetail.breakdown.explainer.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wir vergleichen die Anzeige mit deinem Lebenslauf und deinen Wünschen. Zuerst zählen Anforderungen wie Ort, Remote-Arbeit und Gehalt, dann Skills und Erfahrung. Jede Zeile zeigt den Text aus der Anzeige oder deinem Lebenslauf, auf dem sie beruht."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We compare the posting with your CV and your preferences. Requirements like location, remote work and salary count first, then skills and experience. Each line shows the text from the posting or your CV behind it."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "İlanı CV'nizle ve tercihlerinizle karşılaştırıyoruz. Önce konum, uzaktan çalışma ve maaş gibi koşullar, ardından beceriler ve deneyim sayılır. Her satır, dayandığı ilan ya da CV metnini gösterir."
+          }
+        }
+      }
+    },
+    "jobDetail.breakdown.explainer.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wie entsteht diese Einschätzung?"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What goes into this score?"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bu puan neye dayanıyor?"
+          }
+        }
+      }
+    },
+    "jobDetail.breakdown.open" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alle Details ansehen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "See full breakdown"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tüm dökümü görün"
+          }
+        }
+      }
+    },
+    "jobDetail.breakdown.requirements" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anforderungen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Requirements"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Koşullar"
+          }
+        }
+      }
+    },
+    "jobDetail.breakdown.skills" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skills"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skills"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Beceriler"
+          }
+        }
+      }
+    },
+    "jobDetail.breakdown.skills.footer" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skills mit Häkchen stehen in deinem Lebenslauf."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skills with a check are in your CV."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Onay işaretli beceriler CV'nizde var."
+          }
+        }
+      }
+    },
+    "jobDetail.count.gaps" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mögliche Lücken: %lld"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gaps to consider: %lld"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Göz önünde bulundurulacaklar: %lld"
+          }
+        }
+      }
+    },
+    "jobDetail.count.notStated" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In der Anzeige nicht angegeben: %lld"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not stated in the posting: %lld"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "İlanda belirtilmeyen: %lld"
+          }
+        }
+      }
+    },
+    "jobDetail.count.requirements" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anforderungen: %1$lld von %2$lld erfüllt"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Requirements: %1$lld of %2$lld met"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Karşılanan koşullar: %1$lld / %2$lld"
+          }
+        }
+      }
+    },
+    "jobDetail.count.skills" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skills: %1$lld von %2$lld passen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skills: %1$lld of %2$lld match"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eşleşen beceriler: %1$lld / %2$lld"
           }
         }
       }
@@ -162,6 +532,167 @@
         }
       }
     },
+    "jobDetail.delisted.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du liest die Kopie, die wir gespeichert haben."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You're reading the copy we saved."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kaydettiğimiz kopyayı okuyorsunuz."
+          }
+        }
+      }
+    },
+    "jobDetail.description.showMore" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mehr anzeigen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show more"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Daha fazla göster"
+          }
+        }
+      }
+    },
+    "jobDetail.employment.contract" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Auf Vertragsbasis"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Contract"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sözleşmeli"
+          }
+        }
+      }
+    },
+    "jobDetail.employment.fullTime" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vollzeit"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Full-time"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tam zamanlı"
+          }
+        }
+      }
+    },
+    "jobDetail.employment.internship" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Praktikum"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Internship"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Staj"
+          }
+        }
+      }
+    },
+    "jobDetail.employment.partTime" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Teilzeit"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Part-time"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yarı zamanlı"
+          }
+        }
+      }
+    },
+    "jobDetail.employment.temporary" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Befristet"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Temporary"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Geçici"
+          }
+        }
+      }
+    },
     "jobDetail.error.notFound" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -180,7 +711,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Bu ilan artık listenizde değil"
+            "value" : "Bu ilan artık listenizde yok"
           }
         }
       }
@@ -208,6 +739,308 @@
         }
       }
     },
+    "jobDetail.evidence.cv" : {
+      "comment" : "%@ = quoted CV text. DE uses „…“.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dein Lebenslauf: „%@“"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your CV: “%@”"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CV'niz: “%@”"
+          }
+        }
+      }
+    },
+    "jobDetail.evidence.posting" : {
+      "comment" : "%@ = quoted posting text. DE uses „…“.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anzeige: „%@“"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Posting: “%@”"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "İlan: “%@”"
+          }
+        }
+      }
+    },
+    "jobDetail.evidence.profile" : {
+      "comment" : "%@ = quoted profile text. DE uses „…“.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dein Profil: „%@“"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your profile: “%@”"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Profiliniz: “%@”"
+          }
+        }
+      }
+    },
+    "jobDetail.fact.employmentType" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anstellungsart"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Employment type"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "İstihdam türü"
+          }
+        }
+      }
+    },
+    "jobDetail.fact.lastSeen" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zuletzt online gesehen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Last seen live"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En son yayında görüldü"
+          }
+        }
+      }
+    },
+    "jobDetail.fact.no" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nein"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hayır"
+          }
+        }
+      }
+    },
+    "jobDetail.fact.notStated" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nicht angegeben"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not stated"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Belirtilmemiş"
+          }
+        }
+      }
+    },
+    "jobDetail.fact.relocation" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Umzugshilfe"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Relocation support"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Taşınma desteği"
+          }
+        }
+      }
+    },
+    "jobDetail.fact.salary" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gehalt"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Salary"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Maaş"
+          }
+        }
+      }
+    },
+    "jobDetail.fact.visaSponsorship" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Visa-Sponsoring"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Visa sponsorship"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vize sponsorluğu"
+          }
+        }
+      }
+    },
+    "jobDetail.fact.whereTheyHire" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wo eingestellt wird"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Where they hire"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "İşe alım yapılan yerler"
+          }
+        }
+      }
+    },
+    "jobDetail.fact.workMode" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arbeitsmodell"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Work mode"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Çalışma şekli"
+          }
+        }
+      }
+    },
+    "jobDetail.fact.yes" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ja"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yes"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Evet"
+          }
+        }
+      }
+    },
     "jobDetail.foundOn" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -227,6 +1060,52 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%lld sitede bulundu"
+          }
+        }
+      }
+    },
+    "jobDetail.foundOn.one" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Auf 1 Seite gefunden"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Found on 1 site"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 sitede bulundu"
+          }
+        }
+      }
+    },
+    "jobDetail.gap.addToCV" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zum Lebenslauf hinzufügen…"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add to CV…"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CV'ye ekle…"
           }
         }
       }
@@ -254,6 +1133,53 @@
         }
       }
     },
+    "jobDetail.gap.outsidePrefs" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Außerhalb deiner Wünsche: %@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Outside your preferences: %@"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tercihlerinizin dışında: %@"
+          }
+        }
+      }
+    },
+    "jobDetail.gap.skill" : {
+      "comment" : "%@ = skill name, e.g. Vue.js.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Noch nicht in deinem Lebenslauf: %@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not in your CV yet: %@"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Henüz CV'nizde yok: %@"
+          }
+        }
+      }
+    },
     "jobDetail.hidden" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -273,6 +1199,99 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Akışınızdan gizlendi"
+          }
+        }
+      }
+    },
+    "jobDetail.hidden.reasons" : {
+      "comment" : "%@ = comma-separated reasons, e.g. Location, Salary.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deine Gründe: %@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your reasons: %@"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nedenleriniz: %@"
+          }
+        }
+      }
+    },
+    "jobDetail.hidden.tellUsWhy" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sag uns, warum"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tell us why"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nedenini söyleyin"
+          }
+        }
+      }
+    },
+    "jobDetail.impact.most" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wichtigster Faktor"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Matters most"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En önemli"
+          }
+        }
+      }
+    },
+    "jobDetail.impact.some" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Teilweise wichtig"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Matters some"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Biraz önemli"
           }
         }
       }
@@ -300,13 +1319,84 @@
         }
       }
     },
+    "jobDetail.match.basis" : {
+      "comment" : "%1$@ = CV title, %2$@ = relative time, e.g. 7 hours ago. DE uses „…“.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Basierend auf „%1$@“ · aktualisiert %2$@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Based on “%1$@” · updated %2$@"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“%1$@” CV'sine göre · %2$@ güncellendi"
+          }
+        }
+      }
+    },
+    "jobDetail.match.basis.removedCV" : {
+      "comment" : "%@ = relative time.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Basierend auf einem Lebenslauf, den du entfernt hast · aktualisiert %@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Based on a CV you've since removed · updated %@"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sonradan kaldırdığınız bir CV'ye göre · %@ güncellendi"
+          }
+        }
+      }
+    },
+    "jobDetail.match.explainer" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eine grobe Orientierung, wie gut die Stelle zu deinem Lebenslauf und deinen Wünschen passt. Keine Vorhersage deiner Chancen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A rough guide to how this job fits your CV and preferences. It isn't a prediction of your chances."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "İlanın CV'nize ve tercihlerinize ne kadar uyduğuna dair kabaca bir rehber. Şansınızın tahmini değildir."
+          }
+        }
+      }
+    },
     "jobDetail.match.noCV" : {
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Wähle einen Lebenslauf, um die Passung zu sehen"
+            "value" : "Wähle einen Lebenslauf, um zu sehen, wie gut es passt"
           }
         },
         "en" : {
@@ -318,7 +1408,30 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Uygunluğu görmek için bir CV seçin"
+            "value" : "Uyumu görmek için bir CV seçin"
+          }
+        }
+      }
+    },
+    "jobDetail.match.noCV.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Treffer werden anhand eines deiner Lebensläufe berechnet."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Matches are worked out against one of your CVs."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eşleşmeler CV'lerinizden birine göre hesaplanır."
           }
         }
       }
@@ -346,6 +1459,29 @@
         }
       }
     },
+    "jobDetail.match.pending.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sobald es fertig ist, siehst du hier, wie gut die Stelle zu deinem Lebenslauf passt."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You'll see how this job fits your CV here as soon as it's ready."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bu ilanın CV'nize ne kadar uyduğunu, hazır olur olmaz burada göreceksiniz."
+          }
+        }
+      }
+    },
     "jobDetail.noDescription" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -364,7 +1500,609 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Bu ilanın açıklaması yok. Okumak için orijinal ilanı açın."
+            "value" : "Bu ilanda açıklama yok. Okumak için orijinal ilanı açın."
+          }
+        }
+      }
+    },
+    "jobDetail.notForMe.footer" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Blendet die Stelle aus deinem Feed aus. Du kannst das rückgängig machen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hides this job from your feed. You can undo it."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bu ilan akışınızdan gizlenir. Geri alabilirsiniz."
+          }
+        }
+      }
+    },
+    "jobDetail.opensInBrowser" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Öffnet sich in deinem Browser"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opens in your browser"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tarayıcınızda açılır"
+          }
+        }
+      }
+    },
+    "jobDetail.posted" : {
+      "comment" : "%@ = relative day, mid-sentence, e.g. yesterday.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Veröffentlicht %@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Posted %@"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yayın: %@"
+          }
+        }
+      }
+    },
+    "jobDetail.reason.alreadyApplied" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Schon beworben"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Already applied"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zaten başvurdum"
+          }
+        }
+      }
+    },
+    "jobDetail.reason.company" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unternehmen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Company"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Şirket"
+          }
+        }
+      }
+    },
+    "jobDetail.reason.language" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sprache"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Language"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dil"
+          }
+        }
+      }
+    },
+    "jobDetail.reason.location" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ort"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Location"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Konum"
+          }
+        }
+      }
+    },
+    "jobDetail.reason.notRelevant" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rolle oder Skills"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Role or skills"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rol veya beceriler"
+          }
+        }
+      }
+    },
+    "jobDetail.reason.other" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Etwas anderes"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Something else"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Başka bir şey"
+          }
+        }
+      }
+    },
+    "jobDetail.reason.salary" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gehalt"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Salary"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Maaş"
+          }
+        }
+      }
+    },
+    "jobDetail.reason.seniority" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Erfahrungsstufe"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seniority"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kıdem"
+          }
+        }
+      }
+    },
+    "jobDetail.reason.visa" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Visum"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Visa"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vize"
+          }
+        }
+      }
+    },
+    "jobDetail.reasons.save" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Grund speichern"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save reason"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nedeni kaydet"
+          }
+        }
+      }
+    },
+    "jobDetail.reasons.skip" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Überspringen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skip"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Atla"
+          }
+        }
+      }
+    },
+    "jobDetail.reasons.subtitle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wähle alles, was zutrifft. Wir nutzen das, um deine Treffer zu verbessern."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pick any that apply. We'll use this to tune your matches."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Uygun olanları seçin. Eşleşmelerinizi iyileştirmek için kullanacağız."
+          }
+        }
+      }
+    },
+    "jobDetail.reasons.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Was hat nicht gepasst?"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What didn't fit?"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ne uymadı?"
+          }
+        }
+      }
+    },
+    "jobDetail.salary.estimated" : {
+      "comment" : "Salary provenance after the amount.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "vom Jobportal geschätzt"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "estimated by the job site"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iş sitesinin tahmini"
+          }
+        }
+      }
+    },
+    "jobDetail.salary.from" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ab %@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "From %@"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En az %@"
+          }
+        }
+      }
+    },
+    "jobDetail.salary.fromEmployer" : {
+      "comment" : "Salary provenance after the amount: €70K–€85K a year · from employer.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "laut Arbeitgeber"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "from employer"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "işverene göre"
+          }
+        }
+      }
+    },
+    "jobDetail.salary.notStated" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gehalt nicht angegeben"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Salary not stated"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Maaş belirtilmemiş"
+          }
+        }
+      }
+    },
+    "jobDetail.salary.perDay" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ pro Tag"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ a day"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Günlük %@"
+          }
+        }
+      }
+    },
+    "jobDetail.salary.perHour" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ pro Stunde"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ an hour"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saatlik %@"
+          }
+        }
+      }
+    },
+    "jobDetail.salary.perMonth" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ pro Monat"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ a month"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aylık %@"
+          }
+        }
+      }
+    },
+    "jobDetail.salary.perYear" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ pro Jahr"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ a year"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yıllık %@"
+          }
+        }
+      }
+    },
+    "jobDetail.salary.range" : {
+      "comment" : "%1$@ = lower amount, %2$@ = upper amount.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@–%2$@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@–%2$@"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@–%2$@"
+          }
+        }
+      }
+    },
+    "jobDetail.salary.upTo" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bis %@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Up to %@"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En fazla %@"
           }
         }
       }
@@ -387,7 +2125,53 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "İlan hakkında"
+            "value" : "İş hakkında"
+          }
+        }
+      }
+    },
+    "jobDetail.section.details" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Details"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Details"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ayrıntılar"
+          }
+        }
+      }
+    },
+    "jobDetail.section.gaps" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mögliche Lücken"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gaps to consider"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Göz önünde bulundurulacaklar"
           }
         }
       }
@@ -398,7 +2182,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Wie sie passt"
+            "value" : "Wie gut es passt"
           }
         },
         "en" : {
@@ -410,7 +2194,632 @@
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Size uygunluğu"
+            "value" : "Ne kadar uygun"
+          }
+        }
+      }
+    },
+    "jobDetail.section.reasons" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Warum es passt"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Why it matches"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neden uygun"
+          }
+        }
+      }
+    },
+    "jobDetail.section.summary" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zusammenfassung"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Summary"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Özet"
+          }
+        }
+      }
+    },
+    "jobDetail.seniority.director" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Director"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Director"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Direktör"
+          }
+        }
+      }
+    },
+    "jobDetail.seniority.intern" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Praktikum"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Intern"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stajyer"
+          }
+        }
+      }
+    },
+    "jobDetail.seniority.junior" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Junior"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Junior"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Junior"
+          }
+        }
+      }
+    },
+    "jobDetail.seniority.lead" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lead"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lead"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lead"
+          }
+        }
+      }
+    },
+    "jobDetail.seniority.manager" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Manager"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Manager"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yönetici"
+          }
+        }
+      }
+    },
+    "jobDetail.seniority.mid" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mid-Level"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mid-level"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Orta seviye"
+          }
+        }
+      }
+    },
+    "jobDetail.seniority.principal" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Principal"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Principal"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Principal"
+          }
+        }
+      }
+    },
+    "jobDetail.seniority.senior" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Senior"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Senior"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kıdemli"
+          }
+        }
+      }
+    },
+    "jobDetail.seniority.staff" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Staff"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Staff"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Staff"
+          }
+        }
+      }
+    },
+    "jobDetail.sources.direct" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Direkt vom Arbeitgeber"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Direct from employer"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Doğrudan işverenden"
+          }
+        }
+      }
+    },
+    "jobDetail.sources.footnote" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aus öffentlichen Jobseiten gesammelt. Details können je nach Quelle abweichen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Collected from public job sites. Details can differ between sources."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Herkese açık iş sitelerinden toplandı. Ayrıntılar kaynağa göre değişebilir."
+          }
+        }
+      }
+    },
+    "jobDetail.sources.salary" : {
+      "comment" : "This source shows a different salary. %@ = e.g. €75K–€85K a year.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hier: %@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lists %@"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Burada: %@"
+          }
+        }
+      }
+    },
+    "jobDetail.sources.showAll" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alle %lld Quellen anzeigen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show all %lld sources"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld kaynağın tümünü gösterin"
+          }
+        }
+      }
+    },
+    "jobDetail.sources.title" : {
+      "comment" : "This source shows a different job title.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hier als „%@“"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Listed as “%@”"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Burada “%@” olarak geçiyor"
+          }
+        }
+      }
+    },
+    "jobDetail.sources.usedForApply" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Für die Bewerbung genutzt"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Used for Apply"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Başvuruda kullanılıyor"
+          }
+        }
+      }
+    },
+    "jobDetail.status.met" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Erfüllt"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Meets this"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Karşılıyor"
+          }
+        }
+      }
+    },
+    "jobDetail.status.missing" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Noch nicht in deinem Lebenslauf"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not in your CV yet"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Henüz CV'nizde yok"
+          }
+        }
+      }
+    },
+    "jobDetail.status.notStated" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nicht angegeben"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not stated"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Belirtilmemiş"
+          }
+        }
+      }
+    },
+    "jobDetail.status.outsidePrefs" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Außerhalb deiner Wünsche"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Outside your preferences"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tercihlerinizin dışında"
+          }
+        }
+      }
+    },
+    "jobDetail.status.partial" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Teilweise"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Partly"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kısmen"
+          }
+        }
+      }
+    },
+    "jobDetail.summary.none" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eine schriftliche Zusammenfassung gibt es für deine besten Treffer."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A written summary is created for your top matches."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yazılı özet en iyi eşleşmeleriniz için hazırlanır."
+          }
+        }
+      }
+    },
+    "jobDetail.summary.notUseful" : {
+      "comment" : "Thumbs-down button on the AI summary (accessibility label).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nicht hilfreich"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not useful"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "İşe yaramadı"
+          }
+        }
+      }
+    },
+    "jobDetail.summary.question" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "War diese Zusammenfassung hilfreich?"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Was this summary useful?"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bu özet işinize yaradı mı?"
+          }
+        }
+      }
+    },
+    "jobDetail.summary.thanks" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Danke für dein Feedback."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thanks for the feedback."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Geri bildiriminiz için teşekkürler."
+          }
+        }
+      }
+    },
+    "jobDetail.summary.useful" : {
+      "comment" : "Thumbs-up button on the AI summary (accessibility label).",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hilfreich"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Useful"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "İşe yaradı"
           }
         }
       }
@@ -435,6 +2844,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Akışınızdan gizlendi"
+          }
+        }
+      }
+    },
+    "jobDetail.toast.reasonsSaved" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Danke. Wir nutzen das, um deine Treffer zu verbessern."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thanks. We'll use this to tune your matches."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Teşekkürler. Eşleşmelerinizi iyileştirmek için kullanacağız."
           }
         }
       }
@@ -483,6 +2915,75 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ becerilerinize eklendi"
+          }
+        }
+      }
+    },
+    "jobDetail.workMode.hybrid" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hybrid"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hybrid"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hibrit"
+          }
+        }
+      }
+    },
+    "jobDetail.workMode.onsite" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vor Ort"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "On-site"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ofiste"
+          }
+        }
+      }
+    },
+    "jobDetail.workMode.remote" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remote"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remote"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Uzaktan"
           }
         }
       }

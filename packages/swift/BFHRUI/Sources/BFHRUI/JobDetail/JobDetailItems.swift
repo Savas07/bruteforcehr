@@ -186,4 +186,10 @@ extension JobDetailModel {
         /// An application exists at Applied or beyond: "Applied {date} · View in Tracker".
         case applied(date: Date, applicationId: String)
     }
+
+    /// 👍 / 👎 on the AI summary (`AISummaryBlock`).
+    public enum SummaryFeedback: Hashable, Sendable {
+        case helpful
+        case notHelpful
+    }
 }

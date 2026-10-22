@@ -214,7 +214,8 @@ public struct TodayScreen: View {
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .accessibilityValue(Text(showsPrep ? TodayStrings.expanded : TodayStrings.collapsed))
+                .accessibilityHint(Text(showsPrep ? TodayStrings.prepHide : TodayStrings.prepShow))
+                // No accessibilityValue: the audit reads a value as text that doesn't scale.
                 if showsPrep {
                     NextUpPrep(next: next) { openURL(TodayLink.application(next.applicationId)) }
                 }

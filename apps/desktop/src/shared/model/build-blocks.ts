@@ -334,6 +334,7 @@ export function reviewProposalVM(
     headline: mailHeadline(message.category, company, hedged, ctx),
     hedged,
     move,
+    application: application ? { id: application.id, label: applicationLabel(application) } : null,
     reason: linkReason(message.linkStrength, message.from.address, application, ctx),
     evidence: message.snippet || null,
     dates: message.extracted.dates.map((date) => ({

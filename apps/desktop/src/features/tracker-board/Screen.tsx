@@ -162,7 +162,13 @@ function StaticBoard({ loading, onRetry }: { loading: boolean; onRetry: (() => v
       <span role="status" className="sr-only">
         {loading ? intl.formatMessage(messages.loading) : ""}
       </span>
-      <div className="flex min-w-0 flex-1 gap-2 overflow-x-auto">
+      {/* Nothing inside is focusable here, so the scroller itself takes focus for keyboard scrolling. */}
+      <div
+        role="group"
+        tabIndex={0}
+        aria-label={intl.formatMessage(messages.boardLabel)}
+        className="flex min-w-0 flex-1 gap-2 overflow-x-auto"
+      >
         {statuses.map((status, index) => (
           <BoardColumn
             key={status.key}
@@ -251,6 +257,10 @@ function ReadyBoard({ model }: { model: TrackerBoardModel }) {
   };
   const tabbableId = laneOf(focusedId) ? focusedId : (lanes[0]?.cards[0]?.applicationId ?? null);
 
+  /**
+   * Makes `id` the active card and focuses it after the next paint. A card that left the board (into
+   * the folded Closed rail) is skipped; the focus event of whatever does get focus wins.
+   */
   const focusCard = (id: string) => {
     setFocusedId(id);
     requestAnimationFrame(() => {
@@ -586,7 +596,11 @@ function ReadyBoard({ model }: { model: TrackerBoardModel }) {
         <DetailSidePanel
           open
           label={intl.formatMessage(messages.panelLabel)}
-          onClose={() => select(null)}
+          onClose={() => {
+            select(null);
+            // The record's card, even if a move re-mounted it in another column since it opened.
+            focusCard(selected.applicationId);
+          }}
           nav={{
             position: panelIndex + 1,
             total: selectedColumn.cards.length,

@@ -115,12 +115,15 @@ export function BoardColumn({
       <button
         type="button"
         aria-expanded={false}
-        aria-label={intl.formatMessage(messages.expand, { column: accessibleLabel })}
+        // Named by its content, not `aria-label`, so the name contains the visible words (WCAG 2.5.3).
         onClick={() => onCollapsedChange?.(false)}
         className="hover:bg-surface-hover flex min-h-0 w-full flex-1 cursor-default flex-col items-center gap-2 rounded-lg py-3"
       >
+        <span className="sr-only">{intl.formatMessage(messages.expand, { column: accessibleLabel })}</span>
         <span aria-hidden="true" className={cx("size-2 shrink-0 rounded-full", STATUS_DOT[status.key])} />
-        <span className="text-fg-secondary text-footnote font-medium tabular-nums">{count}</span>
+        <span aria-hidden="true" className="text-fg-secondary text-footnote font-medium tabular-nums">
+          {countLabel ?? "–"}
+        </span>
         <span
           aria-hidden="true"
           className="text-fg-primary text-callout font-medium [writing-mode:vertical-rl]"

@@ -127,13 +127,15 @@ export function ClosedRail({
           type="button"
           disabled={rail === null}
           aria-expanded={expanded}
-          aria-label={rail?.accessibleLabel ?? label}
+          // Named by its content (a spoken sentence), not `aria-label`, so the name contains the
+          // visible words (WCAG 2.5.3).
           onClick={() => onExpandedChange(!expanded)}
           className={cx(
             "bg-surface-sunken hover:bg-surface-hover flex w-10 shrink-0 cursor-default flex-col items-center gap-3 overflow-hidden rounded-lg py-3",
             expanded && "bg-surface-selected",
           )}
         >
+          <span className="sr-only">{rail?.accessibleLabel ?? label}</span>
           <span aria-hidden="true" className="bg-phase-closed-solid size-2 shrink-0 rounded-full" />
           <span aria-hidden="true" className="text-fg-secondary text-footnote font-medium tabular-nums">
             {rail?.countLabel ?? "–"}

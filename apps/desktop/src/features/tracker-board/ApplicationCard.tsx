@@ -8,7 +8,7 @@ import type { ApplicationStatus } from "@bfhr/core";
 import { useDraggable } from "@dnd-kit/core";
 import { ArrowRightLeft, CalendarClock, Mail } from "lucide-react";
 import { DropdownMenu } from "radix-ui";
-import { forwardRef, type Ref } from "react";
+import { forwardRef, type Ref, useRef } from "react";
 import { defineMessages, useIntl } from "react-intl";
 import { cx } from "../../shared/cx";
 import { Monogram } from "../../shared/ui/Company";
@@ -117,10 +117,15 @@ export const ApplicationCard = forwardRef(function ApplicationCard(
 ) {
   const intl = useIntl();
   const { setNodeRef, listeners, isDragging } = useDraggable({ id: card.applicationId, data: { card } });
+  const cardRef = useRef<HTMLButtonElement | null>(null);
+  // Radix gives focus back to the corner trigger when the menu closes; the card is where the user
+  // pressed `M`, and where ↑ ↓ ← → and ⇧⌘→ continue from.
+  const returnToCard = useRef(false);
   return (
     <li className="group relative" data-card-id={card.applicationId} onFocus={onFocus}>
       <button
         ref={(node) => {
+          cardRef.current = node;
           setNodeRef(node);
           if (typeof ref === "function") ref(node);
           else if (ref) ref.current = node;
@@ -140,7 +145,13 @@ export const ApplicationCard = forwardRef(function ApplicationCard(
       >
         <CardBody card={card} muted={muted} />
       </button>
-      <DropdownMenu.Root open={menuOpen} onOpenChange={onMenuOpenChange}>
+      <DropdownMenu.Root
+        open={menuOpen}
+        onOpenChange={(open) => {
+          returnToCard.current = !open;
+          onMenuOpenChange(open);
+        }}
+      >
         <Hint label={intl.formatMessage(messages.moveTo)} keys="M">
           <DropdownMenu.Trigger asChild>
             <button
@@ -148,6 +159,11 @@ export const ApplicationCard = forwardRef(function ApplicationCard(
               tabIndex={tabbable ? 0 : -1}
               aria-label={intl.formatMessage(messages.moveTo)}
               aria-describedby={undefined}
+              onFocus={() => {
+                if (!returnToCard.current) return;
+                returnToCard.current = false;
+                cardRef.current?.focus();
+              }}
               className={cx(
                 "text-fg-secondary hover:bg-surface-hover hover:text-fg-primary data-[state=open]:bg-surface-selected absolute end-2 top-2 inline-flex size-6 items-center justify-center rounded-sm opacity-0 transition-opacity duration-(--bfhr-duration-fast) group-focus-within:opacity-100 group-hover:opacity-100 focus-visible:opacity-100 data-[state=open]:opacity-100",
               )}

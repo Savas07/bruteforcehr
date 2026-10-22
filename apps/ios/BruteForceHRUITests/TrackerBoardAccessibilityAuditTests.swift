@@ -28,7 +28,7 @@ final class TrackerBoardAccessibilityAuditTests: XCTestCase {
     func testPopulatedAccessibilitySize() throws {
         let app = launch(dataset: "populated", contentSize: largestSize)
         try snapshot("pipeline-ax")
-        try scrollAudit(app, "populated AX", pages: 6)
+        try scrollAudit(app, "populated AX", pages: 6, defaultSize: false)
     }
 
     @MainActor
@@ -38,7 +38,7 @@ final class TrackerBoardAccessibilityAuditTests: XCTestCase {
 
     @MainActor
     func testEmptyAccessibilitySize() throws {
-        try audit(launch(dataset: "empty", contentSize: largestSize), "empty AX")
+        try audit(launch(dataset: "empty", contentSize: largestSize), "empty AX", defaultSize: false)
     }
 
     /// Closed scope: outcomes in the grey tone, rejected reads "Not selected".
@@ -73,7 +73,7 @@ final class TrackerBoardAccessibilityAuditTests: XCTestCase {
         let app = launch(dataset: "populated", contentSize: largestSize)
         openBrightwave(app)
         try snapshot("detail-ax")
-        try scrollAudit(app, "detail AX", pages: 6)
+        try scrollAudit(app, "detail AX", pages: 6, defaultSize: false)
     }
 
     // MARK: Moves
@@ -137,6 +137,24 @@ final class TrackerBoardAccessibilityAuditTests: XCTestCase {
         try snapshot("not-selected-toast")
     }
 
+    /// Drag a row onto the drop panel's stage targets (pinned over the top of the list while
+    /// dragging): the move happens and the Undo toast names it.
+    @MainActor
+    func testDragOntoStageTarget() throws {
+        let app = launch(dataset: "populated", contentSize: nil)
+        let row = app.buttons.containing(NSPredicate(format: "label CONTAINS %@", "Aire Digital Health")).firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: 10))
+        // Panel layout: 8 pt below the bar, 12 pt padding, the title line, 8 pt, then the first row
+        // of chips (Saved ✓ · Preparing · Applied …). Aim at the second chip.
+        let top = app.navigationBars.firstMatch.frame.maxY
+        let target = app.coordinate(withNormalizedOffset: .zero).withOffset(CGVector(dx: 175, dy: top + 72))
+        row.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+            .press(forDuration: 1.0, thenDragTo: target, withVelocity: .slow, thenHoldForDuration: 1.0)
+        let toast = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH %@", "Aire Digital Health · moved to")).firstMatch
+        XCTAssertTrue(toast.waitForExistence(timeout: 5))
+        try snapshot("drag-dropped")
+    }
+
     // MARK: Helpers
 
     /// The sheet's title (the principal item also names the application).
@@ -149,10 +167,16 @@ final class TrackerBoardAccessibilityAuditTests: XCTestCase {
     private func openBrightwave(_ app: XCUIApplication) {
         // The stage strip jumps to Interviewing, so no long scroll is needed at any text size.
         let chip = app.buttons.containing(NSPredicate(format: "label BEGINSWITH %@", "Interviewing")).firstMatch
-        XCTAssertTrue(chip.waitForExistence(timeout: 10))
+        let firstChip = app.buttons.containing(NSPredicate(format: "label BEGINSWITH %@", "Saved")).firstMatch
+        XCTAssertTrue(firstChip.waitForExistence(timeout: 10))
+        var swipes = 0
+        while !chip.isHittable, swipes < 8 {
+            (firstChip.isHittable ? firstChip : chip).swipeLeft()
+            swipes += 1
+        }
         chip.tap()
         let row = app.buttons.containing(NSPredicate(format: "label CONTAINS %@", "Brightwave")).firstMatch
-        var swipes = 0
+        swipes = 0
         while !(row.exists && row.isHittable), swipes < 8 {
             app.swipeUp()
             swipes += 1
@@ -161,22 +185,42 @@ final class TrackerBoardAccessibilityAuditTests: XCTestCase {
         XCTAssertTrue(app.navigationBars["Brightwave"].waitForExistence(timeout: 10))
     }
 
-    /// Audits, ignoring the system tab and status bars, and logs each issue with its element.
+    /// Audits this screen and logs every issue (kept or ignored) to `audit.log`. Ignored, each a
+    /// documented false positive (docs/design/critiques/ios/tracker-board/accessibility.md):
+    /// - the system tab and status bars, and contrast of rows passing under the translucent
+    ///   navigation / tab bars (the audit measures them against the blur);
+    /// - disabled controls (WCAG 1.4.3 exempts inactive components), e.g. the current stage in
+    ///   Move to…;
+    /// - "Dynamic Type unsupported" at the default size: the same screens at AX5 pass that check;
+    /// - "Text clipped" without an element: the stage strip's peeking chip and rows cut by the
+    ///   viewport edge (checked in the page screenshots).
     @MainActor
-    private func audit(_ app: XCUIApplication, _ context: String) throws {
+    private func audit(_ app: XCUIApplication, _ context: String, defaultSize: Bool = true) throws {
+        let navBottom = app.navigationBars.firstMatch.exists ? app.navigationBars.firstMatch.frame.maxY : 0
+        let tabTop = app.tabBars.firstMatch.exists ? app.tabBars.firstMatch.frame.minY : .greatestFiniteMagnitude
+        try snapshot("audit-\(context.replacingOccurrences(of: " ", with: "-"))")
         try app.performAccessibilityAudit { issue in
-            if let element = issue.element, element.elementType == .tabBar || element.elementType == .statusBar { return true }
-            self.log("\(context): \(issue.auditType) \(issue.compactDescription) — \(issue.element?.debugDescription.prefix(240) ?? "no element")")
-            return false
+            let element = issue.element
+            let ignored: String? = {
+                if let element, element.elementType == .tabBar || element.elementType == .statusBar { return "system bar" }
+                if let element, !element.isEnabled { return "disabled control" }
+                if issue.auditType == .contrast, let frame = element?.frame,
+                   frame.minY < navBottom || frame.maxY > tabTop { return "under a translucent bar" }
+                if issue.auditType == .dynamicType, defaultSize { return "default size; AX run covers scaling" }
+                if issue.auditType == .textClipped, element == nil { return "viewport / strip peek" }
+                return nil
+            }()
+            self.log("\(ignored.map { "IGNORED (\($0))" } ?? "KEPT") \(context): \(issue.compactDescription) — \(element?.debugDescription.prefix(240) ?? "no element")")
+            return ignored != nil
         }
     }
 
     @MainActor
-    private func scrollAudit(_ app: XCUIApplication, _ context: String, pages: Int) throws {
-        try audit(app, "\(context) top")
+    private func scrollAudit(_ app: XCUIApplication, _ context: String, pages: Int, defaultSize: Bool = true) throws {
+        try audit(app, "\(context) top", defaultSize: defaultSize)
         for page in 1...pages {
             app.swipeUp()
-            try audit(app, "\(context) page \(page)")
+            try audit(app, "\(context) page \(page)", defaultSize: defaultSize)
         }
     }
 

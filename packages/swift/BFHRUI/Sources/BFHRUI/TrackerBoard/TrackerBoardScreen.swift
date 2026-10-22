@@ -290,7 +290,13 @@ struct TrackerMoveSheet: View {
                     .accessibilityAddTraits(.isHeader)
                 }
                 ToolbarItem(placement: .cancellationAction) {
-                    Button(action: onCancel) { Text(Strings.close) }
+                    // The system ✕ (iOS 26): a "Close" text button would read like the
+                    // Close… outcome action in this very sheet.
+                    if #available(iOS 26, macOS 26, *) {
+                        Button(role: .close, action: onCancel)
+                    } else {
+                        Button(role: .cancel, action: onCancel) { Text(Strings.close) }
+                    }
                 }
             }
         }

@@ -50,9 +50,6 @@ public struct TrackerBoardScreen: View {
                 self.sheet = nil
             }
         }
-        .navigationDestination(for: TrackerRoute.self) { route in
-            TrackerApplicationDetailScreen(model: model, applicationId: route.applicationId)
-        }
     }
 
     // MARK: Empty
@@ -101,7 +98,9 @@ public struct TrackerBoardScreen: View {
                     Section {
                         if isExpanded(section) {
                             ForEach(section.rows) { row in
-                                NavigationLink(value: TrackerRoute(applicationId: row.id)) {
+                                NavigationLink {
+                                    TrackerApplicationDetailScreen(model: model, applicationId: row.id)
+                                } label: {
                                     PipelineRowView(row: row)
                                 }
                                 .bfhrRowActions(actions(for: row))
@@ -228,11 +227,6 @@ public struct TrackerBoardScreen: View {
     }
 }
 
-/// A pushed Application detail.
-struct TrackerRoute: Hashable {
-    var applicationId: String
-}
-
 /// Move to… (every status) or Close… (outcomes only).
 enum TrackerSheet: Identifiable, Hashable {
     case move(String)
@@ -261,7 +255,8 @@ extension TrackerBoardStrings {
 
 // MARK: - Sheets
 
-/// The Move to… / Close… sheet: `StatusMenu` with the medium detent.
+/// The Move to… / Close… sheet: `StatusMenu` with the medium detent, titled with the action and
+/// the application it moves, on a solid background so the Pipeline doesn't show through.
 struct TrackerMoveSheet: View {
     let sheet: TrackerSheet
     let model: TrackerBoardModel
@@ -279,12 +274,28 @@ struct TrackerMoveSheet: View {
             .navigationTitle(Text(title))
             .bfhrInlineTitle()
             .toolbar {
+                ToolbarItem(placement: .principal) {
+                    VStack(spacing: 0) {
+                        Text(title)
+                            .font(.bfhr(.headline))
+                            .foregroundStyle(BFHRColor.Fg.primary)
+                        if let application = model.data.application(id: sheet.applicationId) {
+                            Text(verbatim: "\(application.company) · \(application.role)")
+                                .font(.bfhr(.footnote))
+                                .foregroundStyle(BFHRColor.Fg.secondary)
+                                .lineLimit(1)
+                        }
+                    }
+                    .accessibilityElement(children: .combine)
+                    .accessibilityAddTraits(.isHeader)
+                }
                 ToolbarItem(placement: .cancellationAction) {
                     Button(action: onCancel) { Text(Strings.close) }
                 }
             }
         }
         .presentationDetents([.medium, .large])
+        .presentationBackground(BFHRColor.groupedBackground)
     }
 
     private var title: LocalizedStringResource {

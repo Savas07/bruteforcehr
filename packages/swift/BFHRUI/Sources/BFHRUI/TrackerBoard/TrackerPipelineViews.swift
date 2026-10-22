@@ -7,21 +7,27 @@ import SwiftUI
 
 /// One application (`ApplicationRow`): monogram (envelope badge when the last move came from an
 /// email), role, company, days in stage, and a second line only when there is something next.
+/// At accessibility sizes the decorative monogram steps aside so the role keeps whole words, and
+/// the envelope moves next to the day count.
 struct PipelineRowView: View {
     let row: PipelineRow
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
+    private var isLarge: Bool { dynamicTypeSize.isAccessibilitySize }
+
     var body: some View {
         HStack(alignment: .top, spacing: BFHRSpace.s3) {
-            CompanyMonogram(row.company, badge: row.lastMoveAutomatic ? "envelope.fill" : nil)
+            if !isLarge {
+                CompanyMonogram(row.company, badge: row.lastMoveAutomatic ? "envelope.fill" : nil)
+            }
             VStack(alignment: .leading, spacing: 2) {
                 HStack(alignment: .firstTextBaseline, spacing: BFHRSpace.s2) {
                     Text(verbatim: row.role)
                         .font(.bfhr(.headline))
-                        .foregroundStyle(row.status.isActive ? BFHRColor.Fg.primary : BFHRColor.Fg.secondary)
-                        .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 2)
+                        .foregroundStyle(BFHRColor.Fg.primary)
+                        .lineLimit(isLarge ? nil : 2)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                    if !dynamicTypeSize.isAccessibilitySize { trailing }
+                    if !isLarge { trailing }
                 }
                 Text(verbatim: row.company.name)
                     .font(.bfhr(.subheadline))
@@ -29,7 +35,7 @@ struct PipelineRowView: View {
                 NextStepLine(step: row.secondLine)
                     .font(.bfhr(.footnote))
                     .padding(.top, 2)
-                if dynamicTypeSize.isAccessibilitySize { trailing }
+                if isLarge { trailing }
             }
         }
         .padding(.vertical, BFHRSpace.s1)
@@ -41,6 +47,9 @@ struct PipelineRowView: View {
     @ViewBuilder
     private var trailing: some View {
         HStack(spacing: BFHRSpace.s1) {
+            if isLarge, row.lastMoveAutomatic {
+                Image(systemName: "envelope.fill").accessibilityHidden(true)
+            }
             if row.pendingSync { SyncGlyph() }
             if row.status.isActive {
                 Text(TrackerBoardStrings.daysShort(row.daysInStage))
@@ -176,6 +185,11 @@ struct StageSectionHeader: View {
                 .accessibilityValue(Text(isExpanded ? TrackerBoardStrings.expanded : TrackerBoardStrings.collapsed))
             }
         }
+        .padding(.horizontal, BFHRSpace.s4)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        // Opaque while pinned, so rows scrolling underneath never collide with the label.
+        .background(BFHRColor.background)
+        .listRowInsets(EdgeInsets())
     }
 
     private var label: some View {

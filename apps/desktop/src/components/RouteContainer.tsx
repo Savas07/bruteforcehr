@@ -22,7 +22,10 @@ export function RouteContainer({ destination }: { destination: DestinationId }) 
   }, [documentTitle]);
 
   return (
-    <section aria-labelledby={ROUTE_TITLE_ID} className="min-h-0 flex-1 overflow-y-auto px-8 pt-5 pb-8">
+    <section
+      aria-labelledby={ROUTE_TITLE_ID}
+      className="scrollbar-gutter-stable min-h-0 flex-1 overflow-y-auto px-8 pt-5 pb-8"
+    >
       {/* Focus target after keyboard navigation (palette, ⌘1–5) so screen readers announce it. */}
       <h1
         id={ROUTE_TITLE_ID}

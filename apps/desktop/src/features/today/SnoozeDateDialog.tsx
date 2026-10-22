@@ -40,6 +40,8 @@ export function SnoozeDateDialog({
   const intl = useIntl();
   const fieldId = useId();
   const [value, setValue] = useState("");
+  // Tomorrow at the earliest ("Later today" covers today), as the field's local YYYY-MM-DD.
+  const [min] = useState(() => new Date(Date.now() + 86_400_000).toLocaleDateString("sv"));
   const submit = () => {
     const [year, month, day] = value.split("-").map(Number);
     if (!year || !month || !day) return;
@@ -75,6 +77,7 @@ export function SnoozeDateDialog({
                 type="date"
                 value={value}
                 onChange={(event) => setValue(event.target.value)}
+                min={min}
                 className="bg-surface-base border-line-control text-callout text-fg-primary h-8 rounded-md border px-2"
               />
             </div>

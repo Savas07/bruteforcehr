@@ -20,9 +20,10 @@ on:
 permissions:
   contents: read
 
+# Superseded PR runs are cancelled; every push to main keeps its own result.
 concurrency:
-  group: desktop-${{ github.ref }}
-  cancel-in-progress: true
+  group: desktop-${{ github.ref }}-${{ github.event_name == 'pull_request' && 'pr' || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   COREPACK_ENABLE_DOWNLOAD_PROMPT: "0"

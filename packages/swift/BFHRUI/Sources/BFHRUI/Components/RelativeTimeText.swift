@@ -45,10 +45,16 @@ public struct RelativeTimeText: View {
         case .time: DateText.time(date, locale: locale, calendar: calendar)
         }
         // `.day` ("8 days ago") reads the absolute date to VoiceOver; the styles that show the time
-        // already are absolute enough and read what's shown (a label much longer than the visible
-        // text makes the accessibility audit report it as clipped).
-        return Text(verbatim: text)
-            .monospacedDigit()
-            .accessibilityLabel(Text(verbatim: style == .day ? DateText.full(date, locale: locale, calendar: calendar) : text))
+        // are absolute enough and stay a plain text element (an overriding label much longer than
+        // the visible text made the accessibility audit report it as clipped).
+        return Group {
+            if style == .day {
+                Text(verbatim: text)
+                    .accessibilityLabel(Text(verbatim: DateText.full(date, locale: locale, calendar: calendar)))
+            } else {
+                Text(verbatim: text)
+            }
+        }
+        .monospacedDigit()
     }
 }

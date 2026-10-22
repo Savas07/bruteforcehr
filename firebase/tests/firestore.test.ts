@@ -241,7 +241,7 @@ describe("appConfig/{platform}: public read, server write", () => {
 });
 
 describe("serverOnly/**: no client access", () => {
-  it.each(["serverOnly/otp/challenges/abc", "serverOnly/otp/sendLogs/abc", "serverOnly/mailTokens/alice"])(
+  it.each(["serverOnly/otp/challenges/abc", "serverOnly/otp/sendLogs/abc", "serverOnly/mail/tokens/acc-gmail"])(
     "%s",
     async (path) => {
       await seed(path, { secret: true });

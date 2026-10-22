@@ -67,13 +67,13 @@ service cloud.firestore {
         allow read: if isOwner(uid);
       }
 
-      // Created by the mail worker. Clients only review them.
+      // Created by the mail worker. Clients only review them: every client write is a review act,
+      // so the resulting reviewState must be one a client may set (a no-op "pending" write fails too).
       match /mailMessages/{messageId} {
         allow read: if isOwner(uid);
         allow update: if isOwner(uid)
           && changedKeys().hasOnly(['reviewState', 'applicationId', 'category', 'reviewedAt'])
-          && (!('reviewState' in changedKeys())
-            || request.resource.data.reviewState in ['confirmed', 'corrected', 'dismissed']);
+          && request.resource.data.reviewState in ['confirmed', 'corrected', 'dismissed'];
       }
     }
 

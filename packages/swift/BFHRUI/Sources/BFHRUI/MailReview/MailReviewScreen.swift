@@ -36,7 +36,7 @@ public struct MailReviewScreen: View {
             }
             .bfhrInsetGroupedList()
         } failure: { failure in
-            PaneError(failure, title: MailViewStrings.errorTitle, retry: { openURL(.mail) })
+            PaneError(failure, title: MailViewStrings.errorTitle, retry: reload)
         }
         .toolbar {
             if model.filter == .updates && !model.updates.isEmpty {
@@ -74,6 +74,7 @@ public struct MailReviewScreen: View {
     }
 
     @Environment(\.openURL) private var openURLAction
+    @Environment(\.bfhrReload) private var reload
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private func openURL(_ link: MailLink) {
@@ -90,7 +91,7 @@ public struct MailReviewScreen: View {
                 Section {
                     InlineAlert(
                         .warning,
-                        title: MailViewStrings.reconnect(account.address.mailUnlinked),
+                        title: MailViewStrings.reconnect(account.address),
                         message: MailViewStrings.reconnectBody,
                         actionTitle: MailViewStrings.reconnectAction,
                         action: { openURL(.mailAccount(account.id)) }
@@ -184,7 +185,7 @@ public struct MailReviewScreen: View {
             ForEach(model.accounts) { account in
                 Group {
                     if account.needsAttention {
-                        Label { Text(mailPlain: MailViewStrings.needsSignIn(account.address)) } icon: { Image(systemName: "exclamationmark.triangle") }
+                        Label { Text(bfhrPlain: MailViewStrings.needsSignIn(account.address)) } icon: { Image(systemName: "exclamationmark.triangle") }
                     } else {
                         Text(verbatim: account.address)
                     }
@@ -401,13 +402,11 @@ private struct CategoryChip: View {
 /// In-app links (IA.md "Deep links") the Mail tab's buttons open; the app's `openURL` handler
 /// routes them to their tab or sheet.
 private enum MailLink {
-    case mail
     case connectEmail
     case mailAccount(String)
 
     var url: URL {
         switch self {
-        case .mail: URL(string: "bruteforcehr://mail")!
         case .connectEmail: URL(string: "bruteforcehr://settings/mail-accounts")!
         case .mailAccount(let id): URL(string: "bruteforcehr://settings/mail-accounts/\(id)")!
         }

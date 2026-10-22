@@ -97,7 +97,7 @@ private struct MetaChips: View {
             }
             if let accountAddress {
                 MetaChip(systemImage: "tray") {
-                    Text(mailPlain: MailViewStrings.receivedIn(accountAddress))
+                    Text(bfhrPlain: MailViewStrings.receivedIn(accountAddress))
                 }
             }
         }
@@ -245,25 +245,6 @@ extension View {
     }
 }
 
-extension Text {
-    /// A localized string with user data (email addresses) that must not turn into tappable
-    /// `mailto:` links: the system detects addresses in localized text and styles them as links.
-    init(mailPlain resource: LocalizedStringResource) {
-        var attributed = AttributedString(localized: resource)
-        for run in attributed.runs where run.link != nil {
-            attributed[run.range].link = nil
-        }
-        self.init(attributed)
-    }
-}
-
-extension String {
-    /// The address with word joiners around "@", so link detection in shared components that
-    /// render a `LocalizedStringResource` doesn't turn it into a `mailto:` link.
-    var mailUnlinked: String {
-        replacingOccurrences(of: "@", with: "\u{2060}@\u{2060}")
-    }
-}
 
 /// Today's emails show the time, older ones the day.
 struct MailTimeText: View {

@@ -1,0 +1,211 @@
+{
+  "format": 1,
+  "now": "2026-10-22T07:30:00.000Z",
+  "appConfigs": [
+    {
+      "id": "ios",
+      "latestVersion": "0.1.0",
+      "minSupportedVersion": "0.1.0",
+      "downloadUrl": null,
+      "releaseNotesUrl": "https://github.com/Savas07/bruteforcehr-releases/releases/tag/v0.1.0",
+      "featureFlags": {
+        "mailIntelligence": false,
+        "insights": false
+      },
+      "updatedAt": "2026-10-17T07:30:00.000Z"
+    },
+    {
+      "id": "macos",
+      "latestVersion": "0.1.0",
+      "minSupportedVersion": "0.1.0",
+      "downloadUrl": "https://github.com/Savas07/bruteforcehr-releases/releases/latest",
+      "releaseNotesUrl": "https://github.com/Savas07/bruteforcehr-releases/releases/tag/v0.1.0",
+      "featureFlags": {
+        "mailIntelligence": false,
+        "insights": false
+      },
+      "updatedAt": "2026-10-17T07:30:00.000Z"
+    },
+    {
+      "id": "windows",
+      "latestVersion": "0.1.0",
+      "minSupportedVersion": "0.1.0",
+      "downloadUrl": "https://github.com/Savas07/bruteforcehr-releases/releases/latest",
+      "releaseNotesUrl": "https://github.com/Savas07/bruteforcehr-releases/releases/tag/v0.1.0",
+      "featureFlags": {
+        "mailIntelligence": false,
+        "insights": false
+      },
+      "updatedAt": "2026-10-17T07:30:00.000Z"
+    }
+  ],
+  "uid": "fixture-user-deniz",
+  "profile": {
+    "id": "fixture-user-deniz",
+    "fullName": "Deniz Aksoy",
+    "email": "deniz.aksoy@example.com",
+    "phone": "+90 532 555 01 47",
+    "headline": "Frontend & product engineer · React, TypeScript, design systems",
+    "links": [
+      {
+        "label": "Portfolio",
+        "url": "https://deniz.example.com"
+      },
+      {
+        "label": "GitHub",
+        "url": "https://github.com/deniz-aksoy-example"
+      },
+      {
+        "label": "LinkedIn",
+        "url": "https://www.linkedin.com/in/deniz-aksoy-example"
+      }
+    ],
+    "targetRoles": [
+      "Frontend Engineer",
+      "Product Engineer",
+      "Senior Frontend Engineer",
+      "Design Systems Engineer"
+    ],
+    "seniority": "mid",
+    "locations": [
+      {
+        "label": "Istanbul",
+        "city": "Istanbul",
+        "countryCode": "TR",
+        "relocation": false
+      },
+      {
+        "label": "Berlin",
+        "city": "Berlin",
+        "countryCode": "DE",
+        "relocation": true
+      },
+      {
+        "label": "Amsterdam",
+        "city": "Amsterdam",
+        "countryCode": "NL",
+        "relocation": true
+      },
+      {
+        "label": "London",
+        "city": "London",
+        "countryCode": "GB",
+        "relocation": true
+      },
+      {
+        "label": "United States (remote)",
+        "city": null,
+        "countryCode": "US",
+        "relocation": false
+      }
+    ],
+    "remotePreferences": [
+      "remote",
+      "hybrid"
+    ],
+    "salaryFloor": {
+      "amount": 55000,
+      "currency": "EUR",
+      "period": "year"
+    },
+    "workAuthorization": [
+      {
+        "region": "TR",
+        "status": "citizen"
+      },
+      {
+        "region": "EU",
+        "status": "needs_sponsorship"
+      },
+      {
+        "region": "GB",
+        "status": "needs_sponsorship"
+      },
+      {
+        "region": "US",
+        "status": "needs_sponsorship"
+      }
+    ],
+    "languages": [
+      {
+        "language": "tr",
+        "level": "native"
+      },
+      {
+        "language": "en",
+        "level": "C1"
+      },
+      {
+        "language": "de",
+        "level": "A2"
+      }
+    ],
+    "timezone": "Europe/Istanbul",
+    "uiLanguage": "en",
+    "hiddenCompanies": [],
+    "skills": [
+      "react",
+      "typescript",
+      "javascript",
+      "next.js",
+      "react native",
+      "node.js",
+      "graphql",
+      "css",
+      "tailwind css",
+      "design systems",
+      "accessibility",
+      "storybook",
+      "jest",
+      "playwright",
+      "figma",
+      "web performance",
+      "i18n",
+      "vite",
+      "redux",
+      "a/b testing"
+    ],
+    "defaultCvId": null,
+    "onboardingCompletedAt": "2026-10-22T07:24:00.000Z",
+    "settings": {
+      "ghostedAfterDays": 21,
+      "followUpAfterDays": 7,
+      "mailBodyRetentionDays": 180,
+      "autoApplyConfidence": 0.9,
+      "aiMailTextAllowed": true,
+      "dailySendCap": 20,
+      "quietHours": {
+        "start": "22:30",
+        "end": "08:00"
+      },
+      "notifyRejections": true
+    },
+    "createdAt": "2026-10-22T07:18:00.000Z",
+    "updatedAt": "2026-10-22T07:24:00.000Z"
+  },
+  "cvs": [],
+  "cvRevisions": [],
+  "renderedFiles": [],
+  "coverLetters": [],
+  "jobs": [],
+  "jobMatches": [],
+  "savedSearches": [],
+  "applications": [],
+  "applicationEvents": [],
+  "interviews": [],
+  "contacts": [],
+  "mailAccounts": [],
+  "mailMessages": [],
+  "devices": [
+    {
+      "id": "device-iphone",
+      "platform": "ios",
+      "pushToken": "fixture-apns-token-0f3c9a7e51d24b6e",
+      "appVersion": "0.1.0",
+      "osVersion": "26.5",
+      "locale": "en-GB",
+      "lastSeenAt": "2026-10-22T06:30:00.000Z",
+      "createdAt": "2026-10-22T07:18:00.000Z"
+    }
+  ]
+}

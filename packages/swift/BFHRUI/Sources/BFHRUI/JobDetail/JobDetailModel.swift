@@ -50,9 +50,6 @@ public final class JobDetailModel: ScreenModel {
     /// 👍 / 👎 on the AI summary; nil until the user rates it. Kept per job for this session
     /// until the feedback write lands with the matching pipeline (M4).
     public private(set) var summaryFeedback: SummaryFeedback?
-    /// Re-fetches the job after a failed load (`PaneError`'s Try again); nil hides Try again.
-    /// The data layer sets it (design mode reloads the fixture).
-    public var reload: (() -> Void)?
 
     public var hasDescription: Bool { !description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
     /// The job's match changed offline and hasn't synced (`SyncGlyph`).

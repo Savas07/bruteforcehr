@@ -98,7 +98,7 @@ struct FactorRow: View {
                     .foregroundStyle(BFHRColor.Fg.primary)
                     .fixedSize(horizontal: false, vertical: true)
                 if let evidence = factor.evidence {
-                    Text(JobDetailViewStrings.evidence(evidence))
+                    Text(bfhrPlain: JobDetailViewStrings.evidence(evidence))
                         .font(.bfhr(.footnote))
                         .foregroundStyle(BFHRColor.Fg.secondary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -128,7 +128,7 @@ struct GapRow: View {
                         .foregroundStyle(BFHRColor.Fg.primary)
                         .fixedSize(horizontal: false, vertical: true)
                     if let evidence = gap.evidence {
-                        Text(JobDetailViewStrings.evidence(evidence))
+                        Text(bfhrPlain: JobDetailViewStrings.evidence(evidence))
                             .font(.bfhr(.footnote))
                             .foregroundStyle(BFHRColor.Fg.secondary)
                     }
@@ -146,9 +146,9 @@ struct GapRow: View {
 
     private var title: Text {
         if gap.kind == .skill {
-            Text(JobDetailViewStrings.skillGap(gap.label))
+            Text(bfhrPlain: JobDetailViewStrings.skillGap(gap.label))
         } else if gap.status == .outsidePrefs {
-            Text(JobDetailViewStrings.outsidePreferences(gap.label))
+            Text(bfhrPlain: JobDetailViewStrings.outsidePreferences(gap.label))
         } else {
             Text(verbatim: gap.label)
         }

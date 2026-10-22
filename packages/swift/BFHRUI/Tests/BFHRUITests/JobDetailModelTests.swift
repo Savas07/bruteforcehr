@@ -280,6 +280,52 @@ struct JobDetailModelTests {
         #expect(model.isSaved && !model.isHidden)
     }
 
+    @Test("Tell us why sets the hidden job's reasons; nothing happens while it's visible")
+    func hiddenReasons() throws {
+        let model = model()
+        #expect(model.setHiddenReasons([.salary]) == nil)
+        let hideToast = try #require(model.hide())
+        let toast = try #require(model.setHiddenReasons([.location, .seniority]))
+        #expect(model.isHidden)
+        #expect(model.hiddenReasons == [.location, .seniority])
+        #expect(model.data.match(forJob: Self.featured)?.dismissReasons == [.location, .seniority])
+        #expect(toast.action == nil)
+        #expect(toast.resolvedMessage == "Thanks. We'll use this to tune your matches.")
+        // The hide toast's Undo still restores the job as it was before Not for me.
+        hideToast.action?.perform()
+        #expect(!model.isHidden && model.hiddenReasons.isEmpty)
+    }
+
+    @Test("AI summary rating toggles, and needs a summary")
+    func rateSummary() {
+        let model = model()
+        #expect(model.summaryFeedback == nil)
+        model.rateSummary(.helpful)
+        #expect(model.summaryFeedback == .helpful)
+        model.rateSummary(.notHelpful)
+        #expect(model.summaryFeedback == .notHelpful)
+        model.rateSummary(.notHelpful)
+        #expect(model.summaryFeedback == nil)
+
+        let pending = JobDetailModel(jobId: Self.featured, now: document.now)
+        pending.load(UserData(profile: data.profile, jobs: data.jobs))
+        pending.rateSummary(.helpful)
+        #expect(pending.summaryFeedback == nil)
+    }
+
+    @Test("Salary, relative time and source names format for display")
+    func formatting() throws {
+        let en = Locale(identifier: "en_US")
+        let range = SalaryRange(min: 70_000, max: 85_000, currency: "EUR", period: .year, estimated: false)
+        #expect(JobDetailFormat.salary(range, locale: en) == "€70K–€85K a year")
+        let from = SalaryRange(min: 70_000, max: nil, currency: "EUR", period: .month, estimated: false)
+        #expect(JobDetailFormat.salary(from, locale: en) == "From €70K a month")
+        #expect(JobDetailFormat.salary(SalaryRange(min: nil, max: nil, currency: "EUR", period: .year, estimated: false), locale: en) == nil)
+        #expect(JobDetailFormat.sourceName("smartrecruiters") == "SmartRecruiters")
+        #expect(JobDetailFormat.sourceName("company_site") == "Company Site")
+        #expect(JobDetailFormat.relativeTime(date("2026-10-22T00:18:00Z"), now: document.now, locale: en, calendar: .current) == "7 hours ago")
+    }
+
     @Test("I have this moves the skill and drops its gap; Undo restores", arguments: ["vue", "Vue.js"])
     func markHaveSkill(skill: String) throws {
         let model = model()

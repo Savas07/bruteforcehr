@@ -15,18 +15,14 @@ extension DesignScenario {
         let populated = UserData(Self.fixture(.populated))
         let jobId = Self.featuredJobId(in: populated) ?? populated.jobs.first?.id ?? "job-missing"
         let model = JobDetailModel(jobId: jobId, now: now)
-        let screenData: UserData
         switch dataset {
         case .populated:
-            screenData = populated
+            apply(to: model)
         case .empty:
             var job = populated.job(id: jobId)
             job?.description = ""
-            screenData = UserData(profile: data.profile, jobs: job.map { [$0] } ?? [])
+            apply(to: model, data: UserData(profile: data.profile, jobs: job.map { [$0] } ?? []))
         }
-        apply(to: model, data: screenData)
-        // Try again on the error state loads the scenario's data.
-        model.reload = { [weak model] in model?.load(screenData) }
         return model
     }
 

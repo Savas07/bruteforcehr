@@ -1,42 +1,79 @@
 #!/usr/bin/env bash
-# Captures every tab of BruteForceHR on the simulator for design critique.
+# Captures BruteForceHR on the simulator for design critique.
 #
-# Builds the app and its UI tests once for the iOS Simulator, then on each device and appearance
-# runs ScreenCaptureTests, which installs and launches the app, opens bruteforcehr://<tab> and
-# saves artifacts/screens/ios/<device>/<tab>-<theme>[-ax].png (repository root; gitignored).
+# Builds the app and its UI tests once (Debug, iOS Simulator), then on each device, appearance
+# and text size runs ScreenCaptureTests, which launches the app and saves PNGs under
+# artifacts/screens/ios/<device>/ (repository root of this worktree; gitignored):
 #
-# Usage: apps/ios/scripts/capture.sh [--ax] [--device NAME]... [--theme light|dark]...
-#   --ax        capture at the largest accessibility Dynamic Type size (files end in -ax)
+#   design screens (--screen):  <screen>-<state>-<theme>[-ax].png
+#   title-only shell (default): <tab>-<theme>[-ax].png
+#
+# Usage: apps/ios/scripts/capture.sh [--screen NAME|all]... [--state NAME]... [--size default|ax]...
+#                                     [--ax] [--device NAME]... [--theme light|dark]... [--skip-build]
+#   --screen    core screen in design mode: today, job-detail, cv-editor, tracker-board, mail-review,
+#               or all (repeatable). Without it the tabs of the title-only shell are captured.
+#   --state     populated, empty, loading, error, offline (repeatable; default: all five)
+#   --size      default (Large) or ax (largest accessibility size, files end in -ax)
+#               (repeatable; default: default)
+#   --ax        same as --size ax
 #   --device    simulator name (repeatable; default: "iPhone 17e" and "iPhone 17 Pro Max")
 #   --theme     appearance (repeatable; default: light and dark)
+#   --skip-build  reuse the last build in this worktree's DerivedData
 #
-# Simulator settings (appearance, text size, status bar) are restored afterwards, and devices the
-# script booted are shut down again.
+# DerivedData lives in this worktree (apps/ios/build/DerivedData), so worktrees build in
+# parallel. Set BFHR_DERIVED_DATA to share one DerivedData across worktrees instead (one compiled
+# Firebase SDK on disk); the build then runs inside the lock so builds never overlap. The
+# simulators are shared, so the capture part takes a machine-wide lock
+# (/tmp/bfhr-ios-capture.lock) and waits for other worktrees' captures to finish. Simulator
+# settings (appearance, text size, status bar) are restored afterwards, and devices the script
+# booted are shut down again.
 set -euo pipefail
 
 ios_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 repo_root="$(cd "$ios_dir/../.." && pwd)"
-derived_data="$ios_dir/build/DerivedData"
+derived_data="${BFHR_DERIVED_DATA:-$ios_dir/build/DerivedData}"
+lock_dir="/tmp/bfhr-ios-capture.lock"
+all_screens=(today job-detail cv-editor tracker-board mail-review)
+all_states=(populated empty loading error offline)
 
+screens=()
+states=()
+sizes=()
 devices=()
 themes=()
-ax=false
+build=true
 while (($# > 0)); do
   case "$1" in
-    --ax) ax=true ;;
+    --screen) if [[ "$2" == all ]]; then screens+=("${all_screens[@]}"); else screens+=("$2"); fi; shift ;;
+    --state) states+=("$2"); shift ;;
+    --size) sizes+=("$2"); shift ;;
+    --ax) sizes+=(ax) ;;
     --device) devices+=("$2"); shift ;;
     --theme) themes+=("$2"); shift ;;
-    -h | --help) sed -n '2,15p' "$0"; exit 0 ;;
+    --skip-build) build=false ;;
+    -h | --help) sed -n '2,29p' "$0"; exit 0 ;;
     *) echo "capture.sh: unknown argument $1" >&2; exit 64 ;;
   esac
   shift
 done
 ((${#devices[@]} > 0)) || devices=("iPhone 17e" "iPhone 17 Pro Max")
 ((${#themes[@]} > 0)) || themes=(light dark)
+((${#sizes[@]} > 0)) || sizes=(default)
+((${#states[@]} > 0)) || states=("${all_states[@]}")
+
+contains() { local needle="$1"; shift; for item in "$@"; do [[ "$item" == "$needle" ]] && return 0; done; return 1; }
 for theme in "${themes[@]}"; do
-  [[ "$theme" == light || "$theme" == dark ]] || { echo "capture.sh: theme must be light or dark" >&2; exit 64; }
+  contains "$theme" light dark || { echo "capture.sh: theme must be light or dark" >&2; exit 64; }
 done
-if $ax; then content_size=accessibility-extra-extra-extra-large; suffix="-ax"; else content_size=large; suffix=""; fi
+for size in "${sizes[@]}"; do
+  contains "$size" default ax || { echo "capture.sh: size must be default or ax" >&2; exit 64; }
+done
+for screen in ${screens[@]+"${screens[@]}"}; do
+  contains "$screen" "${all_screens[@]}" || { echo "capture.sh: unknown screen $screen (${all_screens[*]})" >&2; exit 64; }
+done
+for state in "${states[@]}"; do
+  contains "$state" "${all_states[@]}" || { echo "capture.sh: unknown state $state (${all_states[*]})" >&2; exit 64; }
+done
 
 udid_for() {
   xcrun simctl list devices available | grep -F "    $1 (" | head -n 1 | sed -E 's/.*\(([0-9A-F-]{36})\).*/\1/'
@@ -51,8 +88,47 @@ done
 
 xcodebuild_args=(-project "$ios_dir/BruteForceHR.xcodeproj" -scheme BruteForceHR -derivedDataPath "$derived_data" -quiet)
 
-echo "Building BruteForceHR and its UI tests for the iOS Simulator…"
-xcodebuild build-for-testing "${xcodebuild_args[@]}" -destination "platform=iOS Simulator,id=${udids[0]}"
+build_now() {
+  echo "Building BruteForceHR and its UI tests for the iOS Simulator (DerivedData: $derived_data)…"
+  xcodebuild build-for-testing "${xcodebuild_args[@]}" -destination "platform=iOS Simulator,id=${udids[0]}"
+}
+
+# Private DerivedData: build before queueing for the simulators.
+if $build && [[ -z "${BFHR_DERIVED_DATA:-}" ]]; then build_now; fi
+
+# One capture at a time on this machine: the simulators and their settings are shared.
+until mkdir "$lock_dir" 2>/dev/null; do
+  holder="$(cat "$lock_dir/pid" 2>/dev/null || true)"
+  if [[ -n "$holder" ]] && ! kill -0 "$holder" 2>/dev/null; then
+    echo "capture.sh: removing stale lock of process $holder"
+    rm -rf "$lock_dir"
+    continue
+  fi
+  echo "capture.sh: waiting for another capture (process ${holder:-?}, $(cat "$lock_dir/worktree" 2>/dev/null || echo unknown))…"
+  sleep 10
+done
+echo $$ >"$lock_dir/pid"
+echo "$repo_root" >"$lock_dir/worktree"
+
+current_restore=""
+cleanup() {
+  [[ -n "$current_restore" ]] && eval "$current_restore"
+  rm -rf "$lock_dir"
+}
+trap cleanup EXIT
+
+# Shared DerivedData: build while holding the lock, so two worktrees never build into it at once.
+if $build && [[ -n "${BFHR_DERIVED_DATA:-}" ]]; then build_now; fi
+
+if ((${#screens[@]} > 0)); then
+  test_name=testCaptureDesignScreens
+  screen_list="$(IFS=,; echo "${screens[*]}")"
+  state_list="$(IFS=,; echo "${states[*]}")"
+else
+  test_name=testCaptureEveryTab
+  screen_list=""
+  state_list=""
+fi
 
 for index in "${!devices[@]}"; do
   device="${devices[$index]}"
@@ -67,27 +143,34 @@ for index in "${!devices[@]}"; do
 
   original_appearance="$(xcrun simctl ui "$udid" appearance)"
   original_size="$(xcrun simctl ui "$udid" content_size)"
-  restore() {
-    xcrun simctl ui "$udid" appearance "$original_appearance" || true
-    xcrun simctl ui "$udid" content_size "$original_size" || true
-    xcrun simctl status_bar "$udid" clear || true
-    $was_booted || xcrun simctl shutdown "$udid" || true
-  }
-  trap restore EXIT
+  current_restore="xcrun simctl ui $udid appearance $original_appearance || true; \
+xcrun simctl ui $udid content_size $original_size || true; \
+xcrun simctl status_bar $udid clear || true; \
+$was_booted || xcrun simctl shutdown $udid || true"
 
   xcrun simctl status_bar "$udid" override --time 9:41 --dataNetwork wifi --wifiMode active --wifiBars 3 \
     --cellularMode active --cellularBars 4 --batteryState charged --batteryLevel 100
-  xcrun simctl ui "$udid" content_size "$content_size"
 
-  for theme in "${themes[@]}"; do
-    echo "Capturing ${device} · ${theme}${suffix}…"
-    xcrun simctl ui "$udid" appearance "$theme"
-    TEST_RUNNER_BFHR_CAPTURE_DIR="$out_dir" TEST_RUNNER_BFHR_CAPTURE_SUFFIX="$theme$suffix" \
-      xcodebuild test-without-building "${xcodebuild_args[@]}" -destination "platform=iOS Simulator,id=$udid" \
-      -only-testing:BruteForceHRUITests/ScreenCaptureTests
-    for tab in today jobs tracker cvs mail; do echo "$out_dir/$tab-$theme$suffix.png"; done
+  for size in "${sizes[@]}"; do
+    if [[ "$size" == ax ]]; then content_size=accessibility-extra-extra-extra-large; suffix="-ax"; else content_size=large; suffix=""; fi
+    xcrun simctl ui "$udid" content_size "$content_size"
+    for theme in "${themes[@]}"; do
+      echo "Capturing ${device} · ${theme}${suffix}${screen_list:+ · $screen_list}…"
+      xcrun simctl ui "$udid" appearance "$theme"
+      TEST_RUNNER_BFHR_CAPTURE_DIR="$out_dir" TEST_RUNNER_BFHR_CAPTURE_SUFFIX="$theme$suffix" \
+        TEST_RUNNER_BFHR_CAPTURE_SCREENS="$screen_list" TEST_RUNNER_BFHR_CAPTURE_STATES="$state_list" \
+        xcodebuild test-without-building "${xcodebuild_args[@]}" -destination "platform=iOS Simulator,id=$udid" \
+        -only-testing:"BruteForceHRUITests/ScreenCaptureTests/$test_name"
+      if [[ -n "$screen_list" ]]; then
+        for screen in "${screens[@]}"; do
+          for state in "${states[@]}"; do echo "$out_dir/$screen-$state-$theme$suffix.png"; done
+        done
+      else
+        for tab in today jobs tracker cvs mail; do echo "$out_dir/$tab-$theme$suffix.png"; done
+      fi
+    done
   done
 
-  restore
-  trap - EXIT
+  eval "$current_restore"
+  current_restore=""
 done

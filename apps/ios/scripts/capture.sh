@@ -21,7 +21,9 @@
 #   --skip-build  reuse the last build in this worktree's DerivedData
 #
 # DerivedData lives in this worktree (apps/ios/build/DerivedData), so worktrees build in
-# parallel. The simulators are shared, so the capture part takes a machine-wide lock
+# parallel. Set BFHR_DERIVED_DATA to share one DerivedData across worktrees instead (one compiled
+# Firebase SDK on disk); the build then runs inside the lock so builds never overlap. The
+# simulators are shared, so the capture part takes a machine-wide lock
 # (/tmp/bfhr-ios-capture.lock) and waits for other worktrees' captures to finish. Simulator
 # settings (appearance, text size, status bar) are restored afterwards, and devices the script
 # booted are shut down again.
@@ -29,7 +31,7 @@ set -euo pipefail
 
 ios_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 repo_root="$(cd "$ios_dir/../.." && pwd)"
-derived_data="$ios_dir/build/DerivedData"
+derived_data="${BFHR_DERIVED_DATA:-$ios_dir/build/DerivedData}"
 lock_dir="/tmp/bfhr-ios-capture.lock"
 all_screens=(today job-detail cv-editor tracker-board mail-review)
 all_states=(populated empty loading error offline)
@@ -86,10 +88,13 @@ done
 
 xcodebuild_args=(-project "$ios_dir/BruteForceHR.xcodeproj" -scheme BruteForceHR -derivedDataPath "$derived_data" -quiet)
 
-if $build; then
+build_now() {
   echo "Building BruteForceHR and its UI tests for the iOS Simulator (DerivedData: $derived_data)…"
   xcodebuild build-for-testing "${xcodebuild_args[@]}" -destination "platform=iOS Simulator,id=${udids[0]}"
-fi
+}
+
+# Private DerivedData: build before queueing for the simulators.
+if $build && [[ -z "${BFHR_DERIVED_DATA:-}" ]]; then build_now; fi
 
 # One capture at a time on this machine: the simulators and their settings are shared.
 until mkdir "$lock_dir" 2>/dev/null; do
@@ -111,6 +116,9 @@ cleanup() {
   rm -rf "$lock_dir"
 }
 trap cleanup EXIT
+
+# Shared DerivedData: build while holding the lock, so two worktrees never build into it at once.
+if $build && [[ -n "${BFHR_DERIVED_DATA:-}" ]]; then build_now; fi
 
 if ((${#screens[@]} > 0)); then
   test_name=testCaptureDesignScreens

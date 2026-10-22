@@ -9,7 +9,7 @@ Method:
 ### Summary
 **Issues found:** 6 | **Critical:** 0 | **Major:** 3 (all fixed) | **Minor:** 3 (1 fixed, 2 logged)
 
-Final axe result (after fixes, commit after `c1a95d6`): **0 critical · 0 serious · 0 moderate · 0 minor** in all 20 runs. WebKit runs list one "needs review" item: `color-contrast` on the shell's ⌘ keycap in "Jump to…" ("Element content contains only non-text characters"); it's shell chrome, not Today, and the glyph is decorative next to its spoken label.
+Final axe result (after fixes, `a6b2282` and `57e5597`): **0 critical · 0 serious · 0 moderate · 0 minor** in all 20 runs. WebKit runs list one "needs review" item: `color-contrast` on the shell's ⌘ keycap in "Jump to…" ("Element content contains only non-text characters"); it's shell chrome, not Today, and the glyph is decorative next to its spoken label.
 
 ### Findings
 

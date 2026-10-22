@@ -82,8 +82,8 @@ describe("buildMailReviewModel — folders and accounts", () => {
       {
         accountId: "acc-icloud",
         address: "deniz.aksoy@example.net",
-        message:
-          "iCloud needs you to sign in again. We paused checking deniz.aksoy@example.net on 21 Oct. Reconnect to pick up where we left off.",
+        title: "iCloud needs you to sign in again",
+        body: "We paused checking deniz.aksoy@example.net on 21 Oct. Reconnect to pick up where we left off.",
         actionLabel: "Reconnect",
       },
     ]);
@@ -283,7 +283,9 @@ describe("buildMailReviewModel — correction popover", () => {
     expect(model.correction.categories.map((category) => category.key)).toEqual(
       model.categories.map((category) => category.key),
     );
-    expect(model.correction.categories.find((category) => category.key === "rejection")?.label).toBe("Decision");
+    expect(model.correction.categories.find((category) => category.key === "rejection")?.label).toBe(
+      "Decision",
+    );
   });
 
   it("lists open applications before closed ones, most recently updated first", () => {
@@ -320,6 +322,10 @@ describe("buildMailReviewModel — correction popover", () => {
       "Nordlicht Mobility · Frontend Engineer",
     );
     expect(model.copy.reviewedChips).toEqual({ confirmed: "Confirmed", corrected: "Corrected" });
+  });
+
+  it("offers Review later dates from tomorrow in the user's zone", () => {
+    expect(model.reviewLaterMinDate).toBe("2026-10-23");
   });
 });
 

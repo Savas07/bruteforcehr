@@ -132,7 +132,7 @@ private struct NextUpTimes: View {
                 let their = { () -> Calendar in var c = calendar; c.timeZone = theirs; return c }()
                 let range = "\(DateText.time(next.startsAt, locale: locale, calendar: their))–\(DateText.time(next.endsAt, locale: locale, calendar: their))"
                 let zone = theirs.localizedName(for: .generic, locale: locale) ?? theirs.identifier
-                Text(TodayStrings.interviewerTime(range, zone: zone))
+                Text(bfhrPlain: TodayStrings.interviewerTime(range, zone: zone))
                     .font(.bfhr(.footnote))
                     .foregroundStyle(BFHRColor.Fg.secondary)
                     .monospacedDigit()
@@ -246,7 +246,7 @@ struct AutoChangeTodayRow: View {
                     }
                 } else if let sender = item.sender {
                     InlineLabel(systemImage: "envelope") {
-                        Text(TodayStrings.fromEmailBy(sender))
+                        Text(bfhrPlain: TodayStrings.fromEmailBy(sender))
                             .font(.bfhr(.footnote))
                             .foregroundStyle(BFHRColor.Fg.secondary)
                     }
@@ -332,7 +332,7 @@ struct DeadlineRow: View {
                 Text(verbatim: TodayStrings.deadlineTitle(deadline))
                     .font(.bfhr(.headline))
                     .foregroundStyle(BFHRColor.Fg.primary)
-                Text(TodayStrings.deadlineContext(deadline))
+                Text(bfhrPlain: TodayStrings.deadlineContext(deadline))
                     .font(.bfhr(.subheadline))
                     .foregroundStyle(BFHRColor.Fg.secondary)
                 InlineLabel(systemImage: "clock") { RelativeTimeText(deadline.dueAt, style: .dayAndTime) }

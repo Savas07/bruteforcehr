@@ -513,19 +513,19 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Unser Server hat nicht geantwortet. Deine Bewerbungen und E-Mails sind sicher."
+            "value" : "Unser Server hat nicht geantwortet. Deine Bewerbungen und E-Mails sind sicher. Versuch es gleich noch einmal."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Our server didn't respond. Your applications and emails are safe."
+            "value" : "Our server didn't respond. Your applications and emails are safe. Try again in a moment."
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sunucumuz yanıt vermedi. Başvurularınız ve e-postalarınız güvende."
+            "value" : "Sunucumuz yanıt vermedi. Başvurularınız ve e-postalarınız güvende. Biraz sonra tekrar deneyin."
           }
         }
       }

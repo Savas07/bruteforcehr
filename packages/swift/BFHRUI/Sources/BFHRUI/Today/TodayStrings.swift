@@ -5,7 +5,7 @@ import Foundation
 enum TodayStrings {
     static let loading = LocalizedStringResource.bfhr("today.loading", default: "Loading today's updates", table: "Today")
     static let errorTitle = LocalizedStringResource.bfhr("today.error.title", default: "We couldn't load today's updates", table: "Today")
-    static let errorBody = LocalizedStringResource.bfhr("today.error.body", default: "Our server didn't respond. Your applications and emails are safe.", table: "Today")
+    static let errorBody = LocalizedStringResource.bfhr("today.error.body", default: "Our server didn't respond. Your applications and emails are safe. Try again in a moment.", table: "Today")
     static let caughtUpTitle = LocalizedStringResource.bfhr("today.caughtUp.title", default: "You're all caught up", table: "Today")
     static let caughtUpBody = LocalizedStringResource.bfhr("today.caughtUp.body", default: "New updates will show up here.", table: "Today")
     static let firstRunTitle = LocalizedStringResource.bfhr("today.firstRun.title", default: "Nothing needs you yet", table: "Today")

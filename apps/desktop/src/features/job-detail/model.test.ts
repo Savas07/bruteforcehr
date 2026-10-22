@@ -88,6 +88,52 @@ describe("buildJobDetailModel — list pane", () => {
   });
 });
 
+describe("buildJobDetailModel — search and reasons", () => {
+  it("filters rows by title, company or place and keeps the band order", () => {
+    const all = buildJobDetailModel(populatedDataset, ctx, {});
+    const model = buildJobDetailModel(populatedDataset, ctx, { q: "  FRONTEND " });
+    expect(model.list.query).toBe("FRONTEND");
+    expect(model.list.rows.length).toBeGreaterThan(0);
+    expect(model.list.rows.length).toBeLessThan(all.list.rows.length);
+    for (const row of model.list.rows)
+      expect(`${row.title} ${row.company.name} ${row.where ?? ""}`.toLowerCase()).toContain("frontend");
+    const order = all.list.rows.map((row) => row.jobId).filter((id) => model.list.rows.some((row) => row.jobId === id));
+    expect(model.list.rows.map((row) => row.jobId)).toEqual(order);
+    expect(model.selectedJobId).toBe(model.list.rows[0]?.jobId);
+  });
+
+  it("says when the search hides every job and offers to clear it", () => {
+    const model = buildJobDetailModel(populatedDataset, ctx, { q: "zzz-nothing" });
+    expect(model.list.rows).toEqual([]);
+    expect(model.list.empty).toEqual({
+      kind: "noResults",
+      title: "No jobs match “zzz-nothing”",
+      body: "Try another word, or clear the search to see all your jobs.",
+      action: "Clear search",
+    });
+  });
+
+  it("lists the dismiss reasons in the core order, and the CVs for the basis menu", () => {
+    const model = buildJobDetailModel(populatedDataset, ctx, {});
+    expect(model.dismissReasons.map((reason) => reason.key)).toEqual([
+      "not_relevant",
+      "location",
+      "salary",
+      "seniority",
+      "company",
+      "language",
+      "visa",
+      "already_applied",
+      "other",
+    ]);
+    expect(model.dismissReasons[7]?.label).toBe("Already applied");
+    const match = ready(detailOf("job-brisk-frontend").match);
+    const active = populatedDataset.cvs.filter((cv) => cv.archivedAt === null);
+    expect(match.cvOptions.map((cv) => cv.id)).toEqual(active.map((cv) => cv.id));
+    expect(match.cvOptions.some((cv) => cv.id === match.basedOnCvId)).toBe(true);
+  });
+});
+
 describe("buildJobDetailModel — selection", () => {
   it("selects the top row when no job is in the route", () => {
     const model = buildJobDetailModel(populatedDataset, ctx, {});

@@ -7,6 +7,8 @@
  */
 import {
   type Application,
+  type DismissReason,
+  DismissReasonSchema,
   type EmploymentType,
   type Job,
   type JobMatch,
@@ -209,6 +211,15 @@ const messages = defineMessages({
       "Search for a role and save the search. We'll collect matching jobs here and rank them against your CV.",
   },
   firstUseAction: { id: "job-detail.empty.firstUseAction", defaultMessage: "Search jobs" },
+  noResultsTitle: {
+    id: "job-detail.empty.noResultsTitle",
+    defaultMessage: "No jobs match “{query}”",
+  },
+  noResultsBody: {
+    id: "job-detail.empty.noResultsBody",
+    defaultMessage: "Try another word, or clear the search to see all your jobs.",
+  },
+  noResultsAction: { id: "job-detail.empty.noResultsAction", defaultMessage: "Clear search" },
   caughtUpTitle: { id: "job-detail.empty.caughtUpTitle", defaultMessage: "No jobs to show" },
   caughtUpBody: {
     id: "job-detail.empty.caughtUpBody",
@@ -240,6 +251,18 @@ const SENIORITY_MESSAGES: Readonly<Record<Seniority, MessageDescriptor>> = defin
   lead: { id: "job-detail.seniority.lead", defaultMessage: "Lead" },
   manager: { id: "job-detail.seniority.manager", defaultMessage: "Manager" },
   director: { id: "job-detail.seniority.director", defaultMessage: "Director" },
+});
+
+const DISMISS_REASON_MESSAGES: Readonly<Record<DismissReason, MessageDescriptor>> = defineMessages({
+  not_relevant: { id: "job-detail.dismissReason.notRelevant", defaultMessage: "Role or skills" },
+  location: { id: "job-detail.dismissReason.location", defaultMessage: "Location" },
+  salary: { id: "job-detail.dismissReason.salary", defaultMessage: "Salary" },
+  seniority: { id: "job-detail.dismissReason.seniority", defaultMessage: "Seniority" },
+  company: { id: "job-detail.dismissReason.company", defaultMessage: "Company" },
+  language: { id: "job-detail.dismissReason.language", defaultMessage: "Language" },
+  visa: { id: "job-detail.dismissReason.visa", defaultMessage: "Visa or work permit" },
+  already_applied: { id: "job-detail.dismissReason.alreadyApplied", defaultMessage: "Already applied" },
+  other: { id: "job-detail.dismissReason.other", defaultMessage: "Something else" },
 });
 
 /** "Best match" order: band first, so 1–2 point differences don't reorder results. */
@@ -396,6 +419,8 @@ export type MatchSectionVM =
       /** `Based on CV "Base CV — English" · updated 3 hours ago`; the Change button follows it. */
       readonly basisLine: string;
       readonly basedOnCvId: string;
+      /** The user's active CVs for the basis line's Change menu (current one included). */
+      readonly cvOptions: readonly { readonly id: string; readonly title: string }[];
       readonly computedAt: TimeVM;
       /** "4 of 5 requirements met · 1 not stated · 5 of 6 skills · 1 gap". */
       readonly countsLine: string;
@@ -531,12 +556,19 @@ export interface JobDetailVM {
 
 /** Empty list pane (states.md empty kinds). */
 export interface JobsEmptyVM {
-  /** `firstUse`: no jobs yet; `caughtUp`: every job is hidden. */
-  readonly kind: "firstUse" | "caughtUp";
+  /** `firstUse`: no jobs yet; `noResults`: the search hides every job; `caughtUp`: every job is hidden. */
+  readonly kind: "firstUse" | "noResults" | "caughtUp";
   readonly title: string;
   readonly body: string;
-  /** Primary CTA (focuses the search field); null for caught-up. */
+  /** Primary CTA: focuses the search field (first use) or clears it (no results); null for caught-up. */
   readonly action: string | null;
+}
+
+/** One choice in the optional "What didn't fit?" popover (`DismissReasonPopover`). */
+export interface DismissReasonVM {
+  readonly key: DismissReason;
+  /** "Location", "Already applied". */
+  readonly label: string;
 }
 
 export interface JobDetailModel {
@@ -548,8 +580,12 @@ export interface JobDetailModel {
     readonly countLabel: string;
     readonly sortLabel: string;
     readonly rankingInfo: string;
+    /** The search text (`q` param) the rows are filtered by; "" when there is none. */
+    readonly query: string;
     readonly empty: JobsEmptyVM | null;
   };
+  /** Multi-select reasons for Not for me, in the core enum's order (numbered 1–9 on desktop). */
+  readonly dismissReasons: readonly DismissReasonVM[];
   /** `jobId` when it names a job, else the first row, else null. */
   readonly selectedJobId: string | null;
   /** Shown in the detail pane when `selectedJobId` is null. */
@@ -754,6 +790,9 @@ function matchSectionVM(
     scoreCaption: caption,
     basisLine: intl.formatMessage(messages.basisLine, { name: cv.title, time: computedAt.label }),
     basedOnCvId: cv.id,
+    cvOptions: data.cvs
+      .filter((candidate) => candidate.archivedAt === null)
+      .map((candidate) => ({ id: candidate.id, title: candidate.title })),
     computedAt,
     countsLine: counts.join(" · "),
     accessibleSummary: [
@@ -969,7 +1008,9 @@ export function buildJobDetailModel(
   params: Readonly<Record<string, string | undefined>>,
 ): JobDetailModel {
   const { intl } = ctx;
-  const rows = data.jobs
+  const query = (params.q ?? "").trim();
+  const needle = query.toLocaleLowerCase(ctx.locale);
+  const feed = data.jobs
     .filter((job) => !isHiddenCompany(job, data))
     .flatMap((job) => {
       const match = data.jobMatches.find((candidate) => candidate.id === job.id);
@@ -978,6 +1019,12 @@ export function buildJobDetailModel(
       return [rowVM(job, match, application, ctx)];
     })
     .sort(compareRows);
+  // Title, company or place contains the search text (case-insensitive in the UI locale).
+  const rows = feed.filter((row) =>
+    [row.title, row.company.name, row.where ?? ""].some((field) =>
+      field.toLocaleLowerCase(ctx.locale).includes(needle),
+    ),
+  );
 
   const requested = params.jobId === undefined ? undefined : data.jobs.find((job) => job.id === params.jobId);
   const selectedJobId = requested?.id ?? rows[0]?.jobId ?? null;
@@ -990,6 +1037,13 @@ export function buildJobDetailModel(
       title: intl.formatMessage(messages.firstUseTitle),
       body: intl.formatMessage(messages.firstUseBody),
       action: intl.formatMessage(messages.firstUseAction),
+    };
+  else if (feed.length > 0 && rows.length === 0)
+    empty = {
+      kind: "noResults",
+      title: intl.formatMessage(messages.noResultsTitle, { query }),
+      body: intl.formatMessage(messages.noResultsBody),
+      action: intl.formatMessage(messages.noResultsAction),
     };
   else if (rows.length === 0)
     empty = {
@@ -1010,8 +1064,13 @@ export function buildJobDetailModel(
       countLabel: intl.formatMessage(messages.jobCount, { count: rows.length }),
       sortLabel: copy.sortLabel,
       rankingInfo: copy.rankingInfo,
+      query,
       empty,
     },
+    dismissReasons: DismissReasonSchema.options.map((key) => ({
+      key,
+      label: intl.formatMessage(DISMISS_REASON_MESSAGES[key]),
+    })),
     selectedJobId,
     noSelection: { title: copy.noSelection, hint: copy.noSelectionHint },
     detail: selected ? detailVM(selected, data, ctx, rows) : null,

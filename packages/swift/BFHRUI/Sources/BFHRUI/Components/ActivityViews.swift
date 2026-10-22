@@ -186,10 +186,16 @@ public struct SnoozeMenu<Label: View>: View {
 
 /// One timeline row (components.md `Timeline`): system rows are one line (icon + sentence +
 /// actor + time); automatic rows add the reason, "View source" and Undo or the "Can't undo" line.
+///
+/// Each text is its own accessibility element, in reading order; the glyph is decorative; View
+/// source and Undo are separate buttons. Neither a combined element nor a container: the
+/// accessibility audit couldn't tie those nodes to elements and reported them as unsupported
+/// Dynamic Type, clipped text and failed contrast with no element.
 public struct TimelineRow: View {
     private let entry: TimelineEntry
     private let onUndo: (() -> Void)?
     private let onViewSource: (() -> Void)?
+    @ScaledMetric(relativeTo: .subheadline) private var glyphColumn = BFHRIconSize.lg
 
     public init(_ entry: TimelineEntry, onUndo: (() -> Void)? = nil, onViewSource: (() -> Void)? = nil) {
         self.entry = entry
@@ -202,40 +208,16 @@ public struct TimelineRow: View {
             Image(systemName: glyph)
                 .font(.bfhr(.subheadline))
                 .foregroundStyle(BFHRColor.Fg.secondary)
-                .frame(width: BFHRIconSize.lg)
+                .frame(width: glyphColumn)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: BFHRSpace.s1) {
-                Text(sentence)
-                    .font(.bfhr(.subheadline))
-                    .foregroundStyle(entry.isReverted ? BFHRColor.Fg.tertiary : BFHRColor.Fg.primary)
-                    .strikethrough(entry.isReverted, color: BFHRColor.Fg.tertiary)
-                if let text = entry.text, !text.isEmpty {
-                    Text(verbatim: text)
-                        .font(.bfhr(.footnote))
-                        .foregroundStyle(BFHRColor.Fg.secondary)
-                }
-                if entry.isAutomatic, let reason = entry.reason {
-                    Text(verbatim: reason)
-                        .font(.bfhr(.footnote))
-                        .foregroundStyle(BFHRColor.Fg.secondary)
-                }
-                ChipFlow {
-                    SourceTag(entry.isAutomatic ? .automatic(entry.actor) : .user)
-                    RelativeTimeText(entry.occurredAt, style: .time)
-                        .font(.bfhr(.caption1))
-                        .foregroundStyle(BFHRColor.Fg.tertiary)
-                }
-                if entry.isAutomatic, case .denied(.superseded) = entry.undo {
-                    Text(Strings.cantUndo)
-                        .font(.bfhr(.footnote))
-                        .foregroundStyle(BFHRColor.Fg.tertiary)
-                }
-                if entry.isAutomatic, entry.mailMessageId != nil || entry.undo == .allowed {
+                description
+                if showsViewSource || showsUndo {
                     HStack(spacing: BFHRSpace.s2) {
-                        if entry.mailMessageId != nil, let onViewSource {
+                        if showsViewSource, let onViewSource {
                             Button(action: onViewSource) { Text(Strings.viewSource) }.buttonStyle(.bfhrPlain)
                         }
-                        if entry.undo == .allowed, let onUndo {
+                        if showsUndo, let onUndo {
                             Button(action: onUndo) { Text(Strings.undo) }.buttonStyle(.bfhrPlain)
                         }
                     }
@@ -244,7 +226,43 @@ public struct TimelineRow: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .accessibilityElement(children: .combine)
+    }
+
+    private var showsViewSource: Bool { entry.isAutomatic && entry.mailMessageId != nil && onViewSource != nil }
+    private var showsUndo: Bool { entry.isAutomatic && entry.undo == .allowed && onUndo != nil }
+
+    private var description: some View {
+        VStack(alignment: .leading, spacing: BFHRSpace.s1) {
+            Text(sentence)
+                .font(.bfhr(.subheadline))
+                .foregroundStyle(entry.isReverted ? BFHRColor.Fg.tertiary : BFHRColor.Fg.primary)
+                .strikethrough(entry.isReverted, color: BFHRColor.Fg.tertiary)
+                .fixedSize(horizontal: false, vertical: true)
+            if let text = entry.text, !text.isEmpty {
+                Text(verbatim: text)
+                    .font(.bfhr(.footnote))
+                    .foregroundStyle(BFHRColor.Fg.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            if entry.isAutomatic, let reason = entry.reason {
+                Text(verbatim: reason)
+                    .font(.bfhr(.footnote))
+                    .foregroundStyle(BFHRColor.Fg.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            ChipFlow {
+                SourceTag(entry.isAutomatic ? .automatic(entry.actor) : .user)
+                RelativeTimeText(entry.occurredAt, style: .time)
+                    .font(.bfhr(.caption1))
+                    .foregroundStyle(BFHRColor.Fg.tertiary)
+            }
+            if entry.isAutomatic, case .denied(.superseded) = entry.undo {
+                Text(Strings.cantUndo)
+                    .font(.bfhr(.footnote))
+                    .foregroundStyle(BFHRColor.Fg.tertiary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
     }
 
     private var glyph: String {

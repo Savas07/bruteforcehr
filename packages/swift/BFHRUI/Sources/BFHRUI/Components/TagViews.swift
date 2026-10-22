@@ -10,7 +10,10 @@ public struct CompactLabelStyle: LabelStyle {
 
     public func makeBody(configuration: Configuration) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: BFHRSpace.s1) {
+            // Decorative, as in the system label styles: the title is the accessible text. Exposed,
+            // an SF Symbol reads its own name ("Mark Unread" for envelope.badge).
             configuration.icon
+                .accessibilityHidden(true)
             configuration.title
         }
     }

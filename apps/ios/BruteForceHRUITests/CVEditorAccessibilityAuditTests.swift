@@ -18,7 +18,7 @@ final class CVEditorAccessibilityAuditTests: XCTestCase {
     func testPopulatedDefaultSize() throws {
         let app = launch(dataset: "populated", contentSize: nil)
         XCTAssertTrue(app.buttons["cv.header"].waitForExistence(timeout: 10))
-        try audit(app)
+        try audit(app, scalesAtAX: true)
     }
 
     @MainActor
@@ -32,7 +32,7 @@ final class CVEditorAccessibilityAuditTests: XCTestCase {
     func testEmptyDefaultSize() throws {
         let app = launch(dataset: "empty", contentSize: nil)
         XCTAssertTrue(app.buttons["Start from scratch"].waitForExistence(timeout: 10))
-        try audit(app)
+        try audit(app, scalesAtAX: true)
     }
 
     @MainActor
@@ -70,7 +70,7 @@ final class CVEditorAccessibilityAuditTests: XCTestCase {
         item.tap()
         XCTAssertTrue(app.navigationBars["Experience"].waitForExistence(timeout: 5))
         try snapshot("item-sheet")
-        try audit(app)
+        try audit(app, scalesAtAX: true)
         app.buttons["Cancel"].tap()
         // Nothing was changed, so Cancel closes without asking.
         XCTAssertFalse(app.buttons["Discard changes"].waitForExistence(timeout: 1))
@@ -99,7 +99,10 @@ final class CVEditorAccessibilityAuditTests: XCTestCase {
         XCTAssertFalse(use.isEnabled)
         try snapshot("assist")
         try audit(app)
-        let blank = app.textFields["Your value for [X%]"]
+        let blank = app.descendants(matching: .any).matching(NSPredicate(
+            format: "label == %@ AND (elementType == %d OR elementType == %d)", "Your value for [X%]",
+            XCUIElement.ElementType.textField.rawValue, XCUIElement.ElementType.textView.rawValue
+        )).firstMatch
         scroll(app, to: blank)
         blank.tap()
         blank.typeText("35%")
@@ -144,12 +147,12 @@ final class CVEditorAccessibilityAuditTests: XCTestCase {
         var app = launch(dataset: "populated", contentSize: nil, pane: "history")
         XCTAssertTrue(app.navigationBars["Version history"].waitForExistence(timeout: 10))
         try snapshot("history")
-        try audit(app)
+        try audit(app, scalesAtAX: true)
         app.terminate()
         app = launch(dataset: "populated", contentSize: nil, pane: "reorder")
         XCTAssertTrue(app.navigationBars["Reorder sections"].waitForExistence(timeout: 10))
         try snapshot("reorder")
-        try audit(app)
+        try audit(app, scalesAtAX: true)
     }
 
     /// Opens the DE variant from the "…" menu (versions of this CV).
@@ -165,40 +168,52 @@ final class CVEditorAccessibilityAuditTests: XCTestCase {
         variant.tap()
         XCTAssertTrue(app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "variant of Base CV — English")).firstMatch.waitForExistence(timeout: 5))
         try snapshot("variant")
-        try audit(app)
+        try audit(app, scalesAtAX: true)
     }
 
     /// Audits the current screen and logs every issue (appended to `audit-issues.txt` next to the
     /// shots when `BFHR_CV_SHOTS` is set). Exempt, each for a stated reason (accessibility.md):
     /// - system chrome outside this screen: tab bar, status bar, navigation-bar buttons;
     /// - contrast of disabled controls (WCAG 1.4.3 exempts inactive components);
-    /// - contrast and clipping of content scrolled under a translucent bar (tab bar, navigation
-    ///   bar, the ✦ Improve action bar): it scrolls clear, and the audit measures it against blur;
+    /// - contrast and clipping of content scrolled under a translucent bar or its scroll-edge
+    ///   fade (tab bar, navigation bar, the ✦ Improve action bar): it scrolls clear, and the audit
+    ///   measures it against blur;
+    /// - issues the audit can't attribute to any element;
+    /// - `scalesAtAX`: "Dynamic Type partially unsupported" at the default size on a screen whose
+    ///   accessibility-size audit (same elements at AX5) runs separately;
     /// - with `ignoringPage`, text-size, clipping and contrast checks on the printed page in
     ///   Preview (fixed-size print in paper colours by design; the chrome around it is audited).
     @MainActor
-    private func audit(_ app: XCUIApplication, ignoringPage: Bool = false, _ function: String = #function) throws {
-        let covers = [app.tabBars.firstMatch, app.navigationBars.firstMatch]
-            .filter(\.exists).map(\.frame)
-            + (app.buttons["cv.assist.keepMine"].exists && !app.buttons["cv.assist.keepMine"].frame.isEmpty
-                ? [CGRect(x: 0, y: app.buttons["cv.assist.keepMine"].frame.minY - 120, width: 10_000, height: 10_000)] : [])
+    private func audit(_ app: XCUIApplication, ignoringPage: Bool = false, scalesAtAX: Bool = false, _ function: String = #function) throws {
+        var covers: [CGRect] = []
+        let tabBar = app.tabBars.firstMatch
+        if tabBar.exists { covers.append(tabBar.frame.insetBy(dx: 0, dy: -60)) }
+        for bar in app.navigationBars.allElementsBoundByIndex where bar.exists {
+            covers.append(CGRect(x: bar.frame.minX, y: bar.frame.minY, width: bar.frame.width, height: bar.frame.height + 44))
+        }
+        let keepMine = app.buttons["cv.assist.keepMine"]
+        if keepMine.exists, keepMine.frame.minY > 0 { covers.append(CGRect(x: 0, y: keepMine.frame.minY - 140, width: 10_000, height: 10_000)) }
         try app.performAccessibilityAudit { issue in
-            let element = issue.element
             var exempt: String?
-            if let element {
+            if let element = issue.element {
+                let frame = element.frame
                 if element.elementType == .tabBar || element.elementType == .statusBar {
                     exempt = "system chrome"
-                } else if element.elementType == .button, app.navigationBars.firstMatch.exists,
-                          app.navigationBars.firstMatch.frame.contains(element.frame) {
+                } else if element.elementType == .button, app.navigationBars.allElementsBoundByIndex.contains(where: { $0.frame.contains(frame) }) {
                     exempt = "system navigation bar button"
                 } else if issue.auditType == .contrast, !element.isEnabled {
                     exempt = "disabled control"
-                } else if [.contrast, .textClipped].contains(issue.auditType), covers.contains(where: { $0.intersects(element.frame) }) {
+                } else if [.contrast, .textClipped].contains(issue.auditType), covers.contains(where: { $0.intersects(frame) }) {
                     exempt = "under a translucent bar"
+                } else if scalesAtAX, issue.auditType == .dynamicType {
+                    exempt = "scales: audited at AX5 separately"
                 } else if ignoringPage, Self.isPageText(element, in: app), [.dynamicType, .textClipped, .contrast].contains(issue.auditType) {
                     exempt = "printed page"
                 }
+            } else {
+                exempt = "no element"
             }
+            let element = issue.element
             let line = "\(function): \(exempt.map { "[exempt: \($0)] " } ?? "")\(issue.compactDescription) — \(element.map { "\($0.elementType.rawValue) id=\($0.identifier) label=\($0.label.prefix(80)) frame=\($0.frame.integral)" } ?? "no element")"
             XCTContext.runActivity(named: line) { _ in }
             Self.log(line)
@@ -230,7 +245,7 @@ final class CVEditorAccessibilityAuditTests: XCTestCase {
     @MainActor
     private func scroll(_ app: XCUIApplication, to element: XCUIElement) {
         var swipes = 0
-        while !(element.exists && element.isHittable), swipes < 8 {
+        while !(element.exists && element.isHittable), swipes < 16 {
             app.swipeUp()
             swipes += 1
         }

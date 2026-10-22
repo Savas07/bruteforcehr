@@ -290,5 +290,6 @@ extension View {
     func cvListFooter() -> some View {
         font(.bfhr(.footnote))
             .foregroundStyle(BFHRColor.Fg.secondary)
+            .fixedSize(horizontal: false, vertical: true)
     }
 }

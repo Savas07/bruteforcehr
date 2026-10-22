@@ -409,16 +409,16 @@ struct CVLabeledField: View {
                 .accessibilityHidden(true)
             field
                 .font(.bfhr(.body))
-                .fixedSize(horizontal: false, vertical: true)
         }
         .padding(.vertical, 2)
     }
 
     @ViewBuilder
     private var field: some View {
-        let base = multiline
-            ? TextField(text: $text, axis: .vertical) { Text(label) }
-            : TextField(text: $text) { Text(label) }
+        // Vertical fields grow with their text instead of clipping it (long titles, AX sizes);
+        // single-value fields drop line breaks, so Return can't split a role or a name.
+        let base = TextField(text: multiline ? $text : singleLine, axis: .vertical) { Text(label) }
+            .accessibilityLabel(Text(label))
         #if os(iOS)
         switch kind {
         case .text: base
@@ -430,6 +430,10 @@ struct CVLabeledField: View {
         #else
         base
         #endif
+    }
+
+    private var singleLine: Binding<String> {
+        Binding(get: { text }, set: { text = $0.replacingOccurrences(of: "\n", with: " ") })
     }
 }
 

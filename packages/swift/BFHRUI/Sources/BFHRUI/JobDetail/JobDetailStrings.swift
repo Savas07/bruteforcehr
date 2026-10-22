@@ -12,6 +12,11 @@ enum JobDetailStrings {
         comment: "Toast after Not for me on a job (decisions.md D19). Followed by Undo."
     )
 
+    static let reasonsSavedToast = LocalizedStringResource.bfhr(
+        "jobDetail.toast.reasonsSaved", default: "Thanks. We'll use this to tune your matches.", table: "JobDetail",
+        comment: "Toast after Save reason in the Not for me reason sheet. No action."
+    )
+
     static func skillAddedToast(_ skill: String) -> LocalizedStringResource {
         .bfhr(
             "jobDetail.toast.skillAdded", default: "\(skill) added to your skills", table: "JobDetail",

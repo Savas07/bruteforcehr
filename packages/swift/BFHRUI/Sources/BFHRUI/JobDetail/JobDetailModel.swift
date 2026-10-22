@@ -47,6 +47,9 @@ public final class JobDetailModel: ScreenModel {
     public private(set) var canToggleSave = false
     /// "Not for me" needs a match document to write to.
     public private(set) var canHide = false
+    /// 👍 / 👎 on the AI summary; nil until the user rates it. Kept per job for this session
+    /// until the feedback write lands with the matching pipeline (M4).
+    public private(set) var summaryFeedback: SummaryFeedback?
 
     public var hasDescription: Bool { !description.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
     /// The job's match changed offline and hasn't synced (`SyncGlyph`).
@@ -106,6 +109,23 @@ public final class JobDetailModel: ScreenModel {
         guard isHidden else { return }
         data.setMatchState(jobId, to: .new, at: now)
         commit()
+    }
+
+    /// The reason sheet's Save reason on a hidden job: replaces the hidden job's reasons
+    /// (empty = none given). Returns "Thanks. We'll use this to tune your matches."; nil when the
+    /// job isn't hidden.
+    @discardableResult
+    public func setHiddenReasons(_ reasons: [DismissReason]) -> ToastItem? {
+        guard isHidden else { return nil }
+        data.setMatchState(jobId, to: .dismissed, reasons: reasons, at: now)
+        commit()
+        return ToastItem(glyph: ToastGlyph.confirmed, message: JobDetailStrings.reasonsSavedToast)
+    }
+
+    /// Rates the AI summary; rating it the same way again clears the rating.
+    public func rateSummary(_ feedback: SummaryFeedback) {
+        guard match.scored?.rationale != nil else { return }
+        summaryFeedback = summaryFeedback == feedback ? nil : feedback
     }
 
     /// "I have this" on a skill gap: moves `skill` (an unmatched skill or a skill gap's label) to
@@ -173,7 +193,7 @@ public final class JobDetailModel: ScreenModel {
             salary: statedSalary,
             salaryProvenance: statedSalary.map { $0.estimated ? .estimated : .statedByEmployer } ?? .notStated
         )
-        match = Self.summary(of: jobMatch, cvs: data.cvs)
+        match = Self.summary(of: jobMatch, cvs: data.cvs, posting: job.description)
         facts = Self.facts(of: job, salary: statedSalary)
         description = job.description
         isDelisted = job.expiresAt.map { $0 < now } ?? false
@@ -193,7 +213,7 @@ public final class JobDetailModel: ScreenModel {
         canHide = jobMatch != nil && !isHidden
     }
 
-    private static func summary(of jobMatch: JobMatch?, cvs: [Cv]) -> MatchSummary {
+    private static func summary(of jobMatch: JobMatch?, cvs: [Cv], posting: String) -> MatchSummary {
         guard let jobMatch else { return .pending }
         guard let cvId = jobMatch.basedOnCvId else { return .noCV }
         let reasons = jobMatch.reasons.enumerated().map { factor($1, origin: .reason, index: $0, unmatched: []) }
@@ -226,8 +246,26 @@ public final class JobDetailModel: ScreenModel {
             requirements: requirements,
             matchedSkills: skills.matched,
             unmatchedSkills: skills.unmatched,
+            skillLabels: skillLabels(skills.matched + skills.unmatched, gaps: jobMatch.gaps, posting: posting),
             rationale: jobMatch.rationale.flatMap { $0.isEmpty ? nil : $0 }
         ))
+    }
+
+    /// How each skill key ("vue", "typescript") reads: a skill gap's label ("Vue.js"), else the
+    /// posting's own spelling ("TypeScript"), else the key.
+    private static func skillLabels(_ keys: [String], gaps: [MatchFactor], posting: String) -> [String: String] {
+        var labels: [String: String] = [:]
+        for key in keys {
+            if let gap = gaps.first(where: { $0.kind == .skill && SkillKey($0.label) == SkillKey(key) }) {
+                labels[key] = gap.label
+                continue
+            }
+            let pattern = "(?<![\\p{L}\\p{N}])" + NSRegularExpression.escapedPattern(for: key) + "(\\.js)?(?![\\p{L}\\p{N}])"
+            if let range = posting.range(of: pattern, options: [.regularExpression, .caseInsensitive]) {
+                labels[key] = String(posting[range])
+            }
+        }
+        return labels
     }
 
     private static func factor(_ factor: MatchFactor, origin: Factor.Origin, index: Int, unmatched: [String]) -> Factor {

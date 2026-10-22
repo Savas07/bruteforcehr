@@ -1,12 +1,217 @@
 @import "tailwindcss";
+@import "@bfhr/ui-tokens/tailwind.css";
 
 /*
- * Light/dark follows the OS (`prefers-color-scheme`), matching Tailwind's default `dark:` variant.
- * `--canvas-light` / `--canvas-dark` are set on <html> by BaseLayout from THEME_COLOR, so the page
- * canvas and the browser UI colour (`<meta name="theme-color">`) always agree.
+ * Light/dark follows the OS (`prefers-color-scheme`) through the token variables; `tokens.css` sets
+ * `color-scheme` per scheme. Tailwind's default palette, type sizes, radii and shadows are off, so
+ * only token utilities compile (docs/design/system.md).
  */
-:root {
-  color-scheme: light dark;
-  background-color: light-dark(var(--canvas-light), var(--canvas-dark));
-  color: CanvasText;
+@layer base {
+  html {
+    background-color: var(--bfhr-color-surface-canvas);
+    color: var(--bfhr-color-fg-primary);
+    font-family: var(--bfhr-font-sans);
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    /* Anchored headings land below the sticky header. */
+    scroll-padding-top: calc(var(--spacing) * 24);
+  }
+
+  /* German and Turkish compounds wrap instead of overflowing; `lang` on <html> drives the dictionary. */
+  body {
+    hyphens: auto;
+    overflow-wrap: break-word;
+  }
+
+  h1,
+  h2,
+  h3 {
+    hyphens: manual;
+    text-wrap: balance;
+  }
+
+  p,
+  li,
+  dd {
+    text-wrap: pretty;
+  }
+
+  /* One focus ring everywhere: 2 px `line.focus`, 2 px offset, never removed. */
+  :focus-visible {
+    outline: var(--bfhr-border-thick) solid var(--bfhr-color-line-focus);
+    outline-offset: 2px;
+  }
+
+  :target {
+    scroll-margin-top: calc(var(--spacing) * 24);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    html {
+      scroll-behavior: smooth;
+    }
+  }
+}
+
+@layer components {
+  /* Inline links in running text: underlined, so they don't rely on colour alone (WCAG 1.4.1). */
+  .prose-link,
+  .legal-prose a {
+    color: var(--bfhr-color-fg-link);
+    text-decoration-line: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.2em;
+    transition: text-decoration-thickness var(--bfhr-duration-fast) var(--bfhr-easing-standard);
+  }
+
+  .prose-link:hover,
+  .legal-prose a:hover {
+    text-decoration-thickness: 2px;
+  }
+
+  /* Legal table of contents: numbers match the CSS-counted section headings. */
+  .toc {
+    list-style: decimal;
+    padding-inline-start: 1.75rem;
+    color: var(--bfhr-color-fg-tertiary);
+    font-size: var(--bfhr-text-prose-size);
+    line-height: var(--bfhr-text-prose-line-height);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .toc a {
+    display: inline-block;
+    padding-block: calc(var(--spacing) * 2.5);
+    color: var(--bfhr-color-fg-primary);
+    text-decoration-line: underline;
+    text-decoration-color: transparent;
+    text-underline-offset: 0.2em;
+    transition: text-decoration-color var(--bfhr-duration-fast) var(--bfhr-easing-standard);
+  }
+
+  .toc a:hover {
+    text-decoration-color: currentColor;
+  }
+
+  /*
+   * Markdown body of the legal pages. Sections are numbered with counters (1, 2 … and 4.1, 4.2 …)
+   * so anchors stay stable when sections move. Line length stays ≤ 75 characters.
+   */
+  .legal-prose {
+    counter-reset: section;
+    max-width: 68ch;
+    font-size: var(--bfhr-text-prose-size);
+    line-height: var(--bfhr-text-prose-line-height);
+    color: var(--bfhr-color-fg-primary);
+
+    & > * + * {
+      margin-top: calc(var(--spacing) * 4);
+    }
+
+    & h2 {
+      counter-increment: section;
+      counter-reset: subsection;
+      margin-top: calc(var(--spacing) * 12);
+      padding-top: calc(var(--spacing) * 8);
+      border-top: var(--bfhr-border-thin) solid var(--bfhr-color-line-subtle);
+      font-family: var(--bfhr-font-display);
+      font-size: var(--bfhr-text-title1-size);
+      line-height: var(--bfhr-text-title1-line-height);
+      font-weight: var(--bfhr-text-title1-weight);
+    }
+
+    & h2::before {
+      content: counter(section) ". ";
+      color: var(--bfhr-color-fg-tertiary);
+      font-variant-numeric: tabular-nums;
+    }
+
+    & h3 {
+      counter-increment: subsection;
+      margin-top: calc(var(--spacing) * 8);
+      font-size: var(--bfhr-text-title2-size);
+      line-height: var(--bfhr-text-title2-line-height);
+      font-weight: var(--bfhr-text-title2-weight);
+    }
+
+    & h3::before {
+      content: counter(section) "." counter(subsection) " ";
+      color: var(--bfhr-color-fg-tertiary);
+      font-variant-numeric: tabular-nums;
+    }
+
+    & h2 + *,
+    & h3 + * {
+      margin-top: calc(var(--spacing) * 3);
+    }
+
+    & ul,
+    & ol {
+      padding-inline-start: 1.5rem;
+    }
+
+    & ul {
+      list-style: disc;
+    }
+
+    & ol {
+      list-style: decimal;
+    }
+
+    & li + li {
+      margin-top: calc(var(--spacing) * 2);
+    }
+
+    & li::marker {
+      color: var(--bfhr-color-fg-tertiary);
+    }
+
+    & strong {
+      font-weight: 600;
+    }
+
+    & code {
+      padding: 0.1em 0.35em;
+      border-radius: var(--bfhr-radius-xs);
+      background-color: var(--bfhr-color-surface-sunken);
+      font-family: var(--bfhr-font-mono);
+      font-size: 0.875em;
+      overflow-wrap: anywhere;
+    }
+
+    & table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: var(--bfhr-text-body-size);
+      line-height: var(--bfhr-text-body-line-height);
+    }
+
+    & th,
+    & td {
+      padding: calc(var(--spacing) * 3) calc(var(--spacing) * 3) calc(var(--spacing) * 3) 0;
+      border-bottom: var(--bfhr-border-thin) solid var(--bfhr-color-line-subtle);
+      text-align: start;
+      vertical-align: top;
+    }
+
+    & th {
+      color: var(--bfhr-color-fg-secondary);
+      font-weight: 600;
+    }
+
+    & td:first-child {
+      font-weight: 600;
+    }
+  }
+
+  /* "In short" plain-language summary at the top of a legal section (Surfshark). */
+  .plain-summary {
+    padding: calc(var(--spacing) * 4) calc(var(--spacing) * 5);
+    border-radius: var(--bfhr-radius-lg);
+    background-color: var(--bfhr-color-surface-selected);
+
+    & strong:first-child {
+      color: var(--bfhr-color-accent-text);
+    }
+  }
 }

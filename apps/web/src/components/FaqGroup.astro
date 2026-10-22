@@ -1,0 +1,20 @@
+---
+/** A titled group of questions (website.md › FAQ: KÖPPEN group headings, Frontify split at 1280 px). */
+interface Props {
+  id: string;
+  title: string;
+}
+
+const { id, title } = Astro.props;
+---
+
+<section
+  id={id}
+  aria-labelledby={`${id}-title`}
+  class="border-t border-line-subtle pt-8 xl:grid xl:grid-cols-[16rem_minmax(0,1fr)] xl:gap-16"
+>
+  <h3 id={`${id}-title`} class="font-display text-title1 text-fg-primary">{title}</h3>
+  <div class="mt-2 xl:mt-0">
+    <slot />
+  </div>
+</section>

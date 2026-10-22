@@ -1,0 +1,83 @@
+---
+/**
+ * Support contact card (website.md › Support: monday.com tiles, Framer primary + secondary sizes).
+ * The primary card carries the one filled accent button on the page; secondary cards are whole-card
+ * links (the title link stretches over the card).
+ */
+interface Props {
+  title: string;
+  href: string;
+  /** Action label; on secondary cards it is shown under the description. */
+  action: string;
+  variant: "primary" | "secondary";
+  /** Leaves the site (GitHub); shows an arrow and says so to screen readers. */
+  external?: boolean;
+}
+
+const { title, href, action, variant, external = false } = Astro.props;
+---
+
+{
+  variant === "primary" ? (
+    <div class="rounded-lg border border-line-subtle bg-surface-base p-6 md:p-8">
+      <h3 class="font-display text-title1 text-fg-primary">{title}</h3>
+      <div class="mt-3 space-y-4 text-prose text-fg-secondary">
+        <slot />
+      </div>
+      <a
+        href={href}
+        class="mt-6 inline-flex min-h-11 items-center gap-2 rounded-full bg-accent-solid px-6 text-prose font-semibold text-fg-on-accent transition-colors duration-(--bfhr-duration-fast) ease-standard hover:bg-accent-hover active:bg-accent-pressed"
+      >
+        {action}
+        {external && (
+          <svg class="size-4" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+            <path
+              d="M5 11 11 5M6 5h5v5"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.75"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        )}
+      </a>
+    </div>
+  ) : (
+    <div class="relative rounded-lg border border-line-subtle bg-surface-base p-6 transition-colors duration-(--bfhr-duration-fast) ease-standard focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-line-focus hover:bg-surface-hover">
+      <h3 class="text-title2 text-fg-primary">
+        <a href={href} class="after:absolute after:inset-0 focus-visible:outline-none">
+          {title}
+          {external && <span class="sr-only"> on GitHub</span>}
+        </a>
+      </h3>
+      <div class="mt-2 text-prose text-fg-secondary">
+        <slot />
+      </div>
+      <p class="mt-3 inline-flex items-center gap-1.5 text-prose font-semibold text-accent-text" aria-hidden="true">
+        {action}
+        <svg class="size-4" viewBox="0 0 16 16" focusable="false">
+          {external ? (
+            <path
+              d="M5 11 11 5M6 5h5v5"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.75"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          ) : (
+            <path
+              d="M3 8h10M9 4l4 4-4 4"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.75"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          )}
+        </svg>
+      </p>
+    </div>
+  )
+}

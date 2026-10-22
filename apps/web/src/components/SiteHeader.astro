@@ -1,0 +1,43 @@
+---
+/**
+ * Floating pill header (website.md › Site header, Serus). Lists only pages that exist (`HEADER_NAV`);
+ * the Menu disclosure for narrow widths arrives with Features, Download and Changelog, when the
+ * links no longer fit on one row at 375 px.
+ */
+import { HEADER_NAV, SITE_NAME } from "../site.ts";
+import BrandMark from "./BrandMark.astro";
+
+const current = Astro.url.pathname.replace(/\/?$/, "/");
+---
+
+<header class="sticky top-0 z-(--bfhr-layer-sticky) px-3 pt-3 md:px-6">
+  <div
+    class="mx-auto flex max-w-6xl items-center justify-between gap-3 rounded-full border border-line-subtle bg-surface-base py-1 pr-1 pl-2 shadow-raised"
+  >
+    <a
+      href="/"
+      class="flex min-h-11 items-center gap-2 rounded-full px-2 font-display text-title2 text-fg-primary"
+      aria-current={current === "/" ? "page" : undefined}
+    >
+      <BrandMark class="size-7 shrink-0" />
+      <span>{SITE_NAME}</span>
+    </a>
+    <nav aria-label="Main">
+      <ul class="flex items-center gap-1">
+        {
+          HEADER_NAV.map((item) => (
+            <li>
+              <a
+                href={item.href}
+                class="inline-flex min-h-11 items-center rounded-full px-4 text-prose font-medium text-fg-secondary transition-colors duration-(--bfhr-duration-fast) ease-standard hover:bg-surface-hover hover:text-fg-primary aria-[current=page]:bg-surface-selected aria-[current=page]:text-accent-text"
+                aria-current={current === item.href ? "page" : undefined}
+              >
+                {item.label}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+  </div>
+</header>

@@ -1,0 +1,58 @@
+---
+/**
+ * Markdown layout for the Privacy Policy and Terms (website.md › Privacy Policy and Terms).
+ * Title + effective date (OpenPhone), numbered sections (CSS counters, Wise), plain-language
+ * summaries (`.plain-summary` blocks in the Markdown, Surfshark), table of contents built from the
+ * `h2`s: inline under the title below 1280 px, sticky in a left column from 1280 px (folk).
+ * English only (decisions.md U3).
+ */
+import type { MarkdownLayoutProps } from "astro";
+import SiteLayout from "./SiteLayout.astro";
+
+type Props = MarkdownLayoutProps<{
+  title: string;
+  description: string;
+  /** ISO date (YYYY-MM-DD, quoted in the frontmatter so YAML keeps it a string). */
+  effective: string;
+}>;
+
+const { frontmatter, headings } = Astro.props;
+const sections = headings.filter((heading) => heading.depth === 2);
+const effectiveLabel = new Intl.DateTimeFormat("en-GB", { dateStyle: "long", timeZone: "UTC" }).format(
+  new Date(`${frontmatter.effective}T00:00:00Z`),
+);
+---
+
+<SiteLayout title={frontmatter.title} description={frontmatter.description}>
+  <div
+    class="mx-auto max-w-6xl px-5 pt-10 md:px-6 md:pt-16 xl:grid xl:grid-cols-[15rem_minmax(0,1fr)] xl:gap-x-16"
+  >
+    <header class="xl:col-start-2">
+      <h1 class="font-display text-display text-fg-primary">{frontmatter.title}</h1>
+      <p class="mt-4 max-w-[60ch] text-lead text-fg-secondary">{frontmatter.description}</p>
+      <p class="mt-5 inline-flex rounded-full bg-surface-sunken px-3 py-1 text-subheadline text-fg-secondary">
+        Effective&nbsp;<time datetime={frontmatter.effective}>{effectiveLabel}</time>
+      </p>
+    </header>
+
+    <nav
+      aria-labelledby="toc-title"
+      class="mt-8 rounded-lg border border-line-subtle bg-surface-base p-5 xl:sticky xl:top-24 xl:col-start-1 xl:row-span-2 xl:row-start-1 xl:mt-0 xl:max-h-[calc(100dvh-7rem)] xl:self-start xl:overflow-y-auto xl:border-0 xl:bg-transparent xl:p-0"
+    >
+      <h2 id="toc-title" class="font-mono text-subheadline text-fg-tertiary">On this page</h2>
+      <ol class="toc mt-2">
+        {
+          sections.map((section) => (
+            <li>
+              <a href={`#${section.slug}`}>{section.text}</a>
+            </li>
+          ))
+        }
+      </ol>
+    </nav>
+
+    <article class="legal-prose mt-10 xl:col-start-2 xl:mt-12">
+      <slot />
+    </article>
+  </div>
+</SiteLayout>

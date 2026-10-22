@@ -1,0 +1,23 @@
+---
+/**
+ * Interim "B" monogram on `accent.solid` (same drawing as `public/favicon.svg`). Decorative: the
+ * wordmark text next to it carries the name. The real app icon and wordmark go through their own
+ * critique (docs/STATUS.md › App icon and wordmark).
+ */
+interface Props {
+  class?: string;
+}
+
+const { class: className } = Astro.props;
+---
+
+<svg class={className} viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+  <rect width="32" height="32" rx="8" fill="var(--bfhr-color-accent-solid)"></rect>
+  <path
+    d="M11 8.5V23.5H17.5A3.75 3.75 0 0 0 17.5 16H11M11 8.5H16.5A3.75 3.75 0 0 1 16.5 16"
+    fill="none"
+    stroke="var(--bfhr-color-fg-on-accent)"
+    stroke-width="3"
+    stroke-linecap="round"
+    stroke-linejoin="round"></path>
+</svg>

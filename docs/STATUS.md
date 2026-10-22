@@ -127,9 +127,9 @@ Sections (hero, features, how it works, download CTA, FAQ, changelog, footer, le
 | Features       | Web      | [website](design/research/website.md) | 0               | —    | researching |
 | Download       | Web      | [website](design/research/website.md) | 0               | —    | researching |
 | Changelog      | Web      | [website](design/research/website.md) | 0               | —    | researching |
-| Privacy Policy | Web      | [website](design/research/website.md) | 0               | —    | researching |
-| Terms          | Web      | [website](design/research/website.md) | 0               | —    | researching |
-| Support        | Web      | [website](design/research/website.md) | 0               | —    | researching |
+| Privacy Policy | Web      | [website](design/research/website.md) | 3               | pass | approved    |
+| Terms          | Web      | [website](design/research/website.md) | 3               | pass | approved    |
+| Support        | Web      | [website](design/research/website.md) | 2               | pass | approved    |
 
 ## App icon and wordmark
 

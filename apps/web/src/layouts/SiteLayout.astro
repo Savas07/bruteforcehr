@@ -1,0 +1,23 @@
+---
+/** Every website page: skip link → header → main → footer. */
+import SiteFooter from "../components/SiteFooter.astro";
+import SiteHeader from "../components/SiteHeader.astro";
+import type { ComponentProps } from "astro/types";
+import BaseLayout from "./BaseLayout.astro";
+
+type Props = ComponentProps<typeof BaseLayout>;
+---
+
+<BaseLayout {...Astro.props}>
+  <a
+    href="#main"
+    class="skip-link rounded-full bg-accent-solid px-5 py-3 text-prose font-semibold text-fg-on-accent shadow-overlay"
+  >
+    Skip to content
+  </a>
+  <SiteHeader />
+  <main id="main" tabindex="-1" class="focus:outline-none">
+    <slot />
+  </main>
+  <SiteFooter />
+</BaseLayout>

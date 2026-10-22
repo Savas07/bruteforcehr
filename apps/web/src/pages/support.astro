@@ -1,0 +1,200 @@
+---
+/**
+ * Support (website.md › Support). Contact first, then answers (monday.com). Support runs on public
+ * GitHub issues only, with no email address (decisions.md U4).
+ */
+import ContactCard from "../components/ContactCard.astro";
+import FaqGroup from "../components/FaqGroup.astro";
+import FaqItem from "../components/FaqItem.astro";
+import SiteLayout from "../layouts/SiteLayout.astro";
+import { ISSUES_URL, NEW_ISSUE_URL, RELEASES_REPO_URL } from "../site.ts";
+
+const topics = [
+  { id: "installing", label: "Installing" },
+  { id: "signing-in", label: "Signing in" },
+  { id: "email-accounts", label: "Email accounts" },
+  { id: "your-data", label: "Your data" },
+] as const;
+---
+
+<SiteLayout
+  title="Support"
+  description="Get help with BruteForceHR: answers about installing, signing in, email accounts and your data, or ask on GitHub."
+>
+  <div class="mx-auto max-w-6xl px-5 pt-10 md:px-6 md:pt-16">
+    <header class="max-w-3xl">
+      <h1 class="font-display text-display text-fg-primary">Support</h1>
+      <p class="mt-4 text-lead text-fg-secondary">
+        Something not working, or a question about your data? Ask on GitHub, or find a quick answer below.
+      </p>
+    </header>
+
+    <section id="contact" aria-labelledby="contact-title" class="mt-12">
+      <h2 id="contact-title" class="sr-only">Get in touch</h2>
+      <div class="grid gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+        <ContactCard variant="primary" title="Ask on GitHub" href={NEW_ISSUE_URL} action="Open a GitHub issue" external>
+          <p>
+            Report a problem or ask a question by opening an issue on GitHub. You'll need a free GitHub account.
+            BruteForceHR is run by one person, so a reply can take a few days.
+          </p>
+          <p class="rounded-md bg-warning-subtle px-4 py-3 text-warning-text">
+            <strong class="font-semibold">Issues are public.</strong> Don't include email addresses, CV content, message
+            text, or screenshots that show personal details.
+          </p>
+        </ContactCard>
+        <div class="grid gap-4">
+          <ContactCard variant="secondary" title="Known issues" href={ISSUES_URL} action="Browse issues" external>
+            <p>See whether someone has already reported the same problem.</p>
+          </ContactCard>
+          <ContactCard variant="secondary" title="Your data and privacy" href="/privacy/" action="Read the Privacy Policy">
+            <p>What BruteForceHR reads, what it keeps, and how to delete it.</p>
+          </ContactCard>
+        </div>
+      </div>
+    </section>
+
+    <section aria-labelledby="faq-title" class="mt-20 md:mt-24">
+      <h2 id="faq-title" class="font-display text-section text-fg-primary">Common questions</h2>
+      <nav aria-label="Question topics" class="mt-5">
+        <ul class="flex flex-wrap gap-2">
+          {
+            topics.map((topic) => (
+              <li>
+                <a
+                  href={`#${topic.id}`}
+                  class="inline-flex min-h-11 items-center rounded-full border border-line-control px-4 text-prose text-fg-primary transition-colors duration-(--bfhr-duration-fast) ease-standard hover:bg-surface-hover"
+                >
+                  {topic.label}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </nav>
+
+      <div class="mt-10 space-y-12">
+        <FaqGroup id="installing" title="Installing">
+          <FaqItem id="windows-protected-your-pc" question="Windows shows “Windows protected your PC”. What should I do?">
+            <p>
+              The Windows app isn't code-signed yet, so Windows SmartScreen warns you before it opens. If you downloaded
+              it from the official{" "}
+              <a class="prose-link" href={`${RELEASES_REPO_URL}/releases`}>BruteForceHR releases page on GitHub</a>,
+              select <strong class="text-fg-primary">More info</strong>, then{" "}
+              <strong class="text-fg-primary">Run anyway</strong>.
+            </p>
+          </FaqItem>
+          <FaqItem id="iphone-app" question="How do I get the iPhone app?">
+            <p>
+              The iPhone app is in a private beta on TestFlight and is invite only. If you've been invited, install
+              Apple's TestFlight app, then open the invitation sent to your Apple ID email.
+            </p>
+          </FaqItem>
+          <FaqItem id="desktop-updates" question="How do I update the Mac or Windows app?">
+            <p>
+              The desktop app checks for updates when it starts and every few hours, and checks each update's signature
+              before installing it. To check right away, go to <strong class="text-fg-primary"
+                >Settings › Updates</strong
+              >.
+            </p>
+          </FaqItem>
+        </FaqGroup>
+
+        <FaqGroup id="signing-in" title="Signing in">
+          <FaqItem id="no-sign-in-code" question="I didn't get my sign-in code">
+            <p>
+              Codes usually arrive within a minute. Check your spam or junk folder, and make sure your email address is
+              spelled correctly. If it still hasn't arrived, request a new code. You can request up to 5 codes an hour.
+            </p>
+          </FaqItem>
+          <FaqItem id="code-not-working" question="My code doesn't work">
+            <p>
+              Each code works once and only for 10 minutes. After 5 incorrect tries, the code stops working. Request a
+              new code and use the most recent email.
+            </p>
+          </FaqItem>
+          <FaqItem id="no-password" question="Why is there no password?">
+            <p>
+              BruteForceHR signs you in with a one-time code sent to your email address, so there's no password to
+              remember or to leak.
+            </p>
+          </FaqItem>
+        </FaqGroup>
+
+        <FaqGroup id="email-accounts" title="Email accounts">
+          <FaqItem id="which-email-accounts" question="Which email accounts can I connect?">
+            <p>
+              Gmail and Google Workspace, Outlook.com and Microsoft 365, and other accounts that support IMAP, such as
+              iCloud Mail or Yahoo Mail, using an app password.
+            </p>
+          </FaqItem>
+          <FaqItem id="google-hasnt-verified" question="Google says it hasn't verified this app. Is it safe?">
+            <p>
+              BruteForceHR is a personal project and hasn't been through Google's app verification yet, so Google shows
+              “Google hasn't verified this app” when you connect Gmail. If you want to continue, select{" "}
+              <strong class="text-fg-primary">Advanced</strong>, then{" "}
+              <strong class="text-fg-primary">Go to BruteForceHR</strong>. Before you decide, you can read{" "}
+              <a class="prose-link" href="/privacy/#your-email-accounts">what BruteForceHR does with your email</a>.
+            </p>
+          </FaqItem>
+          <FaqItem id="sending-without-me" question="Can BruteForceHR send email without me?">
+            <p>
+              No. It sends a message only after you've reviewed it and pressed Send, and you can undo for 10 seconds
+              after that. It asks for permission to send only the first time you apply by email from an account.
+            </p>
+          </FaqItem>
+          <FaqItem id="disconnect-email" question="How do I disconnect an email account?">
+            <p>
+              Go to <strong class="text-fg-primary">Settings › Mail accounts</strong>, choose the account, then{" "}
+              <strong class="text-fg-primary">Disconnect</strong>. BruteForceHR removes its access and deletes the email
+              it stored from that account. Your applications stay in your tracker. For IMAP accounts, also delete the
+              app password at your email provider.
+            </p>
+          </FaqItem>
+        </FaqGroup>
+
+        <FaqGroup id="your-data" title="Your data">
+          <FaqItem id="stored-email" question="Does BruteForceHR store all my email?">
+            <p>
+              No. It only keeps job-related email. For other messages, it keeps just the message's ID and a hash, so it
+              doesn't check them twice. The text of job-related email is deleted 180 days after the application it
+              belongs to closes.
+            </p>
+          </FaqItem>
+          <FaqItem id="email-and-ai" question="Is my email sent to AI?">
+            <p>
+              Only if you turn on <strong class="text-fg-primary">Allow sending email text to AI</strong> in{" "}
+              <strong class="text-fg-primary">Settings › AI & sending</strong>. Then only the text needed to sort a
+              message is sent to Anthropic's Claude, and Anthropic doesn't use it to train its models.
+            </p>
+          </FaqItem>
+          <FaqItem id="export-data" question="How do I download my data?">
+            <p>
+              Go to <strong class="text-fg-primary">Settings › Data & privacy › Export everything</strong>. You'll get a
+              ZIP file with all your data as JSON, plus your files.
+            </p>
+          </FaqItem>
+          <FaqItem id="delete-account" question="How do I delete my account?">
+            <p>
+              Go to <strong class="text-fg-primary">Settings › Data & privacy › Delete account</strong> and confirm with
+              a sign-in code. Your data and files are permanently deleted, and BruteForceHR's access to your email
+              accounts is revoked. This can't be undone, so export your data first if you want a copy.
+            </p>
+          </FaqItem>
+        </FaqGroup>
+      </div>
+    </section>
+  </div>
+</SiteLayout>
+
+<script>
+  // Open the question a link points to (#iphone-app); <details> stays closed on fragment navigation otherwise.
+  function openTargetedQuestion(): void {
+    const id = decodeURIComponent(window.location.hash.slice(1));
+    if (id === "") return;
+    const target = document.getElementById(id);
+    if (target instanceof HTMLDetailsElement) target.open = true;
+  }
+
+  openTargetedQuestion();
+  window.addEventListener("hashchange", openTargetedQuestion);
+</script>

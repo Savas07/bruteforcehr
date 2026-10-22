@@ -1,0 +1,51 @@
+---
+/** Site footer (website.md › Footer: Framer columns, Dovetail mono labels, Samara contact block). */
+import { FOOTER_NAV, SITE_DESCRIPTION, SITE_NAME } from "../site.ts";
+import BrandMark from "./BrandMark.astro";
+
+const year = new Date().getFullYear();
+---
+
+<footer class="mt-24 border-t border-line-subtle bg-surface-base">
+  <div
+    class="mx-auto grid max-w-6xl gap-10 px-5 py-12 md:grid-cols-2 md:px-6 xl:py-16"
+  >
+    <div class="max-w-sm">
+      <a href="/" class="inline-flex min-h-11 items-center gap-2 rounded-md font-display text-title2 text-fg-primary">
+        <BrandMark class="size-7 shrink-0" />
+        <span>{SITE_NAME}</span>
+      </a>
+      <p class="mt-3 text-prose text-fg-secondary">{SITE_DESCRIPTION}</p>
+      <p class="mt-4 text-prose text-fg-secondary">
+        Questions or something not working?{" "}
+        <a href="/support/" class="prose-link">Get help on the Support page</a>.
+      </p>
+    </div>
+    <nav aria-label="Footer" class="grid grid-cols-2 gap-8">
+      {
+        FOOTER_NAV.map((group) => (
+          <div>
+            <h2 class="font-mono text-subheadline text-fg-tertiary">{group.title}</h2>
+            <ul class="mt-3">
+              {group.items.map((item) => (
+                <li>
+                  <a
+                    href={item.href}
+                    class="inline-flex min-h-11 items-center text-prose text-fg-primary underline decoration-transparent underline-offset-4 transition-colors duration-(--bfhr-duration-fast) ease-standard hover:decoration-current"
+                  >
+                    {item.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))
+      }
+    </nav>
+  </div>
+  <div class="border-t border-line-subtle">
+    <p class="mx-auto max-w-6xl px-5 py-6 text-subheadline text-fg-tertiary md:px-6">
+      {`© ${year} ${SITE_NAME} · A personal project, made for people looking for work.`}
+    </p>
+  </div>
+</footer>

@@ -1,0 +1,32 @@
+---
+/**
+ * One question (website.md › FAQ: Notion hairline accordion on native `<details>`). The `id` makes
+ * every answer deep-linkable; the Support page opens the targeted item on load and on hash change.
+ */
+interface Props {
+  id: string;
+  question: string;
+}
+
+const { id, question } = Astro.props;
+---
+
+<details id={id} class="group border-b border-line-subtle">
+  <summary
+    class="flex min-h-11 cursor-pointer list-none items-start justify-between gap-4 py-4 text-prose font-semibold text-fg-primary [&::-webkit-details-marker]:hidden"
+  >
+    <span>{question}</span>
+    <svg
+      class="mt-1 size-5 shrink-0 text-fg-tertiary transition-transform duration-(--bfhr-duration-fast) ease-standard group-open:rotate-45"
+      viewBox="0 0 20 20"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path d="M10 4v12M4 10h12" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"
+      ></path>
+    </svg>
+  </summary>
+  <div class="faq-answer max-w-[68ch] pb-5 text-prose text-fg-secondary">
+    <slot />
+  </div>
+</details>

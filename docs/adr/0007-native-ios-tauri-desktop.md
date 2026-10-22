@@ -1,0 +1,105 @@
+# ADR 0007 — Native SwiftUI on iOS, Tauri 2 on desktop
+
+- **Status:** Accepted
+- **Date:** 2026-10-22 (owner decision, same day as kickoff)
+- **Deciders:** Savas (owner), lead engineer agent
+- **Supersedes:** the client parts of [0001-stack.md](0001-stack.md) (Electron desktop, Expo/React Native iOS, React pin, hoisted linker) and the Electron/Expo release jobs of [0004-release-updates-signing.md](0004-release-updates-signing.md); BRIEF §6 (Desktop, iOS, Push rows; §6.5 desktop `printToPDF`), §7.2–7.3 (electron-builder, electron-updater, `expo prebuild`/fastlane), §8 "Electron hardening" and §9 Playwright `_electron` / Maestro
+- **Related:** [0001-stack.md](0001-stack.md), [0002-data-model.md](0002-data-model.md), [0004-release-updates-signing.md](0004-release-updates-signing.md), [runbooks/release.md](../runbooks/release.md)
+
+All versions below were checked on 2026-10-22: `tauri` crate 2.12.5, `tauri-plugin-updater` 2.14.0, `@tauri-apps/cli`/`@tauri-apps/api` 2.12.4, `@wdio/tauri-service` 1.5.0, `firebase-ios-sdk` 13.1.0, `typst`/`typst-pdf` 0.15.1, Rust 1.99.1, Xcode 26.6, Swift 6.3.3.
+
+## Context
+
+ADR 0001 chose the brief's default clients: Electron for desktop and Expo/React Native for iOS. The owner reviewed that and **rejected Electron and Expo/React Native**. **Flutter is excluded too.** The owner's direction is native UI on iPhone and a small Rust shell on desktop. Electron and Expo code from the first M0 pass is removed.
+
+The other constraints still apply:
+
+- Backend, data model and auth stay as decided (Firebase; ADRs 0001–0003). TypeScript stays the source of truth for domain logic (`@bfhr/core`), validation and the functions.
+- There's no local JDK or Docker on the development Mac (kickoff), so tools that need Java can only run in CI.
+- Windows builds stay unsigned until the app is shared (kickoff; ADR 0004). Update integrity can't depend on Authenticode.
+- macOS: Developer ID signing plus notarization (Apple Developer Program membership exists).
+- BRIEF §2.2: GitHub Releases in the public `Savas07/bruteforcehr-releases` repo are the only source of versions and binaries.
+
+## Decision
+
+### iOS: native SwiftUI app (`apps/ios`)
+
+| Concern | Decision |
+|---|---|
+| UI | SwiftUI, Swift 6.3 (Xcode 26.6). Native navigation, tab bar, sheets and Dynamic Type. No web views except the CV preview (see "CV PDF" below). |
+| Project | A committed `apps/ios/BruteForceHR.xcodeproj` that uses Xcode **buildable (synchronized) folders**. These "only record the folder path into the project file without enumerating the contained files", so adding or removing files doesn't touch the project file ([Xcode 16 release notes](https://developer.apple.com/documentation/xcode-release-notes/xcode-16-release-notes)). No XcodeGen or Tuist. |
+| Firebase | **Firebase iOS SDK through Swift Package Manager** (`https://github.com/firebase/firebase-ios-sdk`, 13.1.0). Firebase recommends SPM for new projects, and SPM support needs Xcode 26.2 or later ([Firebase installation methods](https://firebase.google.com/docs/ios/installation-methods); [SPM notes](https://github.com/firebase/firebase-ios-sdk/blob/main/SwiftPackageManager.md)). Firestore offline persistence is **on by default on Apple platforms** ([Access data offline](https://firebase.google.com/docs/firestore/manage-data/enable-offline)), and it acts as the outbox. `GoogleService-Info.plist` (client config, not a secret) is committed. |
+| Domain logic | Local Swift package **`packages/swift/BFHRCore`**: `Codable` models matching the Firestore documents, plus a Swift port of the status state machine. It does **not** share runtime code with TypeScript. Instead, `@bfhr/core` and `@bfhr/fixtures` export **JSON conformance vectors**: `packages/core/conformance/state-machine.json`, plus `packages/fixtures/conformance/populated.json` and `empty.json` (Firestore-shaped documents, ISO-8601 dates). BFHRCore's tests must pass every vector. TypeScript stays the source of truth, and changing a vector-generating rule regenerates the vectors in the same commit. |
+| Design tokens | Local Swift package **`packages/ui-tokens/swift/BFHRDesignTokens`**, generated from `@bfhr/ui-tokens` and committed. Screens adopt it in the next wave. |
+| UI tests | **XCUITest** (XCTest + XCUIAutomation, the framework apps use to "control your app's user interface and inspect its state" — [XCUIAutomation](https://developer.apple.com/documentation/xcuiautomation)) runs on the iPhone 17e / 17 Pro Max simulators. It replaces the brief's **Maestro**, because the Maestro CLI needs "Java version 17 or higher" ([Maestro CLI install](https://docs.maestro.dev/maestro-cli/how-to-install-maestro-cli)) and the development Mac has no JDK. |
+| Distribution | TestFlight via `xcodebuild archive` + `-exportArchive` with an App Store Connect API key ([ADR 0004](0004-release-updates-signing.md)). |
+
+### Desktop: Tauri 2 (`apps/desktop`)
+
+| Concern | Decision |
+|---|---|
+| Shell | **Tauri 2** (`tauri` 2.12.5): a Rust process in `apps/desktop/src-tauri`, with a UI that runs in the OS webview. Tauri uses **WKWebView** on macOS and **WebView2** on Windows ([Webview versions](https://v2.tauri.app/reference/webview-versions/)). |
+| UI | React 19.3 + Vite + Tailwind 4 + Radix + cmdk + TanStack Router (kickoff layout). The UI consumes `@bfhr/ui-tokens` CSS variables, `@bfhr/core` and `@bfhr/api`. |
+| Data | Firebase JS SDK in the webview, with IndexedDB persistence (`persistentLocalCache`) as on the web ([Access data offline](https://firebase.google.com/docs/firestore/manage-data/enable-offline)). **`app.windows[].useHttpsScheme` is fixed at its first value and never changed**: the config reference warns that changing it "will change the IndexedDB, cookies and localstorage location and your app will not be able to access the old data" ([config reference](https://v2.tauri.app/reference/config/)). |
+| Security model (replaces Electron hardening) | **Capabilities + permissions**: each window gets only the core/plugin permissions listed in `src-tauri/capabilities/*.json`. By default "all potentially dangerous plugin commands and scopes are blocked" ([Capabilities](https://v2.tauri.app/security/capabilities/); [Permissions](https://v2.tauri.app/security/permissions/)). App commands are allowed for every window unless restricted, so the app limits them with `tauri_build::AppManifest::commands` (same page). Every command validates its input on the Rust side, and the UI validates with zod at its boundary. **CSP** is set in `app.security.csp`. Tauri only enforces it when it's configured, and it adds nonces/hashes for bundled assets at compile time ([CSP](https://v2.tauri.app/security/csp/)). Allowed sources are the bundled assets, Tauri IPC, and the Firebase/Functions origins. **External links** go through `tauri-plugin-opener`, whose `opener:allow-open-url` permission is scoped to an `https` allowlist ([Opener](https://v2.tauri.app/plugin/opener/)). **Navigation** away from the app is refused in `WebviewWindowBuilder::on_navigation`, and new windows in `on_new_window` ([`webview/mod.rs`](https://github.com/tauri-apps/tauri/blob/dev/crates/tauri/src/webview/mod.rs)). The webview has no Node.js runtime, so `nodeIntegration`, Fuses and ASAR integrity no longer apply. |
+| Window chrome | **macOS:** `titleBarStyle: "Overlay"`, `hiddenTitle: true`, `trafficLightPosition` (which "requires titleBarStyle: Overlay and decorations: true"), sidebar vibrancy via `windowEffects` `sidebar` ([config reference](https://v2.tauri.app/reference/config/#windowconfig); [window customization](https://v2.tauri.app/learn/window-customization/)). Drag regions use `data-tauri-drag-region` (needs `core:window:allow-start-dragging`). **Windows:** Tauri has **no title-bar overlay on Windows**. In the config schema, `titleBarStyle`, `hiddenTitle` and `trafficLightPosition` are macOS-only. Tauri's documented route to a custom title bar is `decorations: false` plus an HTML title bar ([window customization](https://v2.tauri.app/learn/window-customization/)). That loses the Windows 11 Snap Layouts flyout, which only appears when the window answers `WM_NCHITTEST` with `HTMAXBUTTON` ([Support snap layouts](https://learn.microsoft.com/en-us/windows/apps/desktop/modernize/ui/apply-snap-layout-menu)). **Decision: Windows keeps the native title bar** (`decorations: true`, native caption buttons, Snap Layouts, system theme) and uses `windowEffects` `mica` on Windows 11 ("Windows 11 Only" in the schema). This replaces the Electron `titleBarOverlay` design in `docs/design/research/desktop-chrome.md`. The 40 px app-name row moves below the native title bar. (`app.macOSPrivateApi` isn't needed: the schema says it is a "No-op in Tauri 2.12.1+ because the APIs are always enabled now".) |
+| E2E | **WebdriverIO + `@wdio/tauri-service`** (1.5.0). It is Tauri's recommended setup and "works on Windows, Linux, and macOS". By default it runs an **embedded WebDriver server** inside the app (`tauri-plugin-wdio-webdriver`), "and this is how macOS is supported", because macOS has no WKWebView driver for `tauri-driver` ([Tauri WebDriver](https://v2.tauri.app/develop/tests/webdriver/); [WebdriverIO Tauri](https://webdriver.io/docs/desktop-testing/tauri)). On Windows the service can use the official `tauri-driver` + Edge WebDriver instead. The WebDriver plugins are compiled only behind an `e2e` Cargo feature with a separate `tauri.e2e.conf.json`, and they never ship in release bundles. This replaces Playwright `_electron`. Screenshots for the design protocol come from the same harness. |
+| Packaging | `tauri build`: macOS **universal** (`--target universal-apple-darwin`, which needs both `aarch64-apple-darwin` and `x86_64-apple-darwin` installed — [CLI reference](https://v2.tauri.app/reference/cli/)) `.app` + DMG; Windows **NSIS** `-setup.exe` x64. WebView2 comes from the default `downloadBootstrapper` install mode ([Windows installer](https://v2.tauri.app/distribute/windows-installer/)). |
+| Deep links & OAuth return | `bruteforcehr://` comes in through `tauri-plugin-deep-link` (`plugins.deep-link.desktop.schemes`; `getCurrent`/`onOpenUrl`), with `tauri-plugin-single-instance` (feature `deep-link`) registered first. Desktop links fire only for installed apps ([Deep linking](https://v2.tauri.app/plugin/deep-linking/)). Mail OAuth opens the system browser via `opener`. **iOS** uses SwiftUI `onOpenURL` for links, and the `webAuthenticationSession` environment value for OAuth ([ADR 0006](0006-hosting-domains.md); [design/IA.md](../design/IA.md#deep-links)). |
+| Updates | **`tauri-plugin-updater`** with the static `latest.json` published in GitHub Releases of `Savas07/bruteforcehr-releases` ([Updater](https://v2.tauri.app/plugin/updater/)). Signature checking "cannot be disabled". The public key is embedded in `tauri.conf.json` (`plugins.updater.pubkey`), and the private key exists only as CI secrets (`TAURI_SIGNING_PRIVATE_KEY` + `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`, generated with `tauri signer generate`). The signatures are **minisign** signatures, which are **Ed25519** (the plugin verifies with [`minisign-verify`](https://github.com/tauri-apps/plugins-workspace/blob/v2/plugins/updater/Cargo.toml); [minisign](https://github.com/jedisct1/minisign): "Minisign uses the Ed25519 public-key signature system"). This gives **update integrity on the unsigned Windows build**: an installer that wasn't signed with our key is rejected, whatever Authenticode says. Endpoints, channels and artifacts are in [ADR 0004](0004-release-updates-signing.md). |
+
+### Monorepo effects
+
+- pnpm uses the **default isolated linker**. Hoisting existed only for Metro/electron-builder and was removed with them.
+- React isn't pinned workspace-wide. Only `@bfhr/desktop` (and `@bfhr/web`, if it uses React islands) depends on React.
+- `@bfhr/api` (typed Firestore paths, converters, functions client) serves desktop and functions. iOS gets its typed models from BFHRCore, which the conformance vectors check against the same TS schemas.
+- CI adds a `macos-26` job for `swift test` (BFHRCore, BFHRDesignTokens) and `xcodebuild test` (XCUITest), and a Rust job for `cargo clippy`/`cargo test` in `src-tauri`. The Windows E2E job runs on `windows-latest`.
+
+## Consequences
+
+Positive
+- iOS gets native controls, Dynamic Type, VoiceOver and sheets/detents without a bridge. The native Firebase SDK keeps offline persistence on by default.
+- Desktop bundles use the OS webview and a Rust process instead of a bundled Chromium + Node. There's no Node in the UI process, and IPC is deny-by-default per capability.
+- Ed25519 update signatures protect Windows updates even without a code-signing certificate, which closes the integrity gap ADR 0004 previously accepted for electron-updater.
+- No Java is needed locally for iOS UI tests.
+
+Negative / risks
+- **UI is written twice** (SwiftUI and React). Every screen needs two implementations and two critique passes. BRIEF §6 already said not to share view components, so this mostly removes React Native as a middle layer.
+- **Domain logic is ported to Swift.** Drift between `@bfhr/core` and BFHRCore is caught only by the conformance vectors. Any rule that isn't covered by a vector can drift silently, so new state-machine or schema rules must come with vectors. The functions stay authoritative for anything security-relevant (Security Rules + server checks).
+- **Two webview engines on desktop.** WebKit's version follows the installed macOS/Safari ([Webview versions](https://v2.tauri.app/reference/webview-versions/)), while WebView2 Evergreen is Chromium-based and updates on its own ([WebView2 distribution](https://learn.microsoft.com/en-us/microsoft-edge/webview2/concepts/distribution)). CSS/JS features must work in the oldest supported Safari WebKit, and screenshots, E2E and visual baselines are per OS.
+- **Webview origin differs per OS** (`tauri://localhost` scheme on macOS vs `http(s)://tauri.localhost` on Windows — `useHttpsScheme` in the [config reference](https://v2.tauri.app/reference/config/)). CSP and Firebase config must allow both.
+- **The Windows chrome design changes** (native title bar instead of an overlay). The desktop-chrome research and critique rows need a re-check.
+- **Static `latest.json` has no staged rollout percentage** (BRIEF §7.3 `stagingPercentage`). Halting a rollout means replacing `latest.json` ([ADR 0004](0004-release-updates-signing.md) §5).
+- **Losing the updater private key** means installed apps can't accept new updates ("you will NOT be able to publish new updates" — [Updater](https://v2.tauri.app/plugin/updater/)). The key needs an offline backup ([runbooks/release.md](../runbooks/release.md)).
+- **Offline CV PDF export on desktop is open** (see below). Electron's `printToPDF` assumption in BRIEF §6.5, PRD M2-CV-7 and ADR 0002 (`renderedFiles`) no longer holds.
+
+### Open: offline CV PDF export on desktop (decide before M2)
+
+BRIEF §6.5 requires desktop PDF export to work offline, with server Chromium for iOS exports and email attachments, and **raster parity tests between the engines**. Tauri has no `printToPDF`. These options were evaluated but not decided:
+
+| Option | How | For | Against |
+|---|---|---|---|
+| **A. System webview PDF via Rust** | Get the native webview through `Webview::with_webview` → `PlatformWebview::inner()` (WKWebView pointer on macOS) / `controller()` (WebView2 controller on Windows) ([`webview/mod.rs`](https://github.com/tauri-apps/tauri/blob/dev/crates/tauri/src/webview/mod.rs)). **macOS:** `WKWebView.createPDF(configuration:)` ([Apple](https://developer.apple.com/documentation/webkit/wkwebview/createpdf(configuration:completionhandler:))). `WKPDFConfiguration` only offers `rect` and `allowTransparentBackground` ([Apple](https://developer.apple.com/documentation/webkit/wkpdfconfiguration)), so A4/Letter pagination needs AppKit `printOperation(with: NSPrintInfo)` ([Apple](https://developer.apple.com/documentation/webkit/wkwebview/printoperation(with:))). **Windows:** `ICoreWebView2_7::PrintToPdf` / `PrintToPdfAsync` with `CoreWebView2PrintSettings` (page size, margins, scale, backgrounds, header/footer) ([PrintToPdfAsync](https://learn.microsoft.com/en-us/dotnet/api/microsoft.web.webview2.core.corewebview2.printtopdfasync); [PrintSettings](https://learn.microsoft.com/en-us/dotnet/api/microsoft.web.webview2.core.corewebview2printsettings)). | Offline. Keeps one HTML template (`packages/cv-render`) for preview and export. No extra binary. | **Three engines** (WebKit, WebView2, server Chromium). Pagination and page settings work differently per OS. Neither API documents tagged-PDF output (the WebView2 settings list has no tagging option), so BRIEF §4.5 "tagged where supported" may only hold on the server. Needs unsafe Objective-C/COM code per OS. |
+| **B. Typst everywhere** | CV templates written in Typst. Desktop embeds the `typst` + `typst-pdf` crates (0.15.1, Apache-2.0) in `src-tauri`. Functions run the same Typst version (the release ships a static `x86_64-unknown-linux-musl` CLI build — [releases](https://github.com/typst/typst/releases)). Previews come from `typst-svg`/`typst-render`. | Offline. **One engine** on desktop and server. "By default, Typst will always write Tagged PDF", with opt-in PDF/UA-1 and all PDF/A standards ([Typst PDF](https://typst.app/docs/reference/pdf/); [0.14 changelog](https://typst.app/docs/changelog/0.14.0)). Deterministic output makes parity easy. | Replaces the HTML `cv-render` design with Typst templates and a JSON → Typst mapping. iOS preview would need server-rendered SVG/PNG or an embedded Rust build. Fonts must be bundled for EN/TR/DE glyphs. Running a binary inside Cloud Functions gen2 must be proven in a spike. |
+| **C. Server-side headless Chromium only** | Desktop calls the render function, as iOS does. Puppeteer `page.pdf` generates tagged PDF (`tagged`, experimental, default `true` — [PDFOptions](https://pptr.dev/api/puppeteer.pdfoptions)). | One engine, one template. Tagged output. Least client code. | **No offline export.** This contradicts BRIEF §6.5 and needs an owner-approved deviation. Each export costs a network round trip and function time. |
+
+**Impact on BRIEF §6.5 parity tests:**
+- **A** turns "both engines" into three. It needs per-engine baselines and a WebKit-vs-Chromium tolerance, and the WebKit and WebView2 diffs have to run on macOS and Windows runners.
+- **B** reduces parity to one engine. The test becomes "same Typst version + fonts give the same raster on macOS, Windows and Linux".
+- **C** removes the cross-engine test. Only server output is checked, plus ATS text round-trip (M2-CV-8).
+
+A decision ADR is due at the start of M2, after a spike that renders the same CV fixture with A and B and checks raster diff, text extraction and tagging.
+
+## Alternatives considered
+
+| Alternative | Why rejected |
+|---|---|
+| **Electron desktop + Expo/React Native iOS** (previous ADR 0001, the brief's default) | **Rejected by the owner** on 2026-10-22. It was implemented in the first M0 pass and is now removed. |
+| **Flutter** | **Excluded by the owner.** |
+| **Tauri 2 on iOS too** | The iOS UI would run in a webview instead of native SwiftUI controls, against the owner's direction (native iOS). |
+| **Kotlin/Swift shared logic (KMP) or a Rust core via FFI** | Adds a third language and bridge tooling for a small domain layer. JSON vectors catch drift with far less machinery, and TS stays the one source of truth. |
+| **Firebase JS SDK in a WKWebView on iOS** | Same objection as Tauri on iOS. The native SDK already has persistence on by default. |
+| **Maestro for iOS E2E** | Needs Java 17+ ([Maestro](https://docs.maestro.dev/maestro-cli/how-to-install-maestro-cli)), and there's no local JDK. XCUITest needs nothing beyond Xcode. |
+| **`tauri-driver` only for desktop E2E** | Driving it directly supports only Windows and Linux, because macOS has no WKWebView driver ([Tauri WebDriver](https://v2.tauri.app/develop/tests/webdriver/)). The embedded driver covers macOS. |
+| **CrabNebula `tauri-driver` fork** | Needs "a paid API key" for macOS (same page). |
+| **Custom HTML title bar on Windows (`decorations: false`)** | Loses Snap Layouts unless the window handles `WM_NCHITTEST`/`HTMAXBUTTON` natively ([Microsoft](https://learn.microsoft.com/en-us/windows/apps/desktop/modernize/ui/apply-snap-layout-menu)). That would need third-party plugins or custom Win32 code for a cosmetic gain. |

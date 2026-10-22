@@ -103,7 +103,7 @@ public struct SubmitPrompt: View {
 
     public var body: some View {
         VStack(alignment: .leading, spacing: BFHRSpace.s3) {
-            Text(Strings.submitQuestion(company: company))
+            Text(bfhrPlain: Strings.submitQuestion(company: company))
                 .font(.bfhr(.headline))
                 .foregroundStyle(BFHRColor.Fg.primary)
             ButtonPair {

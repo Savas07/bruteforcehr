@@ -115,6 +115,8 @@ All components use `BFHRDesignTokens` only (no raw colors), scale with Dynamic T
 
 Shared copy lives in `Strings` (Undo, Try again, statuses, "X · moved to Y", offline, AI disclaimer…); reuse it instead of re-adding a string.
 
+Strings that interpolate user data (email addresses, domains, company names) render with `Text(bfhrPlain: resource)`: plain `Text(resource)` turns an address into an accent-colored `mailto:` link inside the sentence. The shared components already do this.
+
 Navigation between tabs: open `bruteforcehr://…` links with `@Environment(\.openURL)` (IA.md "Deep links"). `RootView` handles them in-app (no round trip through the system) by selecting the link's tab; other schemes go to the system. Links only switch tabs in M0; pushing the linked item and the `settings` host (Settings sheet) land with those screens.
 
 ## Strings

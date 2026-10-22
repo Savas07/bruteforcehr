@@ -26,6 +26,7 @@ public struct BFHRButtonStyle: ButtonStyle {
 
     public func makeBody(configuration: Configuration) -> some View {
         configuration.label
+            .fixedSize(horizontal: false, vertical: true)
             .font(.bfhr(.body, emphasized: variant == .primary))
             .multilineTextAlignment(.center)
             .foregroundStyle(foreground)
@@ -75,8 +76,9 @@ extension ButtonStyle where Self == BFHRButtonStyle {
     }
 }
 
-/// A primary + secondary pair: side by side when both labels fit, stacked (primary on top) when
-/// either needs more than half the width, as German labels often do.
+/// A primary + secondary pair: side by side in equal halves when both labels fit on one line in
+/// half the width, stacked (primary on top) otherwise, as German labels and large text sizes often
+/// need. Labels are never truncated or shrunk; stacked labels wrap.
 public struct ButtonPair<Primary: View, Secondary: View>: View {
     private let primary: Primary
     private let secondary: Secondary
@@ -87,15 +89,60 @@ public struct ButtonPair<Primary: View, Secondary: View>: View {
     }
 
     public var body: some View {
-        ViewThatFits(in: .horizontal) {
-            HStack(spacing: BFHRSpace.s2) {
-                secondary.buttonStyle(.bfhr(.secondary, fullWidth: true)).fixedSize(horizontal: false, vertical: true)
-                primary.buttonStyle(.bfhr(.primary, fullWidth: true)).fixedSize(horizontal: false, vertical: true)
-            }
-            VStack(spacing: BFHRSpace.s2) {
-                primary.buttonStyle(.bfhr(.primary, fullWidth: true))
-                secondary.buttonStyle(.bfhr(.secondary, fullWidth: true))
-            }
+        ButtonPairLayout(spacing: BFHRSpace.s2) {
+            primary.buttonStyle(.bfhr(.primary, fullWidth: true))
+            secondary.buttonStyle(.bfhr(.secondary, fullWidth: true))
+        }
+    }
+}
+
+/// Lays out [primary, secondary]: secondary | primary in equal halves when each one's one-line
+/// ideal width fits in half, else primary over secondary at full width.
+struct ButtonPairLayout: Layout {
+    var spacing: CGFloat
+
+    static func isSideBySide(idealWidths: [CGFloat], available: CGFloat, spacing: CGFloat) -> Bool {
+        guard available.isFinite else { return true }
+        let half = (available - spacing) / 2
+        // `ceil` + 1 pt: a label measured at exactly its fractional ideal width can still truncate
+        // once pixel-rounded, so side by side needs a little slack.
+        return idealWidths.allSatisfy { $0.rounded(.up) + 1 <= half }
+    }
+
+    private func sideBySide(_ subviews: Subviews, width: CGFloat) -> Bool {
+        Self.isSideBySide(
+            idealWidths: subviews.map { $0.sizeThatFits(.unspecified).width },
+            available: width,
+            spacing: spacing
+        )
+    }
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        guard subviews.count == 2 else { return .zero }
+        let width = proposal.width ?? subviews.map { $0.sizeThatFits(.unspecified).width }.reduce(spacing, +)
+        if sideBySide(subviews, width: width) {
+            let half = ProposedViewSize(width: (width - spacing) / 2, height: nil)
+            return CGSize(width: width, height: subviews.map { $0.sizeThatFits(half).height }.max() ?? 0)
+        }
+        let full = ProposedViewSize(width: width, height: nil)
+        let heights = subviews.map { $0.sizeThatFits(full).height }
+        return CGSize(width: width, height: heights.reduce(spacing, +))
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        guard subviews.count == 2 else { return }
+        let primary = subviews[0], secondary = subviews[1]
+        if sideBySide(subviews, width: bounds.width) {
+            let half = (bounds.width - spacing) / 2
+            // Height unconstrained: a label that wraps grows the button instead of truncating.
+            let size = ProposedViewSize(width: half, height: nil)
+            secondary.place(at: CGPoint(x: bounds.minX, y: bounds.minY), proposal: size)
+            primary.place(at: CGPoint(x: bounds.minX + half + spacing, y: bounds.minY), proposal: size)
+        } else {
+            let full = ProposedViewSize(width: bounds.width, height: nil)
+            let primaryHeight = primary.sizeThatFits(full).height
+            primary.place(at: CGPoint(x: bounds.minX, y: bounds.minY), proposal: full)
+            secondary.place(at: CGPoint(x: bounds.minX, y: bounds.minY + primaryHeight + spacing), proposal: full)
         }
     }
 }

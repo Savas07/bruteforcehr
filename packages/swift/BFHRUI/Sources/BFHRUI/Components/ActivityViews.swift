@@ -9,6 +9,7 @@ import SwiftUI
 public struct AutoChangeRow: View {
     private let item: AutoChangeItem
     private let onUndo: () -> Void
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     public init(_ item: AutoChangeItem, onUndo: @escaping () -> Void) {
         self.item = item
@@ -17,7 +18,7 @@ public struct AutoChangeRow: View {
 
     public var body: some View {
         HStack(alignment: .top, spacing: BFHRSpace.s3) {
-            CompanyMonogram(item.company, badge: "envelope")
+            CompanyMonogram(item.company, badge: "envelope", hidesAtAccessibilitySizes: true)
             VStack(alignment: .leading, spacing: BFHRSpace.s1) {
                 Text(Strings.timelineMoved(to: item.to))
                     .font(.bfhr(.headline))
@@ -45,17 +46,26 @@ public struct AutoChangeRow: View {
                         .font(.bfhr(.footnote))
                         .foregroundStyle(BFHRColor.Fg.tertiary)
                 }
+                // At accessibility sizes Undo goes under the text, so the text keeps the full width.
+                if item.canUndo, dynamicTypeSize.isAccessibilitySize {
+                    undoButton
+                        .padding(.leading, -BFHRSpace.s2)
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            if item.canUndo {
-                Button(action: onUndo) { Text(Strings.undo) }
-                    .buttonStyle(.bfhrPlain)
+            if item.canUndo, !dynamicTypeSize.isAccessibilitySize {
+                undoButton
             }
         }
         .accessibilityElement(children: .combine)
         .accessibilityActions {
             if item.canUndo { Button(action: onUndo) { Text(Strings.undo) } }
         }
+    }
+
+    private var undoButton: some View {
+        Button(action: onUndo) { Text(Strings.undo) }
+            .buttonStyle(.bfhrPlain)
     }
 }
 
@@ -79,7 +89,7 @@ public struct NudgeCard: View {
         let days = item.days(at: now, calendar: calendar)
         VStack(alignment: .leading, spacing: BFHRSpace.s3) {
             HStack(alignment: .top, spacing: BFHRSpace.s3) {
-                CompanyMonogram(item.company)
+                CompanyMonogram(item.company, hidesAtAccessibilitySizes: true)
                 VStack(alignment: .leading, spacing: BFHRSpace.s1) {
                     Text(verbatim: "\(item.company.name) · \(item.role)")
                         .font(.bfhr(.headline))

@@ -155,16 +155,28 @@ public struct ReviewSheet: View {
         .background(.bar)
     }
 
+    private var senderName: some View {
+        Text(verbatim: proposal.sender.name ?? proposal.sender.address)
+            .font(.bfhr(.subheadline, emphasized: true))
+            .foregroundStyle(BFHRColor.Fg.primary)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private var receivedTime: some View {
+        RelativeTimeText(proposal.receivedAt, style: .dayAndTime)
+            .font(.bfhr(.caption1))
+            .foregroundStyle(BFHRColor.Fg.tertiary)
+            .fixedSize()
+    }
+
     private var evidence: some View {
         VStack(alignment: .leading, spacing: BFHRSpace.s2) {
-            HStack(alignment: .firstTextBaseline) {
-                Text(verbatim: proposal.sender.name ?? proposal.sender.address)
-                    .font(.bfhr(.subheadline, emphasized: true))
-                    .foregroundStyle(BFHRColor.Fg.primary)
-                Spacer()
-                RelativeTimeText(proposal.receivedAt, style: .dayAndTime)
-                    .font(.bfhr(.caption1))
-                    .foregroundStyle(BFHRColor.Fg.tertiary)
+            // Sender then time, wrapping the time to the next line when both don't fit; neither is
+            // clipped. A layout, not ViewThatFits, so the texts keep their identity when the text
+            // size changes (the accessibility audit checks that).
+            ChipFlow(spacing: BFHRSpace.s2) {
+                senderName
+                receivedTime
             }
             Text(verbatim: proposal.sender.address + (proposal.accountAddress.map { " → \($0)" } ?? ""))
                 .font(.bfhr(.footnote))
@@ -172,15 +184,19 @@ public struct ReviewSheet: View {
             Text(verbatim: proposal.subject)
                 .font(.bfhr(.subheadline, emphasized: true))
                 .foregroundStyle(BFHRColor.Fg.primary)
-            Text(verbatim: proposal.snippet)
+            // The excerpt is the snippet, shown whole (never clipped); "Show full email" swaps in
+            // the stored body when there is one.
+            Text(verbatim: showsFullEmail ? proposal.bodyText ?? proposal.snippet : proposal.snippet)
                 .font(.bfhr(.subheadline))
                 .foregroundStyle(BFHRColor.Fg.secondary)
-                .lineLimit(showsFullEmail ? nil : 3)
-            Button { showsFullEmail.toggle() } label: {
-                Text(showsFullEmail ? Strings.showLess : Strings.showFullEmail)
+                .fixedSize(horizontal: false, vertical: true)
+            if let body = proposal.bodyText, body != proposal.snippet {
+                Button { showsFullEmail.toggle() } label: {
+                    Text(showsFullEmail ? Strings.showLess : Strings.showFullEmail)
+                }
+                .buttonStyle(.bfhrPlain)
+                .padding(.leading, -BFHRSpace.s2)
             }
-            .buttonStyle(.bfhrPlain)
-            .padding(.leading, -BFHRSpace.s2)
         }
         .padding(BFHRSpace.s3)
         .background(BFHRColor.Surface.sunken, in: BFHRRadius.shape(BFHRRadius.lg))
@@ -228,8 +244,12 @@ public struct ReviewSheet: View {
 }
 
 /// The Move to… list (components.md `StatusMenu`): every status, the current one checked, invalid
-/// targets disabled with the reason as a footnote, never hidden. Present it in a sheet with the
-/// medium detent; VoiceOver users reach it through the row's "Move to…" action.
+/// targets disabled with the reason, never hidden (D16). A reason shared by several rows of a
+/// section shows once as the section footer; a reason only one row has shows under that row.
+/// VoiceOver hears the reason on every disabled row either way. Present it in a sheet with the
+/// medium detent; it sets an opaque grouped presentation background, so the list underneath
+/// doesn't show through the iOS 26 glass sheet. VoiceOver users reach it through the row's
+/// "Move to…" action.
 public struct StatusMenu: View {
     private let targets: [MoveTarget]
     private let onSelect: (ApplicationStatus) -> Void
@@ -244,19 +264,49 @@ public struct StatusMenu: View {
             ForEach(StatusPhase.allCases, id: \.self) { phase in
                 let rows = targets.filter { $0.status.phase == phase }
                 if !rows.isEmpty {
+                    let shared = Self.sharedDenials(in: rows)
                     Section {
                         ForEach(rows) { target in
-                            row(target)
+                            row(target, showsReason: !shared.contains { $0 == Self.denial(of: target) })
                         }
                     } header: {
                         StatusHeader(phase: phase, count: nil)
+                    } footer: {
+                        if !shared.isEmpty {
+                            VStack(alignment: .leading, spacing: BFHRSpace.s1) {
+                                ForEach(shared, id: \.self) { denial in
+                                    if let reason = denial.reason {
+                                        Text(reason)
+                                    }
+                                }
+                            }
+                            .font(.bfhr(.footnote))
+                            .foregroundStyle(BFHRColor.Fg.secondary)
+                        }
                     }
                 }
             }
         }
+        .presentationBackground(BFHRColor.groupedBackground)
     }
 
-    private func row(_ target: MoveTarget) -> some View {
+    /// The denial with user-facing copy that keeps `target` disabled, if any.
+    static func denial(of target: MoveTarget) -> TransitionDenial? {
+        guard !target.isCurrent, case .denied(let denial) = target.check, denial.reason != nil else { return nil }
+        return denial
+    }
+
+    /// Denials carried by two or more rows of one section, in row order: shown once as the footer.
+    static func sharedDenials(in rows: [MoveTarget]) -> [TransitionDenial] {
+        let denials = rows.compactMap(denial(of:))
+        var shared: [TransitionDenial] = []
+        for denial in denials where !shared.contains(denial) && denials.filter({ $0 == denial }).count > 1 {
+            shared.append(denial)
+        }
+        return shared
+    }
+
+    private func row(_ target: MoveTarget, showsReason: Bool) -> some View {
         Button { onSelect(target.status) } label: {
             HStack(alignment: .firstTextBaseline) {
                 VStack(alignment: .leading, spacing: 2) {
@@ -266,7 +316,7 @@ public struct StatusMenu: View {
                             .font(.bfhr(.body))
                             .foregroundStyle(target.isEnabled || target.isCurrent ? BFHRColor.Fg.primary : BFHRColor.Fg.disabled)
                     }
-                    if !target.isCurrent, case .denied(let denial) = target.check, let reason = denial.reason {
+                    if showsReason, let reason = Self.denial(of: target)?.reason {
                         Text(reason)
                             .font(.bfhr(.footnote))
                             .foregroundStyle(BFHRColor.Fg.secondary)
@@ -285,5 +335,6 @@ public struct StatusMenu: View {
         .buttonStyle(.plain)
         .disabled(!target.isEnabled)
         .accessibilityAddTraits(target.isCurrent ? .isSelected : [])
+        .accessibilityHint(Self.denial(of: target)?.reason.map { Text($0) } ?? Text(verbatim: ""))
     }
 }

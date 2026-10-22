@@ -27,8 +27,9 @@ public struct MatchBandPill: View {
 }
 
 /// Four labelled segments (Stretch · Partial · Good · Strong) with a marker at the score. The
-/// segment the score falls in is filled. Decorative to VoiceOver: the card's label states the
-/// band and score.
+/// segment the score falls in is filled. When the four labels don't fit on one line (large text
+/// sizes, long translations) only the current band's label shows, never a word broken across
+/// lines. Decorative to VoiceOver: the card's label states the band and score.
 public struct MatchBandBar: View {
     private struct Segment: Identifiable {
         let band: MatchBand
@@ -61,10 +62,14 @@ public struct MatchBandBar: View {
                 track(width: proxy.size.width)
             }
             .frame(height: barHeight * 2)
-            HStack(spacing: 0) {
-                ForEach(segments) { segment in
-                    segmentLabel(segment)
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: BFHRSpace.s1) {
+                    ForEach(segments) { segment in
+                        segmentLabel(segment)
+                    }
                 }
+                segmentLabel(segments.first { $0.band == matchBand(score) } ?? segments[0])
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
         .accessibilityHidden(true)
@@ -97,6 +102,8 @@ public struct MatchBandBar: View {
         return Text(segment.band.shortLabel)
             .font(.bfhr(.caption2, emphasized: isCurrent))
             .foregroundStyle(isCurrent ? BFHRColor.Fg.primary : BFHRColor.Fg.tertiary)
+            .lineLimit(1)
+            .fixedSize()
             .frame(maxWidth: .infinity, alignment: .leading)
     }
 }

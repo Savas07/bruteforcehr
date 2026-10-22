@@ -20,7 +20,7 @@ import {
   type DesignState,
   designStates,
 } from "../../src/design/matrix.ts";
-import { osName, repoRoot, saveScreenshot, setTheme, setViewport, useOpaqueMaterial } from "./helpers";
+import { osName, repoRoot, saveScreenshot, setTheme, setViewport, prepareCapture } from "./helpers";
 
 function fromEnv<T extends string>(name: string, allowed: readonly T[]): readonly T[] {
   const value = process.env[name];
@@ -39,7 +39,7 @@ describe("design-build screenshots", () => {
   it("captures every screen × state in light and dark at both sizes", async () => {
     await mkdir(outputDir, { recursive: true });
     await expect($("#root")).toBeExisting();
-    await useOpaqueMaterial();
+    await prepareCapture();
 
     const written: string[] = [];
     for (const theme of captureThemes) {

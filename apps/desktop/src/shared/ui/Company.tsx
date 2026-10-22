@@ -19,8 +19,10 @@ export interface MonogramProps {
   /** 20 px (`sm`, inline with text), 32 px (`md`, rows; default) or 40 px (`lg`, headers). */
   size?: "sm" | "md" | "lg";
   /**
-   * Small element pinned to the bottom-right corner (auto-change glyph, account icon). It stays in
-   * the accessibility tree, so give it its own label when it means something.
+   * Small element for the bottom-right corner (auto-change glyph, account icon). On `md` / `lg`
+   * tiles it overlaps the corner; the 20 px `sm` tile is too small for that without covering the
+   * initials, so there it sits just after the tile instead. It stays in the accessibility tree, so
+   * give it its own label when it means something.
    */
   badge?: ReactNode;
 }
@@ -28,7 +30,7 @@ export interface MonogramProps {
 /** Initials tile on a neutral tone; decorative (`aria-hidden`) except for its `badge`. */
 export function Monogram({ company, size = "md", badge }: MonogramProps) {
   return (
-    <span className="relative inline-flex shrink-0">
+    <span className={cx("inline-flex shrink-0", size === "sm" ? "items-end gap-0.5" : "relative")}>
       <span
         aria-hidden="true"
         className={cx(
@@ -38,7 +40,14 @@ export function Monogram({ company, size = "md", badge }: MonogramProps) {
       >
         {company.monogram}
       </span>
-      {badge !== undefined && <span className="absolute -right-1 -bottom-1 inline-flex">{badge}</span>}
+      {badge !== undefined && (
+        <span
+          data-monogram-badge=""
+          className={cx("inline-flex", size !== "sm" && "absolute -right-1 -bottom-1")}
+        >
+          {badge}
+        </span>
+      )}
     </span>
   );
 }

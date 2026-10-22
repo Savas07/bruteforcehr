@@ -5780,7 +5780,7 @@
         {
           "kind": "requirement",
           "facet": "remote",
-          "label": "Remote for EU residents with the right to work only",
+          "label": "Remote for EU residents with the right to work, which excludes Türkiye",
           "status": "outside_prefs",
           "impact": "most",
           "evidence": {
@@ -6704,7 +6704,7 @@
         {
           "kind": "requirement",
           "facet": "remote",
-          "label": "Remote for US residents only only",
+          "label": "Remote for US residents only, which excludes Türkiye",
           "status": "outside_prefs",
           "impact": "most",
           "evidence": {

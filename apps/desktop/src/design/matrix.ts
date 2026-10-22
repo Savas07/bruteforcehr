@@ -44,6 +44,17 @@ export const captureSizes = [
 ] as const;
 
 /**
+ * Locale and time zone every capture tool pins (`?locale=&tz=`), so macOS, Windows and the browser
+ * harness render the same text whatever the machine's settings. Captures in another UI language
+ * replace `locale` (`tr-TR`, `de-DE`) and keep the zone. The persona lives in Istanbul.
+ */
+export const CAPTURE_PIN = { locale: "en-GB", tz: "Europe/Istanbul" } as const;
+
+/** Formatting locale for each UI language a capture can be taken in. */
+export const CAPTURE_LOCALES = { en: "en-GB", tr: "tr-TR", de: "de-DE" } as const;
+export type CaptureLanguage = keyof typeof CAPTURE_LOCALES;
+
+/**
  * The hash route that renders `screen` in `state`, e.g. `#/today?fixture=empty&state=ready`.
  * `extra` adds params (`platform=windows` makes a browser render the Windows chrome).
  */

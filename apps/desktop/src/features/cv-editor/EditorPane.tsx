@@ -11,6 +11,7 @@ import { defineMessages, useIntl } from "react-intl";
 import { cx } from "../../shared/cx";
 import { Button, IconButton } from "../../shared/ui/Button";
 import { GhostRow } from "../../shared/ui/EmptyState";
+import { ScrollStrip } from "../../shared/ui/ScrollStrip";
 import {
   insertBullet,
   removeBullet,
@@ -25,7 +26,6 @@ import {
 } from "./draft";
 import type { CvEditorVM, CvItemFieldsVM, CvSectionVM } from "./model";
 import { cvDateRange } from "./preview-document";
-import { HORIZONTAL_STRIP } from "./strip";
 import type { CvSuggestionVM } from "./suggestions";
 import { TrackedChange } from "./TrackedChange";
 
@@ -136,7 +136,8 @@ function MonthYear({
   const [year = "", month = ""] = (value ?? "").split("-");
   const compose = (nextYear: string, nextMonth: string) =>
     onChange(nextYear === "" ? "" : nextMonth === "" ? nextYear : `${nextYear}-${nextMonth}`);
-  const selectClass = "border-line-control bg-surface-base h-8 min-w-0 rounded-md border px-1.5 text-callout disabled:text-fg-disabled";
+  const selectClass =
+    "border-line-control bg-surface-base h-8 min-w-0 rounded-md border px-1.5 text-callout disabled:text-fg-disabled";
   return (
     <fieldset className="flex min-w-0 flex-col gap-1" disabled={disabled}>
       <legend className={cx(labelClass, "mb-1")}>{label}</legend>
@@ -175,7 +176,11 @@ function MonthYear({
 function HeaderForm({ draft, ops }: { draft: CvDraft; ops: EditorOps }) {
   const intl = useIntl();
   const { header } = draft;
-  const text = (key: "name" | "headline" | "email" | "phone" | "website" | "location", label: string, type = "text") => (
+  const text = (
+    key: "name" | "headline" | "email" | "phone" | "website" | "location",
+    label: string,
+    type = "text",
+  ) => (
     <Field label={label}>
       <input
         type={type}
@@ -224,7 +229,9 @@ function HeaderForm({ draft, ops }: { draft: CvDraft; ops: EditorOps }) {
           <input
             type="date"
             value={header.dateOfBirth}
-            onChange={(event) => ops.change((current) => updateHeader(current, { dateOfBirth: event.target.value }))}
+            onChange={(event) =>
+              ops.change((current) => updateHeader(current, { dateOfBirth: event.target.value }))
+            }
             className={inputClass}
           />
         </Field>
@@ -237,7 +244,8 @@ function HeaderForm({ draft, ops }: { draft: CvDraft; ops: EditorOps }) {
             aria-describedby="cv-photo-hint"
             onChange={(event) => {
               const file = event.target.files?.[0];
-              if (file) ops.change((current) => updateHeader(current, { photoUrl: URL.createObjectURL(file) }));
+              if (file)
+                ops.change((current) => updateHeader(current, { photoUrl: URL.createObjectURL(file) }));
             }}
             className="text-callout file:border-line-control file:bg-surface-base file:mr-2 file:rounded-md file:border file:px-2 file:py-1"
           />
@@ -297,7 +305,9 @@ function Bullets({
                     data-bullet={`${item.id}:${index}`}
                     aria-label={intl.formatMessage(messages.bullet, { list: label, number: index + 1 })}
                     onChange={(event) =>
-                      ops.change((current) => updateBullet(current, section.key, item.id, index, event.target.value))
+                      ops.change((current) =>
+                        updateBullet(current, section.key, item.id, index, event.target.value),
+                      )
                     }
                   />
                 )}
@@ -321,7 +331,9 @@ function Bullets({
         icon={Plus}
         shortcut="Mod+Enter"
         className="self-start"
-        onClick={() => ops.change((current) => insertBullet(current, section.key, item.id, item.bullets.length - 1))}
+        onClick={() =>
+          ops.change((current) => insertBullet(current, section.key, item.id, item.bullets.length - 1))
+        }
       >
         {intl.formatMessage(messages.addBullet)}
       </Button>
@@ -430,7 +442,11 @@ function ItemBlock({
             </Field>
             {fields.org && (
               <Field label={fields.org}>
-                <input value={item.org} onChange={(event) => set("org", event.target.value)} className={inputClass} />
+                <input
+                  value={item.org}
+                  onChange={(event) => set("org", event.target.value)}
+                  className={inputClass}
+                />
               </Field>
             )}
             {fields.dates && (
@@ -585,14 +601,18 @@ function SectionCard({
               <ChevronDown aria-hidden className="text-fg-tertiary size-4 shrink-0" />
             )}
             <span className="text-headline">{vm.title}</span>
-            {count !== null && <span className="text-fg-tertiary text-footnote font-normal tabular-nums">· {count}</span>}
+            {count !== null && (
+              <span className="text-fg-tertiary text-footnote font-normal tabular-nums">· {count}</span>
+            )}
             {vm.hiddenNote && (
               <span className="border-line-subtle text-fg-secondary rounded-sm border px-1.5 text-caption1 font-normal">
                 {vm.hiddenNote}
               </span>
             )}
             {collapsed && vm.summary && (
-              <span className="text-fg-tertiary min-w-0 truncate text-footnote font-normal">{vm.summary}</span>
+              <span className="text-fg-tertiary min-w-0 truncate text-footnote font-normal">
+                {vm.summary}
+              </span>
             )}
           </button>
         </h2>
@@ -713,29 +733,28 @@ export function EditorPane({
   return (
     <div className="flex min-h-0 min-w-0 flex-1 flex-col">
       {header}
-      <nav
-        aria-label={intl.formatMessage(messages.jumpNav)}
-        className={cx("border-line-subtle flex shrink-0 gap-1 border-b px-4 py-1.5", HORIZONTAL_STRIP)}
-      >
-        {draft.sections.map((section) => {
-          const vm = vmByKey.get(section.key);
-          if (!vm) return null;
-          return (
-            // Buttons, not links: WebKit (WKWebView) leaves links out of the Tab order by default.
-            <button
-              type="button"
-              key={section.key}
-              onClick={() => {
-                const target = document.getElementById(vm.anchorId);
-                target?.scrollIntoView({ block: "start" });
-                target?.querySelector<HTMLElement>("h2 button")?.focus({ preventScroll: true });
-              }}
-              className="text-fg-secondary hover:bg-surface-hover hover:text-fg-primary rounded-md px-2 py-1 text-footnote whitespace-nowrap"
-            >
-              {vm.title}
-            </button>
-          );
-        })}
+      <nav aria-label={intl.formatMessage(messages.jumpNav)} className="border-line-subtle shrink-0 border-b">
+        <ScrollStrip className="gap-1 px-4 py-1.5">
+          {draft.sections.map((section) => {
+            const vm = vmByKey.get(section.key);
+            if (!vm) return null;
+            return (
+              // Buttons, not links: WebKit (WKWebView) leaves links out of the Tab order by default.
+              <button
+                type="button"
+                key={section.key}
+                onClick={() => {
+                  const target = document.getElementById(vm.anchorId);
+                  target?.scrollIntoView({ block: "start" });
+                  target?.querySelector<HTMLElement>("h2 button")?.focus({ preventScroll: true });
+                }}
+                className="text-fg-secondary hover:bg-surface-hover hover:text-fg-primary rounded-md px-2 py-1 text-footnote whitespace-nowrap"
+              >
+                {vm.title}
+              </button>
+            );
+          })}
+        </ScrollStrip>
       </nav>
       <div className="bg-surface-canvas min-h-0 flex-1 overflow-y-auto">
         <div className="mx-auto flex max-w-180 flex-col gap-3 px-4 py-4">

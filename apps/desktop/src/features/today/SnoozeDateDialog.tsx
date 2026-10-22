@@ -6,6 +6,7 @@ import { Dialog } from "radix-ui";
 import { useId, useState } from "react";
 import { defineMessages, useIntl } from "react-intl";
 import { Button } from "../../shared/ui/Button";
+import { snoozeDateInstant, type TodayModel } from "./model";
 
 const messages = defineMessages({
   title: { id: "today.snoozeDate.title", defaultMessage: "Snooze until…", description: "Dialog title" },
@@ -22,30 +23,43 @@ const messages = defineMessages({
     defaultMessage: "Choose a date first.",
     description: "Why Snooze is disabled",
   },
+  tooEarly: {
+    id: "today.snoozeDate.tooEarly",
+    defaultMessage: "Pick tomorrow or a later day. For today, use Later today.",
+    description: "Why Snooze is disabled when the chosen date is today or in the past",
+  },
 });
 
 export function SnoozeDateDialog({
   company,
+  snoozeDate,
   open,
   onOpenChange,
   onSnooze,
 }: {
   /** Company of the item being snoozed. */
   company: string;
+  /** Earliest day and the user's zone, from the model (`TodayModel.snoozeDate`). */
+  snoozeDate: TodayModel["snoozeDate"];
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** The chosen local date at 09:00. */
+  /** 09:00 on the chosen day in the user's zone. */
   onSnooze: (date: Date) => void;
 }) {
   const intl = useIntl();
   const fieldId = useId();
   const [value, setValue] = useState("");
-  // Tomorrow at the earliest ("Later today" covers today), as the field's local YYYY-MM-DD.
-  const [min] = useState(() => new Date(Date.now() + 86_400_000).toLocaleDateString("sv"));
+  const at = snoozeDateInstant(value, snoozeDate.timeZone);
+  // Typed dates can bypass `min` in some engines; ISO day strings compare in calendar order.
+  const disabledReason =
+    at === null
+      ? intl.formatMessage(messages.pickFirst)
+      : value < snoozeDate.min
+        ? intl.formatMessage(messages.tooEarly)
+        : null;
   const submit = () => {
-    const [year, month, day] = value.split("-").map(Number);
-    if (!year || !month || !day) return;
-    onSnooze(new Date(year, month - 1, day, 9));
+    if (at === null || disabledReason !== null) return;
+    onSnooze(at);
     setValue("");
   };
   return (
@@ -77,7 +91,7 @@ export function SnoozeDateDialog({
                 type="date"
                 value={value}
                 onChange={(event) => setValue(event.target.value)}
-                min={min}
+                min={snoozeDate.min}
                 className="bg-surface-base border-line-control text-callout text-fg-primary h-8 rounded-md border px-2"
               />
             </div>
@@ -85,11 +99,7 @@ export function SnoozeDateDialog({
               <Dialog.Close asChild>
                 <Button>{intl.formatMessage(messages.cancel)}</Button>
               </Dialog.Close>
-              <Button
-                type="submit"
-                variant="primary"
-                disabledReason={value ? null : intl.formatMessage(messages.pickFirst)}
-              >
+              <Button type="submit" variant="primary" disabledReason={disabledReason}>
                 {intl.formatMessage(messages.snooze)}
               </Button>
             </div>

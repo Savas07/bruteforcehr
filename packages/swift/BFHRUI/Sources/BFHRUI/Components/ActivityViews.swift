@@ -17,7 +17,7 @@ public struct AutoChangeRow: View {
 
     public var body: some View {
         HStack(alignment: .top, spacing: BFHRSpace.s3) {
-            CompanyMonogram(item.company, badge: "envelope")
+            CompanyMonogram(item.company, badge: "envelope", hidesAtAccessibilitySizes: true)
             VStack(alignment: .leading, spacing: BFHRSpace.s1) {
                 Text(Strings.timelineMoved(to: item.to))
                     .font(.bfhr(.headline))
@@ -79,7 +79,7 @@ public struct NudgeCard: View {
         let days = item.days(at: now, calendar: calendar)
         VStack(alignment: .leading, spacing: BFHRSpace.s3) {
             HStack(alignment: .top, spacing: BFHRSpace.s3) {
-                CompanyMonogram(item.company)
+                CompanyMonogram(item.company, hidesAtAccessibilitySizes: true)
                 VStack(alignment: .leading, spacing: BFHRSpace.s1) {
                     Text(verbatim: "\(item.company.name) · \(item.role)")
                         .font(.bfhr(.headline))

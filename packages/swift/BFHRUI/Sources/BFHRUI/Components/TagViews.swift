@@ -136,14 +136,17 @@ public struct ConfidenceTag: View {
 public struct ProgressNote: View {
     private let label: LocalizedStringResource
     @State private var isLong = false
+    /// The label's first line, so the spinner centers on it (baseline alignment puts it low).
+    @ScaledMetric(relativeTo: .subheadline) private var lineHeight = BFHRTextStyle.subheadline.lineHeight
 
     public init(_ label: LocalizedStringResource) {
         self.label = label
     }
 
     public var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: BFHRSpace.s2) {
+        HStack(alignment: .top, spacing: BFHRSpace.s2) {
             ProgressView()
+                .frame(minHeight: lineHeight)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
                 Text(label)

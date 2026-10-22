@@ -12,8 +12,10 @@ private struct SkeletonModifier: ViewModifier {
     func body(content: Content) -> some View {
         if isActive {
             content
+                // The placeholder bars take the row's own text colors (at the system's placeholder
+                // opacity), which stay visible on white cards; `Skeleton.base` alone was nearly
+                // invisible there.
                 .redacted(reason: .placeholder)
-                .foregroundStyle(BFHRColor.Skeleton.base)
                 .modifier(Shimmer(isOn: BFHRMotion.shimmer(reduceMotion: reduceMotion)))
                 .allowsHitTesting(false)
                 .accessibilityHidden(true)

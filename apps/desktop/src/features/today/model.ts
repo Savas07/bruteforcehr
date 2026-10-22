@@ -241,6 +241,12 @@ export interface TodayModel {
   readonly firstUse: FirstUseVM | null;
   /** Nothing open and nothing to set up (`EmptyState` kind `caughtUp`); null otherwise. */
   readonly caughtUp: { readonly message: string } | null;
+  /**
+   * "Pick a date…" in the snooze menu: the earliest day the date field allows (tomorrow, as
+   * `YYYY-MM-DD` in the user's zone; "Later today" covers today) and the zone the chosen day is
+   * read in (`snoozeDateInstant`).
+   */
+  readonly snoozeDate: { readonly min: string; readonly timeZone: string };
 }
 
 /* ------------------------------------------------------------------------------------------------
@@ -778,6 +784,47 @@ function agenda(
   };
 }
 
+/** Hour of the day an item snoozed to a picked date comes back, in the user's zone. */
+const SNOOZE_DATE_HOUR = 9;
+
+/** Wall-clock fields of `date` in `timeZone`, as the UTC epoch of that wall time. */
+function zonedWallTime(date: Date, timeZone: string): number {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    hourCycle: "h23",
+    year: "numeric",
+    month: "numeric",
+    day: "numeric",
+    hour: "numeric",
+    minute: "numeric",
+    second: "numeric",
+  }).formatToParts(date);
+  const part = (type: Intl.DateTimeFormatPartTypes) =>
+    Number(parts.find((candidate) => candidate.type === type)?.value);
+  return Date.UTC(part("year"), part("month") - 1, part("day"), part("hour"), part("minute"), part("second"));
+}
+
+/** `YYYY-MM-DD` of the calendar day `days` after `now`'s day in `timeZone` (date-input format). */
+function zonedIsoDay(now: Date, days: number, timeZone: string): string {
+  return new Date(zonedWallTime(now, timeZone) + days * DAY_MS).toISOString().slice(0, 10);
+}
+
+/**
+ * The instant a snooze to the picked day `value` (`YYYY-MM-DD` from the date field) ends:
+ * `SNOOZE_DATE_HOUR`:00 on that day in `timeZone`, independent of the machine's zone. Null when
+ * `value` isn't a date.
+ */
+export function snoozeDateInstant(value: string, timeZone: string): Date | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return null;
+  const wall = Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]), SNOOZE_DATE_HOUR);
+  // Start from the wall time read as UTC and shift by the zone's offset there; a second pass
+  // settles days where the offset changes (daylight saving).
+  let instant = wall;
+  for (let pass = 0; pass < 2; pass += 1) instant += wall - zonedWallTime(new Date(instant), timeZone);
+  return new Date(instant);
+}
+
 export function buildTodayModel(
   data: UserData,
   ctx: ModelContext,
@@ -837,5 +884,6 @@ export function buildTodayModel(
     firstUse: connectMail ? { connectMail, findJobs } : null,
     caughtUp:
       items.length === 0 && !connectMail ? { message: ctx.intl.formatMessage(messages.caughtUp) } : null,
+    snoozeDate: { min: zonedIsoDay(ctx.now, 1, ctx.timeZone), timeZone: ctx.timeZone },
   };
 }

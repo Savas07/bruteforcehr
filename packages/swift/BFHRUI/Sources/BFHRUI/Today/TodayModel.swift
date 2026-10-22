@@ -142,6 +142,12 @@ public final class TodayModel: ScreenModel {
     /// Everything handled: "You're all caught up."
     public var isCaughtUp: Bool { sections.isEmpty }
 
+    /// Nothing to show because nothing exists yet (no mail account, no applications, no matches):
+    /// the first-use empty state ("Find jobs") instead of "You're all caught up".
+    public var isFirstRun: Bool {
+        isCaughtUp && !hasMailAccount && data.applications.isEmpty && data.jobMatches.isEmpty
+    }
+
     public var profileName: String { data.profile?.fullName ?? "" }
 
     static let connectCardID = "today.connectMail"
@@ -297,14 +303,79 @@ public final class TodayModel: ScreenModel {
         })
     }
 
-    /// Acknowledges an automatic change ("Looks right"): the row leaves To review.
+    /// Acknowledges an automatic change ("Looks right"): the row leaves To review. Undo puts it back.
     public func acknowledge(_ autoChangeId: String) -> ToastItem? {
         guard let item = autoChanges.first(where: { $0.id == autoChangeId }) else { return nil }
+        let before = item.mailMessageId.flatMap { data.mailMessage(id: $0) }
         if let messageId = item.mailMessageId { try? data.setReviewState(messageId, to: .confirmed, at: now) }
         recordWrite(autoChangeId)
         markDone(autoChangeId, company: item.company, summary: item.role)
         recompute()
+        return ToastItem(
+            glyph: ToastGlyph.confirmed,
+            message: .bfhr("today.toast.acknowledged", default: "\(item.company.name) · marked as seen", table: "Today"),
+            action: .undo { [weak self] in
+                guard let self else { return }
+                if let before, let index = self.data.mailMessages.firstIndex(where: { $0.id == before.id }) {
+                    self.data.mailMessages[index] = before
+                }
+                self.undoDone(autoChangeId)
+            }
+        )
+    }
+
+    /// "Not job mail" on a review item: the email leaves the job-mail list. Undo puts it back.
+    public func notJobMail(_ proposalId: String) throws -> ToastItem {
+        guard let proposal = toReview.first(where: { $0.id == proposalId }), let before = data.mailMessage(id: proposalId) else {
+            throw UserDataError.missingMailMessage(proposalId)
+        }
+        try data.setReviewState(proposalId, to: .dismissed, at: now)
+        recordWrite(proposalId)
+        markDone(proposalId, company: proposal.company, summary: proposal.subject)
+        recompute()
+        let company = proposal.company?.name ?? proposal.sender.name ?? proposal.sender.address
+        return ToastItem(
+            glyph: ToastGlyph.hidden,
+            message: .bfhr("today.toast.notJobMail", default: "\(company) · not job mail", table: "Today"),
+            action: .undo { [weak self] in
+                guard let self, let index = self.data.mailMessages.firstIndex(where: { $0.id == before.id }) else { return }
+                self.data.mailMessages[index] = before
+                self.undoDone(proposalId)
+            }
+        )
+    }
+
+    /// "Snooze all" on the older follow-up suggestions. Undo brings them all back.
+    public func snoozeAll(_ itemIds: [String], until date: Date) -> ToastItem {
+        for id in itemIds {
+            snoozedUntil[id] = date
+            recordWrite(id)
+        }
+        recompute()
+        return ToastItem(
+            glyph: ToastGlyph.snoozed,
+            message: .bfhr("today.toast.snoozedAll", default: "\(itemIds.count) suggestions · snoozed", table: "Today"),
+            action: .undo { [weak self] in
+                for id in itemIds { self?.snoozedUntil[id] = nil }
+                self?.recompute()
+            },
+            isBulk: true
+        )
+    }
+
+    /// The application behind a Today item, for "Open application".
+    public func applicationId(for itemId: String) -> String? {
+        if let item = toReview.first(where: { $0.id == itemId }) { return item.applicationId }
+        if let item = autoChanges.first(where: { $0.id == itemId }) { return item.applicationId }
+        if let item = (followUps + olderFollowUps).first(where: { $0.id == itemId }) { return item.applicationId }
+        if let item = deadlines.first(where: { $0.id == itemId }) { return item.applicationId }
+        if let interview = nextUp, interview.id == itemId { return interview.applicationId }
         return nil
+    }
+
+    /// The job behind an application, for "Draft follow-up" (the Apply sheet's compose step).
+    public func jobId(forApplication applicationId: String) -> String? {
+        data.application(id: applicationId)?.jobId
     }
 
     /// Undoes an automatic change (reverse event; the email goes back for review).

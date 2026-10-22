@@ -60,8 +60,23 @@ struct TodayModelTests {
         #expect(model.sections.isEmpty)
         #expect(model.isCaughtUp)
         #expect(model.showsConnectMailCard)
+        #expect(model.isFirstRun)
         model.dismissConnectMailCard()
         #expect(!model.showsConnectMailCard)
+    }
+
+    @Test("Snooze all hides every listed suggestion as one bulk change with Undo")
+    func snoozeAll() throws {
+        let (model, _) = try Self.populated()
+        #expect(!model.isFirstRun)
+        let ids = (model.followUps + model.olderFollowUps).map(\.id)
+        try #require(!ids.isEmpty)
+        let toast = model.snoozeAll(ids, until: model.now.addingTimeInterval(86_400))
+        #expect(toast.isBulk)
+        #expect(model.followUps.isEmpty && model.olderFollowUps.isEmpty)
+        #expect(!model.sections.contains(.followUps))
+        toast.action?.perform()
+        #expect((model.followUps + model.olderFollowUps).map(\.id) == ids)
     }
 
     @Test("Confirm moves the application; Undo restores status and the pending email")
@@ -94,8 +109,22 @@ struct TodayModelTests {
     @Test("Acknowledge, snooze, not needed and match actions, each with Undo")
     func listActions() throws {
         let (model, _) = try Self.populated()
-        _ = model.acknowledge("evt-grachten-screening")
+        let acknowledged = try #require(model.acknowledge("evt-grachten-screening"))
         #expect(!model.autoChanges.contains { $0.id == "evt-grachten-screening" })
+        #expect(model.done.first?.id == "evt-grachten-screening")
+        acknowledged.action?.perform()
+        #expect(model.autoChanges.contains { $0.id == "evt-grachten-screening" })
+        #expect(model.done.isEmpty)
+
+        let notJobMail = try model.notJobMail("mail-sail-outreach")
+        #expect(model.data.mailMessage(id: "mail-sail-outreach")?.reviewState == .dismissed)
+        #expect(!model.toReview.contains { $0.id == "mail-sail-outreach" })
+        notJobMail.action?.perform()
+        #expect(model.data.mailMessage(id: "mail-sail-outreach")?.reviewState == .pending)
+        #expect(model.toReview.contains { $0.id == "mail-sail-outreach" })
+
+        #expect(model.applicationId(for: "evt-brightwave-interviewing") == "app-brightwave")
+        #expect(model.applicationId(for: "mail-nordlicht-invite") == "app-nordlicht")
 
         let snooze = model.snooze("mail-sail-outreach", until: model.now.addingTimeInterval(3600))
         #expect(!model.toReview.contains { $0.id == "mail-sail-outreach" })

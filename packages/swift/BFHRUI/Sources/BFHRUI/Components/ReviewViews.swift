@@ -228,8 +228,12 @@ public struct ReviewSheet: View {
 }
 
 /// The Move to… list (components.md `StatusMenu`): every status, the current one checked, invalid
-/// targets disabled with the reason as a footnote, never hidden. Present it in a sheet with the
-/// medium detent; VoiceOver users reach it through the row's "Move to…" action.
+/// targets disabled with the reason, never hidden (D16). A reason shared by several rows of a
+/// section shows once as the section footer; a reason only one row has shows under that row.
+/// VoiceOver hears the reason on every disabled row either way. Present it in a sheet with the
+/// medium detent; it sets an opaque grouped presentation background, so the list underneath
+/// doesn't show through the iOS 26 glass sheet. VoiceOver users reach it through the row's
+/// "Move to…" action.
 public struct StatusMenu: View {
     private let targets: [MoveTarget]
     private let onSelect: (ApplicationStatus) -> Void
@@ -244,19 +248,49 @@ public struct StatusMenu: View {
             ForEach(StatusPhase.allCases, id: \.self) { phase in
                 let rows = targets.filter { $0.status.phase == phase }
                 if !rows.isEmpty {
+                    let shared = Self.sharedDenials(in: rows)
                     Section {
                         ForEach(rows) { target in
-                            row(target)
+                            row(target, showsReason: !shared.contains { $0 == Self.denial(of: target) })
                         }
                     } header: {
                         StatusHeader(phase: phase, count: nil)
+                    } footer: {
+                        if !shared.isEmpty {
+                            VStack(alignment: .leading, spacing: BFHRSpace.s1) {
+                                ForEach(shared, id: \.self) { denial in
+                                    if let reason = denial.reason {
+                                        Text(reason)
+                                    }
+                                }
+                            }
+                            .font(.bfhr(.footnote))
+                            .foregroundStyle(BFHRColor.Fg.secondary)
+                        }
                     }
                 }
             }
         }
+        .presentationBackground(BFHRColor.groupedBackground)
     }
 
-    private func row(_ target: MoveTarget) -> some View {
+    /// The denial with user-facing copy that keeps `target` disabled, if any.
+    static func denial(of target: MoveTarget) -> TransitionDenial? {
+        guard !target.isCurrent, case .denied(let denial) = target.check, denial.reason != nil else { return nil }
+        return denial
+    }
+
+    /// Denials carried by two or more rows of one section, in row order: shown once as the footer.
+    static func sharedDenials(in rows: [MoveTarget]) -> [TransitionDenial] {
+        let denials = rows.compactMap(denial(of:))
+        var shared: [TransitionDenial] = []
+        for denial in denials where !shared.contains(denial) && denials.filter({ $0 == denial }).count > 1 {
+            shared.append(denial)
+        }
+        return shared
+    }
+
+    private func row(_ target: MoveTarget, showsReason: Bool) -> some View {
         Button { onSelect(target.status) } label: {
             HStack(alignment: .firstTextBaseline) {
                 VStack(alignment: .leading, spacing: 2) {
@@ -266,7 +300,7 @@ public struct StatusMenu: View {
                             .font(.bfhr(.body))
                             .foregroundStyle(target.isEnabled || target.isCurrent ? BFHRColor.Fg.primary : BFHRColor.Fg.disabled)
                     }
-                    if !target.isCurrent, case .denied(let denial) = target.check, let reason = denial.reason {
+                    if showsReason, let reason = Self.denial(of: target)?.reason {
                         Text(reason)
                             .font(.bfhr(.footnote))
                             .foregroundStyle(BFHRColor.Fg.secondary)
@@ -285,5 +319,6 @@ public struct StatusMenu: View {
         .buttonStyle(.plain)
         .disabled(!target.isEnabled)
         .accessibilityAddTraits(target.isCurrent ? .isSelected : [])
+        .accessibilityHint(Self.denial(of: target)?.reason.map { Text($0) } ?? Text(verbatim: ""))
     }
 }

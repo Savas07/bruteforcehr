@@ -185,6 +185,8 @@ jobs:
     runs-on: macos-26
     defaults:
       run:
+        # Job defaults replace the workflow's, so the shell is repeated (pwsh on Windows otherwise).
+        shell: bash
         working-directory: apps/desktop
     env:
       VERSION: ${{ needs.prepare.outputs.version }}
@@ -313,6 +315,7 @@ jobs:
     runs-on: windows-latest
     defaults:
       run:
+        shell: bash
         working-directory: apps/desktop
     env:
       VERSION: ${{ needs.prepare.outputs.version }}

@@ -4,9 +4,10 @@ import { Tooltip } from "radix-ui";
 import type { ReactNode } from "react";
 import { chrome } from "../lib/desktop";
 import { destinations } from "../lib/destinations";
-import { shortcutById, type Shortcut } from "../lib/shortcuts";
+import { shortcutById, shortcutKeys, type Shortcut } from "../lib/shortcuts";
+import { Keycaps } from "../shared/ui/Keycaps";
+import { SyncStatus } from "../shared/ui/SyncStatus";
 import { destinationIcons } from "./icons";
-import { Keycaps } from "./Keycaps";
 
 const rowClass =
   "flex h-8 w-full items-center gap-2.5 rounded-md px-2 text-callout text-fg-primary outline-offset-0 hover:bg-surface-hover narrow:justify-center narrow:px-0";
@@ -24,7 +25,7 @@ function WithHint({ label, shortcut, children }: { label: string; shortcut: Shor
           className="bg-surface-elevated text-fg-primary shadow-overlay z-(--bfhr-layer-tooltip) flex items-center gap-2 rounded-md px-2 py-1 text-footnote"
         >
           {label}
-          <Keycaps shortcut={shortcut} />
+          <Keycaps keys={shortcutKeys(shortcut)} />
         </Tooltip.Content>
       </Tooltip.Portal>
     </Tooltip.Root>
@@ -51,7 +52,7 @@ function ActionRow({
         <span className={labelClass}>{label}</span>
         {showKeycaps && (
           <span className="ml-auto narrow:hidden">
-            <Keycaps shortcut={shortcut} />
+            <Keycaps keys={`Mod+${shortcut.key}`} />
           </span>
         )}
       </button>
@@ -113,6 +114,10 @@ export function Sidebar({
           showKeycaps={false}
           onClick={onOpenShortcuts}
         />
+        {/* The sync line (states.md "Desktop: offline and sync status"); hidden until there's data. */}
+        <div className="narrow:hidden">
+          <SyncStatus variant="sidebar" />
+        </div>
       </div>
     </nav>
   );

@@ -3,9 +3,9 @@ import { Keyboard, Search } from "lucide-react";
 import { Dialog } from "radix-ui";
 import { useRef, type ReactNode } from "react";
 import { destinations, type DestinationId } from "../lib/destinations";
-import { shortcutById } from "../lib/shortcuts";
+import { shortcutById, shortcutKeys } from "../lib/shortcuts";
+import { Keycaps } from "../shared/ui/Keycaps";
 import { destinationIcons } from "./icons";
-import { Keycaps } from "./Keycaps";
 
 const itemClass =
   "flex h-9 cursor-default items-center gap-2.5 rounded-md px-2.5 text-callout text-fg-primary data-[selected=true]:bg-surface-selected";
@@ -92,7 +92,7 @@ export function CommandPalette({
                         strokeWidth={1.75}
                       />
                       <span className="flex-1 truncate">{destination.label}</span>
-                      <Keycaps shortcut={shortcutById(`go-${destination.id}`)} />
+                      <Keycaps keys={shortcutKeys(shortcutById(`go-${destination.id}`))} />
                     </Command.Item>
                   );
                 })}
@@ -109,7 +109,7 @@ export function CommandPalette({
                     strokeWidth={1.75}
                   />
                   <span className="flex-1 truncate">Keyboard shortcuts</span>
-                  <Keycaps shortcut={shortcutById("keyboard-shortcuts")} />
+                  <Keycaps keys={shortcutKeys(shortcutById("keyboard-shortcuts"))} />
                 </Command.Item>
               </Command.Group>
             </Command.List>

@@ -1,7 +1,35 @@
 import { X } from "lucide-react";
 import { Dialog } from "radix-ui";
-import { shortcutGroups, shortcuts } from "../lib/shortcuts";
-import { Keycaps } from "./Keycaps";
+import { shortcutGroups, shortcutKeys, shortcuts } from "../lib/shortcuts";
+import type { KeyBinding } from "../shared/keyboard/keymap";
+import { useRegisteredBindings } from "../shared/keyboard/useKeyBindings";
+import { Keycaps } from "../shared/ui/Keycaps";
+
+interface Row {
+  readonly id: string;
+  readonly label: string;
+  readonly keys: KeyBinding["keys"];
+}
+
+/** The static shortcuts first, then each group of keys the mounted views registered. */
+function useRowGroups(): readonly (readonly [string, readonly Row[]])[] {
+  const registered = useRegisteredBindings();
+  const groups = new Map<string, Row[]>(
+    shortcutGroups.map((group) => [
+      group,
+      shortcuts
+        .filter((shortcut) => shortcut.group === group)
+        .map((shortcut) => ({ id: shortcut.id, label: shortcut.label, keys: shortcutKeys(shortcut) })),
+    ]),
+  );
+  for (const binding of registered) {
+    if (binding.hidden) continue;
+    const rows = groups.get(binding.group) ?? [];
+    rows.push({ id: binding.id, label: binding.label, keys: binding.keys });
+    groups.set(binding.group, rows);
+  }
+  return [...groups];
+}
 
 export function ShortcutsSheet({
   open,
@@ -10,6 +38,7 @@ export function ShortcutsSheet({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const groups = useRowGroups();
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
@@ -30,7 +59,7 @@ export function ShortcutsSheet({
             </Dialog.Close>
           </div>
           <div className="overflow-y-auto px-6 pb-6">
-            {shortcutGroups.map((group) => (
+            {groups.map(([group, rows]) => (
               <section key={group} aria-labelledby={`shortcuts-${group}`} className="mt-3 first:mt-0">
                 <h3
                   id={`shortcuts-${group}`}
@@ -39,16 +68,14 @@ export function ShortcutsSheet({
                   {group}
                 </h3>
                 <dl className="divide-line-subtle divide-y">
-                  {shortcuts
-                    .filter((shortcut) => shortcut.group === group)
-                    .map((shortcut) => (
-                      <div key={shortcut.id} className="flex h-9 items-center justify-between gap-4">
-                        <dt className="text-callout">{shortcut.label}</dt>
-                        <dd>
-                          <Keycaps shortcut={shortcut} />
-                        </dd>
-                      </div>
-                    ))}
+                  {rows.map((row) => (
+                    <div key={row.id} className="flex min-h-9 items-center justify-between gap-4 py-1">
+                      <dt className="text-callout">{row.label}</dt>
+                      <dd>
+                        <Keycaps keys={row.keys} />
+                      </dd>
+                    </div>
+                  ))}
                 </dl>
               </section>
             ))}

@@ -3,7 +3,15 @@
   "compilerOptions": {
     "lib": ["ES2023", "DOM", "DOM.Iterable"],
     "types": ["node", "mocha", "@wdio/globals/types", "@wdio/tauri-service"],
+    "allowImportingTsExtensions": true,
     "noEmit": true
   },
-  "include": ["vite.config.ts", "e2e/**/*.ts", "src/lib/**/*.ts"]
+  "include": [
+    "vite.config.ts",
+    "vitest.config.ts",
+    "e2e/**/*.ts",
+    "scripts/**/*.ts",
+    "src/env.d.ts",
+    "src/lib/**/*.ts"
+  ]
 }

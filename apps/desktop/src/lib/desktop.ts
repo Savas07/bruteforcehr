@@ -2,7 +2,7 @@
  * The UI's whole surface to the Tauri backend (src-tauri). Capabilities grant exactly these
  * calls: listening for menu commands and the `open_external` command.
  */
-import { invoke } from "@tauri-apps/api/core";
+import { invoke, isTauri } from "@tauri-apps/api/core";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
 import type { MenuCommand } from "./shortcuts";
 
@@ -23,20 +23,40 @@ declare global {
   }
 }
 
+/**
+ * Design builds (`__BFHR_DESIGN__`) also run in a plain browser for the capture harness: there
+ * is no Tauri shell, so the platform comes from the `platform` route param (`#/today?platform=
+ * windows`) or the user agent, and the material is opaque. Production builds compile this out.
+ */
+function designChrome(): ChromeInfo {
+  const param = new URLSearchParams(window.location.hash.split("?")[1] ?? "").get("platform");
+  const platform: Platform =
+    param === "macos" || param === "windows" || param === "linux"
+      ? param
+      : navigator.userAgent.includes("Mac OS X")
+        ? "macos"
+        : "windows";
+  return { platform, material: "none" };
+}
+
 function readChrome(): ChromeInfo {
   const chrome = window.__BFHR_CHROME__;
-  if (!chrome)
-    throw new Error("BruteForceHR runs inside its desktop shell only (window chrome info missing).");
-  return chrome;
+  if (chrome) return chrome;
+  if (__BFHR_DESIGN__) return designChrome();
+  throw new Error("BruteForceHR runs inside its desktop shell only (window chrome info missing).");
 }
 
 export const chrome: ChromeInfo = readChrome();
+
+/** False only for design builds opened in a plain browser (the capture harness). */
+const inShell = !__BFHR_DESIGN__ || isTauri();
 
 /** Event emitted by the native menu (src-tauri/src/menu.rs). */
 const MENU_COMMAND_EVENT = "menu-command";
 
 /** Subscribes to native menu clicks; returns the unsubscribe function. */
 export function onMenuCommand(listener: (command: MenuCommand) => void): () => void {
+  if (!inShell) return () => undefined;
   const unlisten = getCurrentWebviewWindow().listen<MenuCommand>(MENU_COMMAND_EVENT, (event) =>
     listener(event.payload),
   );
@@ -50,5 +70,9 @@ export function onMenuCommand(listener: (command: MenuCommand) => void): () => v
  * validates the URL and rejects anything else.
  */
 export function openExternal(url: string): Promise<void> {
+  if (!inShell) {
+    window.open(url, "_blank", "noopener");
+    return Promise.resolve();
+  }
   return invoke("open_external", { url });
 }

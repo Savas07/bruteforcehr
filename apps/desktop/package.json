@@ -6,20 +6,27 @@
   "type": "module",
   "scripts": {
     "dev": "tauri dev",
+    "dev:design": "pnpm --filter @bfhr/ui-tokens build && vite --mode design",
     "build": "vite build",
+    "check:bundle": "vite build && node scripts/check-production-bundle.ts",
     "bundle": "tauri build",
     "bundle:app": "tauri build --bundles app",
     "build:e2e": "tauri build --features e2e --no-bundle --config src-tauri/tauri.e2e.conf.json",
+    "build:e2e:design": "tauri build --features e2e --no-bundle --config src-tauri/tauri.e2e.conf.json --config src-tauri/tauri.design.conf.json",
     "test:e2e": "wdio run e2e/wdio.conf.ts",
     "capture": "wdio run e2e/wdio.capture.conf.ts",
+    "capture:app:design": "wdio run e2e/wdio.capture-design.conf.ts",
+    "capture:design": "node scripts/capture-design.ts",
     "tauri": "tauri",
     "lint": "eslint .",
+    "test": "vitest run",
     "lint:rust": "cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets --all-features -- -D warnings",
     "format:rust": "cargo fmt --manifest-path src-tauri/Cargo.toml --check",
     "test:rust": "cargo test --manifest-path src-tauri/Cargo.toml",
     "typecheck": "tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p tsconfig.node.json"
   },
   "dependencies": {
+    "@bfhr/core": "workspace:*",
     "@bfhr/ui-tokens": "workspace:*",
     "@tanstack/react-router": "^1.170.45",
     "@tauri-apps/api": "^2.12.4",
@@ -31,6 +38,7 @@
     "react-dom": "19.3.1"
   },
   "devDependencies": {
+    "@bfhr/fixtures": "workspace:*",
     "@tailwindcss/vite": "^4.3.3",
     "@tauri-apps/cli": "^2.12.4",
     "@types/mocha": "^10.0.10",
@@ -46,8 +54,11 @@
     "@wdio/tauri-plugin": "^1.5.0",
     "@wdio/tauri-service": "^1.5.0",
     "eslint-plugin-react-hooks": "^7.1.1",
+    "happy-dom": "^21.0.4",
+    "playwright": "^1.64.1",
     "tailwindcss": "^4.3.3",
     "vite": "^8.3.5",
+    "vitest": "^5.0.5",
     "webdriverio": "^9.32.0"
   }
 }

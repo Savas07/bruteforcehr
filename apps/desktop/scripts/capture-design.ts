@@ -2,7 +2,11 @@
 //
 //   pnpm --filter @bfhr/desktop capture:design <screen…|all> [--states populated,empty,…]
 //     [--engines webkit,chromium] [--themes light,dark] [--sizes 1280x800,1920x1080] [--scale 1]
-//     [--locale en|tr|de]
+//     [--locale en|tr|de] [--axe]
+//
+// --axe also runs axe-core (WCAG 2.1 A + AA tags) on every screen × state × theme in each engine,
+// writes artifacts/a11y/desktop/<screen>-<state>-<theme>-<engine>.json, prints one line per page
+// (violating nodes by impact) and exits non-zero on serious or critical violations.
 //
 // Starts the Vite dev server in `design` mode, opens every screen × state in Playwright WebKit
 // (≈ macOS WKWebView, rendered with the macOS chrome) and Chromium (≈ Windows WebView2, rendered
@@ -12,9 +16,10 @@
 // Runs on Node 22 type stripping.
 import { execFileSync } from "node:child_process";
 import { existsSync } from "node:fs";
-import { mkdir } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { type BrowserType, chromium, webkit } from "playwright";
+import AxeBuilder from "@axe-core/playwright";
+import { type BrowserType, chromium, type Page, webkit } from "playwright";
 import { createServer } from "vite";
 import {
   captureFileName,
@@ -44,7 +49,7 @@ function usage(message: string): never {
   console.error(`${message}
 
 Usage: pnpm --filter @bfhr/desktop capture:design <screen…|all> [--states a,b] [--engines webkit,chromium]
-       [--themes light,dark] [--sizes 1280x800,1920x1080] [--scale 1] [--locale en|tr|de]
+       [--themes light,dark] [--sizes 1280x800,1920x1080] [--scale 1] [--locale en|tr|de] [--axe]
 Screens: ${Object.keys(designScreenPaths).join(", ")}
 States:  ${designStates.join(", ")}`);
   process.exit(2);
@@ -60,9 +65,13 @@ function pick<T extends string>(value: string | undefined, allowed: readonly T[]
 const positional: string[] = [];
 const options: Record<string, string> = {};
 const argv = process.argv.slice(2);
+/** Flags without a value. */
+const switches: Record<string, true> = { axe: true };
+const enabled = new Set<string>();
 for (let index = 0; index < argv.length; index += 1) {
   const arg = argv[index] ?? "";
   if (!arg.startsWith("--")) positional.push(arg);
+  else if (switches[arg.slice(2)]) enabled.add(arg.slice(2));
   else {
     const [key, inline] = arg.slice(2).split("=");
     const value = inline ?? argv[(index += 1)];
@@ -70,6 +79,7 @@ for (let index = 0; index < argv.length; index += 1) {
     options[key] = value;
   }
 }
+const runAxe = enabled.has("axe");
 const screenNames = Object.keys(designScreenPaths) as DesignScreenName[];
 if (positional.length === 0) usage("Name at least one screen (or all).");
 const screens: DesignScreenName[] = positional.includes("all")
@@ -114,6 +124,37 @@ if (!baseUrl) throw new Error("The Vite dev server has no local URL");
 
 const written: string[] = [];
 const failures: string[] = [];
+
+/** axe-core impact levels, most severe first; serious and critical fail the run. */
+const IMPACTS = ["critical", "serious", "moderate", "minor"] as const;
+type Impact = (typeof IMPACTS)[number];
+/** WCAG 2.1 level A and AA rules (axe tags). */
+const WCAG_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"];
+const a11yRoot = path.join(repoRoot, "artifacts/a11y/desktop", ...(language === "en" ? [] : [language]));
+interface AuditSummary {
+  readonly name: string;
+  readonly counts: Record<Impact, number>;
+  /** "color-contrast×3" per violated rule. */
+  readonly rules: readonly string[];
+  /** Nodes axe couldn't decide (e.g. contrast over gradients): "needs review", never failing. */
+  readonly needsReview: number;
+}
+const audits: AuditSummary[] = [];
+
+/** Runs axe on the rendered state, writes the full JSON report, returns the per-impact counts. */
+async function audit(page: Page, name: string): Promise<AuditSummary> {
+  const results = await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze();
+  await mkdir(a11yRoot, { recursive: true });
+  await writeFile(path.join(a11yRoot, `${name}.json`), `${JSON.stringify(results, null, 2)}\n`);
+  const counts: Record<Impact, number> = { critical: 0, serious: 0, moderate: 0, minor: 0 };
+  for (const violation of results.violations) counts[violation.impact ?? "minor"] += violation.nodes.length;
+  return {
+    name,
+    counts,
+    rules: results.violations.map((violation) => `${violation.id}×${violation.nodes.length}`),
+    needsReview: results.incomplete.reduce((sum, result) => sum + result.nodes.length, 0),
+  };
+}
 try {
   for (const engineName of engineNames) {
     const engine = engines[engineName];
@@ -123,7 +164,7 @@ try {
     const browser = await engine.type.launch();
     try {
       for (const theme of themes) {
-        for (const size of sizes) {
+        for (const [sizeIndex, size] of sizes.entries()) {
           const context = await browser.newContext({
             viewport: size,
             colorScheme: theme,
@@ -157,6 +198,9 @@ try {
               const file = path.join(outputDir, captureFileName(screen, state, theme, size));
               await page.screenshot({ path: file, animations: "disabled", caret: "hide" });
               written.push(path.relative(repoRoot, file));
+              // One audit per screen × state × theme × engine (the first size; layout-independent rules).
+              if (runAxe && sizeIndex === 0)
+                audits.push(await audit(page, `${screen}-${state}-${theme}-${engineName}`));
             }
           }
           await context.close();
@@ -172,7 +216,16 @@ try {
 
 console.log(written.join("\n"));
 console.log(`${written.length} screenshots in ${path.relative(repoRoot, outputRoot)}`);
-if (failures.length > 0) {
-  console.error(`Page errors:\n${[...new Set(failures)].join("\n")}`);
-  process.exit(1);
+let blocking = 0;
+if (runAxe) {
+  for (const { name, counts, rules, needsReview } of audits) {
+    const line = IMPACTS.map((impact) => `${counts[impact]} ${impact}`).join(" · ");
+    const details = rules.length > 0 ? ` (${rules.join(", ")})` : "";
+    console.log(`a11y ${name}: ${line} · ${needsReview} needs review${details}`);
+    blocking += counts.critical + counts.serious;
+  }
+  console.log(`${audits.length} axe reports in ${path.relative(repoRoot, a11yRoot)}`);
 }
+if (failures.length > 0) console.error(`Page errors:\n${[...new Set(failures)].join("\n")}`);
+if (blocking > 0) console.error(`✗ ${blocking} serious or critical accessibility violations`);
+if (failures.length > 0 || blocking > 0) process.exit(1);

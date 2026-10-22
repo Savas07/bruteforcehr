@@ -384,7 +384,7 @@ export default function JobDetailScreen({ model, params }: ScreenProps<JobDetail
         title={scopeTitle}
         documentTitle={detail ? `${detail.title} · ${detail.company.name}` : scopeTitle}
       />
-      <label className="relative flex w-full max-w-80 items-center">
+      <label className="relative flex w-full max-w-96 items-center">
         <span className="sr-only">{intl.formatMessage(messages.search)}</span>
         <Search aria-hidden="true" className="text-fg-tertiary pointer-events-none absolute left-2.5 size-4" strokeWidth={1.75} />
         <input

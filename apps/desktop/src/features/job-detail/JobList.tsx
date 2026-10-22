@@ -231,9 +231,9 @@ export function JobList({
     );
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="text-fg-secondary text-footnote flex h-9 shrink-0 items-center justify-between gap-2 px-5">
+      <div className="text-fg-secondary text-footnote flex min-h-9 shrink-0 flex-wrap items-center justify-between gap-x-3 gap-y-0.5 px-5 py-2 *:whitespace-nowrap">
         <span className="tabular-nums">{list.countLabel}</span>
-        <span className="flex items-center gap-2">
+        <span className="flex flex-wrap items-center justify-end gap-x-2 gap-y-0.5 *:whitespace-nowrap">
           {stamp}
           <Hint label={list.rankingInfo}>
             <button type="button" className="inline-flex items-center gap-1 rounded-sm">

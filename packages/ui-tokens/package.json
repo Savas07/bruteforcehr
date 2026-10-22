@@ -1,0 +1,23 @@
+{
+  "name": "@bfhr/ui-tokens",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Design tokens (color light/dark, type, spacing, radius, elevation, motion) as typed TS, CSS variables, a Tailwind 4 theme and a React Native theme.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./native": "./src/native.ts",
+    "./tokens.css": "./dist/tokens.css",
+    "./tailwind.css": "./dist/tailwind.css"
+  },
+  "scripts": {
+    "build": "node scripts/build.ts",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "vitest": "^5.0.5"
+  }
+}

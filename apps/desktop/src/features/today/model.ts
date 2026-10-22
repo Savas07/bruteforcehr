@@ -276,8 +276,8 @@ const DEADLINE_MESSAGES: Readonly<Record<DeadlineKind, MessageDescriptor>> = def
   },
   offerReply: {
     id: "today.deadline.offerReply",
-    defaultMessage: "Reply to the offer by",
-    description: "Deadline row title, followed by a date chip",
+    defaultMessage: "Offer reply due",
+    description: "Deadline row title, next to a date chip: the date to answer a job offer by",
   },
   jobClosing: {
     id: "today.deadline.jobClosing",

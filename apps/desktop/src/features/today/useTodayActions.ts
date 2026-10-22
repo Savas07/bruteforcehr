@@ -92,8 +92,16 @@ const messages = defineMessages({
     description: "Done today: the user undid an automatic change. {status} is a status name",
   },
   outcomeDone: { id: "today.outcome.done", defaultMessage: "Done", description: "Done today" },
-  outcomeNotNeeded: { id: "today.outcome.notNeeded", defaultMessage: "Not needed", description: "Done today" },
-  outcomeKeptOpen: { id: "today.outcome.keptOpen", defaultMessage: "Still waiting", description: "Done today" },
+  outcomeNotNeeded: {
+    id: "today.outcome.notNeeded",
+    defaultMessage: "Not needed",
+    description: "Done today",
+  },
+  outcomeKeptOpen: {
+    id: "today.outcome.keptOpen",
+    defaultMessage: "Still waiting",
+    description: "Done today",
+  },
   outcomeNoResponse: {
     id: "today.outcome.noResponse",
     defaultMessage: "Marked as no response",

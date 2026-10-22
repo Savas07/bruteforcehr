@@ -165,7 +165,7 @@ describe("buildTodayModel — populated", () => {
       ]),
     ).toEqual([
       ["Grachten Commerce", "assessment", "Assessment due", "In 5 days"],
-      ["Lumenpay", "offerReply", "Reply to the offer by", "29 Oct, 18:00"],
+      ["Lumenpay", "offerReply", "Offer reply due", "29 Oct, 18:00"],
     ]);
     // Tannenbaum's reply date sits in a pending email: it shows in the review proposal instead.
     expect(itemsOf(model, "deadline").some((item) => item.company.name === "Tannenbaum Software")).toBe(

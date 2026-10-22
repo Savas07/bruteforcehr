@@ -53,21 +53,7 @@ public struct MailReviewScreen: View {
         }
         .toolbarTitleMenu {
             if model.accounts.count > 1 {
-                Picker(selection: $model.accountFilter) {
-                    Text(MailViewStrings.allAccounts).tag(String?.none)
-                    ForEach(model.accounts) { account in
-                        Group {
-                            if account.needsAttention {
-                                Label { Text(MailViewStrings.needsSignIn(account.address)) } icon: { Image(systemName: "exclamationmark.triangle") }
-                            } else {
-                                Text(verbatim: account.address)
-                            }
-                        }
-                        .tag(Optional(account.id))
-                    }
-                } label: {
-                    Text(MailViewStrings.scopeMenu)
-                }
+                accountPicker
             }
         }
         .bfhrToastHost()
@@ -104,7 +90,7 @@ public struct MailReviewScreen: View {
                 Section {
                     InlineAlert(
                         .warning,
-                        title: MailViewStrings.reconnect(account.address),
+                        title: MailViewStrings.reconnect(account.address.mailUnlinked),
                         message: MailViewStrings.reconnectBody,
                         actionTitle: MailViewStrings.reconnectAction,
                         action: { openURL(.mailAccount(account.id)) }
@@ -139,28 +125,75 @@ public struct MailReviewScreen: View {
                 .accessibilityElement(children: .contain)
                 .accessibilityLabel(Text(MailViewStrings.chipFilters))
             }
-            .listRowInsets(EdgeInsets(top: 0, leading: BFHRSpace.s1, bottom: BFHRSpace.s2, trailing: BFHRSpace.s1))
+            .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: BFHRSpace.s2, trailing: 0))
             .listRowBackground(Color.clear)
         }
         .mailCompactSectionSpacing()
     }
 
-    @ViewBuilder private var syncLine: some View {
+    /// "All accounts ▾ · Checked 6m ago"; offline: "Last checked 07:24" + when new email arrives.
+    private var syncLine: some View {
         VStack(alignment: .leading, spacing: 2) {
-            if model.connection.isOffline, let checked = model.lastChecked {
-                StaleStamp(checked, kind: .lastChecked)
+            HStack(alignment: .firstTextBaseline, spacing: BFHRSpace.s1) {
+                if model.accounts.count > 1 {
+                    Menu { accountPicker } label: {
+                        HStack(spacing: 2) {
+                            scopeText
+                            Image(systemName: "chevron.down")
+                                .font(.bfhr(.caption2, emphasized: true))
+                                .accessibilityHidden(true)
+                        }
+                        .font(.bfhr(.footnote, emphasized: true))
+                        .foregroundStyle(BFHRColor.Accent.text)
+                        .frame(minHeight: BFHRHitTarget.minimum)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(Text(MailViewStrings.scopeMenu))
+                    .accessibilityValue(scopeText)
+                    Text(verbatim: "·")
+                        .font(.bfhr(.footnote))
+                        .foregroundStyle(BFHRColor.Fg.tertiary)
+                        .accessibilityHidden(true)
+                }
+                if model.connection.isOffline, let checked = model.lastChecked {
+                    StaleStamp(checked, kind: .lastChecked)
+                } else {
+                    SyncLine(lastChecked: model.lastChecked, now: model.now)
+                }
+            }
+            if model.connection.isOffline {
                 Text(MailViewStrings.offlineFootnote)
                     .font(.bfhr(.footnote))
                     .foregroundStyle(BFHRColor.Fg.tertiary)
-            } else {
-                SyncLine(scope: scopeName, lastChecked: model.lastChecked, now: model.now)
             }
         }
     }
 
-    private var scopeName: String? {
-        guard model.accounts.count > 1 else { return nil }
-        return model.accounts.first { $0.id == model.accountFilter }?.address
+    private var scopeText: Text {
+        guard let address = model.accounts.first(where: { $0.id == model.accountFilter })?.address else {
+            return Text(MailViewStrings.allAccounts)
+        }
+        return Text(verbatim: address)
+    }
+
+    /// All accounts + one row per address (title menu and the sync line's scope menu).
+    private var accountPicker: some View {
+        Picker(selection: $model.accountFilter) {
+            Text(MailViewStrings.allAccounts).tag(String?.none)
+            ForEach(model.accounts) { account in
+                Group {
+                    if account.needsAttention {
+                        Label { Text(mailPlain: MailViewStrings.needsSignIn(account.address)) } icon: { Image(systemName: "exclamationmark.triangle") }
+                    } else {
+                        Text(verbatim: account.address)
+                    }
+                }
+                .tag(Optional(account.id))
+            }
+        } label: {
+            Text(MailViewStrings.scopeMenu)
+        }
     }
 
     private func chip(_ filter: MailFilter, title: LocalizedStringResource) -> some View {
@@ -290,31 +323,23 @@ public struct MailReviewScreen: View {
     }
 }
 
-/// "All accounts · Checked 6 min. ago": the account scope and how fresh the list is.
+/// "Checked 6 min. ago": how fresh the list is (the server polls every 5 minutes).
 private struct SyncLine: View {
-    let scope: String?
     let lastChecked: Date?
     let now: Date
     @Environment(\.locale) private var locale
 
     var body: some View {
-        let sync = sync
-        Group {
-            if let scope {
-                Text(MailViewStrings.scoped(scope, String(localized: sync)))
-            } else {
-                Text(sync)
-            }
-        }
-        .font(.bfhr(.footnote))
-        .foregroundStyle(BFHRColor.Fg.secondary)
+        Text(sync)
+            .font(.bfhr(.footnote))
+            .foregroundStyle(BFHRColor.Fg.secondary)
     }
 
     private var sync: LocalizedStringResource {
         guard let lastChecked else { return MailViewStrings.notCheckedYet }
         let formatter = RelativeDateTimeFormatter()
         formatter.locale = locale
-        formatter.unitsStyle = .abbreviated
+        formatter.unitsStyle = .short
         return MailViewStrings.checked(formatter.localizedString(for: lastChecked, relativeTo: now))
     }
 }

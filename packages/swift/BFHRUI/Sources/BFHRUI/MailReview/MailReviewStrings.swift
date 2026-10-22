@@ -49,9 +49,6 @@ enum MailViewStrings {
         .bfhr("mail.sync.checked", default: "Checked \(relative)", table: "MailReview", comment: "Sync line. %@ = relative time from the system formatter, e.g. \"6 min. ago\".")
     }
 
-    static func scoped(_ scope: String, _ sync: String) -> LocalizedStringResource {
-        .bfhr("mail.sync.scoped", default: "\(scope) · \(sync)", table: "MailReview", comment: "%1$@ = account scope (All accounts or an address), %2$@ = sync line.")
-    }
 
     static func needsSignIn(_ address: String) -> LocalizedStringResource {
         .bfhr("mail.scope.needsSignIn", default: "\(address) · Needs sign-in", table: "MailReview", comment: "Title menu row for an account that needs re-auth. %@ = address.")

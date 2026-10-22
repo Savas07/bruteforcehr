@@ -48,12 +48,18 @@ describe("design-build screenshots", () => {
         await setViewport(size.width, size.height);
         for (const screen of screens) {
           for (const state of states) {
+            // The screen clears and re-sets the ready flag itself whenever its screen × state
+            // changes. Clearing it here would hang when the route already shows that state (the
+            // first capture: `#/today` defaults to populated/ready), so instead wait until React
+            // has committed the navigation (two frames) and then for the flag.
             await browser.execute(
-              (attribute, hash) => {
-                document.documentElement.removeAttribute(attribute);
+              async (hash) => {
                 window.location.hash = hash;
+                // Executor form: the shared tsconfig targets ES2023 (no Promise.withResolvers).
+                await new Promise((resolve) =>
+                  requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(resolve, 0))),
+                );
               },
-              DESIGN_READY_ATTRIBUTE,
               designHash(screen, state),
             );
             await $(`html[${DESIGN_READY_ATTRIBUTE}="true"]`).waitForExist();

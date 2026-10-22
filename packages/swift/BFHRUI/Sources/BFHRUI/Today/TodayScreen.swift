@@ -111,12 +111,23 @@ public struct TodayScreen: View {
                 }
             }
             ForEach(model.sections, id: \.self) { section in
-                Section {
-                    rows(for: section)
-                } header: {
-                    TodaySectionHeader(section: section, count: section == .toReview ? model.toReviewCount : nil)
-                } footer: {
-                    footer(for: section)
+                if section != .toReview || !model.toReview.isEmpty {
+                    Section {
+                        rows(for: .list(section))
+                    } header: {
+                        TodaySectionHeader(section: section, count: section == .toReview ? model.toReviewCount : nil)
+                    } footer: {
+                        footer(for: section)
+                    }
+                }
+                if section == .toReview, !model.autoChanges.isEmpty {
+                    // Automatic changes follow the decisions, under their own quiet header, so the
+                    // "To review · n" count clearly belongs to the decisions.
+                    Section {
+                        rows(for: .autoChanges)
+                    } header: {
+                        AutoChangeCaption()
+                    }
                 }
             }
             if !model.done.isEmpty {
@@ -167,9 +178,16 @@ public struct TodayScreen: View {
         }
     }
 
-    @ViewBuilder private func rows(for section: TodayModel.Section) -> some View {
-        switch section {
-        case .nextUp:
+    /// A List section of the screen: one of the model's sections, or the automatic changes that
+    /// follow To review.
+    private enum ListPart {
+        case list(TodayModel.Section)
+        case autoChanges
+    }
+
+    @ViewBuilder private func rows(for part: ListPart) -> some View {
+        switch part {
+        case .list(.nextUp):
             if let next = model.nextUp {
                 NextUpCard(next: next, isPendingSync: model.pendingSyncIDs.contains(next.id)) { url in
                     openURL(url)
@@ -191,7 +209,7 @@ public struct TodayScreen: View {
                             .rotationEffect(.degrees(showsPrep ? 90 : 0))
                             .accessibilityHidden(true)
                     }
-                    .frame(minHeight: BFHRHitTarget.minimum)
+                    .padding(.vertical, BFHRSpace.s2)
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
@@ -200,7 +218,7 @@ public struct TodayScreen: View {
                     NextUpPrep(next: next) { openURL(TodayLink.application(next.applicationId)) }
                 }
             }
-        case .toReview:
+        case .list(.toReview):
             ForEach(model.toReview) { proposal in
                 Button { reviewing = proposal } label: {
                     ReviewRow(proposal: proposal, isPendingSync: model.pendingSyncIDs.contains(proposal.id))
@@ -209,9 +227,7 @@ public struct TodayScreen: View {
                 .accessibilityHint(Text(TodayStrings.reviewHint))
                 .bfhrRowActions(reviewActions(proposal))
             }
-            if !model.autoChanges.isEmpty {
-                AutoChangeCaption()
-            }
+        case .autoChanges:
             ForEach(model.autoChanges) { item in
                 AutoChangeRow(item) { run { try model.undoAutoChange(item.id) } }
                     .overlay(alignment: .bottomTrailing) {
@@ -219,7 +235,7 @@ public struct TodayScreen: View {
                     }
                     .bfhrRowActions(autoChangeActions(item))
             }
-        case .followUps:
+        case .list(.followUps):
             ForEach(model.followUps) { nudge in
                 followUpRow(nudge)
             }
@@ -243,12 +259,12 @@ public struct TodayScreen: View {
                         .foregroundStyle(BFHRColor.Fg.secondary)
                 }
             }
-        case .deadlines:
+        case .list(.deadlines):
             ForEach(model.deadlines) { deadline in
                 DeadlineRow(deadline: deadline, isPendingSync: model.pendingSyncIDs.contains(deadline.id))
                     .bfhrRowActions(deadlineActions(deadline))
             }
-        case .newMatches:
+        case .list(.newMatches):
             ForEach(model.newMatches) { match in
                 MatchRow(
                     match: match,

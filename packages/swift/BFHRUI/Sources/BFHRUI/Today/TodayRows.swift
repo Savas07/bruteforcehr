@@ -221,12 +221,13 @@ struct ReviewRow: View {
     }
 }
 
-/// The quiet caption between the decisions and the automatic changes in To review.
+/// The header of the automatic changes that follow To review ("Updated automatically").
 struct AutoChangeCaption: View {
     var body: some View {
         Text(TodayStrings.updatedAutomatically)
-            .font(.bfhr(.footnote, emphasized: true))
+            .font(.bfhr(.subheadline, emphasized: true))
             .foregroundStyle(BFHRColor.Fg.secondary)
+            .textCase(nil)
             .accessibilityAddTraits(.isHeader)
     }
 }

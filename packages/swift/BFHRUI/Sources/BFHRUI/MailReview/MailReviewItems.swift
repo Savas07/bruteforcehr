@@ -152,4 +152,6 @@ public struct ApplicationOption: Identifiable, Hashable, Sendable {
 public enum MailReviewError: Error, Hashable {
     /// Confirm was asked for without a category or an application.
     case incompleteDraft(messageId: String)
+    /// `confirmDraft()` was called without an open review sheet.
+    case noOpenReview
 }

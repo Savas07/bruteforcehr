@@ -106,7 +106,7 @@ struct ToastView: View {
                 Image(systemName: item.glyph)
                     .foregroundStyle(BFHRColor.Toast.text)
                     .accessibilityHidden(true)
-                Text(item.message)
+                Text(bfhrPlain: item.message)
                     .font(.bfhr(.subheadline))
                     .foregroundStyle(BFHRColor.Toast.text)
                     .frame(maxWidth: .infinity, alignment: .leading)

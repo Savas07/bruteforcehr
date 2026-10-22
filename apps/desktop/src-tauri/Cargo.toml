@@ -16,11 +16,9 @@ serde_json = "1.0.154"
 tauri = { version = "2.12.5", features = [] }
 tauri-plugin-opener = "2.7.2"
 url = "2.5.8"
-# Test-only (feature `e2e`): WebdriverIO execute/log bridge. Never part of release bundles.
+# Test-only (feature `e2e`), never part of release bundles: WebdriverIO's execute/log bridge and
+# the embedded WebDriver server the E2E tests drive on macOS and Windows.
 tauri-plugin-wdio = { version = "1.5.0", optional = true }
-
-[target.'cfg(target_os = "macos")'.dependencies]
-# Test-only (feature `e2e`): embedded WebDriver server; macOS has no WKWebView driver.
 tauri-plugin-wdio-webdriver = { version = "1.5.0", optional = true }
 
 [target.'cfg(windows)'.dependencies]

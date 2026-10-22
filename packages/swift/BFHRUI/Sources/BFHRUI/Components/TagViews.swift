@@ -2,6 +2,24 @@ import BFHRCore
 import BFHRDesignTokens
 import SwiftUI
 
+/// Icon and title side by side with a fixed `BFHRSpace.s1` gap, first-baseline aligned. Use it
+/// for any `Label` inside a capsule or a `List` row: the default style in an iOS 26 list row puts
+/// the title into the row's text column, leaving a wide gap after the icon.
+public struct CompactLabelStyle: LabelStyle {
+    public init() {}
+
+    public func makeBody(configuration: Configuration) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: BFHRSpace.s1) {
+            configuration.icon
+            configuration.title
+        }
+    }
+}
+
+extension LabelStyle where Self == CompactLabelStyle {
+    public static var bfhrCompact: CompactLabelStyle { CompactLabelStyle() }
+}
+
 /// Provenance (components.md `SourceTag`): where a value or change came from. Caption text with a
 /// glyph, neutral colors; automatic sources read "Automatic · Mail".
 public struct SourceTag: View {
@@ -41,7 +59,7 @@ public struct SourceTag: View {
     /// wraps when it alone is wider than the row (AX sizes).
     public var body: some View {
         Label { Text(source.label) } icon: { Image(systemName: source.glyph) }
-            .labelStyle(.titleAndIcon)
+            .labelStyle(.bfhrCompact)
             .font(.bfhr(.caption1))
             .foregroundStyle(BFHRColor.Fg.secondary)
             .padding(.horizontal, BFHRSpace.s2)
@@ -62,6 +80,7 @@ public struct AiBadge: View {
 
     public var body: some View {
         Label { Text(label) } icon: { Image(systemName: "sparkles") }
+            .labelStyle(.bfhrCompact)
             .font(.bfhr(.caption1, emphasized: true))
             .foregroundStyle(BFHRTone.info.text)
             .padding(.horizontal, BFHRSpace.s2)
@@ -76,6 +95,7 @@ public struct AiDisclosureLine: View {
 
     public var body: some View {
         Label { Text(Strings.aiDisclaimer) } icon: { Image(systemName: "sparkles") }
+            .labelStyle(.bfhrCompact)
             .font(.bfhr(.footnote))
             .foregroundStyle(BFHRColor.Fg.secondary)
     }
@@ -95,6 +115,7 @@ public struct ConfidenceTag: View {
             Label { Text(Strings.needsALook) } icon: {
                 Image(systemName: "info.circle")
             }
+            .labelStyle(.bfhrCompact)
             .font(.bfhr(.caption1, emphasized: true))
             .foregroundStyle(BFHRTone.warning.text)
             .padding(.horizontal, BFHRSpace.s2)

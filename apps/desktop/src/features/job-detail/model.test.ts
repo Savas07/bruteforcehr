@@ -88,6 +88,72 @@ describe("buildJobDetailModel — list pane", () => {
   });
 });
 
+describe("buildJobDetailModel — search and reasons", () => {
+  it("filters rows by title, company or place and keeps the band order", () => {
+    const all = buildJobDetailModel(populatedDataset, ctx, {});
+    const model = buildJobDetailModel(populatedDataset, ctx, { q: "  FRONTEND " });
+    expect(model.list.query).toBe("FRONTEND");
+    expect(model.list.rows.length).toBeGreaterThan(0);
+    expect(model.list.rows.length).toBeLessThan(all.list.rows.length);
+    for (const row of model.list.rows)
+      expect(`${row.title} ${row.company.name} ${row.where ?? ""}`.toLowerCase()).toContain("frontend");
+    const order = all.list.rows.map((row) => row.jobId).filter((id) => model.list.rows.some((row) => row.jobId === id));
+    expect(model.list.rows.map((row) => row.jobId)).toEqual(order);
+    expect(model.selectedJobId).toBe(model.list.rows[0]?.jobId);
+  });
+
+  it("says when the search hides every job and offers to clear it", () => {
+    const model = buildJobDetailModel(populatedDataset, ctx, { q: "zzz-nothing" });
+    expect(model.list.rows).toEqual([]);
+    expect(model.list.empty).toEqual({
+      kind: "noResults",
+      title: "No jobs match “zzz-nothing”",
+      body: "Try another word, or clear the search to see all your jobs.",
+      action: "Clear search",
+    });
+  });
+
+  it("lists the dismiss reasons in the core order, and the CVs for the basis menu", () => {
+    const model = buildJobDetailModel(populatedDataset, ctx, {});
+    expect(model.dismissReasons.map((reason) => reason.key)).toEqual([
+      "not_relevant",
+      "location",
+      "salary",
+      "seniority",
+      "company",
+      "language",
+      "visa",
+      "already_applied",
+      "other",
+    ]);
+    expect(model.dismissReasons[7]?.label).toBe("Already applied");
+    const match = ready(detailOf("job-brisk-frontend").match);
+    const active = populatedDataset.cvs.filter((cv) => cv.archivedAt === null);
+    expect(match.cvOptions.map((cv) => cv.id)).toEqual(active.map((cv) => cv.id));
+    expect(match.cvOptions.some((cv) => cv.id === match.basedOnCvId)).toBe(true);
+  });
+});
+
+describe("buildJobDetailModel — scopes", () => {
+  it("shows only saved jobs in Saved and only hidden ones in Hidden jobs", () => {
+    const saved = buildJobDetailModel(populatedDataset, ctx, { scope: "saved" });
+    expect(saved.scope).toBe("saved");
+    expect(saved.list.rows.length).toBeGreaterThan(0);
+    expect(saved.list.rows.every((row) => row.saved)).toBe(true);
+    const hidden = buildJobDetailModel(populatedDataset, ctx, { scope: "hidden" });
+    const ids = hidden.list.rows.map((row) => row.jobId);
+    for (const dismissed of ["job-spinach-angular", "job-hollowpine-unity", "job-bergmann-frontend"])
+      expect(ids).toContain(dismissed);
+    expect(hidden.detail?.hidden).toBe(true);
+    expect(buildJobDetailModel(populatedDataset, ctx, { scope: "bogus" }).scope).toBe("all");
+  });
+
+  it("words an empty scope by what arrives there", () => {
+    const model = buildJobDetailModel(emptyDataset, fixtureContext(emptyDataset), { scope: "saved" });
+    expect(model.list.empty?.kind).toBe("firstUse");
+  });
+});
+
 describe("buildJobDetailModel — selection", () => {
   it("selects the top row when no job is in the route", () => {
     const model = buildJobDetailModel(populatedDataset, ctx, {});
@@ -251,7 +317,7 @@ describe("buildJobDetailModel — detail", () => {
     expect(fernweh.gaps.some((gap) => gap.correctable)).toBe(true);
 
     const tidewater = ready(detailOf("job-tidewater-product").match);
-    expect(tidewater.outsidePreferences).toMatch(/^Outside your preferences: Remote for US residents only/u);
+    expect(tidewater.outsidePreferences).toMatch(/^Outside your preferences: Remote for US residents only.* and No visa sponsorship$/u);
     const remote = tidewater.requirements.find((item) => item.facet === "remote");
     expect(remote).toMatchObject({
       status: "outside_prefs",

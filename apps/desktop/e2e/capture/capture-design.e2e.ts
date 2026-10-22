@@ -20,7 +20,7 @@ import {
   type DesignState,
   designStates,
 } from "../../src/design/matrix.ts";
-import { osName, repoRoot, saveScreenshot, setTheme, setViewport, useOpaqueMaterial } from "./helpers";
+import { osName, repoRoot, saveScreenshot, setTheme, setViewport, prepareCapture } from "./helpers";
 
 function fromEnv<T extends string>(name: string, allowed: readonly T[]): readonly T[] {
   const value = process.env[name];
@@ -39,7 +39,7 @@ describe("design-build screenshots", () => {
   it("captures every screen × state in light and dark at both sizes", async () => {
     await mkdir(outputDir, { recursive: true });
     await expect($("#root")).toBeExisting();
-    await useOpaqueMaterial();
+    await prepareCapture();
 
     const written: string[] = [];
     for (const theme of captureThemes) {
@@ -48,12 +48,18 @@ describe("design-build screenshots", () => {
         await setViewport(size.width, size.height);
         for (const screen of screens) {
           for (const state of states) {
+            // The screen clears and re-sets the ready flag itself whenever its screen × state
+            // changes. Clearing it here would hang when the route already shows that state (the
+            // first capture: `#/today` defaults to populated/ready), so instead wait until React
+            // has committed the navigation (two frames) and then for the flag.
             await browser.execute(
-              (attribute, hash) => {
-                document.documentElement.removeAttribute(attribute);
+              async (hash) => {
                 window.location.hash = hash;
+                // Executor form: the shared tsconfig targets ES2023 (no Promise.withResolvers).
+                await new Promise((resolve) =>
+                  requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(resolve, 0))),
+                );
               },
-              DESIGN_READY_ATTRIBUTE,
               designHash(screen, state),
             );
             await $(`html[${DESIGN_READY_ATTRIBUTE}="true"]`).waitForExist();

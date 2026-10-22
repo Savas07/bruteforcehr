@@ -17,12 +17,11 @@ fn main() {
             .build(),
     );
 
-    // Test builds only (`pnpm build:e2e`): WebdriverIO bridge and, on macOS, the embedded
-    // WebDriver server.
+    // Test builds only (`pnpm build:e2e`): WebdriverIO bridge and the embedded WebDriver server.
     #[cfg(feature = "e2e")]
-    let builder = builder.plugin(tauri_plugin_wdio::init());
-    #[cfg(all(feature = "e2e", target_os = "macos"))]
-    let builder = builder.plugin(tauri_plugin_wdio_webdriver::init());
+    let builder = builder
+        .plugin(tauri_plugin_wdio::init())
+        .plugin(tauri_plugin_wdio_webdriver::init());
 
     builder
         .manage(job_url::RateLimiter::for_job_urls())

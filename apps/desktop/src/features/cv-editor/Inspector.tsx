@@ -18,6 +18,7 @@ import { SyncGlyph } from "../../shared/ui/SyncGlyph";
 import type { CvCoverage } from "./coverage";
 import type { CvDraft } from "./draft";
 import type { CvEditorVM, CvRevisionVM } from "./model";
+import { HORIZONTAL_STRIP } from "./strip";
 import { hasUnfilledPlaceholders, type CvSuggestionVM } from "./suggestions";
 
 export type InspectorTab = "design" | "check" | "suggestions" | "history";
@@ -596,7 +597,7 @@ export function Inspector({
     >
       <Tabs.Root value={tab} onValueChange={(value) => onTab(value as InspectorTab)} className="flex min-h-0 flex-1 flex-col">
         <div className="border-line-subtle flex h-11 shrink-0 items-end gap-1 border-b pr-1 pl-2">
-          <Tabs.List aria-label={intl.formatMessage(messages.label)} className="flex min-w-0 flex-1 gap-1 overflow-x-auto">
+          <Tabs.List aria-label={intl.formatMessage(messages.label)} className={cx("flex min-w-0 flex-1 gap-1", HORIZONTAL_STRIP)}>
             {tabs.map((item) => (
               <Tabs.Trigger key={item.value} value={item.value} className={tabTrigger}>
                 {item.label}

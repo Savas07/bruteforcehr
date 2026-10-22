@@ -25,6 +25,7 @@ import {
 } from "./draft";
 import type { CvEditorVM, CvItemFieldsVM, CvSectionVM } from "./model";
 import { cvDateRange } from "./preview-document";
+import { HORIZONTAL_STRIP } from "./strip";
 import type { CvSuggestionVM } from "./suggestions";
 import { TrackedChange } from "./TrackedChange";
 
@@ -714,7 +715,7 @@ export function EditorPane({
       {header}
       <nav
         aria-label={intl.formatMessage(messages.jumpNav)}
-        className="border-line-subtle flex shrink-0 gap-1 overflow-x-auto border-b px-4 py-1.5"
+        className={cx("border-line-subtle flex shrink-0 gap-1 border-b px-4 py-1.5", HORIZONTAL_STRIP)}
       >
         {draft.sections.map((section) => {
           const vm = vmByKey.get(section.key);

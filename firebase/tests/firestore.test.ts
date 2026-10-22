@@ -19,22 +19,14 @@ async function seed(path: string, data: Record<string, unknown>): Promise<void> 
   });
 }
 
-const OWNER_COLLECTIONS = [
-  "renderedFiles",
-  "coverLetters",
-  "jobMatches",
-  "savedSearches",
-  "applications",
-  "interviews",
-  "contacts",
-  "devices",
-];
+const OWNER_COLLECTIONS = ["coverLetters", "savedSearches", "interviews", "contacts", "devices"];
 
 describe("users/{uid}: owner only", () => {
-  it("lets a user read and write their own profile", async () => {
+  it("lets a user read and write their own profile, but not delete it", async () => {
     await assertSucceeds(client("alice").doc("users/alice").set({ displayName: "Alice" }));
+    await assertSucceeds(client("alice").doc("users/alice").update({ displayName: "Alice A." }));
     await assertSucceeds(client("alice").doc("users/alice").get());
-    await assertSucceeds(client("alice").doc("users/alice").delete());
+    await assertFails(client("alice").doc("users/alice").delete());
   });
 
   it("keeps user A out of user B's profile", async () => {
@@ -68,11 +60,25 @@ describe("users/{uid}: owner only", () => {
   });
 });
 
+describe("users/{uid}/renderedFiles: create-only", () => {
+  const file = "users/alice/renderedFiles/f1";
+
+  it("lets the owner create and read, never change", async () => {
+    await assertSucceeds(client("alice").doc(file).set({ kind: "pdf", sha256: "ab12" }));
+    await assertSucceeds(client("alice").doc(file).get());
+    await assertFails(client("alice").doc(file).update({ sha256: "cd34" }));
+    await assertFails(client("alice").doc(file).delete());
+    await assertFails(client("bob").doc(file).get());
+    await assertFails(client("bob").doc("users/alice/renderedFiles/f2").set({ kind: "pdf" }));
+  });
+});
+
 describe("users/{uid}/jobs: embedding is server-written", () => {
   it("lets the owner save and edit a job without an embedding", async () => {
     await assertSucceeds(client("alice").doc("users/alice/jobs/j1").set({ title: "Engineer" }));
     await assertSucceeds(client("alice").doc("users/alice/jobs/j1").update({ title: "Senior Engineer" }));
     await assertSucceeds(client("alice").doc("users/alice/jobs/j1").get());
+    await assertFails(client("alice").doc("users/alice/jobs/j1").delete());
     await assertFails(client("bob").doc("users/alice/jobs/j1").get());
   });
 
@@ -111,11 +117,104 @@ describe("users/{uid}/cvs: optimistic concurrency", () => {
     await assertSucceeds(client("alice").doc(cv).update({ version: 4, "basics.name": "A." }));
   });
 
-  it("keeps other users out", async () => {
+  it("keeps other users out and is archived, not deleted", async () => {
     await seed(cv, { version: 1 });
     await assertFails(client("bob").doc(cv).get());
     await assertFails(client("bob").doc(cv).update({ version: 2 }));
-    await assertFails(client("bob").doc(cv).delete());
+    await assertFails(client("alice").doc(cv).delete());
+  });
+});
+
+describe("users/{uid}/jobMatches: save and dismiss only", () => {
+  const match = "users/alice/jobMatches/j1";
+
+  beforeEach(() =>
+    seed(match, {
+      score: 82,
+      state: "new",
+      dismissReasons: [],
+      stateChangedAt: null,
+      computedAt: new Date(),
+    }),
+  );
+
+  it("lets the owner save or dismiss a match", async () => {
+    await assertSucceeds(client("alice").doc(match).get());
+    await assertSucceeds(client("alice").doc(match).update({ state: "saved", stateChangedAt: new Date() }));
+    await assertSucceeds(
+      client("alice")
+        .doc(match)
+        .update({ state: "dismissed", dismissReasons: ["salary", "location"], stateChangedAt: new Date() }),
+    );
+  });
+
+  it("rejects other fields, unknown states, create and delete", async () => {
+    await assertFails(client("alice").doc(match).update({ score: 100 }));
+    await assertFails(client("alice").doc(match).update({ state: "saved", score: 100 }));
+    await assertFails(client("alice").doc(match).update({ state: "applied" }));
+    await assertFails(client("alice").doc("users/alice/jobMatches/j2").set({ state: "new", score: 50 }));
+    await assertFails(client("alice").doc(match).delete());
+    await assertFails(client("bob").doc(match).get());
+    await assertFails(client("bob").doc(match).update({ state: "dismissed" }));
+  });
+});
+
+describe("users/{uid}/applications: pins are write-once after appliedAt", () => {
+  const application = "users/alice/applications/a1";
+  const pins = { cvRevisionId: null, cvFileId: null, coverLetterId: null, coverLetterFileId: null };
+
+  it("lets the owner manage applications before applying", async () => {
+    await assertSucceeds(
+      client("alice")
+        .doc(application)
+        .set({ status: "saved", appliedAt: null, ...pins }),
+    );
+    await assertSucceeds(client("alice").doc(application).update({ cvRevisionId: "r1", cvFileId: "f1" }));
+    await assertSucceeds(client("alice").doc(application).update({ cvRevisionId: "r2", cvFileId: null }));
+    await assertSucceeds(client("alice").doc(application).get());
+    await assertSucceeds(client("alice").doc(application).delete());
+    await assertFails(client("bob").doc("users/alice/applications/a2").set({ status: "saved" }));
+  });
+
+  it("allows setting pins together with appliedAt and filling empty pins afterwards", async () => {
+    await seed(application, { status: "preparing", appliedAt: null, ...pins });
+    await assertSucceeds(
+      client("alice")
+        .doc(application)
+        .update({ status: "applied", appliedAt: new Date(), cvRevisionId: "r1" }),
+    );
+    await assertSucceeds(
+      client("alice").doc(application).update({ coverLetterId: "cl1", coverLetterFileId: "f2" }),
+    );
+    await assertSucceeds(
+      client("alice").doc(application).update({ status: "screening", notes: "Call on Monday" }),
+    );
+  });
+
+  it("forbids changing or clearing a pin once applied", async () => {
+    await seed(application, {
+      status: "applied",
+      appliedAt: new Date(),
+      ...pins,
+      cvRevisionId: "r1",
+      cvFileId: "f1",
+    });
+    await assertFails(client("alice").doc(application).update({ cvRevisionId: "r2" }));
+    await assertFails(client("alice").doc(application).update({ cvFileId: null }));
+    await assertFails(client("alice").doc(application).update({ appliedAt: null }));
+    await assertFails(client("alice").doc(application).update({ appliedAt: null, cvRevisionId: "r2" }));
+    await assertSucceeds(
+      client("alice")
+        .doc(application)
+        .update({ appliedAt: new Date("2026-10-20T09:00:00Z") }),
+    );
+  });
+
+  it("keeps other users out", async () => {
+    await seed(application, { status: "applied", appliedAt: new Date(), ...pins });
+    await assertFails(client("bob").doc(application).get());
+    await assertFails(client("bob").doc(application).update({ notes: "hijacked" }));
+    await assertFails(client("bob").doc(application).delete());
   });
 });
 
@@ -214,6 +313,8 @@ describe("users/{uid}/mailMessages: review fields only", () => {
   it("rejects review states the client may not set", async () => {
     await assertFails(client("alice").doc(message).update({ reviewState: "pending" }));
     await assertFails(client("alice").doc(message).update({ reviewState: "auto_applied" }));
+    // Every client review lands in a client state, so the server's pending/auto states can't be kept.
+    await assertFails(client("alice").doc(message).update({ category: "interview" }));
   });
 
   it("forbids create and delete, and other users", async () => {

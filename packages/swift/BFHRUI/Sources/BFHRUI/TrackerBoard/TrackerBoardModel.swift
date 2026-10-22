@@ -49,17 +49,6 @@ public final class TrackerBoardModel: ScreenModel {
         phase = .loaded
     }
 
-    /// Reloads from the data layer after a failed cold load (`PaneError`'s Try again). Nil hides
-    /// Try again; the data layer (and design mode) sets it.
-    public var reload: (() -> Void)?
-
-    /// Try again on the pane error: back to the skeleton, then `reload`.
-    public func retry() {
-        guard let reload else { return }
-        phase = .loading
-        reload()
-    }
-
     // MARK: Pipeline
 
     /// No applications at all: the empty Pipeline ("No applications yet").

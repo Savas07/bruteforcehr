@@ -142,28 +142,39 @@ struct StageStrip: View {
 }
 
 /// A sticky stage section header (`PipelineSection`): dot, label, count and a chevron that
-/// collapses the section. Empty stages are a single quiet line without a chevron.
+/// collapses the section. Empty stages are a single quiet line without a chevron. The first stage
+/// of a phase carries the phase name above it (Shortlist, In progress, Closed).
 struct StageSectionHeader: View {
     let section: PipelineSection
     let isExpanded: Bool
+    var phaseCaption: StatusPhase?
     let toggle: () -> Void
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        if section.isEmpty {
-            label
-                .opacity(0.7)
+        VStack(alignment: .leading, spacing: 0) {
+            if let phaseCaption {
+                Text(phaseCaption.label)
+                    .font(.bfhr(.footnote, emphasized: true))
+                    .foregroundStyle(BFHRColor.Fg.secondary)
+                    .textCase(.uppercase)
+                    .padding(.top, BFHRSpace.s3)
+                    .accessibilityAddTraits(.isHeader)
+            }
+            if section.isEmpty {
+                label
+                    .accessibilityElement(children: .combine)
+                    .accessibilityAddTraits(.isHeader)
+            } else {
+                Button(action: toggle) {
+                    label
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
                 .accessibilityElement(children: .combine)
                 .accessibilityAddTraits(.isHeader)
-        } else {
-            Button(action: toggle) {
-                label
-                    .contentShape(Rectangle())
+                .accessibilityValue(Text(isExpanded ? TrackerBoardStrings.expanded : TrackerBoardStrings.collapsed))
             }
-            .buttonStyle(.plain)
-            .accessibilityElement(children: .combine)
-            .accessibilityAddTraits(.isHeader)
-            .accessibilityValue(Text(isExpanded ? TrackerBoardStrings.expanded : TrackerBoardStrings.collapsed))
         }
     }
 
@@ -171,8 +182,8 @@ struct StageSectionHeader: View {
         HStack(spacing: BFHRSpace.s2) {
             ToneDot(tone: section.status.tone)
             Text(section.status.label)
-                .font(.bfhr(.subheadline, emphasized: true))
-                .foregroundStyle(BFHRColor.Fg.primary)
+                .font(.bfhr(.subheadline, emphasized: !section.isEmpty))
+                .foregroundStyle(section.isEmpty ? BFHRColor.Fg.secondary : BFHRColor.Fg.primary)
             Text(section.count, format: .number)
                 .font(.bfhr(.subheadline))
                 .monospacedDigit()

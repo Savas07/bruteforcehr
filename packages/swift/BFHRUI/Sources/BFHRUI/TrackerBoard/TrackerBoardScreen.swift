@@ -37,7 +37,7 @@ public struct TrackerBoardScreen: View {
         } skeleton: {
             TrackerSkeleton()
         } failure: { failure in
-            PaneError(failure, title: TrackerBoardStrings.errorTitle, retry: model.reload == nil ? nil : { model.retry() })
+            PaneError(failure, title: TrackerBoardStrings.errorTitle, retry: reload)
         }
         .bfhrToastHost()
         .environment(\.bfhrNow, model.now)
@@ -109,7 +109,7 @@ public struct TrackerBoardScreen: View {
                             }
                         }
                     } header: {
-                        StageSectionHeader(section: section, isExpanded: isExpanded(section)) {
+                        StageSectionHeader(section: section, isExpanded: isExpanded(section), phaseCaption: phaseCaption(for: section)) {
                             withAnimation(BFHRMotion.animation(.base, easing: .standard, reduceMotion: reduceMotion)) {
                                 expansion[section.status] = !isExpanded(section)
                             }
@@ -149,6 +149,14 @@ public struct TrackerBoardScreen: View {
     }
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.bfhrReload) private var reload
+
+    /// The phase (Shortlist, In progress, Closed) above the first stage of each phase, so the
+    /// list reads as the three phases. Not in Closed, where it would only repeat the tab.
+    private func phaseCaption(for section: PipelineSection) -> StatusPhase? {
+        guard model.scope != .closed else { return nil }
+        return model.sections.first { $0.phase == section.phase }?.status == section.status ? section.phase : nil
+    }
 
     private func isExpanded(_ section: PipelineSection) -> Bool {
         guard !section.isEmpty else { return false }

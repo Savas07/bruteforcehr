@@ -13,12 +13,29 @@ final class TrackerBoardAccessibilityAuditTests: XCTestCase {
 
     @MainActor
     func testPopulatedDefaultSize() throws {
-        try launch(dataset: "populated", contentSize: nil).performAccessibilityAudit()
+        let app = launch(dataset: "populated", contentSize: nil)
+        try app.performAccessibilityAudit()
+        app.swipeUp()
+        try snapshot("pipeline-scrolled")
+        app.swipeUp()
+        try snapshot("pipeline-scrolled-2")
     }
 
     @MainActor
     func testPopulatedAccessibilitySize() throws {
-        try launch(dataset: "populated", contentSize: largestSize).performAccessibilityAudit()
+        let app = launch(dataset: "populated", contentSize: largestSize)
+        try snapshot("pipeline-ax")
+        try app.performAccessibilityAudit()
+    }
+
+    /// Closed scope: the outcomes in grey, rejected reads "Not selected".
+    @MainActor
+    func testClosedScope() throws {
+        let app = launch(dataset: "populated", contentSize: nil)
+        app.buttons["Closed"].tap()
+        XCTAssertTrue(app.staticTexts["Not selected"].firstMatch.waitForExistence(timeout: 5))
+        try snapshot("closed")
+        try app.performAccessibilityAudit()
     }
 
     @MainActor

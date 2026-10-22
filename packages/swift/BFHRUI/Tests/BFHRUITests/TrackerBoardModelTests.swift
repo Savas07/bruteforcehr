@@ -234,22 +234,6 @@ struct TrackerBoardModelTests {
         #expect(String(localized: TrackerBoardStrings.moveError(TrackerBoardError.notAnOutcome(.applied))) == "That move isn't available from this stage.")
     }
 
-    @Test("Try again reloads through the data layer; without one it does nothing")
-    func retry() throws {
-        let model = TrackerBoardModel(now: now, calendar: calendar)
-        model.phase = .failed(LoadFailure(.network))
-        model.retry()
-        #expect(model.phase == .failed(LoadFailure(.network)))
-
-        let data = UserData(document)
-        var reloads = 0
-        model.reload = { reloads += 1; model.load(data) }
-        model.retry()
-        #expect(reloads == 1)
-        #expect(model.phase == .loaded)
-        #expect(!model.isEmpty)
-    }
-
     @Test("Timeline Undo of an automatic change restores the status and corrects the email")
     func timelineUndo() throws {
         let model = try makeModel()

@@ -31,10 +31,7 @@ struct MatchScoreCard: View {
                     .foregroundStyle(BFHRColor.Fg.secondary)
                     .monospacedDigit()
             }
-            // The segment labels are a legend under a decorative bar (the band is named above at
-            // full size); past xLarge four labels can't share the width without breaking words.
             MatchBandBar(score: match.score)
-                .dynamicTypeSize(...DynamicTypeSize.xLarge)
             Text(verbatim: basis)
                 .font(.bfhr(.footnote))
                 .foregroundStyle(BFHRColor.Fg.secondary)

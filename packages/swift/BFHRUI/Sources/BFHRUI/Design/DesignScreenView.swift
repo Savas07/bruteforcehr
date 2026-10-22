@@ -14,10 +14,12 @@ extension DesignScenario {
 /// app's design mode puts one in each tab (`apps/ios/BruteForceHR/DesignMode.swift`).
 public struct DesignScreenView: View {
     private let screen: DesignScreen
+    private let scenario: DesignScenario
     @State private var holder: ModelHolder
 
     public init(_ screen: DesignScreen, scenario: DesignScenario) {
         self.screen = screen
+        self.scenario = scenario
         _holder = State(initialValue: ModelHolder(screen: screen, scenario: scenario))
     }
 
@@ -32,7 +34,22 @@ public struct DesignScreenView: View {
             }
         }
         .environment(\.bfhrNow, holder.now)
+        .environment(\.bfhrReload, reload)
         .accessibilityIdentifier("design.\(screen.rawValue)")
+    }
+
+    /// Try again in design mode: a cold load (skeleton) for a moment, then the scenario's data
+    /// without the forced condition.
+    private func reload() {
+        var loading = scenario
+        loading.condition = .loading
+        holder = ModelHolder(screen: screen, scenario: loading)
+        var loaded = scenario
+        loaded.condition = nil
+        Task {
+            try? await Task.sleep(for: .seconds(1))
+            holder = ModelHolder(screen: screen, scenario: loaded)
+        }
     }
 }
 

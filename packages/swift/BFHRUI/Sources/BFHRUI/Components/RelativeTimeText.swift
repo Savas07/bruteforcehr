@@ -5,6 +5,11 @@ extension EnvironmentValues {
     /// The clock relative times are measured against. Production leaves the default (the current
     /// time); design builds and previews set the fixture's `now` so captures are stable.
     @Entry public var bfhrNow: Date = .now
+
+    /// Reloads the current screen's data: what a `PaneError`'s Try again calls
+    /// (`PaneError(failure, retry: reload)`; nil → no Try again). Design mode sets it to replay the
+    /// scenario (skeleton, then the data); the data layer sets it to re-run the listener.
+    @Entry public var bfhrReload: (@MainActor () -> Void)? = nil
 }
 
 /// A neutral relative date (components.md `RelativeTimeChip`), with the full date and time as the

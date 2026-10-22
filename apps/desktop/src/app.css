@@ -47,6 +47,46 @@
     outline-offset: 2px;
   }
 
+  /*
+   * Scrollbars. macOS (WKWebView) keeps the system overlay scrollbars untouched. WebView2 on
+   * Windows draws classic, always-on 17 px bars, so there they become thin, rounded token-colored
+   * thumbs on a transparent track (10 px of layout, a 6 px thumb that grows to 8 px on hover).
+   * Vertical bars stay visible: the thumb uses `line.control` (≥ 3:1 on every surface, SC 1.4.11).
+   * Chromium ignores `::-webkit-scrollbar` once `scrollbar-width` / `scrollbar-color` are set on
+   * an element, so these rules must not be mixed with the standard properties on Windows.
+   */
+  :root[data-platform="windows"] *::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+    background: transparent;
+  }
+
+  :root[data-platform="windows"] *::-webkit-scrollbar-track,
+  :root[data-platform="windows"] *::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
+  :root[data-platform="windows"] *::-webkit-scrollbar-thumb {
+    border: 2px solid transparent;
+    border-radius: 9999px;
+    background-clip: padding-box;
+    background-color: var(--bfhr-color-line-control);
+  }
+
+  :root[data-platform="windows"] *::-webkit-scrollbar-thumb:hover {
+    border-width: 1px;
+    background-color: var(--bfhr-color-fg-tertiary);
+  }
+
+  :root[data-platform="windows"] *::-webkit-scrollbar-thumb:active {
+    border-width: 1px;
+    background-color: var(--bfhr-color-fg-secondary);
+  }
+
+  :root[data-platform="windows"] *::-webkit-scrollbar-button {
+    display: none;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     *,
     ::before,
@@ -55,4 +95,24 @@
       transition-duration: 0.01ms !important;
     }
   }
+}
+
+/*
+ * Scroll utilities (docs/design/foundation-desktop.md "Scrolling"):
+ * - `scrollbar-hidden`: no bar, still scrollable (horizontal strips only: tab strips, chip rows,
+ *   board columns); prefer the `ScrollStrip` component, which also maps the mouse wheel and keeps
+ *   the strip reachable from the keyboard. Never on vertical content.
+ * - `scrollbar-gutter-stable`: reserves the bar's width on Windows so content doesn't jump when
+ *   it starts to overflow (detail panes, lists that load more rows). No effect with macOS
+ *   overlay scrollbars.
+ */
+@utility scrollbar-hidden {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@utility scrollbar-gutter-stable {
+  scrollbar-gutter: stable;
 }

@@ -1049,6 +1049,7 @@
   "today.snoozeDate.pickFirst": "Choose a date first.",
   "today.snoozeDate.snooze": "Snooze",
   "today.snoozeDate.title": "Snooze until…",
+  "today.snoozeDate.tooEarly": "Pick tomorrow or a later day. For today, use Later today.",
   "today.title": "Today",
   "today.toast.confirmed": "Confirmed · {company}",
   "today.toast.confirmedMove": "Confirmed · {company} moved to {status}",

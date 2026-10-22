@@ -199,8 +199,12 @@ extension CvContent {
         case .references:
             return (references ?? []).flatMap { entry($0.name, nil, nil, nil, $0.reference, nil) }
         case .custom(let id, _):
-            return (meta.customSections.first { $0.id == id }?.items ?? []).flatMap {
-                entry($0.title, $0.subtitle, dates($0.startDate, $0.endDate), nil, $0.summary, $0.highlights)
+            // Custom items (talks, events) with only a start date are one-off: no "– Present".
+            return (meta.customSections.first { $0.id == id }?.items ?? []).flatMap { item in
+                let when = item.endDate?.nonBlankValue == nil
+                    ? item.startDate?.nonBlankValue.map { CVPageVocabulary.month($0, language: language) }
+                    : dates(item.startDate, item.endDate)
+                return entry(item.title, item.subtitle, when, nil, item.summary, item.highlights)
             }
         }
     }

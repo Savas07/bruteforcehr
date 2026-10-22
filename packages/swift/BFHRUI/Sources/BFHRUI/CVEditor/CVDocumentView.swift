@@ -37,6 +37,7 @@ enum CVEditorSheet: Identifiable, Hashable {
 struct CVDocumentView: View {
     @Bindable var model: CVEditorModel
     @Environment(ToastCenter.self) private var toasts: ToastCenter?
+    @Environment(\.bfhrReload) private var reload
     @State private var segment: CVSegment = .edit
     @State private var sheet: CVEditorSheet?
     @State private var zoomed = false
@@ -54,7 +55,7 @@ struct CVDocumentView: View {
         } skeleton: {
             CVFormSkeleton()
         } failure: { failure in
-            PaneError(failure, title: L.errorTitleCV, retry: model.reload.map { reload in { reload() } }, goBack: { model.select(cvId: nil) })
+            PaneError(failure, title: L.errorTitleCV, retry: reload, goBack: { model.select(cvId: nil) })
         }
         .navigationTitle(Text(verbatim: model.document?.title ?? ""))
         .bfhrInlineTitle()
@@ -142,20 +143,21 @@ struct CVDocumentView: View {
     private func moreMenu(_ document: CVDocument) -> some View {
         Menu {
             if let group = model.selectedGroup, !group.variants.isEmpty {
-                Picker(selection: Binding(get: { document.id }, set: { model.select(cvId: $0) })) {
+                Section {
                     ForEach([group.base] + group.variants) { row in
-                        Label {
-                            Text(verbatim: row.title)
-                            Text(row.variantKind == nil ? L.baseCV : row.variantKind == .language ? L.languageVariant(CVLanguageName.name(of: row.language)) : L.roleVariant)
-                        } icon: {
-                            Image(systemName: row.variantKind == nil ? "doc.text" : "doc.on.doc")
+                        Button { model.select(cvId: row.id) } label: {
+                            Label {
+                                Text(verbatim: row.title)
+                                Text(row.variantKind == nil ? L.baseCV : row.variantKind == .language ? L.languageVariant(CVLanguageName.name(of: row.language)) : L.roleVariant)
+                            } icon: {
+                                Image(systemName: row.id == document.id ? "checkmark" : row.variantKind == nil ? "doc.text" : "doc.on.doc")
+                            }
                         }
-                        .tag(row.id)
+                        .accessibilityAddTraits(row.id == document.id ? .isSelected : [])
                     }
-                } label: {
+                } header: {
                     Text(L.versionsOfThisCV)
                 }
-                .pickerStyle(.inline)
             }
             Section {
                 Button { sheet = .history } label: { Label { Text(L.versionHistory) } icon: { Image(systemName: "clock.arrow.circlepath") } }

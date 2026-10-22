@@ -40,8 +40,6 @@ public final class CVEditorModel: ScreenModel {
     /// AI assists aren't offered. Claude through the server fills it from M2; Debug design mode
     /// sets a canned provider.
     public var suggestionProvider: (any CVSuggestionProvider)?
-    /// "Try again" on the pane error: asks the data layer (or a design scenario) to load again.
-    public var reload: (@MainActor () -> Void)?
 
     /// Local working copies by CV id (M0: edits don't write revisions).
     private var drafts: [String: Draft] = [:]

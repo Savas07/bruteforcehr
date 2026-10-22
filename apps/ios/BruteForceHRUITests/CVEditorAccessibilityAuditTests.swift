@@ -18,21 +18,21 @@ final class CVEditorAccessibilityAuditTests: XCTestCase {
     func testPopulatedDefaultSize() throws {
         let app = launch(dataset: "populated", contentSize: nil)
         XCTAssertTrue(app.buttons["cv.header"].waitForExistence(timeout: 10))
-        try app.performAccessibilityAudit()
+        try audit(app)
     }
 
     @MainActor
     func testPopulatedAccessibilitySize() throws {
         let app = launch(dataset: "populated", contentSize: largestSize)
         try snapshot("edit-ax")
-        try app.performAccessibilityAudit()
+        try audit(app)
     }
 
     @MainActor
     func testEmptyDefaultSize() throws {
         let app = launch(dataset: "empty", contentSize: nil)
         XCTAssertTrue(app.buttons["Start from scratch"].waitForExistence(timeout: 10))
-        try app.performAccessibilityAudit()
+        try audit(app)
     }
 
     @MainActor
@@ -48,9 +48,7 @@ final class CVEditorAccessibilityAuditTests: XCTestCase {
         let app = launch(dataset: "populated", contentSize: nil, pane: "preview")
         XCTAssertTrue(app.descendants(matching: .any)["cv.page.1"].waitForExistence(timeout: 10))
         try snapshot("preview")
-        try app.performAccessibilityAudit { issue in
-            Self.isOnPage(issue) && [.dynamicType, .textClipped, .contrast].contains(issue.auditType)
-        }
+        try audit(app, ignoringPage: true)
     }
 
     @MainActor
@@ -58,9 +56,7 @@ final class CVEditorAccessibilityAuditTests: XCTestCase {
         let app = launch(dataset: "populated", contentSize: largestSize, pane: "preview")
         XCTAssertTrue(app.descendants(matching: .any)["cv.page.1"].waitForExistence(timeout: 10))
         try snapshot("preview-ax")
-        try app.performAccessibilityAudit { issue in
-            Self.isOnPage(issue) && [.dynamicType, .textClipped, .contrast].contains(issue.auditType)
-        }
+        try audit(app, ignoringPage: true)
     }
 
     /// Tapping an item opens its edit sheet; swiping it offers Remove, whose toast has Undo.
@@ -72,8 +68,11 @@ final class CVEditorAccessibilityAuditTests: XCTestCase {
         item.tap()
         XCTAssertTrue(app.navigationBars["Experience"].waitForExistence(timeout: 5))
         try snapshot("item-sheet")
-        try app.performAccessibilityAudit()
+        try audit(app)
         app.buttons["Cancel"].tap()
+        // Nothing was changed, so Cancel closes without asking.
+        XCTAssertFalse(app.buttons["Discard changes"].waitForExistence(timeout: 1))
+        XCTAssertTrue(app.navigationBars["Experience"].waitForNonExistence(timeout: 5))
 
         XCTAssertTrue(item.waitForExistence(timeout: 5))
         item.swipeLeft()
@@ -97,8 +96,8 @@ final class CVEditorAccessibilityAuditTests: XCTestCase {
         XCTAssertTrue(app.buttons["cv.assist.suggestion.1"].waitForExistence(timeout: 5))
         XCTAssertFalse(use.isEnabled)
         try snapshot("assist")
-        try app.performAccessibilityAudit()
-        let blank = app.textFields.matching(NSPredicate(format: "label CONTAINS %@", "[X%]")).firstMatch
+        try audit(app)
+        let blank = app.textViews.matching(NSPredicate(format: "label CONTAINS %@", "[X%]")).firstMatch
         XCTAssertTrue(blank.waitForExistence(timeout: 5))
         blank.tap()
         blank.typeText("35%")
@@ -114,7 +113,7 @@ final class CVEditorAccessibilityAuditTests: XCTestCase {
         let app = launch(dataset: "populated", contentSize: largestSize, pane: "assist")
         XCTAssertTrue(app.buttons["cv.assist.keepMine"].waitForExistence(timeout: 10))
         try snapshot("assist-ax")
-        try app.performAccessibilityAudit()
+        try audit(app)
     }
 
     @MainActor
@@ -122,12 +121,12 @@ final class CVEditorAccessibilityAuditTests: XCTestCase {
         var app = launch(dataset: "populated", contentSize: nil, pane: "history")
         XCTAssertTrue(app.navigationBars["Version history"].waitForExistence(timeout: 10))
         try snapshot("history")
-        try app.performAccessibilityAudit()
+        try audit(app)
         app.terminate()
         app = launch(dataset: "populated", contentSize: nil, pane: "reorder")
         XCTAssertTrue(app.navigationBars["Reorder sections"].waitForExistence(timeout: 10))
         try snapshot("reorder")
-        try app.performAccessibilityAudit()
+        try audit(app)
     }
 
     /// Opens the DE variant from the "…" menu (versions of this CV).
@@ -143,12 +142,44 @@ final class CVEditorAccessibilityAuditTests: XCTestCase {
         variant.tap()
         XCTAssertTrue(app.staticTexts.containing(NSPredicate(format: "label CONTAINS %@", "Variant of Base CV — English")).firstMatch.waitForExistence(timeout: 5))
         try snapshot("variant")
-        try app.performAccessibilityAudit()
+        try audit(app)
     }
 
-    private static func isOnPage(_ issue: XCUIAccessibilityAuditIssue) -> Bool {
-        guard let element = issue.element else { return false }
-        return !element.identifier.hasPrefix("cv.segment") && element.elementType == .staticText
+    /// Audits the current screen. System chrome (tab bar, status bar) is outside this screen.
+    /// With `ignoringPage`, the printed CV page in Preview is exempt from the text-size, clipping
+    /// and contrast checks: it is a fixed-size page in paper colours by design (the chrome around
+    /// it is still audited). Every issue is logged, and appended to `audit-issues.txt` next to
+    /// the shots when `BFHR_CV_SHOTS` is set.
+    @MainActor
+    private func audit(_ app: XCUIApplication, ignoringPage: Bool = false, _ function: String = #function) throws {
+        try app.performAccessibilityAudit { issue in
+            let element = issue.element
+            if let element, element.elementType == .tabBar || element.elementType == .statusBar { return true }
+            if ignoringPage, let element, Self.isPageText(element), [.dynamicType, .textClipped, .contrast].contains(issue.auditType) {
+                return true
+            }
+            let line = "\(function): \(issue.compactDescription) — \(element.map { "\($0.elementType.rawValue) id=\($0.identifier) label=\($0.label.prefix(80))" } ?? "no element")"
+            XCTContext.runActivity(named: line) { _ in }
+            if let directory = ProcessInfo.processInfo.environment["BFHR_CV_SHOTS"], !directory.isEmpty {
+                let url = URL(fileURLWithPath: directory).appendingPathComponent("audit-issues.txt")
+                if let handle = try? FileHandle(forWritingTo: url) {
+                    handle.seekToEndOfFile()
+                    handle.write(Data((line + "\n").utf8))
+                    try? handle.close()
+                } else {
+                    try? Data((line + "\n").utf8).write(to: url)
+                }
+            }
+            return false
+        }
+    }
+
+    /// Static text inside a rendered page (`cv.page.N`).
+    @MainActor
+    private static func isPageText(_ element: XCUIElement) -> Bool {
+        guard element.elementType == .staticText else { return false }
+        let page = XCUIApplication().descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH %@", "cv.page.")).firstMatch
+        return page.exists && page.frame.contains(element.frame)
     }
 
     @MainActor
@@ -167,7 +198,8 @@ final class CVEditorAccessibilityAuditTests: XCTestCase {
         if let pane { app.launchArguments += ["-BFHRCVPane", pane] }
         if let contentSize { app.launchArguments += ["-UIPreferredContentSizeCategoryName", contentSize] }
         app.launch()
-        XCTAssertTrue(app.descendants(matching: .any)["design.cv-editor"].waitForExistence(timeout: 20))
+        // Populated pushes the CV over the list, so wait for the tab bar rather than the root.
+        XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 20))
         Thread.sleep(forTimeInterval: 1.5)
         return app
     }

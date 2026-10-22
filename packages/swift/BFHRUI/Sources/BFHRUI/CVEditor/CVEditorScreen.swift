@@ -9,6 +9,7 @@ private typealias L = CVEditorViewStrings
 public struct CVEditorScreen: View {
     @Bindable private var model: CVEditorModel
     @Environment(ToastCenter.self) private var toasts: ToastCenter?
+    @Environment(\.bfhrReload) private var reload
 
     public init(model: CVEditorModel) {
         self.model = model
@@ -30,7 +31,7 @@ public struct CVEditorScreen: View {
         } skeleton: {
             CVListSkeleton()
         } failure: { failure in
-            PaneError(failure, title: L.errorTitle, retry: model.reload.map { reload in { reload() } })
+            PaneError(failure, title: L.errorTitle, retry: reload)
         }
         .toolbar { toolbar }
         .navigationDestination(item: selection) { _ in

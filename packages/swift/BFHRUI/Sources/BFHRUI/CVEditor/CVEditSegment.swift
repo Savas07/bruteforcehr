@@ -107,7 +107,7 @@ struct CVEditSegment: View {
         let changed = variant.baseChangedSections.map { String(localized: L.sectionTitle($0)) }
         return InlineAlert(
             .info,
-            title: L.variantOf(variant.parentTitle, kind),
+            title: L.variantOf(kind, variant.parentTitle),
             message: changed.isEmpty ? L.variantInSync : L.baseChanged(changed.formatted(.list(type: .and))),
             actionTitle: L.openBase,
             action: { model.select(cvId: variant.parentCvId) }

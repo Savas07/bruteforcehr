@@ -15,15 +15,6 @@ extension DesignScenario {
         let model = CVEditorModel(selectedCvId: selected?.id, now: now)
         model.suggestionProvider = CVDesignSuggestions()
         apply(to: model)
-        let scenario = self
-        model.reload = { [weak model] in
-            guard let model else { return }
-            model.phase = .loading
-            Task {
-                try? await Task.sleep(for: .seconds(1))
-                model.load(scenario.data)
-            }
-        }
         return model
     }
 }

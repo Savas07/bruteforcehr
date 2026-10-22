@@ -291,6 +291,7 @@ extension CvContent {
             draft.summary = c.summary ?? ""
             draft.bullets = bullets(c.highlights)
             dates(c.startDate, c.endDate)
+            draft.isCurrent = false // a start date alone is a one-off, not ongoing
         }
         return draft
     }

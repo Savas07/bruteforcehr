@@ -85,13 +85,13 @@ struct CVItemEditorSheet: View {
             }
             .navigationTitle(Text(index == nil ? L.newItemTitle(kind) : L.editItemTitle(kind)))
             .bfhrInlineTitle()
+            .confirmationDialog(Text(L.discardTitle), isPresented: $confirmDiscard, titleVisibility: .visible) {
+                Button(role: .destructive) { dismiss() } label: { Text(L.discard) }
+                Button(role: .cancel) {} label: { Text(L.keepEditing) }
+            }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button { hasChanges ? (confirmDiscard = true) : dismiss() } label: { Text(L.cancel) }
-                        .confirmationDialog(Text(L.discardTitle), isPresented: $confirmDiscard, titleVisibility: .visible) {
-                            Button(role: .destructive) { dismiss() } label: { Text(L.discard) }
-                            Button(role: .cancel) {} label: { Text(L.keepEditing) }
-                        }
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button {
@@ -269,13 +269,13 @@ struct CVHeaderSheet: View {
             }
             .navigationTitle(Text(L.sectionTitle(.header)))
             .bfhrInlineTitle()
+            .confirmationDialog(Text(L.discardTitle), isPresented: $confirmDiscard, titleVisibility: .visible) {
+                Button(role: .destructive) { dismiss() } label: { Text(L.discard) }
+                Button(role: .cancel) {} label: { Text(L.keepEditing) }
+            }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button { draft != original ? (confirmDiscard = true) : dismiss() } label: { Text(L.cancel) }
-                        .confirmationDialog(Text(L.discardTitle), isPresented: $confirmDiscard, titleVisibility: .visible) {
-                            Button(role: .destructive) { dismiss() } label: { Text(L.discard) }
-                            Button(role: .cancel) {} label: { Text(L.keepEditing) }
-                        }
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button {
@@ -342,13 +342,13 @@ struct CVSummarySheet: View {
             }
             .navigationTitle(Text(L.sectionTitle(.summary)))
             .bfhrInlineTitle()
+            .confirmationDialog(Text(L.discardTitle), isPresented: $confirmDiscard, titleVisibility: .visible) {
+                Button(role: .destructive) { dismiss() } label: { Text(L.discard) }
+                Button(role: .cancel) {} label: { Text(L.keepEditing) }
+            }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button { text != original ? (confirmDiscard = true) : dismiss() } label: { Text(L.cancel) }
-                        .confirmationDialog(Text(L.discardTitle), isPresented: $confirmDiscard, titleVisibility: .visible) {
-                            Button(role: .destructive) { dismiss() } label: { Text(L.discard) }
-                            Button(role: .cancel) {} label: { Text(L.keepEditing) }
-                        }
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button {

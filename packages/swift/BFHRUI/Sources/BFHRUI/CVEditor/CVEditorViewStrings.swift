@@ -86,8 +86,8 @@ enum CVEditorViewStrings {
         .bfhr("cvEditor.addSection.hiddenItems", default: "Entries saved: \(count)", table: "CVEditor", comment: "Under a hidden section in the Add section menu. %lld = entries it already holds.")
     }
     static let addSectionFooter = LocalizedStringResource.bfhr("cvEditor.addSection.footer", default: "New sections appear on your CV after the others. You can reorder them anytime.", table: "CVEditor")
-    static func variantOf(_ parent: String, _ kind: LocalizedStringResource) -> LocalizedStringResource {
-        .bfhr("cvEditor.variant.of", default: "Variant of \(parent) · \(kind)", table: "CVEditor", comment: "%1$@ = base CV title, %2$@ = variant kind (Deutsch variant).")
+    static func variantOf(_ kind: LocalizedStringResource, _ parent: String) -> LocalizedStringResource {
+        .bfhr("cvEditor.variant.of", default: "\(kind) of \(parent)", table: "CVEditor", comment: "%1$@ = variant kind (Deutsch variant, Role variant), %2$@ = base CV title.")
     }
     static let variantInSync = LocalizedStringResource.bfhr("cvEditor.variant.inSync", default: "Edits here stay in this variant. Changes to the base CV don't copy over by themselves.", table: "CVEditor")
     static func baseChanged(_ sections: String) -> LocalizedStringResource {

@@ -12,7 +12,7 @@ struct CVAssistSheet: View {
     let onUse: (String) -> Void
     let onEdit: (String) -> Void
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.locale) private var locale
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         NavigationStack {
@@ -62,11 +62,26 @@ struct CVAssistSheet: View {
                 Section {
                     AiDisclosureLine()
                 }
+                if dynamicTypeSize.isAccessibilitySize {
+                    // At accessibility sizes a pinned bar would cover most of the sheet, so the
+                    // actions scroll with the content.
+                    Section { actions }
+                        .listRowBackground(Color.clear)
+                        .listRowInsets(EdgeInsets())
+                }
             }
             .bfhrInsetGroupedList()
             .navigationTitle(Text(L.improveTitle))
             .bfhrInlineTitle()
-            .safeAreaInset(edge: .bottom, spacing: 0) { actionBar }
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                if !dynamicTypeSize.isAccessibilitySize {
+                    actions
+                        .padding(.horizontal, BFHRSpace.s4)
+                        .padding(.top, BFHRSpace.s3)
+                        .padding(.bottom, BFHRSpace.s2)
+                        .background(.bar)
+                }
+            }
         }
         .presentationDetents([.large])
         .task { if session.phase == .loading { await session.load() } }
@@ -175,7 +190,7 @@ struct CVAssistSheet: View {
         )
     }
 
-    private var actionBar: some View {
+    private var actions: some View {
         VStack(spacing: BFHRSpace.s2) {
             if session.selected != nil, !session.missingPlaceholders.isEmpty {
                 Label { Text(L.fillBlanksFirst(session.missingPlaceholders.count)) } icon: { Image(systemName: "pencil.line") }
@@ -199,9 +214,5 @@ struct CVAssistSheet: View {
                 .buttonStyle(.bfhrPlain)
                 .disabled(session.selected == nil)
         }
-        .padding(.horizontal, BFHRSpace.s4)
-        .padding(.top, BFHRSpace.s3)
-        .padding(.bottom, BFHRSpace.s2)
-        .background(.bar)
     }
 }

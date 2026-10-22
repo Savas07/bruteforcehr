@@ -370,13 +370,7 @@ function ItemBlock({
         <button
           type="button"
           aria-expanded={expanded}
-          aria-label={[
-            title,
-            subtitle,
-            pending.length > 0 ? intl.formatMessage(messages.suggestionHere, { count: pending.length }) : "",
-          ]
-            .filter(Boolean)
-            .join(", ")}
+          // The name is the visible text; sr-only commas keep the spoken parts apart.
           onClick={() => ops.toggleItem(item.id)}
           className="hover:bg-surface-hover flex min-w-0 flex-1 items-start gap-1.5 rounded-sm px-1.5 py-1 text-left"
         >
@@ -387,13 +381,22 @@ function ItemBlock({
           )}
           <span className="min-w-0 flex-1">
             <span className="block text-callout font-semibold">{title}</span>
-            {subtitle && <span className="text-fg-secondary block text-footnote">{subtitle}</span>}
+            {subtitle && (
+              <span className="text-fg-secondary block text-footnote">
+                <span className="sr-only">, </span>
+                {subtitle}
+              </span>
+            )}
             {!expanded && item.bullets[0] && (
-              <span className="text-fg-tertiary mt-0.5 line-clamp-1 text-footnote">{item.bullets[0]}</span>
+              <span className="text-fg-tertiary mt-0.5 line-clamp-1 text-footnote">
+                <span className="sr-only">, </span>
+                {item.bullets[0]}
+              </span>
             )}
           </span>
           {pending.length > 0 && !expanded && (
             <span className="bg-accent-subtle text-accent-text shrink-0 rounded-sm px-1.5 text-caption1">
+              <span className="sr-only">, </span>
               {intl.formatMessage(messages.suggestionHere, { count: pending.length })}
             </span>
           )}

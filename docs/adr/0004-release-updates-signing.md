@@ -94,6 +94,8 @@ GitHub Actions stopped starting jobs on the private repo (free minutes / spendin
 
 Consequences for M1, to be decided at M1 kickoff: the `desktop-mac`, `desktop-win` and `ios` release jobs above need macOS/Windows runner minutes. Options: (a) owner funds minutes for release runs only; (b) build, sign and notarize the macOS app and the iOS archive locally on the owner's Mac with a scripted, reproducible release command, and build Windows only via a manually triggered run; (c) make the repo public (free runners). Until then the release flow above is the target design, not an automatic one.
 
+**Resolved the same day: option (c).** The owner made `Savas07/bruteforcehr` public after a history audit: gitleaks over the full history (one false positive: a keyboard key name), no secrets or personal data in tracked files (commits use the GitHub noreply address; the Firebase iOS API key is client config, limited to Firebase services and now to bundle id `com.savas07.bruteforcehr`; the Apple Team ID is not secret). Standard GitHub-hosted runners are free for public repos, so `desktop.yml` runs automatically again on desktop changes, and the release jobs above can run as designed. Secrets stay in GitHub Actions secrets and Secret Manager; pull requests from forks don't receive them.
+
 ## Alternatives considered
 
 | Alternative | Why rejected |

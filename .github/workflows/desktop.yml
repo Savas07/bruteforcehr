@@ -1,9 +1,20 @@
 name: Desktop
 
-# Manual only (owner decision, 2026-10-22): the repo stays private and automatic CI runs on Linux
-# only, because macOS and Windows runners bill at 10x / 2x. Run this before releases or when
-# desktop chrome changes: `gh workflow run desktop.yml [-f design_capture=true]`.
+# Public repo: GitHub-hosted runners are free, so this runs whenever desktop code or its
+# dependencies change (ADR 0004 amendment), plus on demand.
 on:
+  push:
+    branches: [main]
+    paths:
+      - apps/desktop/**
+      - packages/**
+      - pnpm-lock.yaml
+      - .github/workflows/desktop.yml
+  pull_request:
+    paths:
+      - apps/desktop/**
+      - packages/**
+      - pnpm-lock.yaml
   workflow_dispatch:
     inputs:
       design_capture:

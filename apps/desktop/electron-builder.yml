@@ -1,0 +1,49 @@
+# electron-builder 26 (v27 is alpha and renames keys; verify before upgrading).
+# Code signing, notarization and electron-updater arrive in M1 (docs/BRIEF.md §7).
+appId: com.savas07.bruteforcehr
+productName: BruteForceHR
+copyright: Copyright © 2026 Savas07
+
+directories:
+  # `build/` is gitignored at the repo root, so packaging resources live here.
+  buildResources: resources
+  output: release
+
+# Everything the app needs is bundled into out/ by electron-vite; no node_modules ship.
+files:
+  - out/**/*
+npmRebuild: false
+
+electronFuses:
+  runAsNode: false
+  enableCookieEncryption: true
+  enableNodeOptionsEnvironmentVariable: false
+  enableNodeCliInspectArguments: false
+  enableEmbeddedAsarIntegrityValidation: true
+  onlyLoadAppFromAsar: true
+  loadBrowserProcessSpecificV8Snapshot: false
+  # The renderer is served from app://, never file://.
+  grantFileProtocolExtraPrivileges: false
+
+mac:
+  category: public.app-category.productivity
+  target:
+    - target: dmg
+      arch: [arm64, x64]
+    - target: zip # electron-updater installs from the zip
+      arch: [arm64, x64]
+
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+
+nsis:
+  oneClick: true
+  perMachine: false
+
+publish:
+  provider: github
+  owner: Savas07
+  repo: bruteforcehr-releases
+  releaseType: draft

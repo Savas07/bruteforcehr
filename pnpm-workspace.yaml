@@ -5,3 +5,9 @@ packages:
 # Expo (Metro) and electron-builder both resolve dependencies most reliably from a
 # flat node_modules; see docs/adr/0001-stack.md.
 nodeLinker: hoisted
+
+# Install scripts are opt-in. esbuild needs its postinstall (binary check); electron-winstaller
+# (Squirrel.Windows, unused: the Windows target is NSIS) only copies vendor files.
+allowBuilds:
+  electron-winstaller: false
+  esbuild: true

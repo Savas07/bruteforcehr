@@ -1,0 +1,45 @@
+rules_version = '2';
+
+// Deny by default. Users read and delete only their own files and upload only CV documents of the
+// allowed types and sizes. Cloud Functions use the Admin SDK, which bypasses these rules.
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function isOwner(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    function isUpload(maxBytes, contentTypes) {
+      return request.resource.size > 0
+        && request.resource.size <= maxBytes
+        && request.resource.contentType in contentTypes;
+    }
+
+    function pdfOrDocx() {
+      return [
+        'application/pdf',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+      ];
+    }
+
+    match /users/{uid}/{allPaths=**} {
+      allow read, delete: if isOwner(uid);
+    }
+
+    // CV import sources: PDF, DOCX, JSON Resume, LinkedIn data-export ZIP (Windows browsers report
+    // ZIP files as application/x-zip-compressed).
+    match /users/{uid}/cv-imports/{fileId} {
+      allow create, update: if isOwner(uid)
+        && isUpload(20 * 1024 * 1024, pdfOrDocx().concat([
+          'application/json',
+          'application/zip',
+          'application/x-zip-compressed'
+        ]));
+    }
+
+    // CVs and cover letters rendered on the desktop (printToPDF / DOCX export).
+    match /users/{uid}/rendered/{fileId} {
+      allow create, update: if isOwner(uid) && isUpload(10 * 1024 * 1024, pdfOrDocx());
+    }
+  }
+}

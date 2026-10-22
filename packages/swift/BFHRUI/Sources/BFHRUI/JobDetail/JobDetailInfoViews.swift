@@ -125,6 +125,7 @@ struct JobFactsSection: View {
                 }
             } header: {
                 Text(JobDetailViewStrings.details)
+                    .foregroundStyle(BFHRColor.Fg.secondary)
             }
         }
     }
@@ -234,6 +235,7 @@ struct JobDescriptionSection: View {
             }
         } header: {
             Text(JobDetailViewStrings.about)
+                .foregroundStyle(BFHRColor.Fg.secondary)
         }
     }
 }
@@ -261,8 +263,10 @@ struct JobSourcesSection: View {
                 }
             } header: {
                 Text(JobDetailViewStrings.foundOn(sources.total))
+                    .foregroundStyle(BFHRColor.Fg.secondary)
             } footer: {
                 Text(JobDetailViewStrings.sourcesFootnote)
+                    .foregroundStyle(BFHRColor.Fg.secondary)
             }
         }
     }
@@ -485,6 +489,7 @@ struct JobDetailSkeleton: View {
                 Text(verbatim: "Requirements: 2 of 3 met").font(.bfhr(.subheadline))
             } header: {
                 Text(JobDetailViewStrings.match)
+                    .foregroundStyle(BFHRColor.Fg.secondary)
             }
             Section {
                 ForEach(0..<3, id: \.self) { _ in

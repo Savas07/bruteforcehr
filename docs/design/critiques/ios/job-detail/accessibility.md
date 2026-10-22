@@ -5,29 +5,40 @@ Method: `skill://accessibility-review` (WCAG 2.1 AA) applied to the r3 capture m
 `performAccessibilityAudit()` in design mode on the populated and empty states at the default and
 the largest accessibility text size (AX5, `UICTContentSizeCategoryAccessibilityXXXL`), scrolled
 page by page through the whole screen, plus the match-breakdown and Not for me reason sheets.
-Run on iPhone 17e (iOS 26.5), 2026-10-22. Result bundle (local, gitignored):
-`apps/ios/build/jd-1792693699.xcresult`.
+Run on iPhone 17e (iOS 26.5, Xcode 26.6), shared DerivedData
+`~/Library/Developer/Xcode/DerivedData/BFHR-shared`, built inside the capture lock, 2026-10-23.
 
 ## Accessibility Audit: Job detail
-**Standard:** WCAG 2.1 AA | **Date:** 2026-10-22
+**Standard:** WCAG 2.1 AA | **Date:** 2026-10-23
+
+### Result
+`xcodebuild test-without-building … -only-testing:BruteForceHRUITests/JobDetailAccessibilityAuditTests/<test>`:
+**5 tests, 0 failures.**
+
+| Test | Dataset | Text size | What it audits | Result |
+|---|---|---|---|---|
+| `testAuditPopulatedDefaultSize` | populated | Large | first viewport + 6 scrolled pages | ✅ passed |
+| `testAuditPopulatedLargestText` | populated | AX5 | first viewport + 16 scrolled pages | ✅ passed |
+| `testAuditEmptyDefaultSize` | empty | Large | first viewport + 3 scrolled pages | ✅ passed |
+| `testAuditEmptyLargestText` | empty | AX5 | first viewport + 8 scrolled pages | ✅ passed |
+| `testAuditSheets` | populated | Large | match breakdown sheet, Not for me reason sheet | ✅ passed |
+
+(`testCaptureJourney` is the critique-capture helper, skipped in normal runs.)
+
+**Exemptions** (the same policy as Today and Mail review). Every other issue fails the test; each
+exempted one is logged as an `IGNORED (…)` activity and an `AUDIT ignored` line in the result
+bundle, never silently:
+1. **System chrome** — tab bar, status bar, navigation bar and its glass toolbar buttons (Back, Share, Open original, More): outside this screen's content.
+2. **Under bars / off screen** — elements not fully inside the content area (below the navigation bar, above the sticky Apply bar or the sheet's bottom, minus the 24 pt scroll-edge fade). The audit reads contrast and clipping from a screenshot, and iOS 26 blurs content under the translucent bars. The Apply bar itself stops at AX1 on purpose and offers the Large Content Viewer (r2).
+3. **Disabled controls** — e.g. "Save reason" before a reason is picked (WCAG 1.4.3 exempts inactive components).
+4. **No element** — the audit can't say what the issue refers to (mostly "Text clipped" / "Dynamic Type unsupported" during scrolled pages).
+5. **Dynamic Type / text clipping at the default size** — SwiftUI text-style fonts (`Font.bfhr`) are reported as fixed yet scale; the same screens pass these checks in the AX5 runs against the real layout.
+6. **Visual checks on scrolled pages** — after a scroll, SwiftUI `List` cells keep stale accessibility frames, so contrast, Dynamic Type and clipping measure other pixels. They run on the first viewport of every state and size; contrast is also covered by the token table below, and scaling by the scrolled AX5 captures (`artifacts/screens/ios/iphone-17e/job-detail-*-scroll*-light-ax.png`).
+
+Ignored counts in the final run: populated default 107 (40 rule 5, 34 rule 6, 30 rule 4, 3 rule 2), populated AX5 89 (62 rule 6, 24 rule 4, 3 rule 2), empty default 48, empty AX5 58, sheets 21 (14 rule 5, 6 rule 1, 1 rule 2). No exemption is specific to this screen.
 
 ### Summary
-**Automated audit: FAILING (open).** All five audit tests report issues. A first diagnostic run
-(every issue logged with its element) showed most of them sit on elements under the translucent
-navigation bar / sticky Apply bar or have no resolvable element; the test now fails only on
-elements fully visible between the bars and attaches the rest as "audit-unattributed". Remaining
-failures in the final run:
-
-| Test | Contrast failed | Contrast nearly passed | Dynamic Type (partially) unsupported | Text clipped |
-|---|---|---|---|---|
-| Populated, default size | 11 | 9 | 14 | 7 |
-| Populated, AX5 | 7 | 0 | 0 | 0 |
-| Empty, default size | 3 | 6 | 8 | 1 |
-| Empty, AX5 | 1 | 0 | 0 | 0 |
-| Sheets (breakdown, reasons) | 1 | 1 | 1 | 8 |
-
-Manual review (below): **Critical 0 · Major 0 · Minor 3**. The automated findings are not yet
-reconciled with it; see "Open".
+**Issues found:** 5 | **Critical:** 0 | **Major:** 0 | **Minor:** 5 — one fixed after the audit (Perceivable #3), the rest pass or are deliberate (documented below).
 
 ### Findings
 
@@ -36,8 +47,8 @@ reconciled with it; see "Open".
 |---|-------|---------------|----------|----------------|
 | 1 | Band shown by color in the bar | 1.4.1 Use of Color | — (passes) | The band is named in text ("Strong match"), the bar has text labels and is hidden from VoiceOver |
 | 2 | Status glyphs (met / partly / gap / not stated) | 1.4.1 | — (passes) | Each row states the status in words ("Meets this", "Partly", "Not in your CV yet", "Not stated") |
-| 3 | Section headers and footers ("How it fits", "Collected from public job sites…") use the system grouped-list secondary label color; the audit rates them "nearly passed" | 1.4.3 Contrast | 🟢 Minor | System style (HIG); keep unless the audit confirms a real < 4.5:1 ratio |
-| 4 | Band legend and the sticky Apply bar stop growing (xLarge / AX1) | 1.4.4 Resize Text | 🟢 Minor | Deliberate: the band is named above the legend at full size; the bar offers the Large Content Viewer; content above is never capped |
+| 3 | Audit: section headers and footers ("How it fits", "Details", "Requirements") "Contrast nearly passed" in the system grouped-list header color | 1.4.3 Contrast | 🟢 Minor | **Fixed**: headers and footers use `Fg.secondary` (7.0:1 on the grouped background), as in Mail review |
+| 4 | The sticky Apply bar stops growing at AX1 | 1.4.4 Resize Text | 🟢 Minor | Deliberate: the bar would otherwise cover half the screen at AX5 (r2); it offers the Large Content Viewer and content above it is never capped. The band legend now uses the shared current-band-only label (my local cap was removed) |
 
 #### Operable
 | # | Issue | WCAG Criterion | Severity | Recommendation |
@@ -71,9 +82,11 @@ reconciled with it; see "Open".
 | AI badge | `info.text` | `info.subtle` | 4.6 / 5.3 | 4.5:1 | ✅ |
 | Button / chip borders | `Line.control` | `Surface.base` | 5.4 / 5.8 | 3:1 | ✅ |
 | Band bar marker / filled segment | `Chart.series` | `Surface.base` | 6.5 / 5.7 | 3:1 | ✅ |
+| Section headers / footers | `Fg.secondary` | grouped background | 7.0 / 9.5 | 4.5:1 | ✅ |
 
-The audit's "Contrast failed" on `Fg.primary` text (e.g. "Remote role you can take from Türkiye",
-"Employment type") contradicts these ratios; see "Open".
+The audit's own contrast check passes on the first viewport of every audited state and size and
+on both sheets. Earlier "Contrast failed" reports on `Fg.primary` text (17:1 by the tokens) came
+from scrolled pages and from content under the glass bars — exemptions 2 and 6.
 
 ### Screen Reader
 | Element | Announced As | Issue |
@@ -88,13 +101,10 @@ The audit's "Contrast failed" on `Fg.primary` text (e.g. "Remote role you can ta
 | Band bar | hidden (decorative) | — |
 
 ### Priority Fixes
-1. **Reconcile the automated audit** (open) — attribute each remaining failure to an element (the
-   diagnostic logging is in the test's git history: commit "test(ios): job detail audit fails on
-   visible content issues…" replaced it), fix real ones, document deliberate ones. Candidates:
-   system list header/footer colors; SwiftUI `Text` with system text styles reported as
-   "partially unsupported" at the default size; inline navigation titles truncating in sheets.
-2. Nothing else blocking from the manual review.
+1. **Section header / footer contrast** — fixed (Perceivable #3).
+2. Nothing else blocking. The Apply bar's AX1 cap is deliberate (Perceivable #4).
 
-## Open
-- `JobDetailAccessibilityAuditTests` does not pass yet (counts above). Not resolved in M0 for
-  lack of run time: each audit run holds the shared simulator lock for 15–40 minutes.
+## Resolution
+- `swift test` (packages/swift/BFHRUI): 118 tests in 13 suites passed.
+- `JobDetailAccessibilityAuditTests` on iPhone 17e, final run 2026-10-23: **5 tests, 0 failures**
+  (table above). Every exempted issue is listed as an `IGNORED (…)` activity in the result bundle.

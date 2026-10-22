@@ -79,6 +79,7 @@ public struct JobDetailScreen: View {
                     }
                 } footer: {
                     Text(JobDetailViewStrings.notForMeFooter)
+                        .foregroundStyle(BFHRColor.Fg.secondary)
                 }
             }
         }
@@ -106,6 +107,7 @@ public struct JobDetailScreen: View {
                 .padding(.vertical, BFHRSpace.s1)
             } header: {
                 Text(JobDetailViewStrings.match)
+                    .foregroundStyle(BFHRColor.Fg.secondary)
             }
         case .noCV:
             Section {
@@ -121,6 +123,7 @@ public struct JobDetailScreen: View {
                 Button { open("bruteforcehr://cvs") } label: { Text(JobDetailViewStrings.openCVs) }
             } header: {
                 Text(JobDetailViewStrings.match)
+                    .foregroundStyle(BFHRColor.Fg.secondary)
             }
         case .scored(let match):
             Section {
@@ -138,8 +141,10 @@ public struct JobDetailScreen: View {
                 }
             } header: {
                 Text(JobDetailViewStrings.match)
+                    .foregroundStyle(BFHRColor.Fg.secondary)
             } footer: {
                 Text(JobDetailViewStrings.explainer)
+                    .foregroundStyle(BFHRColor.Fg.secondary)
             }
             if !match.topReasons.isEmpty {
                 Section {
@@ -148,8 +153,9 @@ public struct JobDetailScreen: View {
                     }
                 } header: {
                     Text(JobDetailViewStrings.reasons)
+                        .foregroundStyle(BFHRColor.Fg.secondary)
                 } footer: {
-                    if match.rationale == nil { Text(JobDetailViewStrings.noRationale) }
+                    if match.rationale == nil { Text(JobDetailViewStrings.noRationale).foregroundStyle(BFHRColor.Fg.secondary) }
                 }
             }
             if !match.topGaps.isEmpty {
@@ -160,6 +166,7 @@ public struct JobDetailScreen: View {
                     }
                 } header: {
                     Text(JobDetailViewStrings.gaps)
+                        .foregroundStyle(BFHRColor.Fg.secondary)
                 }
             }
             if let rationale = match.rationale {
@@ -167,6 +174,7 @@ public struct JobDetailScreen: View {
                     AISummaryBlock(rationale: rationale, feedback: model.summaryFeedback, onRate: model.rateSummary)
                 } header: {
                     Text(JobDetailViewStrings.summary)
+                        .foregroundStyle(BFHRColor.Fg.secondary)
                 }
             }
         }

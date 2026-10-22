@@ -11,6 +11,7 @@ public struct JobDetailScreen: View {
     @Environment(ToastCenter.self) private var toasts: ToastCenter?
     @Environment(\.openURL) private var openURL
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.bfhrReload) private var reload
     @State private var saveCount = 0
     @State private var confirmCount = 0
     @State private var showsTitle = false
@@ -30,7 +31,7 @@ public struct JobDetailScreen: View {
             PaneError(
                 failure,
                 title: failure.kind == .notFound ? JobDetailViewStrings.notFoundTitle : JobDetailViewStrings.errorTitle,
-                retry: model.reload,
+                retry: reload,
                 goBack: { dismiss() }
             )
         }

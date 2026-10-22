@@ -9,6 +9,7 @@ import {
   type Application,
   type ApplicationStatus,
   canTransition,
+  isActiveStatus,
   suggestGhosted,
   TERMINAL_STATUSES,
 } from "@bfhr/core";
@@ -616,7 +617,9 @@ function applyOne(
         // Reaching Applied or beyond records the application date when none was set (core `transition`).
         appliedAt:
           selected.summary.appliedAt ??
-          (ACTIVE_STATUSES.indexOf(move.to) >= ACTIVE_STATUSES.indexOf("applied") ? model.justNow : null),
+          (isActiveStatus(move.to) && ACTIVE_STATUSES.indexOf(move.to) >= ACTIVE_STATUSES.indexOf("applied")
+            ? model.justNow
+            : null),
       },
       timeline: [
         event,

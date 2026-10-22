@@ -10,6 +10,8 @@
 		BF0000000000000000000045 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = BF0000000000000000000042 /* FirebaseAuth */; };
 		BF0000000000000000000046 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = BF0000000000000000000043 /* FirebaseFirestore */; };
 		BF0000000000000000000047 /* BFHRCore in Frameworks */ = {isa = PBXBuildFile; productRef = BF0000000000000000000044 /* BFHRCore */; };
+		BF0000000000000000000048 /* BFHRUI in Frameworks */ = {isa = PBXBuildFile; productRef = BF000000000000000000004A /* BFHRUI */; };
+		BF0000000000000000000049 /* BFHRDesignTokens in Frameworks */ = {isa = PBXBuildFile; productRef = BF000000000000000000004B /* BFHRDesignTokens */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -61,6 +63,8 @@
 				BF0000000000000000000045 /* FirebaseAuth in Frameworks */,
 				BF0000000000000000000046 /* FirebaseFirestore in Frameworks */,
 				BF0000000000000000000047 /* BFHRCore in Frameworks */,
+				BF0000000000000000000048 /* BFHRUI in Frameworks */,
+				BF0000000000000000000049 /* BFHRDesignTokens in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -102,6 +106,7 @@
 				BF0000000000000000000011 /* Sources */,
 				BF0000000000000000000012 /* Frameworks */,
 				BF0000000000000000000013 /* Resources */,
+				BF0000000000000000000014 /* Copy design fixtures (Debug only) */,
 			);
 			buildRules = (
 			);
@@ -115,6 +120,8 @@
 				BF0000000000000000000042 /* FirebaseAuth */,
 				BF0000000000000000000043 /* FirebaseFirestore */,
 				BF0000000000000000000044 /* BFHRCore */,
+				BF000000000000000000004A /* BFHRUI */,
+				BF000000000000000000004B /* BFHRDesignTokens */,
 			);
 			productName = BruteForceHR;
 			productReference = BF0000000000000000000004 /* BruteForceHR.app */;
@@ -176,6 +183,8 @@
 			packageReferences = (
 				BF0000000000000000000040 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 				BF0000000000000000000041 /* XCLocalSwiftPackageReference "../../packages/swift/BFHRCore" */,
+				BF000000000000000000004C /* XCLocalSwiftPackageReference "../../packages/swift/BFHRUI" */,
+				BF000000000000000000004D /* XCLocalSwiftPackageReference "../../packages/ui-tokens/swift/BFHRDesignTokens" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = BF0000000000000000000003 /* Products */;
@@ -204,6 +213,33 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		BF0000000000000000000014 /* Copy design fixtures (Debug only) */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/../../packages/fixtures/conformance/populated.json",
+				"$(SRCROOT)/../../packages/fixtures/conformance/empty.json",
+			);
+			name = "Copy design fixtures (Debug only)";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(BFHR_DESIGN_FIXTURES_DIR)/populated.json",
+				"$(BFHR_DESIGN_FIXTURES_DIR)/empty.json",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# Design mode reads packages/fixtures/conformance/*.json from BFHRFixtures/ in the app bundle\n# (BFHRUIFixtures/FixtureStore.swift). BFHR_DESIGN_FIXTURES_DIR points into the app only in Debug;\n# in Release it is a folder in DerivedSources and nothing is copied, so the bundle has no fixtures.\nset -eu\nif [ \"${CONFIGURATION}\" = \"Debug\" ]; then\n  mkdir -p \"${BFHR_DESIGN_FIXTURES_DIR}\"\n  cp \"${SRCROOT}/../../packages/fixtures/conformance/populated.json\" \"${SRCROOT}/../../packages/fixtures/conformance/empty.json\" \"${BFHR_DESIGN_FIXTURES_DIR}/\"\nfi\n";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		BF0000000000000000000011 /* Sources */ = {
@@ -357,6 +393,7 @@
 		BF0000000000000000000034 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				BFHR_DESIGN_FIXTURES_DIR = "$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/BFHRFixtures";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;
@@ -391,6 +428,7 @@
 		BF0000000000000000000035 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				BFHR_DESIGN_FIXTURES_DIR = "$(DERIVED_FILE_DIR)/BFHRFixtures-unused";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;
@@ -497,6 +535,14 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = ../../packages/swift/BFHRCore;
 		};
+		BF000000000000000000004C /* XCLocalSwiftPackageReference "../../packages/swift/BFHRUI" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../../packages/swift/BFHRUI;
+		};
+		BF000000000000000000004D /* XCLocalSwiftPackageReference "../../packages/ui-tokens/swift/BFHRDesignTokens" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../../packages/ui-tokens/swift/BFHRDesignTokens;
+		};
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCRemoteSwiftPackageReference section */
@@ -524,6 +570,14 @@
 		BF0000000000000000000044 /* BFHRCore */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = BFHRCore;
+		};
+		BF000000000000000000004A /* BFHRUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = BFHRUI;
+		};
+		BF000000000000000000004B /* BFHRDesignTokens */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = BFHRDesignTokens;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

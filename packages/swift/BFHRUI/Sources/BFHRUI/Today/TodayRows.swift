@@ -54,20 +54,6 @@ struct InlineLabel<Content: View>: View {
     }
 }
 
-/// The company monogram at the head of a row. Decorative (rows name the company), so at
-/// accessibility text sizes it steps aside and the text gets the full row width.
-struct RowMonogram: View {
-    let company: CompanyIdentity
-    var badge: String?
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-
-    var body: some View {
-        if !dynamicTypeSize.isAccessibilitySize {
-            CompanyMonogram(company, badge: badge)
-        }
-    }
-}
-
 // MARK: Next up
 
 /// The next interview within 48 h (Tana "Next Up" + Fireflies prep): what, who, when (with the
@@ -80,7 +66,7 @@ struct NextUpCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: BFHRSpace.s3) {
             HStack(alignment: .top, spacing: BFHRSpace.s3) {
-                RowMonogram(company: next.company, badge: "calendar")
+                CompanyMonogram(next.company, badge: "calendar", hidesAtAccessibilitySizes: true)
                 VStack(alignment: .leading, spacing: BFHRSpace.s1) {
                     Text(TodayStrings.interviewKind(next.kind, round: next.round))
                         .font(.bfhr(.footnote, emphasized: true))
@@ -213,7 +199,7 @@ struct ReviewRow: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: BFHRSpace.s3) {
-            RowMonogram(company: proposal.company ?? CompanyIdentity(name: proposal.sender.name ?? proposal.sender.address), badge: proposal.category.glyph)
+            CompanyMonogram(proposal.company ?? CompanyIdentity(name: proposal.sender.name ?? proposal.sender.address), badge: proposal.category.glyph, hidesAtAccessibilitySizes: true)
             VStack(alignment: .leading, spacing: BFHRSpace.s1) {
                 Text(Strings.classification(proposal.category, hedged: proposal.isHedged))
                     .font(.bfhr(.headline))
@@ -257,7 +243,7 @@ struct FollowUpRow: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: BFHRSpace.s3) {
-            RowMonogram(company: nudge.company)
+            CompanyMonogram(nudge.company, hidesAtAccessibilitySizes: true)
             VStack(alignment: .leading, spacing: BFHRSpace.s1) {
                 Text(verbatim: "\(nudge.company.name) · \(nudge.role)")
                     .font(.bfhr(.headline))
@@ -289,7 +275,7 @@ struct DeadlineRow: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: BFHRSpace.s3) {
-            RowMonogram(company: deadline.company, badge: TodayStrings.deadlineGlyph(deadline.kind))
+            CompanyMonogram(deadline.company, badge: TodayStrings.deadlineGlyph(deadline.kind), hidesAtAccessibilitySizes: true)
             VStack(alignment: .leading, spacing: BFHRSpace.s1) {
                 Text(verbatim: TodayStrings.deadlineTitle(deadline))
                     .font(.bfhr(.headline))
@@ -331,7 +317,7 @@ struct MatchRow: View {
         HStack(alignment: .top, spacing: BFHRSpace.s3) {
             Button(action: onOpen) {
                 HStack(alignment: .top, spacing: BFHRSpace.s3) {
-                    RowMonogram(company: match.company)
+                    CompanyMonogram(match.company, hidesAtAccessibilitySizes: true)
                     VStack(alignment: .leading, spacing: BFHRSpace.s1) {
                         Text(verbatim: match.title)
                             .font(.bfhr(.headline))

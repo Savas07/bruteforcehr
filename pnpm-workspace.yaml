@@ -1,0 +1,7 @@
+packages:
+  - apps/*
+  - packages/*
+
+# Expo (Metro) and electron-builder both resolve dependencies most reliably from a
+# flat node_modules; see docs/adr/0001-stack.md.
+nodeLinker: hoisted

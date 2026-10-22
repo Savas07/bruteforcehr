@@ -1,0 +1,53 @@
+# dependencies
+node_modules/
+.pnpm-store/
+
+# build output
+dist/
+out/
+build/
+release/
+.turbo/
+coverage/
+*.tsbuildinfo
+
+# Expo / React Native
+.expo/
+apps/ios/ios/
+apps/ios/android/
+*.ipa
+*.dSYM.zip
+
+# Astro
+apps/web/.astro/
+
+# Firebase
+.firebase/
+*-debug.log
+firebase-debug.*.log
+ui-debug.log
+firestore-debug.log
+apps/functions/lib/
+
+# Mobbin images are third-party copyrighted screenshots: never commit (docs/BRIEF.md §5.2)
+design-refs/
+
+# screenshots captured for critique runs live outside git; critique text is committed
+artifacts/
+
+# secrets
+.env
+.env.*
+!.env.example
+*.p8
+*.p12
+*.mobileprovision
+service-account*.json
+.secret.local
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json

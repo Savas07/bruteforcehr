@@ -85,7 +85,8 @@ function Requirement({ item, copy }: { item: RequirementVM; copy: JobDetailCopyV
       <Icon aria-hidden="true" className={cx("mt-0.5 size-4 shrink-0", statusTone[item.status])} strokeWidth={1.75} />
       <div className="min-w-0">
         <p className="text-callout">
-          <span className="sr-only">{item.statusLabel}: </span>
+          {/* Status for screen readers, unless the item's text already says it. */}
+          {!item.text.includes(item.statusLabel) && <span className="sr-only">{item.statusLabel}: </span>}
           {item.text}
           <span className="text-fg-tertiary text-footnote whitespace-nowrap">
             {" · "}

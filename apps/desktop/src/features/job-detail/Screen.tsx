@@ -8,7 +8,7 @@
 import { layout } from "@bfhr/ui-tokens";
 import { Briefcase, Search } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { defineMessages, useIntl } from "react-intl";
 import { destinationMessages } from "../../lib/destinations";
 import { openJobUrl } from "../../lib/desktop";
@@ -91,6 +91,9 @@ const messages = defineMessages({
   notApplyingToast: { id: "job-detail.view.notApplyingToast", defaultMessage: "Kept in Saved: {company}" },
 });
 
+/** A list row that should get focus once it renders as the selection (see `select`). */
+let rowToFocus: string | null = null;
+
 /** Optimistic, per-session state of the screen's actions (no backend in M0). */
 function useLocalState() {
   const [saved, setSaved] = useState<ReadonlyMap<string, boolean>>(new Map());
@@ -164,13 +167,26 @@ export default function JobDetailScreen({ model, params }: ScreenProps<JobDetail
   const selectedId = data?.selectedJobId ?? null;
   const visibleIds = rows.map((row) => row.jobId);
 
-  const select = (jobId: string) =>
+  const select = (jobId: string) => {
+    // Keep keyboard focus on the list across the route change (`/jobs` → `/jobs/$jobId` remounts
+    // the screen) and when the focused row is hidden.
+    const active = document.activeElement;
+    if (active === document.body || (active instanceof Node && listRef.current?.contains(active)))
+      rowToFocus = jobId;
     void navigate({
       to: "/jobs/$jobId",
       params: { jobId },
       search: (previous: Readonly<Record<string, unknown>>) => previous,
       replace: true,
     });
+  };
+  useEffect(() => {
+    if (rowToFocus === null || rowToFocus !== selectedId) return;
+    const element = listRef.current?.querySelector<HTMLElement>(`[data-nav-id="${CSS.escape(rowToFocus)}"]`);
+    if (!element) return;
+    rowToFocus = null;
+    element.focus();
+  });
   const neighbour = (jobId: string, without: ReadonlySet<string>) => {
     const index = visibleIds.indexOf(jobId);
     const rest = visibleIds.filter((id) => !without.has(id));
@@ -242,7 +258,13 @@ export default function JobDetailScreen({ model, params }: ScreenProps<JobDetail
     setReasonsOpen(withReason && index >= 0);
     if (selectedId === row.jobId) {
       const next = neighbour(row.jobId, new Set(jobIds));
-      if (next) select(next);
+      if (next) {
+        // The focused row (or the detail showing it) is going away: continue triage from the next row.
+        if (!withReason) rowToFocus = next;
+        select(next);
+        // With a reason the popover takes focus; it hands it back to the list when it closes.
+        if (withReason) rowToFocus = null;
+      }
       if (narrow) setDetailOpen(false);
     }
     toast.show({

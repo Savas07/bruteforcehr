@@ -55,10 +55,11 @@ function Row({
 }) {
   const intl = useIntl();
   const titleId = `job-row-${row.jobId}`;
+  const companyId = `job-row-company-${row.jobId}`;
   return (
     <li
       {...nav.itemProps(row.jobId)}
-      aria-labelledby={titleId}
+      aria-labelledby={`${titleId} ${companyId}`}
       onClick={onSelect}
       className={cx(
         "group relative flex cursor-default gap-3 rounded-md px-3 py-3 outline-offset-[-2px] focus-visible:outline-2",
@@ -71,7 +72,7 @@ function Row({
           {row.title}
         </p>
         <p className="text-fg-secondary text-callout truncate">
-          {row.company.name}
+          <span id={companyId}>{row.company.name}</span>
           {row.where && ` · ${row.where}`}
         </p>
         <p className={cx("text-footnote", row.salary.provenance === "notStated" ? "text-fg-tertiary" : "text-fg-secondary")}>
@@ -236,7 +237,7 @@ export function JobList({
         <span className="flex flex-wrap items-center justify-end gap-x-2 gap-y-0.5 *:whitespace-nowrap">
           {stamp}
           <Hint label={list.rankingInfo}>
-            <button type="button" className="inline-flex items-center gap-1 rounded-sm">
+            <button type="button" className="inline-flex min-h-6 items-center gap-1 rounded-sm">
               {intl.formatMessage(messages.sortedBy, { sort: list.sortLabel })}
               <Info aria-hidden="true" className="size-3.5" strokeWidth={1.75} />
               <span className="sr-only">. {list.rankingInfo}</span>

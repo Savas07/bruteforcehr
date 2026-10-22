@@ -241,7 +241,7 @@ export function DetailPane({
               </div>
             </div>
             {chips.length > 0 && (
-              <ul className="flex flex-wrap gap-1.5" aria-label={copy.details}>
+              <ul className="flex flex-wrap gap-1.5">
                 {chips.map((chip) => (
                   <FactChip key={chip}>{chip}</FactChip>
                 ))}
@@ -357,10 +357,7 @@ export function DetailPane({
               )}
             </div>
 
-            <aside
-              aria-label={copy.details}
-              className="contents @min-[760px]:flex @min-[760px]:flex-col @min-[760px]:gap-4"
-            >
+            <div className="contents @min-[760px]:flex @min-[760px]:flex-col @min-[760px]:gap-4">
               <div className="@max-[759px]:order-1">
                 <DetailsCard facts={detail.facts} copy={copy} />
               </div>
@@ -368,7 +365,7 @@ export function DetailPane({
               <div className="@max-[759px]:order-3">
                 <SourcesList sources={detail.sources} copy={copy} onOpen={actions.onOpenUrl} />
               </div>
-            </aside>
+            </div>
           </div>
         </article>
       </div>

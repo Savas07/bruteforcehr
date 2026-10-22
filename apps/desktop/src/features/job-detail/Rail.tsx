@@ -84,7 +84,9 @@ function SourceRow({
           href={row.url}
           target="_blank"
           rel="noreferrer noopener"
-          className="text-fg-link text-callout inline-flex items-center gap-0.5 font-medium hover:underline"
+          // Explicit: WebKit (WKWebView) skips links on Tab unless the user enabled it system-wide.
+          tabIndex={0}
+          className="text-fg-link text-callout inline-flex min-h-6 items-center gap-0.5 font-medium hover:underline"
           onClick={(event) => {
             event.preventDefault();
             onOpen(row.url);

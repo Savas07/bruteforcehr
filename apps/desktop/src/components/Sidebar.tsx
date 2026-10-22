@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useRouterState } from "@tanstack/react-router";
 import { Keyboard, Search, type LucideIcon } from "lucide-react";
 import { Tooltip } from "radix-ui";
 import type { ReactNode } from "react";
@@ -7,6 +7,7 @@ import { chrome } from "../lib/desktop";
 import { destinationMessages, destinations } from "../lib/destinations";
 import { shortcutById, shortcutKeys, type Shortcut } from "../lib/shortcuts";
 import { Keycaps } from "../shared/ui/Keycaps";
+import { SidebarChildrenOutlet } from "../shared/ui/SidebarChildren";
 import { SyncStatus } from "../shared/ui/SyncStatus";
 import { destinationIcons } from "./icons";
 
@@ -83,6 +84,7 @@ export function Sidebar({
   onOpenShortcuts: () => void;
 }) {
   const intl = useIntl();
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
   const isMac = chrome.platform === "macos";
   return (
     <nav
@@ -118,6 +120,10 @@ export function Sidebar({
                   <span className={labelClass}>{label}</span>
                 </Link>
               </WithHint>
+              {/* The active section's nested navigation (src/shared/ui/SidebarChildren.tsx). */}
+              {(pathname === destination.path || pathname.startsWith(`${destination.path}/`)) && (
+                <SidebarChildrenOutlet destination={destination.id} />
+              )}
             </li>
           );
         })}

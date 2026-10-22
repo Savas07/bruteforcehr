@@ -142,28 +142,6 @@ final class TrackerBoardAccessibilityAuditTests: XCTestCase {
         try snapshot("not-selected-toast")
     }
 
-    /// Drag a row onto a stage of the strip: the chip under the finger takes the drop, the move
-    /// goes through the state machine and the Undo toast names it.
-    @MainActor
-    func testDragOntoStageStrip() throws {
-        let app = launch(dataset: "populated", contentSize: nil)
-        let row = app.buttons.containing(NSPredicate(format: "label CONTAINS %@", "Aire Digital Health")).firstMatch
-        let chip = app.buttons.containing(NSPredicate(format: "label BEGINSWITH %@", "Preparing")).firstMatch
-        XCTAssertTrue(row.waitForExistence(timeout: 10))
-        XCTAssertTrue(chip.waitForExistence(timeout: 10))
-        let toast = app.staticTexts["Aire Digital Health · moved to Preparing"]
-        // The lift starts before the context menu settles; a longer press shows the menu first.
-        for press in [0.5, 0.8, 1.2] where !toast.exists {
-            row.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
-                .press(forDuration: press, thenDragTo: chip.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)), withVelocity: .slow, thenHoldForDuration: 0.8)
-            _ = toast.waitForExistence(timeout: 3)
-            log("drag: press \(press) s → \(toast.exists ? "dropped" : "no drop")")
-            if !toast.exists, app.buttons["Move to…"].exists { app.tap() }
-        }
-        XCTAssertTrue(toast.exists)
-        try snapshot("drag-dropped")
-    }
-
     // MARK: Helpers
 
     /// The sheet's title (a navigation subtitle names the application).

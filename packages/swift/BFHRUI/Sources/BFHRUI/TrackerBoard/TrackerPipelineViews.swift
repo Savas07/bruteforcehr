@@ -3,7 +3,7 @@ import BFHRDesignTokens
 import SwiftUI
 
 // The Pipeline's parts (tracker.md "Components needed"): ApplicationRow, StageIndexStrip,
-// PipelineSection header, the drag drop panel and the skeleton.
+// PipelineSection header and the skeleton.
 
 /// One application (`ApplicationRow`): monogram (envelope badge when the last move came from an
 /// email), role, company, days in stage, and a second line only when there is something next.
@@ -107,39 +107,16 @@ struct NextStepLine: View {
     }
 }
 
-/// Drop handling shared by the strip and the drop panel: which stage is under the finger, and
-/// what to do when it changes or a row lands.
-struct StageDrop {
-    var hovered: ApplicationStatus?
-    var onTarget: (ApplicationStatus, Bool) -> Void
-    var onDrop: ([String], ApplicationStatus) -> Bool
-}
-
-extension View {
-    /// Makes a stage chip a drop target for a dragged application id.
-    func stageDropTarget(_ status: ApplicationStatus, _ drop: StageDrop) -> some View {
-        dropDestination(for: String.self) { items, _ in
-            drop.onDrop(items, status)
-        } isTargeted: { targeted in
-            drop.onTarget(status, targeted)
-        }
-    }
-}
-
 /// The stage index strip (`StageIndexStrip`): one tab per section with its count. Empty stages
-/// are dimmed but still tappable; a tap scrolls to (and opens) that section. While a row is
-/// dragged, each chip is a drop target: the one under the finger fills with the accent and grows.
+/// are dimmed but still tappable; a tap scrolls to (and opens) that section.
 struct StageStrip: View {
     let stages: [StageCount]
-    let drop: StageDrop
     let onSelect: (ApplicationStatus) -> Void
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: BFHRSpace.s2) {
                 ForEach(stages) { stage in
-                    let isHovered = drop.hovered == stage.status
                     Button { onSelect(stage.status) } label: {
                         HStack(spacing: BFHRSpace.s1) {
                             ToneDot(tone: stage.status.tone)
@@ -154,28 +131,17 @@ struct StageStrip: View {
                         .foregroundStyle(stage.isEmpty ? BFHRColor.Fg.secondary : BFHRColor.Fg.primary)
                         .padding(.horizontal, BFHRSpace.s3)
                         .frame(minHeight: BFHRHitTarget.minimum)
-                        .background(
-                            isHovered ? BFHRColor.Accent.subtle : stage.isEmpty ? Color.clear : BFHRColor.Surface.sunken,
-                            in: Capsule()
-                        )
-                        .overlay(
-                            Capsule().strokeBorder(
-                                isHovered ? BFHRColor.Accent.solid : BFHRColor.Line.subtle,
-                                lineWidth: isHovered ? BFHRBorderWidth.thick : BFHRBorderWidth.hairline
-                            )
-                        )
-                        .scaleEffect(isHovered && !reduceMotion ? 1.06 : 1)
+                        .background(stage.isEmpty ? Color.clear : BFHRColor.Surface.sunken, in: Capsule())
+                        .overlay(Capsule().strokeBorder(BFHRColor.Line.subtle, lineWidth: BFHRBorderWidth.hairline))
                         .contentShape(Capsule())
                     }
                     .buttonStyle(.plain)
-                    .stageDropTarget(stage.status, drop)
                     .accessibilityElement(children: .combine)
                     .accessibilityHint(Text(TrackerBoardStrings.stageHint))
                 }
             }
             .padding(.horizontal, BFHRSpace.s4)
             .padding(.vertical, BFHRSpace.s1)
-            .animation(BFHRMotion.animation(.fast, easing: .standard, reduceMotion: reduceMotion), value: drop.hovered)
         }
         .accessibilityElement(children: .contain)
         .accessibilityLabel(Text(TrackerBoardStrings.stagesLabel))
@@ -247,56 +213,6 @@ struct StageSectionHeader: View {
         }
         .textCase(nil)
         .frame(minHeight: BFHRHitTarget.minimum)
-    }
-}
-
-/// While an application is dragged and the strip has scrolled away: every stage as a drop chip
-/// pinned over the top of the list, so a long move (Saved → Offer, or to an outcome) needs no
-/// scrolling. The title names the destination under the finger ("Move to Screening"); targets the
-/// state machine refuses are dimmed and explain themselves in a toast if dropped on.
-struct DropPanel: View {
-    let targets: [MoveTarget]
-    let drop: StageDrop
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: BFHRSpace.s2) {
-            Text(drop.hovered.map(TrackerBoardStrings.moveTo) ?? TrackerBoardStrings.dropHint)
-                .font(.bfhr(.subheadline, emphasized: true))
-                .foregroundStyle(BFHRColor.Fg.primary)
-            ChipFlow(spacing: BFHRSpace.s2) {
-                ForEach(targets) { target in
-                    chip(target)
-                }
-            }
-        }
-        .padding(BFHRSpace.s3)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(BFHRColor.Surface.elevated, in: BFHRRadius.shape(BFHRRadius.lg))
-        .overlay(BFHRRadius.shape(BFHRRadius.lg).strokeBorder(BFHRColor.Line.subtle, lineWidth: BFHRBorderWidth.hairline))
-        .bfhrElevation(.overlay)
-        .padding(.horizontal, BFHRSpace.s3)
-        .padding(.top, BFHRSpace.s2)
-        .animation(BFHRMotion.animation(.fast, easing: .standard, reduceMotion: reduceMotion), value: drop.hovered)
-    }
-
-    private func chip(_ target: MoveTarget) -> some View {
-        let isHovered = drop.hovered == target.status
-        return HStack(spacing: BFHRSpace.s1) {
-            ToneDot(tone: target.status.tone)
-            Text(target.status.label)
-                .font(.bfhr(.subheadline, emphasized: isHovered))
-            if target.isCurrent {
-                Image(systemName: "checkmark").font(.bfhr(.caption1, emphasized: true))
-            }
-        }
-        .foregroundStyle(target.isEnabled ? BFHRColor.Fg.primary : BFHRColor.Fg.disabled)
-        .padding(.horizontal, BFHRSpace.s3)
-        .frame(minHeight: BFHRHitTarget.minimum)
-        .background(isHovered ? BFHRColor.Accent.subtle : BFHRColor.Surface.sunken, in: Capsule())
-        .overlay(Capsule().strokeBorder(isHovered ? BFHRColor.Accent.solid : BFHRColor.Line.subtle, lineWidth: isHovered ? BFHRBorderWidth.thick : BFHRBorderWidth.hairline))
-        .scaleEffect(isHovered && !reduceMotion ? 1.06 : 1)
-        .stageDropTarget(target.status, drop)
     }
 }
 

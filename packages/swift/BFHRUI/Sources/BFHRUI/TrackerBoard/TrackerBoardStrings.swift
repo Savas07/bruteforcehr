@@ -27,10 +27,9 @@ enum TrackerBoardStrings {
     static let closeApplication = LocalizedStringResource.bfhr("tracker.action.close", default: "Close…", table: "TrackerBoard", comment: "Row action: opens the outcome sheet (Not selected, Withdrawn, No response, Accepted, Declined).")
     static let closeTitle = LocalizedStringResource.bfhr("tracker.sheet.close.title", default: "Close application", table: "TrackerBoard", comment: "Title of the outcome sheet.")
     static let moveFailed = LocalizedStringResource.bfhr("tracker.toast.moveFailed", default: "That move isn't available from this stage.", table: "TrackerBoard")
-    static let dropHint = LocalizedStringResource.bfhr("tracker.drop.hint", default: "Drop on a stage to move it", table: "TrackerBoard", comment: "Drop panel title while dragging an application.")
 
     static func moveTo(_ status: ApplicationStatus) -> LocalizedStringResource {
-        .bfhr("tracker.action.advance", default: "Move to \(status.label)", table: "TrackerBoard", comment: "Leading swipe and drop target label. %@ = status.")
+        .bfhr("tracker.action.advance", default: "Move to \(status.label)", table: "TrackerBoard", comment: "Leading swipe / menu action: move to the next stage. %@ = status.")
     }
 
     static func noReply(_ days: Int) -> LocalizedStringResource {

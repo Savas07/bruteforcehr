@@ -157,13 +157,13 @@ public struct MailReviewScreen: View {
         .accessibilityLabel(Text(MailViewStrings.chipFilters))
     }
 
-    /// "All accounts ▾ · Checked 6 min. ago"; offline: "Last checked 07:24" + when new email
+    /// "All accounts ▾   Checked 6 min. ago"; offline: "Last checked 07:24" + when new email
     /// arrives. At accessibility sizes the scope and the time stack instead of squeezing.
     private var syncLine: some View {
         let stacked = dynamicTypeSize.isAccessibilitySize
         let layout = stacked
             ? AnyLayout(VStackLayout(alignment: .leading, spacing: 0))
-            : AnyLayout(HStackLayout(alignment: .firstTextBaseline, spacing: BFHRSpace.s1))
+            : AnyLayout(HStackLayout(alignment: .firstTextBaseline, spacing: BFHRSpace.s3))
         return VStack(alignment: .leading, spacing: 2) {
             layout {
                 if model.accounts.count > 1 {
@@ -183,12 +183,6 @@ public struct MailReviewScreen: View {
                     .fixedSize(horizontal: !stacked, vertical: false)
                     .accessibilityLabel(Text(MailViewStrings.scopeMenu))
                     .accessibilityValue(scopeText)
-                    if !stacked {
-                        Text(verbatim: "·")
-                            .font(.bfhr(.footnote))
-                            .foregroundStyle(BFHRColor.Fg.secondary)
-                            .accessibilityHidden(true)
-                    }
                 }
                 if model.connection.isOffline, let checked = model.lastChecked {
                     StaleStamp(checked, kind: .lastChecked)

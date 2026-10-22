@@ -75,8 +75,15 @@ function Row({
           <span id={companyId}>{row.company.name}</span>
           {row.where && ` · ${row.where}`}
         </p>
-        <p className={cx("text-footnote", row.salary.provenance === "notStated" ? "text-fg-tertiary" : "text-fg-secondary")}>
-          {row.salary.text}
+        <p
+          className={cx(
+            "text-footnote",
+            row.salary.provenance === "notStated" ? "text-fg-tertiary" : "text-fg-secondary",
+          )}
+          title={row.salary.shortText === row.salary.text ? undefined : row.salary.text}
+        >
+          <span aria-hidden="true">{row.salary.shortText}</span>
+          <span className="sr-only">{row.salary.text}</span>
         </p>
         <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
           {row.match ? (
@@ -101,7 +108,12 @@ function Row({
         <span className="flex items-center gap-1">
           {row.pendingSync && <SyncGlyph />}
           {saved && !row.status && (
-            <BookmarkCheck aria-label={copy.saved} role="img" className="text-accent-text size-4" strokeWidth={1.75} />
+            <BookmarkCheck
+              aria-label={copy.saved}
+              role="img"
+              className="text-accent-text size-4"
+              strokeWidth={1.75}
+            />
           )}
         </span>
       </div>

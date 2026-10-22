@@ -66,7 +66,7 @@ public enum Strings {
 
     // AI and provenance (decisions.md D13, components.md SourceTag)
     public static let aiAssisted = LocalizedStringResource.bfhr("ai.badge", default: "AI-assisted")
-    public static let aiSummaryLabel = LocalizedStringResource.bfhr("ai.summaryLabel", default: "AI summary · can be wrong")
+    public static let aiSummaryLabel = LocalizedStringResource.bfhr("ai.summaryLabel", default: "Summary · can be wrong")
     public static let aiDisclaimer = LocalizedStringResource.bfhr("ai.disclaimer", default: "Suggested by Claude. Check names, numbers and dates before you use it.")
     public static let needsALook = LocalizedStringResource.bfhr("confidence.needsALook", default: "Needs a look", comment: "Low-confidence tag on proposals and imported fields. Amber, never red.")
 

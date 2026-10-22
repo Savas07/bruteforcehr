@@ -53,7 +53,11 @@ describe("buildJobDetailModel — list pane", () => {
       title: "Frontend Engineer",
       company: { name: "Brisk Payments", monogram: "BP" },
       where: "Remote · Europe, including Türkiye (CET ±3 h)",
-      salary: { provenance: "stated", text: "€55,000–€68,000 a year · from employer" },
+      salary: {
+        provenance: "stated",
+        text: "€55,000–€68,000 a year · from employer",
+        shortText: "€55,000–€68,000 a year · employer",
+      },
       match: { score: 92, band: "strong", bandLabel: "Strong" },
       scoreCaption: "92 of 100",
       status: { key: "acknowledged", label: "Acknowledged" },
@@ -343,7 +347,12 @@ describe("buildJobDetailModel — detail", () => {
     );
 
     const ada = detailOf("job-ada-frontend");
-    expect(ada.salary).toEqual({ provenance: "notStated", amount: null, text: "Salary not stated" });
+    expect(ada.salary).toEqual({
+      provenance: "notStated",
+      amount: null,
+      text: "Salary not stated",
+      shortText: "Salary not stated",
+    });
     expect(ada.facts.find((fact) => fact.key === "salary")).toMatchObject({
       value: "Not stated",
       notStated: true,

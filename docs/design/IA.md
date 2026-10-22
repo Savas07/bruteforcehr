@@ -17,7 +17,7 @@ Status: M0 synthesis, 2026-10-22. Sources: BRIEF §4.1, the 14 research docs in 
 | 2   | Jobs        | Tab 2                                        | Sidebar 2                        | 2    | `briefcase`           | `briefcase`           | İlanlar   | Jobs          |
 | 3   | Tracker     | Tab 3                                        | Sidebar 3                        | 3    | `rectangle.split.3x1` | `kanban`              | Takip     | Tracker       |
 | 4   | CVs         | Tab 4                                        | Sidebar 4                        | 4    | `doc.text`            | `file-text`           | CV'ler    | Lebensläufe   |
-| 5   | Mail        | Tab 5, the only badge (To review count)      | Sidebar 5, the only badge        | 5    | `envelope`            | `mail`                | Posta     | Mail          |
+| 5   | Mail        | Tab 5, the only badge (To review count)      | Sidebar 5, the only badge        | 5    | `envelope`            | `mail`                | E-posta   | Mail          |
 | 6   | Insights    | Tracker nav-bar button + Today footer link   | Sidebar 6                        | 6    | `chart.bar.xaxis`     | `chart-column`        | İçgörüler | Einblicke     |
 | —   | Settings    | Avatar button (top right, every tab) → sheet | Sidebar bottom, menu "Settings…" | `,`  | `person.crop.circle`  | `settings`            | Ayarlar   | Einstellungen |
 
@@ -312,7 +312,8 @@ Apply is never a swipe action (it needs the Apply sheet). Destructive actions ar
 Scheme `bruteforcehr://` (D29). Links only navigate. Unknown or invalid links open Today without an error. `{…}` are Firestore document ids. Query parameters use the same names on both platforms. The desktop route is the hash route (TanStack Router) the link resolves to.
 
 Handling:
-- **iOS:** the scheme is registered in the app's URL types, and the root view parses links in `onOpenURL` ([onOpenURL](https://developer.apple.com/documentation/swiftui/view/onopenurl(perform:))). The OAuth return (`bruteforcehr://connected`) is the exception: `WebAuthenticationSession` returns it directly to the awaiting connect flow ([ADR 0006](../adr/0006-hosting-domains.md)).
+
+- **iOS:** the scheme is registered in the app's URL types, and the root view parses links in `onOpenURL` ([onOpenURL](<https://developer.apple.com/documentation/swiftui/view/onopenurl(perform:)>)). The OAuth return (`bruteforcehr://connected`) is the exception: `WebAuthenticationSession` returns it directly to the awaiting connect flow ([ADR 0006](../adr/0006-hosting-domains.md)).
 - **Desktop:** `tauri-plugin-deep-link` with `plugins.deep-link.desktop.schemes: ["bruteforcehr"]`. The UI reads the launch link with `getCurrent()` and later links with `onOpenUrl`. `tauri-plugin-single-instance` (feature `deep-link`) is registered first, so a link opened while the app is running reaches the running window instead of a second instance. Schemes must be in the config ("Dynamic registration at runtime is not supported"), and "deep links are only triggered for installed applications on desktop" ([Deep linking](https://v2.tauri.app/plugin/deep-linking/)). A link can also be faked as a command-line argument, so every link is parsed against this table and anything else opens Today.
 
 | Link                                                                                                                                                                                              | Opens (iOS)                                                                                                                | Opens (desktop)                                                | Used by                                                                          |

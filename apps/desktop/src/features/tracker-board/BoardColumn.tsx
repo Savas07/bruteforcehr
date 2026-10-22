@@ -1,7 +1,8 @@
 /**
  * `BoardColumn` (components.md "Tracker", tracker.md "Board" + "Drag between columns"): header with
  * dot, label, count and "oldest 18 d", a full-height well that is the drop target, and a collapse
- * control. Collapsed (empty columns by default) it becomes a 40 px rail that still accepts drops.
+ * control that shows on column hover and keyboard focus. Collapsed (empty columns by default) it
+ * becomes a 40 px rail that still accepts drops.
  * While a card is dragged over it, the well tints and the header states the transition
  * ("Applied → Screening"); targets the state machine refuses are greyed with the reason.
  */
@@ -168,14 +169,14 @@ export function BoardColumn({
       ref={setNodeRef}
       aria-label={accessibleLabel}
       className={cx(
-        "flex min-h-0 flex-col",
+        "group/column flex min-h-0 flex-col",
         // Fluid columns never shrink below their header's longest word (flex `min-width: auto`), so
         // labels wrap only between words; narrower than that, the board scrolls.
         fluid ? "max-w-68 flex-1 basis-0" : "w-68 shrink-0",
         wellTone,
       )}
     >
-      <header className="flex flex-col gap-0.5 px-3 pt-2.5 pb-2">
+      <header className="group/header flex flex-col gap-0.5 px-3 pt-2.5 pb-2">
         <div className="flex min-h-6 items-start gap-2">
           <span
             aria-hidden="true"
@@ -192,7 +193,9 @@ export function BoardColumn({
               label={intl.formatMessage(messages.collapse, { status: status.label })}
               aria-expanded={true}
               onClick={() => onCollapsedChange(true)}
-              className="-me-1 ms-auto"
+              // Shown only on column hover and keyboard focus (checkpoint-m0 decision Q8); opacity, not
+              // display, so it stays in the Tab order and the header never shifts.
+              className="-me-1 ms-auto opacity-0 group-hover/column:opacity-100 group-has-[:focus-visible]/header:opacity-100 focus-visible:opacity-100"
             />
           )}
         </div>

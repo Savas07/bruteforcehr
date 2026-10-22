@@ -373,7 +373,7 @@ Explicitly **not stored**:
 | Template thumbnails before a CV exists                     | Structural skeleton thumbnails with a caption, never invented people                                                                                                                                               | cv-editor OQ7            |
 | Translate scope                                            | "Translate all" once at variant creation, then per section; translated fields marked for review                                                                                                                    | cv-editor OQ9            |
 | German tab/sidebar label for CVs                           | "Lebensläufe" (desktop-chrome); "Lebenslauf" in body copy                                                                                                                                                          | onboarding-signin OQ7    |
-| TR names                                                   | Jobs "İlanlar", Tracker "Takip", CVs "CV'ler", Mail "Posta", Insights "İçgörüler"                                                                                                                                  | desktop-chrome, insights |
+| TR names                                                   | Jobs "İlanlar", Tracker "Takip", CVs "CV'ler", Mail "Posta" (changed to "E-posta" by Q9), Insights "İçgörüler"                                                                                                     | desktop-chrome, insights |
 | Website localized routes                                   | `/` English, `/tr/…`, `/de/…`                                                                                                                                                                                      | website OQ6              |
 | Website checksums                                          | Publish `SHA256SUMS.txt` with each release; the site shows SHA-256                                                                                                                                                 | website OQ2              |
 | Website status line                                        | Not in v1 (no public health endpoint)                                                                                                                                                                              | website OQ5              |
@@ -425,3 +425,47 @@ These needed the user. The user decided all eight on 2026-10-22 (kickoff); nothi
 ### U8 · No greeting on Today
 
 - **Decision (user):** **no greeting** on Today (today-home OQ6). The screen opens with its content.
+
+## M0 checkpoint taste answers (Q1–Q10)
+
+The owner approved the [M0 design checkpoint](checkpoint-m0.md) on 2026-10-23 and answered its ten taste questions.
+
+### Q1 · Today: tint on the "Next up" card
+
+- **Decision (user):** **kept as is.** The selected Next up card keeps the `surface.selected` tint; unselected it has a border.
+
+### Q2 · Today: "Updated automatically · you can undo these"
+
+- **Decision (user):** **kept as is.** The heading keeps the promise of Undo.
+
+### Q3 · Match bar colour for weak bands
+
+- **Decision (user):** the shared `MatchBandBar` (desktop and iOS) fills the current segment with the neutral **`chart.neutral`** tone for **Partial** and **Stretch**, and with the accent for **Good** and **Strong**. The band label still carries the meaning.
+
+### Q4 · Job list: short salary provenance
+
+- **Decision (user):** job list rows show the short form, "· employer" (or "· estimate"); the full wording ("· from employer") is the row's tooltip and accessible text. Job detail is unchanged. iOS has no job list rows in M0, so the change is desktop only.
+
+### Q5 · Job detail: "AI" shown twice
+
+- **Decision (user):** keep the AI badge; the label becomes **"Summary · can be wrong"** (TR "Özet · hatalı olabilir", DE "Zusammenfassung · kann Fehler enthalten") on desktop and iOS.
+
+### Q6 · Tracker on iPhone: no drag (D32)
+
+- **Decision (user):** **kept as is.** No drag on iPhone in M0; Move to…, the status pill, VoiceOver actions and swipe actions move applications. Revisit in M3 with real usage.
+
+### Q7 · Tracker on iPhone: status order
+
+- **Decision (user):** **kept as is.** The pipeline keeps stage order.
+
+### Q8 · Tracker on desktop: column collapse buttons
+
+- **Decision (user):** keep the « buttons, **visible only on column hover and keyboard focus**. They stay in the Tab order and are hidden with opacity, so the header doesn't shift.
+
+### Q9 · Turkish name for Mail
+
+- **Decision (user):** **"E-posta" everywhere** (desktop and iOS TR catalogs, IA.md). Still subject to the native TR review.
+
+### Q10 · Tracker on desktop: two polish items
+
+- **Decision (user):** **scheduled for M3:** let the German record-panel header wrap instead of truncating, and dim the columns behind the error card.

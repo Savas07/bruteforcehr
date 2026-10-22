@@ -36,6 +36,18 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm turbo run lint typecheck test
 
+  swift:
+    name: BFHRCore (swift test)
+    runs-on: ubuntu-latest
+    # Official Swift image matching Xcode 26.6's toolchain. swift-actions/setup-swift's latest
+    # release (v2.4.0) only knows Swift ≤ 6.2.1; its v3 (swiftly-based) is still a beta.
+    container: swift:6.3.3-noble
+    steps:
+      - uses: actions/checkout@v7
+      # Replays packages/core/conformance and packages/fixtures/conformance (committed; the check job
+      # fails when they are stale).
+      - run: swift test --package-path packages/swift/BFHRCore
+
   rules:
     name: Security rules (emulators)
     runs-on: ubuntu-latest

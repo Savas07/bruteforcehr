@@ -3,7 +3,7 @@
 - **Status:** Accepted
 - **Date:** 2026-10-22
 - **Supersedes:** BRIEF.md §0 "Domain" and §6 "Website: Astro on GitHub Pages"
-- **Related:** [0001-stack.md](0001-stack.md), [0003-auth-email-otp.md](0003-auth-email-otp.md), [0004-release-updates-signing.md](0004-release-updates-signing.md), [runbooks/accounts.md](../runbooks/accounts.md)
+- **Related:** [0001-stack.md](0001-stack.md), [0003-auth-email-otp.md](0003-auth-email-otp.md), [0004-release-updates-signing.md](0004-release-updates-signing.md), [0007-native-ios-tauri-desktop.md](0007-native-ios-tauri-desktop.md), [runbooks/accounts.md](../runbooks/accounts.md)
 
 ## Context
 
@@ -47,9 +47,12 @@
 |---|---|---|
 | Google (Gmail) | `https://bruteforcehr.web.app/connect/google/callback` | OAuth client type **Web application**; authorized domain `bruteforcehr.web.app` (or `web.app` parent as Console accepts) |
 | Microsoft (Graph) | `https://bruteforcehr.web.app/connect/microsoft/callback` | Platform **Web**, authority `common` |
-| App return | `bruteforcehr://connected?account=<id>` | After callback, `connect` redirects to the app scheme; desktop and iOS also see `mailAccounts/{id}` change via snapshot listener |
+| App return | `bruteforcehr://connected?nonce=…&provider=…&intent=…&status=ok\|error&reason=…` (full format in [design/IA.md — Deep links](../design/IA.md#deep-links)) | After the callback, `connect` redirects to the app scheme. The link is accepted only with the pending nonce. Desktop and iOS also see the `mailAccounts/{id}` change through the snapshot listener. |
 
-Flow (from BRIEF §6.4): client opens `https://bruteforcehr.web.app/connect/{google|microsoft}?nonce=<short-lived signed nonce>` in the system browser (iOS: `ASWebAuthenticationSession` via `expo-web-browser`); `connect` runs authorization code + PKCE, validates `state`, stores tokens encrypted under `serverOnly/**`, redirects to `bruteforcehr://connected`.
+Flow (from BRIEF §6.4): the client opens `https://bruteforcehr.web.app/connect/{google|microsoft}?nonce=<short-lived signed nonce>`. `connect` runs authorization code + PKCE, validates `state`, stores tokens encrypted under `serverOnly/**` and redirects to `bruteforcehr://connected`. How each client opens the page and gets the return ([ADR 0007](0007-native-ios-tauri-desktop.md)):
+
+- **iOS (SwiftUI):** `ASWebAuthenticationSession` used directly through SwiftUI's `webAuthenticationSession` environment value (iOS 16.4+). The view calls `authenticate(using: connectURL, callbackURLScheme: "bruteforcehr", preferredBrowserSession: …)`. The browser "detects that redirect, dismisses itself, and returns the complete URL to the awaiting caller", so the return doesn't go through `onOpenURL` ([EnvironmentValues.webAuthenticationSession](https://developer.apple.com/documentation/swiftui/environmentvalues/webauthenticationsession); [WebAuthenticationSession](https://developer.apple.com/documentation/authenticationservices/webauthenticationsession)).
+- **Desktop (Tauri):** opens the URL in the **system browser** through `tauri-plugin-opener`. Its `opener:allow-open-url` scope includes `https://bruteforcehr.web.app/connect/*` ([Opener](https://v2.tauri.app/plugin/opener/)). The browser's final redirect to `bruteforcehr://connected…` comes back through **`tauri-plugin-deep-link`**: the scheme is declared in `plugins.deep-link.desktop.schemes`, and `onOpenUrl`/`getCurrent` deliver the link. `tauri-plugin-single-instance` (feature `deep-link`) routes it to the already-running window. Desktop deep links "are only triggered for installed applications" and can't be registered at runtime on macOS ([Deep linking](https://v2.tauri.app/plugin/deep-linking/)), so the connect flow is tested on an installed build. The snapshot listener on `mailAccounts/{id}` is the fallback if the browser doesn't hand the link back.
 
 ### Google consent screen, authorized domain, Search Console
 

@@ -27,7 +27,7 @@ There are no badges on Today, Jobs, Tracker or CVs (D01). Mail health shows as a
 
 ### Structure
 
-- **Tab bar:** native tabs (`expo-router` native tabs) Today · Jobs · Tracker · CVs · Mail. Each tab owns a native stack with a large title. Reselecting a tab pops to its root, and a second tap scrolls to the top.
+- **Tab bar:** SwiftUI `TabView` built with the iOS 18 `Tab` API ([Tab](https://developer.apple.com/documentation/swiftui/tab), [TabView](https://developer.apple.com/documentation/swiftui/tabview)): Today · Jobs · Tracker · CVs · Mail. Each tab owns a `NavigationStack` with a large title. Reselecting a tab pops to its root, and a second tap scrolls to the top.
 - **Avatar** (top-right nav-bar button on every tab root; initials monogram, amber dot when a mail account needs attention) opens **Settings** as a sheet (large detent, "Done"). Nothing else lives behind the avatar.
 - **Sheets:** focused tasks open as sheets over the current tab, so the user never loses their place:
   - Apply (page sheet, large detent, its own stack).
@@ -96,7 +96,7 @@ flowchart TB
 
 ### Shell
 
-- **Window chrome** (desktop-chrome.md): macOS hidden-inset title bar with traffic lights over the sidebar (52 px toolbar row, sidebar vibrancy). Windows title-bar overlay (40 px) with native caption buttons and Mica on 22H2+.
+- **Window chrome** ([ADR 0007](../adr/0007-native-ios-tauri-desktop.md); desktop-chrome.md): on macOS, Tauri `titleBarStyle: "Overlay"` with hidden title and the traffic lights over the sidebar (52 px toolbar row, sidebar vibrancy). On Windows, the **native title bar** with native caption buttons and Snap Layouts, plus Mica on Windows 11. Tauri has no Windows title-bar overlay, so the app-name row sits below the native title bar.
 - **Minimum window** 480 × 360. Below 640 px the sidebar becomes a 60 px icon rail (D04).
 - **Sidebar** (232 px, 32 px rows), top to bottom:
   1. **Jump to…** Mod+K.
@@ -150,7 +150,7 @@ flowchart LR
 
 ### Native menu (macOS) and command registry
 
-macOS lists every command in the menu bar. Windows has no visible menu, so the same registry feeds the palette and the shortcuts sheet (D07). Title case in macOS menus, sentence case everywhere else.
+macOS lists every command in the menu bar. Windows shows the same native menu below its native title bar ([ADR 0007](../adr/0007-native-ios-tauri-desktop.md)). The same registry also feeds the palette and the shortcuts sheet (D07). Title case in macOS menus, sentence case everywhere else.
 
 | Menu         | Items                                                                                                                                   |
 | ------------ | --------------------------------------------------------------------------------------------------------------------------------------- |
@@ -191,10 +191,10 @@ One map for both desktop platforms. ⌘ / Ctrl columns differ only in the modifi
 
 1. **Single keys** (letters, digits, `/`, `?`) fire only when focus isn't in a text field, an editable cell or a combobox (D28). They match the typed character (`event.key`), so they work on every layout. Mod+digit matches physical keys.
 2. **One meaning per key.** `J`/`K` = next / previous item in the focused collection; `Enter` = open; `Esc` = close or go back one level; `M` = move / change status; `D` = not for me / not needed; `H` = later (snooze); `C` = confirm; `O` = open original; `S` = save; `A` = apply (or use suggestion inside Tailor review); `F` = focus filters; `X` = select row.
-3. **Never assign** OS- or Electron-reserved keys:
+3. **Never assign** OS- or webview-reserved keys:
    - **macOS:** ⌘H, ⌥⌘H, ⌘M, ⌘Q, ⌘W (except closing our own windows), ⌘Tab, ⌘Space, ⌘\`, ⌃⌘F, ⌃⌘Q, ⇧⌘3/4/5, ⌥⌘Esc.
    - **Windows:** Win+…, Alt+F4, Alt+Space, Alt+Tab, Ctrl+Esc, Ctrl+Shift+Esc, F10, F11, F12.
-   - **Electron and browser:** ⌥⌘I / Ctrl+Shift+I (DevTools), ⌘R / Ctrl+R / F5 (reload).
+   - **Webview and browser:** ⌥⌘I / Ctrl+Shift+I (web inspector / DevTools in debug builds), ⌘R / Ctrl+R / F5 (reload).
    - **Print:** ⌘P / Ctrl+P (stays unassigned; there's no print command).
    - **Ctrl+Alt+…** on Windows (that's AltGr on DE/TR layouts).
    - **Bracket and backslash chords** as the only path (AltGr on DE/TR).
@@ -310,6 +310,10 @@ Apply is never a swipe action (it needs the Apply sheet). Destructive actions ar
 ## Deep links
 
 Scheme `bruteforcehr://` (D29). Links only navigate. Unknown or invalid links open Today without an error. `{…}` are Firestore document ids. Query parameters use the same names on both platforms. The desktop route is the hash route (TanStack Router) the link resolves to.
+
+Handling:
+- **iOS:** the scheme is registered in the app's URL types, and the root view parses links in `onOpenURL` ([onOpenURL](https://developer.apple.com/documentation/swiftui/view/onopenurl(perform:))). The OAuth return (`bruteforcehr://connected`) is the exception: `WebAuthenticationSession` returns it directly to the awaiting connect flow ([ADR 0006](../adr/0006-hosting-domains.md)).
+- **Desktop:** `tauri-plugin-deep-link` with `plugins.deep-link.desktop.schemes: ["bruteforcehr"]`. The UI reads the launch link with `getCurrent()` and later links with `onOpenUrl`. `tauri-plugin-single-instance` (feature `deep-link`) is registered first, so a link opened while the app is running reaches the running window instead of a second instance. Schemes must be in the config ("Dynamic registration at runtime is not supported"), and "deep links are only triggered for installed applications on desktop" ([Deep linking](https://v2.tauri.app/plugin/deep-linking/)). A link can also be faked as a command-line argument, so every link is parsed against this table and anything else opens Today.
 
 | Link                                                                                                                                                                                              | Opens (iOS)                                                                                                                | Opens (desktop)                                                | Used by                                                                          |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- | -------------------------------------------------------------------------------- |

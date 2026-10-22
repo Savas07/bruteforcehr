@@ -1,0 +1,56 @@
+name: Desktop
+
+# macOS and Windows runners bill at 10x / 2x on private repos, so this runs only when desktop code
+# or its dependencies change, or on demand.
+on:
+  push:
+    branches: [main]
+    paths:
+      - apps/desktop/**
+      - packages/**
+      - pnpm-lock.yaml
+      - .github/workflows/desktop.yml
+  pull_request:
+    paths:
+      - apps/desktop/**
+      - packages/**
+      - pnpm-lock.yaml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: desktop-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  COREPACK_ENABLE_DOWNLOAD_PROMPT: "0"
+
+jobs:
+  e2e:
+    name: E2E + screenshots (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+      - run: corepack enable pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @bfhr/desktop test:e2e
+      - run: pnpm --filter @bfhr/desktop capture
+        if: always()
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: desktop-${{ matrix.os }}
+          path: |
+            artifacts/screens/desktop/
+            artifacts/playwright/desktop/
+          if-no-files-found: ignore
+          retention-days: 14

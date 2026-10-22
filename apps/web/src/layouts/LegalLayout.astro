@@ -14,6 +14,8 @@ type Props = MarkdownLayoutProps<{
   description: string;
   /** ISO date (YYYY-MM-DD, quoted in the frontmatter so YAML keeps it a string). */
   effective: string;
+  /** "The short version": 4–5 one-line promises shown before the contents, each backed by a section. */
+  keyPoints: string[];
 }>;
 
 const { frontmatter, headings } = Astro.props;
@@ -35,9 +37,40 @@ const effectiveLabel = new Intl.DateTimeFormat("en-GB", { dateStyle: "long", tim
       </p>
     </header>
 
+    <section
+      aria-labelledby="key-points-title"
+      class="mt-8 max-w-[68ch] rounded-lg border border-line-subtle bg-surface-base p-5 md:p-6 xl:col-start-2"
+    >
+      <h2 id="key-points-title" class="text-title2 text-fg-primary">The short version</h2>
+      <ul class="mt-4 space-y-3 text-prose text-fg-primary">
+        {
+          frontmatter.keyPoints.map((point) => (
+            <li class="flex gap-3">
+              <svg
+                class="mt-1 size-5 shrink-0 text-accent-text"
+                viewBox="0 0 20 20"
+                aria-hidden="true"
+                focusable="false"
+              >
+                <path
+                  d="m4.5 10.5 3.5 3.5 7.5-8"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+              <span>{point}</span>
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+
     <nav
       aria-labelledby="toc-title"
-      class="mt-8 rounded-lg border border-line-subtle bg-surface-base p-5 xl:sticky xl:top-24 xl:col-start-1 xl:row-span-2 xl:row-start-1 xl:mt-0 xl:max-h-[calc(100dvh-7rem)] xl:self-start xl:overflow-y-auto xl:border-0 xl:bg-transparent xl:p-0"
+      class="mt-8 rounded-lg border border-line-subtle bg-surface-base p-5 xl:sticky xl:top-24 xl:col-start-1 xl:row-span-3 xl:row-start-1 xl:mt-0 xl:max-h-[calc(100dvh-7rem)] xl:self-start xl:overflow-y-auto xl:border-0 xl:bg-transparent xl:p-0"
     >
       <h2 id="toc-title" class="font-mono text-subheadline text-fg-tertiary">On this page</h2>
       <ol class="toc mt-2 gap-x-10 md:columns-2 xl:columns-1">

@@ -3,6 +3,12 @@ layout: ../layouts/LegalLayout.astro
 title: Privacy Policy
 description: What BruteForceHR collects, why, where it's kept, and how you can download or delete it.
 effective: "2026-10-22"
+keyPoints:
+  - "Only job-related email is kept. Other email is never stored."
+  - "Nothing is sent from your email account until you've reviewed the message and pressed Send."
+  - "AI is optional, gets only the text a task needs, and doesn't train on it."
+  - "Your data is stored with Google Cloud in Belgium and is never sold or used for ads."
+  - "You can download or permanently delete everything yourself, at any time."
 ---
 
 This policy covers the BruteForceHR apps for iPhone, Mac and Windows, the servers they use, and this website. Each section starts with a short summary in plain words. The summaries help you skim; the full text under each one is what applies.

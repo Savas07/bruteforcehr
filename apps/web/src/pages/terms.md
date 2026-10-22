@@ -3,6 +3,11 @@ layout: ../layouts/LegalLayout.astro
 title: Terms of Use
 description: The rules for using BruteForceHR, in plain words. It's a free personal tool, provided as is.
 effective: "2026-10-22"
+keyPoints:
+  - "BruteForceHR is a free tool for your own job search, provided as is."
+  - "Nothing is sent without your confirmation, and you're responsible for what you send."
+  - "Job listings come from other websites; some of them may not allow automated access."
+  - "What you create stays yours, and you can delete your account at any time."
 ---
 
 These terms apply when you use the BruteForceHR apps for iPhone, Mac and Windows and this website. By using BruteForceHR, you agree to them. Each section starts with a short summary; the full text under it is what applies. How we handle your data is described in the [Privacy Policy](/privacy/).

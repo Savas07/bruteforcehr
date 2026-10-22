@@ -332,6 +332,15 @@ Explicitly **not stored**:
 - **Decision:** computed on the client from `applicationEvents` in v1 (works offline). Revisit above a few thousand events. The low-sample threshold is fixed at n < 5, not configurable. iOS ranges are `4W · 12W · All` and desktop ranges are `30D · 90D · 6M · 12M · All · Custom…`; the platforms differ on purpose, so each fits its width.
 - **Affects:** insights OQ4, OQ6.
 
+## Tracker
+
+### D32 · No drag-to-move on iPhone in M0
+
+- **Options:** (a) three equal move paths on iPhone: Move to…, swipes, and dragging a row onto a stage; (b) Move to… and swipes only (tracker OQ5).
+- **Decision:** (b), recorded for the integration owner on 2026-10-22. On iPhone an application moves through **Move to…** (long-press context menu, the row's VoiceOver action, the detail's status pill and ⋯ menu) and **swipe actions** (leading "Move to {next stage}", trailing Move to… / Close…). There's no drag affordance, so nothing half-working ships. Desktop keeps drag between board columns. Revisit with real usage in M3.
+- **Why:** in the Pipeline (a `List` whose rows also carry a context menu), the long press opens the menu instead of lifting the row. Three implementations failed under XCUITest: `.draggable` on the row, `onDrag`, and `.draggable` on the row content, each with the stage strip as drop targets. Both remaining paths reach every status, work with VoiceOver and Switch Control, and go through the same state machine with Undo (critiques/ios/tracker-board r2–r4).
+- **Affects:** tracker (iOS decision, OQ5 → "no for now"), components.md `StageIndexStrip` (no drop-chip mode on iPhone).
+
 ## Other open questions resolved
 
 | Question                                                   | Decision                                                                                                                                                                                                           | Doc                      |

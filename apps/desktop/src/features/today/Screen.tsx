@@ -21,7 +21,12 @@ import { MenuItem } from "../../shared/ui/Menu";
 import { PaneError } from "../../shared/ui/PaneError";
 import { ScreenTitle } from "../../shared/ui/ScreenTitle";
 import { SegmentedControl } from "../../shared/ui/SegmentedControl";
-import { AttentionRowSkeleton, SkeletonRegion, SkeletonText } from "../../shared/ui/Skeleton";
+import {
+  AttentionRowSkeleton,
+  SkeletonRegion,
+  SkeletonText,
+  useSkeletonGate,
+} from "../../shared/ui/Skeleton";
 import { SplitView } from "../../shared/ui/SplitView";
 import { StaleStamp } from "../../shared/ui/StaleStamp";
 import { AgendaRail, AgendaRailSkeleton } from "./AgendaRail";
@@ -695,7 +700,11 @@ export default function TodayScreen({ model }: ScreenProps<TodayModel>) {
     />
   );
 
-  if (split && items.length > 0)
+  // Same 300 ms delay / 500 ms minimum as the list's SkeletonRegion.
+  const detailSkeleton = useSkeletonGate(model.status === "loading");
+
+  // Loading uses the populated layout too, so the list doesn't jump when data arrives.
+  if (split && (model.status === "loading" || items.length > 0))
     return (
       <div className="flex min-h-0 flex-1 flex-col">
         <SplitView
@@ -719,6 +728,13 @@ export default function TodayScreen({ model }: ScreenProps<TodayModel>) {
             >
               {selected ? (
                 <div className="max-w-[44rem] px-8 pt-8 pb-12">{renderDetail(selected, 2)}</div>
+              ) : model.status === "loading" ? (
+                detailSkeleton && (
+                  <div className="flex max-w-[44rem] flex-col gap-4 px-8 pt-8" aria-hidden="true">
+                    <SkeletonText lines={2} widths={[40, 70]} />
+                    <SkeletonText lines={3} />
+                  </div>
+                )
               ) : (
                 <EmptyState kind="subArea" body={intl.formatMessage(messages.selectItem)} className="p-8" />
               )}

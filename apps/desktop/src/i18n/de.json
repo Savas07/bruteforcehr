@@ -1049,6 +1049,7 @@
   "today.snoozeDate.pickFirst": "Wähle zuerst ein Datum.",
   "today.snoozeDate.snooze": "Verschieben",
   "today.snoozeDate.title": "Verschieben bis…",
+  "today.snoozeDate.tooEarly": "Wähle morgen oder einen späteren Tag. Für heute nimm „Später heute“.",
   "today.title": "Heute",
   "today.toast.confirmed": "Bestätigt · {company}",
   "today.toast.confirmedMove": "Bestätigt · {company} ist jetzt bei {status}",

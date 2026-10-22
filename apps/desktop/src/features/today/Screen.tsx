@@ -686,9 +686,10 @@ export default function TodayScreen({ model }: ScreenProps<TodayModel>) {
     ) : null;
   const railLabel = ready?.agenda.title ?? intl.formatMessage(messages.loading);
 
-  const dateDialog = dateFor && (
+  const dateDialog = dateFor && ready && (
     <SnoozeDateDialog
       company={dateFor.company.name}
+      snoozeDate={ready.snoozeDate}
       open
       onOpenChange={(open) => {
         if (open) return;

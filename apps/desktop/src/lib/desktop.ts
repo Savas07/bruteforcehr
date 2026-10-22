@@ -80,3 +80,18 @@ export function openExternal(url: string): Promise<void> {
   }
   return invoke("open_external", { url });
 }
+
+/**
+ * Opens a job-posting link (Open original, Apply on company site / board, "Found on" rows) in the
+ * default browser. The backend (`open_job_url`, src-tauri/src/job_url.rs) accepts public https
+ * addresses only (no credentials, IP literals, local names or ports) and at most 5 per 10 s. It
+ * rejects with `{ kind: "url-not-allowed" | "rate-limited" | "open-failed", message }`; show a
+ * toast. M0 can't check the URL against the stored job yet (no data layer in the shell).
+ */
+export function openJobUrl(url: string): Promise<void> {
+  if (!inShell) {
+    window.open(url, "_blank", "noopener");
+    return Promise.resolve();
+  }
+  return invoke("open_job_url", { url });
+}

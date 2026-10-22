@@ -2,9 +2,10 @@ import BFHRCore
 import BFHRDesignTokens
 import SwiftUI
 
-/// "Moved to Interviewing — from an email by marcus@brightwave.io · Undo" (components.md
-/// `AutoChangeRow`, Today and Mail › Updates). Always names the source; Undo while `canRevert`
-/// allows it, otherwise the quiet "Can't undo" line.
+/// An automatic status change (components.md `AutoChangeRow`, Today and Mail › Updates): leads with
+/// the change ("Moved to Offer"), then the application, then the evidence sentence that names the
+/// source ("Email from elif@lumenpay.com.tr: “Teklif Mektubu”"). Undo while `canRevert` allows
+/// it, otherwise the quiet "Can't undo" line.
 public struct AutoChangeRow: View {
     private let item: AutoChangeItem
     private let onUndo: () -> Void
@@ -18,13 +19,22 @@ public struct AutoChangeRow: View {
         HStack(alignment: .top, spacing: BFHRSpace.s3) {
             CompanyMonogram(item.company, badge: "envelope")
             VStack(alignment: .leading, spacing: BFHRSpace.s1) {
-                Text(verbatim: "\(item.company.name) · \(item.role)")
+                Text(Strings.timelineMoved(to: item.to))
                     .font(.bfhr(.headline))
                     .foregroundStyle(BFHRColor.Fg.primary)
-                Text(Strings.autoChange(to: item.to, sender: item.sender))
+                Text(verbatim: "\(item.company.name) · \(item.role)")
                     .font(.bfhr(.subheadline))
-                    .foregroundStyle(BFHRColor.Fg.secondary)
-                HStack(spacing: BFHRSpace.s2) {
+                    .foregroundStyle(BFHRColor.Fg.primary)
+                Group {
+                    if let reason = item.reason {
+                        Text(verbatim: reason)
+                    } else {
+                        Text(bfhrPlain: Strings.autoChange(to: item.to, sender: item.sender))
+                    }
+                }
+                .font(.bfhr(.footnote))
+                .foregroundStyle(BFHRColor.Fg.secondary)
+                ChipFlow {
                     SourceTag(.automatic(item.actor))
                     RelativeTimeText(item.occurredAt, style: .day)
                         .font(.bfhr(.caption1))
@@ -74,7 +84,7 @@ public struct NudgeCard: View {
                     Text(verbatim: "\(item.company.name) · \(item.role)")
                         .font(.bfhr(.headline))
                         .foregroundStyle(BFHRColor.Fg.primary)
-                    Text(prompt(days: days))
+                    Text(bfhrPlain: prompt(days: days))
                         .font(.bfhr(.subheadline))
                         .foregroundStyle(BFHRColor.Fg.secondary)
                 }
@@ -199,7 +209,7 @@ public struct TimelineRow: View {
                         .font(.bfhr(.footnote))
                         .foregroundStyle(BFHRColor.Fg.secondary)
                 }
-                HStack(spacing: BFHRSpace.s2) {
+                ChipFlow {
                     SourceTag(entry.isAutomatic ? .automatic(entry.actor) : .user)
                     RelativeTimeText(entry.occurredAt, style: .time)
                         .font(.bfhr(.caption1))

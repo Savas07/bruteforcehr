@@ -320,6 +320,10 @@ function CorrectionForm({
           )}
         </Command.List>
       </Command>
+      {/* The search field stays focused while Tab switches fields: say which field it searches now. */}
+      <p className="sr-only" aria-live="polite">
+        {intl.formatMessage(messages[field])}
+      </p>
       <p id={hintId} className="sr-only">
         {intl.formatMessage(messages.hint, {
           saveKeys: spokenAlternatives("Mod+Enter", chrome.platform, intl),

@@ -50,7 +50,7 @@ export function KeyboardHintBar() {
         {hints.map((hint) => (
           <li key={hint.keys} className="flex items-center gap-1.5">
             <Keycaps keys={hint.keys} />
-            <span aria-hidden="true">{hint.label}</span>
+            <span>{hint.label}</span>
           </li>
         ))}
       </ul>

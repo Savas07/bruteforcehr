@@ -201,7 +201,13 @@ export function MailRow({
             {row.sender}
           </span>
           {row.pendingSync && <SyncGlyph />}
-          <span className="text-footnote text-fg-tertiary shrink-0 tabular-nums">
+          {/* Hover actions take the time's place (keyboard users have C / M; the time stays in the reading pane). */}
+          <span
+            className={cx(
+              "text-footnote text-fg-tertiary shrink-0 tabular-nums",
+              actions !== null && "group-hover:invisible",
+            )}
+          >
             <RelativeTimeChip time={row.receivedAt} />
           </span>
         </div>
@@ -234,11 +240,7 @@ export function MailRow({
           )}
         </p>
       </div>
-      {actions && (
-        <span className="bg-inherit absolute top-1.5 right-2 flex gap-0.5 rounded-md opacity-0 group-hover:opacity-100 group-focus-within:opacity-100">
-          {actions}
-        </span>
-      )}
+      {actions && <span className="absolute top-1.5 right-2 hidden gap-0.5 group-hover:flex">{actions}</span>}
     </li>
   );
 }

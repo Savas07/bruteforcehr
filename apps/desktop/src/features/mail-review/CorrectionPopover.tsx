@@ -79,13 +79,12 @@ export interface CorrectionDraft {
 export const NEW_APPLICATION = "new";
 
 const itemClass =
-  "text-callout text-fg-primary data-[selected=true]:bg-surface-hover data-[disabled=true]:text-fg-disabled flex min-h-8 cursor-default items-center gap-2 rounded-md px-2 py-1";
+  "text-callout text-fg-primary data-[selected=true]:bg-surface-hover flex min-h-8 cursor-default items-center gap-2 rounded-md px-2 py-1";
 
 interface Option {
   readonly value: string;
   readonly label: string;
   readonly leading?: ReactNode;
-  readonly disabled?: boolean;
 }
 
 export interface CorrectionPopoverProps {
@@ -99,7 +98,7 @@ export interface CorrectionPopoverProps {
   onSave: (draft: CorrectionDraft) => void;
 }
 
-/** Renders the anchor (place it under the review card's actions) and the popover. */
+/** Renders the anchor (place it right before the review card) and the popover. */
 export function CorrectionPopover({ open, onOpenChange, ...form }: CorrectionPopoverProps) {
   const intl = useIntl();
   return (
@@ -107,9 +106,11 @@ export function CorrectionPopover({ open, onOpenChange, ...form }: CorrectionPop
       <Popover.Anchor className="h-0" />
       <Popover.Portal>
         <Popover.Content
-          side="bottom"
+          // Beside the card, over the list pane: the proposal and the email stay readable while
+          // correcting (Radix flips it over the pane when the window is too narrow).
+          side="left"
           align="start"
-          sideOffset={4}
+          sideOffset={12}
           collisionPadding={16}
           aria-label={intl.formatMessage(messages.title)}
           className="bg-surface-elevated text-fg-primary border-line-subtle shadow-overlay z-(--bfhr-layer-popover) flex max-h-(--radix-popover-content-available-height) w-[min(400px,calc(100vw-32px))] flex-col overflow-hidden rounded-lg border"
@@ -173,13 +174,12 @@ function CorrectionForm({
     },
     status: {
       placeholder: intl.formatMessage(messages.searchStatus),
+      // Without an application there is nothing to move: say so instead of listing dead options.
       options: [
         { value: "none", label: intl.formatMessage(messages.noStatusChange) },
-        ...options.statuses.map((candidate) => ({
-          value: candidate.key,
-          label: candidate.label,
-          disabled: draft.applicationId === null,
-        })),
+        ...(draft.applicationId === null
+          ? []
+          : options.statuses.map((candidate) => ({ value: candidate.key, label: candidate.label }))),
       ],
     },
   };
@@ -256,7 +256,7 @@ function CorrectionForm({
             <span className={candidate === field ? "text-fg-primary font-medium" : "text-fg-secondary"}>
               {intl.formatMessage(messages[candidate])}
             </span>
-            <span className="text-fg-primary min-w-0 truncate">{summary[candidate]}</span>
+            <span className="text-fg-primary min-w-0 text-pretty">{summary[candidate]}</span>
           </button>
         ))}
       </div>
@@ -290,7 +290,6 @@ function CorrectionForm({
             <Command.Item
               key={option.value}
               value={option.label}
-              disabled={option.disabled ?? false}
               onSelect={() => choose(option.value)}
               className={itemClass}
             >
@@ -301,6 +300,11 @@ function CorrectionForm({
               )}
             </Command.Item>
           ))}
+          {field === "status" && draft.applicationId === null && (
+            <p className="text-footnote text-fg-secondary px-2 py-2">
+              {intl.formatMessage(messages.statusNeedsApplication)}
+            </p>
+          )}
         </Command.List>
       </Command>
       <p id={hintId} className="sr-only">

@@ -135,6 +135,14 @@ export function ReadingPane({
       <>
         {selection.unclassified && <InlineAlert tone="info" title={selection.unclassified} />}
         <div>
+          <CorrectionPopover
+            open={correctionOpen}
+            onOpenChange={onCorrectionOpenChange}
+            options={model.correction}
+            initial={initialDraft(selection)}
+            newApplicationLabel={selection.newApplicationLabel}
+            onSave={handlers.onSaveCorrection}
+          />
           <ReviewDetailPane
             proposal={selection.proposal}
             offline={offline}
@@ -144,14 +152,6 @@ export function ReadingPane({
             {...(!selection.canConfirm && {
               confirmDisabledReason: intl.formatMessage(messages.confirmDisabled),
             })}
-          />
-          <CorrectionPopover
-            open={correctionOpen}
-            onOpenChange={onCorrectionOpenChange}
-            options={model.correction}
-            initial={initialDraft(selection)}
-            newApplicationLabel={selection.newApplicationLabel}
-            onSave={handlers.onSaveCorrection}
           />
         </div>
       </>

@@ -11,7 +11,6 @@ import { EmptyState } from "../../shared/ui/EmptyState";
 import { InlineAlert } from "../../shared/ui/InlineAlert";
 import { Keycaps } from "../../shared/ui/Keycaps";
 import { MenuContent, MenuItem } from "../../shared/ui/Menu";
-import { useConnectivity } from "../../shared/connectivity";
 import type { MailEmptyAction, MailNoSelectionVM, MailEmptyVM, MailReauthVM } from "./model";
 
 const messages = defineMessages({
@@ -25,7 +24,7 @@ const messages = defineMessages({
   hintConfirm: { id: "mail-review.list.hintConfirm", defaultMessage: "Confirm" },
   hintChange: { id: "mail-review.list.hintChange", defaultMessage: "Change" },
   hintNotJobMail: { id: "mail-review.list.hintNotJobMail", defaultMessage: "Not job mail" },
-  hintLater: { id: "mail-review.list.hintLater", defaultMessage: "Later" },
+  hintLater: { id: "mail-review.list.hintLater", defaultMessage: "Review later" },
   hideHints: { id: "mail-review.list.hideHints", defaultMessage: "Hide these tips" },
 });
 
@@ -92,7 +91,6 @@ export function ReauthCallouts({
   reauth: readonly MailReauthVM[];
   onReconnect: (accountId: string) => void;
 }) {
-  const { status } = useConnectivity();
   if (reauth.length === 0) return null;
   return (
     <div className="flex flex-col gap-2 px-3 pt-3">
@@ -101,9 +99,7 @@ export function ReauthCallouts({
           key={account.accountId}
           tone="warning"
           title={account.title}
-          {...(status !== "offline" && {
-            action: { label: account.actionLabel, onClick: () => onReconnect(account.accountId) },
-          })}
+          action={{ label: account.actionLabel, onClick: () => onReconnect(account.accountId) }}
         >
           <p className="text-fg-secondary text-footnote">{account.body}</p>
         </InlineAlert>

@@ -91,6 +91,14 @@ const messages = defineMessages({
     id: "mail-review.toast.openingSignIn",
     defaultMessage: "Opening the sign-in page in your browser…",
   },
+  reconnectOffline: {
+    id: "mail-review.toast.reconnectOffline",
+    defaultMessage: "Reconnecting needs a connection. Try again when you're back online.",
+  },
+  errorDetail: {
+    id: "mail-review.screen.errorDetail",
+    defaultMessage: "Emails show up here once they load.",
+  },
   backfillLater: {
     id: "mail-review.toast.backfillLater",
     defaultMessage: "Reviewing the inbox scan isn't available in this version yet.",
@@ -535,7 +543,17 @@ export default function MailReviewScreen({ model }: ScreenProps<MailReviewModel>
   const list = (
     <div className="flex min-h-0 flex-1 flex-col">
       {header}
-      {data && <ReauthCallouts reauth={data.reauth} onReconnect={() => emptyAction("connectEmail")} />}
+      {data && (
+        <ReauthCallouts
+          reauth={data.reauth}
+          onReconnect={() =>
+            toast.show({
+              variant: "info",
+              message: intl.formatMessage(offline ? messages.reconnectOffline : messages.openingSignIn),
+            })
+          }
+        />
+      )}
       <div className="border-line-subtle mt-2 min-h-0 flex-1 overflow-y-auto border-t">
         {listBody}
         {offline && data && (
@@ -555,6 +573,14 @@ export default function MailReviewScreen({ model }: ScreenProps<MailReviewModel>
       >
         {null}
       </SkeletonRegion>
+    );
+  } else if (model.status === "error") {
+    detail = (
+      <EmptyState
+        kind="subArea"
+        className="flex-1 content-center justify-center"
+        body={intl.formatMessage(messages.errorDetail)}
+      />
     );
   } else if (selection && data) {
     detail = (

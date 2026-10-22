@@ -52,17 +52,22 @@ export function MailDetails({
       value: <CompanyChip company={details.company} size="sm" />,
     },
     ...(details.role ? [{ term: intl.formatMessage(messages.role), value: details.role }] : []),
-    {
-      term: intl.formatMessage(messages.application),
-      value: application ? (
-        <span className="flex flex-wrap items-center gap-1.5">
-          <span>{application.label}</span>
-          {layout === "folded" && <StatusPill status={application.summary.status} size="sm" />}
-        </span>
-      ) : (
-        <span className="text-fg-tertiary">{copy.noApplication}</span>
-      ),
-    },
+    // The rail shows the application in its own summary block below.
+    ...(layout === "rail" && application
+      ? []
+      : [
+          {
+            term: intl.formatMessage(messages.application),
+            value: application ? (
+              <span className="flex flex-wrap items-center gap-1.5">
+                <span>{application.label}</span>
+                {layout === "folded" && <StatusPill status={application.summary.status} size="sm" />}
+              </span>
+            ) : (
+              <span className="text-fg-tertiary">{copy.noApplication}</span>
+            ),
+          },
+        ]),
     ...(contact
       ? [
           {

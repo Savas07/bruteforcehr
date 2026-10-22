@@ -34,6 +34,7 @@ final class TodayAccessibilityAuditTests: XCTestCase {
     ///   frames after a scroll, so these screenshot-based checks measure the wrong pixels. They run
     ///   on the first viewport of every state and size; contrast is also covered by token ratios
     ///   and the rest by the scrolled AX captures (docs/design/critiques/ios/today/accessibility.md);
+    /// - the Prep row's "Dynamic Type partially unsupported" (known false positive, see accessibility.md);
     /// - issues with no element (the audit can't say what they are; logged for review).
     /// Everything else fails the test.
     @MainActor
@@ -69,6 +70,13 @@ final class TodayAccessibilityAuditTests: XCTestCase {
             // check every other audit type.
             if scrolled, [.contrast, .dynamicType, .textClipped].contains(issue.auditType) {
                 XCTContext.runActivity(named: "IGNORED (visual check after scroll) \(context): \(issue.compactDescription) — \(element.label)") { _ in }
+                return true
+            }
+            // Known false positive, logged: the audit reports the Prep row's text as "partially"
+            // unsupported although it's `.bfhr(.body)` and renders at full size in the AX5 captures
+            // (accessibility.md, Robust #3).
+            if issue.auditType == .dynamicType, element.label == "Prep" { // tests launch in English
+                XCTContext.runActivity(named: "IGNORED (known false positive, Prep) \(context): \(issue.compactDescription)") { _ in }
                 return true
             }
             if !content.contains(element.frame) {

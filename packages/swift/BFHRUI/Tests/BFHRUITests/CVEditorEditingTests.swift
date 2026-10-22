@@ -34,6 +34,19 @@ struct CVEditorEditingTests {
         #expect(model.document?.hasLocalEdits == true)
     }
 
+    @Test("An untouched draft has no changes; a blank bullet doesn't count as one")
+    func draftChanges() throws {
+        let model = try model()
+        var draft = try #require(model.itemDraft(sectionKind: .work, at: 0))
+        #expect(!model.itemDraftChangesCV(draft, sectionKind: .work, at: 0))
+        draft.bullets.append(CVBullet(text: "  "))
+        #expect(!model.itemDraftChangesCV(draft, sectionKind: .work, at: 0))
+        draft.title = "Lead Engineer"
+        #expect(model.itemDraftChangesCV(draft, sectionKind: .work, at: 0))
+        #expect(model.document?.hasLocalEdits == false)
+        #expect(!model.itemDraftChangesCV(CVItemDraft(), sectionKind: .work, at: nil))
+    }
+
     @Test("Ending before the start or leaving a [blank] blocks Save")
     func itemDraftValidation() throws {
         var draft = CVItemDraft()

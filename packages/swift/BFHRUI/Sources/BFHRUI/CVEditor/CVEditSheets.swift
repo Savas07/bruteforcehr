@@ -11,7 +11,6 @@ struct CVItemEditorSheet: View {
     let model: CVEditorModel
     let kind: CVSectionKind
     let index: Int?
-    private let original: CVItemDraft
     @State private var draft: CVItemDraft
     @State private var assist: CVAssistSession?
     @State private var assistTarget: UUID?
@@ -25,12 +24,12 @@ struct CVItemEditorSheet: View {
         self.model = model
         self.kind = kind
         self.index = index
-        original = draft
         _draft = State(initialValue: draft)
     }
 
     private var fields: [CVItemField] { kind.itemFields }
-    private var hasChanges: Bool { draft != original }
+    /// Compared as the CV would save it, so untouched fields and blank bullets don't count.
+    private var hasChanges: Bool { model.itemDraftChangesCV(draft, sectionKind: kind, at: index) }
 
     var body: some View {
         NavigationStack {
@@ -99,7 +98,7 @@ struct CVItemEditorSheet: View {
                     } label: {
                         Text(L.save)
                     }
-                    .disabled(!draft.canSave || (index != nil && !hasChanges))
+                    .disabled(!draft.canSave || !hasChanges)
                     .accessibilityIdentifier("cv.sheet.save")
                 }
             }

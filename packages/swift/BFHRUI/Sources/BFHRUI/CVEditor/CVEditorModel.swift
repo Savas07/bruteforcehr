@@ -220,6 +220,14 @@ public final class CVEditorModel: ScreenModel {
         return saved || index != nil
     }
 
+    /// Whether saving `draft` would change the CV (the sheet's "unsaved changes" test). A new
+    /// item counts once anything is typed.
+    public func itemDraftChangesCV(_ draft: CVItemDraft, sectionKind: CVSectionKind, at index: Int?) -> Bool {
+        guard let index else { return !draft.isBlank }
+        guard var content = document?.content else { return false }
+        return content.setItem(sectionKind, at: index, to: draft)
+    }
+
     /// Reorders a section's items (Edit mode drag handles).
     public func moveItems(sectionKind: CVSectionKind, from source: IndexSet, to destination: Int) {
         editContent { content in content.moveItems(sectionKind, from: source, to: destination) }

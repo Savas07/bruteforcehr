@@ -35,7 +35,10 @@ public struct CVEditorScreen: View {
         }
         .toolbar { toolbar }
         .navigationDestination(item: selection) { _ in
+            // Destinations take the stack's environment, so hand over what this screen set.
             CVDocumentView(model: model)
+                .environment(\.bfhrReload, reload)
+                .environment(\.bfhrNow, model.now)
         }
         .bfhrToastHost()
         .environment(\.bfhrNow, model.now)

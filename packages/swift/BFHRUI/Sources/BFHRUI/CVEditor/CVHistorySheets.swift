@@ -98,15 +98,6 @@ struct CVReorderSectionsSheet: View {
         NavigationStack {
             List {
                 Section {
-                    ForEach(pinned) { section in
-                        Label { Text(L.sectionTitle(section.kind)) } icon: { Image(systemName: "pin") }
-                            .foregroundStyle(BFHRColor.Fg.secondary)
-                            .moveDisabled(true)
-                    }
-                } footer: {
-                    Text(L.pinnedFooter).cvListFooter()
-                }
-                Section {
                     ForEach(movable) { section in
                         Text(L.sectionTitle(section.kind))
                             .accessibilityActions {
@@ -124,6 +115,8 @@ struct CVReorderSectionsSheet: View {
                         let to = destination > from ? destination - 1 : destination
                         model.moveSection(from: pinned.count + from, to: pinned.count + to)
                     }
+                } header: {
+                    Text(L.pinnedFooter).cvListFooter()
                 } footer: {
                     Text(L.reorderFooter).cvListFooter()
                 }

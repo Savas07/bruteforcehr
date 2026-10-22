@@ -1315,22 +1315,22 @@
     "cvEditor.empty.body" : {
       "extractionState" : "manual",
       "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Starte mit einem leeren Lebenslauf, in dem deine Profildaten schon stehen. Der Import von PDF- oder Word-Dateien kommt mit einem späteren Update."
-          }
-        },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Start from a blank CV with your profile details filled in. Importing a PDF or Word file comes in a later update."
+            "value" : "Start from a blank CV with your profile details filled in."
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Profil bilgileriniz doldurulmuş boş bir CV ile başlayın. PDF veya Word dosyası içe aktarma sonraki bir güncellemeyle gelecek."
+            "value" : "Profil bilgileriniz doldurulmuş boş bir CV ile başlayın."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Starte mit einem leeren Lebenslauf, in dem deine Profildaten schon stehen."
           }
         }
       }

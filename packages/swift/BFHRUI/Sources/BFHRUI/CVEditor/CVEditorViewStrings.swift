@@ -10,7 +10,7 @@ enum CVEditorViewStrings {
     static let errorTitle = LocalizedStringResource.bfhr("cvEditor.error.title", default: "We couldn't load your CVs", table: "CVEditor")
     static let errorTitleCV = LocalizedStringResource.bfhr("cvEditor.error.titleCV", default: "We couldn't load this CV", table: "CVEditor")
     static let emptyTitle = LocalizedStringResource.bfhr("cvEditor.empty.title", default: "No CVs yet", table: "CVEditor")
-    static let emptyBody = LocalizedStringResource.bfhr("cvEditor.empty.body", default: "Start from a blank CV with your profile details filled in. Importing a PDF or Word file comes in a later update.", table: "CVEditor")
+    static let emptyBody = LocalizedStringResource.bfhr("cvEditor.empty.body", default: "Start from a blank CV with your profile details filled in.", table: "CVEditor")
     static let startFromScratch = LocalizedStringResource.bfhr("cvEditor.empty.scratch", default: "Start from scratch", table: "CVEditor")
     static let newCV = LocalizedStringResource.bfhr("cvEditor.list.new", default: "New CV", table: "CVEditor")
 

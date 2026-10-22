@@ -1,0 +1,22 @@
+{
+  "name": "@bfhr/fixtures",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Dev/test-only realistic data typed by @bfhr/core. Never import from production code.",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@bfhr/core": "workspace:*"
+  },
+  "devDependencies": {
+    "vitest": "^5.0.5",
+    "zod": "^4.6.7"
+  }
+}

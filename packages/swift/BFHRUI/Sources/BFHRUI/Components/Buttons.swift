@@ -26,6 +26,7 @@ public struct BFHRButtonStyle: ButtonStyle {
 
     public func makeBody(configuration: Configuration) -> some View {
         configuration.label
+            .fixedSize(horizontal: false, vertical: true)
             .font(.bfhr(.body, emphasized: variant == .primary))
             .multilineTextAlignment(.center)
             .foregroundStyle(foreground)
@@ -103,7 +104,9 @@ struct ButtonPairLayout: Layout {
     static func isSideBySide(idealWidths: [CGFloat], available: CGFloat, spacing: CGFloat) -> Bool {
         guard available.isFinite else { return true }
         let half = (available - spacing) / 2
-        return idealWidths.allSatisfy { $0 <= half }
+        // `ceil` + 1 pt: a label measured at exactly its fractional ideal width can still truncate
+        // once pixel-rounded, so side by side needs a little slack.
+        return idealWidths.allSatisfy { $0.rounded(.up) + 1 <= half }
     }
 
     private func sideBySide(_ subviews: Subviews, width: CGFloat) -> Bool {
@@ -131,7 +134,8 @@ struct ButtonPairLayout: Layout {
         let primary = subviews[0], secondary = subviews[1]
         if sideBySide(subviews, width: bounds.width) {
             let half = (bounds.width - spacing) / 2
-            let size = ProposedViewSize(width: half, height: bounds.height)
+            // Height unconstrained: a label that wraps grows the button instead of truncating.
+            let size = ProposedViewSize(width: half, height: nil)
             secondary.place(at: CGPoint(x: bounds.minX, y: bounds.minY), proposal: size)
             primary.place(at: CGPoint(x: bounds.minX + half + spacing, y: bounds.minY), proposal: size)
         } else {

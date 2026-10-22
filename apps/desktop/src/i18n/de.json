@@ -655,6 +655,7 @@
   "tracker-board.column.oldestTodayAccessible": "Älteste: seit heute in dieser Phase",
   "tracker-board.detail.nextAction": "Als Nächstes: <b>{action}</b>",
   "tracker-board.detail.timeline": "Verlauf",
+  "tracker-board.detail.upNext": "Anstehend",
   "tracker-board.drag.cancelled": "Verschieben abgebrochen. {company} bleibt in {status}.",
   "tracker-board.drag.dropHere": "Hier ablegen, um nach {status} zu verschieben",
   "tracker-board.drag.dropped": "Abgelegt in {status}.",

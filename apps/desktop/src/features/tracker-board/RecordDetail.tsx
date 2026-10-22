@@ -21,6 +21,7 @@ const messages = defineMessages({
     defaultMessage: "Next: <b>{action}</b>",
     description: "Detail header: the application's next to-do",
   },
+  upNext: { id: "tracker-board.detail.upNext", defaultMessage: "Up next" },
   timeline: { id: "tracker-board.detail.timeline", defaultMessage: "Timeline" },
 });
 

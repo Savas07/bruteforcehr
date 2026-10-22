@@ -174,9 +174,11 @@ private struct DetailHeader: View {
                 }
             }
             VStack(alignment: .leading, spacing: BFHRSpace.s1) {
-                ViewThatFits(in: .horizontal) {
-                    HStack(spacing: BFHRSpace.s2) { pill; lastMoved }
+                // Stacked at accessibility sizes (by text size, not ViewThatFits; see FactRow).
+                if dynamicTypeSize.isAccessibilitySize {
                     VStack(alignment: .leading, spacing: BFHRSpace.s1) { pill; lastMoved }
+                } else {
+                    HStack(spacing: BFHRSpace.s2) { pill; lastMoved }
                 }
                 if header.lastMoveAutomatic {
                     // The source of an automatic move, up front (trust principle); the timeline
@@ -333,22 +335,29 @@ private struct DetailFacts: View {
 private struct FactRow: View {
     let label: LocalizedStringResource
     let value: Text
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     init(_ label: LocalizedStringResource, value: Text) {
         self.label = label
         self.value = value
     }
 
+    /// Side by side up to the largest standard size (a long value wraps under itself), stacked at
+    /// accessibility sizes. Chosen by text size, not by `ViewThatFits`, which the accessibility
+    /// audit reports as Dynamic Type unsupported.
     var body: some View {
-        ViewThatFits(in: .horizontal) {
-            HStack(alignment: .firstTextBaseline, spacing: BFHRSpace.s3) {
-                title
-                Spacer(minLength: BFHRSpace.s2)
-                value.foregroundStyle(BFHRColor.Fg.secondary).multilineTextAlignment(.trailing)
-            }
-            VStack(alignment: .leading, spacing: 2) {
-                title
-                value.foregroundStyle(BFHRColor.Fg.secondary)
+        Group {
+            if dynamicTypeSize.isAccessibilitySize {
+                VStack(alignment: .leading, spacing: 2) {
+                    title
+                    value.foregroundStyle(BFHRColor.Fg.secondary)
+                }
+            } else {
+                HStack(alignment: .firstTextBaseline, spacing: BFHRSpace.s3) {
+                    title
+                    Spacer(minLength: BFHRSpace.s2)
+                    value.foregroundStyle(BFHRColor.Fg.secondary).multilineTextAlignment(.trailing)
+                }
             }
         }
         .font(.bfhr(.body))

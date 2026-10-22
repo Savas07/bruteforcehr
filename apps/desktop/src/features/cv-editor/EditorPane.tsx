@@ -370,6 +370,13 @@ function ItemBlock({
         <button
           type="button"
           aria-expanded={expanded}
+          aria-label={[
+            title,
+            subtitle,
+            pending.length > 0 ? intl.formatMessage(messages.suggestionHere, { count: pending.length }) : "",
+          ]
+            .filter(Boolean)
+            .join(", ")}
           onClick={() => ops.toggleItem(item.id)}
           className="hover:bg-surface-hover flex min-w-0 flex-1 items-start gap-1.5 rounded-sm px-1.5 py-1 text-left"
         >
@@ -710,11 +717,11 @@ export function EditorPane({
           const vm = vmByKey.get(section.key);
           if (!vm) return null;
           return (
-            <a
+            // Buttons, not links: WebKit (WKWebView) leaves links out of the Tab order by default.
+            <button
+              type="button"
               key={section.key}
-              href={`#${vm.anchorId}`}
-              onClick={(event) => {
-                event.preventDefault();
+              onClick={() => {
                 const target = document.getElementById(vm.anchorId);
                 target?.scrollIntoView({ block: "start" });
                 target?.querySelector<HTMLElement>("h2 button")?.focus({ preventScroll: true });
@@ -722,7 +729,7 @@ export function EditorPane({
               className="text-fg-secondary hover:bg-surface-hover hover:text-fg-primary rounded-md px-2 py-1 text-footnote whitespace-nowrap"
             >
               {vm.title}
-            </a>
+            </button>
           );
         })}
       </nav>

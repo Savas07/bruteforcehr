@@ -105,6 +105,8 @@ export interface AutoUpdateItemVM extends AttentionItemBase {
 export interface FollowUpItemVM extends AttentionItemBase {
   readonly kind: "followUp";
   readonly nudge: NudgeVM;
+  /** The application's job: "Draft follow-up" opens its Apply panel (IA.md deep link `jobs/{id}/apply`). */
+  readonly jobId: string | null;
 }
 
 export type DeadlineKind = "assessment" | "offerReply" | "jobClosing";
@@ -524,6 +526,7 @@ function followUpItems(data: UserData, ctx: ModelContext): FollowUpItemVM[] {
     title: nudge.role,
     context: nudge.message,
     nudge,
+    jobId: data.applications.find((application) => application.id === nudge.applicationId)?.jobId ?? null,
     pendingSync: nudge.pendingSync,
   }));
 }

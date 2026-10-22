@@ -77,6 +77,11 @@ export interface BoardColumnProps {
   emptyLine?: string | null;
   /** Below the list: the first-use "+ Add" row. */
   footer?: ReactNode;
+  /**
+   * Share the board's width (up to 272 px) instead of the fixed 272 px: for boards with nothing
+   * to scroll to (first use, load error), so they never overflow.
+   */
+  fluid?: boolean;
 }
 
 export function BoardColumn({
@@ -90,6 +95,7 @@ export function BoardColumn({
   children,
   emptyLine = null,
   footer,
+  fluid = false,
 }: BoardColumnProps) {
   const intl = useIntl();
   const { setNodeRef } = useDroppable({ id: status.key });
@@ -161,7 +167,13 @@ export function BoardColumn({
     <section
       ref={setNodeRef}
       aria-label={accessibleLabel}
-      className={cx("flex min-h-0 w-68 shrink-0 flex-col", wellTone)}
+      className={cx(
+        "flex min-h-0 flex-col",
+        // Fluid columns never shrink below their header's longest word (flex `min-width: auto`), so
+        // labels wrap only between words; narrower than that, the board scrolls.
+        fluid ? "max-w-68 flex-1 basis-0" : "w-68 shrink-0",
+        wellTone,
+      )}
     >
       <header className="flex flex-col gap-0.5 px-3 pt-2.5 pb-2">
         <div className="flex min-h-6 items-start gap-2">
@@ -169,7 +181,9 @@ export function BoardColumn({
             aria-hidden="true"
             className={cx("mt-1.5 size-2 shrink-0 rounded-full", STATUS_DOT[status.key])}
           />
-          <h2 className="text-fg-primary min-w-0 text-callout font-semibold text-balance">{status.label}</h2>
+          <h2 className={cx("text-fg-primary text-callout font-semibold text-balance", !fluid && "min-w-0")}>
+            {status.label}
+          </h2>
           <span className="text-fg-secondary mt-px text-footnote font-medium tabular-nums">{count}</span>
           {onCollapsedChange && (
             <IconButton

@@ -28,7 +28,6 @@ import type { StatusVM } from "../../shared/model/types";
 import { PHASE_MESSAGES } from "../../shared/model/vocabulary";
 import type { ScreenProps } from "../../shared/screen";
 import { EmptyState, GhostRow } from "../../shared/ui/EmptyState";
-import { useBreakpoints } from "../../shared/ui/layout";
 import { PaneError } from "../../shared/ui/PaneError";
 import { ScreenTitle } from "../../shared/ui/ScreenTitle";
 import { BoardCardSkeleton, useSkeletonGate } from "../../shared/ui/Skeleton";
@@ -162,10 +161,12 @@ function StaticBoard({ loading, onRetry }: { loading: boolean; onRetry: (() => v
       <span role="status" className="sr-only">
         {loading ? intl.formatMessage(messages.loading) : ""}
       </span>
-      {/* Nothing inside is focusable here, so the scroller itself takes focus for keyboard scrolling. */}
+      {/* Loading keeps the real 272 px columns (the board that arrives scrolls the same way); with
+          nothing focusable inside, the scroller itself takes focus for keyboard scrolling. After an
+          error there is nothing to scroll to, so the columns share the width instead. */}
       <div
         role="group"
-        tabIndex={0}
+        tabIndex={loading ? 0 : undefined}
         aria-label={intl.formatMessage(messages.boardLabel)}
         className="flex min-w-0 flex-1 gap-2 overflow-x-auto"
       >
@@ -177,6 +178,7 @@ function StaticBoard({ loading, onRetry }: { loading: boolean; onRetry: (() => v
             accessibleLabel={status.label}
             oldest={null}
             collapsed={false}
+            fluid={!loading}
             drop={none}
           >
             {showSkeleton &&
@@ -218,10 +220,28 @@ function ReadyBoard({ model }: { model: TrackerBoardModel }) {
   const intl = useIntl();
   const toast = useToast();
   const navigate = useNavigate();
-  const { detail: wideEnough } = useBreakpoints();
   const offline = useConnectivity().status === "offline";
   const instructionsId = useId();
   const boardRef = useRef<HTMLDivElement>(null);
+  // Which board edges have more columns beyond them (the fades). Re-measured on scroll, on resize
+  // and after every render (collapsing a column or opening the panel changes the overflow).
+  const [edges, setEdges] = useState({ start: false, end: false });
+  const measureEdges = () => {
+    const element = boardRef.current;
+    if (!element) return;
+    const start = element.scrollLeft > 1;
+    const end = element.scrollLeft + element.clientWidth < element.scrollWidth - 1;
+    setEdges((previous) => (previous.start === start && previous.end === end ? previous : { start, end }));
+  };
+  useEffect(measureEdges);
+  useEffect(() => {
+    const element = boardRef.current;
+    if (!element) return;
+    // `measureEdges` only reads the ref and the state setter, so the first render's copy stays valid.
+    const observer = new ResizeObserver(measureEdges);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
   const panelRef = useRef<HTMLDivElement>(null);
   const cardRefs = useRef(new Map<string, HTMLButtonElement>());
   const moveCounter = useRef(0);
@@ -498,28 +518,10 @@ function ReadyBoard({ model }: { model: TrackerBoardModel }) {
 
   // ─── Columns ────────────────────────────────────────────────────────────────────────────────
   const firstUse = board.firstUse;
-  const renderColumn = (column: TrackerColumnVM, index: number) => {
+  const renderColumn = (column: TrackerColumnVM) => {
     const target = preview?.status.key === column.status.key ? preview : null;
     const shown = target ?? column;
     const closed = isClosed(column.status.key);
-    const explainer =
-      firstUse && index === 0 && wideEnough ? (
-        <li>
-          <EmptyState
-            kind="firstUse"
-            glyph={Inbox}
-            title={firstUse.title}
-            body={firstUse.body}
-            primary={{
-              label: firstUse.primary.label,
-              keys: firstUse.primary.shortcut,
-              onClick: () => notYet("add"),
-            }}
-            secondary={{ label: firstUse.secondary.label, onClick: () => notYet("import") }}
-            className="bg-surface-base rounded-md px-4 py-8"
-          />
-        </li>
-      ) : null;
     return (
       <BoardColumn
         key={column.status.key}
@@ -532,9 +534,13 @@ function ReadyBoard({ model }: { model: TrackerBoardModel }) {
             : null
         }
         collapsed={isCollapsed(column)}
-        onCollapsedChange={(value) =>
-          setCollapsed((previous) => ({ ...previous, [column.status.key]: value }))
-        }
+        // An empty first-use board shares the width and has nothing to fold away.
+        {...(firstUse
+          ? { fluid: true }
+          : {
+              onCollapsedChange: (value: boolean) =>
+                setCollapsed((previous) => ({ ...previous, [column.status.key]: value })),
+            })}
         drop={dropRole(column.status)}
         emptyLine={shown.emptyLine}
         footer={
@@ -545,7 +551,6 @@ function ReadyBoard({ model }: { model: TrackerBoardModel }) {
           ) : undefined
         }
       >
-        {explainer}
         {shown.cards.map((card) =>
           target && card.applicationId === activeId ? (
             <DropPlaceholder key={card.applicationId} card={card} />
@@ -692,14 +697,31 @@ function ReadyBoard({ model }: { model: TrackerBoardModel }) {
         }}
       >
         <div className="relative flex min-w-0 flex-1 gap-2 ps-6 pe-4 pb-4">
-          <div
-            ref={boardRef}
-            role="group"
-            aria-label={intl.formatMessage(messages.boardLabel)}
-            className="flex min-w-0 flex-1 gap-2 overflow-x-auto"
-          >
-            {board.columns.map(renderColumn)}
-            {closedExpanded && board.closedRail.outcomes.map((column) => renderColumn(column, -1))}
+          <div className="relative flex min-w-0 flex-1">
+            <div
+              ref={boardRef}
+              role="group"
+              aria-label={intl.formatMessage(messages.boardLabel)}
+              onScroll={measureEdges}
+              className="flex min-w-0 flex-1 gap-2 overflow-x-auto"
+            >
+              {board.columns.map(renderColumn)}
+              {closedExpanded && board.closedRail.outcomes.map(renderColumn)}
+            </div>
+            {/* The board fades into the page where columns continue, so a column cut at the edge
+                reads as "scroll for more", not as hidden behind the Closed rail. */}
+            {edges.start && (
+              <div
+                aria-hidden="true"
+                className="from-surface-base pointer-events-none absolute inset-y-0 start-0 w-6 bg-linear-to-r to-transparent"
+              />
+            )}
+            {edges.end && (
+              <div
+                aria-hidden="true"
+                className="from-surface-base pointer-events-none absolute inset-y-0 end-0 w-16 bg-linear-to-l to-transparent"
+              />
+            )}
           </div>
           <ClosedRail
             rail={board.closedRail}
@@ -715,7 +737,7 @@ function ReadyBoard({ model }: { model: TrackerBoardModel }) {
             overId={overId}
             fallbackLabel={board.closedRail.label}
           />
-          {firstUse && !wideEnough && (
+          {firstUse && (
             <div className="absolute inset-x-0 top-24 flex justify-center px-6">
               <EmptyState
                 kind="firstUse"

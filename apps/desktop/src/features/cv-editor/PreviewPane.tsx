@@ -140,10 +140,12 @@ export function PreviewPane({
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const observer = new ResizeObserver(([entry]) => {
-      const width = entry?.contentRect.width ?? 0;
-      setFitScale(Math.min(1, Math.max(ZOOM_MIN, (width - 48) / paper.width)));
-    });
+    // Fit against the scrollport (`clientWidth` excludes classic scrollbars, e.g. WebView2), and
+    // floor it so the scaled page never overflows the canvas horizontally.
+    const fit = () =>
+      setFitScale(Math.min(1, Math.max(ZOOM_MIN, Math.floor(((canvas.clientWidth - 48) / paper.width) * 100) / 100)));
+    const observer = new ResizeObserver(fit);
+    fit();
     observer.observe(canvas);
     return () => observer.disconnect();
   }, [paper.width]);
@@ -178,7 +180,7 @@ export function PreviewPane({
     <section
       ref={regionRef}
       aria-labelledby="cv-preview-title"
-      className="bg-surface-sunken flex min-h-0 min-w-0 flex-1 flex-col"
+      className="bg-surface-sunken relative flex min-h-0 min-w-0 flex-1 flex-col"
     >
       <header className="border-line-subtle bg-surface-base flex h-11 shrink-0 items-center gap-2 border-b px-3">
         <h2 id="cv-preview-title" className="text-headline">
@@ -213,29 +215,28 @@ export function PreviewPane({
           />
         </div>
       </header>
-      {/* Focusable so keyboard users can scroll the pages and zoom with Mod+= / Mod+-. */}
-      <div
-        ref={canvasRef}
-        tabIndex={0}
-        role="group"
-        aria-labelledby="cv-preview-title"
-        className="relative min-h-0 flex-1 overflow-auto outline-offset-[-2px]"
-      >
-        {/* Off-screen measuring copy at the page's content width. */}
-        <div
-          ref={measureRef}
-          aria-hidden
-          data-theme="light"
-          className="invisible absolute top-0 left-0 font-sans"
-          style={{ width: contentWidth }}
-        >
+      {/* Off-screen measuring copy at the page's content width. Outside the scrollport (in a
+          zero-size clip) so its width never adds scroll overflow on classic-scrollbar engines. */}
+      <div aria-hidden className="pointer-events-none absolute top-0 left-0 size-0 overflow-hidden">
+        <div ref={measureRef} data-theme="light" className="invisible font-sans" style={{ width: contentWidth }}>
           {document.blocks.map((block) => (
             <div key={block.id}>
               <Block block={block} accent={accent} />
             </div>
           ))}
         </div>
-        <div className="flex flex-col items-center gap-6 px-6 py-6">
+      </div>
+      {/* Focusable so keyboard users can scroll the pages and zoom with Mod+= / Mod+-. */}
+      <div
+        ref={canvasRef}
+        tabIndex={0}
+        role="group"
+        aria-labelledby="cv-preview-title"
+        // `scrollbar-gutter: stable` keeps the fit width the same whether or not the pages overflow.
+        className="relative min-h-0 flex-1 overflow-auto [scrollbar-gutter:stable] outline-offset-[-2px]"
+      >
+        {/* `w-fit min-w-full`: centred at fit, scrollable from the left edge when zoomed past it. */}
+        <div className="flex w-fit min-w-full flex-col items-center gap-6 px-6 py-6">
           {pages.map((indexes, pageIndex) => (
             <div
               key={pageIndex}

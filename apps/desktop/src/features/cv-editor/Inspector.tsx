@@ -11,6 +11,7 @@ import { cx } from "../../shared/cx";
 import { useKeyBindings } from "../../shared/keyboard/useKeyBindings";
 import { Button, IconButton } from "../../shared/ui/Button";
 import { EmptyState } from "../../shared/ui/EmptyState";
+import { ScrollStrip } from "../../shared/ui/ScrollStrip";
 import { SegmentedControl } from "../../shared/ui/SegmentedControl";
 import { SourceTag } from "../../shared/ui/SourceTag";
 import { StatusPill } from "../../shared/ui/StatusPill";
@@ -56,7 +57,10 @@ const messages = defineMessages({
     id: "cv-editor.check.noJobs",
     defaultMessage: "Save a job, then check which of its keywords your CV covers.",
   },
-  allCovered: { id: "cv-editor.check.allCovered", defaultMessage: "Your CV covers every keyword from this job." },
+  allCovered: {
+    id: "cv-editor.check.allCovered",
+    defaultMessage: "Your CV covers every keyword from this job.",
+  },
   pendingCount: {
     id: "cv-editor.suggestions.count",
     defaultMessage: "{count, plural, one {# suggestion to review} other {# suggestions to review}}",
@@ -131,7 +135,9 @@ function DesignTab({
                 {intl.formatMessage(messages.atsSafe)}
               </span>
             </p>
-            <p className="text-fg-secondary mt-1 text-footnote">{intl.formatMessage(messages.templateNote)}</p>
+            <p className="text-fg-secondary mt-1 text-footnote">
+              {intl.formatMessage(messages.templateNote)}
+            </p>
           </div>
         </div>
       </section>
@@ -235,7 +241,9 @@ function CheckTab({
   return (
     <div className="flex flex-col gap-4">
       <label className="flex flex-col gap-1">
-        <span className="text-fg-secondary text-footnote font-semibold">{intl.formatMessage(messages.checkJob)}</span>
+        <span className="text-fg-secondary text-footnote font-semibold">
+          {intl.formatMessage(messages.checkJob)}
+        </span>
         <select
           value={jobId ?? ""}
           onChange={(event) => onJob(event.target.value)}
@@ -261,8 +269,14 @@ function CheckTab({
         value={filter}
         onValueChange={setFilter}
         options={[
-          { value: "missing", label: intl.formatMessage(messages.checkMissing, { count: coverage.missing.length }) },
-          { value: "covered", label: intl.formatMessage(messages.checkCovered, { count: coverage.covered.length }) },
+          {
+            value: "missing",
+            label: intl.formatMessage(messages.checkMissing, { count: coverage.missing.length }),
+          },
+          {
+            value: "covered",
+            label: intl.formatMessage(messages.checkCovered, { count: coverage.covered.length }),
+          },
           { value: "all", label: intl.formatMessage(messages.checkAll, { count: coverage.total }) },
         ]}
       />
@@ -375,7 +389,9 @@ function SuggestionsTab({
           <ul className="flex flex-col gap-2">
             {items.map((suggestion) => {
               const reason = blocked(suggestion)
-                ? intl.formatMessage(messages.fillInCv, { placeholders: intl.formatList(suggestion.placeholders) })
+                ? intl.formatMessage(messages.fillInCv, {
+                    placeholders: intl.formatList(suggestion.placeholders),
+                  })
                 : null;
               return (
                 <li
@@ -420,7 +436,13 @@ function SuggestionsTab({
                     >
                       {intl.formatMessage(messages.use)}
                     </Button>
-                    <Button size="sm" variant="plain" icon={X} shortcut="R" onClick={() => onKeep(suggestion.id)}>
+                    <Button
+                      size="sm"
+                      variant="plain"
+                      icon={X}
+                      shortcut="R"
+                      onClick={() => onKeep(suggestion.id)}
+                    >
                       {intl.formatMessage(messages.keep)}
                     </Button>
                     <Button size="sm" variant="plain" shortcut="E" onClick={() => onShow(suggestion.id)}>
@@ -479,7 +501,13 @@ function RestoreButton({ revision, onRestore }: { revision: CvRevisionVM; onRest
   );
 }
 
-function HistoryTab({ editor, onRestore }: { editor: CvEditorVM; onRestore: (revision: CvRevisionVM) => void }) {
+function HistoryTab({
+  editor,
+  onRestore,
+}: {
+  editor: CvEditorVM;
+  onRestore: (revision: CvRevisionVM) => void;
+}) {
   const intl = useIntl();
   return (
     <div className="flex flex-col gap-5">
@@ -594,22 +622,34 @@ export function Inspector({
         overlay && "shadow-overlay absolute inset-y-0 right-0 z-(--bfhr-layer-sticky)",
       )}
     >
-      <Tabs.Root value={tab} onValueChange={(value) => onTab(value as InspectorTab)} className="flex min-h-0 flex-1 flex-col">
+      <Tabs.Root
+        value={tab}
+        onValueChange={(value) => onTab(value as InspectorTab)}
+        className="flex min-h-0 flex-1 flex-col"
+      >
         <div className="border-line-subtle flex h-11 shrink-0 items-end gap-1 border-b pr-1 pl-2">
-          <Tabs.List aria-label={intl.formatMessage(messages.label)} className="flex min-w-0 flex-1 gap-1 overflow-x-auto">
-            {tabs.map((item) => (
-              <Tabs.Trigger key={item.value} value={item.value} className={tabTrigger}>
-                {item.label}
-                {item.count !== undefined && item.count > 0 && (
-                  <span className="bg-surface-selected text-fg-secondary ml-1.5 rounded-full px-1.5 text-caption1 tabular-nums">
-                    {item.count}
-                  </span>
-                )}
-              </Tabs.Trigger>
-            ))}
-          </Tabs.List>
+          <ScrollStrip className="flex-1 items-end">
+            <Tabs.List aria-label={intl.formatMessage(messages.label)} className="flex gap-1">
+              {tabs.map((item) => (
+                <Tabs.Trigger key={item.value} value={item.value} className={tabTrigger}>
+                  {item.label}
+                  {item.count !== undefined && item.count > 0 && (
+                    <span className="bg-surface-selected text-fg-secondary ml-1.5 rounded-full px-1.5 text-caption1 tabular-nums">
+                      {item.count}
+                    </span>
+                  )}
+                </Tabs.Trigger>
+              ))}
+            </Tabs.List>
+          </ScrollStrip>
           <div className="self-center">
-            <IconButton size="sm" icon={X} label={intl.formatMessage(messages.close)} shortcut="Mod+Shift+D" onClick={onClose} />
+            <IconButton
+              size="sm"
+              icon={X}
+              label={intl.formatMessage(messages.close)}
+              shortcut="Mod+Shift+D"
+              onClick={onClose}
+            />
           </div>
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto p-4">

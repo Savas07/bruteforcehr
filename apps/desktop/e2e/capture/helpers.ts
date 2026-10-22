@@ -72,10 +72,17 @@ export async function setTheme(theme: "light" | "dark"): Promise<void> {
   );
 }
 
-/** Screenshots can't show the OS material behind transparent areas; use the opaque fallback. */
-export async function useOpaqueMaterial(): Promise<void> {
+/**
+ * Makes captures independent of the machine:
+ * - Screenshots can't show the OS material behind transparent areas; use the opaque fallback.
+ * - The real mouse cursor rests somewhere over the window (the Windows runner's sits mid-screen)
+ *   and would leave a stray :hover row in the shot; with pointer-events off, nothing is hovered.
+ *   Captures drive the app through JS events only, so they don't need the pointer.
+ */
+export async function prepareCapture(): Promise<void> {
   await browser.execute(() => {
     document.documentElement.dataset["material"] = "none";
+    document.documentElement.style.pointerEvents = "none";
   });
 }
 

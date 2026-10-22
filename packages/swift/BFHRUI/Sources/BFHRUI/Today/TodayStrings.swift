@@ -29,6 +29,8 @@ enum TodayStrings {
     static let openJobHint = LocalizedStringResource.bfhr("today.match.hint", default: "Opens the job", table: "Today")
     static let seeAllInJobs = LocalizedStringResource.bfhr("today.matches.seeAll", default: "See all in Jobs", table: "Today")
     static let prep = LocalizedStringResource.bfhr("today.nextUp.prep", default: "Prep", table: "Today", comment: "Disclosure with interviewers, notes and the application.")
+    static let expanded = LocalizedStringResource.bfhr("today.disclosure.expanded", default: "Expanded", table: "Today")
+    static let collapsed = LocalizedStringResource.bfhr("today.disclosure.collapsed", default: "Collapsed", table: "Today")
     static let yourNotes = LocalizedStringResource.bfhr("today.nextUp.notes", default: "Your notes", table: "Today")
     static let videoCall = LocalizedStringResource.bfhr("today.nextUp.videoCall", default: "Video call", table: "Today")
     static let joinLater = LocalizedStringResource.bfhr("today.nextUp.joinLater", default: "Join appears here 10 minutes before the start.", table: "Today")

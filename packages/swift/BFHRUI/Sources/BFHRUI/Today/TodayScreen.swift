@@ -18,6 +18,7 @@ public struct TodayScreen: View {
     @State private var pickingDate: SnoozeRequest?
     @State private var showsOlderFollowUps = false
     @State private var showsDone = false
+    @State private var showsPrep = false
     @State private var reviewDetent: PresentationDetent = .large
 
     public init(model: TodayModel) {
@@ -174,14 +175,29 @@ public struct TodayScreen: View {
                     openURL(url)
                 }
                 .bfhrRowActions(nextUpActions(next))
-                DisclosureGroup {
-                    NextUpPrep(next: next) { openURL(TodayLink.application(next.applicationId)) }
+                Button {
+                    withAnimation(BFHRMotion.spring(reduceMotion: reduceMotion)) { showsPrep.toggle() }
                 } label: {
-                    InlineLabel(systemImage: "list.bullet.clipboard") {
-                        Text(TodayStrings.prep)
-                            .font(.bfhr(.body))
-                            .foregroundStyle(BFHRColor.Fg.primary)
+                    HStack(spacing: BFHRSpace.s2) {
+                        InlineLabel(systemImage: "list.bullet.clipboard") {
+                            Text(TodayStrings.prep)
+                                .font(.bfhr(.body))
+                                .foregroundStyle(BFHRColor.Fg.primary)
+                        }
+                        Spacer(minLength: BFHRSpace.s2)
+                        Image(systemName: "chevron.right")
+                            .font(.bfhr(.footnote, emphasized: true))
+                            .foregroundStyle(BFHRColor.Fg.tertiary)
+                            .rotationEffect(.degrees(showsPrep ? 90 : 0))
+                            .accessibilityHidden(true)
                     }
+                    .frame(minHeight: BFHRHitTarget.minimum)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityValue(Text(showsPrep ? TodayStrings.expanded : TodayStrings.collapsed))
+                if showsPrep {
+                    NextUpPrep(next: next) { openURL(TodayLink.application(next.applicationId)) }
                 }
             }
         case .toReview:

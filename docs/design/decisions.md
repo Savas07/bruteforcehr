@@ -2,7 +2,7 @@
 
 Date: 2026-10-22. Scope: every cross-doc conflict and open question in the 14 research docs (`docs/design/research/*.md`, including `desktop-chrome.md` and `website.md`) that doesn't need the user. Inputs also include ADR 0002 (data model, `@bfhr/core`) and ADR 0003 (sign-in). Each decision lists the options, the decision, why, and the docs it changes. Where a decision changes a research doc, this file wins until the research doc is updated in its next critique round.
 
-The decisions that need the user (taste or legal) are listed separately at the end, each with a recommendation.
+The decisions that needed the user (taste or legal) are recorded at the end as U1–U8. The user made all of them on 2026-10-22, so none are open.
 
 Shorthand: **Mod** = ⌘ on macOS, Ctrl on Windows. "Research" = `docs/design/research/`.
 
@@ -38,7 +38,7 @@ Shorthand: **Mod** = ⌘ on macOS, Ctrl on Windows. "Research" = `docs/design/re
 
 ### D05 · Accent color: brand or OS accent
 
-- **Options:** follow the OS accent (`systemPreferences.getAccentColor()`, desktop-chrome OQ3) or use the brand accent.
+- **Options:** follow the OS accent color (desktop-chrome OQ3) or use the brand accent.
 - **Decision:** **brand accent** (`accent.*` tokens) on every platform. The sidebar selection stays a neutral fill (desktop-chrome), and the focus ring uses `line.focus`.
 - **Why:** OS accents include yellow and graphite, which fail contrast for text and focus rings. The website and iOS need the same brand. Every brand pair is contrast-tested.
 - **Affects:** desktop-chrome OQ3, job-feed-search ("system accent selection" on macOS becomes the neutral selected fill with an accent focus ring).
@@ -142,9 +142,9 @@ Shorthand: **Mod** = ⌘ on macOS, Ctrl on Windows. "Research" = `docs/design/re
 - **Decision:**
   - Mail category `rejection` displays as **Decision**: "Acme decided not to move forward. We updated the application."
   - The notification kind is **Decisions**, and it can be muted.
-  - The backfill review group header uses the status display label from the user decision U2.
+  - The backfill review group header uses the status display label from U2 ("Not selected").
   - No red, no "unfortunately", no "Sorry".
-- **Why:** mail-review, settings-account and today-home already agree. Only the status label was open, and that's a user decision.
+- **Why:** mail-review, settings-account and today-home already agree. Only the status label was open, and the user settled it (U2).
 - **Affects:** connect-email ("Not moving forward" header becomes the status label), mail-review, settings-account, today-home.
 
 ### D19 · Dismiss verbs and snooze presets
@@ -250,7 +250,7 @@ The consolidated map is in [IA.md § Keyboard map](IA.md#keyboard-map). These ch
 | Primary action                            | Mod+Enter, overloaded                                             | kept, with one rule: Mod+Enter runs the primary action of the focused surface (Continue, Send, Import, use suggestion, open record) |
 
 - **Why:**
-  - Avoid OS-reserved and Electron-reserved keys (⌘H, ⌘⌥H, ⌘M, ⌘Q, ⌘W, ⌘P, ⌘⌥I / Ctrl+Shift+I, Ctrl+R, F11, F12, Alt+F4, Alt+Space, Win+…).
+  - Avoid OS-reserved keys and keys the webviews reserve (⌘H, ⌘⌥H, ⌘M, ⌘Q, ⌘W, ⌘P, ⌘⌥I / Ctrl+Shift+I, Ctrl+R, F11, F12, Alt+F4, Alt+Space, Win+…). The desktop app is Tauri 2: WKWebView on macOS, WebView2 on Windows.
   - Avoid keys that need AltGr on German and Turkish layouts.
   - One letter means one thing across views.
 
@@ -283,7 +283,7 @@ ADR 0002 defines only `users/{uid}/cv-imports/{fileId}` and `users/{uid}/rendere
 | ------------------------------------ | --------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- | -------------------------------------------------------------------------- | ---------------- |
 | `users/{uid}/exports/{exportId}.zip` | "Export everything" ZIP (JSON + files)                                                                          | Server (export callable)                       | Deleted after 7 days (bucket lifecycle rule on the prefix)                 | settings-account |
 | `users/{uid}/attachments/{fileId}`   | Extra files the user attaches to an email application (portfolio PDF, certificates) from Files or the drop zone | Client upload, ≤ 20 MB total per email (apply) | Kept while an application references it, then deleted with the application | apply            |
-| `users/{uid}/cv-photos/{fileId}`     | Photo for CV variants that use one (only if U6 allows it)                                                       | Client upload                                  | Deleted when no CV revision references it                                  | cv-editor OQ8    |
+| `users/{uid}/cv-photos/{fileId}`     | Photo for CV variants that turned it on (U6: opt-in per variant, off by default)                                | Client upload                                  | Deleted when no CV revision references it                                  | cv-editor OQ8    |
 
 Explicitly **not stored**:
 
@@ -293,21 +293,21 @@ Explicitly **not stored**:
 
 ### Firestore
 
-| #   | Change                                                                                                                                                                                                                                                                                                | Why                                                                 | Research                         |
-| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- | -------------------------------- |
-| F1  | Contract: "Save" writes `applications` (`status: saved`, `jobId`) + `created` event + `jobMatches.state = saved` in one batch. "Is this job tracked?" is `applications where jobId == …` (single-field, auto-indexed)                                                                                 | D02                                                                 | tracker, job-feed-search         |
-| F2  | `users/{uid}/exports/{id}`: status, sizeBytes, storagePath, expiresAt (server-written, client read)                                                                                                                                                                                                   | Export cards with expiry                                            | settings-account OQ2             |
-| F3  | `users/{uid}/jobSources/{sourceId}`: enabled (client), `{configured, last4, lastUsedAt, lastError, jobsLastRun}` (server)                                                                                                                                                                             | Key state without exposing secrets                                  | settings-account OQ2             |
-| F4  | `mailAccounts/{id}.backfill`: `{windowDays, since, scanned, total?, candidates, stage, finishedAt}` (server-written)                                                                                                                                                                                  | Scan progress + D17                                                 | connect-email OQ2                |
-| F5  | `settings.dailySendCap` max 50 (was 200)                                                                                                                                                                                                                                                              | D22                                                                 | apply                            |
-| F6  | `applications/{id}.emailSend`: `{state: scheduled\|sent\|cancelled\|failed, sendAt, providerMessageId, threadId}`; the Cloud Task name stays server-only                                                                                                                                              | Real 10 s window, "Sending in 7 s · Cancel" banner                  | apply OQ2                        |
-| F7  | `users/{uid}/templates/{id}` (kind `email` \| `cover_letter`, language, body) and `users/{uid}/answers/{id}` (category, label, per-language values, country/currency tags)                                                                                                                            | Templates and the answers library                                   | apply OQ1                        |
-| F8  | `mailMessages` review snooze: add `reviewLaterUntil` to the client-updatable review fields                                                                                                                                                                                                            | "Review later" (H) without a new collection                         | mail-review, today-home          |
-| F9  | `applications/{id}.followUpSnoozedUntil`, `jobMatches/{id}.snoozedUntil`                                                                                                                                                                                                                              | Snooze for computed Today items, on the source doc (today-home OQ1) | today-home                       |
-| F10 | `mail_received` events carry `mailCategory` (and `revertsEventId` stays status-only)                                                                                                                                                                                                                  | Insights "response" from replies that don't change status (D30)     | insights OQ1                     |
-| F11 | Tailored CVs: `Cv.variantKind` `role` \| `language` \| `tailored` and `tailoredForJobId`                                                                                                                                                                                                              | apply creates tailored variants, cv-editor's kinds lacked one       | apply, cv-editor OQ1             |
-| F12 | Profile settings: `settings.notifications.{kind}` (interviews, offers, assessments, decisions, reauth, matches) and the quiet-hours shape `{enabled, days, start, end, timeZone, summary}`                                                                                                            | Notification settings, settings-account proposal                    | settings-account                 |
-| F13 | Appearance is **not** synced to Firestore. iOS follows the system, with no in-app override (HIG). Desktop: Settings › Desktop app › Appearance (System / Light / Dark, default System), also in the palette, stored per install by the Electron main process and applied as `data-theme` on `<html>`. | Appearance is a device preference                                   | settings-account, desktop-chrome |
+| #   | Change                                                                                                                                                                                                                                                                                    | Why                                                                 | Research                         |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- | -------------------------------- |
+| F1  | Contract: "Save" writes `applications` (`status: saved`, `jobId`) + `created` event + `jobMatches.state = saved` in one batch. "Is this job tracked?" is `applications where jobId == …` (single-field, auto-indexed)                                                                     | D02                                                                 | tracker, job-feed-search         |
+| F2  | `users/{uid}/exports/{id}`: status, sizeBytes, storagePath, expiresAt (server-written, client read)                                                                                                                                                                                       | Export cards with expiry                                            | settings-account OQ2             |
+| F3  | `users/{uid}/jobSources/{sourceId}`: enabled (client), `{configured, last4, lastUsedAt, lastError, jobsLastRun}` (server)                                                                                                                                                                 | Key state without exposing secrets                                  | settings-account OQ2             |
+| F4  | `mailAccounts/{id}.backfill`: `{windowDays, since, scanned, total?, candidates, stage, finishedAt}` (server-written)                                                                                                                                                                      | Scan progress + D17                                                 | connect-email OQ2                |
+| F5  | `settings.dailySendCap` max 50 (was 200)                                                                                                                                                                                                                                                  | D22                                                                 | apply                            |
+| F6  | `applications/{id}.emailSend`: `{state: scheduled\|sent\|cancelled\|failed, sendAt, providerMessageId, threadId}`; the Cloud Task name stays server-only                                                                                                                                  | Real 10 s window, "Sending in 7 s · Cancel" banner                  | apply OQ2                        |
+| F7  | `users/{uid}/templates/{id}` (kind `email` \| `cover_letter`, language, body) and `users/{uid}/answers/{id}` (category, label, per-language values, country/currency tags)                                                                                                                | Templates and the answers library                                   | apply OQ1                        |
+| F8  | `mailMessages` review snooze: add `reviewLaterUntil` to the client-updatable review fields                                                                                                                                                                                                | "Review later" (H) without a new collection                         | mail-review, today-home          |
+| F9  | `applications/{id}.followUpSnoozedUntil`, `jobMatches/{id}.snoozedUntil`                                                                                                                                                                                                                  | Snooze for computed Today items, on the source doc (today-home OQ1) | today-home                       |
+| F10 | `mail_received` events carry `mailCategory` (and `revertsEventId` stays status-only)                                                                                                                                                                                                      | Insights "response" from replies that don't change status (D30)     | insights OQ1                     |
+| F11 | Tailored CVs: `Cv.variantKind` `role` \| `language` \| `tailored` and `tailoredForJobId`                                                                                                                                                                                                  | apply creates tailored variants, cv-editor's kinds lacked one       | apply, cv-editor OQ1             |
+| F12 | Profile settings: `settings.notifications.{kind}` (interviews, offers, assessments, decisions, reauth, matches) and the quiet-hours shape `{enabled, days, start, end, timeZone, summary}`                                                                                                | Notification settings, settings-account proposal                    | settings-account                 |
+| F13 | Appearance is **not** synced to Firestore. iOS follows the system, with no in-app override (HIG). Desktop: Settings › Desktop app › Appearance (System / Light / Dark, default System), also in the palette, stored per install by the Tauri app and applied as `data-theme` on `<html>`. | Appearance is a device preference                                   | settings-account, desktop-chrome |
 
 ## Insights
 
@@ -369,48 +369,50 @@ Explicitly **not stored**:
 | Website checksums                                          | Publish `SHA256SUMS.txt` with each release; the site shows SHA-256                                                                                                                                                 | website OQ2              |
 | Website status line                                        | Not in v1 (no public health endpoint)                                                                                                                                                                              | website OQ5              |
 
-## Decisions that need the user (taste or legal)
+## User decisions (taste or legal)
 
-Each needs a yes/no or a pick at the M0 design checkpoint. The recommendation applies until then.
+These needed the user. The user decided all eight on 2026-10-22 (kickoff); nothing here is waiting on the user any more. Options and evidence are kept for context.
 
-### U1 · Turkish sen/siz and German du/Sie
+### U1 · Turkish siz, German du
 
 - **Evidence:**
   - **German:** every doc uses **du**: today-home, mail-review, apply, cv-editor, settings-account, states, onboarding-signin, insights, job-detail, desktop-chrome and the ADR 0003 sign-in email ("Dein Anmeldecode").
   - **Turkish, sen:** today-home, mail-review, apply, cv-editor, settings-account, states, onboarding-signin, insights.
   - **Turkish, siz:** job-detail and the job-feed-search drafts ("deneyin"), the shipped desktop shell strings ("gezinin", "deneyin"), and the ADR 0003 sign-in email ("paylaşmayın", "Sizden"), which already ships.
-- **Options:** TR sen + DE du (warm, personal, matches most drafts) · TR siz + DE du (Turkish career services such as Kariyer.net and LinkedIn TR address users with siz, and it matches what already ships) · TR siz + DE Sie (formal everywhere).
-- **Recommendation:** **DE du, TR siz.** In Turkish, siz reads as respectful rather than cold, and it suits a stressful, professional context. The two strings already shipped use it. du is the norm for German consumer apps, and every German draft already uses it. Cost: the sen drafts in 8 research docs are rewritten in the copy pass, which TR native review needs anyway.
+- **Options:** TR sen + DE du · TR siz + DE du · TR siz + DE Sie.
+- **Decision (user):** **Turkish uses siz, German uses du.**
+- **Consequence:** the sen drafts in 8 research docs are rewritten to siz in the copy pass, together with the TR native review.
 
-### U2 · Show "Rejected" as "Not selected"
+### U2 · "Rejected" is shown as "Not selected"
 
 - **Options:** "Rejected" / "Not selected" / "Unsuccessful" / "Closed by employer".
-- **Recommendation:** **Not selected** (TR "Olumsuz sonuç", DE "Absage"). It's factual, and it stays distinct from **Declined** (TR "Ben reddettim", DE "Abgelehnt (von mir)"). The enum stays `rejected`. Charts and notifications use the D18 wording.
+- **Decision (user):** **Not selected** (TR "Olumsuz sonuç", DE "Absage"), in the neutral grey Closed tone, never red (`color.status.rejected` = `color.phase.closed`; a test enforces it). It stays distinct from **Declined** (TR "Ben reddettim", DE "Abgelehnt (von mir)"). The enum stays `rejected`. Charts and notifications use the D18 wording.
 
-### U3 · Legal pages in Turkish and German
+### U3 · Legal pages in English only
 
-- **Options:** English only with a note · translated plain summaries only · full translations with English as the governing text.
-- **Recommendation:** **full TR and DE translations** of the Privacy Policy and Terms. Each carries a line that the English version governs if they differ. The plain summaries are translated too. Users in Turkey (KVKK) and Germany (GDPR transparency, Art. 12: "clear and plain language") should get the policy in the language the app speaks to them in. This needs the user's (or counsel's) sign-off on the legal text itself.
+- **Options:** English only · translated plain summaries only · full translations with English as the governing text.
+- **Decision (user):** **English only.** The Privacy Policy and Terms (and their plain summaries) exist in English; the `/tr/…` and `/de/…` website routes and the in-app links point to the English pages.
 
-### U4 · Support email and bug channel
+### U4 · Support through GitHub issues only
 
-- **Options:** a dedicated mailbox now (for example a new Gmail address) · the user's personal address · GitHub issues only.
-- **Recommendation:** a **dedicated support mailbox** until a domain exists, shown on the Support page with a Copy button. Also **GitHub issues on the public releases repo** for bugs, with a template that warns not to paste personal data. Needs: the address, and approval to open issues publicly.
+- **Options:** a dedicated mailbox · the user's personal address · GitHub issues only.
+- **Decision (user):** **GitHub issues only**, on the public `Savas07/bruteforcehr-releases` repo. No support email address is published (website or app). The issue template warns not to paste personal data, because issues are public. The website's Support page links to a new issue instead of showing an address.
 
-### U5 · Brand accent
+### U5 · Brand accent: teal-green
 
-- **Proposed:** indigo-blue, `#2F54C8` light / `#4A6CE3` fill and `#8FA8FF` text in dark (`@bfhr/ui-tokens`), with every pair contrast-tested. It's calm and trustworthy, and it avoids LinkedIn's blue. **Needs:** approval, or another hue (the system rebuilds from one hue).
+- **Earlier proposal:** indigo-blue (`#2F54C8`), not taken.
+- **Decision (user):** a **teal / green accent family**. Re-derived in `@bfhr/ui-tokens` at OKLCH hue ≈ 188: light `accent.solid` `#216863`, `accent.text` `#1F635D`; dark `accent.solid` `#2B827B`, `accent.text` `#43BEB4`. The In progress status ramp follows the accent hue; Accepted and success stay a separate gentle green, closed outcomes stay grey. Every pair is contrast-tested, with increased-contrast variants for iOS (system.md "Color").
 
-### U6 · CV photo and date of birth (DE-market CVs)
+### U6 · CV photo and date of birth: opt-in per variant
 
 - **Options:** no photo field at all · per-variant opt-in, off by default · on for DE variants by default.
-- **Recommendation:** **per-variant opt-in, off by default**, with a neutral note that German employers may expect one while UK/US employers usually don't. Under the German AGG, a photo can invite bias. This is the user's call, and it decides whether `cv-photos/` exists.
+- **Decision (user):** for German- and Turkish-market CVs, **photo and date of birth are each an opt-in per CV variant, off by default.** The toggle carries a neutral note that German and Turkish employers may expect them while UK/US employers usually don't (under the German AGG a photo can invite bias). `users/{uid}/cv-photos/` exists for variants that turn the photo on.
 
-### U7 · TestFlight link on the website
+### U7 · TestFlight: "Invite only"
 
 - **Options:** "Invite only" copy (internal testing has no public link) · enable external testing (needs Beta App Review) and publish a public link.
-- **Recommendation:** **invite only** for now, with "Ask for an invite" pointing to the support channel (U4).
+- **Decision (user):** the website's iPhone row shows an **"Invite only" TestFlight note** (internal testing, no public link).
 
-### U8 · Greeting on Today
+### U8 · No greeting on Today
 
-- **Recommendation:** **none** (today-home OQ6). If the user wants one, it's time-of-day only ("Good morning") with no praise.
+- **Decision (user):** **no greeting** on Today (today-home OQ6). The screen opens with its content.

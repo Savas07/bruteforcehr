@@ -6,21 +6,21 @@ Status: M0, 2026-10-22. Source of truth: `packages/ui-tokens` (`@bfhr/ui-tokens`
 
 1. **Calm.** Job hunting is stressful. One accent family, neutral surfaces, no alarming red for outcomes, no badges except the Mail review count, no celebration, no streaks.
 2. **Trust is visible.** Every automatic change shows its source, its reason and Undo, using the same components everywhere (`SourceTag`, `ReasonLine`, `AutoChangeRow`, `Toast`).
-3. **Platform-native behavior, one brand.** iOS uses system colors where the HIG expects them, plus Dynamic Type, SF Symbols, sheets, swipe actions and haptics. Desktop is keyboard-first, with Segoe UI Variable on Windows and SF Pro on macOS. The colors, type ramp and spacing are the same everywhere.
+3. **Platform-native behavior, one brand.** iOS is native SwiftUI: system colors where the HIG expects them, plus Dynamic Type, SF Symbols, sheets, swipe actions and haptics. Desktop is a Tauri webview (WKWebView on macOS, WebView2 on Windows), keyboard-first, with Segoe UI Variable on Windows and SF Pro on macOS. The colors, type ramp and spacing are the same everywhere.
 4. **Consistency over creativity.** If a token or component exists, use it. Tailwind's default palette, type sizes, radii, shadows and easings are switched off, so `bg-red-500` and `text-sm` don't compile.
 5. **Accessible by construction.** Every allowed color pairing is contrast-tested (WCAG 2.1 AA) in CI. Color never carries meaning alone. Every interactive element meets the hit-target minimums.
 
 ## Using the tokens
 
-| Target                                 | How                                                                                                                                                                                                                                                                                                   |
-| -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| TypeScript (any app)                   | `import { color, textStyles, space, radius, elevation, duration, easing, timing, hitTarget, layout } from "@bfhr/ui-tokens";`                                                                                                                                                                         |
-| CSS variables                          | Build once (`pnpm --filter @bfhr/ui-tokens build`), then `@import "@bfhr/ui-tokens/tokens.css";`. Every variable starts with `--bfhr-`.                                                                                                                                                               |
-| Tailwind 4 (desktop renderer, website) | `@import "tailwindcss";` then `@import "@bfhr/ui-tokens/tailwind.css";` (it imports `tokens.css` itself). Utilities: `bg-surface-base`, `text-fg-secondary`, `border-line-control`, `text-body`, `rounded-lg`, `shadow-overlay`, `ease-standard`, `p-3` (12 px).                                      |
-| React Native (iOS)                     | `createNativeTheme({ PlatformColor, DynamicColorIOS })` from `@bfhr/ui-tokens/native`. The package doesn't depend on `react-native`; the app passes its color APIs.                                                                                                                                   |
-| Light / dark                           | CSS follows `prefers-color-scheme`. `data-theme="light"` or `"dark"` on any element overrides it for that subtree. Tailwind's `dark:` variant follows the same rule. On iOS, `PlatformColor` and `DynamicColorIOS` switch automatically. Elevation shadows are per scheme: `theme.elevation[scheme]`. |
-| Reduced motion                         | CSS shortens durations and sets `--bfhr-motion-distance: 0px` under `prefers-reduced-motion: reduce`. On iOS, read `AccessibilityInfo.isReduceMotionEnabled()` and use `theme.motion.reducedDuration`.                                                                                                |
-| Build order                            | `dist/` is generated and gitignored. Turbo's `build`, `lint`, `typecheck` and `test` depend on `^build`, so dependents get the CSS. A dev server that imports the CSS needs one `pnpm --filter @bfhr/ui-tokens build` first.                                                                          |
+| Target                                   | How                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| TypeScript (any app)                     | `import { color, textStyles, space, radius, elevation, duration, easing, timing, hitTarget, layout } from "@bfhr/ui-tokens";`                                                                                                                                                                                                                                                                                                                                 |
+| CSS variables                            | Build once (`pnpm --filter @bfhr/ui-tokens build`), then `@import "@bfhr/ui-tokens/tokens.css";`. Every variable starts with `--bfhr-`.                                                                                                                                                                                                                                                                                                                       |
+| Tailwind 4 (desktop webview UI, website) | `@import "tailwindcss";` then `@import "@bfhr/ui-tokens/tailwind.css";` (it imports `tokens.css` itself). Utilities: `bg-surface-base`, `text-fg-secondary`, `border-line-control`, `text-body`, `rounded-lg`, `shadow-overlay`, `ease-standard`, `p-3` (12 px).                                                                                                                                                                                              |
+| SwiftUI (iOS)                            | Add the local package `packages/ui-tokens/swift/BFHRDesignTokens` (iOS 18 / macOS 15), then `import BFHRDesignTokens`. See "Swift package" below.                                                                                                                                                                                                                                                                                                             |
+| Light / dark                             | CSS follows `prefers-color-scheme`. `data-theme="light"` or `"dark"` on any element overrides it for that subtree. Tailwind's `dark:` variant follows the same rule. In SwiftUI, system colors and the asset-catalog colors switch automatically, Increase Contrast included; `.bfhrElevation(_:)` picks the shadow for the current `colorScheme`.                                                                                                            |
+| Reduced motion                           | CSS shortens durations and sets `--bfhr-motion-distance: 0px` under `prefers-reduced-motion: reduce`. In SwiftUI, read `@Environment(\.accessibilityReduceMotion)` and pass it to `BFHRMotion.animation(_:easing:reduceMotion:)`, `BFHRMotion.spring(reduceMotion:)`, `BFHRMotion.distance(reduceMotion:)` and `BFHRMotion.shimmer(reduceMotion:)`.                                                                                                           |
+| Build order                              | `dist/` is generated and gitignored. Turbo's `build`, `lint`, `typecheck` and `test` depend on `^build`, so dependents get the CSS. A dev server that imports the CSS needs one `pnpm --filter @bfhr/ui-tokens build` first. The Swift package is generated but **committed** (Xcode reads it without Node): after changing `src/`, run `pnpm --filter @bfhr/ui-tokens generate:swift` and commit the result. `check:swift` and the test suite fail on drift. |
 
 Each app checks once, at the type level, that `ApplicationStatus` (from `@bfhr/core`) and `StatusKey` (from `@bfhr/ui-tokens`) match. It fails to compile if either side gains or loses a status:
 
@@ -31,9 +31,49 @@ type Same<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false;
 export const statusTokensMatchCore: Same<ApplicationStatus, StatusKey> = true;
 ```
 
+In Swift, `BFHRStatus` and `BFHRPhase` use the core enum strings as raw values (`BFHRStatus(rawValue: "rejected")`), so the iOS app converts a BFHRCore status by its raw value, and a unit test over `allCases` should keep both lists equal.
+
+### Swift package
+
+`packages/ui-tokens/swift/BFHRDesignTokens` is written by `src/swift.ts`: `Package.swift`, `Sources/BFHRDesignTokens/Tokens.swift` and `Colors.xcassets` with one color set per token (same names as the CSS variables: `surface-canvas`, `status-offer-text`), each with light and dark values and, for the increased-contrast roles, `contrast: high` variants. Don't edit it by hand.
+
+| API                                                                                                                                                                                                | What it gives you                                                                                                                                                                                                                  |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `BFHRColor.background`, `.secondaryBackground`, `.tertiaryBackground`, `.groupedBackground` (+ secondary / tertiary), `.label`, `.separator`, `.opaqueSeparator`, `.fill` (+ secondary / tertiary) | iOS system colors (`UIColor.systemBackground`, `.label`, …), as the HIG expects for screens, grouped lists, primary text, separators and fills. Elevated sheet backgrounds and Increase Contrast come from iOS.                    |
+| `BFHRColor.tint`                                                                                                                                                                                   | `Accent.text`; set once with `.tint(BFHRColor.tint)` at the app root.                                                                                                                                                              |
+| `BFHRColor.Surface.*`, `.Fg.*`, `.Line.*`, `.Accent.*`, `.Danger.fill`, `.Chart.*`, `.Skeleton.*`, `.Toast.*`                                                                                      | Brand roles from the asset catalog. Use `Fg.secondary` / `Fg.tertiary` for secondary text (iOS `secondaryLabel` is ≈ 3.4:1 on white).                                                                                              |
+| `BFHRTone.success` / `.warning` / `.danger` / `.info`, `BFHRTone.status(_:)`, `BFHRTone.phase(_:)`                                                                                                 | Tones (`text`, `subtle`, `solid`) for pills, dots and callouts.                                                                                                                                                                    |
+| `BFHRTextStyle` + `Font.bfhr(_:emphasized:)`                                                                                                                                                       | The ramp below, as `Font.system(<Font.TextStyle>, weight:)`, so Dynamic Type scales it to AX5. `title1` → `.title`, `caption1` → `.caption`. `pointSize` / `lineHeight` are the default metrics, for `@ScaledMetric(relativeTo:)`. |
+| `BFHRSpace.s0…s20`, `BFHRRadius.*` + `BFHRRadius.shape(_:)`, `BFHRBorderWidth.*`, `BFHRIconSize.*`, `BFHRHitTarget.minimum` (44)                                                                   | Scales in points; `shape(_:)` is a continuous-corner `RoundedRectangle`.                                                                                                                                                           |
+| `BFHRElevation` + `.bfhrElevation(_:)`                                                                                                                                                             | Per-scheme shadows.                                                                                                                                                                                                                |
+| `BFHRDuration`, `BFHREasing`, `BFHRMotion`                                                                                                                                                         | Durations, timing curves and the critically damped spring, each with its Reduce Motion variant.                                                                                                                                    |
+| `BFHRTiming.*`, `BFHRHaptic.*.feedback`                                                                                                                                                            | Behavioral timings (seconds) and haptics as `SensoryFeedback` for `.sensoryFeedback(_:trigger:)`.                                                                                                                                  |
+
+```swift
+import BFHRDesignTokens
+
+struct StatusPill: View {
+    let status: BFHRStatus
+    let label: LocalizedStringKey
+
+    var body: some View {
+        let tone = BFHRTone.status(status)
+        Label { Text(label) } icon: { Circle().fill(tone.solid).frame(width: 8, height: 8) }
+            .font(.bfhr(.footnote))
+            .foregroundStyle(tone.text)
+            .padding(.horizontal, BFHRSpace.s2)
+            .background(tone.subtle, in: Capsule())
+    }
+}
+```
+
+`swift build` in the package folder compiles it for macOS; Xcode compiles the asset catalog when the iOS app builds.
+
 ## Color
 
 All values are sRGB hex. `pnpm --filter @bfhr/ui-tokens test` checks every pairing listed under "Allowed pairings" for both schemes: on token surfaces, and for brand colors also on iOS system backgrounds (`#FFFFFF`, `#F2F2F7`, `#000000`, `#1C1C1E`, `#2C2C2E`).
+
+**Palette.** One accent family, **teal-green** (the user's pick, decisions.md U5): OKLCH hue ≈ 188 at 85 % of the sRGB gamut's chroma, derived by keeping each role's WCAG luminance so every contrast relationship holds. Neutrals stay cool grey. Accepted and success keep a separate gentle green (hue ≈ 150), info stays blue (≈ 245), and closed outcomes stay neutral grey. In dark mode the accent fill sits in the narrow band where it shows ≥ 3:1 against every dark surface and white text on it keeps ≥ 4.5:1.
 
 ### Roles
 
@@ -44,60 +84,72 @@ All values are sRGB hex. `pnpm --filter @bfhr/ui-tokens test` checks every pairi
 |          | `sunken`                             | `#EFF1F4`                                     | `#0A0C0F`                                     | Board column wells, inset inputs on cards, code / checksum blocks                             |
 |          | `elevated`                           | `#FFFFFF`                                     | `#1E2229`                                     | Popovers, menus, dialogs, palette (always with an elevation shadow)                           |
 |          | `hover`                              | `#EBEEF2`                                     | `#232730`                                     | Hovered row or control (desktop, website)                                                     |
-|          | `selected`                           | `#EBF0FC`                                     | `#1F2A44`                                     | Selected row, current list item, active filter background                                     |
+|          | `selected`                           | `#E1F3F1`                                     | `#0D302D`                                     | Selected row, current list item, active filter background                                     |
 |          | `scrim`                              | `#0E1014` @ 40 %                              | `#000000` @ 60 %                              | Modal backdrop only                                                                           |
 | fg       | `primary`                            | `#161A22`                                     | `#ECEEF2`                                     | Titles, body text                                                                             |
 |          | `secondary`                          | `#4B5261`                                     | `#A8AFBB`                                     | Supporting text, labels, metadata that matters                                                |
 |          | `tertiary`                           | `#5E6573`                                     | `#8F97A4`                                     | Timestamps, captions, placeholders (still AA)                                                 |
 |          | `disabled`                           | `#A0A6B0`                                     | `#5C6370`                                     | Disabled controls only (exempt from contrast, WCAG 1.4.3)                                     |
-|          | `link`                               | `#2B4FC0`                                     | `#8FA8FF`                                     | Inline links                                                                                  |
+|          | `link`                               | `#1F635D`                                     | `#43BEB4`                                     | Inline links                                                                                  |
 |          | `onAccent`, `onDanger`               | `#FFFFFF`                                     | `#FFFFFF`                                     | Text on `accent.solid` / `danger.fill`                                                        |
 | line     | `subtle`                             | `#E1E4EA`                                     | `#2A2F38`                                     | Decorative dividers, card hairlines                                                           |
 |          | `control`                            | `#7D8492`                                     | `#707887`                                     | Borders that identify a control: inputs, checkboxes, outlined buttons                         |
-|          | `focus`                              | `#2F54C8`                                     | `#8FA8FF`                                     | Focus ring (2 px, 2 px offset)                                                                |
-| accent   | `solid` / `hover` / `pressed`        | `#2F54C8` / `#2847AE` / `#213C95`             | `#4A6CE3` / `#4263DB` / `#3A59CC`             | Primary button fill, switch on, progress, current step                                        |
-|          | `subtle`                             | `#E3EAFB`                                     | `#1F2A44`                                     | Selected chips, matched-skill chips, added text in diffs                                      |
-|          | `text`                               | `#2B4FC0`                                     | `#8FA8FF`                                     | Text buttons, icons, iOS tint                                                                 |
+|          | `focus`                              | `#216863`                                     | `#43BEB4`                                     | Focus ring (2 px, 2 px offset)                                                                |
+| accent   | `solid` / `hover` / `pressed`        | `#216863` / `#1B5954` / `#154B47`             | `#2B827B` / `#277972` / `#236E68`             | Primary button fill, switch on, progress, current step                                        |
+|          | `subtle`                             | `#D3EFEC`                                     | `#0D302D`                                     | Selected chips, matched-skill chips, added text in diffs                                      |
+|          | `text`                               | `#1F635D`                                     | `#43BEB4`                                     | Text buttons, icons, iOS tint                                                                 |
 | success  | `text` / `subtle` / `solid`          | `#1B7B3C` / `#E0F7E4` / `#409A59`             | `#67AA76` / `#152D1A` / `#2D8949`             | Sent, connected, readback passed (never job outcomes)                                         |
 | warning  |                                      | `#9C5D00` / `#FFEDD7` / `#BC7A19`             | `#C18C4C` / `#34220B` / `#A96800`             | Attention and uncertainty: "Needs a look", "Needs reconnecting", low-confidence import fields |
 | danger   | `text` / `subtle` / `solid` / `fill` | `#BD3838` / `#FFE7E4` / `#E25B56` / `#BD3838` | `#E1756E` / `#3A1D1B` / `#CF4946` / `#CD4845` | Errors, "Can't connect", destructive actions. **Never for Rejected / Not selected.**          |
 | info     |                                      | `#2870A5` / `#DDF3FF` / `#488EC5`             | `#689ECB` / `#12283B` / `#377DB4`             | Neutral notices, AI disclosure callouts                                                       |
-| chart    | `series` / `neutral` / `grid`        | `#2F54C8` / `#7D8492` / `#E1E4EA`             | `#6F8EF0` / `#707887` / `#2A2F38`             | Insights: one brand hue, grey for dropped off / waiting, decorative grid                      |
+| chart    | `series` / `neutral` / `grid`        | `#216863` / `#7D8492` / `#E1E4EA`             | `#38A29B` / `#707887` / `#2A2F38`             | Insights: one brand hue, grey for dropped off / waiting, decorative grid                      |
 | skeleton | `base` / `highlight`                 | `#ECEEF2` / `#F5F6F8`                         | `#1E2229` / `#262B33`                         | Loading placeholders (shimmer only without reduced motion)                                    |
-| toast    | `bg` / `text` / `action` / `border`  | `#1F232B` / `#F2F4F7` / `#A9BCFF` / = bg      | `#2E333D` / `#F2F4F7` / `#A9BCFF` / `#3A404B` | The dark snackbar in both schemes                                                             |
+| toast    | `bg` / `text` / `action` / `border`  | `#1F232B` / `#F2F4F7` / `#79CDC5` / = bg      | `#2E333D` / `#F2F4F7` / `#79CDC5` / `#3A404B` | The dark snackbar in both schemes                                                             |
 
 ### Status and phase tones
 
-Each tone has `text` (label and icon), `subtle` (pill background) and `solid` (dot, column accent, bar). This follows tracker.md: **one hue per phase**. Saturation rises from Applied to Offer. Closed outcomes are neutral grey, Accepted alone gets a gentle green, and **no red for a rejection**. Status meaning always comes from the label; the dot only supports it.
+Each tone has `text` (label and icon), `subtle` (pill background) and `solid` (dot, column accent, bar). This follows tracker.md: **one hue per phase**. Saturation rises from Applied to Offer. Closed outcomes are neutral grey, Accepted alone gets a gentle green, and **no red for a rejection**: `rejected` is labelled **"Not selected"** (decisions.md U2) and uses the Closed tone. Status meaning always comes from the label; the dot only supports it.
 
-| Phase       | Statuses                                  | Hue                | Light text / subtle / solid       | Dark text / subtle / solid        |
-| ----------- | ----------------------------------------- | ------------------ | --------------------------------- | --------------------------------- |
-| Shortlist   | —                                         | blue-grey          | `#596D7D` / `#DFF3FF` / `#768B9B` | `#899BA9` / `#182835` / `#667A8B` |
-|             | saved                                     |                    | `#636D77` / `#E7F2FC` / `#7E8993` | `#909AA2` / `#1F282F` / `#6E7983` |
-|             | preparing                                 |                    | `#536E82` / `#DEF4FF` / `#6F8CA0` | `#849CAE` / `#122938` / `#5F7B90` |
-| In progress | —                                         | accent (indigo)    | `#4B6AAB` / `#E5F1FF` / `#6788CC` | `#7B98D3` / `#1C263A` / `#5777BA` |
-|             | applied                                   | low chroma         | `#576B95` / `#E5F1FF` / `#7489B4` | `#8698BE` / `#1C263A` / `#6277A1` |
-|             | acknowledged                              |                    | `#516BA0` / … / `#6D88C0`         | `#8098C8` / … / `#5E78AE`         |
-|             | screening                                 |                    | `#4B6AAB` / … / `#6788CC`         | `#7B98D3` / … / `#5777BA`         |
-|             | interviewing                              |                    | `#4468B6` / … / `#6086D8`         | `#7597DD` / … / `#5176C5`         |
-|             | offer                                     | high chroma        | `#3F68C3` / … / `#5B86E5`         | `#7096E7` / … / `#4A74D1`         |
-| Closed      | —                                         | neutral            | `#686C70` / `#EDF1F5` / `#84888C` | `#95999C` / `#24272A` / `#74787C` |
-|             | accepted                                  | gentle green       | `#35794B` / `#E1F7E6` / `#539666` | `#6FA87E` / `#162C1C` / `#428557` |
-|             | declined · rejected · withdrawn · ghosted | neutral (= Closed) | same as Closed                    | same as Closed                    |
+| Phase       | Statuses                                                   | Hue                | Light text / subtle / solid       | Dark text / subtle / solid        |
+| ----------- | ---------------------------------------------------------- | ------------------ | --------------------------------- | --------------------------------- |
+| Shortlist   | —                                                          | blue-grey          | `#596D7D` / `#DFF3FF` / `#768B9B` | `#899BA9` / `#182835` / `#667A8B` |
+|             | saved                                                      |                    | `#636D77` / `#E7F2FC` / `#7E8993` | `#909AA2` / `#1F282F` / `#6E7983` |
+|             | preparing                                                  |                    | `#536E82` / `#DEF4FF` / `#6F8CA0` | `#849CAE` / `#122938` / `#5F7B90` |
+| In progress | —                                                          | accent (teal)      | `#39756F` / `#DDF5F2` / `#4A958E` | `#53A59E` / `#0D2A28` / `#40837D` |
+|             | applied                                                    | low chroma         | `#52716E` / `#DDF5F2` / `#6A908C` | `#759F9B` / `#0D2A28` / `#5B7E7A` |
+|             | acknowledged                                               |                    | `#47736F` / … / `#5B928D`         | `#65A39D` / … / `#50817D`         |
+|             | screening                                                  |                    | `#39756F` / … / `#4A958E`         | `#53A59E` / … / `#40837D`         |
+|             | interviewing                                               |                    | `#267670` / … / `#33968E`         | `#3AA79F` / … / `#2C857E`         |
+|             | offer                                                      | high chroma        | `#007973` / … / `#009991`         | `#00AAA0` / … / `#00857E`         |
+| Closed      | —                                                          | neutral            | `#686C70` / `#EDF1F5` / `#84888C` | `#95999C` / `#24272A` / `#74787C` |
+|             | accepted                                                   | gentle green       | `#35794B` / `#E1F7E6` / `#539666` | `#6FA87E` / `#162C1C` / `#428557` |
+|             | declined · rejected ("Not selected") · withdrawn · ghosted | neutral (= Closed) | same as Closed                    | same as Closed                    |
 
 ### Allowed pairings
 
 The test defines these (`contrastPairs()` in `src/contrast.ts`). Anything not listed is not allowed in product UI.
 
-| Foreground                                                                                                 | On                                                                          | Minimum             | Examples (measured)                                                                               |
-| ---------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- | ------------------- | ------------------------------------------------------------------------------------------------- |
-| `fg.primary`, `fg.secondary`, `fg.tertiary`, `fg.link`, `accent.text`                                      | every surface (`canvas`, `base`, `sunken`, `elevated`, `hover`, `selected`) | 4.5:1               | light `fg.secondary`/`base` 7.84, `fg.tertiary`/`sunken` 5.18; dark `fg.tertiary`/`elevated` 5.42 |
-| `fg.onAccent`                                                                                              | `accent.solid`, `.hover`, `.pressed`                                        | 4.5:1               | light 6.52, dark 4.62                                                                             |
-| `fg.onDanger`                                                                                              | `danger.fill`                                                               | 4.5:1               | —                                                                                                 |
-| `fg.primary`, `accent.text`                                                                                | `accent.subtle`                                                             | 4.5:1               | —                                                                                                 |
-| tone `text` (feedback, phase, status)                                                                      | its own `subtle` and every surface                                          | 4.5:1               | light `status.rejected.text` on its pill 4.66; `warning.text` on its callout 4.61                 |
-| tone `solid`, `line.control`, `line.focus`, `accent.solid`, `danger.fill`, `chart.series`, `chart.neutral` | every surface                                                               | 3:1 (UI, SC 1.4.11) | light `line.control`/`base` 3.76, `status.offer.solid`/`sunken` 3.10                              |
-| `toast.text`, `toast.action`                                                                               | `toast.bg`                                                                  | 4.5:1               | dark `toast.action` 6.83                                                                          |
+| Foreground                                                                                                 | On                                                                          | Minimum             | Examples (measured)                                                                                    |
+| ---------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- | ------------------- | ------------------------------------------------------------------------------------------------------ |
+| `fg.primary`, `fg.secondary`, `fg.tertiary`, `fg.link`, `accent.text`                                      | every surface (`canvas`, `base`, `sunken`, `elevated`, `hover`, `selected`) | 4.5:1               | light `fg.secondary`/`base` 7.84, `fg.tertiary`/`sunken` 5.18; dark `fg.tertiary`/`elevated` 5.42      |
+| `fg.onAccent`                                                                                              | `accent.solid`, `.hover`, `.pressed`                                        | 4.5:1               | light 6.51, dark 4.58 (pressed 6.00)                                                                   |
+| `fg.onDanger`                                                                                              | `danger.fill`                                                               | 4.5:1               | —                                                                                                      |
+| `fg.primary`, `accent.text`                                                                                | `accent.subtle`                                                             | 4.5:1               | `accent.text` light 5.77, dark 6.27                                                                    |
+| tone `text` (feedback, phase, status)                                                                      | its own `subtle` and every surface                                          | 4.5:1               | light `status.rejected.text` on its pill 4.66; `status.offer.text` 4.62; `warning.text` 4.61           |
+| tone `solid`, `line.control`, `line.focus`, `accent.solid`, `danger.fill`, `chart.series`, `chart.neutral` | every surface                                                               | 3:1 (UI, SC 1.4.11) | light `line.control`/`base` 3.76, `status.offer.solid`/`sunken` 3.11; dark `accent.solid`/`hover` 3.26 |
+| `toast.text`, `toast.action`                                                                               | `toast.bg`                                                                  | 4.5:1               | `toast.action` light 8.51, dark 6.85                                                                   |
+
+### Increased contrast (iOS / macOS)
+
+`increasedContrast` in `src/color.ts` overrides a few roles when the user turns on Increase Contrast. They ship as `contrast: high` variants in the asset catalog (the CSS output doesn't use them). Backgrounds keep their values. `increasedContrastPairs()` tests them on every token surface and the iOS backgrounds:
+
+| Token                          | Light                 | Dark                  | Minimum (measured)                                                                 |
+| ------------------------------ | --------------------- | --------------------- | ---------------------------------------------------------------------------------- |
+| `fg.secondary` / `fg.tertiary` | `#3C424F` / `#474E5C` | `#C7CCD3` / `#B4BAC2` | 7:1, SC 1.4.6 (light `fg.secondary`/`base` 10.08, dark `fg.tertiary`/`hover` 7.65) |
+| `fg.link`, `accent.text`       | `#19544F`             | `#49CCC2`             | 7:1, also on `accent.subtle` (light 7.15)                                          |
+| `line.control`                 | `#626B7C`             | `#8E95A0`             | 4.5:1 (dark on `hover` 4.95)                                                       |
+| `line.focus`                   | `#19544F`             | `#49CCC2`             | 4.5:1                                                                              |
+| `line.subtle`                  | `#B7BECD`             | `#444C59`             | decorative; only has to be more visible than the default                           |
 
 Not allowed:
 
@@ -105,7 +157,7 @@ Not allowed:
 - `fg.disabled` for anything the user must read.
 - Text on `scrim`.
 - Brand colors on photos.
-- iOS `secondaryLabel` for body text (≈ 3.4:1 on white; the native theme's `secondaryText` replaces it).
+- iOS `secondaryLabel` for body text (≈ 3.4:1 on white; use `BFHRColor.Fg.secondary`).
 
 ### Color rules
 
@@ -120,7 +172,7 @@ Not allowed:
 
 ## Typography
 
-Styles are named after iOS Dynamic Type styles. iOS values are Apple's default ("Large") sizes, which RN scales through `dynamicTypeRamp` up to AX5. Desktop values are px, emitted as rem so zoom scales them. The website uses the desktop ramp plus four fluid marketing styles.
+Styles are named after iOS Dynamic Type styles. iOS values are Apple's default ("Large") sizes; in SwiftUI each style is the system font at its `Font.TextStyle` (`BFHRTextStyle`), so Dynamic Type scales it up to AX5. Desktop values are px, emitted as rem so zoom scales them. The website uses the desktop ramp plus four fluid marketing styles.
 
 | Style         | iOS pt (size / line, weight)  | Desktop px (size / line, weight) | Family  | Use for                                                           |
 | ------------- | ----------------------------- | -------------------------------- | ------- | ----------------------------------------------------------------- |
@@ -139,9 +191,11 @@ Styles are named after iOS Dynamic Type styles. iOS values are Apple's default (
 | Marketing style (website) | 375 px → 1440 px  | Weight |
 | ------------------------- | ----------------- | ------ |
 | `display`                 | 36 / 44 → 56 / 64 | 600    |
-| `headline`                | 26 / 32 → 36 / 44 | 600    |
+| `section`                 | 26 / 32 → 36 / 44 | 600    |
 | `lead`                    | 18 / 28 → 20 / 30 | 400    |
 | `prose`                   | 16 / 26 → 17 / 28 | 400    |
+
+Marketing style names never reuse a ramp name: both live in `--bfhr-text-*`, and the old marketing `headline` overwrote the desktop `headline` variables.
 
 **Font stacks**
 
@@ -149,7 +203,7 @@ Styles are named after iOS Dynamic Type styles. iOS values are Apple's default (
 - `display`: the same with `"Segoe UI Variable Display"`.
 - `mono`: `ui-monospace, "SF Mono", "Cascadia Mono", Consolas, …`.
 
-iOS uses the system font (no `fontFamily`). No web fonts are downloaded.
+iOS uses the system font (`Font.system(_:weight:)`; SF Pro picks Text / Display optical sizes). No web fonts are downloaded.
 
 **Rules**
 
@@ -166,7 +220,7 @@ iOS uses the system font (no `fontFamily`). No web fonts are downloaded.
   - Card padding: 16 (iOS) / 16–20 (desktop).
   - Gap between related controls: 8. Between groups: 24.
   - Page gutter: 20–24 (website at 375).
-- **Radius:** `xs` 4 (checkbox, keycap) · `sm` 6 (dense chips, tooltips) · `md` 8 (buttons, inputs, menu items) · `lg` 12 (cards, popovers, toasts) · `xl` 16 (dialogs, sheets, palette) · `full` (pills, avatars, dots). On iOS, use `borderCurve: "continuous"` for `lg` and `xl`.
+- **Radius:** `xs` 4 (checkbox, keycap) · `sm` 6 (dense chips, tooltips) · `md` 8 (buttons, inputs, menu items) · `lg` 12 (cards, popovers, toasts) · `xl` 16 (dialogs, sheets, palette) · `full` (pills, avatars, dots). On iOS, draw `lg` and `xl` with continuous corners (`BFHRRadius.shape(_:)`, i.e. `RoundedRectangle(style: .continuous)`), and `full` with `Capsule()`.
 - **Borders:** `hairline` 0.5 px, `thin` 1, `thick` 2 (focus ring). Focus ring: 2 px `line.focus`, 2 px offset, never removed.
 - **Hit targets:**
   - iOS: **44 pt** for everything tappable, including token ✕ and the toast's Undo.
@@ -189,20 +243,20 @@ Dark mode adds a 1 px `rgb(255 255 255 / 0.05–0.08)` ring because shadows bare
 
 ## Motion
 
-| Token                   | Value                             | Use                                                                   |
-| ----------------------- | --------------------------------- | --------------------------------------------------------------------- |
-| `duration.fast`         | 120 ms                            | Hover, press, color changes, toggles                                  |
-| `duration.base`         | 200 ms                            | Popovers, toasts entering, row expand                                 |
-| `duration.slow`         | 300 ms                            | Panels, the backfill cross-fade, the board drop settle                |
-| `duration.slower`       | 400 ms                            | Sheets and large panel transitions (desktop; iOS sheets are native)   |
-| `easing.standard`       | cubic-bezier(0.2, 0, 0, 1)        | Most transitions                                                      |
-| `easing.enter` / `exit` | (0, 0, 0, 1) / (0.3, 0, 1, 1)     | Elements entering / leaving                                           |
-| `spring.standard`       | damping 35, stiffness 300, mass 1 | iOS drags and gesture-driven motion (critically damped, no overshoot) |
-| `motionDistance`        | 8 px                              | Slide distance for toasts, popovers, arriving rows                    |
+| Token                   | Value                             | Use                                                                                                                    |
+| ----------------------- | --------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `duration.fast`         | 120 ms                            | Hover, press, color changes, toggles                                                                                   |
+| `duration.base`         | 200 ms                            | Popovers, toasts entering, row expand                                                                                  |
+| `duration.slow`         | 300 ms                            | Panels, the backfill cross-fade, the board drop settle                                                                 |
+| `duration.slower`       | 400 ms                            | Sheets and large panel transitions (desktop; iOS sheets are native)                                                    |
+| `easing.standard`       | cubic-bezier(0.2, 0, 0, 1)        | Most transitions                                                                                                       |
+| `easing.enter` / `exit` | (0, 0, 0, 1) / (0.3, 0, 1, 1)     | Elements entering / leaving                                                                                            |
+| `spring.standard`       | damping 35, stiffness 300, mass 1 | iOS drags and gesture-driven motion (critically damped, no overshoot): `.interpolatingSpring(mass:stiffness:damping:)` |
+| `motionDistance`        | 8 px                              | Slide distance for toasts, popovers, arriving rows                                                                     |
 
 **Reduced motion:**
 
-- Every move becomes a cross-fade: `fast` = 0 and the rest 100 ms, with movement 0.
+- Every move becomes a cross-fade: `fast` = 0 and the rest 100 ms, with movement 0. On iOS the spring becomes a 100 ms ease-in-out (`BFHRMotion.spring(reduceMotion: true)`).
 - Skeleton shimmer, scroll-driven website chapters and the job-source chip physics turn off.
 - The sign-in check animation becomes a fade.
 
@@ -211,7 +265,7 @@ Dark mode adds a 1 px `rgb(255 255 255 / 0.05–0.08)` ring because shadows bare
 - Motion explains a change of place (a card moving, a sheet arriving). It never decorates.
 - No count-ups, confetti, pulsing badges or animated score gauges.
 
-**Haptics (iOS, `haptics` in the native theme):**
+**Haptics (iOS, `BFHRHaptic` → SwiftUI `.sensoryFeedback`):**
 
 - Light impact on confirm, save and mark applied.
 - Selection tick when a drag target changes.
@@ -311,7 +365,7 @@ The components every core screen uses, documented in full. The rest follow the s
 | Disabled        | `fg.disabled` label, no fill change for secondary | Not focusable in groups; reason announced         |
 | Loading         | Spinner + label                                   | Ignores repeat presses                            |
 
-**Accessibility:** role `button`. Enter and Space activate it. The accessible name is the visible label; icon-only buttons need `aria-label` / `accessibilityLabel`. Labels never have fixed widths. On iOS, paired buttons stack when either label exceeds half the width (DE).
+**Accessibility:** role `button`. Enter and Space activate it. The accessible name is the visible label; icon-only buttons need `aria-label` / SwiftUI `.accessibilityLabel(_:)`. Labels never have fixed widths. On iOS, paired buttons stack when either label exceeds half the width (DE), via `ViewThatFits`.
 
 | ✅ Do                                                     | ❌ Don't                               |
 | --------------------------------------------------------- | -------------------------------------- |
@@ -358,7 +412,7 @@ Shows an application status as a dot plus a label.
 | Replaced   | A newer toast takes its place                                                             | The old action stays reachable via Mod+Z and history |
 | After Undo | "Restored · Open"                                                                         | Never offers another Undo                            |
 
-**Accessibility:** `role="status"` / `aria-live="polite"`, and a UIAccessibility announcement on iOS. The action is reachable by keyboard (desktop: the toast takes focus with F6; Mod+Z works without focusing it) and by the VoiceOver rotor. At AX text sizes or with VoiceOver, iOS shows a full-width Undo button.
+**Accessibility:** `role="status"` / `aria-live="polite"`, and an `AccessibilityNotification.Announcement` on iOS. The action is reachable by keyboard (desktop: the toast takes focus with F6; Mod+Z works without focusing it) and by the VoiceOver rotor. At AX text sizes or with VoiceOver, iOS shows a full-width Undo button.
 
 | ✅ Do                                                                          | ❌ Don't                                                         |
 | ------------------------------------------------------------------------------ | ---------------------------------------------------------------- |
@@ -399,7 +453,7 @@ Buttons stack when a label is longer than 18 characters (DE). Empty sections on 
 
 ## Versioning and change process
 
-- Tokens change only through a PR that updates `packages/ui-tokens` and this doc together. The contrast test must pass, and the change should name the screens it affects.
-- Renaming a token is a breaking change. Grep the consumers (`--bfhr-`, Tailwind utility names, `theme.colors.*`) and migrate them in the same PR. No aliases are kept.
-- New colors start as roles, not hex values in components. A component that needs a color that doesn't exist gets a new role here, with its pairings added to `contrastPairs()`.
-- A new application status (core enum change) needs a tone in `color.status` for both schemes, or the test fails.
+- Tokens change only through a PR that updates `packages/ui-tokens` (including the regenerated Swift package) and this doc together. The contrast test must pass, and the change should name the screens it affects.
+- Renaming a token is a breaking change. Grep the consumers (`--bfhr-`, Tailwind utility names, `BFHRColor.*` / `BFHRTone.*` in Swift) and migrate them in the same PR. No aliases are kept.
+- New colors start as roles, not hex values in components. A component that needs a color that doesn't exist gets a new role here, with its pairings added to `contrastPairs()` (and `increasedContrastPairs()` if it gets an Increase Contrast value).
+- A new application status (core enum change) needs a tone in `color.status` for both schemes, or the test fails; regenerate the Swift package so `BFHRStatus` gains the case.

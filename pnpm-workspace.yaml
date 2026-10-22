@@ -2,6 +2,7 @@ packages:
   - apps/*
   - packages/*
   - firebase/tests
+  - scripts/release
 
 # Install scripts are opt-in. esbuild needs its postinstall (binary check). Optional, skipped:
 # protobufjs version check, @firebase/util web-config autoinit, re2 native regex for firebase-tools,

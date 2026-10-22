@@ -3,10 +3,6 @@ import Foundation
 
 /// The CV editor's view strings (table "CVEditor"; en, tr with siz, de with du).
 enum CVEditorViewStrings {
-    private static func r(_ key: StaticString, _ value: String.LocalizationValue, _ comment: StaticString? = nil) -> LocalizedStringResource {
-        .bfhr(key, default: value, table: "CVEditor", comment: comment)
-    }
-
     // MARK: Loading, errors, empty
 
     static let loading = LocalizedStringResource.bfhr("cvEditor.loading", default: "Loading your CVs", table: "CVEditor")
@@ -105,19 +101,19 @@ enum CVEditorViewStrings {
 
     static func sectionTitle(_ kind: CVSectionKind) -> LocalizedStringResource {
         switch kind {
-        case .header: r("cvEditor.section.header", "Header")
-        case .summary: r("cvEditor.section.summary", "Summary")
-        case .work: r("cvEditor.section.work", "Experience")
-        case .education: r("cvEditor.section.education", "Education")
-        case .skills: r("cvEditor.section.skills", "Skills")
-        case .languages: r("cvEditor.section.languages", "Languages")
-        case .projects: r("cvEditor.section.projects", "Projects")
-        case .certificates: r("cvEditor.section.certificates", "Certificates")
-        case .volunteer: r("cvEditor.section.volunteer", "Volunteering")
-        case .awards: r("cvEditor.section.awards", "Awards")
-        case .publications: r("cvEditor.section.publications", "Publications")
-        case .interests: r("cvEditor.section.interests", "Interests")
-        case .references: r("cvEditor.section.references", "References")
+        case .header: .bfhr("cvEditor.section.header", default: "Header", table: "CVEditor")
+        case .summary: .bfhr("cvEditor.section.summary", default: "Summary", table: "CVEditor")
+        case .work: .bfhr("cvEditor.section.work", default: "Experience", table: "CVEditor")
+        case .education: .bfhr("cvEditor.section.education", default: "Education", table: "CVEditor")
+        case .skills: .bfhr("cvEditor.section.skills", default: "Skills", table: "CVEditor")
+        case .languages: .bfhr("cvEditor.section.languages", default: "Languages", table: "CVEditor")
+        case .projects: .bfhr("cvEditor.section.projects", default: "Projects", table: "CVEditor")
+        case .certificates: .bfhr("cvEditor.section.certificates", default: "Certificates", table: "CVEditor")
+        case .volunteer: .bfhr("cvEditor.section.volunteer", default: "Volunteering", table: "CVEditor")
+        case .awards: .bfhr("cvEditor.section.awards", default: "Awards", table: "CVEditor")
+        case .publications: .bfhr("cvEditor.section.publications", default: "Publications", table: "CVEditor")
+        case .interests: .bfhr("cvEditor.section.interests", default: "Interests", table: "CVEditor")
+        case .references: .bfhr("cvEditor.section.references", default: "References", table: "CVEditor")
         case .custom(_, let title): .bfhr("cvEditor.section.custom", default: "\(title)", table: "CVEditor")
         }
     }
@@ -126,18 +122,18 @@ enum CVEditorViewStrings {
         switch kind {
         case .header: addHeader
         case .summary: addSummary
-        case .work: r("cvEditor.ghost.work", "Add your first role. Start with the most recent.")
-        case .education: r("cvEditor.ghost.education", "Add your education")
-        case .skills: r("cvEditor.ghost.skills", "Add a group of skills")
-        case .languages: r("cvEditor.ghost.languages", "Add a language")
-        case .projects: r("cvEditor.ghost.projects", "Add a project")
-        case .certificates: r("cvEditor.ghost.certificates", "Add a certificate")
-        case .volunteer: r("cvEditor.ghost.volunteer", "Add volunteering")
-        case .awards: r("cvEditor.ghost.awards", "Add an award")
-        case .publications: r("cvEditor.ghost.publications", "Add a publication")
-        case .interests: r("cvEditor.ghost.interests", "Add an interest")
-        case .references: r("cvEditor.ghost.references", "Add a reference")
-        case .custom: r("cvEditor.ghost.custom", "Add an entry")
+        case .work: .bfhr("cvEditor.ghost.work", default: "Add your first role. Start with the most recent.", table: "CVEditor")
+        case .education: .bfhr("cvEditor.ghost.education", default: "Add your education", table: "CVEditor")
+        case .skills: .bfhr("cvEditor.ghost.skills", default: "Add a group of skills", table: "CVEditor")
+        case .languages: .bfhr("cvEditor.ghost.languages", default: "Add a language", table: "CVEditor")
+        case .projects: .bfhr("cvEditor.ghost.projects", default: "Add a project", table: "CVEditor")
+        case .certificates: .bfhr("cvEditor.ghost.certificates", default: "Add a certificate", table: "CVEditor")
+        case .volunteer: .bfhr("cvEditor.ghost.volunteer", default: "Add volunteering", table: "CVEditor")
+        case .awards: .bfhr("cvEditor.ghost.awards", default: "Add an award", table: "CVEditor")
+        case .publications: .bfhr("cvEditor.ghost.publications", default: "Add a publication", table: "CVEditor")
+        case .interests: .bfhr("cvEditor.ghost.interests", default: "Add an interest", table: "CVEditor")
+        case .references: .bfhr("cvEditor.ghost.references", default: "Add a reference", table: "CVEditor")
+        case .custom: .bfhr("cvEditor.ghost.custom", default: "Add an entry", table: "CVEditor")
         }
     }
 
@@ -161,58 +157,58 @@ enum CVEditorViewStrings {
 
     static func titleLabel(_ kind: CVSectionKind) -> LocalizedStringResource {
         switch kind {
-        case .work, .volunteer: r("cvEditor.field.role", "Role")
-        case .education: r("cvEditor.field.area", "Field of study")
-        case .skills: r("cvEditor.field.skillGroup", "Skill group")
-        case .languages: r("cvEditor.field.language", "Language")
-        case .projects: r("cvEditor.field.projectName", "Project name")
-        case .certificates: r("cvEditor.field.certificate", "Certificate")
-        case .awards: r("cvEditor.field.award", "Award")
-        case .interests: r("cvEditor.field.interest", "Interest")
-        case .references: r("cvEditor.field.referenceName", "Name")
-        case .header, .summary, .publications, .custom: r("cvEditor.field.title", "Title")
+        case .work, .volunteer: .bfhr("cvEditor.field.role", default: "Role", table: "CVEditor")
+        case .education: .bfhr("cvEditor.field.area", default: "Field of study", table: "CVEditor")
+        case .skills: .bfhr("cvEditor.field.skillGroup", default: "Skill group", table: "CVEditor")
+        case .languages: .bfhr("cvEditor.field.language", default: "Language", table: "CVEditor")
+        case .projects: .bfhr("cvEditor.field.projectName", default: "Project name", table: "CVEditor")
+        case .certificates: .bfhr("cvEditor.field.certificate", default: "Certificate", table: "CVEditor")
+        case .awards: .bfhr("cvEditor.field.award", default: "Award", table: "CVEditor")
+        case .interests: .bfhr("cvEditor.field.interest", default: "Interest", table: "CVEditor")
+        case .references: .bfhr("cvEditor.field.referenceName", default: "Name", table: "CVEditor")
+        case .header, .summary, .publications, .custom: .bfhr("cvEditor.field.title", default: "Title", table: "CVEditor")
         }
     }
 
     static func detailLabel(_ kind: CVSectionKind) -> LocalizedStringResource {
         switch kind {
-        case .education: r("cvEditor.field.degree", "Degree")
-        case .skills: r("cvEditor.field.level", "Level")
-        case .languages: r("cvEditor.field.fluency", "Fluency")
-        default: r("cvEditor.field.detail", "Detail")
+        case .education: .bfhr("cvEditor.field.degree", default: "Degree", table: "CVEditor")
+        case .skills: .bfhr("cvEditor.field.level", default: "Level", table: "CVEditor")
+        case .languages: .bfhr("cvEditor.field.fluency", default: "Fluency", table: "CVEditor")
+        default: .bfhr("cvEditor.field.detail", default: "Detail", table: "CVEditor")
         }
     }
 
     static func subtitleLabel(_ kind: CVSectionKind) -> LocalizedStringResource {
         switch kind {
-        case .work: r("cvEditor.field.company", "Company")
-        case .education: r("cvEditor.field.institution", "School or university")
-        case .certificates: r("cvEditor.field.issuer", "Issued by")
-        case .awards: r("cvEditor.field.awarder", "Awarded by")
-        case .publications: r("cvEditor.field.publisher", "Publisher")
-        case .custom: r("cvEditor.field.place", "Event or place")
-        default: r("cvEditor.field.organization", "Organization")
+        case .work: .bfhr("cvEditor.field.company", default: "Company", table: "CVEditor")
+        case .education: .bfhr("cvEditor.field.institution", default: "School or university", table: "CVEditor")
+        case .certificates: .bfhr("cvEditor.field.issuer", default: "Issued by", table: "CVEditor")
+        case .awards: .bfhr("cvEditor.field.awarder", default: "Awarded by", table: "CVEditor")
+        case .publications: .bfhr("cvEditor.field.publisher", default: "Publisher", table: "CVEditor")
+        case .custom: .bfhr("cvEditor.field.place", default: "Event or place", table: "CVEditor")
+        default: .bfhr("cvEditor.field.organization", default: "Organization", table: "CVEditor")
         }
     }
 
     static func summaryLabel(_ kind: CVSectionKind) -> LocalizedStringResource {
         switch kind {
-        case .work: r("cvEditor.field.aboutRole", "About the company or role")
-        case .references: r("cvEditor.field.reference", "Reference")
-        default: r("cvEditor.field.description", "Description")
+        case .work: .bfhr("cvEditor.field.aboutRole", default: "About the company or role", table: "CVEditor")
+        case .references: .bfhr("cvEditor.field.reference", default: "Reference", table: "CVEditor")
+        default: .bfhr("cvEditor.field.description", default: "Description", table: "CVEditor")
         }
     }
 
     static func currentLabel(_ kind: CVSectionKind) -> LocalizedStringResource {
         switch kind {
-        case .work: r("cvEditor.field.currentWork", "I currently work here")
-        case .education: r("cvEditor.field.currentStudy", "I'm studying here now")
-        default: r("cvEditor.field.ongoing", "Ongoing")
+        case .work: .bfhr("cvEditor.field.currentWork", default: "I currently work here", table: "CVEditor")
+        case .education: .bfhr("cvEditor.field.currentStudy", default: "I'm studying here now", table: "CVEditor")
+        default: .bfhr("cvEditor.field.ongoing", default: "Ongoing", table: "CVEditor")
         }
     }
 
     static func bulletsHeader(_ kind: CVSectionKind) -> LocalizedStringResource {
-        kind == .education ? r("cvEditor.field.courses", "Courses") : r("cvEditor.field.highlights", "Highlights")
+        kind == .education ? .bfhr("cvEditor.field.courses", default: "Courses", table: "CVEditor") : .bfhr("cvEditor.field.highlights", default: "Highlights", table: "CVEditor")
     }
 
     static let locationLabel = LocalizedStringResource.bfhr("cvEditor.field.location", default: "Location", table: "CVEditor")
@@ -251,10 +247,10 @@ enum CVEditorViewStrings {
     static let howToImprove = LocalizedStringResource.bfhr("cvEditor.assist.how", default: "What should Claude do?", table: "CVEditor")
     static func mode(_ mode: CVAssistMode) -> LocalizedStringResource {
         switch mode {
-        case .rewrite: r("cvEditor.assist.mode.rewrite", "Rewrite")
-        case .shorten: r("cvEditor.assist.mode.shorten", "Shorten")
-        case .strongerVerb: r("cvEditor.assist.mode.strongerVerb", "Stronger verb")
-        case .translate: r("cvEditor.assist.mode.translate", "Translate")
+        case .rewrite: .bfhr("cvEditor.assist.mode.rewrite", default: "Rewrite", table: "CVEditor")
+        case .shorten: .bfhr("cvEditor.assist.mode.shorten", default: "Shorten", table: "CVEditor")
+        case .strongerVerb: .bfhr("cvEditor.assist.mode.strongerVerb", default: "Stronger verb", table: "CVEditor")
+        case .translate: .bfhr("cvEditor.assist.mode.translate", default: "Translate", table: "CVEditor")
         }
     }
     static let translateTo = LocalizedStringResource.bfhr("cvEditor.assist.translateTo", default: "Translate to", table: "CVEditor")
@@ -267,11 +263,11 @@ enum CVEditorViewStrings {
     }
     static func reason(_ reason: CVSuggestionReason) -> LocalizedStringResource {
         switch reason {
-        case .shorter: r("cvEditor.assist.reason.shorter", "Shorter")
-        case .strongerVerb: r("cvEditor.assist.reason.strongerVerb", "Stronger verb")
-        case .clearer: r("cvEditor.assist.reason.clearer", "Clearer")
-        case .measurableResult: r("cvEditor.assist.reason.result", "Shows a result")
-        case .translated: r("cvEditor.assist.reason.translated", "Translated")
+        case .shorter: .bfhr("cvEditor.assist.reason.shorter", default: "Shorter", table: "CVEditor")
+        case .strongerVerb: .bfhr("cvEditor.assist.reason.strongerVerb", default: "Stronger verb", table: "CVEditor")
+        case .clearer: .bfhr("cvEditor.assist.reason.clearer", default: "Clearer", table: "CVEditor")
+        case .measurableResult: .bfhr("cvEditor.assist.reason.result", default: "Shows a result", table: "CVEditor")
+        case .translated: .bfhr("cvEditor.assist.reason.translated", default: "Translated", table: "CVEditor")
         }
     }
     static func changeReplaced(_ removed: String, _ added: String) -> LocalizedStringResource {
@@ -312,9 +308,9 @@ enum CVEditorViewStrings {
     static let localEditsNote = LocalizedStringResource.bfhr("cvEditor.history.localEdits", default: "Your latest edits become a new version once they're saved.", table: "CVEditor")
     static func source(_ source: CvRevisionSource) -> LocalizedStringResource {
         switch source {
-        case .manual: r("cvEditor.history.manual", "Edited by you")
-        case .import: r("cvEditor.history.import", "Imported")
-        case .aiTailor: r("cvEditor.history.aiTailor", "Tailored with AI")
+        case .manual: .bfhr("cvEditor.history.manual", default: "Edited by you", table: "CVEditor")
+        case .import: .bfhr("cvEditor.history.import", default: "Imported", table: "CVEditor")
+        case .aiTailor: .bfhr("cvEditor.history.aiTailor", default: "Tailored with AI", table: "CVEditor")
         }
     }
     static func sourceAndTime(_ source: LocalizedStringResource, _ date: Date) -> LocalizedStringResource {

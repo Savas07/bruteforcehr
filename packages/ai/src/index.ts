@@ -30,6 +30,16 @@ export {
   type CvImportResult,
   type GroundedImport,
 } from "./cv-import";
+export {
+  cutDescription,
+  extractJobPosting,
+  groundJobExtraction,
+  JOB_EXTRACT_MAX_CHARS,
+  JOB_EXTRACT_MODEL,
+  type GroundedJobExtraction,
+  type JobExtractDependencies,
+  type JobExtractResult,
+} from "./job-extract";
 export { importJsonResume, JSON_RESUME_MAPPER_VERSION, sanitizeResume } from "./extract/json-resume";
 export { importLinkedInZip, LINKEDIN_MAPPER_VERSION, parseCsv } from "./extract/linkedin";
 export { extractDocxText, extractPdfText, UnreadableFileError } from "./extract/text";
@@ -45,6 +55,7 @@ export type { AiLogEvent, AiLogger, AiOutcome } from "./log";
 export { costMicroUsd, MODELS, type ModelId, type TokenUsage } from "./models";
 export { CV_ASSIST_PROMPT_VERSION } from "./prompts/cv-assist";
 export { CV_IMPORT_PROMPT_VERSION } from "./prompts/cv-import";
+export { JOB_EXTRACT_PROMPT_VERSION } from "./prompts/job-extract";
 export {
   AiProviderError,
   type AiProvider,

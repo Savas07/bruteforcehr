@@ -46,6 +46,7 @@ let package = Package(
                 .process("CVEditor/CVEditor.xcstrings"),
                 .process("TrackerBoard/TrackerBoard.xcstrings"),
                 .process("MailReview/MailReview.xcstrings"),
+                .process("Insights/Insights.xcstrings"),
                 .process("UpdateGate/UpdateGate.xcstrings"),
                 .process("SignIn/SignIn.xcstrings"),
             ],

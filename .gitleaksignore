@@ -4,3 +4,5 @@
 29efa0c27ccf49e5d920969100fcc102eef1a4a1:apps/desktop/src/lib/appConfig.ts:gcp-api-key:15
 # A keyboard shortcut label ("Mod+Shift+ArrowLeft"), not a key.
 93fe88921104961934b9f3cd780780c3798cb319:apps/desktop/src/features/tracker-board/Screen.tsx:generic-api-key:405
+# The same public Firebase web API key in the cvRenderPdf smoke script.
+6eb122dcf3613d623ea79a7f0b5bf151ac69580f:apps/functions/scripts/smoke-render.ts:gcp-api-key:20

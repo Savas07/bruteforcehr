@@ -177,7 +177,11 @@ describe("Tracker table + CSV import", () => {
   });
 
   it("shows the imported rows in the table", async () => {
-    await $('[aria-label="Show"] button*=All').click();
+    // WebdriverIO's text selectors don't combine with CSS: find the segment inside its group.
+    await $('[aria-label="Show"]').$("button*=All").click();
+    await browser.waitUntil(
+      async () => (await $('[aria-label="Show"]').$("button*=All").getAttribute("data-state")) === "on",
+    );
     await browser.waitUntil(async () => (await $$("tr[data-row-id]").length) === 7, {
       timeout: 20_000,
       timeoutMsg: "the table never showed the 7 imported rows",

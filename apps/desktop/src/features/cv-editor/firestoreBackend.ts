@@ -8,6 +8,7 @@ import { createConverters, firestorePaths } from "@bfhr/api";
 import { CV_INITIAL_VERSION, type Cv, type CvRevision, type Profile } from "@bfhr/core";
 import {
   collection,
+  type DocumentSnapshot,
   doc,
   FirestoreError,
   onSnapshot,
@@ -136,6 +137,19 @@ export function createFirestoreCvBackend(uid: string): CvStudioBackend {
  * Live data.
  * ---------------------------------------------------------------------------------------------- */
 
+/**
+ * One document's entity, or null (logged) when it doesn't decode: a document another client
+ * wrote in a shape this build can't read must not stop the whole listener.
+ */
+function decoded<T>(document: DocumentSnapshot, decode: (snapshot: DocumentSnapshot) => T): T | null {
+  try {
+    return decode(document);
+  } catch (error) {
+    console.error(`Skipping ${document.ref.path}`, error);
+    return null;
+  }
+}
+
 export interface LiveCvData {
   readonly profile: Profile | null;
   readonly cvs: readonly Cv[];
@@ -211,7 +225,8 @@ export function useLiveCvData(uid: string): LiveCvState {
           const value: CvRevision[] = [];
           const pending = new Set<string>();
           for (const document of snapshot.docs) {
-            value.push(converters.cvRevision.fromSnapshot(document));
+            const revision = decoded(document, converters.cvRevision.fromSnapshot);
+            if (revision) value.push(revision);
             if (document.metadata.hasPendingWrites) pending.add(document.id);
           }
           snapshots.revisions.set(cvId, { value, pending, cache: snapshot.metadata.fromCache });
@@ -242,7 +257,9 @@ export function useLiveCvData(uid: string): LiveCvState {
         const value: Cv[] = [];
         const pending = new Set<string>();
         for (const document of snapshot.docs) {
-          value.push(converters.cv.fromSnapshot(document));
+          const cv = decoded(document, converters.cv.fromSnapshot);
+          if (!cv) continue;
+          value.push(cv);
           if (document.metadata.hasPendingWrites) pending.add(document.id);
           listenRevisions(document.id);
         }

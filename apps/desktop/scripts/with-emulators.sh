@@ -30,7 +30,8 @@ ready() {
     curl -s -o /dev/null "http://127.0.0.1:8080/" &&
     curl -s -o /dev/null "http://127.0.0.1:9199/"
 }
-for _ in $(seq 120); do
+# Up to 8 minutes: the Windows runner sometimes takes minutes to start the emulators.
+for _ in $(seq 240); do
   if ready; then break; fi
   if ! kill -0 "$emulator" 2>/dev/null; then
     cat "$log"

@@ -101,7 +101,15 @@ describe("CV Studio", () => {
   it("resolves a conflict with Keep this version", async () => {
     await typeSummary("Local change.");
     await remoteEdit(cv.name, "Remote change.");
-    await $("*=This CV changed on another device").waitForDisplayed({ timeout: 20_000 });
+    await $("*=This CV changed on another device")
+      .waitForDisplayed({ timeout: 20_000 })
+      .catch(async (error: unknown) => {
+        const page = await browser.execute(() => document.querySelector("header")?.textContent ?? "");
+        const doc = await getDoc(cvPath());
+        throw new Error(
+          `no conflict banner (${String(error)}); header: ${page}; cv version ${String(plain(doc.fields["version"]))}, current ${String(plain(doc.fields["currentRevisionId"]))}`,
+        );
+      });
     await capture("conflict-banner");
     await $("button=Compare").click();
     await $('[role="dialog"]').waitForDisplayed();
@@ -120,7 +128,7 @@ describe("CV Studio", () => {
     await restore.waitForDisplayed();
     await capture("history");
     await restore.click();
-    await $('[role="alertdialog"] button=Restore').click();
+    await $('[role="alertdialog"]').$("button=Restore").click();
     await browser.waitUntil(async () => (await listRevisions(cv.name)).length === before + 1, {
       timeout: 20_000,
       timeoutMsg: "restore wrote no revision",
@@ -130,7 +138,9 @@ describe("CV Studio", () => {
     expect(summaryOf(revision)).not.toBe("Local change.");
   });
 
-  it("exports a PDF whose text reads back", async () => {
+  it("exports a PDF whose text reads back", async function () {
+    // Printing through the OS webview plus the file write can take a while on CI runners.
+    this.timeout(180_000);
     const dir = process.env["BFHR_E2E_EXPORT_DIR"];
     if (!dir) throw new Error("BFHR_E2E_EXPORT_DIR is not set (desktop.yml sets it)");
     const file = path.join(dir, "Deniz-Aksoy-CV-Acme.pdf");

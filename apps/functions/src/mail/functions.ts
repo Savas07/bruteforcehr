@@ -22,7 +22,7 @@ import { onSchedule } from "firebase-functions/v2/scheduler";
 import { onTaskDispatched } from "firebase-functions/v2/tasks";
 import { ANTHROPIC_API_KEY } from "../ai/common";
 import { verifiedUid } from "../callable";
-import { converters } from "../converters";
+import { adminConverters as converters } from "../converters";
 import { loadMailSecret } from "./accounts";
 import { MAIL_SECRETS, oauthProvider } from "./config";
 import { MailCallableError } from "./errors";

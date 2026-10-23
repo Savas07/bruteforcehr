@@ -56,10 +56,11 @@ export const MATCH_WEIGHTS = { requirements: 0.3, skills: 0.25, similarity: 0.25
 export const HARD_FAIL_SCORE_CAP = 44;
 
 /**
- * Similarity range of the embedding model (gemini-embedding-001, 768 dims): unrelated job/profile
- * pairs sit near the low end, near-identical role descriptions near the high end.
+ * Similarity range of the embedding model (gemini-embedding-001, 768 dims, profile as
+ * RETRIEVAL_QUERY vs job as RETRIEVAL_DOCUMENT). Probe on 2026-10-24: same role ≈ 0.79, adjacent
+ * roles ≈ 0.70, unrelated jobs 0.52–0.62 (docs/adr/0011-embeddings-matching.md).
  */
-export const SIMILARITY_RANGE = { low: 0.55, high: 0.85 } as const;
+export const SIMILARITY_RANGE = { low: 0.55, high: 0.82 } as const;
 
 const STATUS_VALUE: Readonly<Record<MatchFactor["status"], number>> = {
   met: 1,

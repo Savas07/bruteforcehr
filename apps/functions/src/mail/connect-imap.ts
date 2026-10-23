@@ -11,7 +11,7 @@ import { getFirestore } from "firebase-admin/firestore";
 import { logger } from "firebase-functions/v2";
 import { HttpsError, onCall } from "firebase-functions/v2/https";
 import { verifiedUid } from "../callable";
-import { converters } from "../converters";
+import { adminConverters as converters } from "../converters";
 import { saveMailSecret, secretRefOf } from "./accounts";
 import { MAIL_TOKEN_KEYS } from "./config";
 import { MailCallableError } from "./errors";

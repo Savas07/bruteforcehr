@@ -153,6 +153,19 @@
           "order": "ASCENDING"
         }
       ]
+    },
+    {
+      "collectionGroup": "jobs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "embedding",
+          "vectorConfig": {
+            "dimension": 768,
+            "flat": {}
+          }
+        }
+      ]
     }
   ],
   "fieldOverrides": [
@@ -217,6 +230,12 @@
       "indexes": []
     },
     {
+      "collectionGroup": "jobQuotaDays",
+      "fieldPath": "expireAt",
+      "ttl": true,
+      "indexes": []
+    },
+    {
       "collectionGroup": "mailOutbox",
       "fieldPath": "expireAt",
       "ttl": true,
@@ -230,6 +249,12 @@
     },
     {
       "collectionGroup": "mailConnectNonces",
+      "fieldPath": "expireAt",
+      "ttl": true,
+      "indexes": []
+    },
+    {
+      "collectionGroup": "jobAlertItems",
       "fieldPath": "expireAt",
       "ttl": true,
       "indexes": []

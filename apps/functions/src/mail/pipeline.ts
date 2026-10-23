@@ -20,7 +20,7 @@ import { getFirestore, Timestamp } from "firebase-admin/firestore";
 import { logger } from "firebase-functions/v2";
 import { aiProvider } from "../ai/common";
 import { firestoreUsageLedger } from "../ai/usage-ledger";
-import { converters } from "../converters";
+import { adminConverters as converters } from "../converters";
 import { upsertAlertPostings } from "./job-alerts";
 import { type ParsedMail, parseMail } from "./parse";
 import type { MailProviderAdapter, MessageRef } from "./providers/types";

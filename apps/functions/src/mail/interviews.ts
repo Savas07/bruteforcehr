@@ -2,7 +2,7 @@
 import { firestorePaths } from "@bfhr/api";
 import { type ApplicationEvent, interviewFromSuggestion, type MailMessage } from "@bfhr/core";
 import type { Firestore, Transaction } from "firebase-admin/firestore";
-import { converters } from "../converters";
+import { adminConverters as converters } from "../converters";
 
 /** Writes of a confirmed suggestion: run after the transaction's other reads, before commit. */
 export type InterviewWrite = (tx: Transaction) => { "interviewSuggestion.interviewId": string };

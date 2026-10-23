@@ -20,7 +20,7 @@ import { HttpsError, onCall, onRequest } from "firebase-functions/v2/https";
 import type { Request, Response } from "express";
 import { z } from "zod";
 import { verifiedUid } from "../callable";
-import { converters } from "../converters";
+import { adminConverters as converters } from "../converters";
 import { loadMailSecret, oauthSecretFrom, saveMailSecret, secretRefOf } from "./accounts";
 import { MAIL_SECRETS, oauthProvider, PUBLIC_BASE_URL, redirectUri } from "./config";
 import { MailCallableError } from "./errors";

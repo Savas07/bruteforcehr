@@ -33,7 +33,7 @@ import { HttpsError, onCall } from "firebase-functions/v2/https";
 import { onTaskDispatched } from "firebase-functions/v2/tasks";
 import { z } from "zod";
 import { verifiedUid } from "../callable";
-import { converters } from "../converters";
+import { adminConverters as converters } from "../converters";
 import { openAdapter } from "./accounts";
 import { MAIL_SECRETS } from "./config";
 import { MailCallableError } from "./errors";

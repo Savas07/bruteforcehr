@@ -4,7 +4,7 @@ import { firestorePaths, serverOnlyPaths } from "@bfhr/api";
 import type { MailCategory, MailReviewUpdate } from "@bfhr/core";
 import { getFirestore } from "firebase-admin/firestore";
 import { beforeEach, describe, expect, it } from "vitest";
-import { converters } from "../../converters";
+import { adminConverters as converters } from "../../converters";
 import { reviewMailMessage, syncBodyPurgeAt } from "../functions";
 import {
   application,
@@ -159,6 +159,101 @@ describe("mailMessageReviewed", () => {
     expect(await listEvents(UID)).toEqual([]);
     expect(await corrections()).toEqual([]);
     expect((await listMessages(UID))[0]?.reviewState).toBe("dismissed");
+  });
+
+  const suggestion = {
+    title: "Technical interview",
+    startsAt: new Date("2026-11-05T13:00:00Z"),
+    durationMinutes: 45,
+    timezone: "Europe/Berlin",
+    location: null,
+    meetingUrl: "https://hooli.zoom.us/j/93456781234",
+    source: "text" as const,
+    interviewId: null,
+  };
+  const interviews = async () =>
+    (await getFirestore().collection(firestorePaths.interviews(UID)).get()).docs.map((doc) =>
+      converters.interview.fromSnapshot(doc),
+    );
+
+  it("Confirm of an invite creates the suggested interview (review-first)", async () => {
+    await seedMessage(
+      UID,
+      mailMessage({
+        id: "m-slot",
+        category: "interview_invite",
+        applicationId: "app-hooli",
+        linkStrength: "company_domain",
+        suggestedStatus: "interviewing",
+        interviewSuggestion: suggestion,
+      }),
+    );
+    expect(await interviews()).toEqual([]);
+
+    await review("m-slot", {
+      reviewState: "confirmed",
+      applicationId: "app-hooli",
+      category: "interview_invite",
+    });
+
+    expect(await interviews()).toEqual([
+      expect.objectContaining({
+        id: "m-slot",
+        applicationId: "app-hooli",
+        round: 1,
+        kind: "technical",
+        startsAt: suggestion.startsAt,
+        durationMinutes: 45,
+        timezone: "Europe/Berlin",
+        meetingUrl: suggestion.meetingUrl,
+        sourceMailMessageId: "m-slot",
+      }),
+    ]);
+    const events = await listEvents(UID, "app-hooli");
+    expect(events.map((event) => event.type).sort()).toEqual([
+      "interview_scheduled",
+      "mail_received",
+      "status_changed",
+    ]);
+    expect((await listMessages(UID))[0]?.interviewSuggestion?.interviewId).toBe("m-slot");
+  });
+
+  it("Add interview on an automatically applied invite creates only the interview, once", async () => {
+    await seedMessage(
+      UID,
+      mailMessage({
+        id: "m-auto",
+        category: "interview_invite",
+        applicationId: "app-hooli",
+        linkStrength: "thread",
+        suggestedStatus: "interviewing",
+        reviewState: "auto_applied",
+        interviewSuggestion: suggestion,
+      }),
+    );
+
+    await review("m-auto", {
+      reviewState: "confirmed",
+      applicationId: "app-hooli",
+      category: "interview_invite",
+    });
+
+    expect((await interviews()).map((interview) => [interview.id, interview.round])).toEqual([["m-auto", 1]]);
+    expect((await listEvents(UID, "app-hooli")).map((event) => event.type)).toEqual(["interview_scheduled"]);
+    expect((await readApplication(UID, "app-hooli")).status).toBe("applied");
+
+    // A second review write finds the interview already created.
+    await review("m-auto", {
+      reviewState: "corrected",
+      applicationId: "app-hooli",
+      category: "interview_invite",
+    });
+    await review("m-auto", {
+      reviewState: "confirmed",
+      applicationId: "app-hooli",
+      category: "interview_invite",
+    });
+    expect(await interviews()).toHaveLength(1);
   });
 });
 

@@ -12,7 +12,7 @@ import { getStorage } from "firebase-admin/storage";
 import { logger } from "firebase-functions/v2";
 import { HttpsError, onCall } from "firebase-functions/v2/https";
 import { ReasonedHttpsError, verifiedUid } from "../callable";
-import { converters } from "../converters";
+import { adminConverters as converters } from "../converters";
 import { type PdfRenderJob, pdfRenderJob, UnknownTemplateError } from "./input";
 import { loadCvPhoto, PhotoUnavailableError } from "./photo";
 import { pdfPageCount, printHtmlToPdf } from "./print";

@@ -9,7 +9,7 @@ import {
   type ProfileSettings,
 } from "@bfhr/core";
 import { getFirestore } from "firebase-admin/firestore";
-import { converters } from "../../converters";
+import { adminConverters as converters } from "../../converters";
 import { saveMailSecret, secretRefOf } from "../accounts";
 import type { TestMailServers } from "../providers/test-servers";
 import type { SyncEnqueue, SyncTaskData } from "../sync";

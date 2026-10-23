@@ -381,12 +381,93 @@ describe("appConfig/{platform}: public read, server write", () => {
   });
 });
 
+describe("users/{uid}/watchlist: clients own name, URL and switch only", () => {
+  const entry = "users/alice/watchlist/w1";
+  const pending = {
+    name: "Acme",
+    careersUrl: "https://jobs.lever.co/acme",
+    enabled: true,
+    ats: null,
+    boardToken: null,
+    companyDomain: null,
+    status: "pending",
+    lastError: null,
+    openJobs: null,
+    lastFetchedAt: null,
+    schemaVersion: 1,
+  };
+
+  it("lets the owner add a pending entry, edit their fields and delete it", async () => {
+    await assertSucceeds(client("alice").doc(entry).set(pending));
+    await assertSucceeds(
+      client("alice").doc(entry).update({ name: "Acme Inc.", enabled: false, updatedAt: new Date() }),
+    );
+    await assertSucceeds(client("alice").doc(entry).update({ careersUrl: "https://jobs.lever.co/acme-eu" }));
+    await assertSucceeds(client("alice").collection("users/alice/watchlist").get());
+    await assertSucceeds(client("alice").doc(entry).delete());
+  });
+
+  it("rejects client-written resolution fields", async () => {
+    await assertFails(
+      client("alice")
+        .doc(entry)
+        .set({ ...pending, status: "ok" }),
+    );
+    await assertFails(
+      client("alice")
+        .doc(entry)
+        .set({ ...pending, ats: "lever", boardToken: "acme" }),
+    );
+    await assertFails(
+      client("alice")
+        .doc(entry)
+        .set({ ...pending, openJobs: 12 }),
+    );
+    await seed(entry, { ...pending, status: "ok", ats: "lever", boardToken: "acme" });
+    await assertFails(client("alice").doc(entry).update({ status: "pending" }));
+    await assertFails(client("alice").doc(entry).update({ boardToken: "other" }));
+    await assertFails(client("alice").doc(entry).update({ lastError: null, openJobs: 0 }));
+  });
+
+  it("keeps other users out", async () => {
+    await seed(entry, pending);
+    await assertFails(client("bob").doc(entry).get());
+    await assertFails(client("bob").doc(entry).update({ name: "Mallory" }));
+    await assertFails(client("bob").doc("users/alice/watchlist/w2").set(pending));
+    await assertFails(client("bob").doc(entry).delete());
+    await assertFails(unverified("alice").doc(entry).get());
+  });
+});
+
+describe("jobSources/{sourceId}: read by signed-in users, server write", () => {
+  const health = { label: "Remotive", kind: "keyless", state: "ok", reason: null, lastError: null };
+
+  it("is readable by verified users only", async () => {
+    await seed("jobSources/remotive", health);
+    await assertSucceeds(client("alice").doc("jobSources/remotive").get());
+    await assertSucceeds(client("bob").collection("jobSources").get());
+    await assertFails(unverified("alice").doc("jobSources/remotive").get());
+    await assertFails(anonymous().doc("jobSources/remotive").get());
+  });
+
+  it("is not writable by clients", async () => {
+    await seed("jobSources/remotive", health);
+    await assertFails(client("alice").doc("jobSources/remotive").update({ state: "failing" }));
+    await assertFails(client("alice").doc("jobSources/adzuna").set(health));
+    await assertFails(client("alice").doc("jobSources/remotive").delete());
+  });
+});
+
 describe("serverOnly/**: no client access", () => {
   it.each([
     "serverOnly/mail/tokens/acc-gmail",
     "serverOnly/jobSources/keys/adzuna",
     // The user's own AI spend ledger is server-only too: clients must not reset their daily cap.
     "serverOnly/aiUsage/users/alice/aiUsageDays/2026-10-23",
+    // Job search budget and pending alerts: clients must not reset limits or forge alerts.
+    "serverOnly/jobQuota/users/alice/jobQuotaDays/2026-10-24",
+    "serverOnly/jobAlerts/users/alice/jobAlertItems/j1",
+    "serverOnly/jobSources/state/remotive",
   ])("%s", async (path) => {
     await seed(path, { secret: true });
     await assertFails(client("alice").doc(path).get());

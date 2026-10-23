@@ -4,7 +4,7 @@ import { getFirestore, Timestamp } from "firebase-admin/firestore";
 import { logger } from "firebase-functions/v2";
 import { onDocumentCreated } from "firebase-functions/v2/firestore";
 import { onTaskDispatched } from "firebase-functions/v2/tasks";
-import { converters } from "../converters";
+import { adminConverters as converters } from "../converters";
 import { DIGEST_LISTED_JOBS } from "./copy";
 import {
   JOB_ALERT_DIGEST_FUNCTION,

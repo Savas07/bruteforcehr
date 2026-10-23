@@ -9,7 +9,7 @@ import {
   mergeJobListing,
 } from "@bfhr/core";
 import { type DocumentSnapshot, getFirestore } from "firebase-admin/firestore";
-import { converters } from "../converters";
+import { adminConverters as converters } from "../converters";
 
 type JobDraft = Omit<Job, "id">;
 

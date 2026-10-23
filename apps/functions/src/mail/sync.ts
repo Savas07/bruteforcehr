@@ -4,7 +4,7 @@ import type { MailAccount, MailBackfill } from "@bfhr/core";
 import { getFirestore } from "firebase-admin/firestore";
 import { getFunctions } from "firebase-admin/functions";
 import { logger } from "firebase-functions/v2";
-import { converters } from "../converters";
+import { adminConverters as converters } from "../converters";
 import {
   acquireSyncLease,
   type BackfillProgress,

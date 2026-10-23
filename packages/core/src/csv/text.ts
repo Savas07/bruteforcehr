@@ -3,6 +3,7 @@
  * uses for "CSV" in Turkish and German/English installs), delimiter detection and RFC 4180
  * parsing, plus the writer used by exports. Pure: no I/O.
  */
+import { PlatformTextDecoder } from "./platform";
 
 export type CsvEncoding = "utf-8" | "utf-16le" | "utf-16be" | "windows-1254" | "windows-1252";
 export const CSV_ENCODINGS = [
@@ -28,7 +29,7 @@ export interface DecodedText {
 const TURKISH_ONLY_BYTES = new Set([0xd0, 0xdd, 0xde, 0xf0, 0xfd, 0xfe]);
 
 function decode(bytes: Uint8Array, encoding: CsvEncoding, fatal = false): string {
-  return new TextDecoder(encoding, { fatal, ignoreBOM: false }).decode(bytes);
+  return new PlatformTextDecoder(encoding, { fatal, ignoreBOM: false }).decode(bytes);
 }
 
 /** UTF-16 without a BOM: ASCII text has a zero in every other byte. */

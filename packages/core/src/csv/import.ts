@@ -7,6 +7,7 @@
 import type { ApplicationEvent, ApplicationPriority } from "../application";
 import type { ApplicationStatus, Channel } from "../enums";
 import { isActiveStatus, statusRank } from "../status";
+import { PlatformUrl } from "./platform";
 import { type DateOrder, detectDateOrder, parseSpreadsheetDate } from "./dates";
 import {
   type CsvDelimiter,
@@ -428,7 +429,7 @@ export function planImport(table: SpreadsheetTable, settings: ImportSettings): I
     if (linkValue !== "") {
       const candidate = /^www\./i.test(linkValue) ? `https://${linkValue}` : linkValue;
       try {
-        const url = new URL(candidate);
+        const url = new PlatformUrl(candidate);
         if ((url.protocol === "https:" || url.protocol === "http:") && candidate.length <= MAX_LINK_LENGTH)
           link = url.href;
       } catch {

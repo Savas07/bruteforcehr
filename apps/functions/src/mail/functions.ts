@@ -14,7 +14,7 @@ import {
   MAIL_REVIEW_CLIENT_STATES,
   transition,
 } from "@bfhr/core";
-import { FieldValue, getFirestore, Timestamp } from "firebase-admin/firestore";
+import { type DocumentSnapshot, FieldValue, getFirestore, Timestamp } from "firebase-admin/firestore";
 import { logger } from "firebase-functions/v2";
 import { onDocumentUpdated } from "firebase-functions/v2/firestore";
 import { HttpsError, onCall } from "firebase-functions/v2/https";
@@ -182,33 +182,42 @@ export const mailApplicationChanged = onDocumentUpdated(
     const before = event.data?.before;
     const after = event.data?.after;
     if (before === undefined || after === undefined) return;
-    const wasActive = isActiveStatus(before.get("status"));
-    const isActive = isActiveStatus(after.get("status"));
-    if (wasActive === isActive) return;
-    const { uid, applicationId } = event.params;
-    const db = getFirestore();
-    const profile = await db.doc(firestorePaths.user(uid)).get();
-    const retentionDays = Number(
-      profile.get("settings.mailBodyRetentionDays") ?? DEFAULT_PROFILE_SETTINGS.mailBodyRetentionDays,
-    );
-    const application = converters.application.fromSnapshot(after);
-    const messages = await db
-      .collection(firestorePaths.mailMessages(uid))
-      .where("applicationId", "==", applicationId)
-      .get();
-    const batch = db.batch();
-    for (const doc of messages.docs) {
-      if (doc.get("bodyText") === null) continue;
-      const receivedAt = (doc.get("receivedAt") as Timestamp).toDate();
-      const purgeAt = mailBodyPurgeAt({ receivedAt, retentionDays, application });
-      batch.update(doc.ref, {
-        bodyPurgeAt: purgeAt === null ? null : Timestamp.fromDate(purgeAt),
-        updatedAt: Timestamp.now(),
-      });
-    }
-    if (!messages.empty) await batch.commit();
+    await syncBodyPurgeAt(event.params.uid, event.params.applicationId, before, after);
   },
 );
+
+/** Body of `mailApplicationChanged` (exported for the emulator tests). */
+export async function syncBodyPurgeAt(
+  uid: string,
+  applicationId: string,
+  before: DocumentSnapshot,
+  after: DocumentSnapshot,
+): Promise<void> {
+  const wasActive = isActiveStatus(before.get("status"));
+  const isActive = isActiveStatus(after.get("status"));
+  if (wasActive === isActive) return;
+  const db = getFirestore();
+  const profile = await db.doc(firestorePaths.user(uid)).get();
+  const retentionDays = Number(
+    profile.get("settings.mailBodyRetentionDays") ?? DEFAULT_PROFILE_SETTINGS.mailBodyRetentionDays,
+  );
+  const application = converters.application.fromSnapshot(after);
+  const messages = await db
+    .collection(firestorePaths.mailMessages(uid))
+    .where("applicationId", "==", applicationId)
+    .get();
+  const batch = db.batch();
+  for (const doc of messages.docs) {
+    if (doc.get("bodyText") === null) continue;
+    const receivedAt = (doc.get("receivedAt") as Timestamp).toDate();
+    const purgeAt = mailBodyPurgeAt({ receivedAt, retentionDays, application });
+    batch.update(doc.ref, {
+      bodyPurgeAt: purgeAt === null ? null : Timestamp.fromDate(purgeAt),
+      updatedAt: Timestamp.now(),
+    });
+  }
+  if (!messages.empty) await batch.commit();
+}
 
 /**
  * Turns a review decision into tracker changes (flows.md §3: clients write only the four review
@@ -222,118 +231,123 @@ export const mailMessageReviewed = onDocumentUpdated(
     const before = event.data?.before;
     const after = event.data?.after;
     if (before === undefined || after === undefined) return;
-    const state = after.get("reviewState") as string;
-    if (
-      state === before.get("reviewState") ||
-      !(MAIL_REVIEW_CLIENT_STATES as readonly string[]).includes(state)
-    )
-      return;
-    const { uid, messageId } = event.params;
-    const db = getFirestore();
-    const message = converters.mailMessage.fromSnapshot(after);
-    const previousCategory = before.get("category") as string;
-    const previousApplicationId = (before.get("applicationId") as string | null) ?? null;
-
-    if (message.category !== previousCategory || message.applicationId !== previousApplicationId) {
-      await db.collection(serverOnlyPaths.mailCorrections(uid)).add({
-        from: {
-          category: previousCategory,
-          applicationId: previousApplicationId,
-          reviewState: before.get("reviewState"),
-        },
-        to: { category: message.category, applicationId: message.applicationId, reviewState: state },
-        senderDomain: message.from.address.slice(message.from.address.lastIndexOf("@") + 1),
-        language: message.language,
-        confidence: message.confidence,
-        linkStrength: message.linkStrength,
-        at: Timestamp.now(),
-      });
-    }
-    if (message.category === "not_job") {
-      await after.ref.delete();
-      return;
-    }
-    // Undo of an automatic change: the client already wrote the reverting event (ADR 0002).
-    if (
-      before.get("reviewState") === "auto_applied" ||
-      state === "dismissed" ||
-      message.applicationId === null
-    )
-      return;
-
-    const appRef = db.doc(firestorePaths.application(uid, message.applicationId));
-    const profile = await db.doc(firestorePaths.user(uid)).get();
-    const retentionDays = Number(
-      profile.get("settings.mailBodyRetentionDays") ?? DEFAULT_PROFILE_SETTINGS.mailBodyRetentionDays,
-    );
-    await db.runTransaction(async (tx) => {
-      const snapshot = await tx.get(appRef);
-      if (!snapshot.exists) return;
-      const application: Application = converters.application.fromSnapshot(snapshot);
-      const now = new Date();
-      const target =
-        message.category === previousCategory && message.suggestedStatus !== null
-          ? message.suggestedStatus
-          : categoryTargetStatus(message.category, false);
-      const eventsRef = db.collection(firestorePaths.applicationEvents(uid));
-      const evidence = {
-        mailMessageId: messageId,
-        reason: state === "confirmed" ? "Confirmed from an email" : "Corrected from an email",
-      };
-      const linkEvent = eventsRef.doc();
-      const received: ApplicationEvent = {
-        id: linkEvent.id,
-        applicationId: application.id,
-        type: "mail_received",
-        fromStatus: null,
-        toStatus: null,
-        actor: "user",
-        confidence: null,
-        evidence,
-        text: message.subject.slice(0, 5_000) || null,
-        revertsEventId: null,
-        occurredAt: message.receivedAt,
-        createdAt: now,
-      };
-      tx.create(linkEvent, converters.applicationEvent.toFirestore(received));
-      let appliedEventId: string | null = null;
-      let status = application.status;
-      let statusChangedAt = application.statusChangedAt;
-      const check = target === null ? null : canTransition(application.status, target, "user");
-      if (
-        target !== null &&
-        check?.allowed === true &&
-        (check.direction === "forward" || check.direction === "exit")
-      ) {
-        const result = transition({
-          application,
-          to: target,
-          actor: "user",
-          at: now,
-          evidence,
-          ...(message.subject ? { text: message.subject.slice(0, 5_000) } : {}),
-        });
-        const eventRef = eventsRef.doc();
-        tx.create(eventRef, converters.applicationEvent.toFirestore({ id: eventRef.id, ...result.event }));
-        tx.update(
-          appRef,
-          converters.application.toFirestoreUpdate({ ...result.applicationPatch, updatedAt: now }),
-        );
-        appliedEventId = eventRef.id;
-        status = result.applicationPatch.status;
-        statusChangedAt = result.applicationPatch.statusChangedAt;
-      }
-      const purgeAt = mailBodyPurgeAt({
-        receivedAt: message.receivedAt,
-        retentionDays,
-        application: { status, statusChangedAt },
-      });
-      tx.update(after.ref, {
-        appliedEventId,
-        suggestedStatus: appliedEventId === null ? message.suggestedStatus : null,
-        bodyPurgeAt: message.bodyText === null || purgeAt === null ? null : Timestamp.fromDate(purgeAt),
-        updatedAt: FieldValue.serverTimestamp(),
-      });
-    });
+    await reviewMailMessage(event.params.uid, event.params.messageId, before, after);
   },
 );
+
+/** Body of `mailMessageReviewed` (exported for the emulator tests). */
+export async function reviewMailMessage(
+  uid: string,
+  messageId: string,
+  before: DocumentSnapshot,
+  after: DocumentSnapshot,
+): Promise<void> {
+  const state = after.get("reviewState") as string;
+  if (
+    state === before.get("reviewState") ||
+    !(MAIL_REVIEW_CLIENT_STATES as readonly string[]).includes(state)
+  )
+    return;
+  const db = getFirestore();
+  const message = converters.mailMessage.fromSnapshot(after);
+  const previousCategory = before.get("category") as string;
+  const previousApplicationId = (before.get("applicationId") as string | null) ?? null;
+
+  if (message.category !== previousCategory || message.applicationId !== previousApplicationId) {
+    await db.collection(serverOnlyPaths.mailCorrections(uid)).add({
+      from: {
+        category: previousCategory,
+        applicationId: previousApplicationId,
+        reviewState: before.get("reviewState"),
+      },
+      to: { category: message.category, applicationId: message.applicationId, reviewState: state },
+      senderDomain: message.from.address.slice(message.from.address.lastIndexOf("@") + 1),
+      language: message.language,
+      confidence: message.confidence,
+      linkStrength: message.linkStrength,
+      at: Timestamp.now(),
+    });
+  }
+  if (message.category === "not_job") {
+    await after.ref.delete();
+    return;
+  }
+  // Undo of an automatic change: the client already wrote the reverting event (ADR 0002).
+  if (before.get("reviewState") === "auto_applied" || state === "dismissed" || message.applicationId === null)
+    return;
+
+  const appRef = db.doc(firestorePaths.application(uid, message.applicationId));
+  const profile = await db.doc(firestorePaths.user(uid)).get();
+  const retentionDays = Number(
+    profile.get("settings.mailBodyRetentionDays") ?? DEFAULT_PROFILE_SETTINGS.mailBodyRetentionDays,
+  );
+  await db.runTransaction(async (tx) => {
+    const snapshot = await tx.get(appRef);
+    if (!snapshot.exists) return;
+    const application: Application = converters.application.fromSnapshot(snapshot);
+    const now = new Date();
+    const target =
+      message.category === previousCategory && message.suggestedStatus !== null
+        ? message.suggestedStatus
+        : categoryTargetStatus(message.category, false);
+    const eventsRef = db.collection(firestorePaths.applicationEvents(uid));
+    const evidence = {
+      mailMessageId: messageId,
+      reason: state === "confirmed" ? "Confirmed from an email" : "Corrected from an email",
+    };
+    const linkEvent = eventsRef.doc();
+    const received: ApplicationEvent = {
+      id: linkEvent.id,
+      applicationId: application.id,
+      type: "mail_received",
+      fromStatus: null,
+      toStatus: null,
+      actor: "user",
+      confidence: null,
+      evidence,
+      text: message.subject.slice(0, 5_000) || null,
+      revertsEventId: null,
+      occurredAt: message.receivedAt,
+      createdAt: now,
+    };
+    tx.create(linkEvent, converters.applicationEvent.toFirestore(received));
+    let appliedEventId: string | null = null;
+    let status = application.status;
+    let statusChangedAt = application.statusChangedAt;
+    const check = target === null ? null : canTransition(application.status, target, "user");
+    if (
+      target !== null &&
+      check?.allowed === true &&
+      (check.direction === "forward" || check.direction === "exit")
+    ) {
+      const result = transition({
+        application,
+        to: target,
+        actor: "user",
+        at: now,
+        evidence,
+        ...(message.subject ? { text: message.subject.slice(0, 5_000) } : {}),
+      });
+      const eventRef = eventsRef.doc();
+      tx.create(eventRef, converters.applicationEvent.toFirestore({ id: eventRef.id, ...result.event }));
+      tx.update(
+        appRef,
+        converters.application.toFirestoreUpdate({ ...result.applicationPatch, updatedAt: now }),
+      );
+      appliedEventId = eventRef.id;
+      status = result.applicationPatch.status;
+      statusChangedAt = result.applicationPatch.statusChangedAt;
+    }
+    const purgeAt = mailBodyPurgeAt({
+      receivedAt: message.receivedAt,
+      retentionDays,
+      application: { status, statusChangedAt },
+    });
+    tx.update(after.ref, {
+      appliedEventId,
+      suggestedStatus: appliedEventId === null ? message.suggestedStatus : null,
+      bodyPurgeAt: message.bodyText === null || purgeAt === null ? null : Timestamp.fromDate(purgeAt),
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+  });
+}

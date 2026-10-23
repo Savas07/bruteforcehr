@@ -28,6 +28,7 @@ import {
   type JobSourceStatus,
   JobSourceStatusSchema,
   type MailAccount,
+  MAIL_ACCOUNT_READ_DEFAULTS,
   MailAccountSchema,
   type MailMessage,
   MailMessageSchema,
@@ -291,6 +292,7 @@ export function createConverters<TTimestamp>(adapter: TimestampAdapter<TTimestam
       "mailAccount",
       MailAccountSchema,
       ["id"],
+      MAIL_ACCOUNT_READ_DEFAULTS,
     ),
     mailMessage: createEntityConverter<TTimestamp, MailMessage, "id">(
       adapter,

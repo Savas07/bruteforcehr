@@ -43,6 +43,8 @@ const INLINE_NAMES: Readonly<Record<string, string>> = {
   "ProfileSettings.quietHours": "QuietHours",
   "Cv.importedFrom": "CvImportedFile",
   "MailAccount.lastError": "MailAccountError",
+  "MailBackfill.error": "MailBackfillError",
+  "EmailSend.error": "EmailSendError",
   "MailExtraction.dates": "ExtractedDate",
   "JobMatch.skills": "MatchSkills",
   "SavedSearchFilters.salaryMin": "SalaryMinimum",

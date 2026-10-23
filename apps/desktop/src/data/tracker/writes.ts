@@ -119,6 +119,7 @@ export function newApplication(fields: ApplicationFields, at: Date): Omit<Applic
     followUpDismissedAt: null,
     ghostedSnoozedUntil: null,
     ghostedDismissedAt: null,
+    emailSend: null,
     createdAt: at,
     updatedAt: at,
   };

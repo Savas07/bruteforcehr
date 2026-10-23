@@ -1,6 +1,6 @@
 {
   "name": "@bfhr/cv-render",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "One CV renderer: JSON Resume + meta + template + theme → self-contained, ATS-safe HTML (desktop, iOS via JavaScriptCore, server Chromium), DOCX and JSON export.",
   "type": "module",

@@ -1,6 +1,6 @@
 {
   "name": "@bfhr/release-scripts",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "private": true,
   "description": "Release pipeline helpers for .github/workflows/release.yml (ADR 0004): versions, notes, latest.json, updater signature checks, appConfig, TestFlight notes.",
   "type": "module",

@@ -7,25 +7,17 @@
 //
 //   gcloud auth application-default login   # once; the owner account
 //   pnpm --filter @bfhr/functions smoke:mail
+// First: initializes the Admin app before src/callable.ts would (see live-app.ts).
+import { PROJECT, REGION, WEB_API_KEY } from "./live-app";
 import { setTimeout as sleep } from "node:timers/promises";
-import { createConverters, firestorePaths, serverOnlyPaths, userDataRoots, userStoragePrefix } from "@bfhr/api";
+import { firestorePaths, serverOnlyPaths, userDataRoots } from "@bfhr/api";
 import type { Job, MailAccount } from "@bfhr/core";
-import { initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
-import { getFirestore, Timestamp } from "firebase-admin/firestore";
+import { getFirestore } from "firebase-admin/firestore";
 import { getStorage } from "firebase-admin/storage";
+import { deleteUserData } from "../src/account/user-data";
+import { adminConverters as converters } from "../src/converters";
 
-const PROJECT = "bruteforcehr";
-const REGION = "europe-west1";
-/** Web API key (public client config, apps/desktop/src/lib/firebase.ts). */
-const WEB_API_KEY = "AIzaSyBlJk949tJEB9HUmmRGoE8EsqQ2tEA41ag";
-
-initializeApp({ projectId: PROJECT, storageBucket: `${PROJECT}.firebasestorage.app` });
-const converters = createConverters<Timestamp>({
-  fromDate: (date) => Timestamp.fromDate(date),
-  toDate: (value) => value.toDate(),
-  isTimestamp: (value): value is Timestamp => value instanceof Timestamp,
-});
 const db = getFirestore();
 
 interface CallableReply {
@@ -49,7 +41,13 @@ function check(label: string, ok: boolean, observed: unknown): void {
 }
 
 /** Expects a callable error with this status and `details.reason` (and `details.field`). */
-function expectError(label: string, reply: CallableReply, status: string, reason: string, field?: string): void {
+function expectError(
+  label: string,
+  reply: CallableReply,
+  status: string,
+  reason: string,
+  field?: string,
+): void {
   const details = reply.error?.details;
   check(
     label,
@@ -262,10 +260,10 @@ try {
     );
   }
 } finally {
-  // Account-data deletion (JobsBackend's deleteUserData is not on main yet): every userDataRoots
-  // tree, the Storage prefix, then the Auth user. The seeded account has no credentials to revoke.
-  for (const root of userDataRoots(uid)) await db.recursiveDelete(db.doc(root));
-  await getStorage().bucket().deleteFiles({ prefix: userStoragePrefix(uid) });
+  // Cleanup through the account-deletion routine: disconnects the mail accounts (the seeded one has no
+  // credentials, so there is nothing to revoke), deletes every userDataRoots tree and the Storage
+  // prefix; then the Auth user.
+  await deleteUserData(db, getStorage().bucket(), uid);
   await getAuth().deleteUser(uid);
   const gone = await getAuth()
     .getUser(uid)
@@ -279,5 +277,9 @@ try {
   );
 }
 
-console.log(failures.length === 0 ? "\nall expectations met" : `\n${failures.length} failed:\n- ${failures.join("\n- ")}`);
+console.log(
+  failures.length === 0
+    ? "\nall expectations met"
+    : `\n${failures.length} failed:\n- ${failures.join("\n- ")}`,
+);
 process.exitCode = failures.length === 0 ? 0 : 1;

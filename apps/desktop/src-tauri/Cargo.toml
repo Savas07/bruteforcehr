@@ -24,18 +24,40 @@ tauri-plugin-single-instance = { version = "2.5.4", features = ["deep-link"] }
 # In-app updates (src/updater.rs): signed bundles from the GitHub release manifest.
 tauri-plugin-updater = "2.14.0"
 time = { version = "0.3", features = ["formatting"] }
-tokio = { version = "1", features = ["time"] }
+tokio = { version = "1", features = ["sync", "time"] }
 # Test-only (feature `e2e`), never part of release bundles: WebdriverIO's execute/log bridge and
 # the embedded WebDriver server the E2E tests drive on macOS and Windows.
 tauri-plugin-wdio = { version = "1.5.0", optional = true }
 tauri-plugin-wdio-webdriver = { version = "1.5.0", optional = true }
+# CV export (src/export_file.rs): the native Save dialog, from Rust only; none of its JS commands
+# are granted.
+tauri-plugin-dialog = "2.8.3"
+# CV PDF printing (src/cv_pdf.rs): the PDF's temporary directory.
+tempfile = "3.27.0"
+# save_export's percent-encoded file-name header.
+percent-encoding = "2.3.2"
 
 [target.'cfg(windows)'.dependencies]
 windows-version = "0.1.7"
+# WebView2's PrintToPdf (src/cv_pdf/native.rs); the versions wry uses.
+webview2-com = "0.39.1"
+windows-core = "0.62.2"
+
+# WKWebView's print operation (src/cv_pdf/native.rs); the versions wry uses.
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2 = "0.6.5"
+objc2-foundation = { version = "0.3.2", default-features = false, features = ["std", "NSDictionary", "NSGeometry", "NSString", "NSURL", "NSValue"] }
+objc2-app-kit = { version = "0.3.2", default-features = false, features = ["std", "NSPrintInfo", "NSPrintOperation", "NSResponder", "NSView", "objc2-core-foundation", "NSWindow"] }
+objc2-web-kit = { version = "0.3.2", default-features = false, features = ["std", "objc2-app-kit", "WKPreferences", "WKWebView", "WKWebViewConfiguration"] }
 
 [features]
 # Builds the app for WebdriverIO (`pnpm build:e2e`); see tauri.e2e.conf.json.
 e2e = ["dep:tauri-plugin-wdio", "dep:tauri-plugin-wdio-webdriver"]
+
+# Prints with the real OS webview, which needs the main thread: its own `main`.
+[[test]]
+name = "print_pdf"
+harness = false
 
 [profile.release]
 codegen-units = 1
@@ -45,7 +67,8 @@ panic = "abort"
 strip = true
 
 [lints.rust]
-unsafe_code = "forbid"
+# Denied, not forbidden: src/cv_pdf/native.rs alone allows it, for the webviews' print APIs (FFI).
+unsafe_code = "deny"
 
 [lints.clippy]
 pedantic = { level = "warn", priority = -1 }

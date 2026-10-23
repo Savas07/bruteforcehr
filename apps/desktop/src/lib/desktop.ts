@@ -1,8 +1,9 @@
 /**
- * The UI's whole surface to the Tauri backend (src-tauri). Capabilities grant exactly these
- * calls: listening for menu commands, update-status and sign-in-link events, `open_external`,
- * `open_job_url`, `open_mail_inbox`, the update commands (src-tauri/src/updater.rs) and the
- * sign-in commands (src-tauri/src/auth_link.rs).
+ * The UI's surface to the Tauri backend (src-tauri), with the CV export commands in
+ * ./cvExport.ts. Capabilities grant exactly these calls: listening for menu commands,
+ * update-status and sign-in-link events, `open_external`, `open_job_url`, `open_mail_inbox`, the
+ * update commands (src-tauri/src/updater.rs), the sign-in commands (src-tauri/src/auth_link.rs)
+ * and `print_cv_pdf` / `save_export` (cvExport.ts).
  */
 import { invoke, isTauri } from "@tauri-apps/api/core";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";

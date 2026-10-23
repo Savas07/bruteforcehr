@@ -9,6 +9,7 @@ import { createContext, useContext, type ComponentType } from "react";
 import { AppShell } from "./components/AppShell";
 import { RouteContainer } from "./components/RouteContainer";
 import { destinations, type DestinationId } from "./lib/destinations";
+import LiveCvStudio from "./features/cv-editor/LiveCvStudio";
 
 const startPath = destinations[0].path;
 
@@ -49,12 +50,17 @@ function sectionTitle(id: AppRouteId): ComponentType {
   };
 }
 
-/** Production: the title-only shell. Real screens land with their milestones. */
+/** Production: the CVs area runs on live data (M2); other areas show their title until their milestone. */
 export const productionViews: RouteViews = {
   root: AppShell,
-  routes: Object.fromEntries(
-    Object.keys(appRoutes).map((id) => [id, sectionTitle(id as AppRouteId)]),
-  ) as Record<AppRouteId, ComponentType>,
+  routes: {
+    ...(Object.fromEntries(Object.keys(appRoutes).map((id) => [id, sectionTitle(id as AppRouteId)])) as Record<
+      AppRouteId,
+      ComponentType
+    >),
+    cvs: LiveCvStudio,
+    cv: LiveCvStudio,
+  },
 };
 
 export const RouteViewsContext = createContext<RouteViews>(productionViews);

@@ -93,6 +93,9 @@ fn window_config(material: Material) -> WindowConfig {
         // 1366×768.
         "minWidth": 480,
         "minHeight": 360,
+        // Off so HTML5 drag and drop reaches the page: the CV import dialog takes dropped files as
+        // `File` objects (with the native handler on, the webview never sees the drop).
+        "dragDropEnabled": false,
         "transparent": material != Material::None,
     });
     match material {

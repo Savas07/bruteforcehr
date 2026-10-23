@@ -3,6 +3,8 @@
 
 mod auth_link;
 mod commands;
+mod cv_pdf;
+mod export_file;
 mod external_url;
 mod job_url;
 mod mail_inbox;
@@ -32,7 +34,10 @@ fn main() {
                 .build(),
         )
         // Driven from Rust only (src/updater.rs); none of its JS commands are granted.
-        .plugin(tauri_plugin_updater::Builder::new().build());
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        // The CV export's Save dialog (src/export_file.rs), driven from Rust only; none of its JS
+        // commands are granted.
+        .plugin(tauri_plugin_dialog::init());
 
     // Test builds only (`pnpm build:e2e`): WebdriverIO bridge and the embedded WebDriver server.
     #[cfg(feature = "e2e")]
@@ -44,6 +49,11 @@ fn main() {
         .manage(job_url::RateLimiter::for_job_urls())
         .manage(updater::Updates::default())
         .manage(auth_link::PendingAuthLink::default())
+        // CV pages for the hidden print windows (src/cv_pdf.rs).
+        .manage(cv_pdf::PrintJobs::default())
+        .register_uri_scheme_protocol(cv_pdf::SCHEME, |context, request| {
+            cv_pdf::serve(&context, &request)
+        })
         .invoke_handler(tauri::generate_handler![
             commands::open_external,
             commands::open_job_url,
@@ -53,7 +63,9 @@ fn main() {
             commands::set_update_channel,
             commands::take_auth_link,
             commands::set_signed_in,
-            commands::open_mail_inbox
+            commands::open_mail_inbox,
+            commands::print_cv_pdf,
+            commands::save_export
         ])
         .menu(menu::build)
         .on_menu_event(|app, event| menu::handle_event(app, &event))

@@ -36,6 +36,11 @@ function firebaseAuth(): Auth {
   return auth;
 }
 
+/** The signed-in user's uid (null signed out). Data screens render only behind `AuthGate`. */
+export function currentUid(): string | null {
+  return firebaseAuth().currentUser?.uid ?? null;
+}
+
 /** `language` localizes Firebase's sign-in email (its template has EN, TR and DE). */
 export function createFirebaseAuthBackend(language: UiLanguage): AuthBackend {
   const instance = firebaseAuth();

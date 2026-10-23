@@ -202,6 +202,9 @@ importers:
       '@bfhr/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@bfhr/cv-render':
+        specifier: workspace:*
+        version: link:../../packages/cv-render
       '@bfhr/ui-tokens':
         specifier: workspace:*
         version: link:../../packages/ui-tokens
@@ -229,6 +232,9 @@ importers:
       lucide-react:
         specifier: ^1.61.0
         version: 1.61.0(@types/react@19.3.0)(react@19.3.1)
+      pdfjs-dist:
+        specifier: ^6.4.299
+        version: 6.4.299
       radix-ui:
         specifier: ^1.8.1
         version: 1.8.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
@@ -241,6 +247,9 @@ importers:
       react-intl:
         specifier: ^11.0.1
         version: 11.0.1(@types/react@19.3.0)(react@19.3.1)
+      zod:
+        specifier: ^4.6.7
+        version: 4.6.7
     devDependencies:
       '@axe-core/playwright':
         specifier: ^4.14.0

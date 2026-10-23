@@ -9,7 +9,7 @@
  * Disabled items say why (decisions.md D16): they stay focusable (`aria-disabled`), show the
  * reason in a tooltip on hover and keyboard focus, and expose it as the accessible description.
  */
-import { Check, type LucideIcon } from "lucide-react";
+import { Check, ChevronRight, type LucideIcon } from "lucide-react";
 import { ContextMenu, DropdownMenu } from "radix-ui";
 import { createContext, useContext, useId, type KeyboardEvent, type ReactNode } from "react";
 import { cx } from "../cx";
@@ -29,7 +29,7 @@ const itemClass =
 const iconClass = "size-4 shrink-0";
 
 export interface MenuContentProps {
-  /** Menu parts: `MenuItem`, `MenuRadioGroup`, `MenuLabel`, `MenuSeparator`. */
+  /** Menu parts: `MenuItem`, `MenuSub`, `MenuRadioGroup`, `MenuLabel`, `MenuSeparator`. */
   children: ReactNode;
   /** Alignment against the trigger. Default `"start"`. */
   align?: "start" | "center" | "end";
@@ -39,6 +39,8 @@ export interface MenuContentProps {
   "aria-label"?: string | undefined;
   /** Runs before Radix's typeahead; call `preventDefault()` to claim a key (digit presets in `SnoozeMenu`). */
   onKeyDown?: (event: KeyboardEvent<HTMLDivElement>) => void;
+  /** Runs as the menu closes; call `preventDefault()` to put focus somewhere other than the trigger. */
+  onCloseAutoFocus?: (event: Event) => void;
 }
 
 /**
@@ -51,6 +53,7 @@ export function MenuContent({
   side = "bottom",
   "aria-label": label,
   onKeyDown,
+  onCloseAutoFocus,
 }: MenuContentProps) {
   return (
     <DropdownMenu.Portal>
@@ -62,6 +65,7 @@ export function MenuContent({
         loop
         {...(label === undefined ? {} : { "aria-label": label, "aria-labelledby": undefined })}
         onKeyDown={onKeyDown}
+        {...(onCloseAutoFocus && { onCloseAutoFocus })}
         className={cx(contentClass, "max-h-(--radix-dropdown-menu-content-available-height)")}
       >
         <MenuKindContext.Provider value="dropdown">{children}</MenuKindContext.Provider>
@@ -167,6 +171,49 @@ export function MenuItem({
     </Hint>
   ) : (
     item
+  );
+}
+
+export interface MenuSubProps {
+  /** Visible label of the row that opens the submenu ("Translate"). */
+  label: string;
+  /** Menu parts of the submenu. */
+  children: ReactNode;
+}
+
+/**
+ * A row that opens a nested menu ("Translate ▸"): → / Enter opens it, ← closes it, hover opens it
+ * after Radix's pointer grace. The submenu is styled like `MenuContent`.
+ */
+export function MenuSub({ label, children }: MenuSubProps) {
+  const kind = useContext(MenuKindContext);
+  const Sub = kind === "context" ? ContextMenu.Sub : DropdownMenu.Sub;
+  const SubTrigger = kind === "context" ? ContextMenu.SubTrigger : DropdownMenu.SubTrigger;
+  const Portal = kind === "context" ? ContextMenu.Portal : DropdownMenu.Portal;
+  const SubContent = kind === "context" ? ContextMenu.SubContent : DropdownMenu.SubContent;
+  return (
+    <Sub>
+      <SubTrigger className={cx(itemClass, "data-[state=open]:bg-surface-hover")}>
+        <span className="flex-1">{label}</span>
+        <ChevronRight aria-hidden="true" className={cx(iconClass, "text-fg-tertiary")} strokeWidth={1.75} />
+      </SubTrigger>
+      <Portal>
+        <SubContent
+          sideOffset={4}
+          collisionPadding={8}
+          loop
+          aria-label={label}
+          className={cx(
+            contentClass,
+            kind === "context"
+              ? "max-h-(--radix-context-menu-content-available-height)"
+              : "max-h-(--radix-dropdown-menu-content-available-height)",
+          )}
+        >
+          {children}
+        </SubContent>
+      </Portal>
+    </Sub>
   );
 }
 

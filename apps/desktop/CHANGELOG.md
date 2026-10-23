@@ -1,5 +1,23 @@
 # @bfhr/desktop
 
+## 0.3.0
+
+### Minor Changes
+
+- 1c3a3aa: Tracker on real data (M3, desktop): Firestore listeners and batched writes for applications, events, interviews and contacts (offline, waiting-to-sync state); board moves by drag, keyboard and Move to… through the core state machine with durable Undo; full-page application detail (timeline with automatic events and Undo, documents used, contacts, interview rounds with .ics export, notes, reminders); Log an application (⌘N); follow-up and no-response suggestions with Later / Not needed / Keep waiting persisted on the application (`visibleSuggestions`, ported to BFHRCore); opt-in interview prep notifications; Today on live data.
+- ffcd3ed: Insights (M3): pure metrics in `@bfhr/core` (funnel by apply date, response rate by source / channel / CV / market, median time to first response, 12-week activity, Tracker drill-downs) with conformance vectors ported to BFHRCore; desktop Insights screen (sidebar ⌘6) and iOS Insights pushed from the Tracker, both on live data.
+
+### Patch Changes
+
+- fe0780e: Downloads, release notes and updates now come from the public `Savas07/bruteforcehr-releases` repository: the desktop app checks for updates there (stable and beta), the website's Download and Changelog pages list its releases, and "Release page on GitHub", Support and the privacy/terms contact links open it. Problems and questions go to its Issues, which are public, so please don't include personal details.
+- Updated dependencies [1c3a3aa]
+- Updated dependencies [ffcd3ed]
+- Updated dependencies [fad8a90]
+  - @bfhr/core@0.3.0
+  - @bfhr/api@0.3.0
+  - @bfhr/cv-render@0.3.0
+  - @bfhr/ui-tokens@0.3.0
+
 ## 0.2.2
 
 ### Patch Changes

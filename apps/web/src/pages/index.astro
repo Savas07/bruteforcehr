@@ -1,11 +1,310 @@
 ---
+/**
+ * Home (website.md › Home): hero with the OS-detected download (Apple 1821ad0f, Spline, heyclicky)
+ * over a device bento (Serus), four pillars (Calendly), getting started in three steps (Beside
+ * columns, Railway vertical list), promises (Agentcard ruled grid), what's new (Notion) and a calm
+ * closing call to action (Granola). Screenshots are the approved M0 checkpoint captures (sample data).
+ */
+import type { ImageMetadata } from "astro";
+import DownloadCta from "../components/DownloadCta.astro";
+import ThemedScreenshot from "../components/ThemedScreenshot.astro";
 import SiteLayout from "../layouts/SiteLayout.astro";
-import { SITE_DESCRIPTION, SITE_NAME } from "../site.ts";
+import { formatDate, getLatestRelease, getReleases, isoDate } from "../releases.ts";
+import { SITE_DESCRIPTION } from "../site.ts";
+import iphoneTodayDark from "../assets/screens/iphone-today-dark.webp";
+import iphoneTodayLight from "../assets/screens/iphone-today-light.webp";
+import macJobDetailDark from "../assets/screens/mac-job-detail-dark.webp";
+import macJobDetailLight from "../assets/screens/mac-job-detail-light.webp";
+import macMailReviewDark from "../assets/screens/mac-mail-review-dark.webp";
+import macMailReviewLight from "../assets/screens/mac-mail-review-light.webp";
+import macTodayDark from "../assets/screens/mac-today-dark.webp";
+import macTodayLight from "../assets/screens/mac-today-light.webp";
+import macTrackerDark from "../assets/screens/mac-tracker-dark.webp";
+import macTrackerLight from "../assets/screens/mac-tracker-light.webp";
+import windowsCvEditorDark from "../assets/screens/windows-cv-editor-dark.webp";
+import windowsCvEditorLight from "../assets/screens/windows-cv-editor-light.webp";
+import windowsTrackerDark from "../assets/screens/windows-tracker-dark.webp";
+import windowsTrackerLight from "../assets/screens/windows-tracker-light.webp";
+
+const [latest, releases] = await Promise.all([getLatestRelease(), getReleases()]);
+const recent = releases.slice(0, 3);
+
+interface Pillar {
+  label: string;
+  lead: string;
+  text: string;
+  light: ImageMetadata;
+  dark: ImageMetadata;
+  alt: string;
+}
+
+const pillars: Pillar[] = [
+  {
+    label: "Jobs",
+    lead: "Jobs that fit you.",
+    text: "Openings from job boards and company career pages in one list, each with a plain explanation of how well it matches what you want.",
+    light: macJobDetailLight,
+    dark: macJobDetailDark,
+    alt: "Jobs on Mac: a list of openings next to one job's match breakdown, “Strong match, 88 of 100”, with each requirement checked against the posting.",
+  },
+  {
+    label: "CVs",
+    lead: "A version of your CV for every role.",
+    text: "Bring the CV you have and tailor a copy for each application. Suggestions reword what's already true; they never add experience you don't have.",
+    light: windowsCvEditorLight,
+    dark: windowsCvEditorDark,
+    alt: "CV editor on Windows: the sections of an English base CV with suggestions on three roles, next to a two-page A4 preview.",
+  },
+  {
+    label: "Tracker",
+    lead: "Every application at a glance.",
+    text: "See where each application stands, from saved to offer, how long it has waited, and what to do next.",
+    light: macTrackerLight,
+    dark: macTrackerDark,
+    alt: "Tracker on Mac: applications in columns by stage, such as Saved, Preparing and Applied, with days in stage and the next task.",
+  },
+  {
+    label: "Mail",
+    lead: "Email that keeps it up to date.",
+    text: "Connect your inbox and replies from employers update your applications. Each change shows the email it came from, and you can undo it.",
+    light: macMailReviewLight,
+    dark: macMailReviewDark,
+    alt: "Mail on Mac: an email recognised as a recruiter message, linked to an application, with Confirm, Change and Not job mail buttons.",
+  },
+];
+
+const steps = [
+  {
+    title: "Add your CV",
+    text: "Upload a PDF or Word file, a JSON Resume or your LinkedIn data export, or start from scratch.",
+  },
+  {
+    title: "Say what you're looking for",
+    text: "Roles and places come pre-filled from your CV. Change what you like; nothing is required.",
+  },
+  {
+    title: "Connect your email",
+    text: "BruteForceHR looks through the last 90 days for applications you've already sent, and you choose which to add. You can also skip this for now.",
+  },
+] as const;
+
+const promises = [
+  {
+    title: "You press Send",
+    text: "Nothing is sent on your behalf until you've confirmed that exact message.",
+  },
+  {
+    title: "Your facts stay yours",
+    text: "AI can reword, shorten or translate your CV. It never invents employers, job titles, dates, degrees, skills or numbers.",
+  },
+  {
+    title: "Every change can be undone",
+    text: "When something updates on its own, you see why and where it came from, with Undo.",
+  },
+  {
+    title: "Take it with you, or delete it",
+    text: "Export everything as a ZIP file, or delete your account and all your data, from Settings.",
+  },
+  {
+    title: "Stored in the EU",
+    text: "Your data is kept with Google Cloud in Belgium. It's never sold or used for ads.",
+  },
+  {
+    title: "English, Turkish and German",
+    text: "The app, your CVs and email recognition work in all three languages.",
+  },
+] as const;
+
+const tile = "rounded-xl border border-line-subtle bg-surface-sunken p-4 md:p-6";
+const chip =
+  "inline-flex rounded-full bg-surface-base px-3 py-1 text-subheadline font-semibold text-fg-secondary shadow-raised";
+const eyebrow = "font-mono text-subheadline text-accent-text";
 ---
 
 <SiteLayout description={SITE_DESCRIPTION}>
-  <div class="mx-auto max-w-6xl px-5 pt-10 md:px-6 md:pt-16">
-    <h1 class="font-display text-display text-fg-primary">{SITE_NAME}</h1>
-    <p class="mt-4 max-w-[60ch] text-lead text-fg-secondary">{SITE_DESCRIPTION}</p>
-  </div>
+  <section aria-labelledby="hero-title" class="mx-auto max-w-6xl px-5 pt-12 md:px-6 md:pt-20">
+    <div class="mx-auto flex max-w-3xl flex-col items-center text-center">
+      <p class="rounded-full border border-line-subtle bg-surface-base px-3 py-1 text-subheadline text-fg-secondary">
+        In early development ·{" "}
+        <a href="/changelog/" class="prose-link">See what's new</a>
+      </p>
+      <h1 id="hero-title" class="mt-6 font-display text-display text-fg-primary">Your job search, in one calm place</h1>
+      <p class="mt-5 max-w-[60ch] text-lead text-fg-secondary">
+        Find jobs that fit, tailor your CV for each one and keep track of every application, on iPhone, Mac and
+        Windows.
+      </p>
+      <div class="mt-8">
+        <DownloadCta latest={latest} />
+      </div>
+    </div>
+
+    <div class="mt-14 grid gap-4 md:mt-20 md:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] md:gap-5">
+      <figure class:list={[tile, "flex flex-col md:row-span-2"]}>
+        <figcaption><span class={chip}>iPhone</span></figcaption>
+        <div class="flex flex-1 items-start justify-center pt-4 md:pt-6">
+          <ThemedScreenshot
+            light={iphoneTodayLight}
+            dark={iphoneTodayDark}
+            alt="Today on iPhone: the next interview, an on-site round at 3 PM, and emails waiting for review."
+            widths={[300, 600]}
+            sizes="(min-width: 768px) 300px, 260px"
+            priority
+            class="h-auto w-full max-w-[260px] rounded-[2rem] border border-line-subtle shadow-raised md:max-w-[300px]"
+          />
+        </div>
+      </figure>
+      <figure class={tile}>
+        <figcaption><span class={chip}>Mac</span></figcaption>
+        <ThemedScreenshot
+          light={macTodayLight}
+          dark={macTodayDark}
+          alt="Today on Mac: the next interview with time, place and people, emails to review, and applications that moved on their own, each with its source."
+          widths={[400, 720, 1080, 1280]}
+          sizes="(min-width: 1280px) 720px, (min-width: 768px) 62vw, 92vw"
+          priority
+          class="mt-4 h-auto w-full rounded-lg border border-line-subtle shadow-raised md:mt-6"
+        />
+      </figure>
+      <figure class={tile}>
+        <figcaption><span class={chip}>Windows</span></figcaption>
+        <ThemedScreenshot
+          light={windowsTrackerLight}
+          dark={windowsTrackerDark}
+          alt="Tracker on Windows: 18 active applications in columns from Saved to Acknowledged, and 7 closed."
+          widths={[400, 720, 960]}
+          sizes="(min-width: 1280px) 720px, (min-width: 768px) 62vw, 92vw"
+          class="mt-4 h-auto w-full rounded-lg border border-line-subtle shadow-raised md:mt-6"
+        />
+      </figure>
+    </div>
+    <p class="mt-4 text-center text-subheadline text-fg-tertiary">Screens show sample data.</p>
+  </section>
+
+  <section aria-labelledby="pillars-title" class="mx-auto mt-24 max-w-6xl px-5 md:mt-32 md:px-6">
+    <div class="max-w-3xl">
+      <p class={eyebrow}>What it does</p>
+      <h2 id="pillars-title" class="mt-3 font-display text-section text-fg-primary">Four parts that work together</h2>
+    </div>
+    <ul class="mt-10 grid gap-5 md:grid-cols-2">
+      {
+        pillars.map((pillar) => (
+          <li class="flex flex-col rounded-xl border border-line-subtle bg-surface-base p-5 md:p-6">
+            <h3 class="text-title2 text-fg-primary">{pillar.label}</h3>
+            <p class="mt-2 text-prose text-fg-secondary">
+              <strong class="font-semibold text-fg-primary">{pillar.lead}</strong> {pillar.text}
+            </p>
+            <ThemedScreenshot
+              light={pillar.light}
+              dark={pillar.dark}
+              alt={pillar.alt}
+              widths={[400, 640, 960, 1280]}
+              sizes="(min-width: 1280px) 540px, (min-width: 768px) 44vw, 88vw"
+              class="mt-5 h-auto w-full rounded-lg border border-line-subtle"
+            />
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+
+  <section aria-labelledby="steps-title" class="mx-auto mt-24 max-w-6xl px-5 md:mt-32 md:px-6">
+    <div class="max-w-3xl">
+      <p class={eyebrow}>Getting started</p>
+      <h2 id="steps-title" class="mt-3 font-display text-section text-fg-primary">Set up in three steps</h2>
+      <p class="mt-4 text-lead text-fg-secondary">
+        Sign in with a code sent to your email address. There's no password to remember. Then:
+      </p>
+    </div>
+    <ol class="steps mt-10 grid gap-0 md:grid-cols-3 md:gap-8">
+      {
+        steps.map((step, index) => (
+          <li class="relative flex gap-5 pb-10 last:pb-0 md:block md:border-t md:border-line-subtle md:pt-6 md:pb-0">
+            <span
+              class="relative z-10 grid size-11 shrink-0 place-items-center rounded-full border border-line-control bg-surface-canvas font-mono text-prose text-fg-primary md:size-auto md:place-items-start md:rounded-none md:border-0 md:bg-transparent md:text-subheadline md:text-accent-text"
+              aria-hidden="true"
+            >
+              {String(index + 1).padStart(2, "0")}
+            </span>
+            <div class="pt-2 md:pt-3">
+              <h3 class="text-title2 text-fg-primary">
+                <span class="sr-only">Step {index + 1}: </span>
+                {step.title}
+              </h3>
+              <p class="mt-2 text-prose text-fg-secondary">{step.text}</p>
+            </div>
+          </li>
+        ))
+      }
+    </ol>
+  </section>
+
+  <section aria-labelledby="promises-title" class="mx-auto mt-24 max-w-6xl px-5 md:mt-32 md:px-6">
+    <div class="max-w-3xl">
+      <p class={eyebrow}>Our promises</p>
+      <h2 id="promises-title" class="mt-3 font-display text-section text-fg-primary">You stay in charge</h2>
+    </div>
+    <ul class="mt-10 grid border-t border-l border-line-subtle md:grid-cols-2 xl:grid-cols-3">
+      {
+        promises.map((promise) => (
+          <li class="border-r border-b border-line-subtle p-6 md:p-8">
+            <h3 class="font-display text-title1 text-fg-primary">{promise.title}</h3>
+            <p class="mt-3 text-prose text-fg-secondary">{promise.text}</p>
+          </li>
+        ))
+      }
+    </ul>
+    <p class="mt-5 text-prose text-fg-secondary">
+      The details are in the <a class="prose-link" href="/privacy/">Privacy Policy</a>.
+    </p>
+  </section>
+
+  {
+    recent.length > 0 && (
+      <section aria-labelledby="news-title" class="mx-auto mt-24 max-w-6xl px-5 md:mt-32 md:px-6">
+        <div class="flex flex-wrap items-end justify-between gap-4">
+          <h2 id="news-title" class="font-display text-section text-fg-primary">
+            What's new
+          </h2>
+          <a class="prose-link inline-flex min-h-11 items-center text-prose" href="/changelog/">
+            All changes
+          </a>
+        </div>
+        <ul class="mt-8 border-t border-line-subtle">
+          {recent.map((release) => (
+            <li class="border-b border-line-subtle">
+              <a
+                href={`/changelog/#${release.anchor}`}
+                class="flex min-h-14 flex-col gap-1 py-4 transition-colors duration-(--bfhr-duration-fast) ease-standard hover:bg-surface-hover md:flex-row md:flex-wrap md:items-center md:gap-x-6"
+              >
+                <time class="font-mono text-subheadline text-fg-secondary md:w-44" datetime={isoDate(release.publishedAt)}>
+                  {formatDate(release.publishedAt)}
+                </time>
+                <span class="flex items-center gap-3">
+                  <span class="text-prose font-semibold text-fg-primary">Version {release.version}</span>
+                  {release.prerelease && (
+                    <span class="rounded-full bg-info-subtle px-3 py-0.5 text-subheadline font-semibold text-info-text">
+                      Beta
+                    </span>
+                  )}
+                </span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </section>
+    )
+  }
+
+  <section aria-labelledby="closing-title" class="mx-auto mt-24 max-w-6xl px-5 md:mt-32 md:px-6">
+    <div class="rounded-xl border border-line-subtle bg-surface-base px-5 py-12 text-center shadow-raised md:px-10 md:py-16">
+      <h2 id="closing-title" class="font-display text-section text-fg-primary">Ready when you are</h2>
+      <p class="mx-auto mt-4 max-w-[52ch] text-lead text-fg-secondary">
+        Looking for work is hard enough. BruteForceHR keeps the details in one place, so you can focus on the next
+        conversation.
+      </p>
+      <div class="mt-8">
+        <DownloadCta latest={latest} />
+      </div>
+    </div>
+  </section>
 </SiteLayout>

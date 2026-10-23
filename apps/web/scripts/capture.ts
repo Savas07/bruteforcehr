@@ -86,6 +86,15 @@ try {
         }
         await page.evaluate(async () => {
           await document.fonts.ready;
+          // Lazy images load only near the viewport: step through the page so the full-page capture has them.
+          for (let y = 0; y < document.documentElement.scrollHeight; y += window.innerHeight) {
+            window.scrollTo(0, y);
+            const { promise, resolve } = Promise.withResolvers<undefined>();
+            setTimeout(resolve, 50);
+            await promise;
+          }
+          window.scrollTo(0, 0);
+          await Promise.all([...document.images].map((image) => image.decode().catch(() => undefined)));
         });
         const file = path.join(outDir, `${routeSlug(route)}-${theme}-${viewport.width}.png`);
         await page.screenshot({ path: file, fullPage: true, animations: "disabled" });

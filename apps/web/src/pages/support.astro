@@ -7,7 +7,7 @@ import ContactCard from "../components/ContactCard.astro";
 import FaqGroup from "../components/FaqGroup.astro";
 import FaqItem from "../components/FaqItem.astro";
 import SiteLayout from "../layouts/SiteLayout.astro";
-import { ISSUES_URL, NEW_ISSUE_URL, RELEASES_REPO_URL } from "../site.ts";
+import { ISSUES_URL, MAC_BUILD_NOTARIZED, NEW_ISSUE_URL, WINDOWS_BUILD_SIGNED } from "../site.ts";
 
 const topics = [
   { id: "installing", label: "Installing" },
@@ -74,19 +74,36 @@ const topics = [
 
       <div class="mt-10 space-y-12">
         <FaqGroup id="installing" title="Installing">
-          <FaqItem id="windows-protected-your-pc" question="Windows shows “Windows protected your PC”. What should I do?">
-            <p>
-              The Windows app isn't code-signed yet, so Windows SmartScreen warns you before it opens. If you downloaded
-              it from the official{" "}
-              <a class="prose-link" href={`${RELEASES_REPO_URL}/releases`}>BruteForceHR releases page on GitHub</a>,
-              select <strong class="text-fg-primary">More info</strong>, then{" "}
-              <strong class="text-fg-primary">Run anyway</strong>.
-            </p>
-          </FaqItem>
+          {
+            !MAC_BUILD_NOTARIZED && (
+              <FaqItem id="mac-cant-verify" question="macOS says it can't check BruteForceHR for malware. What should I do?">
+                <p>
+                  The Mac app isn't notarized by Apple yet, so macOS asks you to confirm the first time you open it. If
+                  you downloaded it from the <a class="prose-link" href="/download/">Download page</a>, select{" "}
+                  <strong class="text-fg-primary">Done</strong>, open{" "}
+                  <strong class="text-fg-primary">System Settings › Privacy & Security</strong>, and select{" "}
+                  <strong class="text-fg-primary">Open Anyway</strong>.{" "}
+                  <a class="prose-link" href="/download/#mac-first-open">See all the steps</a>.
+                </p>
+              </FaqItem>
+            )
+          }
+          {
+            !WINDOWS_BUILD_SIGNED && (
+              <FaqItem id="windows-protected-your-pc" question="Windows shows “Windows protected your PC”. What should I do?">
+                <p>
+                  The Windows app isn't code-signed yet, so Windows SmartScreen warns you before it opens. If you
+                  downloaded it from the <a class="prose-link" href="/download/">Download page</a>, select{" "}
+                  <strong class="text-fg-primary">More info</strong>, then{" "}
+                  <strong class="text-fg-primary">Run anyway</strong>.
+                </p>
+              </FaqItem>
+            )
+          }
           <FaqItem id="iphone-app" question="How do I get the iPhone app?">
             <p>
               The iPhone app is in a private beta on TestFlight and is invite only. If you've been invited, install
-              Apple's TestFlight app, then open the invitation sent to your Apple ID email.
+              Apple's TestFlight app, then open the invitation sent to your Apple Account email address.
             </p>
           </FaqItem>
           <FaqItem id="desktop-updates" question="How do I update the Mac or Windows app?">

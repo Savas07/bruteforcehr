@@ -9,6 +9,7 @@ type Props = ComponentProps<typeof BaseLayout>;
 ---
 
 <BaseLayout {...Astro.props}>
+  <slot name="head" slot="head" />
   <a
     href="#main"
     class="skip-link rounded-full bg-accent-solid px-5 py-3 text-prose font-semibold text-fg-on-accent shadow-overlay"

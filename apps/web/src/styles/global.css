@@ -281,4 +281,188 @@
       }
     }
   }
+
+  /* Pill buttons: one filled accent action per view (`button-primary`), outlined for the rest. */
+  .button {
+    display: inline-flex;
+    min-height: calc(var(--spacing) * 11);
+    align-items: center;
+    justify-content: center;
+    gap: calc(var(--spacing) * 2);
+    padding-inline: calc(var(--spacing) * 6);
+    border-radius: var(--bfhr-radius-full);
+    font-size: var(--bfhr-text-prose-size);
+    line-height: var(--bfhr-text-prose-line-height);
+    font-weight: 600;
+    text-align: center;
+    transition: background-color var(--bfhr-duration-fast) var(--bfhr-easing-standard);
+  }
+
+  .button-primary {
+    background-color: var(--bfhr-color-accent-solid);
+    color: var(--bfhr-color-fg-on-accent);
+
+    &:hover {
+      background-color: var(--bfhr-color-accent-hover);
+    }
+
+    &:active {
+      background-color: var(--bfhr-color-accent-pressed);
+    }
+  }
+
+  .button-secondary {
+    border: var(--bfhr-border-thin) solid var(--bfhr-color-line-control);
+    color: var(--bfhr-color-fg-primary);
+
+    &:hover {
+      background-color: var(--bfhr-color-surface-hover);
+    }
+  }
+
+  .button-large {
+    min-height: calc(var(--spacing) * 13);
+    padding-inline: calc(var(--spacing) * 8);
+    font-size: var(--bfhr-text-headline-size);
+    line-height: var(--bfhr-text-headline-line-height);
+  }
+
+  /*
+   * OS-specific variants (`BaseLayout` sets `data-os`). `data-os-only` shows for that system;
+   * `data-os-fallback` lists the systems that have their own variant and shows for everyone else,
+   * including visitors without JavaScript.
+   */
+  [data-os-only] {
+    display: none;
+  }
+
+  :root[data-os="mac"] [data-os-only~="mac"],
+  :root[data-os="windows"] [data-os-only~="windows"],
+  :root[data-os="ios"] [data-os-only~="ios"] {
+    display: block;
+  }
+
+  :root[data-os="mac"] [data-os-fallback~="mac"],
+  :root[data-os="windows"] [data-os-fallback~="windows"],
+  :root[data-os="ios"] [data-os-fallback~="ios"] {
+    display: none;
+  }
+
+  /* On iPhone and iPad the Download page leads with the iPhone card. */
+  :root[data-os="ios"] .iphone-card {
+    order: -1;
+  }
+
+  /* Getting-started steps below 768 px: numbered circles joined by a vertical line (Railway). */
+  @media (width < 48rem) {
+    .steps > li:not(:last-child)::before {
+      content: "";
+      position: absolute;
+      top: calc(var(--spacing) * 11);
+      bottom: 0;
+      left: calc(var(--spacing) * 5.5);
+      border-left: var(--bfhr-border-thin) solid var(--bfhr-color-line-subtle);
+    }
+  }
+
+  /* Header Menu sheet (popover) below 768 px: drops from under the pill bar. */
+  .site-menu {
+    position: fixed;
+    inset: calc(var(--spacing) * 17) calc(var(--spacing) * 3) auto;
+
+    &::backdrop {
+      background-color: var(--bfhr-color-surface-scrim);
+    }
+  }
+
+  /* Release notes rendered by GitHub (Changelog, Home "What's new"). */
+  .release-notes {
+    max-width: 68ch;
+    font-size: var(--bfhr-text-prose-size);
+    line-height: var(--bfhr-text-prose-line-height);
+    color: var(--bfhr-color-fg-primary);
+
+    & > * + * {
+      margin-top: calc(var(--spacing) * 3);
+    }
+
+    & h3,
+    & h4,
+    & h5,
+    & h6 {
+      margin-top: calc(var(--spacing) * 6);
+      font-size: var(--bfhr-text-title2-size);
+      line-height: var(--bfhr-text-title2-line-height);
+      font-weight: var(--bfhr-text-title2-weight);
+    }
+
+    & > :first-child {
+      margin-top: 0;
+    }
+
+    & h4,
+    & h5,
+    & h6 {
+      font-size: var(--bfhr-text-headline-size);
+      line-height: var(--bfhr-text-headline-line-height);
+    }
+
+    & a {
+      color: var(--bfhr-color-fg-link);
+      text-decoration-line: underline;
+      text-decoration-thickness: 1px;
+      text-underline-offset: 0.2em;
+      overflow-wrap: anywhere;
+    }
+
+    & ul,
+    & ol {
+      padding-inline-start: 1.5rem;
+    }
+
+    & ul {
+      list-style: disc;
+    }
+
+    & ol {
+      list-style: decimal;
+    }
+
+    & li + li {
+      margin-top: calc(var(--spacing) * 1.5);
+    }
+
+    & li::marker {
+      color: var(--bfhr-color-fg-tertiary);
+    }
+
+    & strong {
+      font-weight: 600;
+    }
+
+    & code {
+      padding: 0.1em 0.35em;
+      border-radius: var(--bfhr-radius-xs);
+      background-color: var(--bfhr-color-surface-sunken);
+      font-family: var(--bfhr-font-mono);
+      font-size: 0.875em;
+      overflow-wrap: anywhere;
+    }
+
+    & pre {
+      overflow-x: auto;
+      padding: calc(var(--spacing) * 4);
+      border-radius: var(--bfhr-radius-md);
+      background-color: var(--bfhr-color-surface-sunken);
+      font-family: var(--bfhr-font-mono);
+      font-size: var(--bfhr-text-footnote-size);
+      line-height: var(--bfhr-text-footnote-line-height);
+    }
+
+    & img {
+      max-width: 100%;
+      height: auto;
+      border-radius: var(--bfhr-radius-md);
+    }
+  }
 }

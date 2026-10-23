@@ -304,4 +304,4 @@ When we change this policy, we update the effective date at the top. If a change
 
 </div>
 
-You can do most things yourself in the app: download your data, delete it, or disconnect accounts. For questions about this policy, [open an issue on GitHub](https://github.com/Savas07/bruteforcehr-releases/issues/new). Issues are public, so don't include email addresses, CV content or message text. If your request needs personal details, say in the issue that you have a privacy request, without the details, and we'll arrange a private way to continue.
+You can do most things yourself in the app: download your data, delete it, or disconnect accounts. For questions about this policy, [open an issue on GitHub](https://github.com/Savas07/bruteforcehr/issues/new). Issues are public, so don't include email addresses, CV content or message text. If your request needs personal details, say in the issue that you have a privacy request, without the details, and we'll arrange a private way to continue.

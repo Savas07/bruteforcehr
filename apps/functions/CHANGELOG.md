@@ -1,5 +1,15 @@
 # @bfhr/functions
 
+## 0.2.1
+
+### Patch Changes
+
+- Updated dependencies [4e69e6c]
+  - @bfhr/cv-render@0.2.1
+  - @bfhr/ai@0.2.1
+  - @bfhr/api@0.2.1
+  - @bfhr/core@0.2.1
+
 ## 0.2.0
 
 ### Minor Changes

@@ -71,7 +71,7 @@ enum ApplyStrings {
     static let kitIntro = LocalizedStringResource.bfhr("apply.kit.intro", default: "Fill in the form on the company site. Your files are here if it asks for them.", table: "Apply")
     static let inProgress = LocalizedStringResource.bfhr("apply.kit.inProgress", default: "In progress. Come back here when you've sent it.", table: "Apply")
     static let filesSection = LocalizedStringResource.bfhr("apply.files.section", default: "Your files", table: "Apply")
-    static let filesFooter = LocalizedStringResource.bfhr("apply.files.footer", default: "Use Share › Save to Files so the form's file picker finds them.", table: "Apply")
+    static let filesFooter = LocalizedStringResource.bfhr("apply.files.footer", default: "Use Share › Save to Files so the form's file picker can find your files.", table: "Apply")
     static let preparingFiles = LocalizedStringResource.bfhr("apply.files.preparing", default: "Making your PDFs…", table: "Apply")
     static let filesFailed = LocalizedStringResource.bfhr("apply.files.failed", default: "We couldn't make the PDFs", table: "Apply")
     static let filesUnavailable = LocalizedStringResource.bfhr("apply.files.unavailable", default: "PDFs can't be made in this build.", table: "Apply")
@@ -102,13 +102,23 @@ enum ApplyStrings {
         .bfhr("apply.email.defaultSubject", default: "Application: \(role)", table: "Apply", comment: "%@ = job title.")
     }
 
-    static func emailBody(role: String, company: String, name: String) -> LocalizedStringResource {
-        .bfhr(
-            "apply.email.defaultBody",
-            default: "Hello,\n\nI'd like to apply for the \(role) role at \(company). My CV and cover letter are attached.\n\nKind regards,\n\(name)",
-            table: "Apply",
-            comment: "Default email body. %1$@ = job title, %2$@ = company, %3$@ = the user's name (may be empty)."
-        )
+    /// The draft's first text; it names the cover letter only when one goes with it.
+    static func emailBody(role: String, company: String, name: String, withLetter: Bool) -> LocalizedStringResource {
+        if withLetter {
+            .bfhr(
+                "apply.email.defaultBodyWithLetter",
+                default: "Hello,\n\nI'd like to apply for the \(role) role at \(company). My CV and cover letter are attached.\n\nKind regards,\n\(name)",
+                table: "Apply",
+                comment: "Default email body. %1$@ = job title, %2$@ = company, %3$@ = the user's name (may be empty). With a cover letter attached."
+            )
+        } else {
+            .bfhr(
+                "apply.email.defaultBody",
+                default: "Hello,\n\nI'd like to apply for the \(role) role at \(company). My CV is attached.\n\nKind regards,\n\(name)",
+                table: "Apply",
+                comment: "Default email body. %1$@ = job title, %2$@ = company, %3$@ = the user's name (may be empty). Without a cover letter."
+            )
+        }
     }
 
     static func sendError(_ error: ApplySendError) -> LocalizedStringResource {

@@ -32,7 +32,7 @@ public struct DesignJobsTab: View {
         let jobId = scenario.designJobId
         switch screen {
         case .jobDetail: _path = State(initialValue: [.job(jobId)])
-        case .savedSearches: _path = State(initialValue: [.savedSearches])
+        case .savedSearches: _path = State(initialValue: JobsDesignPane.take(.hidden) ? [.savedSearches, .hiddenJobs] : [.savedSearches])
         case .apply:
             _path = State(initialValue: [.job(jobId)])
             _applying = State(initialValue: jobId)

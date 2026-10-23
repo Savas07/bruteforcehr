@@ -3105,19 +3105,19 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "braucht einen API-Schlüssel"
+            "value" : "noch nicht eingerichtet"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "needs an API key"
+            "value" : "not set up yet"
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "API anahtarı gerekiyor"
+            "value" : "henüz ayarlanmadı"
           }
         }
       }

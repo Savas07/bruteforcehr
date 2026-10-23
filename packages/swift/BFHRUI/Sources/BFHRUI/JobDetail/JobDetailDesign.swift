@@ -13,7 +13,7 @@ extension DesignScenario {
     ///   empty fixture's profile: the no-description and "Working out your match…" states.
     public func jobDetailModel() -> JobDetailModel {
         let populated = UserData(Self.fixture(.populated))
-        let jobId = Self.featuredJobId(in: populated) ?? populated.jobs.first?.id ?? "job-missing"
+        let jobId = designJobId
         let model = JobDetailModel(jobId: jobId, now: now)
         switch dataset {
         case .populated:

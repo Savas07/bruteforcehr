@@ -259,8 +259,15 @@ public struct ApplySheet: View {
                         .multilineTextAlignment(.trailing)
                         .accessibilityIdentifier("apply.email.to")
                 } label: { Text(ApplyStrings.to) }
-                TextField(text: $model.email.subject) { Text(ApplyStrings.subject) }
-                    .accessibilityIdentifier("apply.email.subject")
+                // A visible label that stays once the subject is filled in (From and To have theirs).
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(ApplyStrings.subject)
+                        .font(.bfhr(.footnote))
+                        .foregroundStyle(BFHRColor.Fg.secondary)
+                        .accessibilityHidden(true)
+                    TextField(text: $model.email.subject, axis: .vertical) { Text(ApplyStrings.subject) }
+                        .accessibilityIdentifier("apply.email.subject")
+                }
                 TextEditor(text: $model.email.body)
                     .frame(minHeight: 180)
                     .font(.bfhr(.body))

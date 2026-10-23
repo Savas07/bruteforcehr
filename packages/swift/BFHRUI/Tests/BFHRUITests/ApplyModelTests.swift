@@ -148,6 +148,8 @@ struct ApplyModelTests {
         #expect(model.email.to == "talent@lighthouse.example")
         #expect(model.email.subject == "Application: Senior Frontend Engineer")
         #expect(model.files.files.count == 1)
+        // No cover letter: the draft names the CV only.
+        #expect(model.email.body.contains("My CV is attached.") && !model.email.body.contains("cover letter"))
 
         let toast = try await model.sendFromAccount()
         #expect(toast.action?.role == .undo)
@@ -159,6 +161,24 @@ struct ApplyModelTests {
         #expect(services.uploads.count == 1)
         let stored = try #require(model.data.renderedFiles.first { $0.id == request.renderedFileIds.first })
         #expect(stored.kind == .pdf && stored.cvRevisionId == model.selectedCV?.revisionId && stored.sha256.count == 64)
+    }
+
+    @Test("An untouched draft follows the cover letter choice; an edited one is kept")
+    func emailBodyFollowsLetter() async throws {
+        let (model, _) = model()
+        model.useEmail("talent@lighthouse.example")
+        try await model.beginEmailApplication()
+        #expect(model.email.body.contains("My CV is attached."))
+        model.step = .checklist
+        model.coverLetter = .written
+        model.letterText = "Dear team,\n\nI'd love to help."
+        try await model.beginEmailApplication()
+        #expect(model.email.body.contains("My CV and cover letter are attached."))
+        model.email.body = "Hi, my own words."
+        model.step = .checklist
+        model.coverLetter = .none
+        try await model.beginEmailApplication()
+        #expect(model.email.body == "Hi, my own words.")
     }
 
     @Test("A refused send stays on the review with the reason")

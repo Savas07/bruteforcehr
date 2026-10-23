@@ -62,6 +62,13 @@ public struct SavedSearchesScreen: View {
             SavedSearchEditor(model: model, searchId: request.searchId, seed: request.seed)
         }
         .accessibilityIdentifier("screen.savedSearches")
+        #if DEBUG
+        .task {
+            if let first = model.savedSearches.first, JobsDesignPane.take(.editor) {
+                editor = SavedSearchEditorRequest(searchId: first.id)
+            }
+        }
+        #endif
     }
 
     private func actions(for search: SavedSearch) -> [RowAction] {

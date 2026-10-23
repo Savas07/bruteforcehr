@@ -55,6 +55,9 @@ public struct JobsFeedScreen: View {
             lastWriteFailures = failures
             toasts?.show(ToastItem(glyph: ToastGlyph.info, message: JobsStrings.writeFailed))
         }
+        #if DEBUG
+        .task { if JobsDesignPane.take(.filters) { facet = FilterSheetRequest(facet: nil) } }
+        #endif
     }
 
     // MARK: Content

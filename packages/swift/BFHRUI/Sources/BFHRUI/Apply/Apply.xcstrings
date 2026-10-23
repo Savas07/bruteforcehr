@@ -629,7 +629,31 @@
       }
     },
     "apply.email.defaultBody" : {
-      "comment" : "Default email body. %1$@ = job title, %2$@ = company, %3$@ = the user's name (may be empty).",
+      "comment" : "Default email body. %1$@ = job title, %2$@ = company, %3$@ = the user's name (may be empty). Without a cover letter.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hallo,\n\nich möchte mich auf die Stelle %1$@ bei %2$@ bewerben. Mein CV ist angehängt.\n\nViele Grüße\n%3$@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hello,\n\nI'd like to apply for the %1$@ role at %2$@. My CV is attached.\n\nKind regards,\n%3$@"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Merhaba,\n\n%2$@ şirketindeki %1$@ pozisyonuna başvurmak istiyorum. CV'm ektedir.\n\nSaygılarımla,\n%3$@"
+          }
+        }
+      }
+    },
+    "apply.email.defaultBodyWithLetter" : {
+      "comment" : "Default email body. %1$@ = job title, %2$@ = company, %3$@ = the user's name (may be empty). With a cover letter attached.",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -959,19 +983,19 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nutze Teilen › In Dateien sichern, damit die Dateiauswahl des Formulars sie findet."
+            "value" : "Nutze Teilen › In Dateien sichern, damit die Dateiauswahl des Formulars deine Dateien findet."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Use Share › Save to Files so the form's file picker finds them."
+            "value" : "Use Share › Save to Files so the form's file picker can find your files."
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Formun dosya seçicisinin bulması için Paylaş › Dosyalar'a Kaydet'i kullanın."
+            "value" : "Formun dosya seçicisinin dosyalarınızı bulabilmesi için Paylaş › Dosyalar'a Kaydet'i kullanın."
           }
         }
       }

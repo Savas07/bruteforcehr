@@ -6,7 +6,32 @@ import Foundation
 // Design mode for the Jobs tab: the feed, Saved searches and the Apply sheet on the fixtures
 // (`-BFHRScreen jobs|saved-searches|apply`). `-BFHRApplyStep checklist|kit|email|prompt` opens
 // the Apply sheet on that page; `-BFHRJobsSearch running|finished|failed` shows the on-demand
-// search's states over the feed.
+// search's states over the feed; `-BFHRJobId <id>` opens Job detail / Apply on that fixture job
+// instead of the featured one (e.g. `job-northstar-frontend`, Preparing: "Did you apply?";
+// `job-kumsal-frontend`, Applied: the application block); `-BFHRJobsPane filters|editor|hidden`
+// opens the feed's filter sheet, the first saved search's editor or Hidden jobs.
+
+/// Design-mode panes for critique captures and UI tests (`-BFHRJobsPane`), opened once per launch.
+enum JobsDesignPane: String {
+    case filters
+    case editor
+    case hidden
+
+    static let requested: JobsDesignPane? = {
+        let arguments = ProcessInfo.processInfo.arguments
+        guard let index = arguments.firstIndex(of: "-BFHRJobsPane"), arguments.indices.contains(index + 1) else { return nil }
+        return JobsDesignPane(rawValue: arguments[index + 1])
+    }()
+
+    private static var taken = false
+
+    /// `pane` when it was requested and not opened yet.
+    static func take(_ pane: JobsDesignPane) -> Bool {
+        guard !taken, requested == pane else { return false }
+        taken = true
+        return true
+    }
+}
 
 /// Apply pages for captures.
 public enum DesignApplyStep: String, CaseIterable, Sendable {
@@ -52,8 +77,13 @@ extension DesignScenario {
         return model
     }
 
-    /// The job the Apply sheet and Job detail open in design mode.
+    /// The job the Apply sheet and Job detail open in design mode: `-BFHRJobId`, else the
+    /// featured job.
     public var designJobId: String {
+        let arguments = ProcessInfo.processInfo.arguments
+        if let index = arguments.firstIndex(of: "-BFHRJobId"), arguments.indices.contains(index + 1) {
+            return arguments[index + 1]
+        }
         let populated = UserData(DesignScenario(dataset: .populated).document)
         return Self.featuredJobId(in: populated) ?? populated.jobs.first?.id ?? "job-missing"
     }
@@ -83,7 +113,7 @@ extension DesignScenario {
                 accountId: model.sendingAccounts.first?.id,
                 to: "talent@lighthouse-learning.example",
                 subject: String(localized: ApplyStrings.emailSubject(role: model.role)),
-                body: String(localized: ApplyStrings.emailBody(role: model.role, company: model.company, name: data.profile?.fullName ?? ""))
+                body: String(localized: ApplyStrings.emailBody(role: model.role, company: model.company, name: data.profile?.fullName ?? "", withLetter: model.letterBody != nil))
             )
             model.step = .email
             model.designFiles()

@@ -70,10 +70,17 @@ struct JobRowView: View {
         }
     }
 
+    /// "Company · place · work mode"; the work mode is left out when the place already says it
+    /// ("Berlin (Mitte), hybrid").
     private var subtitle: String {
         var parts = [row.company.name]
         if let place = row.place { parts.append(place) }
-        if let remote = row.remoteType { parts.append(String(localized: JobDetailViewStrings.workMode(remote))) }
+        if let remote = row.remoteType {
+            let mode = String(localized: JobDetailViewStrings.workMode(remote))
+            if row.place?.range(of: mode, options: [.caseInsensitive, .diacriticInsensitive], locale: locale) == nil {
+                parts.append(mode)
+            }
+        }
         return parts.joined(separator: " · ")
     }
 

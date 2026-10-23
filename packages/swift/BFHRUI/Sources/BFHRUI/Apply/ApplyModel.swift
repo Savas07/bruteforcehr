@@ -231,8 +231,10 @@ public final class ApplyModel: ScreenModel {
         let name = data.profile?.fullName.trimmingCharacters(in: .whitespaces) ?? ""
         email.to = address
         if email.subject.isEmpty { email.subject = String(localized: ApplyStrings.emailSubject(role: role)) }
-        if email.body.isEmpty {
-            email.body = String(localized: ApplyStrings.emailBody(role: role, company: company, name: name.isEmpty ? "" : name))
+        // An untouched default follows the cover letter choice (Back, change it, Review email again).
+        let defaults = [true, false].map { String(localized: ApplyStrings.emailBody(role: role, company: company, name: name, withLetter: $0)) }
+        if email.body.isEmpty || defaults.contains(email.body) {
+            email.body = defaults[letterBody != nil ? 0 : 1]
         }
         step = .email
         await prepareFiles()

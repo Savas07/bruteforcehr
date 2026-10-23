@@ -1,6 +1,6 @@
 {
   "name": "@bfhr/ui-tokens",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "description": "Design tokens (color light/dark, type, spacing, radius, elevation, motion) as typed TS, CSS variables, a Tailwind 4 theme and a committed Swift package (asset catalog + SwiftUI API) for iOS.",
   "type": "module",

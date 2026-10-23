@@ -55,6 +55,8 @@ pub enum CommandError {
 impl From<PrintError> for CommandError {
     fn from(error: PrintError) -> Self {
         let message = error.to_string();
+        // The UI shows a calm "couldn't make the file"; the cause goes to the log.
+        eprintln!("print_cv_pdf failed: {message}");
         match error {
             PrintError::EmptyHtml | PrintError::HtmlTooLarge { .. } => {
                 Self::InvalidExport { message }
@@ -67,6 +69,7 @@ impl From<PrintError> for CommandError {
 impl From<ExportError> for CommandError {
     fn from(error: ExportError) -> Self {
         let message = error.to_string();
+        eprintln!("save_export failed: {message}");
         match error {
             ExportError::Dialog(_) | ExportError::Write(_) => Self::SaveFailed { message },
             _ => Self::InvalidExport { message },

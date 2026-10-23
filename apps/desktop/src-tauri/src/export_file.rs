@@ -197,7 +197,10 @@ pub async fn save<R: Runtime>(
     // E2E builds only: no native dialog for the tests to drive; the file lands in a known folder.
     #[cfg(feature = "e2e")]
     if let Some(directory) = std::env::var_os("BFHR_E2E_EXPORT_DIR") {
-        let path = PathBuf::from(directory).join(file_name);
+        // CI names the folder but doesn't create it.
+        let directory = PathBuf::from(directory);
+        std::fs::create_dir_all(&directory).map_err(ExportError::Write)?;
+        let path = directory.join(file_name);
         std::fs::write(&path, bytes).map_err(ExportError::Write)?;
         return Ok(Some(path));
     }

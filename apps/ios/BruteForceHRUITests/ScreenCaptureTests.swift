@@ -6,7 +6,8 @@ import XCTest
 ///
 /// - `testCaptureEveryTab`: the title-only shell, one screenshot per tab.
 /// - `testCaptureDesignScreens`: design mode (Debug builds), one screenshot per core screen and
-///   state, launched with `-BFHRScreen`, `-BFHRDesign` and `-BFHRState`.
+///   state, launched with `-BFHRScreen`, `-BFHRDesign` and `-BFHRState`; or, for the screen
+///   `update-gate`, the update banner / blocking screen over Today (`-BFHRUpdate`).
 ///
 /// Deep links go through `XCUIApplication.open`, because `simctl openurl` shows a system
 /// "Open in …?" confirmation over the app.
@@ -52,6 +53,11 @@ final class ScreenCaptureTests: XCTestCase {
         }
         let states = list("BFHR_CAPTURE_STATES") ?? ["populated", "empty", "loading", "error", "offline"]
 
+        if screens == ["update-gate"] {
+            try captureUpdateGate(states: list("BFHR_CAPTURE_STATES") ?? ["available", "required"], directory: directory, suffix: suffix)
+            return
+        }
+
         for screen in screens {
             for state in states {
                 let app = XCUIApplication()
@@ -77,6 +83,24 @@ final class ScreenCaptureTests: XCTestCase {
                 try XCUIScreen.main.screenshot().pngRepresentation.write(to: file)
                 app.terminate()
             }
+        }
+    }
+
+    /// The update gate over Today (`-BFHRUpdate`): the banner (`available`) or the blocking
+    /// screen (`required`), saved as `update-gate-<state>-<theme>[-ax].png`.
+    @MainActor
+    private func captureUpdateGate(states: [String], directory: URL, suffix: String) throws {
+        for state in states {
+            let app = XCUIApplication()
+            app.launchArguments += english + ["-BFHRScreen", "today", "-BFHRDesign", "populated", "-BFHRUpdate", state]
+            app.launch()
+            let surface = app.descendants(matching: .any)[state == "required" ? "update.required" : "update.banner"]
+            XCTAssertTrue(surface.waitForExistence(timeout: 20), "update-gate \(state)")
+            // Past the banner's fade-in and the cover's slide-up.
+            Thread.sleep(forTimeInterval: 1.5)
+            let file = directory.appendingPathComponent("update-gate-\(state)-\(suffix).png")
+            try XCUIScreen.main.screenshot().pngRepresentation.write(to: file)
+            app.terminate()
         }
     }
 

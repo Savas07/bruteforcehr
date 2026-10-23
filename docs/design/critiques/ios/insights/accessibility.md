@@ -7,10 +7,10 @@ Ignored (documented false positives, same rules as Tracker/Today audits): system
 
 |#|Issue (KEPT in audit.log)|Severity|Resolution|
 |---|---|---|---|
-|1|About sheet text contrast (3 nodes) over the glass sheet|🟡 Major|**Fixed**: opaque `presentationBackground`.|
+|1|About sheet text contrast (3 nodes) over the glass sheet; after the opaque background, still the first section header (system `secondaryLabel`, right under the sheet's inline title in the iOS 26 scroll-edge fade)|🟡 Major|**Fixed**: opaque `presentationBackground`; terms moved from section headers into their rows (`headline`, `Fg.primary`, header trait), footer in `Fg.secondary`. `testAboutSheet` light + dark: 0 kept issues (2026-10-23 re-run).|
 |2|Section header "How far do my applications get?" contrast nearly passed|🟢 Minor|**Fixed**: `Fg.secondary`.|
-|3|Pipeline "From Insights" chip clear button 17 × 17 pt (`tracker.clearFilter`)|🟡 Major|Owned by TrackerBoard (IosTracker), reported.|
+|3|Pipeline "From Insights" chip clear button 17 × 17 pt (`tracker.clearFilter`)|🟡 Major|**Fixed** by IosTracker (44 × 44 pt frame).|
 |4|AX5: no clipping or Dynamic Type issues kept on any page|✅|—|
 |5|Charts: no colour-only meaning; every bar/stage/row is a button with numbers in its value; card titles are sentences|✅|—|
 
-Re-run after fixes is pending the shared simulator lock (main agent: re-run the command above, expect 1 kept issue — #3 — until IosTracker's fix lands).
+Re-runs: IosTracker ran the suite on m3/ios-tracker with the chip fix (#3 no longer reported; 7/8 passed, `testAboutSheet` failed on #1). After the #1 fix, `testAboutSheet` passes in light and dark with 0 kept issues.

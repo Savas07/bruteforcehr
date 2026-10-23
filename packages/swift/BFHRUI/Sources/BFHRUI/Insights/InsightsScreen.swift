@@ -561,18 +561,25 @@ private struct InsightsAboutSheet: View {
 
     var body: some View {
         NavigationStack {
+            // Token colours throughout: the system footer grey (`secondaryLabel`, ≈ 3.4:1) fails
+            // the contrast audit on the sheet's grouped background.
             List {
-                Section(header: Text(InsightsStrings.kpiApplications)) { Text(InsightsStrings.defApplications) }
-                Section(header: Text(InsightsStrings.stageResponse)) { Text(InsightsStrings.defResponse) }
-                Section(header: Text(InsightsStrings.kpiInterviews)) { Text(InsightsStrings.defInterviews) }
-                Section(header: Text(InsightsStrings.kpiFirstResponse)) { Text(InsightsStrings.firstResponseDefinition) }
+                definition(InsightsStrings.kpiApplications, InsightsStrings.defApplications)
+                definition(InsightsStrings.stageResponse, InsightsStrings.defResponse)
+                definition(InsightsStrings.kpiInterviews, InsightsStrings.defInterviews)
+                definition(InsightsStrings.kpiFirstResponse, InsightsStrings.firstResponseDefinition)
                 Section {
-                    Text(InsightsStrings.defRates)
+                    row(InsightsStrings.defRates)
                 } footer: {
                     Text(InsightsStrings.provenance)
+                        .font(.bfhr(.footnote))
+                        .foregroundStyle(BFHRColor.Fg.secondary)
                 }
             }
             .bfhrInsetGroupedList()
+            #if os(iOS)
+            .listSectionSpacing(.compact)
+            #endif
             .navigationTitle(Text(InsightsStrings.about))
             .bfhrInlineTitle()
             .toolbar {
@@ -584,6 +591,30 @@ private struct InsightsAboutSheet: View {
         .presentationDetents([.medium, .large])
         // Opaque, so the iOS 26 glass sheet doesn't lower the text contrast over the screen below.
         .presentationBackground(BFHRColor.groupedBackground)
+    }
+
+    /// The term as the row's first line (not a section header): header text right under the
+    /// sheet's inline title sits in the iOS 26 scroll-edge fade, where it failed the contrast audit.
+    private func definition(_ title: LocalizedStringResource, _ text: LocalizedStringResource) -> some View {
+        Section {
+            VStack(alignment: .leading, spacing: BFHRSpace.s1) {
+                Text(title)
+                    .font(.bfhr(.headline))
+                    .foregroundStyle(BFHRColor.Fg.primary)
+                    .accessibilityAddTraits(.isHeader)
+                Text(text)
+                    .font(.bfhr(.body))
+                    .foregroundStyle(BFHRColor.Fg.primary)
+            }
+            .listRowBackground(BFHRColor.Surface.base)
+        }
+    }
+
+    private func row(_ text: LocalizedStringResource) -> some View {
+        Text(text)
+            .font(.bfhr(.body))
+            .foregroundStyle(BFHRColor.Fg.primary)
+            .listRowBackground(BFHRColor.Surface.base)
     }
 }
 

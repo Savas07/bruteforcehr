@@ -28,6 +28,7 @@ public struct DesignScreenView: View {
             switch holder.model {
             case .today(let model): TodayScreen(model: model)
             case .jobDetail(let model): JobDetailScreen(model: model)
+            case .jobs(let screen): DesignJobsTab(screen: screen, scenario: scenario)
             case .cvEditor(let model): CVEditorScreen(model: model)
             case .trackerBoard(let model, let insights):
                 TrackerBoardScreen(model: model) {
@@ -73,6 +74,8 @@ private final class ModelHolder {
     enum Model {
         case today(TodayModel)
         case jobDetail(JobDetailModel)
+        /// The Jobs tab's own stack (feed, Saved searches, Apply).
+        case jobs(DesignScreen)
         case cvEditor(CVEditorModel)
         case trackerBoard(TrackerBoardModel, InsightsModel)
         case insights(InsightsModel)
@@ -87,6 +90,7 @@ private final class ModelHolder {
         model = switch screen {
         case .today: .today(scenario.todayModel())
         case .jobDetail: .jobDetail(scenario.jobDetailModel())
+        case .jobs, .savedSearches, .apply: .jobs(screen)
         case .cvEditor: .cvEditor(scenario.cvEditorModel())
         case .trackerBoard: Self.tracker(scenario)
         case .insights: .insights(scenario.insightsModel())

@@ -45,6 +45,8 @@ let package = Package(
                 .process("TrackerCalendar/TrackerCalendar.xcstrings"),
                 .process("ApplicationAdd/ApplicationAdd.xcstrings"),
                 .process("JobDetail/JobDetail.xcstrings"),
+                .process("Jobs/Jobs.xcstrings"),
+                .process("Apply/Apply.xcstrings"),
                 .process("CVEditor/CVEditor.xcstrings"),
                 .process("TrackerBoard/TrackerBoard.xcstrings"),
                 .process("MailReview/MailReview.xcstrings"),

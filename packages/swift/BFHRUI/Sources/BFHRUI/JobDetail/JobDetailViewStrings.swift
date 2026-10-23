@@ -219,6 +219,7 @@ enum JobDetailViewStrings {
     static let showInFeed = LocalizedStringResource.bfhr("jobDetail.action.showInFeed", default: "Show in your feed again", table: "JobDetail")
     static let notForMeFooter = LocalizedStringResource.bfhr("jobDetail.notForMe.footer", default: "Hides this job from your feed. You can undo it.", table: "JobDetail")
     static let viewInTracker = LocalizedStringResource.bfhr("jobDetail.apply.viewInTracker", default: "View in Tracker", table: "JobDetail")
+    static let application = LocalizedStringResource.bfhr("jobDetail.section.application", default: "Your application", table: "JobDetail")
 
     static func apply(_ route: JobDetailModel.ApplyRoute) -> LocalizedStringResource {
         switch route {

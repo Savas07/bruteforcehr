@@ -537,7 +537,7 @@ public final class TodayModel: ScreenModel {
     /// Saves a new match (`confirm` haptic in the view).
     public func saveMatch(_ jobId: String) -> ToastItem {
         let company = companyName(for: jobId)
-        mutate { $0.setMatchState(jobId, to: .saved, at: writeTime) }
+        mutate { $0.saveJob(jobId, at: writeTime) }
         recordWrite(jobId)
         recompute()
         return ToastItem(
@@ -545,7 +545,7 @@ public final class TodayModel: ScreenModel {
             message: .bfhr("today.toast.saved", default: "\(company) · saved to Jobs", table: "Today"),
             action: .undo { [weak self] in
                 guard let self else { return }
-                self.mutate { $0.setMatchState(jobId, to: .new, at: self.writeTime) }
+                self.mutate { $0.unsaveJob(jobId, at: self.writeTime) }
                 self.recompute()
             }
         )

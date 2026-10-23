@@ -23,4 +23,18 @@ enum JobDetailStrings {
             comment: "Toast after I have this on a skill gap. %@ = skill name, e.g. Vue.js. Followed by Undo."
         )
     }
+
+    static let markedAppliedToast = LocalizedStringResource.bfhr(
+        "jobDetail.toast.markedApplied", default: "Marked as Applied", table: "JobDetail",
+        comment: "Toast after Yes, I applied on the Did you apply? card. Followed by Undo."
+    )
+
+    static let backToSavedToast = LocalizedStringResource.bfhr(
+        "jobDetail.toast.backToSaved", default: "Back in Saved", table: "JobDetail",
+        comment: "Toast after I'm not applying: the job's application moves back to Saved."
+    )
+
+    static let writeFailedToast = LocalizedStringResource.bfhr(
+        "jobDetail.toast.writeFailed", default: "A change didn't save. This page shows what's stored.", table: "JobDetail"
+    )
 }

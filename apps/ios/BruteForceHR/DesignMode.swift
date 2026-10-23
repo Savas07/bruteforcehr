@@ -8,22 +8,22 @@ import SwiftUI
 // Release builds compile none of this file and bundle no fixtures.
 
 extension AppTab {
-    /// The tab that hosts a core screen.
+    /// The tab that hosts a design screen.
     init(designScreen: DesignScreen) {
         switch designScreen {
         case .today: self = .today
-        case .jobDetail: self = .jobs
+        case .jobs, .jobDetail, .savedSearches, .apply: self = .jobs
         case .cvEditor: self = .cvs
         case .trackerBoard, .insights: self = .tracker
         case .mailReview: self = .mail
         }
     }
 
-    /// The core screen a tab hosts in design mode.
+    /// The design screen a tab hosts when another tab was launched.
     var designScreen: DesignScreen {
         switch self {
         case .today: .today
-        case .jobs: .jobDetail
+        case .jobs: .jobs
         case .tracker: .trackerBoard
         case .cvs: .cvEditor
         case .mail: .mailReview
@@ -31,32 +31,22 @@ extension AppTab {
     }
 }
 
-/// A tab in design mode. Job detail is a push from Jobs, so it opens pushed over the Jobs root,
-/// with the real back button; the other screens are tab roots with a large title.
+/// A tab in design mode. The Jobs tab is the real Jobs stack on fixtures (Job detail, Saved
+/// searches and Apply open over the feed when launched with them); the other screens are tab
+/// roots with a large title.
 struct DesignTabRoot: View {
     let tab: AppTab
     let scenario: DesignScenario
-    @State private var path: [DesignScreen]
-
-    init(tab: AppTab, scenario: DesignScenario) {
-        self.tab = tab
-        self.scenario = scenario
-        _path = State(initialValue: tab.designScreen == .jobDetail ? [.jobDetail] : [])
-    }
 
     var body: some View {
-        NavigationStack(path: $path) {
-            Group {
-                if tab.designScreen == .jobDetail {
-                    ScrollView {}
-                } else {
-                    DesignScreenView(tab.designScreen, scenario: scenario)
-                }
-            }
-            .navigationTitle(tab.title)
-            .navigationBarTitleDisplayMode(.large)
-            .navigationDestination(for: DesignScreen.self) { screen in
-                DesignScreenView(screen, scenario: scenario)
+        if tab == .jobs {
+            let screen = scenario.screen.flatMap { $0.isJobsScreen ? $0 : nil } ?? .jobs
+            DesignScreenView(screen, scenario: scenario)
+        } else {
+            NavigationStack {
+                DesignScreenView(tab.designScreen, scenario: scenario)
+                    .navigationTitle(tab.title)
+                    .navigationBarTitleDisplayMode(.large)
             }
         }
     }

@@ -108,6 +108,9 @@ mod macos {
         let info = NSPrintInfo::new();
         info.setPaperSize(NSSize::new(width, height));
         info.setOrientation(NSPaperOrientation::Portrait);
+        // 100 %: the page's CSS sizes are the PDF's (`@bfhr/cv-render` sizes for WebKit's print
+        // layout itself).
+        info.setScalingFactor(1.0);
         info.setTopMargin(0.0);
         info.setBottomMargin(0.0);
         info.setLeftMargin(0.0);

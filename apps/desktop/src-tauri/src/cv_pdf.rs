@@ -64,6 +64,13 @@ impl Paper {
     }
 
     /// Width and height in PostScript points, 72 per inch (`NSPrintInfo`, PDF page boxes).
+    #[cfg_attr(
+        not(any(target_os = "macos", test)),
+        expect(
+            dead_code,
+            reason = "WebView2 takes inches; only macOS prints in points"
+        )
+    )]
     pub fn points(self) -> (f64, f64) {
         let (width, height) = self.inches();
         (width * 72.0, height * 72.0)

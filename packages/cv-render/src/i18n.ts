@@ -69,7 +69,11 @@ export const SECTION_HEADINGS: Readonly<Record<CvLanguage, Readonly<Record<Headi
 };
 
 /** Open end date of an ongoing entry ("Mar 2022 – Present"). */
-export const PRESENT_WORD: Readonly<Record<CvLanguage, string>> = { en: "Present", tr: "Günümüz", de: "heute" };
+export const PRESENT_WORD: Readonly<Record<CvLanguage, string>> = {
+  en: "Present",
+  tr: "Günümüz",
+  de: "heute",
+};
 
 interface CvWords {
   /** Document title suffix: "Deniz Aksoy – CV". */
@@ -126,7 +130,20 @@ const LONG_MONTHS: Readonly<Record<CvLanguage, readonly string[]>> = {
     "November",
     "December",
   ],
-  tr: ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"],
+  tr: [
+    "Ocak",
+    "Şubat",
+    "Mart",
+    "Nisan",
+    "Mayıs",
+    "Haziran",
+    "Temmuz",
+    "Ağustos",
+    "Eylül",
+    "Ekim",
+    "Kasım",
+    "Aralık",
+  ],
   de: [
     "Januar",
     "Februar",

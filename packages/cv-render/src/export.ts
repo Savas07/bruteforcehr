@@ -52,7 +52,9 @@ function slug(value: string | undefined, german: boolean): string {
 /** `First-Last-CV-<Company>.pdf`, or `First-Last-CV.pdf` without a company. */
 export function exportFileName({ firstName, lastName, company, ext, locale }: ExportFileNameInput): string {
   const german = (locale ?? "").toLowerCase().startsWith("de");
-  const parts = [slug(firstName, german), slug(lastName, german), "CV", slug(company, german)].filter(Boolean);
+  const parts = [slug(firstName, german), slug(lastName, german), "CV", slug(company, german)].filter(
+    Boolean,
+  );
   return `${parts.join("-")}.${ext}`;
 }
 
@@ -63,7 +65,8 @@ export function splitName(fullName: string | undefined): { firstName: string; la
   return { firstName: words.slice(0, -1).join(" "), lastName: words[words.length - 1] ?? "" };
 }
 
-export const JSON_RESUME_SCHEMA_URL = "https://raw.githubusercontent.com/jsonresume/resume-schema/v1.0.0/schema.json";
+export const JSON_RESUME_SCHEMA_URL =
+  "https://raw.githubusercontent.com/jsonresume/resume-schema/v1.0.0/schema.json";
 
 /**
  * The CV as a JSON Resume v1.0.0 document. Our `meta` extension (template, theme, section order,

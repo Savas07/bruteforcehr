@@ -109,8 +109,15 @@ function field(value: string | undefined, path: string): TextField | undefined {
   return text === undefined ? undefined : { text, path };
 }
 
-function joined(values: readonly (string | undefined)[], separator: string, path: string): TextField | undefined {
-  const text = values.map(clean).filter((value) => value !== undefined).join(separator);
+function joined(
+  values: readonly (string | undefined)[],
+  separator: string,
+  path: string,
+): TextField | undefined {
+  const text = values
+    .map(clean)
+    .filter((value) => value !== undefined)
+    .join(separator);
   return text ? { text, path } : undefined;
 }
 
@@ -164,7 +171,8 @@ function header(input: CvRenderInput, language: CvLanguage, lang: string): DocHe
   const email = clean(basics.email);
   if (email) contact.push({ text: email, path: "/basics/email", href: `mailto:${email}` });
   const phone = clean(basics.phone);
-  if (phone) contact.push({ text: phone, path: "/basics/phone", href: `tel:${phone.replace(/[^\d+]/gu, "")}` });
+  if (phone)
+    contact.push({ text: phone, path: "/basics/phone", href: `tel:${phone.replace(/[^\d+]/gu, "")}` });
   const website = link(basics.url, "/basics/url");
   if (website) contact.push(website);
   (basics.profiles ?? []).forEach((profile, index) => {
@@ -186,7 +194,9 @@ function header(input: CvRenderInput, language: CvLanguage, lang: string): DocHe
         }
       : undefined;
   const photo =
-    personal?.showPhoto && input.photo && PHOTO_DATA_URL.test(input.photo.dataUrl) ? input.photo.dataUrl : undefined;
+    personal?.showPhoto && input.photo && PHOTO_DATA_URL.test(input.photo.dataUrl)
+      ? input.photo.dataUrl
+      : undefined;
 
   const name = field(basics.name, "/basics/name");
   const label = field(basics.label, "/basics/label");
@@ -249,14 +259,22 @@ function labelled(label: string, values: readonly string[] | undefined, path: st
   return list.length > 0 ? { text: `${label}: ${list.join(", ")}`, path } : undefined;
 }
 
-function entries<T>(list: readonly T[] | undefined, base: string, map: (item: T, path: string) => EntryDraft) {
+function entries<T>(
+  list: readonly T[] | undefined,
+  base: string,
+  map: (item: T, path: string) => EntryDraft,
+) {
   return (list ?? []).flatMap((item, index) => {
     const built = entry(map(item, `${base}/${index}`));
     return built ? [built] : [];
   });
 }
 
-function standardSection(key: HeadingKey, input: CvRenderInput, language: CvLanguage): DocSection | undefined {
+function standardSection(
+  key: HeadingKey,
+  input: CvRenderInput,
+  language: CvLanguage,
+): DocSection | undefined {
   const { resume } = input;
   const heading = SECTION_HEADINGS[language][key];
   const words = CV_WORDS[language];
@@ -269,7 +287,13 @@ function standardSection(key: HeadingKey, input: CvRenderInput, language: CvLang
   const linesSection = (list: readonly DocLineDraft[]): DocSection | undefined => {
     const lines: DocLine[] = list.flatMap((line) =>
       line.label || line.text
-        ? [{ path: line.path, ...(line.label ? { label: line.label } : {}), ...(line.text ? { text: line.text } : {}) }]
+        ? [
+            {
+              path: line.path,
+              ...(line.label ? { label: line.label } : {}),
+              ...(line.text ? { text: line.text } : {}),
+            },
+          ]
         : [],
     );
     return lines.length > 0 ? { key, heading, path, kind: "lines", lines } : undefined;
@@ -387,14 +411,22 @@ function standardSection(key: HeadingKey, input: CvRenderInput, language: CvLang
       return linesSection(
         (resume.languages ?? []).map((item, index) => {
           const at = `${path}/${index}`;
-          return { path: at, label: field(item.language, `${at}/language`), text: field(item.fluency, `${at}/fluency`) };
+          return {
+            path: at,
+            label: field(item.language, `${at}/language`),
+            text: field(item.fluency, `${at}/fluency`),
+          };
         }),
       );
     case "interests":
       return linesSection(
         (resume.interests ?? []).map((item, index) => {
           const at = `${path}/${index}`;
-          return { path: at, label: field(item.name, `${at}/name`), text: keywordLine(item.keywords, `${at}/keywords`) };
+          return {
+            path: at,
+            label: field(item.name, `${at}/name`),
+            text: keywordLine(item.keywords, `${at}/keywords`),
+          };
         }),
       );
   }
@@ -437,7 +469,8 @@ function collectPlaceholders(document: Omit<CvDocument, "placeholders" | "outlin
   const hits: PlaceholderHit[] = [];
   const visit = (value: TextField | undefined) => {
     if (!value) return;
-    for (const match of value.text.matchAll(PLACEHOLDER_PATTERN)) hits.push({ path: value.path, text: match[0] });
+    for (const match of value.text.matchAll(PLACEHOLDER_PATTERN))
+      hits.push({ path: value.path, text: match[0] });
   };
   const { header: head } = document;
   if (head) {
@@ -454,7 +487,9 @@ function collectPlaceholders(document: Omit<CvDocument, "placeholders" | "outlin
       }
     } else {
       for (const item of section.entries) {
-        [item.title, item.subtitle, item.location, item.summary, ...item.bullets, ...item.notes].forEach(visit);
+        [item.title, item.subtitle, item.location, item.summary, ...item.bullets, ...item.notes].forEach(
+          visit,
+        );
       }
     }
   }

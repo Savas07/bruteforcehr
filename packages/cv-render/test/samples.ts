@@ -24,7 +24,9 @@ export const trCv: CvContent = {
     summary:
       "React ve TypeScript ile hızlı, erişilebilir ürün arayüzleri geliştirmede beş yıllık deneyime sahip frontend mühendisiyim. Pazarbox'ta tasarım sisteminin yeniden inşasına liderlik ettim; performans bütçeleri, yerelleştirme ve tasarım ile ürün ekipleriyle yakın çalışma benim için önemli.",
     location: { city: "İstanbul", countryCode: "TR" },
-    profiles: [{ network: "GitHub", username: "deniz-aksoy-example", url: "https://github.com/deniz-aksoy-example" }],
+    profiles: [
+      { network: "GitHub", username: "deniz-aksoy-example", url: "https://github.com/deniz-aksoy-example" },
+    ],
   },
   work: [
     {
@@ -73,7 +75,12 @@ export const trCv: CvContent = {
   interests: [{ name: "İlgi", keywords: ["Işık fotoğrafçılığı", "Dağcılık"] }],
   meta: {
     template: "classic",
-    theme: { accentColor: "#1F635D", fontPair: "inter-source-serif", density: "comfortable", paperSize: "a4" },
+    theme: {
+      accentColor: "#1F635D",
+      fontPair: "inter-source-serif",
+      density: "comfortable",
+      paperSize: "a4",
+    },
     sectionOrder: ["basics", "work", "skills", "education", "languages", "interests"],
     customSections: [],
   },
@@ -90,7 +97,10 @@ export const fullCv: CvContent = {
   work: [
     {
       ...enCv.work?.[0],
-      highlights: ["Raised checkout conversion by [X%] after the redesign.", ...(enCv.work?.[0]?.highlights ?? [])],
+      highlights: [
+        "Raised checkout conversion by [X%] after the redesign.",
+        ...(enCv.work?.[0]?.highlights ?? []),
+      ],
     },
     ...(enCv.work?.slice(1) ?? []),
   ],
@@ -103,7 +113,9 @@ export const fullCv: CvContent = {
       summary: "Mentored bootcamp students in React.",
     },
   ],
-  awards: [{ title: "Hackathon winner", awarder: "Istanbul JS", date: "2023-11", summary: "Accessible maps." }],
+  awards: [
+    { title: "Hackathon winner", awarder: "Istanbul JS", date: "2023-11", summary: "Accessible maps." },
+  ],
   publications: [{ name: "Design systems at scale", publisher: "Smashing Magazine", releaseDate: "2024-05" }],
   interests: [{ name: "Outdoors", keywords: ["Climbing", "Photography"] }],
   references: [{ name: "Ayşe Kaya", reference: "Available on request." }],

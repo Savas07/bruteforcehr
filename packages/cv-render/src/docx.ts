@@ -98,7 +98,9 @@ function linkRun(item: ContactItem, style: RunStyle = {}): ParagraphChild[] {
 }
 
 function separated(groups: ParagraphChild[][], color: string): ParagraphChild[] {
-  return groups.flatMap((group, index) => (index === 0 ? group : [new TextRun({ text: " · ", color }), ...group]));
+  return groups.flatMap((group, index) =>
+    index === 0 ? group : [new TextRun({ text: " · ", color }), ...group],
+  );
 }
 
 /** Builds the CV as DOCX bytes. Same content and order as `renderCvHtml` (one model). */
@@ -130,8 +132,10 @@ function cvDocument(input: CvRenderInput): Document {
     if (head.photo) {
       const bytes = base64Bytes(head.photo.slice(head.photo.indexOf(",") + 1));
       const size = imageSize(bytes);
-      const width = 113; // 30 mm at 96 dpi
-      const height = size && size.width > 0 ? Math.round((width * size.height) / size.width) : 151;
+      // 30 mm wide (24 mm in compact) at 96 dpi, the HTML photo slot.
+      const width = Math.round(((compact ? 24 : 30) / 25.4) * 96);
+      const height =
+        size && size.width > 0 ? Math.round((width * size.height) / size.width) : Math.round((width * 4) / 3);
       children.push(
         new Paragraph({
           alignment: AlignmentType.RIGHT,
@@ -157,7 +161,9 @@ function cvDocument(input: CvRenderInput): Document {
       );
     }
     if (head.label) {
-      children.push(new Paragraph({ alignment, spacing: { after: space(2) }, children: runs(head.label.text) }));
+      children.push(
+        new Paragraph({ alignment, spacing: { after: space(2) }, children: runs(head.label.text) }),
+      );
     }
     if (head.contact.length > 0) {
       children.push(
@@ -193,18 +199,22 @@ function cvDocument(input: CvRenderInput): Document {
         tabStops: [{ type: TabStopType.RIGHT, position: textWidth }],
         children: [
           ...title,
-          ...(entry.dates ? [new TextRun({ children: [new Tab(), entry.dates], color: MUTED, bold: false })] : []),
+          ...(entry.dates
+            ? [new TextRun({ children: [new Tab(), entry.dates], color: MUTED, bold: false })]
+            : []),
         ],
       }),
     ];
     const sub: ParagraphChild[][] = [];
-    if (definition.id === "classic" && entry.title && entry.subtitle) sub.push(runs(entry.subtitle.text, { color: MUTED }));
+    if (definition.id === "classic" && entry.title && entry.subtitle)
+      sub.push(runs(entry.subtitle.text, { color: MUTED }));
     if (entry.location) sub.push(runs(entry.location.text, { color: MUTED }));
     if (entry.link) sub.push(linkRun(entry.link, { color: MUTED }));
     if (sub.length > 0) {
       out.push(new Paragraph({ keepNext: entry.bullets.length > 0, children: separated(sub, MUTED) }));
     }
-    if (entry.summary) out.push(new Paragraph({ spacing: { before: space(2) }, children: runs(entry.summary.text) }));
+    if (entry.summary)
+      out.push(new Paragraph({ spacing: { before: space(2) }, children: runs(entry.summary.text) }));
     for (const bullet of entry.bullets) {
       out.push(
         new Paragraph({
@@ -228,12 +238,22 @@ function cvDocument(input: CvRenderInput): Document {
         spacing: { before: space(13), after: space(4) },
         ...(definition.id === "modern"
           ? {}
-          : { border: { bottom: { style: "single", size: definition.id === "classic" ? 6 : 4, color: accent, space: 2 } } }),
+          : {
+              border: {
+                bottom: {
+                  style: "single",
+                  size: definition.id === "classic" ? 6 : 4,
+                  color: accent,
+                  space: 2,
+                },
+              },
+            }),
         children: runs(heading),
       }),
     ];
     if (section.kind === "text") {
-      for (const block of section.text.text.split(/\n\s*\n/u)) out.push(new Paragraph({ children: runs(block) }));
+      for (const block of section.text.text.split(/\n\s*\n/u))
+        out.push(new Paragraph({ children: runs(block) }));
     } else if (section.kind === "lines") {
       for (const line of section.lines) {
         out.push(
@@ -255,7 +275,10 @@ function cvDocument(input: CvRenderInput): Document {
   model.sections.forEach((section, index) => {
     const heading = model.outline[index]?.heading ?? section.heading;
     children.push(
-      ...sectionParagraphs(section, definition.upperCaseHeadings ? upperCase(heading, model.language) : heading),
+      ...sectionParagraphs(
+        section,
+        definition.upperCaseHeadings ? upperCase(heading, model.language) : heading,
+      ),
     );
   });
 

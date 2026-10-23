@@ -125,7 +125,11 @@ export const FONT_PAIRS: readonly FontPairDefinition[] = [
   },
   {
     id: "source-sans-serif",
-    name: { en: "Source Serif + Source Sans", tr: "Source Serif + Source Sans", de: "Source Serif + Source Sans" },
+    name: {
+      en: "Source Serif + Source Sans",
+      tr: "Source Serif + Source Sans",
+      de: "Source Serif + Source Sans",
+    },
     heading: "source-serif-4",
     body: "source-sans-3",
     headingFallback: SERIF_FALLBACK,

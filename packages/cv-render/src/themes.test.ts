@@ -23,7 +23,11 @@ describe("themes", () => {
   });
 
   it("names 2–3 font pairs whose faces are embedded with Latin Extended (Turkish, German)", () => {
-    expect(listFontPairs().map((pair) => pair.id)).toEqual(["inter-source-serif", "inter", "source-sans-serif"]);
+    expect(listFontPairs().map((pair) => pair.id)).toEqual([
+      "inter-source-serif",
+      "inter",
+      "source-sans-serif",
+    ]);
     for (const pair of FONT_PAIRS) {
       for (const id of [pair.heading, pair.body]) {
         expect(EMBEDDED_FONTS[id].faces.map((face) => face.subset)).toEqual(["latin", "latin-ext"]);
@@ -56,7 +60,9 @@ describe("themes", () => {
   });
 
   it("keeps CV_RENDER_VERSION equal to package.json", async () => {
-    const pkg = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8")) as { version: string };
+    const pkg = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8")) as {
+      version: string;
+    };
     expect(CV_RENDER_VERSION).toBe(pkg.version);
   });
 });

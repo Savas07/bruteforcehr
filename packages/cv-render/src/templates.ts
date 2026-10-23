@@ -58,7 +58,11 @@ export function template(id: string): TemplateDefinition {
 export function listTemplates(locale?: string): Array<{ id: TemplateId; name: string; description: string }> {
   const base = (locale ?? "en").toLowerCase().split(/[-_]/u)[0];
   const language: CvLanguage = base === "tr" || base === "de" ? base : "en";
-  return TEMPLATES.map((item) => ({ id: item.id, name: item.name[language], description: item.description[language] }));
+  return TEMPLATES.map((item) => ({
+    id: item.id,
+    name: item.name[language],
+    description: item.description[language],
+  }));
 }
 
 function fontFaces(pair: FontPairDefinition): string {
@@ -93,14 +97,26 @@ export function stylesheet({ templateId, accent, pair, density, page }: StyleInp
   const s = density.space * (templateId === "compact" ? 0.8 : 1);
   const headingFont = `"CV ${EMBEDDED_FONTS[pair.heading].family}", ${pair.headingFallback}`;
   const bodyFont = `"CV ${EMBEDDED_FONTS[pair.body].family}", ${pair.bodyFallback}`;
+  // Text-layer safety for ATS parsers: no ligatures (an "fi" glyph can extract as one odd char),
+  // no hyphenation (breaks words in the text layer), and no Turkish `locl` glyph variants:
+  // Chromium honours `font-feature-settings`, WebKit/CoreText only `-webkit-locale` (with lang="tr"
+  // Quartz writes the i.TRK glyph without a ToUnicode entry, so "Deniz" extracted as "Den$z").
+  // `lang` stays the CV language for screen readers.
+  //
+  // WebKit prints (macOS NSPrintOperation, iOS UIPrintPageRenderer) lay the page out 1.25× wider in
+  // CSS px than the paper's points (WebCore PrintContext's minimum shrink factor), so 1 CSS px
+  // prints as 0.8 pt instead of 0.75 pt and every CV came out 6.7 % larger than in Chromium, with
+  // different page breaks. `zoom: 0.9375` (0.75 / 0.8) restores true sizes; the @supports test
+  // matches WebKit only (`-webkit-nbsp-mode` exists nowhere else).
   const shared = `
 @page{size:${page.paper === "letter" ? "letter" : "A4"};margin:${m.top}mm ${m.right}mm ${m.bottom}mm ${m.left}mm}
 :root{--accent:${accent};--ink:#1B1F24;--muted:#4B5261;--rule:#C3C9D2;--f:${pt(f)};--lh:${density.lineHeight}}
 *,*::before,*::after{box-sizing:border-box}
 html{background:transparent;-webkit-text-size-adjust:100%;text-size-adjust:100%}
-body{margin:0;color:var(--ink);font-family:${bodyFont};font-size:var(--f);line-height:var(--lh);font-kerning:normal;font-variant-ligatures:none;font-synthesis:none;hyphens:manual;-webkit-hyphens:manual;overflow-wrap:break-word;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+body{margin:0;color:var(--ink);font-family:${bodyFont};font-size:var(--f);line-height:var(--lh);font-kerning:normal;font-variant-ligatures:none;font-feature-settings:"locl" 0;-webkit-locale:"en";font-synthesis:none;hyphens:manual;-webkit-hyphens:manual;overflow-wrap:break-word;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 .cv{width:${page.widthMm}mm;min-height:${page.heightMm}mm;margin:0 auto;padding:${m.top}mm ${m.right}mm ${m.bottom}mm ${m.left}mm;background:#fff}
 @media print{html,body{background:#fff}.cv{width:auto;min-height:0;margin:0;padding:0}}
+@media print{@supports (-webkit-nbsp-mode:space){.cv{zoom:0.9375}}}
 h1,h2,h3,p,ul{margin:0;padding:0}
 a{color:inherit;text-decoration:none}
 .cv-header{display:flex;gap:${pt(12 * s)};align-items:flex-start;break-inside:avoid;page-break-inside:avoid}
@@ -108,8 +124,10 @@ a{color:inherit;text-decoration:none}
 .cv-name{font-family:${headingFont};font-weight:650;line-height:1.15;letter-spacing:-0.005em}
 .cv-label{margin-top:${pt(2 * s)}}
 .cv-contact,.cv-personal{margin-top:${pt(4 * s)};color:var(--muted);font-size:${pt(f * 0.92)}}
-.cv-sep{color:var(--rule);padding:0 0.1em}
+.cv-contact>[data-cv-path]{white-space:nowrap}
+.cv-sep{padding:0 0.1em}
 .cv-photo{flex:0 0 auto;width:30mm;height:40mm;object-fit:cover;border-radius:1.5mm}
+.cv-keep{break-inside:avoid;page-break-inside:avoid}
 .cv-section{margin-top:${pt(13 * s)}}
 .cv-heading{font-family:${headingFont};color:var(--accent);font-weight:700;line-height:1.2;break-after:avoid;page-break-after:avoid;break-inside:avoid}
 .cv-entry{margin-top:${pt(8 * s)}}
@@ -120,10 +138,11 @@ a{color:inherit;text-decoration:none}
 .cv-entry-sub{color:var(--muted);break-after:avoid;page-break-after:avoid}
 .cv-entry-summary,.cv-note{margin-top:${pt(2 * s)}}
 .cv-note{color:var(--muted);font-size:${pt(f * 0.94)}}
-.cv-bullets{margin-top:${pt(3 * s)};padding-left:1.15em}
-.cv-bullets li{margin-top:${pt(1.5 * s)};padding-left:0.15em;break-inside:avoid;page-break-inside:avoid}
+.cv-bullets{margin-top:${pt(3 * s)};padding-left:1.3em}
+.cv-bullets li{margin-top:${pt(1.5 * s)};break-inside:avoid;page-break-inside:avoid}
 .cv-entry.is-short{break-inside:avoid;page-break-inside:avoid}
 .cv-text p+p{margin-top:${pt(4 * s)}}
+.cv-lines{break-inside:avoid;page-break-inside:avoid}
 .cv-lines p+p{margin-top:${pt(2 * s)}}
 .cv-line-label{font-weight:650}
 p,li{orphans:3;widows:3}
@@ -151,11 +170,12 @@ mark.cv-ph{color:inherit;background:#FFF1B8;box-shadow:0 0 0 0.6pt #9C5D00 inset
 `,
     compact: `
 .cv--compact .cv-name{font-size:${pt(f * 1.75)}}
-.cv--compact .cv-label{display:inline;font-size:${pt(f * 1.02)};font-weight:600}
+.cv--compact .cv-photo{width:24mm;height:32mm}
+.cv--compact .cv-label{font-size:${pt(f * 1.02)};font-weight:600}
 .cv--compact .cv-contact{margin-top:${pt(2 * s)}}
 .cv--compact .cv-heading{font-size:${pt(f * 0.9)};letter-spacing:0.06em;padding-bottom:${pt(1.5)};border-bottom:0.5pt solid var(--rule)}
 .cv--compact .cv-entry-org{font-weight:400}
-.cv--compact .cv-bullets{list-style-type:disc;padding-left:1em}
+.cv--compact .cv-bullets{list-style-type:disc}
 .cv--compact .cv-bullets li{margin-top:${pt(0.5)}}
 `,
   };

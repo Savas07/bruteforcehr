@@ -14,7 +14,8 @@ function headings(html: string): string[] {
 
 describe("renderCvHtml", () => {
   it("accepts the fixture CVs (they are valid CvContent)", () => {
-    for (const content of [enCv, deCv, trCv, fullCv]) expect(CvContentSchema.safeParse(content).success).toBe(true);
+    for (const content of [enCv, deCv, trCv, fullCv])
+      expect(CvContentSchema.safeParse(content).success).toBe(true);
   });
 
   it.each(TEMPLATE_IDS)("%s: stable structure (snapshot)", (templateId) => {
@@ -74,13 +75,24 @@ describe("renderCvHtml", () => {
 
   it("upper-cases headings with Turkish rules (i → İ, ı → I) in classic and compact", () => {
     const result = renderCvHtml(inputFor(trCv, "tr", "classic"));
-    expect(headings(result.html)).toEqual(["ÖZET", "DENEYİM", "YETENEKLER", "EĞİTİM", "DİLLER", "İLGİ ALANLARI"]);
+    expect(headings(result.html)).toEqual([
+      "ÖZET",
+      "DENEYİM",
+      "YETENEKLER",
+      "EĞİTİM",
+      "DİLLER",
+      "İLGİ ALANLARI",
+    ]);
     expect(result.outline.map((section) => section.heading)).toContain("İLGİ ALANLARI");
     expect(result.html).toContain('<html lang="tr">');
     // German ß upper-cases to SS; English is unaffected.
     const de = renderCvHtml({
       ...inputFor(deCv, "de", "compact"),
-      meta: { ...deCv.meta, customSections: [{ id: "x", title: "Größe", items: [{ title: "a" }] }], sectionOrder: ["custom:x"] },
+      meta: {
+        ...deCv.meta,
+        customSections: [{ id: "x", title: "Größe", items: [{ title: "a" }] }],
+        sectionOrder: ["custom:x"],
+      },
     });
     expect(headings(de.html)).toEqual(["GRÖSSE"]);
   });
@@ -120,14 +132,14 @@ describe("renderCvHtml", () => {
             url: "javascript:alert(1)",
             profiles: [{ network: "Site", url: "example.org/me" }],
           },
-          work: [{ position: "A & B <Lead>", name: "Co \"Q\"", highlights: ["</li><script>x</script>"] }],
+          work: [{ position: "A & B <Lead>", name: 'Co "Q"', highlights: ["</li><script>x</script>"] }],
           meta: { ...enCv.meta, sectionOrder: ["basics", "work"], customSections: [] },
         },
         "en",
       ),
     );
     expect(html).not.toContain("<script>x");
-    expect(html).not.toContain('<img src=x');
+    expect(html).not.toContain("<img src=x");
     expect(html).toContain("A &amp; B &lt;Lead&gt;");
     expect(html).not.toContain('href="javascript:');
     expect(html).toContain("javascript:alert(1)</span>");
@@ -136,7 +148,9 @@ describe("renderCvHtml", () => {
 
   it("marks [X%] placeholders visibly and reports them", () => {
     const result = renderCvHtml(inputFor(fullCv, "en"));
-    expect(result.html).toContain('Raised checkout conversion by <mark class="cv-ph" data-placeholder="">[X%]</mark>');
+    expect(result.html).toContain(
+      'Raised checkout conversion by <mark class="cv-ph" data-placeholder="">[X%]</mark>',
+    );
     expect(result.html).toContain("mark.cv-ph{");
     expect(result.placeholders).toEqual([{ path: "/work/0/highlights/0", text: "[X%]" }]);
     expect(renderCvHtml(inputFor(enCv, "en")).placeholders).toEqual([]);
@@ -160,19 +174,30 @@ describe("renderCvHtml", () => {
 
     const off = renderCvHtml({
       ...withPhoto,
-      meta: { ...fullCv.meta, personal: { showPhoto: false, showDateOfBirth: false, dateOfBirth: "1996-05-14" } },
+      meta: {
+        ...fullCv.meta,
+        personal: { showPhoto: false, showDateOfBirth: false, dateOfBirth: "1996-05-14" },
+      },
     }).html;
     expect(off).not.toContain("<img");
     expect(off).not.toContain("1996");
     // No `personal` at all (UK/US default) and a photo that isn't a JPEG/PNG data URL are ignored too.
     const { personal: _personal, ...metaWithout } = fullCv.meta;
     expect(renderCvHtml({ ...withPhoto, meta: metaWithout }).html).not.toContain("<img");
-    expect(renderCvHtml({ ...withPhoto, photo: { dataUrl: "https://evil.example/p.jpg" } }).html).not.toContain("<img");
+    expect(
+      renderCvHtml({ ...withPhoto, photo: { dataUrl: "https://evil.example/p.jpg" } }).html,
+    ).not.toContain("<img");
   });
 
   it("reports page geometry with fixed margins and uses them in @page", () => {
     const a4 = renderCvHtml(inputFor(enCv, "en", "classic", "a4"));
-    expect(a4.page).toMatchObject({ paper: "a4", widthMm: 210, heightMm: 297, widthPt: 595.28, heightPt: 841.89 });
+    expect(a4.page).toMatchObject({
+      paper: "a4",
+      widthMm: 210,
+      heightMm: 297,
+      widthPt: 595.28,
+      heightPt: 841.89,
+    });
     expect(a4.html).toContain("@page{size:A4;margin:16mm 18mm 16mm 18mm}");
     const letter = renderCvHtml(inputFor(enCv, "en", "classic", "letter"));
     expect(letter.page).toMatchObject({ paper: "letter", widthPt: 612, heightPt: 792 });

@@ -486,6 +486,29 @@
         }
       }
     },
+    "jobs.editor.keywordsLabel" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Suchbegriffe"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keywords"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anahtar kelimeler"
+          }
+        }
+      }
+    },
     "jobs.editor.name" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2125,8 +2148,32 @@
         }
       }
     },
+    "jobs.posted.day" : {
+      "comment" : "Posted-date filter for one day.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Letzte 24 Stunden"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Last 24 hours"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Son 24 saat"
+          }
+        }
+      }
+    },
     "jobs.posted.within" : {
-      "comment" : "Posted-date filter. %lld = days (1, 3, 7, 30).",
+      "comment" : "Posted-date filter. %lld = days (3, 7, 30).",
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
@@ -2543,6 +2590,29 @@
         }
       }
     },
+    "jobs.savedSearches.error" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wir konnten deine gespeicherten Suchen nicht laden"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't load your saved searches"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kayıtlı aramalarınızı yükleyemedik"
+          }
+        }
+      }
+    },
     "jobs.savedSearches.footer" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2562,6 +2632,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Kayıtlı aramalar, uygulama kapalıyken de zamanında çalışır."
+          }
+        }
+      }
+    },
+    "jobs.savedSearches.loading" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gespeicherte Suchen werden geladen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Loading saved searches"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kayıtlı aramalar yükleniyor"
           }
         }
       }

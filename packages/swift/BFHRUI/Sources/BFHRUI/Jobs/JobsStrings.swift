@@ -136,7 +136,8 @@ enum JobsStrings {
     static let postedAny = LocalizedStringResource.bfhr("jobs.posted.any", default: "Any time", table: "Jobs")
 
     static func postedWithin(_ days: Int) -> LocalizedStringResource {
-        .bfhr("jobs.posted.within", default: "Last \(days) days", table: "Jobs", comment: "Posted-date filter. %lld = days (1, 3, 7, 30).")
+        if days == 1 { return .bfhr("jobs.posted.day", default: "Last 24 hours", table: "Jobs", comment: "Posted-date filter for one day.") }
+        return .bfhr("jobs.posted.within", default: "Last \(days) days", table: "Jobs", comment: "Posted-date filter. %lld = days (3, 7, 30).")
     }
 
     static let currency = LocalizedStringResource.bfhr("jobs.salary.currency", default: "Currency", table: "Jobs")
@@ -269,6 +270,8 @@ enum JobsStrings {
     // MARK: Saved searches
 
     static let savedSearchesTitle = LocalizedStringResource.bfhr("jobs.savedSearches.title", default: "Saved searches", table: "Jobs")
+    static let savedSearchesLoading = LocalizedStringResource.bfhr("jobs.savedSearches.loading", default: "Loading saved searches", table: "Jobs")
+    static let savedSearchesError = LocalizedStringResource.bfhr("jobs.savedSearches.error", default: "We couldn't load your saved searches", table: "Jobs")
     static let noSavedSearchesTitle = LocalizedStringResource.bfhr("jobs.savedSearches.empty.title", default: "No saved searches yet", table: "Jobs")
     static let noSavedSearchesBody = LocalizedStringResource.bfhr("jobs.savedSearches.empty.body", default: "Save a search to have it run for you and hear about good matches.", table: "Jobs")
     static let savedSearchesFooter = LocalizedStringResource.bfhr("jobs.savedSearches.footer", default: "Saved searches run on their schedule, even when the app is closed.", table: "Jobs")
@@ -304,6 +307,7 @@ enum JobsStrings {
     static let searchSection = LocalizedStringResource.bfhr("jobs.editor.search", default: "Search", table: "Jobs")
     static let searchName = LocalizedStringResource.bfhr("jobs.editor.name", default: "Name", table: "Jobs")
     static let searchKeywords = LocalizedStringResource.bfhr("jobs.editor.keywords", default: "Role, skill or company", table: "Jobs")
+    static let searchKeywordsLabel = LocalizedStringResource.bfhr("jobs.editor.keywordsLabel", default: "Keywords", table: "Jobs")
     static let noFilters = LocalizedStringResource.bfhr("jobs.editor.noFilters", default: "None", table: "Jobs")
     static let alertsSection = LocalizedStringResource.bfhr("jobs.editor.alertsSection", default: "Alerts", table: "Jobs")
     static let alerts = LocalizedStringResource.bfhr("jobs.editor.alerts", default: "Run and notify me", table: "Jobs")

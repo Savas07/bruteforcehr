@@ -144,3 +144,23 @@ struct JobsFeedSkeleton: View {
         .bfhrSkeleton()
     }
 }
+
+/// Saved searches and Hidden jobs while the feed's data loads: title + two lines per row.
+struct JobsListSkeleton: View {
+    var body: some View {
+        List {
+            Section {
+                ForEach(0..<4, id: \.self) { _ in
+                    VStack(alignment: .leading, spacing: BFHRSpace.s1) {
+                        Text(verbatim: "Berlin & Amsterdam").font(.bfhr(.headline))
+                        Text(verbatim: "“frontend engineer” · Hybrid · Last 30 days").font(.bfhr(.subheadline))
+                        Text(verbatim: "Every day · Good and above").font(.bfhr(.footnote))
+                    }
+                    .padding(.vertical, BFHRSpace.s1)
+                }
+            }
+        }
+        .bfhrInsetGroupedList()
+        .bfhrSkeleton()
+    }
+}

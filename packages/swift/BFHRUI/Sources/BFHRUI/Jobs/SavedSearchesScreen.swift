@@ -9,6 +9,7 @@ public struct SavedSearchesScreen: View {
     @Bindable private var model: JobsFeedModel
     @Environment(ToastCenter.self) private var toasts: ToastCenter?
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.bfhrReload) private var reload
     @State private var editor: SavedSearchEditorRequest?
 
     public init(model: JobsFeedModel) {
@@ -16,6 +17,31 @@ public struct SavedSearchesScreen: View {
     }
 
     public var body: some View {
+        // Loading and failure come from the feed's data (states.md): never "No saved searches
+        // yet" before the list has loaded.
+        PhaseContainer(model.phase, loadingLabel: JobsStrings.savedSearchesLoading) {
+            list
+        } skeleton: {
+            JobsListSkeleton()
+        } failure: { failure in
+            PaneError(failure, title: JobsStrings.savedSearchesError, retry: reload)
+        }
+        .navigationTitle(Text(JobsStrings.savedSearchesTitle))
+        .bfhrInlineTitle()
+        .sheet(item: $editor) { request in
+            SavedSearchEditor(model: model, searchId: request.searchId, seed: request.seed)
+        }
+        .accessibilityIdentifier("screen.savedSearches")
+        #if DEBUG
+        .task {
+            if let first = model.savedSearches.first, JobsDesignPane.take(.editor) {
+                editor = SavedSearchEditorRequest(searchId: first.id)
+            }
+        }
+        #endif
+    }
+
+    private var list: some View {
         List {
             ConnectionBannerSection(model.connection)
             Section {
@@ -55,20 +81,7 @@ public struct SavedSearchesScreen: View {
             }
         }
         .bfhrInsetGroupedList()
-        .navigationTitle(Text(JobsStrings.savedSearchesTitle))
-        .bfhrInlineTitle()
         .bfhrToastHost()
-        .sheet(item: $editor) { request in
-            SavedSearchEditor(model: model, searchId: request.searchId, seed: request.seed)
-        }
-        .accessibilityIdentifier("screen.savedSearches")
-        #if DEBUG
-        .task {
-            if let first = model.savedSearches.first, JobsDesignPane.take(.editor) {
-                editor = SavedSearchEditorRequest(searchId: first.id)
-            }
-        }
-        #endif
     }
 
     private func actions(for search: SavedSearch) -> [RowAction] {
@@ -155,21 +168,36 @@ struct SavedSearchEditor: View {
         NavigationStack {
             Form {
                 Section {
-                    TextField(text: $draft.name) { Text(JobsStrings.searchName) }
-                        .accessibilityIdentifier("editor.name")
-                    TextField(text: $draft.query) { Text(JobsStrings.searchKeywords) }
-                        .accessibilityIdentifier("editor.query")
+                    EditorField(label: JobsStrings.searchName) {
+                        TextField(text: $draft.name) { Text(JobsStrings.searchName) }
+                            .accessibilityIdentifier("editor.name")
+                    }
+                    EditorField(label: JobsStrings.searchKeywordsLabel) {
+                        TextField(text: $draft.query) { Text(JobsStrings.searchKeywords) }
+                            .accessibilityLabel(Text(JobsStrings.searchKeywordsLabel))
+                            .accessibilityIdentifier("editor.query")
+                    }
                 } header: {
                     Text(JobsStrings.searchSection).foregroundStyle(BFHRColor.Fg.secondary)
                 }
                 Section {
+                    // The summary under its label, left-aligned: a long criteria line wraps as a
+                    // sentence instead of a ragged right-aligned column.
                     Button { editsFilters = true } label: {
-                        LabeledContent {
-                            Text(verbatim: JobsFilterSummary.line(draft.filters) ?? String(localized: JobsStrings.noFilters))
-                                .multilineTextAlignment(.trailing)
-                        } label: {
-                            Text(JobsStrings.filters).foregroundStyle(BFHRColor.Fg.primary)
+                        HStack(spacing: BFHRSpace.s3) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(JobsStrings.filters).foregroundStyle(BFHRColor.Fg.primary)
+                                Text(verbatim: JobsFilterSummary.line(draft.filters) ?? String(localized: JobsStrings.noFilters))
+                                    .font(.bfhr(.subheadline))
+                                    .foregroundStyle(BFHRColor.Fg.secondary)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            Image(systemName: "chevron.right")
+                                .font(.bfhr(.footnote, emphasized: true))
+                                .foregroundStyle(BFHRColor.Fg.tertiary)
+                                .accessibilityHidden(true)
                         }
+                        .contentShape(Rectangle())
                     }
                     .accessibilityIdentifier("editor.filters")
                 }
@@ -235,6 +263,23 @@ struct SavedSearchEditor: View {
             model.scope = .search(id)
         }
         dismiss()
+    }
+}
+
+/// A text field with its label above it, so a filled-in field still says what it is (the label
+/// is visual only; the field carries the accessibility label).
+private struct EditorField<Field: View>: View {
+    let label: LocalizedStringResource
+    @ViewBuilder let field: () -> Field
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(label)
+                .font(.bfhr(.footnote))
+                .foregroundStyle(BFHRColor.Fg.secondary)
+                .accessibilityHidden(true)
+            field()
+        }
     }
 }
 
@@ -366,12 +411,26 @@ struct SavedSearchCriteriaForm: View {
 public struct HiddenJobsScreen: View {
     @Bindable private var model: JobsFeedModel
     @Environment(ToastCenter.self) private var toasts: ToastCenter?
+    @Environment(\.bfhrReload) private var reload
 
     public init(model: JobsFeedModel) {
         self.model = model
     }
 
     public var body: some View {
+        PhaseContainer(model.phase, loadingLabel: JobsStrings.loading) {
+            list
+        } skeleton: {
+            JobsListSkeleton()
+        } failure: { failure in
+            PaneError(failure, title: JobsStrings.errorTitle, retry: reload)
+        }
+        .navigationTitle(Text(JobsStrings.hiddenJobsTitle))
+        .bfhrInlineTitle()
+        .accessibilityIdentifier("screen.hiddenJobs")
+    }
+
+    private var list: some View {
         List {
             ConnectionBannerSection(model.connection)
             if model.hiddenJobs.isEmpty {
@@ -411,9 +470,6 @@ public struct HiddenJobsScreen: View {
             }
         }
         .bfhrInsetGroupedList()
-        .navigationTitle(Text(JobsStrings.hiddenJobsTitle))
-        .bfhrInlineTitle()
         .bfhrToastHost()
-        .accessibilityIdentifier("screen.hiddenJobs")
     }
 }

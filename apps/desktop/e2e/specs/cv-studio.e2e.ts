@@ -11,7 +11,15 @@ import { $, browser, expect } from "@wdio/globals";
 import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
 import { Key } from "webdriverio";
 import { ensureSignedIn, expectHeading, testEmail } from "../support/auth";
-import { findCv, getDoc, listRevisions, plain, remoteEdit, summaryOf, type FirestoreDoc } from "../support/firestore";
+import {
+  findCv,
+  getDoc,
+  listRevisions,
+  plain,
+  remoteEdit,
+  summaryOf,
+  type FirestoreDoc,
+} from "../support/firestore";
 const TITLE = `E2E CV ${process.pid}`;
 const SHOTS = path.join(repoRoot, "artifacts/screens/desktop", osName, "cv-studio");
 
@@ -36,11 +44,17 @@ const cvPath = () => cv.name.slice(cv.name.indexOf("/documents/") + "/documents/
 async function current(): Promise<{ version: number; revision: FirestoreDoc }> {
   const doc = await getDoc(cvPath());
   const revisionId = String(plain(doc.fields["currentRevisionId"]));
-  return { version: Number(plain(doc.fields["version"])), revision: await getDoc(`${cvPath()}/revisions/${revisionId}`) };
+  return {
+    version: Number(plain(doc.fields["version"])),
+    revision: await getDoc(`${cvPath()}/revisions/${revisionId}`),
+  };
 }
 
 async function waitForSummary(text: string, timeoutMsg: string): Promise<void> {
-  await browser.waitUntil(async () => summaryOf((await current()).revision) === text, { timeout: 20_000, timeoutMsg });
+  await browser.waitUntil(async () => summaryOf((await current()).revision) === text, {
+    timeout: 20_000,
+    timeoutMsg,
+  });
 }
 
 async function openSection(key: string): Promise<void> {
@@ -66,7 +80,9 @@ describe("CV Studio", () => {
 
   it("creates a CV", async () => {
     const scratch = $("button*=Start from scratch");
-    await browser.waitUntil(async () => (await scratch.isExisting()) || (await $('nav[aria-label="Your CVs"]').isExisting()));
+    await browser.waitUntil(
+      async () => (await scratch.isExisting()) || (await $('nav[aria-label="Your CVs"]').isExisting()),
+    );
     if (await scratch.isExisting()) {
       await scratch.click();
     } else {
@@ -78,7 +94,9 @@ describe("CV Studio", () => {
     await name.setValue(TITLE);
     await $('[role="dialog"] button[type="submit"]').click();
     await expectHeading(TITLE, 20_000);
-    await browser.waitUntil(async () => (await findCv(TITLE)) !== null, { timeoutMsg: "the CV never reached Firestore" });
+    await browser.waitUntil(async () => (await findCv(TITLE)) !== null, {
+      timeoutMsg: "the CV never reached Firestore",
+    });
     cv = (await findCv(TITLE)) as FirestoreDoc;
     expect((await current()).version).toBe(1);
   });
@@ -153,7 +171,9 @@ describe("CV Studio", () => {
     await browser
       .waitUntil(() => existsSync(file), { timeout: 120_000 })
       .catch(async () => {
-        const dialog = await browser.execute(() => document.querySelector('[role="dialog"]')?.textContent ?? "(no dialog)");
+        const dialog = await browser.execute(
+          () => document.querySelector('[role="dialog"]')?.textContent ?? "(no dialog)",
+        );
         throw new Error(`no PDF at ${file}; dialog: ${dialog}`);
       });
 
@@ -177,10 +197,23 @@ describe("CV Studio", () => {
     await capture("template-gallery");
     await $('[role="tab"]=Check').click();
     await $("button=Run check").click();
-    await browser.waitUntil(
-      async () => browser.execute(() => /Experience/u.test(document.querySelector('aside[aria-label="Inspector"]')?.textContent ?? "")),
-      { timeout: 90_000, timeoutMsg: "the ATS check showed no result" },
-    );
+    // The outcome: the readback summary, or one of the panel's failure titles.
+    const outcome =
+      /read back from the PDF|Couldn't create the PDF|Couldn't read the PDF's text|No text found in the PDF/u;
+    const inspectorText = () =>
+      browser.execute(
+        () => document.querySelector('aside[aria-label="Inspector"]')?.textContent ?? "(no inspector)",
+      );
+    await browser
+      .waitUntil(async () => outcome.test(await inspectorText()), { timeout: 60_000 })
+      .catch(async () => {
+        throw new Error(`the ATS check showed no outcome; inspector: ${await inspectorText()}`);
+      });
+    const text = await inspectorText();
+    if (!/read back from the PDF/u.test(text)) throw new Error(`the ATS check failed; inspector: ${text}`);
+    // This CV has a header and a summary only (created from scratch, nothing else filled in).
+    expect(text).toContain("Name and contact details · Read back");
+    expect(text).toContain("Summary · Read back");
     await capture("ats-check");
   });
 });

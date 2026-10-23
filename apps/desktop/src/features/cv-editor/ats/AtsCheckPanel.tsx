@@ -290,7 +290,8 @@ export function AtsCheckPanel({ makePdf, content, language, outline, onAddKeywor
       if (generation.current !== current) return;
       setAdded(new Set());
       setRun({ state: "done", text, pages: pages.length, ...snapshot });
-    } catch {
+    } catch (error) {
+      console.error(`ATS check failed (${stage})`, error);
       if (generation.current === current) setRun({ state: "failed", stage });
     }
   };

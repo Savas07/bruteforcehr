@@ -59,11 +59,16 @@ const button = (name: string | RegExp): HTMLButtonElement => {
 
 async function runCheck(): Promise<void> {
   await act(async () => button(/Run check|Check again|Try again/).click());
-  await vi.waitFor(() => {
-    if (container.querySelector("[aria-busy], [role=status] svg.animate-spin"))
-      throw new Error("still checking");
-    if (!container.textContent?.match(/read back from the PDF|Couldn't/)) throw new Error("no result yet");
-  });
+  // The read-back parses a real PDF with pdf.js; on a loaded CI runner that takes well over
+  // vitest's 1 s default, so wait up to 15 s.
+  await vi.waitFor(
+    () => {
+      if (container.querySelector("[aria-busy], [role=status] svg.animate-spin"))
+        throw new Error("still checking");
+      if (!container.textContent?.match(/read back from the PDF|Couldn't/)) throw new Error("no result yet");
+    },
+    { timeout: 15_000, interval: 50 },
+  );
 }
 
 function typeJob(text: string): void {
@@ -76,7 +81,8 @@ function typeJob(text: string): void {
   });
 }
 
-describe("AtsCheckPanel", () => {
+// Each test parses real PDFs (some twice), so allow more than the 5 s default per test.
+describe("AtsCheckPanel", { timeout: 30_000 }, () => {
   it("exports, reads back and lists every section with icon and text", async () => {
     const makePdf = vi.fn(async () => pdf);
     render({ makePdf });

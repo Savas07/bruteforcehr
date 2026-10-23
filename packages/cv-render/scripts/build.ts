@@ -51,5 +51,7 @@ if (import.meta.main) {
   );
   await writeFile(resolve(root, "dist/cv-render.iife.inputs.sha256"), `${sha256(manifest)}\n`);
   const { size } = await stat(outfile);
-  console.log(`cv-render: wrote dist/cv-render.iife.js (${Math.round(size / 1024)} KiB, ${inputs.length} inputs)`);
+  console.log(
+    `cv-render: wrote dist/cv-render.iife.js (${Math.round(size / 1024)} KiB, ${inputs.length} inputs)`,
+  );
 }

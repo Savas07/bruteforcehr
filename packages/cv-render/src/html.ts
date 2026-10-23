@@ -1,5 +1,12 @@
 import { upperCase } from "./i18n";
-import { buildDocument, type ContactItem, type DocEntry, type DocSection, splitPlaceholders, type TextField } from "./model";
+import {
+  buildDocument,
+  type ContactItem,
+  type DocEntry,
+  type DocSection,
+  splitPlaceholders,
+  type TextField,
+} from "./model";
 import { stylesheet, template } from "./templates";
 import { densityScale, fontPair, pageGeometry, printableAccent } from "./themes";
 import type { CvRenderInput, CvRenderResult, TemplateId } from "./types";
@@ -60,7 +67,10 @@ function entryHtml(entry: DocEntry, templateId: TemplateId): string {
     head = entry.title
       ? `<h3 class="cv-entry-title"${at(entry.title.path)}>${inline(entry.title.text)}</h3>`
       : `<h3 class="cv-entry-title"${at(entry.subtitle?.path ?? entry.path)}>${inline(entry.subtitle?.text ?? "")}</h3>`;
-    sub = [entry.title ? span(entry.subtitle, "cv-entry-org") : "", span(entry.location, "cv-entry-location")];
+    sub = [
+      entry.title ? span(entry.subtitle, "cv-entry-org") : "",
+      span(entry.location, "cv-entry-location"),
+    ];
   } else {
     const joiner = templateId === "modern" ? " · " : ", ";
     const title = entry.title ? span(entry.title, "cv-entry-role") : "";
@@ -75,7 +85,9 @@ function entryHtml(entry: DocEntry, templateId: TemplateId): string {
   const parts = [
     `<div class="cv-entry-head">${head}${dates}</div>`,
     subLine ? `<p class="cv-entry-sub">${subLine}</p>` : "",
-    entry.summary ? `<p class="cv-entry-summary"${at(entry.summary.path)}>${inline(entry.summary.text)}</p>` : "",
+    entry.summary
+      ? `<p class="cv-entry-summary"${at(entry.summary.path)}>${inline(entry.summary.text)}</p>`
+      : "",
     entry.bullets.length > 0
       ? `<ul class="cv-bullets">${entry.bullets.map((bullet) => `<li${at(bullet.path)}>${inline(bullet.text)}</li>`).join("")}</ul>`
       : "",
@@ -93,7 +105,9 @@ function sectionHtml(section: DocSection, templateId: TemplateId, heading: strin
       const label = line.label
         ? `<span class="cv-line-label"${at(line.label.path)}>${inline(line.label.text)}${line.text ? ":" : ""}</span>`
         : "";
-      const text = line.text ? `${label ? " " : ""}<span${at(line.text.path)}>${inline(line.text.text)}</span>` : "";
+      const text = line.text
+        ? `${label ? " " : ""}<span${at(line.text.path)}>${inline(line.text.text)}</span>`
+        : "";
       return `<p${at(line.path)}>${label}${text}</p>`;
     });
     items = [`<div class="cv-lines">${lines.join("")}</div>`];
@@ -131,8 +145,12 @@ export function renderCvHtml(input: CvRenderInput): CvRenderResult {
   let headerHtml = "";
   if (head) {
     const contact = head.contact.map(contactItem).join(SEPARATOR);
-    const label = head.label ? `<p class="cv-label"${at(head.label.path)}>${inline(head.label.text)}</p>` : "";
-    const photo = head.photo ? `<img class="cv-photo" src="${escapeHtml(head.photo)}" alt=""${at("/basics/image")}>` : "";
+    const label = head.label
+      ? `<p class="cv-label"${at(head.label.path)}>${inline(head.label.text)}</p>`
+      : "";
+    const photo = head.photo
+      ? `<img class="cv-photo" src="${escapeHtml(head.photo)}" alt=""${at("/basics/image")}>`
+      : "";
     headerHtml =
       `<header class="cv-header${photo ? " has-photo" : ""}"${at("/basics")}><div class="cv-id">` +
       (head.name ? `<h1 class="cv-name"${at(head.name.path)}>${inline(head.name.text)}</h1>` : "") +
@@ -160,5 +178,12 @@ export function renderCvHtml(input: CvRenderInput): CvRenderResult {
     `<title>${escapeHtml(document.title)}</title><style>${css}</style></head>` +
     `<body><main class="cv cv--${templateId}" data-template="${templateId}">${headerHtml}${sections}</main></body></html>`;
 
-  return { html, title: document.title, lang: document.lang, page, placeholders: document.placeholders, outline };
+  return {
+    html,
+    title: document.title,
+    lang: document.lang,
+    page,
+    placeholders: document.placeholders,
+    outline,
+  };
 }

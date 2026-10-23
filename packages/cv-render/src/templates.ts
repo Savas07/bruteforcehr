@@ -58,7 +58,11 @@ export function template(id: string): TemplateDefinition {
 export function listTemplates(locale?: string): Array<{ id: TemplateId; name: string; description: string }> {
   const base = (locale ?? "en").toLowerCase().split(/[-_]/u)[0];
   const language: CvLanguage = base === "tr" || base === "de" ? base : "en";
-  return TEMPLATES.map((item) => ({ id: item.id, name: item.name[language], description: item.description[language] }));
+  return TEMPLATES.map((item) => ({
+    id: item.id,
+    name: item.name[language],
+    description: item.description[language],
+  }));
 }
 
 function fontFaces(pair: FontPairDefinition): string {

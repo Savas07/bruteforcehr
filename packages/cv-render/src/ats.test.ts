@@ -23,22 +23,37 @@ const CVS = [
 describe("ATS round trip (Chromium PDF → pdf.js text)", () => {
   for (const templateId of TEMPLATE_IDS) {
     for (const paper of PAPERS) {
-      it.each(CVS)(`${templateId} · ${paper} · %s reads back every section and entry in order`, async (locale, content) => {
-        const result = renderCvHtml(inputFor(content, locale, templateId, paper));
-        const pdf = await extractPdfText(await printPdf(browser, result));
-        expect(missingInOrder(result, pdf.text)).toEqual([]);
-        expect(pdf.title).toBe(result.title);
-        // Contact details and dates survive as text.
-        expect(pdf.text).toContain("Deniz Aksoy");
-        expect(pdf.text).toContain("deniz.aksoy@example.com");
-        expect(pdf.text).toContain(locale === "en" ? "Mar 2022 – Present" : locale === "de" ? "März 2022 – heute" : "Mar 2022 – Günümüz");
-      });
+      it.each(CVS)(
+        `${templateId} · ${paper} · %s reads back every section and entry in order`,
+        async (locale, content) => {
+          const result = renderCvHtml(inputFor(content, locale, templateId, paper));
+          const pdf = await extractPdfText(await printPdf(browser, result));
+          expect(missingInOrder(result, pdf.text)).toEqual([]);
+          expect(pdf.title).toBe(result.title);
+          // Contact details and dates survive as text.
+          expect(pdf.text).toContain("Deniz Aksoy");
+          expect(pdf.text).toContain("deniz.aksoy@example.com");
+          expect(pdf.text).toContain(
+            locale === "en"
+              ? "Mar 2022 – Present"
+              : locale === "de"
+                ? "März 2022 – heute"
+                : "Mar 2022 – Günümüz",
+          );
+        },
+      );
     }
   }
 
   it("keeps Turkish and German letters intact in the text layer", async () => {
     const tr = await extractPdfText(await printPdf(browser, renderCvHtml(inputFor(trCv, "tr", "classic"))));
-    for (const word of ["DENEYİM", "İLGİ ALANLARI", "Işık fotoğrafçılığı", "İstanbul Teknik Üniversitesi", "Şub 2020"]) {
+    for (const word of [
+      "DENEYİM",
+      "İLGİ ALANLARI",
+      "Işık fotoğrafçılığı",
+      "İstanbul Teknik Üniversitesi",
+      "Şub 2020",
+    ]) {
       expect(tr.text).toContain(word);
     }
     const de = await extractPdfText(await printPdf(browser, renderCvHtml(inputFor(deCv, "de", "modern"))));
@@ -62,14 +77,20 @@ describe("ATS round trip (Chromium PDF → pdf.js text)", () => {
     await page.close();
     // Turkish text needs both the Latin and the Latin Extended face of each family.
     for (const family of families) {
-      expect(faces.filter((face) => face === `${family} loaded`), faces.join()).toHaveLength(2);
+      expect(
+        faces.filter((face) => face === `${family} loaded`),
+        faces.join(),
+      ).toHaveLength(2);
     }
     expect(faces.filter((face) => face.endsWith("error"))).toEqual([]);
   });
 
   it("reads back the every-section CV with photo, date of birth and a placeholder", async () => {
     for (const templateId of TEMPLATE_IDS) {
-      const result = renderCvHtml({ ...inputFor(fullCv, "en", templateId), photo: { dataUrl: PHOTO_DATA_URL } });
+      const result = renderCvHtml({
+        ...inputFor(fullCv, "en", templateId),
+        photo: { dataUrl: PHOTO_DATA_URL },
+      });
       const pdf = await extractPdfText(await printPdf(browser, result));
       expect(missingInOrder(result, pdf.text)).toEqual([]);
       expect(pdf.text).toContain("Date of birth: 14 May 1996");

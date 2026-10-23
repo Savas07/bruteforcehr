@@ -27,30 +27,33 @@ function paragraphsOf(xml: string): string[] {
 }
 
 describe("buildCvDocx", () => {
-  it.each(TEMPLATE_IDS)("%s: real headings and lists, no tables, same order as the HTML", async (templateId) => {
-    const input = inputFor(fullCv, "en", templateId);
-    const xml = await documentXml(await buildCvDocx(input));
-    expect(xml).not.toContain("<w:tbl");
-    expect(xml).not.toContain("<w:txbxContent");
-    expect(xml).not.toContain("<w:cols ");
-    expect(xml).toContain('<w:pStyle w:val="Title"/>');
-    expect(xml).toContain('<w:pStyle w:val="Heading2"/>');
-    expect(xml).toContain('<w:pStyle w:val="Heading3"/>');
-    expect(xml).toContain("<w:numPr>");
+  it.each(TEMPLATE_IDS)(
+    "%s: real headings and lists, no tables, same order as the HTML",
+    async (templateId) => {
+      const input = inputFor(fullCv, "en", templateId);
+      const xml = await documentXml(await buildCvDocx(input));
+      expect(xml).not.toContain("<w:tbl");
+      expect(xml).not.toContain("<w:txbxContent");
+      expect(xml).not.toContain("<w:cols ");
+      expect(xml).toContain('<w:pStyle w:val="Title"/>');
+      expect(xml).toContain('<w:pStyle w:val="Heading2"/>');
+      expect(xml).toContain('<w:pStyle w:val="Heading3"/>');
+      expect(xml).toContain("<w:numPr>");
 
-    const text = paragraphsOf(xml).join("\n");
-    let cursor = 0;
-    for (const section of renderCvHtml(input).outline) {
-      const found = text.indexOf(section.heading, cursor);
-      expect(found, `${section.heading} after ${cursor}`).toBeGreaterThanOrEqual(cursor);
-      cursor = found + section.heading.length;
-      for (const entry of section.entries) {
-        const at = text.indexOf(entry, cursor);
-        expect(at, `${section.key}: ${entry}`).toBeGreaterThanOrEqual(cursor);
-        cursor = at + entry.length;
+      const text = paragraphsOf(xml).join("\n");
+      let cursor = 0;
+      for (const section of renderCvHtml(input).outline) {
+        const found = text.indexOf(section.heading, cursor);
+        expect(found, `${section.heading} after ${cursor}`).toBeGreaterThanOrEqual(cursor);
+        cursor = found + section.heading.length;
+        for (const entry of section.entries) {
+          const at = text.indexOf(entry, cursor);
+          expect(at, `${section.key}: ${entry}`).toBeGreaterThanOrEqual(cursor);
+          cursor = at + entry.length;
+        }
       }
-    }
-  });
+    },
+  );
 
   it("uses the paper size and the CV language", async () => {
     const a4 = await documentXml(await buildCvDocx(inputFor(deCv, "de", "classic", "a4")));

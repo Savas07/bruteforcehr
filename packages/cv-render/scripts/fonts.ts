@@ -47,7 +47,7 @@ export async function renderFontsModule(): Promise<{ module: string; licences: M
     "// Fonts are licensed under the SIL Open Font License 1.1; see packages/cv-render/fonts/*/OFL.txt.",
     "",
     "export interface EmbeddedFontFace {",
-    "  readonly subset: \"latin\" | \"latin-ext\";",
+    '  readonly subset: "latin" | "latin-ext";',
     "  readonly unicodeRange: string;",
     "  readonly woff2Base64: string;",
     "}",

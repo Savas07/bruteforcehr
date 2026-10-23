@@ -20,7 +20,12 @@ await mkdir(out, { recursive: true });
 
 const webkitPrint = process.platform === "darwin" ? join(out, "webkit-print") : undefined;
 if (webkitPrint) {
-  execFileSync("swiftc", ["-O", fileURLToPath(new URL("webkit-print.swift", import.meta.url)), "-o", webkitPrint]);
+  execFileSync("swiftc", [
+    "-O",
+    fileURLToPath(new URL("webkit-print.swift", import.meta.url)),
+    "-o",
+    webkitPrint,
+  ]);
 }
 
 const browser = await launchChromium();
@@ -75,7 +80,9 @@ const cases = [
 
 async function rasterise(pdf: Uint8Array, name: string, paper: string): Promise<number> {
   // The viewer page defines `rasterise`; its result is PNG base64 strings, one per page.
-  const pages = (await viewer.evaluate(`rasterise(${JSON.stringify(Buffer.from(pdf).toString("base64"))}, 2)`)) as string[];
+  const pages = (await viewer.evaluate(
+    `rasterise(${JSON.stringify(Buffer.from(pdf).toString("base64"))}, 2)`,
+  )) as string[];
   for (const [index, png] of pages.entries()) {
     await writeFile(join(out, paper, `${name}-p${index + 1}.png`), Buffer.from(png, "base64"));
   }
@@ -102,9 +109,13 @@ for (const paper of PAPERS) {
 
       if (webkitPrint) {
         const webkitPdfPath = join(out, paper, `${name}-webkit.pdf`);
-        execFileSync(webkitPrint, [htmlPath, webkitPdfPath, String(result.page.widthPt), String(result.page.heightPt)], {
-          timeout: 60_000,
-        });
+        execFileSync(
+          webkitPrint,
+          [htmlPath, webkitPdfPath, String(result.page.widthPt), String(result.page.heightPt)],
+          {
+            timeout: 60_000,
+          },
+        );
         const webkitPdf = new Uint8Array(await readFile(webkitPdfPath));
         const webkitPages = await rasterise(webkitPdf, `${name}-webkit`, paper);
         const webkitText = (await extractPdfText(webkitPdf)).text;

@@ -114,13 +114,17 @@ struct RootView: View {
         #endif
         let uid = signIn.isSignedIn ? Auth.auth().currentUser?.uid : nil
         guard let uid else {
-            if live != nil { NotificationReminderScheduler.removeAll() }
+            if live != nil {
+                NotificationReminderScheduler.removeAll()
+                PushRegistrar.shared.signedOut()
+            }
             live = nil
             return
         }
         guard live?.uid != uid else { return }
         let session = LiveUserData(uid: uid)
         live = session
+        PushRegistrar.shared.signedIn(uid: uid)
         Task { await session.refreshNotifications() }
     }
 

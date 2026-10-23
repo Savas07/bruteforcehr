@@ -4,6 +4,9 @@ import SwiftUI
 
 @main
 struct BruteForceHRApp: App {
+    /// APNs registration callbacks for remote notifications (PushNotifications.swift).
+    @UIApplicationDelegateAdaptor(PushAppDelegate.self) private var appDelegate
+
     init() {
         // Reads the bundled GoogleService-Info.plist (project `bruteforcehr`). Configured before
         // the first view, so `RootView` sees the restored session (`Auth.auth().currentUser`) and
@@ -16,6 +19,7 @@ struct BruteForceHRApp: App {
         Firestore.firestore().settings = settings
         // Before launch finishes, so a reminder tap that launched the app is delivered.
         NotificationRouter.shared.install()
+        PushRegistrar.shared.install()
     }
 
     var body: some Scene {

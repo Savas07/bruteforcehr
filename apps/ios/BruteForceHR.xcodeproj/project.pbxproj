@@ -14,6 +14,7 @@
 		BF0000000000000000000049 /* BFHRDesignTokens in Frameworks */ = {isa = PBXBuildFile; productRef = BF000000000000000000004B /* BFHRDesignTokens */; };
 		BF0000000000000000000052 /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = BF0000000000000000000050 /* FirebaseStorage */; };
 		BF0000000000000000000053 /* FirebaseFunctions in Frameworks */ = {isa = PBXBuildFile; productRef = BF0000000000000000000051 /* FirebaseFunctions */; };
+		BF00000000000000000000C1 /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = BF00000000000000000000C0 /* FirebaseMessaging */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -69,6 +70,7 @@
 				BF0000000000000000000049 /* BFHRDesignTokens in Frameworks */,
 				BF0000000000000000000052 /* FirebaseStorage in Frameworks */,
 				BF0000000000000000000053 /* FirebaseFunctions in Frameworks */,
+				BF00000000000000000000C1 /* FirebaseMessaging in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -129,6 +131,7 @@
 				BF000000000000000000004B /* BFHRDesignTokens */,
 				BF0000000000000000000050 /* FirebaseStorage */,
 				BF0000000000000000000051 /* FirebaseFunctions */,
+				BF00000000000000000000C0 /* FirebaseMessaging */,
 			);
 			productName = BruteForceHR;
 			productReference = BF0000000000000000000004 /* BruteForceHR.app */;
@@ -624,6 +627,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = BF0000000000000000000040 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseFunctions;
+		};
+		BF00000000000000000000C0 /* FirebaseMessaging */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = BF0000000000000000000040 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseMessaging;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

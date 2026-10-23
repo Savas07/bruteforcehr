@@ -49,6 +49,9 @@ final class LiveUserData {
         store = FirestoreUserDataStore(uid: uid)
         jobs.usesSystemClock = true
         jobs.searchService = jobSearch
+        // Turning a saved search's alerts on is the first moment a push makes sense (D25); the
+        // system asks once, later calls just register.
+        jobs.onAlertsTurnedOn = { Task { await PushRegistrar.shared.requestPermission() } }
         connect()
         // Relative times ("Tomorrow, 09:00", "Overdue") and suggestions follow the clock; the
         // loop ends with the session (weak self).

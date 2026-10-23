@@ -1,4 +1,10 @@
-import { type AppConfig, DEFAULT_PROFILE_SETTINGS, type Device, type Profile } from "@bfhr/core";
+import {
+  type AppConfig,
+  DEFAULT_AI_ENABLED,
+  DEFAULT_PROFILE_SETTINGS,
+  type Device,
+  type Profile,
+} from "@bfhr/core";
 import { daysAgo } from "./time";
 
 /** Fixture user: Deniz Aksoy, mid-level frontend/product engineer in Istanbul. */
@@ -69,6 +75,7 @@ export const profile: Profile = {
   ],
   defaultCvId: "cv-en",
   onboardingCompletedAt: daysAgo(70),
+  aiEnabled: DEFAULT_AI_ENABLED,
   settings: {
     ...DEFAULT_PROFILE_SETTINGS,
     aiMailTextAllowed: true,

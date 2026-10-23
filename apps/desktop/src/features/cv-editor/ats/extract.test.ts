@@ -39,6 +39,19 @@ describe("extractPdfText", () => {
     await expect(extractPdfText(bytes)).resolves.toMatchObject({ pages: expect.any(Array) });
   });
 
+  it("works without async iteration of ReadableStream (WKWebView on macOS)", async () => {
+    const prototype = ReadableStream.prototype;
+    const iterator = Object.getOwnPropertyDescriptor(prototype, Symbol.asyncIterator);
+    if (!iterator) throw new Error("this runtime has no ReadableStream async iteration to remove");
+    Reflect.deleteProperty(prototype, Symbol.asyncIterator);
+    try {
+      const { text } = await extractPdfText(fixture("classic"));
+      expect(text).toMatch(/^Ayşe Yılmaz$/m);
+    } finally {
+      Object.defineProperty(prototype, Symbol.asyncIterator, iterator);
+    }
+  });
+
   it("rejects bytes that aren't a PDF", async () => {
     await expect(extractPdfText(new TextEncoder().encode("not a pdf"))).rejects.toThrow();
   });

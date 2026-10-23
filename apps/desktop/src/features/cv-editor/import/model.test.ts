@@ -372,9 +372,18 @@ describe("import errors", () => {
     );
     expect(classifyImportError(error("functions/unauthenticated"), online)).toBe("signedOut");
     expect(classifyImportError(error("functions/invalid-argument"), online)).toBe("invalidFile");
+    expect(classifyImportError(error("functions/invalid-argument", "file_too_large"), online)).toBe(
+      "uploadRejected",
+    );
     expect(classifyImportError(error("functions/not-found"), online)).toBe("fileMissing");
     expect(classifyImportError(error("functions/deadline-exceeded"), online)).toBe("timeout");
     expect(classifyImportError(error("functions/unavailable"), online)).toBe("offline");
+    expect(classifyImportError(error("functions/unavailable", "ai_unavailable"), online)).toBe(
+      "serverFailed",
+    );
+    expect(classifyImportError(error("functions/internal", "ai_invalid_output"), online)).toBe(
+      "serverFailed",
+    );
     expect(classifyImportError(error("functions/internal"), online)).toBe("serverFailed");
     expect(classifyImportError(new Error("boom"), online)).toBe("serverFailed");
   });

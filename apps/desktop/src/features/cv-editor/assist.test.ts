@@ -63,6 +63,14 @@ describe("requestCvAssist", () => {
     ],
     ["no model", { suggestions: [], promptVersion: "p" }],
     ["no prompt version", { suggestions: [], model: "m" }],
+    [
+      "more than three suggestions",
+      {
+        suggestions: Array.from({ length: 4 }, () => ({ text: "a", placeholders: [] })),
+        model: "m",
+        promptVersion: "p",
+      },
+    ],
     ["nothing", null],
   ])("rejects an answer with %s", async (_, data) => {
     call.mockResolvedValue({ data });

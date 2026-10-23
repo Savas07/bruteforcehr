@@ -5,6 +5,7 @@
  * the résumé, and the `meta` defaults of the new CV. No React, no Firebase.
  */
 import {
+  AI_ERROR_REASONS,
   CV_STANDARD_SECTIONS,
   CvContentSchema,
   IdSchema,
@@ -795,7 +796,7 @@ export function buildImportedCv(input: {
 
 /**
  * What went wrong, in the user's terms. `canceled` is the user's own Cancel (no message).
- * Function errors follow the callable's `HttpsError` code + `details.reason`.
+ * Function errors follow the callable's `HttpsError` code + `details.reason` (`AI_ERROR_REASONS`).
  */
 export type ImportErrorKind =
   | "canceled"
@@ -852,7 +853,7 @@ export function classifyImportError(
   if (!online) return "offline";
   const details = errorField(error, "details");
   const rawReason = errorField(details, "reason");
-  const reason = typeof rawReason === "string" ? rawReason : "";
+  const reason = AI_ERROR_REASONS.find((known) => known === rawReason);
   switch (code) {
     case "storage/unauthenticated":
     case "functions/unauthenticated":
@@ -873,11 +874,13 @@ export function classifyImportError(
       if (reason === "no_text") return "noText";
       return "unreadableFile";
     case "functions/invalid-argument":
-      return "invalidFile";
+      // `uploadRejected`'s copy names the size limit.
+      return reason === "file_too_large" ? "uploadRejected" : "invalidFile";
     case "functions/not-found":
       return "fileMissing";
     case "functions/unavailable":
-      return "offline";
+      // `ai_unavailable`: the AI provider failed after retries; the connection is fine.
+      return reason === "ai_unavailable" ? "serverFailed" : "offline";
     case "functions/deadline-exceeded":
       return "timeout";
     default:

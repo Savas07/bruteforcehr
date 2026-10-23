@@ -1,6 +1,6 @@
 {
   "name": "@bfhr/ai",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "private": true,
   "description": "Server-side AI for BruteForceHR: Claude provider, versioned prompts, grounding checker, CV import and CV assists (docs/adr/0010-ai.md).",
   "type": "module",

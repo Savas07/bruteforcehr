@@ -1,6 +1,6 @@
 {
   "name": "@bfhr/fixtures",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "private": true,
   "description": "Dev/test-only realistic data typed by @bfhr/core. Never import from production code.",
   "type": "module",

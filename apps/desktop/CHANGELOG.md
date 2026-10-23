@@ -1,5 +1,22 @@
 # @bfhr/desktop
 
+## 0.2.0
+
+### Minor Changes
+
+- 981fa3a: CV Studio works on your real CVs: create one (empty or from your profile), import a PDF, Word file, JSON Resume or LinkedIn export and review what was read, edit with a live preview that is exactly the exported PDF, pick a template, accent and fonts, and export PDF (made on this computer), Word or JSON with a `First-Last-CV-Company.pdf` name. Each editing session saves one version; version history compares and restores, and edits made on another device at the same time ask which version to keep. The ATS check reads your exported PDF back and compares it with a pasted job description, and "Improve with AI" suggests rewrites you accept one by one (placeholders like [X%] must be filled first).
+- d9dc095: Sign in with your email, no password: enter your address, then open the link we email you on this computer. It takes you back to the app and signs you in. If you asked for the link on another device, the app asks for your address once. Expired, used or broken links get a clear message and a way to send a new one. Gmail, Outlook and other webmail addresses get an "Open …" button. "Sign Out" is in the app menu (macOS) or File (Windows) and in the command palette.
+
+### Patch Changes
+
+- Updated dependencies [f679cc3]
+- Updated dependencies [6eb122d]
+- Updated dependencies [54a2f4b]
+  - @bfhr/core@0.2.0
+  - @bfhr/api@0.2.0
+  - @bfhr/cv-render@0.2.0
+  - @bfhr/ui-tokens@0.2.0
+
 ## 0.1.1
 
 ### Patch Changes

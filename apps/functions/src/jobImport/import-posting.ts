@@ -116,8 +116,9 @@ export async function importPosting(
   input: string,
   dependencies: ImportDependencies,
 ): Promise<ImportedPosting> {
-  const requested = importUrlFrom(input);
-  if (requested === null) throw new JobImportError("invalid_url", "That doesn't look like a web address.");
+  const parsed = importUrlFrom(input);
+  if (parsed === null) throw new JobImportError("invalid_url", "That doesn't look like a web address.");
+  const requested = new URL(parsed.href);
   const checkAllowed = (url: URL): void => {
     const host = url.hostname.toLowerCase();
     if (hostMatches(host, dependencies.config.deniedHosts)) {
@@ -133,7 +134,7 @@ export async function importPosting(
   const robotsPromise = dependencies.robots(requested).catch((): JobImportRobots => "unavailable");
   const page = await fetchOrFail(dependencies, requested, { accept: HTML_ACCEPT });
   // Redirects (short links, locale hops) can land on another site: check and canonicalize again.
-  const landed = importUrlFrom(page.url) ?? new URL(page.url);
+  const landed = new URL(importUrlFrom(page.url)?.href ?? page.url);
   if (landed.hostname !== requested.hostname) checkAllowed(landed);
 
   const contentType = String(page.headers["content-type"] ?? "").toLowerCase();

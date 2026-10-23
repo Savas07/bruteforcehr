@@ -20,6 +20,7 @@ import {
   normalizePointer,
   normalizeResumeDate,
   parseCvImportResponse,
+  parseImportWarning,
   pointerOf,
   reviewFieldProblem,
 } from "./model";
@@ -111,7 +112,7 @@ describe("cvImport response", () => {
   const valid = {
     resume,
     confidence: { "/work/0/startDate": 0.4 },
-    warnings: ["Page 3 was an image, so it was skipped."],
+    warnings: ["date_month_dropped:/work/0/startDate"],
     model: "claude-sonnet",
     promptVersion: "cv-import@3",
   };
@@ -131,6 +132,72 @@ describe("cvImport response", () => {
     expect(parseCvImportResponse({ ...valid, confidence: { "/basics": 2 } })).toBeNull();
     expect(parseCvImportResponse({ ...valid, resume: { work: [{ startDate: "March 2021" }] } })).toBeNull();
     expect(parseCvImportResponse({ ...valid, warnings: undefined })).toBeNull();
+  });
+});
+
+describe("import warnings", () => {
+  it("places pointer warnings by section, entry and field", () => {
+    expect(parseImportWarning("dropped_ungrounded:/work/1/position")).toEqual({
+      code: "dropped_ungrounded",
+      place: { section: "work", index: 1, field: "position" },
+      detail: null,
+    });
+    expect(parseImportWarning("dropped_invalid:/work/0/name").place).toEqual({
+      section: "work",
+      index: 0,
+      field: "organization",
+    });
+    expect(parseImportWarning("dropped_invalid:/work/0/highlights/3").place?.field).toBe("highlights");
+    expect(parseImportWarning("dropped_invalid_date:/education/2").place).toEqual({
+      section: "education",
+      index: 2,
+      field: null,
+    });
+    expect(parseImportWarning("date_month_dropped:/volunteer").place).toEqual({
+      section: "volunteer",
+      index: null,
+      field: null,
+    });
+  });
+
+  it("places header, summary and profile pointers", () => {
+    expect(parseImportWarning("dropped_ungrounded:/basics/location/city").place).toEqual({
+      section: "basics",
+      index: null,
+      field: "city",
+    });
+    expect(parseImportWarning("dropped_ungrounded:/basics/label").place?.field).toBe("headline");
+    expect(parseImportWarning("dropped_ungrounded:/basics/summary").place).toEqual({
+      section: "summary",
+      index: null,
+      field: "summary",
+    });
+    expect(parseImportWarning("dropped_ungrounded:/basics/profiles/0/url").place).toEqual({
+      section: "profiles",
+      index: 0,
+      field: "url",
+    });
+  });
+
+  it("has no place for pointers outside the review", () => {
+    expect(parseImportWarning("dropped_invalid:/meta/template").place).toBeNull();
+    expect(parseImportWarning("dropped_invalid:").place).toBeNull();
+    expect(parseImportWarning("dropped_invalid:/work/0/unknownField").place?.field).toBeNull();
+  });
+
+  it("keeps details of non-pointer codes, and marks unknown codes", () => {
+    expect(parseImportWarning("unmapped_section:Hobbies & Interests: misc")).toEqual({
+      code: "unmapped_section",
+      place: null,
+      detail: "Hobbies & Interests: misc",
+    });
+    expect(parseImportWarning("linkedin_missing:Positions.csv").detail).toBe("Positions.csv");
+    expect(parseImportWarning("source_truncated")).toEqual({
+      code: "source_truncated",
+      place: null,
+      detail: null,
+    });
+    expect(parseImportWarning("something_new:/work/0").code).toBeNull();
   });
 });
 

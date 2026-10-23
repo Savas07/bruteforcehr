@@ -6,11 +6,13 @@
  */
 import {
   AI_ERROR_REASONS,
+  CV_IMPORT_WARNING_CODES,
   CV_STANDARD_SECTIONS,
   CvContentSchema,
   IdSchema,
   ResumeDateSchema,
   type CvContent,
+  type CvImportWarningCode,
   type CvImportKind,
   type CvMeta,
   type CvStandardSection,
@@ -560,6 +562,81 @@ export function buildReviewModel(
     filledCount: fields.filter((field) => field.value.trim() !== "").length,
     flagged: fields.filter((field) => field.flagged),
   };
+}
+
+/* ------------------------------------------------------------------------------------------------
+ * Import warnings
+ * ---------------------------------------------------------------------------------------------- */
+
+/** What a pointer-carrying warning points at, as far as the pointer goes. */
+export interface ImportWarningPlace {
+  readonly section: ReviewSectionKey;
+  /** Entry in a list section (0-based); null for the header and summary, or a section-wide pointer. */
+  readonly index: number | null;
+  /** Null when the pointer stops at the entry or names a field the review doesn't show. */
+  readonly field: ReviewFieldKey | null;
+}
+
+/** One `cvImport` warning (`<code>` or `<code>:<detail>`), split for the view to put into words. */
+export interface ImportWarning {
+  /** Null for a code this build doesn't know yet. */
+  readonly code: CvImportWarningCode | null;
+  /** For the dropped-value codes: where the value would have gone; null when the pointer is unknown. */
+  readonly place: ImportWarningPlace | null;
+  /** The section heading (`unmapped_section`) or file name (`linkedin_missing`). */
+  readonly detail: string | null;
+}
+
+/** Codes whose detail is a JSON Pointer into the résumé. */
+const POINTER_WARNING_CODES: Readonly<Partial<Record<CvImportWarningCode, true>>> = {
+  dropped_ungrounded: true,
+  date_month_dropped: true,
+  dropped_invalid_date: true,
+  dropped_invalid: true,
+};
+
+/** The review field whose path starts `path` (`["location", "city"]` → `city`). */
+function fieldAt(specs: readonly FieldSpec[], path: readonly string[]): ReviewFieldKey | null {
+  return (
+    specs.find((spec) => spec.path.every((segment, position) => path[position] === segment))?.key ?? null
+  );
+}
+
+function listPlace(
+  section: ReviewSectionKey,
+  spec: ListSectionSpec,
+  [rawIndex, ...rest]: readonly string[],
+): ImportWarningPlace {
+  const index = rawIndex !== undefined && /^\d+$/u.test(rawIndex) ? Number(rawIndex) : null;
+  return { section, index, field: index === null ? null : fieldAt(spec.fields, rest) };
+}
+
+/** `/work/0/position` → Experience, entry 0, Role; null for pointers outside the review's sections. */
+function warningPlace(pointer: string): ImportWarningPlace | null {
+  const normalized = normalizePointer(pointer);
+  if (normalized === "") return null;
+  const [head, ...rest] = normalized
+    .slice(1)
+    .split("/")
+    .map((segment) => segment.replaceAll("~1", "/").replaceAll("~0", "~"));
+  if (head === "basics") {
+    const [key, ...tail] = rest;
+    if (key === "summary") return { section: "summary", index: null, field: "summary" };
+    if (key === "profiles") return listPlace("profiles", PROFILE_SECTION, tail);
+    return { section: "basics", index: null, field: fieldAt(HEADER_FIELDS, rest) };
+  }
+  const section = CV_STANDARD_SECTIONS.find((candidate) => candidate === head && candidate !== "basics");
+  return section && section !== "basics" ? listPlace(section, LIST_SECTIONS[section], rest) : null;
+}
+
+export function parseImportWarning(warning: string): ImportWarning {
+  const separator = warning.indexOf(":");
+  const rawCode = (separator === -1 ? warning : warning.slice(0, separator)).trim();
+  const detail = separator === -1 ? "" : warning.slice(separator + 1).trim();
+  const code = CV_IMPORT_WARNING_CODES.find((known) => known === rawCode) ?? null;
+  if (code !== null && POINTER_WARNING_CODES[code])
+    return { code, place: warningPlace(detail), detail: null };
+  return { code, place: null, detail: detail === "" ? null : detail };
 }
 
 /* ------------------------------------------------------------------------------------------------

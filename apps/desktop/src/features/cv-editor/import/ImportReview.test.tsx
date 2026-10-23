@@ -45,7 +45,14 @@ function render(onCreate: (result: ImportReviewResult) => Promise<void>) {
         <Tooltip.Provider>
           <ImportReview
             review={review}
-            warnings={["Page 2 was an image, so it was skipped."]}
+            warnings={[
+              "dropped_ungrounded:/work/0/highlights/1",
+              "dropped_ungrounded:/work/0/highlights/2",
+              "date_month_dropped:/work/0/endDate",
+              "unmapped_section:Hobbies",
+              "source_truncated",
+              "brand_new_code:/x",
+            ]}
             fileName="Deniz_Aksoy_CV.pdf"
             kind="pdf"
             aiAssisted
@@ -85,7 +92,14 @@ describe("ImportReview", () => {
     render(async () => {});
     expect(container.textContent).toContain("We read 6 fields. 2 need a quick look.");
     expect(container.textContent).toContain("2 fields left to check");
-    expect(container.textContent).toContain("Page 2 was an image, so it was skipped.");
+    const notes = [...container.querySelectorAll("ul.list-disc li")].map((item) => item.textContent);
+    expect(notes).toEqual([
+      "Experience · Engineer · Acme · Bullets: we left out a value we couldn't find in your file.",
+      "Experience · Engineer · Acme · End: your file gives only the year here, so we kept just the year.",
+      "We didn't know where “Hobbies” belongs, so it isn't in the CV. Add it by hand if you need it.",
+      "Your file was longer than we can read at once, so its end wasn't imported. Check that your last sections are complete.",
+      "We noticed something unusual while reading your file. Give the fields below a quick look.",
+    ]);
     expect(container.textContent).toContain("Kept attached to this CV");
     expect(container.querySelectorAll("[id$='-tag']")).toHaveLength(2);
 

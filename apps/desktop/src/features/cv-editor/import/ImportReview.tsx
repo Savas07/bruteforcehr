@@ -19,10 +19,12 @@ import { ConfidenceTag, type ConfidenceState } from "../../../shared/ui/Confiden
 import { InlineAlert } from "../../../shared/ui/InlineAlert";
 import { CV_LANGUAGES, type CvLanguage } from "@bfhr/cv-render";
 import {
+  parseImportWarning,
   reviewFieldProblem,
   type ReviewField,
   type ReviewFieldKey,
   type ReviewFieldProblem,
+  type ReviewItem,
   type ReviewModel,
   type ReviewSectionKey,
 } from "./model";
@@ -277,6 +279,69 @@ const PROBLEM_MESSAGES: Readonly<Record<ReviewFieldProblem, MessageDescriptor>> 
   tooMany: messages.tooMany,
 };
 
+/** The importer's notes (`CV_IMPORT_WARNING_CODES`) in words; `{place}` is "Experience · Engineer · Acme · Role". */
+const WARNING_MESSAGES = defineMessages({
+  droppedUngrounded: {
+    id: "cv-editor.import.warning.droppedUngrounded",
+    defaultMessage: "{place}: we left out a value we couldn't find in your file.",
+    description: "Import note: a value the model returned wasn't in the source, so it was removed",
+  },
+  dateMonthDropped: {
+    id: "cv-editor.import.warning.dateMonthDropped",
+    defaultMessage: "{place}: your file gives only the year here, so we kept just the year.",
+    description: "Import note: a date's month wasn't in the source",
+  },
+  droppedInvalidDate: {
+    id: "cv-editor.import.warning.droppedInvalidDate",
+    defaultMessage: "{place}: we couldn't read this date, so it's empty for now.",
+    description: "Import note: a date wasn't valid and was removed",
+  },
+  droppedInvalid: {
+    id: "cv-editor.import.warning.droppedInvalid",
+    defaultMessage: "{place}: a value didn't fit this field, so we left it out.",
+    description: "Import note: a value was the wrong type or too long and was removed",
+  },
+  placeUnknown: {
+    id: "cv-editor.import.warning.placeUnknown",
+    defaultMessage: "One field",
+    description: "{place} of an import note whose field we can't name",
+  },
+  sourceTruncated: {
+    id: "cv-editor.import.warning.sourceTruncated",
+    defaultMessage:
+      "Your file was longer than we can read at once, so its end wasn't imported. Check that your last sections are complete.",
+    description: "Import note: the source was cut at the import limit",
+  },
+  unmappedSection: {
+    id: "cv-editor.import.warning.unmappedSection",
+    defaultMessage:
+      "We didn't know where “{heading}” belongs, so it isn't in the CV. Add it by hand if you need it.",
+    description: "Import note: a section of the file had no place in the CV; {heading} is its heading",
+  },
+  unmappedSectionUnnamed: {
+    id: "cv-editor.import.warning.unmappedSectionUnnamed",
+    defaultMessage:
+      "One part of your file didn't fit a CV section, so it isn't in the CV. Add it by hand if you need it.",
+    description: "Import note: a section of the file had no place in the CV, heading unknown",
+  },
+  linkedinMissing: {
+    id: "cv-editor.import.warning.linkedinMissing",
+    defaultMessage: "Your LinkedIn export had no {file}, so that part is empty.",
+    description: "Import note: a CSV file was missing from the LinkedIn export; {file} is e.g. Positions.csv",
+  },
+  linkedinMissingUnnamed: {
+    id: "cv-editor.import.warning.linkedinMissingUnnamed",
+    defaultMessage: "Part of your LinkedIn export was missing, so some sections may be empty.",
+    description: "Import note: a file was missing from the LinkedIn export, name unknown",
+  },
+  unknown: {
+    id: "cv-editor.import.warning.unknown",
+    defaultMessage:
+      "We noticed something unusual while reading your file. Give the fields below a quick look.",
+    description: "Import note with a code this version doesn't know",
+  },
+});
+
 const inputClass =
   "border-line-control bg-surface-base text-callout w-full rounded-md border px-2 aria-invalid:border-danger-solid";
 const labelClass = "text-fg-secondary text-footnote font-semibold";
@@ -391,6 +456,64 @@ export function ImportReview({
   const sectionRemaining = (items: ReviewModel["sections"][number]["items"]) =>
     items.reduce((sum, item) => sum + item.fields.filter((field) => stateOf(field) === "flagged").length, 0);
 
+  /** "Engineer · Acme" from the item's current values, or "Entry 2" while they're empty. */
+  const itemHeading = (item: ReviewItem, index: number) =>
+    item.headingPointers
+      .map((pointer) => values[pointer]?.trim() ?? "")
+      .filter((part) => part !== "")
+      .join(" · ") || intl.formatMessage(messages.entry, { number: index + 1 });
+
+  const warningText = (warning: string): string => {
+    const { code, place, detail } = parseImportWarning(warning);
+    const where = () => {
+      if (place === null) return intl.formatMessage(WARNING_MESSAGES.placeUnknown);
+      const item =
+        place.index === null
+          ? undefined
+          : review.sections
+              .find((section) => section.key === place.section)
+              ?.items.find((candidate) => candidate.index === place.index);
+      return [
+        intl.formatMessage(SECTION_TITLES[place.section]),
+        place.index === null
+          ? null
+          : item
+            ? itemHeading(item, place.index)
+            : intl.formatMessage(messages.entry, { number: place.index + 1 }),
+        // The summary's only field is the summary itself.
+        place.field === null || place.section === "summary"
+          ? null
+          : intl.formatMessage(FIELD_LABELS[place.field]),
+      ]
+        .filter((part) => part !== null)
+        .join(" · ");
+    };
+    switch (code) {
+      case "dropped_ungrounded":
+        return intl.formatMessage(WARNING_MESSAGES.droppedUngrounded, { place: where() });
+      case "date_month_dropped":
+        return intl.formatMessage(WARNING_MESSAGES.dateMonthDropped, { place: where() });
+      case "dropped_invalid_date":
+        return intl.formatMessage(WARNING_MESSAGES.droppedInvalidDate, { place: where() });
+      case "dropped_invalid":
+        return intl.formatMessage(WARNING_MESSAGES.droppedInvalid, { place: where() });
+      case "source_truncated":
+        return intl.formatMessage(WARNING_MESSAGES.sourceTruncated);
+      case "unmapped_section":
+        return detail === null
+          ? intl.formatMessage(WARNING_MESSAGES.unmappedSectionUnnamed)
+          : intl.formatMessage(WARNING_MESSAGES.unmappedSection, { heading: detail });
+      case "linkedin_missing":
+        return detail === null
+          ? intl.formatMessage(WARNING_MESSAGES.linkedinMissingUnnamed)
+          : intl.formatMessage(WARNING_MESSAGES.linkedinMissing, { file: detail });
+      case null:
+        return intl.formatMessage(WARNING_MESSAGES.unknown);
+    }
+  };
+  // Several dropped values in one field read as one note.
+  const notes = [...new Set(warnings.map(warningText))];
+
   const visibleSections = review.sections
     .map((section) => ({
       section,
@@ -471,11 +594,11 @@ export function ImportReview({
             {aiAssisted && <AiDisclosureLine text={intl.formatMessage(messages.aiDisclosure)} />}
           </div>
 
-          {warnings.length > 0 && (
+          {notes.length > 0 && (
             <InlineAlert tone="info" title={intl.formatMessage(messages.warningsTitle)}>
               <ul className="list-disc pl-4">
-                {warnings.map((warning, index) => (
-                  <li key={index}>{warning}</li>
+                {notes.map((note) => (
+                  <li key={note}>{note}</li>
                 ))}
               </ul>
             </InlineAlert>
@@ -580,18 +703,13 @@ export function ImportReview({
                     </div>
                   );
                   if (item.index === null) return <div key={item.pointer}>{fieldsGrid}</div>;
-                  const heading = item.headingPointers
-                    .map((pointer) => values[pointer]?.trim() ?? "")
-                    .filter((part) => part !== "")
-                    .join(" · ");
+                  const heading = itemHeading(item, item.index);
                   return (
                     <fieldset
                       key={item.pointer}
                       className="border-line-subtle flex min-w-0 flex-col gap-3 rounded-md border px-3 pt-1 pb-3"
                     >
-                      <legend className="text-callout px-1 font-semibold">
-                        {heading || intl.formatMessage(messages.entry, { number: item.index + 1 })}
-                      </legend>
+                      <legend className="text-callout px-1 font-semibold">{heading}</legend>
                       {fieldsGrid}
                     </fieldset>
                   );

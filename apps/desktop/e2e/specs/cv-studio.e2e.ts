@@ -196,6 +196,23 @@ describe("CV Studio", () => {
     await $("legend=Template").waitForDisplayed();
     await capture("template-gallery");
     await $('[role="tab"]=Check').click();
+    // The app's console warnings and errors (worker fallback, failure causes) for the test output.
+    await browser.execute(() => {
+      const log: string[] = [];
+      for (const level of ["warn", "error"] as const) {
+        const original = console[level].bind(console);
+        console[level] = (...args: unknown[]) => {
+          const parts = args.map((arg) =>
+            arg instanceof Error ? `${arg.name}: ${arg.message}` : String(arg),
+          );
+          log.push(`${level}: ${parts.join(" ")}`);
+          document.documentElement.dataset["e2eConsole"] = log.join("\n");
+          original(...args);
+        };
+      }
+    });
+    const appConsole = () =>
+      browser.execute(() => document.documentElement.dataset["e2eConsole"] ?? "(none)");
     await $("button=Run check").click();
     // The outcome: the readback summary, or one of the panel's failure titles.
     const outcome =
@@ -207,10 +224,14 @@ describe("CV Studio", () => {
     await browser
       .waitUntil(async () => outcome.test(await inspectorText()), { timeout: 60_000 })
       .catch(async () => {
-        throw new Error(`the ATS check showed no outcome; inspector: ${await inspectorText()}`);
+        throw new Error(
+          `the ATS check showed no outcome; inspector: ${await inspectorText()}; console: ${await appConsole()}`,
+        );
       });
     const text = await inspectorText();
-    if (!/read back from the PDF/u.test(text)) throw new Error(`the ATS check failed; inspector: ${text}`);
+    console.log(`ATS check console: ${await appConsole()}`);
+    if (!/read back from the PDF/u.test(text))
+      throw new Error(`the ATS check failed; inspector: ${text}; console: ${await appConsole()}`);
     // This CV has a header and a summary only (created from scratch, nothing else filled in).
     expect(text).toContain("Name and contact details · Read back");
     expect(text).toContain("Summary · Read back");

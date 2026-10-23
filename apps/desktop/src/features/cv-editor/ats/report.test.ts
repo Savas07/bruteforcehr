@@ -150,6 +150,29 @@ describe("atsReport", () => {
     ]);
   });
 
+  it("shows upper-cased printed headings as written, and finds them", () => {
+    const outline = [
+      { key: "summary", heading: "SUMMARY", entries: [] },
+      { key: "custom:talks", heading: "TALKS", entries: ["Zero-downtime deploys at scale"] },
+    ];
+    const report = atsReport({ text: cleanText, content: sampleCv, language: "en", outline });
+    expect(report.sections.map((section) => [section.key, section.title, section.status])).toEqual([
+      ["basics", null, "ok"],
+      ["summary", "Summary", "ok"],
+      ["custom:talks", "Talks", "ok"],
+    ]);
+    const tr = atsReport({
+      text: "DENEYİM\nSenior Backend Engineer",
+      content: sampleCv,
+      language: "tr",
+      outline: [{ key: "work", heading: "DENEYİM", entries: ["Senior Backend Engineer"] }],
+    });
+    expect(tr.sections.find((section) => section.key === "work")).toMatchObject({
+      title: "Deneyim",
+      headingFound: true,
+    });
+  });
+
   it("checks exactly what the renderer printed when given its outline", () => {
     const content: CvContent = { ...sampleCv, meta: { ...sampleCv.meta, sectionOrder: ["basics", "work"] } };
     const outline = [

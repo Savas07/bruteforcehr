@@ -164,8 +164,10 @@ function contentFacts(content: CvContent, key: string, language: CvLanguage): Fa
 
 interface SectionPlan {
   readonly key: string;
-  /** The printed heading; `null` for the header. */
+  /** The heading in sentence case for the panel; `null` for the header. */
   readonly title: string | null;
+  /** The heading as printed (templates may upper-case it), looked for as a line of the PDF text. */
+  readonly printedHeading: string | null;
   readonly facts: readonly Fact[];
 }
 
@@ -186,16 +188,17 @@ function standardHeading(content: CvContent, key: string, language: CvLanguage):
 function plan(content: CvContent, language: CvLanguage, outline?: readonly OutlineSection[]): SectionPlan[] {
   const order = [...new Set(content.meta.sectionOrder)];
   const header = order.includes("basics") ? headerFacts(content) : [];
-  const plans: SectionPlan[] = header.length > 0 ? [{ key: "basics", title: null, facts: header }] : [];
+  const plans: SectionPlan[] =
+    header.length > 0 ? [{ key: "basics", title: null, printedHeading: null, facts: header }] : [];
 
-  const sections: { key: string; title: string | null; printed: readonly string[] }[] = outline
-    ? outline.map((section) => ({ key: section.key, title: section.heading, printed: section.entries }))
+  const sections: { key: string; heading: string | null; printed: readonly string[] }[] = outline
+    ? outline.map((section) => ({ key: section.key, heading: section.heading, printed: section.entries }))
     : order
         .flatMap((key) => (key === "basics" ? ["summary"] : [key]))
-        .map((key) => ({ key, title: standardHeading(content, key, language), printed: [] }));
+        .map((key) => ({ key, heading: standardHeading(content, key, language), printed: [] }));
 
-  for (const { key, title, printed } of sections) {
-    if (title === null) continue;
+  for (const { key, heading, printed } of sections) {
+    if (heading === null) continue;
     const seen = new Set<string>();
     const facts = [
       ...printed.flatMap((entry) => text(entry)),
@@ -207,7 +210,11 @@ function plan(content: CvContent, language: CvLanguage, outline?: readonly Outli
       return true;
     });
     // A section the renderer printed is checked even when it has no facts (its heading still counts).
-    if (facts.length > 0 || outline) plans.push({ key, title, facts });
+    if (facts.length === 0 && !outline) continue;
+    // Templates may print headings upper-cased ("EXPERIENCE"); the panel shows them as written.
+    const written = standardHeading(content, key, language);
+    const title = written !== null && foldText(written) === foldText(heading) ? written : heading;
+    plans.push({ key, title, printedHeading: heading, facts });
   }
   return plans;
 }
@@ -243,7 +250,7 @@ export function atsReport({
   let found = 0;
   let total = 0;
   const sections = plan(content, language, outline).map((section): AtsSection => {
-    const headingFound = section.title === null ? null : index.hasLine(section.title);
+    const headingFound = section.printedHeading === null ? null : index.hasLine(section.printedHeading);
     const missing = section.facts.filter((fact) => !fact.found(index)).map((fact) => fact.label);
     const factsFound = section.facts.length - missing.length;
     const checks = section.facts.length + (headingFound === null ? 0 : 1);

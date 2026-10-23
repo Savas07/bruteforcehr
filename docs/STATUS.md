@@ -121,15 +121,17 @@ Synthesis (M0): [IA](design/IA.md) · [flows](design/flows.md) · [decisions](de
 
 Sections (hero, features, how it works, download CTA, FAQ, changelog, footer, legal page) are critiqued as part of the page that contains them.
 
-| Screen         | Platform | References                            | Critique rounds | A11y | Status      |
-| -------------- | -------- | ------------------------------------- | --------------- | ---- | ----------- |
-| Home           | Web      | [website](design/research/website.md) | 0               | —    | researching |
-| Features       | Web      | [website](design/research/website.md) | 0               | —    | researching |
-| Download       | Web      | [website](design/research/website.md) | 0               | —    | researching |
-| Changelog      | Web      | [website](design/research/website.md) | 0               | —    | researching |
-| Privacy Policy | Web      | [website](design/research/website.md) | 3               | pass | approved    |
-| Terms          | Web      | [website](design/research/website.md) | 3               | pass | approved    |
-| Support        | Web      | [website](design/research/website.md) | 2               | pass | approved    |
+| Screen         | Platform | References                            | Critique rounds | A11y | Status                                                                                                                                                           |
+| -------------- | -------- | ------------------------------------- | --------------- | ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Home           | Web      | [website](design/research/website.md) | 2               | pass | refinement — critique exit criteria met; live at https://bruteforcehr.web.app/; awaiting owner review                                                            |
+| Features       | Web      | [website](design/research/website.md) | 0               | —    | researching                                                                                                                                                      |
+| Download       | Web      | [website](design/research/website.md) | 2               | pass | refinement — critique exit criteria met; live at https://bruteforcehr.web.app/download/ ("No release yet" until the first GitHub Release); awaiting owner review |
+| Changelog      | Web      | [website](design/research/website.md) | 2               | pass | refinement — critique exit criteria met; live at https://bruteforcehr.web.app/changelog/ (empty until the first GitHub Release); awaiting owner review           |
+| Privacy Policy | Web      | [website](design/research/website.md) | 3               | pass | approved                                                                                                                                                         |
+| Terms          | Web      | [website](design/research/website.md) | 3               | pass | approved                                                                                                                                                         |
+| Support        | Web      | [website](design/research/website.md) | 2               | pass | approved                                                                                                                                                         |
+
+Home, Download and Changelog read GitHub Releases of `Savas07/bruteforcehr` at build time, so the site is rebuilt and redeployed by the release workflow's `website` job. Lighthouse 13.5.0 (mobile and desktop, all three pages): 100 / 100 / 100 / 100 (Performance / Accessibility / Best Practices / SEO), both locally with releases stubbed and on the deployed site.
 
 ## App icon and wordmark
 

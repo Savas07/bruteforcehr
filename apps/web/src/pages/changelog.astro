@@ -75,8 +75,8 @@ const releases = await getReleases();
                   ) : (
                     <div class="release-notes" set:html={release.notesHtml} />
                   )}
-                  <p class="mt-6 text-subheadline">
-                    <a class="prose-link" href={release.htmlUrl}>
+                  <p class="mt-4 text-subheadline">
+                    <a class="prose-link inline-flex min-h-11 items-center" href={release.htmlUrl}>
                       Version {release.version} on GitHub
                     </a>
                   </p>

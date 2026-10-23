@@ -87,6 +87,17 @@ function parseHtml(html: string): { css: string; body: string; lang: string } {
   return { css, body: parsed.body.innerHTML, lang: parsed.documentElement.lang };
 }
 
+/** Puts cv-render `html` into `host`'s shadow root (styles adopted, `body` rules on the wrapper). */
+function mountCv(host: HTMLElement, html: string): { root: ShadowRoot; css: string } {
+  const root = host.shadowRoot ?? host.attachShadow({ mode: "open" });
+  const { css, body, lang } = parseHtml(html);
+  const sheet = new CSSStyleSheet();
+  sheet.replaceSync(shadowCss(css));
+  root.adoptedStyleSheets = [sheet];
+  root.innerHTML = `<div class="cv-root" lang="${lang}">${body}</div>`;
+  return { root, css };
+}
+
 /**
  * Renders cv-render `html` into `hostRef`'s shadow root; reports the sheet's height (CSS px,
  * unscaled) and, with `onLocate`, clicks on rendered text as JSON pointers.
@@ -104,12 +115,7 @@ export function useCvShadow(
   useLayoutEffect(() => {
     const host = hostRef.current;
     if (!host) return;
-    const root = host.shadowRoot ?? host.attachShadow({ mode: "open" });
-    const { css, body, lang } = parseHtml(html);
-    const sheet = new CSSStyleSheet();
-    sheet.replaceSync(shadowCss(css));
-    root.adoptedStyleSheets = [sheet];
-    root.innerHTML = `<div class="cv-root" lang="${lang}">${body}</div>`;
+    const { root, css } = mountCv(host, html);
     const sheetElement = root.querySelector<HTMLElement>(".cv");
     const measure = () => callbacks.current.onHeight(sheetElement?.getBoundingClientRect().height ?? 0);
     measure();

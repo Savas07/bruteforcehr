@@ -9,8 +9,16 @@ import { createContext, useContext, type ComponentType } from "react";
 import { AppShell } from "./components/AppShell";
 import { RouteContainer } from "./components/RouteContainer";
 import { destinations, type DestinationId } from "./lib/destinations";
+import { InterviewReminders } from "./data/tracker/InterviewReminders";
+import { LiveTrackerProvider } from "./data/tracker/live";
+import { AddApplicationHost } from "./features/application-add";
+import LiveApplicationDetail from "./features/application-detail/Live";
 import LiveCvStudio from "./features/cv-editor/LiveCvStudio";
 import LiveInsights from "./features/insights/LiveInsights";
+import LiveToday from "./features/today/Live";
+import LiveTrackerBoard from "./features/tracker-board/Live";
+import { LiveTrackerCalendar, LiveTrackerTable } from "./features/tracker-table/Live";
+import { TrackerViewsRoute } from "./features/tracker-table/ViewSwitch";
 
 const startPath = destinations[0].path;
 
@@ -24,6 +32,8 @@ export const appRoutes = {
   jobs: { path: "/jobs", destination: "jobs" },
   job: { path: "/jobs/$jobId", destination: "jobs" },
   tracker: { path: "/tracker", destination: "tracker" },
+  /** Full-page application detail (IA.md deep links: `bruteforcehr://applications/{id}`). */
+  application: { path: "/tracker/applications/$applicationId", destination: "tracker" },
   cvs: { path: "/cvs", destination: "cvs" },
   cv: { path: "/cvs/$cvId", destination: "cvs" },
   mail: { path: "/mail", destination: "mail" },
@@ -52,9 +62,42 @@ function sectionTitle(id: AppRouteId): ComponentType {
   };
 }
 
-/** Production: CVs (M2) and Insights (M3) run on live data; other areas show their title until their milestone. */
+/** The signed-in shell with the app-wide tracker hosts (Mod+N dialog, interview reminders). */
+function LiveRoot() {
+  return (
+    <AppShell
+      hosts={
+        <LiveTrackerProvider>
+          <AddApplicationHost />
+          <InterviewReminders />
+        </LiveTrackerProvider>
+      }
+    />
+  );
+}
+
+const live = (View: ComponentType): ComponentType =>
+  function LiveRoute() {
+    return (
+      <LiveTrackerProvider>
+        <View />
+      </LiveTrackerProvider>
+    );
+  };
+
+const liveTrackerViews = { board: LiveTrackerBoard, table: LiveTrackerTable, calendar: LiveTrackerCalendar } as const;
+
+/** Tracker › Board · Table · Calendar (`?view=`). */
+function LiveTracker() {
+  return <TrackerViewsRoute views={liveTrackerViews} />;
+}
+
+/**
+ * Production: CVs (M2), Today, Tracker, application detail and Insights (M3) run on live data;
+ * other areas show their title until their milestone.
+ */
 export const productionViews: RouteViews = {
-  root: AppShell,
+  root: LiveRoot,
   routes: {
     ...(Object.fromEntries(
       Object.keys(appRoutes).map((id) => [id, sectionTitle(id as AppRouteId)]),
@@ -62,6 +105,9 @@ export const productionViews: RouteViews = {
     cvs: LiveCvStudio,
     cv: LiveCvStudio,
     insights: LiveInsights,
+    today: live(LiveToday),
+    tracker: live(LiveTracker),
+    application: live(LiveApplicationDetail),
   },
 };
 
@@ -92,6 +138,7 @@ export const router = createRouter({
     route("jobs"),
     route("job"),
     route("tracker"),
+    route("application"),
     route("cvs"),
     route("cv"),
     route("mail"),

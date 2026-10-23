@@ -189,6 +189,8 @@ interface Loaded {
 /** Mount once (the Tracker route); shows the dialog while `openCsvImport()` asked for it. */
 export function CsvImportHost() {
   const { request, generation } = useCsvImportRequest();
+  // Leaving the Tracker drops an unfinished import rather than reopening it on return.
+  useEffect(() => closeCsvImport, []);
   return (
     <Dialog.Root open={request !== null} onOpenChange={(open) => !open && closeCsvImport()}>
       <Dialog.Portal>

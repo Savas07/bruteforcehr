@@ -1,13 +1,11 @@
 import { emptyDataset, populatedDataset } from "@bfhr/fixtures";
 import { describe, expect, it } from "vitest";
 import { createAppIntl } from "../../i18n/intl";
-import { nudgeVMs } from "../../shared/model/build-blocks";
 import { fixtureContext } from "../../shared/model/fixture-context";
 import {
-  applyBoardMoves,
-  type BoardMove,
   buildTrackerBoardModel,
   checkBoardMove,
+  previewDrop,
   type TrackerBoardModel,
   type TrackerCardVM,
 } from "./model";
@@ -113,83 +111,15 @@ describe("buildTrackerBoardModel · populated", () => {
     expect(labels).not.toMatch(/Rejected|Ghosted/);
   });
 
-  it("passes the shared nudges through", () => {
-    expect(board.nudges).toEqual(nudgeVMs(populatedDataset, ctx));
-    expect(board.nudges.find((nudge) => nudge.applicationId === "app-kiez")?.message).toBe(
-      "No reply in 26 days. Mark as no response?",
-    );
-    expect(board.nudges.find((nudge) => nudge.applicationId === "app-quill")?.primaryLabel).toBe(
-      "Draft follow-up",
-    );
-  });
-
-  it("selects an application with header, timeline and Undo state", () => {
-    const { selected } = buildTrackerBoardModel(populatedDataset, ctx, { applicationId: "app-lumenpay" });
-    expect(selected?.company.name).toBe("Lumenpay");
-    expect(selected?.role).toBe("Frontend Engineer, Merchant Dashboard");
-    expect(selected?.status.label).toBe("Offer");
-    expect(selected?.position).toEqual({ label: "1 of 1 in Offer", previousId: null, nextId: null });
-    expect(selected?.nextAction).toEqual({
-      label: "Reply to the offer",
-      due: expect.objectContaining({ label: "29 Oct, 18:00" }),
-    });
-    expect(selected?.summary.applicationId).toBe("app-lumenpay");
-    expect(selected?.summary.nextStep).toBe("Take the time you need to review the offer before you reply.");
-
-    const timeline = selected?.timeline ?? [];
-    expect(timeline[0]?.kind).toBe("note");
-    const offer = timeline.find((event) => event.id === "evt-lumenpay-offer");
-    expect(offer?.title).toBe("Moved to Offer");
-    expect(offer?.undo).toEqual({ available: true });
-    expect(offer?.source.label).toBe("Automatic · Mail");
-    expect(offer?.mailMessageId).toBe("mail-lumenpay-offer");
-    const ack = timeline.find((event) => event.id === "app-lumenpay-e2");
-    expect(ack?.undo).toEqual({ available: false, reason: "Can't undo — the status changed since." });
-
-    // From Offer, Accepted and Declined are open.
-    const moves = selected?.moves ?? [];
-    expect(moves.find((move) => move.status.key === "accepted")?.disabledReason).toBeNull();
-    expect(moves.find((move) => move.status.key === "offer")?.current).toBe(true);
-  });
-
-  it("walks the column with n of N and disables outcomes before an offer", () => {
+  it("selects an application by id with its place in the column", () => {
     const { selected } = buildTrackerBoardModel(populatedDataset, ctx, { applicationId: "app-thames" });
-    expect(selected?.position).toEqual({
-      label: "2 of 3 in Interviewing",
-      previousId: "app-kervan",
-      nextId: "app-brightwave",
+    expect(selected).toEqual({
+      applicationId: "app-thames",
+      position: { label: "2 of 3 in Interviewing", previousId: "app-kervan", nextId: "app-brightwave" },
     });
-    const moves = selected?.moves ?? [];
-    expect(moves).toHaveLength(12);
-    expect(moves.map((move) => move.status.key).slice(0, 7)).toEqual([
-      "saved",
-      "preparing",
-      "applied",
-      "acknowledged",
-      "screening",
-      "interviewing",
-      "offer",
-    ]);
-    for (const key of ["accepted", "declined"]) {
-      expect(moves.find((move) => move.status.key === key)?.disabledReason).toBe(
-        "Accepted and Declined come after an offer.",
-      );
-    }
-    expect(moves.find((move) => move.status.key === "rejected")).toEqual({
-      status: { key: "rejected", label: "Not selected", phase: "closed" },
-      current: false,
-      disabledReason: null,
-    });
-    expect(moves.find((move) => move.status.key === "interviewing")).toMatchObject({
-      current: true,
-      disabledReason: null,
-    });
-  });
-
-  it("includes the nudge for the selected application", () => {
-    const { selected } = buildTrackerBoardModel(populatedDataset, ctx, { applicationId: "app-quill" });
-    expect(selected?.nudge?.kind).toBe("followUp");
-    expect(selected?.nextAction).toBeNull();
+    expect(
+      card(board, "app-thames").moves.find((move) => move.status.key === "accepted")?.disabledReason,
+    ).toBe("Accepted and Declined come after an offer.");
   });
 
   it("falls back to no selection for a missing or unknown id", () => {
@@ -203,7 +133,6 @@ describe("buildTrackerBoardModel · populated", () => {
     expect(card(model, "app-quill").pendingSync).toBe(true);
     expect(card(model, "app-kervan").pendingSync).toBe(true);
     expect(card(model, "app-thames").pendingSync).toBe(false);
-    expect(model.selected?.pendingSync).toBe(true);
     expect(card(board, "app-quill").pendingSync).toBe(false);
   });
 });
@@ -232,16 +161,14 @@ describe("buildTrackerBoardModel · empty", () => {
       title: "No applications yet",
       body: "Add a job you've applied to, or save one from Jobs to track it here.",
       primary: { label: "Add application", shortcut: "Mod+N" },
-      secondary: { label: "Import CSV" },
       columnAddLabel: "Add",
     });
   });
 
-  it("has an empty Closed rail, no nudges and no selection", () => {
+  it("has an empty Closed rail and no selection", () => {
     expect(empty.closedRail.countLabel).toBe("0");
     expect(empty.closedRail.outcomes.map((outcome) => outcome.count)).toEqual([0, 0, 0, 0, 0]);
     expect(empty.closedRail.emptyLine).toBe("Closed applications will appear here.");
-    expect(empty.nudges).toEqual([]);
     expect(empty.selected).toBeNull();
   });
 });
@@ -255,106 +182,26 @@ describe("buildTrackerBoardModel · Turkish", () => {
   });
 });
 
-describe("applyBoardMoves", () => {
+describe("previewDrop", () => {
   const intl = ctx.intl;
-  const selectedBoard = buildTrackerBoardModel(populatedDataset, ctx, { applicationId: "app-lumenpay" });
-  const move = (
-    applicationId: string,
-    from: BoardMove["from"],
-    to: BoardMove["to"],
-    revertsEventId: string | null = null,
-  ): BoardMove => ({
-    id: `local-${applicationId}-${to}`,
-    applicationId,
-    from,
-    to,
-    revertsEventId,
-  });
 
-  it("moves a card into its board-order slot and recounts both columns", () => {
-    const next = applyBoardMoves(board, [move("app-quill", "applied", "screening")], intl, {
-      pendingSync: false,
-    });
-    expect(next.columns[2]?.cards.map((entry) => entry.applicationId)).toEqual([
-      "app-tannenbaum",
-      "app-halden",
-      "app-kumsal",
-    ]);
-    expect(next.columns[2]?.accessibleLabel).toBe("Applied, 3 applications");
-    expect(next.columns[4]?.countLabel).toBe("3");
-    const quill = card(next, "app-quill");
-    expect(quill.status.key).toBe("screening");
-    expect(quill.age.label).toBe("New today");
-    expect(quill.staleness).toBeNull();
-    expect(quill.stepForward?.key).toBe("interviewing");
-    expect(quill.moves.find((target) => target.current)?.status.key).toBe("screening");
-    expect(quill.pendingSync).toBe(false);
-    // The untouched board is unchanged.
+  it("shows the target column with the card in its board-order slot", () => {
+    const column = previewDrop(board, "app-quill", "screening", intl);
+    expect(column?.countLabel).toBe("3");
+    const quill = column?.cards.find((entry) => entry.applicationId === "app-quill");
+    expect(quill?.status.key).toBe("screening");
+    expect(quill?.age.label).toBe("New today");
+    expect(quill?.staleness).toBeNull();
     expect(card(board, "app-quill").status.key).toBe("applied");
   });
 
-  it("recounts the Closed rail and marks offline moves as waiting to sync", () => {
-    const next = applyBoardMoves(board, [move("app-quill", "applied", "rejected")], intl, {
-      pendingSync: true,
-    });
-    expect(next.closedRail.countLabel).toBe("8");
-    expect(next.closedRail.outcomes[2]?.count).toBe(4);
-    expect(card(next, "app-quill").pendingSync).toBe(true);
-    expect(next.nudges.some((nudge) => nudge.applicationId === "app-quill")).toBe(false);
-  });
-
-  it("skips moves the state machine refuses and stale moves", () => {
+  it("refuses moves the state machine refuses", () => {
     expect(checkBoardMove("applied", "accepted", intl)).toEqual({
       allowed: false,
       reason: "Accepted and Declined come after an offer.",
     });
     expect(checkBoardMove("offer", "accepted", intl)).toEqual({ allowed: true });
-    expect(
-      applyBoardMoves(board, [move("app-quill", "applied", "accepted")], intl, { pendingSync: false }),
-    ).toBe(board);
-    expect(
-      applyBoardMoves(board, [move("app-quill", "offer", "accepted")], intl, { pendingSync: false }),
-    ).toBe(board);
-  });
-
-  it("collapses a column its last card leaves", () => {
-    const next = applyBoardMoves(board, [move("app-lumenpay", "offer", "accepted")], intl, {
-      pendingSync: false,
-    });
-    expect(next.columns[6]).toMatchObject({
-      count: 0,
-      collapsedByDefault: true,
-      emptyLine: "No applications",
-    });
-  });
-
-  it("adds the timeline row to the selected record and tags an undone automatic move", () => {
-    const next = applyBoardMoves(
-      selectedBoard,
-      [move("app-lumenpay", "offer", "acknowledged", "evt-lumenpay-offer")],
-      intl,
-      { pendingSync: false },
-    );
-    const selected = next.selected;
-    expect(selected?.status.key).toBe("acknowledged");
-    expect(selected?.timeline[0]).toMatchObject({
-      title: "Undid a move · back to Acknowledged",
-      source: { kind: "you", label: "You" },
-      move: { from: { key: "offer" }, to: { key: "acknowledged" } },
-    });
-    expect(selected?.timeline.find((event) => event.id === "evt-lumenpay-offer")?.reverted).toBe(true);
-    expect(selected?.summary.nextStep).toBe(selected?.nextStepByStatus.acknowledged);
-    expect(selected?.position.label).toBe("1 of 4 in Acknowledged");
-  });
-
-  it("supersedes earlier Undo offers after a plain move", () => {
-    const next = applyBoardMoves(selectedBoard, [move("app-lumenpay", "offer", "accepted")], intl, {
-      pendingSync: false,
-    });
-    expect(next.selected?.timeline[0]?.title).toBe("Moved to Accepted");
-    expect(next.selected?.timeline.find((event) => event.id === "evt-lumenpay-offer")?.undo).toEqual({
-      available: false,
-      reason: "Can't undo — the status changed since.",
-    });
+    expect(previewDrop(board, "app-quill", "accepted", intl)).toBeNull();
+    expect(previewDrop(board, "app-quill", "applied", intl)).toBeNull();
   });
 });

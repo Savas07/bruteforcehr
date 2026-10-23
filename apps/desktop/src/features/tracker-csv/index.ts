@@ -4,4 +4,4 @@
  * the dialog.
  */
 export { CsvImportHost } from "./CsvImportHost";
-export { openCsvImport, type CsvImportRequest } from "./store";
+export { closeCsvImport, openCsvImport, type CsvImportRequest } from "./store";

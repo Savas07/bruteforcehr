@@ -9,7 +9,7 @@ import { useSearch } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { buildTrackerCalendarModel } from "../features/tracker-calendar/model";
 import TrackerCalendarScreen from "../features/tracker-calendar/Screen";
-import { openCsvImport } from "../features/tracker-csv";
+import { closeCsvImport, openCsvImport } from "../features/tracker-csv";
 import { buildTrackerTableModel } from "../features/tracker-table/model";
 import TrackerTableScreen from "../features/tracker-table/Screen";
 import trExcelCsv from "@bfhr/fixtures/csv/tr-excel-windows-1254.csv?inline";
@@ -51,6 +51,7 @@ function DesignCsvImport() {
       preview: () => openCsvImport({ file: { name: "takip.csv", bytes: dataUrlBytes(trExcelCsv) }, step: "preview" }),
     };
     open[step]();
+    return closeCsvImport;
   }, [step]);
   return null;
 }

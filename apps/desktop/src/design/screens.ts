@@ -8,7 +8,6 @@ import { buildJobDetailModel, type JobDetailModel } from "../features/job-detail
 import { buildInsightsModel, type InsightsModel } from "../features/insights/model";
 import { buildMailReviewModel, type MailReviewModel } from "../features/mail-review/model";
 import { buildTodayModel, type TodayModel } from "../features/today/model";
-import { buildTrackerBoardModel, type TrackerBoardModel } from "../features/tracker-board/model";
 import type { DesignScreenSpec } from "./DesignScreen";
 
 /** Local writes in the offline state: the sidebar says "2 changes waiting to sync". */
@@ -52,16 +51,6 @@ export const cvEditorScreen: DesignScreenSpec<CvEditorModel> = {
     const editor = buildCvEditorModel(data, ctx, {}).editor;
     return editor ? [editor.cvId, editor.currentRevisionId] : [];
   },
-};
-
-export const trackerBoardScreen: DesignScreenSpec<TrackerBoardModel> = {
-  id: "tracker-board",
-  destination: "tracker",
-  build: buildTrackerBoardModel,
-  offlinePending: (data, ctx) =>
-    buildTrackerBoardModel(data, ctx, {})
-      .columns.flatMap((column) => column.cards.slice(0, 1).map((card) => card.applicationId))
-      .slice(0, OFFLINE_PENDING_WRITES),
 };
 
 export const mailReviewScreen: DesignScreenSpec<MailReviewModel> = {

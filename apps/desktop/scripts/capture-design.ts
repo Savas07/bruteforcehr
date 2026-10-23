@@ -3,11 +3,14 @@
 //   pnpm --filter @bfhr/desktop capture:design <screen…|all> [--states populated,empty,…]
 //     [--engines webkit,chromium] [--themes light,dark] [--sizes 1280x800,1920x1080] [--scale 1]
 //     [--locale en|tr|de] [--axe] [--update-states ready,notes,…] [--auth-states email,check-email,…]
+//     [--csv-states pick,columns,…]
 //
 // The `update` target captures the update UI states instead (`updateDesignStates`, over Today, each
 // at its own size: the rail state is 600 px wide) as update-<state>-<theme>-<w>x<h>.png, all audited.
 // The `sign-in` target captures the signed-out window (`authDesignStates`) at 1280×800 as
 // sign-in-<state>-<theme>-<w>x<h>.png, all audited.
+// The `tracker-csv` target captures the CSV import steps (`csvDesignStates`, over the table) at
+// every size as tracker-csv-<state>-<theme>-<w>x<h>.png, audited at the first size.
 //
 // --axe also runs axe-core (WCAG 2.1 A + AA tags) on every screen × state × theme in each engine,
 // writes artifacts/a11y/desktop/<screen>-<state>-<theme>-<engine>.json, prints one line per page
@@ -35,6 +38,10 @@ import {
   CAPTURE_PIN,
   type CaptureLanguage,
   captureFileName,
+  csvCaptureFileName,
+  csvDesignHash,
+  type CsvDesignState,
+  csvDesignStates,
   captureSizes,
   type CaptureTheme,
   captureThemes,
@@ -72,7 +79,8 @@ Usage: pnpm --filter @bfhr/desktop capture:design <screen…|all> [--states a,b]
 Screens: ${Object.keys(designScreenPaths).join(", ")}
 States:  ${designStates.join(", ")}
 Update:  update [--update-states ${updateDesignStates.join(",")}]
-Sign-in: sign-in [--auth-states ${authDesignStates.join(",")}]`);
+Sign-in: sign-in [--auth-states ${authDesignStates.join(",")}]
+CSV:     tracker-csv [--csv-states ${csvDesignStates.join(",")}]`);
   process.exit(2);
 }
 
@@ -102,15 +110,17 @@ for (let index = 0; index < argv.length; index += 1) {
 }
 const runAxe = enabled.has("axe");
 const screenNames = Object.keys(designScreenPaths) as DesignScreenName[];
-if (positional.length === 0) usage("Name at least one screen (or all, update, sign-in).");
+if (positional.length === 0) usage("Name at least one screen (or all, update, sign-in, tracker-csv).");
 /** `update` captures the update UI states (over Today) instead of a screen's five states. */
 const wantsUpdate = positional.includes("update");
 /** `sign-in` captures the signed-out window's states. */
 const wantsSignIn = positional.includes("sign-in");
+/** `tracker-csv` captures the CSV import steps over the table. */
+const wantsCsv = positional.includes("tracker-csv");
 const screens: DesignScreenName[] = positional.includes("all")
   ? screenNames
   : positional
-      .filter((name) => name !== "update" && name !== "sign-in")
+      .filter((name) => name !== "update" && name !== "sign-in" && name !== "tracker-csv")
       .map((name) =>
         screenNames.includes(name as DesignScreenName)
           ? (name as DesignScreenName)
@@ -123,6 +133,7 @@ const updateStates = wantsUpdate
 const authStates = wantsSignIn
   ? pick<AuthDesignState>(options["auth-states"], authDesignStates, "sign-in state")
   : [];
+const csvStates = wantsCsv ? pick<CsvDesignState>(options["csv-states"], csvDesignStates, "CSV state") : [];
 const themes = pick<CaptureTheme>(options["themes"], captureThemes, "theme");
 const engineNames = pick<EngineName>(options["engines"], Object.keys(engines) as EngineName[], "engine");
 const sizes =
@@ -203,14 +214,23 @@ interface Batch {
 
 const batches: Batch[] = sizes.map((size, sizeIndex) => ({
   size,
-  shots: screens.flatMap((screen) =>
-    states.map((state): Shot => ({
-      hash: (platform) => designHash(screen, state, routeExtras(platform)),
-      file: (theme) => captureFileName(screen, state, theme, size),
-      // One audit per screen × state × theme × engine (the first size; layout-independent rules).
-      audit: sizeIndex === 0 ? (theme, engine) => `${screen}-${state}-${theme}-${engine}` : null,
-    })),
-  ),
+  shots: [
+    ...screens.flatMap((screen) =>
+      states.map((state): Shot => ({
+        hash: (platform) => designHash(screen, state, routeExtras(platform)),
+        file: (theme) => captureFileName(screen, state, theme, size),
+        // One audit per screen × state × theme × engine (the first size; layout-independent rules).
+        audit: sizeIndex === 0 ? (theme, engine) => `${screen}-${state}-${theme}-${engine}` : null,
+      })),
+    ),
+    ...csvStates.map(
+      (state): Shot => ({
+        hash: (platform) => csvDesignHash(state, routeExtras(platform)),
+        file: (theme) => csvCaptureFileName(state, theme, size),
+        audit: sizeIndex === 0 ? (theme, engine) => `tracker-csv-${state}-${theme}-${engine}` : null,
+      }),
+    ),
+  ],
 }));
 // Update states pick their own size (the rail state needs the narrow window); every one is audited.
 const updateBatches = new Map<string, { size: Batch["size"]; shots: Shot[] }>();

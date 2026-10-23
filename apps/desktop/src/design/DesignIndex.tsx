@@ -8,6 +8,10 @@ const screenTitles: Readonly<Record<DesignScreenName, MessageDescriptor>> = defi
   "job-detail": { id: "design.index.screen.jobDetail", defaultMessage: "Job detail" },
   "cv-editor": { id: "design.index.screen.cvEditor", defaultMessage: "CV editor" },
   "tracker-board": { id: "design.index.screen.trackerBoard", defaultMessage: "Tracker board" },
+  "application-detail": { id: "design.index.screen.applicationDetail", defaultMessage: "Application detail" },
+  "application-add": { id: "design.index.screen.applicationAdd", defaultMessage: "Log an application" },
+  "tracker-table": { id: "design.index.screen.trackerTable", defaultMessage: "Tracker table" },
+  "tracker-calendar": { id: "design.index.screen.trackerCalendar", defaultMessage: "Tracker calendar" },
   "mail-review": { id: "design.index.screen.mailReview", defaultMessage: "Mail review" },
   insights: { id: "design.index.screen.insights", defaultMessage: "Insights" },
 });

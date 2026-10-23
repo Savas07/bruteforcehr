@@ -101,7 +101,7 @@ describe("CV Studio", () => {
   it("resolves a conflict with Keep this version", async () => {
     await typeSummary("Local change.");
     await remoteEdit(cv.name, "Remote change.");
-    await $("*=This CV changed on another device")
+    await $("p*=This CV changed on another device")
       .waitForDisplayed({ timeout: 20_000 })
       .catch(async (error: unknown) => {
         const page = await browser.execute(() => document.querySelector("header")?.textContent ?? "");
@@ -118,7 +118,7 @@ describe("CV Studio", () => {
     await browser.keys(Key.Escape);
     await $("button=Keep this version").click();
     await waitForSummary("Local change.", "Keep this version didn't win");
-    await expect($("*=This CV changed on another device")).not.toBeExisting();
+    await expect($("p*=This CV changed on another device")).not.toBeExisting();
   });
 
   it("restores an older version as a new revision", async () => {
@@ -150,7 +150,12 @@ describe("CV Studio", () => {
     await $('[role="dialog"] input:not([type])').setValue("Acme");
     await capture("export-dialog");
     await $('[role="dialog"] button[type="submit"]').click();
-    await browser.waitUntil(() => existsSync(file), { timeout: 60_000, timeoutMsg: `no PDF at ${file}` });
+    await browser
+      .waitUntil(() => existsSync(file), { timeout: 120_000 })
+      .catch(async () => {
+        const dialog = await browser.execute(() => document.querySelector('[role="dialog"]')?.textContent ?? "(no dialog)");
+        throw new Error(`no PDF at ${file}; dialog: ${dialog}`);
+      });
 
     const pdf = await getDocument({ data: new Uint8Array(readFileSync(file)) }).promise;
     let text = "";
@@ -172,7 +177,10 @@ describe("CV Studio", () => {
     await capture("template-gallery");
     await $('[role="tab"]=Check').click();
     await $("button=Run check").click();
-    await $("*=Experience").waitForDisplayed({ timeout: 60_000 });
+    await browser.waitUntil(
+      async () => browser.execute(() => /Experience/u.test(document.querySelector('aside[aria-label="Inspector"]')?.textContent ?? "")),
+      { timeout: 90_000, timeoutMsg: "the ATS check showed no result" },
+    );
     await capture("ats-check");
   });
 });

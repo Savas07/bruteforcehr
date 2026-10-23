@@ -65,6 +65,8 @@ describe("credential check", () => {
     await expect(resolvePublicHost("169.254.169.254")).rejects.toThrow("non-public");
     await expect(resolvePublicHost("10.1.2.3")).rejects.toThrow("non-public");
     await expect(resolvePublicHost("::1")).rejects.toThrow("non-public");
+    await expect(resolvePublicHost("::ffff:10.1.2.3")).rejects.toThrow("non-public");
+    await expect(resolvePublicHost("::ffff:169.254.169.254")).rejects.toThrow("non-public");
     const blocked = { ...servers.credentials };
     await expect(
       ImapAdapter.verifyImap(blocked, { tls: { rejectUnauthorized: false } }),

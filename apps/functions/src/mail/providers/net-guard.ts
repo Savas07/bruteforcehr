@@ -23,10 +23,12 @@ for (const [network, prefix] of [
   ["240.0.0.0", 4],
 ] as const)
   BLOCKED.addSubnet(network, prefix, "ipv4");
+// IPv4-mapped IPv6 addresses (`::ffff:10.0.0.1`) are matched by the IPv4 rules above. Never add
+// `::ffff:0:0/96` here: BlockList checks IPv4 addresses against IPv6 rules in their mapped form, so
+// that rule refuses every IPv4 host.
 for (const [network, prefix] of [
   ["::", 128],
   ["::1", 128],
-  ["::ffff:0:0", 96],
   ["64:ff9b::", 96],
   ["fc00::", 7],
   ["fe80::", 10],

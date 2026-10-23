@@ -11,21 +11,33 @@
     "build": "node scripts/build.ts",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "smoke:ai": "node scripts/smoke-ai.ts"
+    "test": "vitest run",
+    "chromium:local": "tsx scripts/local-chromium.ts",
+    "print:local": "tsx scripts/print-local.ts",
+    "smoke:ai": "node scripts/smoke-ai.ts",
+    "smoke:render": "tsx scripts/smoke-render.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.1.0",
     "@bfhr/ai": "workspace:*",
+    "@bfhr/api": "workspace:*",
     "@bfhr/core": "workspace:*",
+    "@bfhr/cv-render": "workspace:*",
+    "@sparticuz/chromium": "153.0.0",
     "fflate": "^0.8.3",
     "firebase-admin": "^14.5.0",
     "firebase-functions": "^7.4.0",
     "mammoth": "^1.13.0",
     "pdfjs-dist": "^6.4.299",
+    "puppeteer-core": "25.11.0",
     "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@bfhr/fixtures": "workspace:*",
+    "@puppeteer/browsers": "3.2.2",
     "@types/node": "^22.20.5",
-    "esbuild": "^0.28.2"
+    "esbuild": "^0.28.2",
+    "tsx": "^4.23.15",
+    "vitest": "^5.0.5"
   }
 }

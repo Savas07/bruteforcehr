@@ -1,0 +1,108 @@
+name: CV parity
+
+# Print-engine parity of @bfhr/cv-render (docs/adr/0009-cv-rendering.md, "Parity plan"): the same
+# CVs printed by Chromium, WebKit (macOS desktop/iOS path) and the Cloud Functions renderer must have
+# the same page count and look the same within the documented pixel tolerance.
+on:
+  push:
+    branches: [main]
+    paths:
+      - packages/cv-render/**
+      - packages/core/**
+      - packages/fixtures/**
+      - apps/functions/src/render/**
+      - apps/functions/scripts/print-local.ts
+      - apps/functions/scripts/local-chromium.ts
+      - apps/functions/package.json
+      - pnpm-lock.yaml
+      - .github/workflows/cv-parity.yml
+  pull_request:
+    paths:
+      - packages/cv-render/**
+      - packages/core/**
+      - packages/fixtures/**
+      - apps/functions/src/render/**
+      - apps/functions/scripts/print-local.ts
+      - apps/functions/scripts/local-chromium.ts
+      - apps/functions/package.json
+      - pnpm-lock.yaml
+      - .github/workflows/cv-parity.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cv-parity-${{ github.ref }}-${{ github.event_name == 'pull_request' && 'pr' || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  COREPACK_ENABLE_DOWNLOAD_PROMPT: "0"
+
+jobs:
+  server:
+    name: Server PDFs (@sparticuz/chromium, Linux x64)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+      - run: corepack enable pnpm
+      - name: pnpm store path
+        id: pnpm-store
+        run: echo "path=$(pnpm store path)" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v6
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: pnpm-${{ runner.os }}-
+      - run: pnpm install --frozen-lockfile
+      # Chromium's shared libraries (NSS, …), which Cloud Functions' Ubuntu base image also has.
+      - run: pnpm --filter @bfhr/cv-render exec playwright install-deps chromium-headless-shell
+      - run: pnpm --filter @bfhr/cv-render parity:server "$RUNNER_TEMP/server-pdfs"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: cv-parity-server-pdfs
+          path: ${{ runner.temp }}/server-pdfs
+          if-no-files-found: error
+          retention-days: 7
+
+  parity:
+    name: Chromium ↔ WebKit ↔ server (macOS)
+    needs: server
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+      - run: corepack enable pnpm
+      - name: pnpm store path
+        id: pnpm-store
+        run: echo "path=$(pnpm store path)" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v6
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: pnpm-${{ runner.os }}-
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @bfhr/cv-render exec playwright install chromium-headless-shell
+      - uses: actions/download-artifact@v8
+        with:
+          name: cv-parity-server-pdfs
+          path: ${{ runner.temp }}/server-pdfs
+      - run: pnpm --filter @bfhr/cv-render parity
+        env:
+          BFHR_PARITY_SERVER_DIR: ${{ runner.temp }}/server-pdfs
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: cv-parity-report
+          path: |
+            artifacts/cv-parity/report.md
+            artifacts/cv-parity/report.json
+            artifacts/cv-parity/*/*.png
+            artifacts/cv-parity/*/*.pdf
+          if-no-files-found: warn
+          retention-days: 14

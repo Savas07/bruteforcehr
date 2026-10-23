@@ -193,34 +193,53 @@ const PAPER_MM: Readonly<Record<PaperSize, { width: number; height: number }>> =
   letter: { width: 215.9, height: 279.4 },
 };
 
-/** Margins per density; Letter is 6.5 mm shorter, so it trims the vertical margins slightly. */
-const MARGINS_MM: Readonly<Record<Density, Readonly<Record<PaperSize, PageMarginsMm>>>> = {
+export const PT_PER_MM = 72 / 25.4;
+
+/**
+ * Page margins in pt per density (≈ 12/14, 16/18 and 20/22 mm on A4; Letter is 6.5 mm shorter and
+ * trims the vertical ones). They are chosen so that Chromium and WebKit print the same page:
+ * - every margin is a multiple of 3 pt: Chromium floors `@page` margins to whole CSS px (0.75 pt)
+ *   and WebKit/Quartz rounds them up to whole points (16 mm = 45.35 pt printed at 45 pt in Chromium
+ *   and 46 pt in WebKit);
+ * - the printable width and height are multiples of 4 pt on WebKit's whole-point paper (A4 595 × 842,
+ *   Letter 612 × 792): WebKit lays a page out `floor(1.25 × printable size)` CSS px wide and tall and
+ *   scales that to the paper, so anything else printed every CV ~0.1 % larger than Chromium, enough to
+ *   wrap a line that fits in Chromium. On A4 that needs an odd left + right sum, hence 3 pt more on
+ *   the left. `themes.test.ts` checks both rules.
+ */
+export const MARGINS_PT: Readonly<
+  Record<Density, Readonly<Record<PaperSize, { top: number; right: number; bottom: number; left: number }>>>
+> = {
   compact: {
-    a4: { top: 12, right: 14, bottom: 12, left: 14 },
-    letter: { top: 11, right: 15, bottom: 11, left: 15 },
+    a4: { top: 33, right: 36, bottom: 33, left: 39 },
+    letter: { top: 30, right: 42, bottom: 30, left: 42 },
   },
   comfortable: {
-    a4: { top: 16, right: 18, bottom: 16, left: 18 },
-    letter: { top: 14, right: 19, bottom: 14, left: 19 },
+    a4: { top: 45, right: 48, bottom: 45, left: 51 },
+    letter: { top: 42, right: 54, bottom: 42, left: 54 },
   },
   spacious: {
-    a4: { top: 20, right: 22, bottom: 20, left: 22 },
-    letter: { top: 18, right: 22, bottom: 18, left: 22 },
+    a4: { top: 57, right: 60, bottom: 57, left: 63 },
+    letter: { top: 48, right: 60, bottom: 48, left: 60 },
   },
 };
-
-const PT_PER_MM = 72 / 25.4;
 
 export function pageGeometry(paper: string, density: string): PageGeometry {
   const size: PaperSize = paper === "letter" ? "letter" : "a4";
   const scale: Density = density === "compact" || density === "spacious" ? density : "comfortable";
   const { width, height } = PAPER_MM[size];
+  const margins = MARGINS_PT[scale][size];
   return {
     paper: size,
     widthMm: width,
     heightMm: height,
     widthPt: Math.round(width * PT_PER_MM * 100) / 100,
     heightPt: Math.round(height * PT_PER_MM * 100) / 100,
-    marginsMm: MARGINS_MM[scale][size],
+    marginsMm: {
+      top: margins.top / PT_PER_MM,
+      right: margins.right / PT_PER_MM,
+      bottom: margins.bottom / PT_PER_MM,
+      left: margins.left / PT_PER_MM,
+    },
   };
 }

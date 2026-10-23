@@ -7,40 +7,20 @@ import {
   UnreadableFileError,
 } from "@bfhr/ai";
 import type { AiErrorReason } from "@bfhr/core";
-import { getApps, initializeApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import { defineSecret } from "firebase-functions/params";
-import { type CallableRequest, HttpsError, type FunctionsErrorCode } from "firebase-functions/v2/https";
+import { HttpsError } from "firebase-functions/v2/https";
 import { logger } from "firebase-functions/v2";
+import { ReasonedHttpsError } from "../callable";
 
 /** Anthropic API key (Secret Manager, docs/runbooks/accounts.md). */
 export const ANTHROPIC_API_KEY = defineSecret("ANTHROPIC_API_KEY");
-
-if (getApps().length === 0) initializeApp();
 
 export function aiProvider(): AnthropicProvider {
   return new AnthropicProvider({ apiKey: ANTHROPIC_API_KEY.value() });
 }
 
-/** An `HttpsError` whose `details.reason` tells the client which copy to show. */
-export class AiCallableError extends HttpsError {
-  constructor(
-    code: FunctionsErrorCode,
-    readonly reason: AiErrorReason,
-    message: string,
-  ) {
-    super(code, message, { reason });
-  }
-}
-
-/** The caller's uid; signed in with a verified email (same rule as firestore.rules). */
-export function verifiedUid(request: CallableRequest): string {
-  if (request.auth === undefined) throw new HttpsError("unauthenticated", "Sign in to use this feature.");
-  if (request.auth.token.email_verified !== true) {
-    throw new AiCallableError("permission-denied", "email_unverified", "Confirm your email address first.");
-  }
-  return request.auth.uid;
-}
+export class AiCallableError extends ReasonedHttpsError<AiErrorReason> {}
 
 /** Refuses when the user turned AI features off (`profile.aiEnabled === false`; missing = on). */
 export async function requireAiEnabled(uid: string): Promise<void> {
@@ -57,6 +37,10 @@ export async function requireAiEnabled(uid: string): Promise<void> {
 /** Maps a failure to the client-facing error and the log outcome; never includes user content. */
 export function toCallableError(error: unknown): { error: HttpsError; outcome: AiOutcome } {
   if (error instanceof AiCallableError) return { error, outcome: error.reason };
+  // verifiedUid (../callable) refuses unverified accounts with the same reason as the AI errors.
+  if (error instanceof ReasonedHttpsError && error.reason === "email_unverified") {
+    return { error, outcome: "email_unverified" };
+  }
   if (error instanceof HttpsError) return { error, outcome: "error" };
   if (error instanceof DailyCapError) {
     return {

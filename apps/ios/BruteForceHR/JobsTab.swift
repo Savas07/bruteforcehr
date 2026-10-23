@@ -10,7 +10,8 @@ import SwiftUI
 final class JobsNavigation {
     var path: [JobsRoute] = []
     var applying: String?
-
+    /// "Add a job from a link" while open.
+    var importing: JobImportModel?
     /// Shows a Jobs link (IA.md "Deep links"): the stack, the scope, and the Apply sheet.
     func open(_ url: URL, feed: JobsFeedModel) {
         guard let destination = JobsRoute.destination(for: url) else {
@@ -35,6 +36,8 @@ struct JobsTabRoot: View {
             feed: live.jobs,
             path: $navigation.path,
             applying: $navigation.applying,
+            importing: $navigation.importing,
+            importer: live.linkImporter,
             detailModel: live.detailModel,
             applyModel: live.applyModel
         ) {

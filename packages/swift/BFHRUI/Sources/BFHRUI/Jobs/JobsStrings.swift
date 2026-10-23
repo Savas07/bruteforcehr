@@ -7,6 +7,52 @@ import Foundation
 enum JobsStrings {
     // MARK: Screen
 
+    // MARK: Add from a link
+
+    static let importLinkPlaceholder = LocalizedStringResource.bfhr("jobs.import.link", default: "Paste the job's web address", table: "Jobs")
+    static let importLookUp = LocalizedStringResource.bfhr("jobs.import.lookUp", default: "Read the posting", table: "Jobs")
+    static let importFooter = LocalizedStringResource.bfhr("jobs.import.footer", default: "We read the public page once and fill in the fields. You check them before anything is saved.", table: "Jobs")
+    static let importReading = LocalizedStringResource.bfhr("jobs.import.reading", default: "Reading the posting…", table: "Jobs")
+    static let importAddByHand = LocalizedStringResource.bfhr("jobs.import.byHand", default: "Log it by hand in the Tracker", table: "Jobs")
+    static let importSave = LocalizedStringResource.bfhr("jobs.import.save", default: "Add", table: "Jobs")
+    static let importDuplicateTitle = LocalizedStringResource.bfhr("jobs.import.duplicate", default: "Already in your jobs", table: "Jobs")
+    static let importDuplicateBody = LocalizedStringResource.bfhr("jobs.import.duplicate.body", default: "Adding it keeps one job and lists this page as another source.", table: "Jobs")
+    static let importCheckHeader = LocalizedStringResource.bfhr("jobs.import.check", default: "Check the details", table: "Jobs")
+    static let importCheckThis = LocalizedStringResource.bfhr("jobs.import.checkThis", default: "Check this", table: "Jobs")
+    static let importTitle = LocalizedStringResource.bfhr("jobs.import.title", default: "Job title", table: "Jobs")
+    static let importCompany = LocalizedStringResource.bfhr("jobs.import.company", default: "Company", table: "Jobs")
+    static let importLocation = LocalizedStringResource.bfhr("jobs.import.location", default: "Location", table: "Jobs")
+    static let importNotStated = LocalizedStringResource.bfhr("jobs.import.notStated", default: "Not stated", table: "Jobs")
+    static let importSaveToSaved = LocalizedStringResource.bfhr("jobs.import.saveToSaved", default: "Add and save it", table: "Jobs")
+    static let importSaveToSavedFooter = LocalizedStringResource.bfhr("jobs.import.saveToSaved.footer", default: "Saved jobs also show in the Tracker.", table: "Jobs")
+
+    static func importFrom(_ host: String) -> LocalizedStringResource {
+        .bfhr("jobs.import.from", default: "Read from \(host)", table: "Jobs", comment: "%@ = web host, e.g. jobs.lever.co.")
+    }
+
+    static func importedToast(_ company: String) -> LocalizedStringResource {
+        .bfhr("jobs.toast.imported", default: "\(company) · added", table: "Jobs", comment: "%@ = company. Followed by Open.")
+    }
+
+    static func importFailedTitle(_ error: JobImportError) -> LocalizedStringResource {
+        switch error {
+        case .offline: .bfhr("jobs.import.failed.offline", default: "Reading a page needs a connection", table: "Jobs")
+        case .invalidURL: .bfhr("jobs.import.failed.invalid", default: "That doesn't look like a web address", table: "Jobs")
+        case .notFound: .bfhr("jobs.import.failed.notFound", default: "This posting is no longer online", table: "Jobs")
+        case .unreadable: .bfhr("jobs.import.failed.unreadable", default: "We couldn't read a job on that page", table: "Jobs")
+        case .limit: .bfhr("jobs.import.failed.limit", default: "You've read a lot of pages today", table: "Jobs")
+        case .failed: .bfhr("jobs.import.failed", default: "The page didn't load", table: "Jobs")
+        }
+    }
+
+    static func importFailedBody(_ error: JobImportError) -> LocalizedStringResource {
+        switch error {
+        case .unreadable: .bfhr("jobs.import.failed.unreadable.body", default: "Some sites need a sign-in or block automatic reading. You can log the job by hand.", table: "Jobs")
+        case .limit: .bfhr("jobs.import.failed.limit.body", default: "Try again tomorrow, or log the job by hand.", table: "Jobs")
+        default: .bfhr("jobs.import.failed.body", default: "Check the address and try again.", table: "Jobs")
+        }
+    }
+
     static let title = LocalizedStringResource.bfhr("jobs.title", default: "Jobs", table: "Jobs")
     static let loading = LocalizedStringResource.bfhr("jobs.loading", default: "Loading jobs", table: "Jobs")
     static let errorTitle = LocalizedStringResource.bfhr("jobs.error.title", default: "We couldn't load your jobs", table: "Jobs")

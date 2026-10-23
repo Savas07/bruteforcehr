@@ -162,3 +162,46 @@ enum CallableJSON {
         return formatter.date(from: text) ?? ISO8601DateFormatter().date(from: text)
     }
 }
+
+/// "Add a job from a link": `jobImportUrl` (@bfhr/core src/jobImport/contract.ts) reads the page
+/// and returns a draft; nothing is written until the user confirms it.
+final class CloudJobLinkImporter: JobLinkImporter {
+    func lookUp(_ url: String) async throws(JobImportError) -> JobImportDraft {
+        do {
+            let callable = CVCallables.functions.httpsCallable("jobImportUrl")
+            // Fetching the page and, when it has no structured data, reading it with AI.
+            callable.timeoutInterval = 90
+            let result = try await callable.call(["url": url])
+            let response = try JobImportUrlResponse.decode(callableData: result.data)
+            return JobImportDraft(
+                job: try response.job(newID: ""),
+                existingJobId: response.existingJobId,
+                confidence: response.confidence,
+                warnings: response.warnings,
+                finalURL: URL(string: response.finalUrl)
+            )
+        } catch let error as JobImportError {
+            throw error
+        } catch {
+            throw Self.importError(error)
+        }
+    }
+
+    static func importError(_ error: any Error) -> JobImportError {
+        let nsError = error as NSError
+        if nsError.domain == NSURLErrorDomain { return .offline }
+        guard nsError.domain == FunctionsErrorDomain else { return .failed("\(nsError.domain) \(nsError.code)") }
+        let reason = ((nsError.userInfo[FunctionsErrorDetailsKey] as? [String: Any])?["reason"] as? String)
+            .flatMap(JobImportErrorReason.init(rawValue:))
+        switch reason {
+        case .invalidUrl?, .blockedUrl?: return .invalidURL
+        case .notFound?: return .notFound
+        case .blockedBySite?, .noJobFound?, .notHtml?, .tooLarge?, .aiDisabled?, .aiUnavailable?: return .unreadable
+        case .dailyCap?, .rateLimited?: return .limit
+        case .fetchFailed?: return .failed("fetch_failed")
+        case .emailUnverified?, nil:
+            if FunctionsErrorCode(rawValue: nsError.code) == .unavailable { return .offline }
+            return .failed("\(nsError.code) \(nsError.localizedDescription)")
+        }
+    }
+}

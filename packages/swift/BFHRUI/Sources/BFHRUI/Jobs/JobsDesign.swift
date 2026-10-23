@@ -110,3 +110,24 @@ extension ApplyModel {
     }
 }
 #endif
+
+#if DEBUG
+/// "Add a job from a link" in design mode: any link returns the featured job as a new draft, with
+/// a low-confidence location ("Check this"); a link containing "fail" shows the unreadable state.
+public final class DesignJobLinkImporter: JobLinkImporter {
+    private let scenario: DesignScenario
+
+    public init(scenario: DesignScenario) {
+        self.scenario = scenario
+    }
+
+    public func lookUp(_ url: String) async throws(JobImportError) -> JobImportDraft {
+        try? await Task.sleep(for: .milliseconds(400))
+        if url.contains("fail") { throw .unreadable }
+        let populated = UserData(DesignScenario(dataset: .populated).document)
+        guard var job = populated.job(id: scenario.designJobId) else { throw .unreadable }
+        job.id = ""
+        return JobImportDraft(job: job, existingJobId: nil, confidence: ["title": 0.95, "company": 0.9, "locations": 0.4], warnings: [], finalURL: URL(string: url))
+    }
+}
+#endif

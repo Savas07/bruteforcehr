@@ -17,6 +17,8 @@ final class LiveUserData {
     let uid: String
     private let scheduler = NotificationReminderScheduler()
     private let jobSearch = CloudJobSearch()
+    /// `jobImportUrl` behind "Add a job from a link".
+    let linkImporter = CloudJobLinkImporter()
     private let applyServices: CloudApplyServices
     private let applyRenderer: DeviceApplyRenderer?
     private var details: [String: JobDetailModel] = [:]

@@ -16,7 +16,10 @@ describe("printCvPdf", () => {
 
     const bytes = await printCvPdf("<!doctype html><p>CV</p>", "letter");
 
-    expect(invoke).toHaveBeenCalledWith("print_cv_pdf", { html: "<!doctype html><p>CV</p>", paper: "letter" });
+    expect(invoke).toHaveBeenCalledWith("print_cv_pdf", {
+      html: "<!doctype html><p>CV</p>",
+      paper: "letter",
+    });
     expect(bytes).toBeInstanceOf(Uint8Array);
     expect(new TextDecoder().decode(bytes)).toBe("%PDF-1.7");
   });
@@ -46,6 +49,21 @@ describe("saveExportFile", () => {
 
   it("returns null when the dialog is cancelled", async () => {
     invoke.mockResolvedValue(null);
-    await expect(saveExportFile(new Uint8Array([123, 125]), "Ada-Lovelace-CV.json", "json")).resolves.toBeNull();
+    await expect(
+      saveExportFile(new Uint8Array([123, 125]), "Ada-Lovelace-CV.json", "json"),
+    ).resolves.toBeNull();
+  });
+
+  it("saves calendar and spreadsheet files with their kinds", async () => {
+    invoke.mockResolvedValue("/tmp/x");
+    const bytes = new TextEncoder().encode("BEGIN:VCALENDAR\r\n");
+    await saveExportFile(bytes, "Interview-Acme.ics", "ics");
+    expect(invoke).toHaveBeenLastCalledWith("save_export", bytes, {
+      headers: { "bfhr-file-name": "Interview-Acme.ics", "bfhr-export-kind": "ics" },
+    });
+    await saveExportFile(bytes, "applications.csv", "csv");
+    expect(invoke).toHaveBeenLastCalledWith("save_export", bytes, {
+      headers: { "bfhr-file-name": "applications.csv", "bfhr-export-kind": "csv" },
+    });
   });
 });

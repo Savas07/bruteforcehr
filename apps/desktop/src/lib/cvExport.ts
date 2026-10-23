@@ -8,8 +8,14 @@ import { invoke } from "@tauri-apps/api/core";
 /** Page size of the printed PDF; the HTML's `@page` rules carry the margins. */
 export type PaperSize = "a4" | "letter";
 
-/** What `saveExportFile` saves; picks the Save dialog's file-type filter and the extension. */
-export type ExportKind = "pdf" | "docx" | "json";
+/**
+ * What `saveExportFile` saves; picks the Save dialog's file-type filter and the extension: CVs
+ * (`pdf`, `docx`, `json`), interviews as iCalendar (`ics`), applications as a spreadsheet (`csv`).
+ */
+export type ExportKind = "pdf" | "docx" | "json" | "ics" | "csv";
+
+/** The formats a CV exports to. */
+export type CvExportKind = Extract<ExportKind, "pdf" | "docx" | "json">;
 
 /** Rejection of both commands (mirrors `CommandError` in src-tauri/src/commands.rs). */
 export interface CvExportError {
@@ -36,7 +42,11 @@ export async function printCvPdf(html: string, paper: PaperSize): Promise<Uint8A
  * must end in the kind's extension), writes `bytes` to the chosen file and returns its path, or
  * null when the user cancels. Rejects with `CvExportError`.
  */
-export function saveExportFile(bytes: Uint8Array, fileName: string, kind: ExportKind): Promise<string | null> {
+export function saveExportFile(
+  bytes: Uint8Array,
+  fileName: string,
+  kind: ExportKind,
+): Promise<string | null> {
   // The bytes travel as the raw request body; headers are ASCII, so the name is percent-encoded.
   return invoke<string | null>("save_export", bytes, {
     headers: { [FILE_NAME_HEADER]: encodeURIComponent(fileName), [KIND_HEADER]: kind },

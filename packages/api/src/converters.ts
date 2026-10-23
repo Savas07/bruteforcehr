@@ -1,6 +1,7 @@
 import {
   type AppConfig,
   AppConfigSchema,
+  APPLICATION_READ_DEFAULTS,
   type Application,
   type ApplicationEvent,
   ApplicationEventSchema,
@@ -255,6 +256,7 @@ export function createConverters<TTimestamp>(adapter: TimestampAdapter<TTimestam
       "application",
       ApplicationSchema,
       ["id"],
+      APPLICATION_READ_DEFAULTS,
     ),
     applicationEvent: createEntityConverter<TTimestamp, ApplicationEvent, "id">(
       adapter,

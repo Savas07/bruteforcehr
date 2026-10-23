@@ -451,3 +451,61 @@ public func followUpDue(
         ? FollowUpSuggestion(since: Date(epochMilliseconds: since), dueAt: Date(epochMilliseconds: dueAt))
         : nil
 }
+
+/// The user's answers on the suggestion cards (decisions.md F9, D15, D19).
+public protocol SuggestionTracked: StatusTracked {
+    var followUpSnoozedUntil: Date? { get }
+    var followUpDismissedAt: Date? { get }
+    var ghostedSnoozedUntil: Date? { get }
+    var ghostedDismissedAt: Date? { get }
+}
+
+extension Application: SuggestionTracked {}
+
+public struct SuggestionSettings: Codable, Hashable, Sendable {
+    public var followUpAfterDays: Int
+    public var ghostedAfterDays: Int
+
+    public init(followUpAfterDays: Int = defaultFollowUpAfterDays, ghostedAfterDays: Int = defaultGhostedAfterDays) {
+        self.followUpAfterDays = followUpAfterDays
+        self.ghostedAfterDays = ghostedAfterDays
+    }
+}
+
+public struct VisibleSuggestions: Codable, Hashable, Sendable {
+    public var followUp: FollowUpSuggestion?
+    public var ghosted: GhostedSuggestion?
+}
+
+/// The suggestions to show after the user's answers on the cards:
+/// - follow-up: hidden while snoozed ("Later") and once marked "Not needed" for the current round
+///   (a newer follow-up sent starts a new round, which is asked about again);
+/// - no response: hidden while snoozed, and for `ghostedAfterDays` after "Keep waiting".
+public func visibleSuggestions(
+    _ application: some SuggestionTracked,
+    events: [ApplicationEvent],
+    now: Date,
+    settings: SuggestionSettings = SuggestionSettings()
+) throws -> VisibleSuggestions {
+    let at = now.epochMilliseconds
+    func snoozed(_ until: Date?) -> Bool { until.map { $0.epochMilliseconds > at } ?? false }
+
+    var followUp = try followUpDue(application, events: events, now: now, days: settings.followUpAfterDays)
+    if let due = followUp,
+       snoozed(application.followUpSnoozedUntil)
+        || (application.followUpDismissedAt.map { $0.epochMilliseconds >= due.since.epochMilliseconds } ?? false)
+    {
+        followUp = nil
+    }
+
+    var ghosted = try suggestGhosted(application, events: events, now: now, days: settings.ghostedAfterDays)
+    if ghosted != nil,
+       snoozed(application.ghostedSnoozedUntil)
+        || (application.ghostedDismissedAt.map {
+            at < $0.epochMilliseconds + Int64(settings.ghostedAfterDays) * millisecondsPerDay
+        } ?? false)
+    {
+        ghosted = nil
+    }
+    return VisibleSuggestions(followUp: followUp, ghosted: ghosted)
+}

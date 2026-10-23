@@ -4,7 +4,7 @@
  * (snapshot listeners show them immediately, `hasPendingWrites` marks them) and queued while
  * offline; see backend.ts for the concurrency rules.
  */
-import { createConverters, firestorePaths } from "@bfhr/api";
+import { firestorePaths } from "@bfhr/api";
 import { CV_INITIAL_VERSION, type Cv, type CvRevision, type Profile } from "@bfhr/core";
 import {
   collection,
@@ -13,11 +13,11 @@ import {
   FirestoreError,
   onSnapshot,
   setDoc,
-  Timestamp,
   updateDoc,
   writeBatch,
 } from "firebase/firestore";
 import { useEffect, useState } from "react";
+import { converters } from "../../data/converters";
 import { firestore } from "../../lib/firebaseServices";
 import {
   CvConflictError,
@@ -27,12 +27,6 @@ import {
   type NewCvInput,
   type PendingWrite,
 } from "./backend";
-
-export const converters = createConverters<Timestamp>({
-  fromDate: (date) => Timestamp.fromDate(date),
-  toDate: (value) => value.toDate(),
-  isTimestamp: (value): value is Timestamp => value instanceof Timestamp,
-});
 
 /** A rejected `version + 1` update: the rules answer `permission-denied`. */
 function isVersionRejection(error: unknown): boolean {
@@ -119,7 +113,11 @@ export function createFirestoreCvBackend(uid: string): CvStudioBackend {
     adoptRevision(cv, revisionId, content) {
       const done = updateDoc(
         cvRef(cv.id),
-        converters.cvUpdate(cv.version, { currentRevisionId: revisionId, ...mirroredDesign(content), updatedAt: new Date() }),
+        converters.cvUpdate(cv.version, {
+          currentRevisionId: revisionId,
+          ...mirroredDesign(content),
+          updatedAt: new Date(),
+        }),
       ).catch((error: unknown) => {
         throw isVersionRejection(error) ? new CvConflictError(revisionId) : error;
       });
@@ -127,7 +125,10 @@ export function createFirestoreCvBackend(uid: string): CvStudioBackend {
     },
 
     updateCv(cv, patch): PendingWrite {
-      const done = updateDoc(cvRef(cv.id), converters.cvUpdate(cv.version, { ...patch, updatedAt: new Date() }));
+      const done = updateDoc(
+        cvRef(cv.id),
+        converters.cvUpdate(cv.version, { ...patch, updatedAt: new Date() }),
+      );
       return { ids: {}, done };
     },
   };
@@ -212,7 +213,14 @@ export function useLiveCvData(uid: string): LiveCvState {
       if (!fromCache) syncedAt = new Date();
       setState({
         status: "ready",
-        data: { profile: snapshots.profile.value, cvs, cvRevisions: revisions, pendingWrites: pending, fromCache, syncedAt },
+        data: {
+          profile: snapshots.profile.value,
+          cvs,
+          cvRevisions: revisions,
+          pendingWrites: pending,
+          fromCache,
+          syncedAt,
+        },
       });
     };
 

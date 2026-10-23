@@ -57,10 +57,29 @@ export const ApplicationSchema = z.object({
   nextActionAt: TimestampSchema.nullable(),
   priority: ApplicationPrioritySchema,
   notes: z.string().max(20_000),
+  // Suggestion state (decisions.md F9), set by the user from the suggestion cards; read through
+  // `visibleSuggestions`. Added after launch: documents without them read as null
+  // (`APPLICATION_READ_DEFAULTS`).
+  /** "Later" on the follow-up suggestion: hidden until then. */
+  followUpSnoozedUntil: TimestampSchema.nullable(),
+  /** "Not needed" on the follow-up suggestion: hidden until a newer follow-up is due. */
+  followUpDismissedAt: TimestampSchema.nullable(),
+  /** "Later" on the no-response suggestion. */
+  ghostedSnoozedUntil: TimestampSchema.nullable(),
+  /** "Keep waiting": asked again only after another `ghostedAfterDays` of silence. */
+  ghostedDismissedAt: TimestampSchema.nullable(),
   createdAt: TimestampSchema,
   updatedAt: TimestampSchema,
 });
 export type Application = z.infer<typeof ApplicationSchema>;
+
+/** Values for `Application` fields added after the first documents were written. */
+export const APPLICATION_READ_DEFAULTS = {
+  followUpSnoozedUntil: null,
+  followUpDismissedAt: null,
+  ghostedSnoozedUntil: null,
+  ghostedDismissedAt: null,
+} as const satisfies Partial<Application>;
 
 export const ApplicationEventTypeSchema = z.enum([
   /** Application created; `toStatus` is the initial status, `fromStatus` is null. */

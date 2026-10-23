@@ -328,3 +328,65 @@ export const SavedSearchSchema = z.object({
   updatedAt: TimestampSchema,
 });
 export type SavedSearch = z.infer<typeof SavedSearchSchema>;
+
+export interface ManualJobInput {
+  readonly company: string;
+  readonly title: string;
+  /** The posting's address the user pasted (http/https). */
+  readonly url: string;
+  readonly location: string | null;
+  readonly at: Date;
+}
+
+/** Source id of jobs the user entered by hand ("Log an application" with a link). */
+export const MANUAL_JOB_SOURCE = "manual" satisfies KnownJobSource;
+
+/**
+ * The `jobs` document for a link entered with "Log an application" (ADR 0002: jobs may be created
+ * by the client for manual entry). One `manual` source pointing at the link; nothing is fetched or
+ * guessed, so the posting language is `und` (undetermined) and the description empty. The
+ * fingerprint is the normalized company and title, so a later import of the same posting can be
+ * deduplicated against it.
+ */
+export function manualJob(input: ManualJobInput): Omit<Job, "id"> {
+  const source: JobSourceLink = {
+    source: MANUAL_JOB_SOURCE,
+    sourceId: null,
+    url: input.url,
+    applyUrl: input.url,
+    applyEmail: null,
+    isDirectFromEmployer: false,
+    title: input.title,
+    locationText: input.location,
+    salary: null,
+    postedAt: null,
+    firstSeenAt: input.at,
+    lastSeenAt: input.at,
+  };
+  const normalize = (value: string) => value.trim().toLocaleLowerCase("en").replace(/\s+/g, " ");
+  return {
+    sources: [source],
+    sourceKeys: [jobSourceKey(source)],
+    applyUrl: input.url,
+    applyEmail: null,
+    company: input.company,
+    companyDomain: null,
+    title: input.title,
+    locations: input.location === null ? [] : [{ label: input.location, city: null, countryCode: null }],
+    remoteType: null,
+    remoteEligibility: null,
+    employmentType: null,
+    seniority: null,
+    salary: null,
+    visaSponsorship: null,
+    relocationSupport: null,
+    language: "und",
+    description: "",
+    skills: [],
+    postedAt: null,
+    expiresAt: null,
+    fingerprint: `manual|${normalize(input.company)}|${normalize(input.title)}`.slice(0, 128),
+    createdAt: input.at,
+    updatedAt: input.at,
+  };
+}

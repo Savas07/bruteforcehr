@@ -9,7 +9,7 @@ import { buildCvDocx, exportFileName, exportJsonResume, splitName } from "@bfhr/
 import { Dialog } from "radix-ui";
 import { useId, useMemo, useState } from "react";
 import { defineMessages, useIntl } from "react-intl";
-import { printCvPdf, saveExportFile, type ExportKind } from "../../lib/cvExport";
+import { printCvPdf, saveExportFile, type CvExportKind } from "../../lib/cvExport";
 import { Button } from "../../shared/ui/Button";
 import { InlineAlert } from "../../shared/ui/InlineAlert";
 import { SegmentedControl } from "../../shared/ui/SegmentedControl";
@@ -75,7 +75,7 @@ export function ExportDialog({
   const intl = useIntl();
   const toast = useToast();
   const companyId = useId();
-  const [kind, setKind] = useState<ExportKind>("pdf");
+  const [kind, setKind] = useState<CvExportKind>("pdf");
   const [paper, setPaper] = useState(content.meta.theme.paperSize);
   const [company, setCompany] = useState("");
   const [busy, setBusy] = useState(false);

@@ -153,4 +153,16 @@ describe("CV Studio", () => {
     const summary = summaryOf(revision);
     if (summary) expect(text.replace(/\s+/gu, " ")).toContain(summary);
   });
+
+  it("shows the template gallery and reads the PDF back in the ATS check", async () => {
+    const inspector = $('aside[aria-label="Inspector"]');
+    if (!(await inspector.isExisting())) await pressShortcut("Shift", "d");
+    await $('[role="tab"]=Design').click();
+    await $("legend=Template").waitForDisplayed();
+    await capture("template-gallery");
+    await $('[role="tab"]=Check').click();
+    await $("button=Run check").click();
+    await $("*=Experience").waitForDisplayed({ timeout: 60_000 });
+    await capture("ats-check");
+  });
 });

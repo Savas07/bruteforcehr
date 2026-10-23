@@ -146,6 +146,8 @@ export const ApplicationCard = forwardRef(function ApplicationCard(
         <CardBody card={card} muted={muted} />
       </button>
       <DropdownMenu.Root
+        // Non-modal (APG menus): a modal Radix menu hides the app from screen readers while open.
+        modal={false}
         open={menuOpen}
         onOpenChange={(open) => {
           returnToCard.current = !open;

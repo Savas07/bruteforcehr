@@ -110,9 +110,12 @@ describe("Tracker", () => {
   it("moves it on the board and undoes the move with a reverting event", async () => {
     const card = $(`[data-card-id="${applicationId}"]`);
     await card.waitForDisplayed({ timeout: 20_000 });
-    // The corner "Move to…" button shows on hover and focus.
-    await card.moveTo();
-    await card.$('button[aria-label="Move to…"]').click();
+    // Keyboard path (IA.md): focus the card, M opens Move to… (Radix opens its menu on pointerdown,
+    // which the embedded WebDriver's script clicks don't send).
+    await browser.execute((id) => {
+      document.querySelector<HTMLButtonElement>(`[data-card-id="${id}"] > button`)?.focus();
+    }, applicationId);
+    await browser.keys("m");
     await $('[role="menuitemradio"]').waitForDisplayed();
     const picked = await browser.execute(() => {
       const item = [...document.querySelectorAll<HTMLElement>('[role="menuitemradio"]')].find(

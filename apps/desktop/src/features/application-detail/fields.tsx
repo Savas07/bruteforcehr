@@ -4,7 +4,15 @@
  * classes only; the global `:focus-visible` ring applies.
  */
 import { Dialog } from "radix-ui";
-import { type ComponentProps, type ReactElement, type ReactNode, cloneElement, useId } from "react";
+import {
+  type ComponentProps,
+  type ReactElement,
+  type ReactNode,
+  type Ref,
+  cloneElement,
+  useId,
+  useState,
+} from "react";
 import { defineMessages, useIntl } from "react-intl";
 import { cx } from "../../shared/cx";
 import { Button } from "../../shared/ui/Button";
@@ -23,11 +31,13 @@ export const controlClass =
 
 /** A page or panel section: `h2` title, optional trailing actions, then the content. */
 export function Section({
+  ref,
   title,
   actions,
   children,
   className,
 }: {
+  ref?: Ref<HTMLElement>;
   title: string;
   /** Buttons on the title line ("Add", "Export all rounds"). */
   actions?: ReactNode;
@@ -36,7 +46,7 @@ export function Section({
 }) {
   const headingId = useId();
   return (
-    <section aria-labelledby={headingId} className={cx("flex flex-col gap-3", className)}>
+    <section ref={ref} aria-labelledby={headingId} className={cx("flex flex-col gap-3", className)}>
       <div className="flex min-h-8 flex-wrap items-center gap-x-2 gap-y-1">
         <h2 id={headingId} className="text-headline text-fg-primary me-auto font-semibold">
           {title}
@@ -128,12 +138,28 @@ export function FormDialog({
   children: ReactNode;
 }) {
   const intl = useIntl();
+  // These dialogs open from buttons, shortcuts and menus without a Radix trigger (and most are
+  // mounted already open): remember what had focus when the dialog opened, before an autofocused
+  // field takes it, and return there on close.
+  const [opener, setOpener] = useState(() =>
+    document.activeElement instanceof HTMLElement ? document.activeElement : null,
+  );
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) setOpener(document.activeElement instanceof HTMLElement ? document.activeElement : null);
+  }
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay className="bg-surface-scrim fixed inset-0 z-(--bfhr-layer-modal)" />
         <Dialog.Content
           {...(description === undefined && { "aria-describedby": undefined })}
+          onCloseAutoFocus={(event) => {
+            if (!opener?.isConnected || opener === document.body) return;
+            event.preventDefault();
+            opener.focus();
+          }}
           className={cx(
             "bg-surface-elevated text-fg-primary shadow-modal fixed top-1/2 left-1/2 z-(--bfhr-layer-modal) flex max-h-[calc(100vh-48px)] -translate-x-1/2 -translate-y-1/2 flex-col rounded-lg",
             wide ? "w-[min(560px,calc(100vw-32px))]" : "w-[min(440px,calc(100vw-32px))]",

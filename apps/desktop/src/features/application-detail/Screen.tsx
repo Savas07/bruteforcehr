@@ -11,7 +11,7 @@
 import { useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, FileQuestion, MoreHorizontal, Trash2 } from "lucide-react";
 import { AlertDialog, DropdownMenu } from "radix-ui";
-import { type ReactNode, useRef, useState } from "react";
+import { type ReactNode, type RefObject, useEffect, useRef, useState } from "react";
 import { defineMessages, useIntl } from "react-intl";
 import { useKeyBindings } from "../../shared/keyboard/useKeyBindings";
 import type { ScreenProps } from "../../shared/screen";
@@ -208,6 +208,7 @@ function ReadyDetail({
   const [reminderEditing, setReminderEditing] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const composerRef = useRef<HTMLTextAreaElement>(null);
+  const moreRef = useRef<HTMLButtonElement>(null);
   const { suggestion, applicationId } = detail;
 
   const runNextAction = (action: NextActionVM) => {
@@ -261,9 +262,25 @@ function ReadyDetail({
     },
   ]);
 
+  // Answering, snoozing or restoring the suggestion removes the focused control with the card or
+  // the snoozed line. Focus then goes to what replaced it: the snoozed line's Show now, the
+  // card's first answer, or (nothing left in Up next) the page title.
+  const headerRef = useRef<HTMLDivElement>(null);
+  const upNextRef = useRef<HTMLElement>(null);
+  const upNext = suggestion !== null ? "card" : detail.snoozed !== null ? "snoozed" : "none";
+  const previousUpNext = useRef(upNext);
+  useEffect(() => {
+    if (previousUpNext.current === upNext) return;
+    previousUpNext.current = upNext;
+    if (document.activeElement !== document.body) return;
+    const target =
+      upNext === "none" ? headerRef.current?.querySelector("h1") : upNextRef.current?.querySelector("button");
+    target?.focus();
+  }, [upNext]);
+
   return (
     <>
-      <div className="flex items-start gap-2">
+      <div ref={headerRef} className="flex items-start gap-2">
         <div className="min-w-0 flex-1">
           <RecordHeader
             header={detail.header}
@@ -284,13 +301,13 @@ function ReadyDetail({
             onOpenPosting={actions.openLink}
           />
         </div>
-        <MoreMenu onDelete={() => setDeleting(true)} />
+        <MoreMenu triggerRef={moreRef} onDelete={() => setDeleting(true)} />
       </div>
 
       <div className="mt-4 grid gap-x-10 gap-y-8 @4xl:grid-cols-[minmax(0,1fr)_minmax(18rem,22rem)]">
         <div className="flex min-w-0 flex-col gap-8">
           {(suggestion !== null || detail.snoozed !== null) && (
-            <Section title={intl.formatMessage(messages.upNext)}>
+            <Section ref={upNextRef} title={intl.formatMessage(messages.upNext)}>
               {suggestion && (
                 <SuggestionCard
                   suggestion={suggestion}
@@ -348,13 +365,14 @@ function ReadyDetail({
             group={group}
             onSave={(notes) => actions.updateApplication(applicationId, { notes }, { quiet: true })}
           />
-          <ApplicationSummaryBlock summary={detail.summary} />
+          <ApplicationSummaryBlock summary={detail.summary} trackedElsewhere />
         </div>
       </div>
 
       <DeleteDialog
         open={deleting}
         onOpenChange={setDeleting}
+        returnFocus={moreRef}
         detail={detail}
         actions={actions}
         onDeleted={onBack}
@@ -363,12 +381,20 @@ function ReadyDetail({
   );
 }
 
-function MoreMenu({ onDelete }: { onDelete: () => void }) {
+function MoreMenu({
+  triggerRef,
+  onDelete,
+}: {
+  triggerRef: RefObject<HTMLButtonElement | null>;
+  onDelete: () => void;
+}) {
   const intl = useIntl();
   return (
-    <DropdownMenu.Root>
+    // Non-modal (APG menu button): Radix's modal mode marks the page aria-hidden while focusable
+    // content stays in it (axe aria-hidden-focus); Tab is blocked inside the menu either way.
+    <DropdownMenu.Root modal={false}>
       <DropdownMenu.Trigger asChild>
-        <IconButton icon={MoreHorizontal} label={intl.formatMessage(messages.more)} />
+        <IconButton ref={triggerRef} icon={MoreHorizontal} label={intl.formatMessage(messages.more)} />
       </DropdownMenu.Trigger>
       <MenuContent align="end" aria-label={intl.formatMessage(messages.more)}>
         <MenuItem icon={Trash2} destructive onSelect={onDelete}>
@@ -379,16 +405,21 @@ function MoreMenu({ onDelete }: { onDelete: () => void }) {
   );
 }
 
-/** Deleting asks first; focus starts on Cancel and Enter / Esc both cancel (IA.md). */
+/**
+ * Deleting asks first; focus starts on Cancel and Enter / Esc both cancel (IA.md). Opened from
+ * the More menu (no Radix trigger), so Cancel returns focus to `returnFocus`.
+ */
 function DeleteDialog({
   open,
   onOpenChange,
+  returnFocus,
   detail,
   actions,
   onDeleted,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  returnFocus: RefObject<HTMLButtonElement | null>;
   detail: ApplicationDetailVM;
   actions: DetailActions;
   onDeleted: () => void;
@@ -398,7 +429,14 @@ function DeleteDialog({
     <AlertDialog.Root open={open} onOpenChange={onOpenChange}>
       <AlertDialog.Portal>
         <AlertDialog.Overlay className="bg-surface-scrim fixed inset-0 z-(--bfhr-layer-modal)" />
-        <AlertDialog.Content className="bg-surface-elevated text-fg-primary shadow-modal fixed top-1/2 left-1/2 z-(--bfhr-layer-modal) flex w-[min(420px,calc(100vw-32px))] -translate-x-1/2 -translate-y-1/2 flex-col gap-4 rounded-lg p-5">
+        <AlertDialog.Content
+          onCloseAutoFocus={(event) => {
+            if (!returnFocus.current?.isConnected) return;
+            event.preventDefault();
+            returnFocus.current.focus();
+          }}
+          className="bg-surface-elevated text-fg-primary shadow-modal fixed top-1/2 left-1/2 z-(--bfhr-layer-modal) flex w-[min(420px,calc(100vw-32px))] -translate-x-1/2 -translate-y-1/2 flex-col gap-4 rounded-lg p-5"
+        >
           <div className="flex flex-col gap-1">
             <AlertDialog.Title className="font-display text-title3 text-pretty">
               {intl.formatMessage(messages.deleteTitle, {

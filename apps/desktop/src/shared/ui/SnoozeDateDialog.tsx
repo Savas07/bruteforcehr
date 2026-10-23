@@ -4,7 +4,7 @@
  * picked day comes back as 09:00 that day in the user's zone (`snoozeDateInstant`).
  */
 import { Dialog } from "radix-ui";
-import { useId, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { defineMessages, useIntl } from "react-intl";
 import { snoozeDateInstant } from "../../data/tracker/snooze";
 import { Button } from "./Button";
@@ -52,6 +52,7 @@ export function SnoozeDateDialog({
   const intl = useIntl();
   const fieldId = useId();
   const [value, setValue] = useState("");
+  const opener = useRef<HTMLElement | null>(null);
   const at = snoozeDateInstant(value, timeZone);
   // Typed dates can bypass `min` in some engines; ISO day strings compare in calendar order.
   const disabledReason =
@@ -69,7 +70,19 @@ export function SnoozeDateDialog({
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay className="bg-surface-scrim fixed inset-0 z-(--bfhr-layer-modal)" />
-        <Dialog.Content className="bg-surface-elevated shadow-modal fixed top-1/2 left-1/2 z-(--bfhr-layer-modal) flex w-[min(400px,calc(100vw-32px))] -translate-x-1/2 -translate-y-1/2 flex-col gap-4 rounded-lg p-5">
+        <Dialog.Content
+          // No Radix trigger opens this dialog (it comes from the snooze menu): remember what had
+          // focus when it opened (the menu's trigger) and go back there when it closes.
+          onOpenAutoFocus={() => {
+            opener.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+          }}
+          onCloseAutoFocus={(event) => {
+            if (!opener.current?.isConnected) return;
+            event.preventDefault();
+            opener.current.focus();
+          }}
+          className="bg-surface-elevated shadow-modal fixed top-1/2 left-1/2 z-(--bfhr-layer-modal) flex w-[min(400px,calc(100vw-32px))] -translate-x-1/2 -translate-y-1/2 flex-col gap-4 rounded-lg p-5"
+        >
           <div>
             <Dialog.Title className="font-display text-title3">
               {intl.formatMessage(messages.title)}

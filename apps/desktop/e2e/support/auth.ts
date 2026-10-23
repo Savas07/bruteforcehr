@@ -8,7 +8,7 @@
  * (LaunchServices on macOS; a second instance and the single-instance hand-off on Windows).
  */
 import { execFileSync } from "node:child_process";
-import { $, browser, expect } from "@wdio/globals";
+import { $, browser } from "@wdio/globals";
 import { Key } from "webdriverio";
 import { firebaseConfig } from "../../src/lib/firebase.ts";
 
@@ -53,6 +53,22 @@ export async function latestSignInCode(email: string): Promise<string> {
 
 export const heading = () => $("h1");
 
+/**
+ * Waits until the page's `h1` reads `text`. Each sign-in step mounts its own heading, so this
+ * re-reads the DOM on every poll instead of holding an element that the next step replaces
+ * (a held, replaced element reads as null in WebView2).
+ */
+export async function expectHeading(text: string, timeout = 10_000): Promise<void> {
+  let last: string | null | undefined;
+  await browser.waitUntil(
+    async () => {
+      last = await browser.execute(() => document.querySelector("h1")?.textContent ?? null);
+      return last === text;
+    },
+    { timeout, timeoutMsg: `expected the heading "${text}", last saw ${JSON.stringify(last)}` },
+  );
+}
+
 /** Whether the signed-in shell is showing (its sidebar exists only after sign-in). */
 const inShell = () => $('nav[aria-label="Sections"]').isExisting();
 
@@ -70,7 +86,7 @@ export async function signOutFromPalette(): Promise<void> {
   await $('[role="dialog"] [role="combobox"]').waitForDisplayed();
   await browser.keys("Sign out");
   await browser.keys(Key.Enter);
-  await expect(heading()).toHaveText("Sign in to BruteForceHR");
+  await expectHeading("Sign in to BruteForceHR");
 }
 
 /** Leaves the app on the email step, whatever state the launch restored. */
@@ -87,7 +103,7 @@ export async function ensureSignedOut(): Promise<void> {
         break;
       }
     }
-    await expect(heading()).toHaveText("Sign in to BruteForceHR");
+    await expectHeading("Sign in to BruteForceHR");
   }
 }
 
@@ -128,7 +144,7 @@ export async function requestLink(email: string): Promise<void> {
 export async function signIn(email: string): Promise<void> {
   await requestLink(email);
   openThroughOs(deepLinkFor(finishPageLink(await latestSignInCode(email))));
-  await expect(heading()).toHaveText("Today", { wait: 20_000 });
+  await expectHeading("Today", 20_000);
 }
 
 /** Leaves the app signed in, whatever state the launch restored. */

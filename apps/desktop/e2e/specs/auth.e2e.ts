@@ -4,13 +4,12 @@
  * (src-tauri/src/auth_link.rs), completed against the Firebase Auth emulator.
  */
 import { $, browser, expect } from "@wdio/globals";
-import { Key } from "webdriverio";
 import {
   deepLinkFor,
   ensureSignedIn,
   ensureSignedOut,
+  expectHeading,
   finishPageLink,
-  heading,
   latestSignInCode,
   openThroughOs,
   requestLink,
@@ -25,7 +24,7 @@ describe("Sign-in", () => {
   });
 
   it("gates the app behind the email step", async () => {
-    await expect(heading()).toHaveText("Sign in to BruteForceHR");
+    await expectHeading("Sign in to BruteForceHR");
     await expect(browser).toHaveTitle("Sign in · BruteForceHR");
     await expect($('nav[aria-label="Sections"]')).not.toBeExisting();
     await expect($('input[type="email"]')).toBeFocused();
@@ -34,15 +33,15 @@ describe("Sign-in", () => {
   it("rejects a deep link whose embedded link isn't a sign-in link on our domains", async () => {
     // Crafted: right deep-link shape, but the embedded link points elsewhere.
     openThroughOs(deepLinkFor("https://evil.example/auth/finish?apiKey=x&oobCode=stolen&mode=signIn"));
-    await expect(heading()).toHaveText("This sign-in link doesn’t work", { wait: 20_000 });
+    await expectHeading("This sign-in link doesn’t work", 20_000);
     // No address is known on this device yet, so the way on is a new link from the email step.
     await $("button=Send a new link").click();
-    await expect(heading()).toHaveText("Sign in to BruteForceHR");
+    await expectHeading("Sign in to BruteForceHR");
   });
 
   it("rejects a malformed deep link", async () => {
     openThroughOs("bruteforcehr://auth/finish?link=not-a-url&extra=1");
-    await expect(heading()).toHaveText("This sign-in link doesn’t work", { wait: 20_000 });
+    await expectHeading("This sign-in link doesn’t work", 20_000);
     await $("button=Send a new link").click();
   });
 
@@ -51,7 +50,7 @@ describe("Sign-in", () => {
     await ensureSignedOut();
     await requestLink(email);
     openThroughOs(deepLinkFor(finishPageLink("not-a-real-code")));
-    await expect(heading()).toHaveText("This sign-in link doesn’t work", { wait: 20_000 });
+    await expectHeading("This sign-in link doesn’t work", 20_000);
     await expect($(`strong=${email}`)).toBeDisplayed();
   });
 
@@ -63,7 +62,7 @@ describe("Sign-in", () => {
     // This device forgets the request, as if it had been made on another one.
     await browser.execute((key) => localStorage.removeItem(key), "bfhr.emailForSignIn");
     openThroughOs(deepLinkFor(finishPageLink(code)));
-    await expect(heading()).toHaveText("Confirm your email", { wait: 20_000 });
+    await expectHeading("Confirm your email", 20_000);
 
     const field = $('input[type="email"]');
     await field.setValue("someone-else@example.com");
@@ -72,7 +71,7 @@ describe("Sign-in", () => {
 
     await field.setValue(email);
     await $('button[type="submit"]').click();
-    await expect(heading()).toHaveText("Today", { wait: 20_000 });
+    await expectHeading("Today", 20_000);
   });
 
   it("signs out from the command palette and back in with a link", async () => {
@@ -93,7 +92,7 @@ describe("Sign-in", () => {
     await ensureSignedIn(testEmail("returning"));
     openThroughOs(deepLinkFor(finishPageLink("whatever")));
     await browser.pause(2000);
-    await expect(heading()).toHaveText("Today");
+    await expectHeading("Today");
   });
 
   it("grants the UI none of the deep-link plugin's commands", async () => {

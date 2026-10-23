@@ -63,7 +63,15 @@ export const IMAP_PRESETS = [
   {
     id: "outlook",
     label: "Outlook.com",
-    domains: ["outlook.com", "hotmail.com", "live.com", "msn.com", "outlook.de", "hotmail.de", "outlook.com.tr"],
+    domains: [
+      "outlook.com",
+      "hotmail.com",
+      "live.com",
+      "msn.com",
+      "outlook.de",
+      "hotmail.de",
+      "outlook.com.tr",
+    ],
     imap: tls("outlook.office365.com"),
     smtp: starttls("smtp-mail.outlook.com"),
     oauthOnly: "microsoft",
@@ -151,7 +159,12 @@ export const MailConnectImapRequestSchema = z.object({
 export type MailConnectImapRequest = z.input<typeof MailConnectImapRequestSchema>;
 
 /** Why SMTP is unusable while IMAP works ("Connected for reading" warning). */
-export const SMTP_WARNING_REASONS = ["smtp_auth_failed", "smtp_unreachable", "smtp_tls_failed", "smtp_not_configured"] as const;
+export const SMTP_WARNING_REASONS = [
+  "smtp_auth_failed",
+  "smtp_unreachable",
+  "smtp_tls_failed",
+  "smtp_not_configured",
+] as const;
 
 export const MailConnectImapResponseSchema = z.object({
   accountId: IdSchema,

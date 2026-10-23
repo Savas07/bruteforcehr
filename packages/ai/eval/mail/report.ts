@@ -1,17 +1,14 @@
 import { MailCategorySchema } from "@bfhr/core";
-import {
-  AUTO_PRECISION_GATE,
-  autoCorrect,
-  type CaseResult,
-  MACRO_F1_GATE,
-  type Metrics,
-} from "./score";
+import { AUTO_PRECISION_GATE, autoCorrect, type CaseResult, MACRO_F1_GATE, type Metrics } from "./score";
 
 const pct = (value: number) => `${(value * 100).toFixed(1)} %`;
 const pass = (ok: boolean) => (ok ? "✅ pass" : "❌ fail");
 
 export function gatePasses(metrics: Metrics): { macroF1: boolean; autoPrecision: boolean } {
-  return { macroF1: metrics.macroF1 >= MACRO_F1_GATE, autoPrecision: metrics.autoPrecision >= AUTO_PRECISION_GATE };
+  return {
+    macroF1: metrics.macroF1 >= MACRO_F1_GATE,
+    autoPrecision: metrics.autoPrecision >= AUTO_PRECISION_GATE,
+  };
 }
 
 function metricsTable(title: string, metrics: Metrics, gateF1: boolean): string {
@@ -43,7 +40,9 @@ function metricsTable(title: string, metrics: Metrics, gateF1: boolean): string 
 }
 
 function errorsTable(results: readonly CaseResult[]): string {
-  const rows = results.filter((r) => !r.categoryOk || !r.linkOk || !r.statusOk || (r.analysis.decision.autoApply && !autoCorrect(r)));
+  const rows = results.filter(
+    (r) => !r.categoryOk || !r.linkOk || !r.statusOk || (r.analysis.decision.autoApply && !autoCorrect(r)),
+  );
   if (rows.length === 0) return "No errors.\n";
   return [
     "| Case | Expected (category · application · status) | Got | Auto | Hard case |",

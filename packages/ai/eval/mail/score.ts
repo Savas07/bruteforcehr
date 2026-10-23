@@ -3,7 +3,13 @@
  * turns fixtures into pipeline inputs, runs `analyzeMail`, and scores the results.
  */
 import { createHash } from "node:crypto";
-import { foldText, MailCategorySchema, type MailCategory, type MailInput, type TrackedApplication } from "@bfhr/core";
+import {
+  foldText,
+  MailCategorySchema,
+  type MailCategory,
+  type MailInput,
+  type TrackedApplication,
+} from "@bfhr/core";
 import type { UsageLedger } from "../../src/budget";
 import { analyzeMail, type AnalyzeMailAi, type MailAnalysis } from "../../src/mail-classify";
 import type { AiProvider, StructuredRequest, StructuredResult } from "../../src/provider";
@@ -38,9 +44,11 @@ export const TRACKER: readonly TrackedApplication[] = MAIL_EVAL_APPLICATIONS.map
       threadId,
       rfc822MessageId: application.sentMessageIds[index] ?? null,
     })),
-    ...application.sentMessageIds
-      .slice(application.threadIds.length)
-      .map((rfc822MessageId, index) => ({ accountId: EVAL_ACCOUNT, threadId: `sent-${application.id}-${index}`, rfc822MessageId })),
+    ...application.sentMessageIds.slice(application.threadIds.length).map((rfc822MessageId, index) => ({
+      accountId: EVAL_ACCOUNT,
+      threadId: `sent-${application.id}-${index}`,
+      rfc822MessageId,
+    })),
   ],
 }));
 
@@ -60,10 +68,7 @@ export function mailInputOf(testCase: MailEvalCase): MailInput {
   };
 }
 
-export async function analyzeCase(
-  testCase: MailEvalCase,
-  ai: AnalyzeMailAi | null,
-): Promise<MailAnalysis> {
+export async function analyzeCase(testCase: MailEvalCase, ai: AnalyzeMailAi | null): Promise<MailAnalysis> {
   return analyzeMail(
     {
       mail: mailInputOf(testCase),
@@ -89,7 +94,10 @@ export interface Recording {
 }
 
 export function promptHash(request: StructuredRequest<unknown>): string {
-  return createHash("sha256").update(`${request.model}\n${request.system}\n${request.user}`).digest("hex").slice(0, 16);
+  return createHash("sha256")
+    .update(`${request.model}\n${request.system}\n${request.user}`)
+    .digest("hex")
+    .slice(0, 16);
 }
 
 /** Replays a recording; a prompt that changed since the recording fails loudly (re-run the live eval). */
@@ -98,12 +106,20 @@ export function replayProvider(recording: Recording, caseId: () => string): AiPr
     async generate<T>(request: StructuredRequest<T>): Promise<StructuredResult<T>> {
       const id = caseId();
       const entry = recording.entries[id];
-      if (entry === undefined) throw new Error(`no recorded reply for ${id}: run pnpm --filter @bfhr/ai eval:mail`);
+      if (entry === undefined)
+        throw new Error(`no recorded reply for ${id}: run pnpm --filter @bfhr/ai eval:mail`);
       const hash = promptHash(request as StructuredRequest<unknown>);
       if (entry.promptHash !== hash) {
-        throw new Error(`prompt for ${id} changed since the recording (${entry.promptHash} → ${hash}): run pnpm --filter @bfhr/ai eval:mail`);
+        throw new Error(
+          `prompt for ${id} changed since the recording (${entry.promptHash} → ${hash}): run pnpm --filter @bfhr/ai eval:mail`,
+        );
       }
-      return { data: request.schema.parse(entry.output), model: request.model, usage: entry.usage, attempts: 1 };
+      return {
+        data: request.schema.parse(entry.output),
+        model: request.model,
+        usage: entry.usage,
+        attempts: 1,
+      };
     },
   };
 }
@@ -130,8 +146,12 @@ export interface CaseResult {
 const sameText = (expected: string | null, actual: string | null): boolean | null => {
   if (expected === null) return null;
   if (actual === null) return false;
-  const a = foldText(expected).replace(/[^\p{L}\p{N}]+/gu, " ").trim();
-  const b = foldText(actual).replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+  const a = foldText(expected)
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .trim();
+  const b = foldText(actual)
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .trim();
   return a === b || a.includes(b) || b.includes(a);
 };
 
@@ -150,12 +170,15 @@ export function scoreCase(testCase: MailEvalCase, analysis: MailAnalysis): CaseR
     categoryOk: analysis.category === expected.category,
     linkOk: analysis.link.applicationId === expected.applicationId,
     statusOk: analysis.decision.suggestedStatus === expected.suggestedStatus,
-    companyOk: expected.category === "not_job" ? null : sameText(expected.company, analysis.extracted.company),
+    companyOk:
+      expected.category === "not_job" ? null : sameText(expected.company, analysis.extracted.company),
     roleOk: expected.category === "not_job" ? null : sameText(expected.role, analysis.extracted.role),
     datesFound,
     datesExpected: expectedDates.length,
     meetingUrlsOk:
-      expectedUrls.length === 0 ? null : expectedUrls.every((url) => analysis.extracted.meetingUrls.includes(url)),
+      expectedUrls.length === 0
+        ? null
+        : expectedUrls.every((url) => analysis.extracted.meetingUrls.includes(url)),
   };
 }
 
@@ -186,7 +209,9 @@ export function computeMetrics(results: readonly CaseResult[]): Metrics {
   const perCategory = {} as Metrics["perCategory"];
   let f1Sum = 0;
   for (const category of MailCategorySchema.options) {
-    const tp = results.filter((r) => r.analysis.category === category && r.testCase.expected.category === category).length;
+    const tp = results.filter(
+      (r) => r.analysis.category === category && r.testCase.expected.category === category,
+    ).length;
     const predicted = results.filter((r) => r.analysis.category === category).length;
     const support = results.filter((r) => r.testCase.expected.category === category).length;
     const precision = predicted === 0 ? (support === 0 ? 1 : 0) : tp / predicted;
@@ -214,15 +239,19 @@ export function computeMetrics(results: readonly CaseResult[]): Metrics {
     autoApplied: auto.length,
     autoCorrect: auto.filter(autoCorrect).length,
     autoPrecision: auto.length === 0 ? 1 : auto.filter(autoCorrect).length / auto.length,
-    autoCoverage: eligible.length === 0 ? 0 : eligible.filter((r) => r.analysis.decision.autoApply && autoCorrect(r)).length / eligible.length,
+    autoCoverage:
+      eligible.length === 0
+        ? 0
+        : eligible.filter((r) => r.analysis.decision.autoApply && autoCorrect(r)).length / eligible.length,
     companyAccuracy: ratio(results.map((r) => r.companyOk)),
     roleAccuracy: ratio(results.map((r) => r.roleOk)),
     dateRecall: datesExpected === 0 ? 1 : results.reduce((sum, r) => sum + r.datesFound, 0) / datesExpected,
     candidatesDropped: {
-      jobMail: results.filter((r) => !r.analysis.candidate && r.testCase.expected.category !== "not_job").length,
-      notJob: results.filter((r) => !r.analysis.candidate && r.testCase.expected.category === "not_job").length,
+      jobMail: results.filter((r) => !r.analysis.candidate && r.testCase.expected.category !== "not_job")
+        .length,
+      notJob: results.filter((r) => !r.analysis.candidate && r.testCase.expected.category === "not_job")
+        .length,
     },
     costMicroUsd: results.reduce((sum, r) => sum + r.analysis.costMicroUsd, 0),
   };
 }
-

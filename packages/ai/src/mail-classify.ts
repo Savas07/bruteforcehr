@@ -123,7 +123,11 @@ export async function analyzeMail(input: AnalyzeMailInput, ai: AnalyzeMailAi | n
   let screening = rules.screening;
   let actor: "ai" | "rule" = "rule";
   let language: string | null = null;
-  let extracted: MailExtraction = { ...EMPTY_EXTRACTION, company: ruleExtraction.company, role: ruleExtraction.role };
+  let extracted: MailExtraction = {
+    ...EMPTY_EXTRACTION,
+    company: ruleExtraction.company,
+    role: ruleExtraction.role,
+  };
   let modelChoice: string | null = null;
   let model: ModelId | null = null;
   let usage = ZERO_USAGE;
@@ -165,7 +169,8 @@ export async function analyzeMail(input: AnalyzeMailInput, ai: AnalyzeMailAi | n
       : null;
     // Cross-check: a decisive rule phrase for a different status category caps the confidence,
     // so a disagreement always lands in the review queue instead of changing the tracker.
-    const ruleDecisive = rules.confidence >= 0.9 && rules.category !== "not_job" && rules.category !== "other_job";
+    const ruleDecisive =
+      rules.confidence >= 0.9 && rules.category !== "not_job" && rules.category !== "other_job";
     if (ruleDecisive && rules.category !== category) confidence = Math.min(confidence, DISAGREEMENT_CAP);
   }
 
@@ -204,7 +209,12 @@ export async function analyzeMail(input: AnalyzeMailInput, ai: AnalyzeMailAi | n
     extracted,
     link,
     decision,
-    reason: mailEvidenceReason({ category, senderDomain: signals.senderDomain, linkStrength: link.linkStrength, actor }),
+    reason: mailEvidenceReason({
+      category,
+      senderDomain: signals.senderDomain,
+      linkStrength: link.linkStrength,
+      actor,
+    }),
     model,
     promptVersion: model === null ? null : MAIL_CLASSIFY_PROMPT_VERSION,
     usage,
@@ -220,7 +230,9 @@ function promptApplications(
 ): TrackedApplication[] {
   const shortlist = candidateApplications(signals, applications, company);
   const rest = applications.filter(
-    (application) => !shortlist.includes(application) && !["rejected", "withdrawn", "accepted", "declined", "ghosted"].includes(application.status),
+    (application) =>
+      !shortlist.includes(application) &&
+      !["rejected", "withdrawn", "accepted", "declined", "ghosted"].includes(application.status),
   );
   return [...shortlist, ...rest].slice(0, MAX_PROMPT_APPLICATIONS);
 }
@@ -230,7 +242,11 @@ function promptApplications(
  * meeting URLs verbatim; dates become instants using the stated offset, the stated zone, or the
  * user's zone. Invalid values are dropped, never repaired.
  */
-export function groundExtraction(output: MailClassifyOutput, mail: MailInput, userTimeZone: string): MailExtraction {
+export function groundExtraction(
+  output: MailClassifyOutput,
+  mail: MailInput,
+  userTimeZone: string,
+): MailExtraction {
   const haystack = foldText(`${mail.from.name ?? ""} ${mail.from.address} ${mail.subject}\n${mail.bodyText}`);
   const grounded = (value: string | null, max: number) => {
     const trimmed = value?.trim() ?? "";
@@ -249,7 +265,8 @@ export function groundExtraction(output: MailClassifyOutput, mail: MailInput, us
     company: grounded(output.company, 200),
     role: grounded(output.role, 200),
     contactName: grounded(output.contactName, 200),
-    contactEmail: contactEmail !== null && /^[^\s@]+@[^\s@]+\.[^\s@]+$/u.test(contactEmail) ? contactEmail : null,
+    contactEmail:
+      contactEmail !== null && /^[^\s@]+@[^\s@]+\.[^\s@]+$/u.test(contactEmail) ? contactEmail : null,
     dates,
     meetingUrls: output.meetingUrls
       .filter((url) => /^https:\/\/\S+$/u.test(url) && mail.bodyText.includes(url))
@@ -295,7 +312,8 @@ function zoneOffsetMinutes(instant: number, timeZone: string): number {
     hour: "2-digit",
     minute: "2-digit",
   }).formatToParts(new Date(instant));
-  const part = (type: Intl.DateTimeFormatPartTypes) => Number(parts.find((entry) => entry.type === type)?.value);
+  const part = (type: Intl.DateTimeFormatPartTypes) =>
+    Number(parts.find((entry) => entry.type === type)?.value);
   const wall = Date.UTC(part("year"), part("month") - 1, part("day"), part("hour"), part("minute"));
   return Math.round((wall - Math.floor(instant / 60_000) * 60_000) / 60_000);
 }
@@ -313,10 +331,15 @@ function isoWithZone(date: Date, timeZone: string): string {
 /** Rules-mode language: Turkish/German letters and function words, else English when Latin text. */
 function guessLanguage(text: string): string | null {
   const folded = ` ${foldText(text).replace(/[^\p{L}]+/gu, " ")} `;
-  const count = (words: readonly string[]) => words.reduce((sum, word) => sum + (folded.includes(` ${word} `) ? 1 : 0), 0);
+  const count = (words: readonly string[]) =>
+    words.reduce((sum, word) => sum + (folded.includes(` ${word} `) ? 1 : 0), 0);
   const scores = {
-    tr: count(["ve", "bir", "icin", "ile", "bu", "size", "sizin", "olarak", "tesekkur", "merhaba", "sayin"]) + (/[ğşı]/u.test(text) ? 3 : 0),
-    de: count(["und", "die", "der", "das", "nicht", "mit", "fur", "ihre", "wir", "sie", "uns", "vielen"]) + (/[äöß]/u.test(text) ? 2 : 0),
+    tr:
+      count(["ve", "bir", "icin", "ile", "bu", "size", "sizin", "olarak", "tesekkur", "merhaba", "sayin"]) +
+      (/[ğşı]/u.test(text) ? 3 : 0),
+    de:
+      count(["und", "die", "der", "das", "nicht", "mit", "fur", "ihre", "wir", "sie", "uns", "vielen"]) +
+      (/[äöß]/u.test(text) ? 2 : 0),
     en: count(["the", "and", "your", "you", "for", "with", "we", "our", "thank", "to"]),
   };
   const [best] = (Object.entries(scores) as [string, number][]).sort((a, b) => b[1] - a[1]);

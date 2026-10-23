@@ -897,9 +897,7 @@ Co-founder, Pebble & Finch Studio`,
       company: "Pebble & Finch Studio",
       role: "Backend Developer",
       dates: [{ kind: "interview", at: "2026-09-02T11:00:00+01:00" }],
-      meetingUrls: [
-        "https://teams.microsoft.com/l/meetup-join/19%3ameeting_PfS2bQx9ZmItODk3@thread.v2/0",
-      ],
+      meetingUrls: ["https://teams.microsoft.com/l/meetup-join/19%3ameeting_PfS2bQx9ZmItODk3@thread.v2/0"],
     },
   },
   {
@@ -970,9 +968,7 @@ Sent via Workable`,
       company: "Fjordline Games",
       role: "Backend Engineer (Live Services)",
       dates: [{ kind: "interview", at: "2026-09-15T14:00:00+02:00" }],
-      meetingUrls: [
-        "https://teams.microsoft.com/l/meetup-join/19%3ameeting_FjLs4YzEtNWQ3Ny00@thread.v2/0",
-      ],
+      meetingUrls: ["https://teams.microsoft.com/l/meetup-join/19%3ameeting_FjLs4YzEtNWQ3Ny00@thread.v2/0"],
     },
   },
   {
@@ -1830,7 +1826,7 @@ Unsubscribe from these emails`,
     message: msg(
       "LinkedIn Job Alerts",
       "jobalerts-noreply@linkedin.com",
-      "\"product manager\": Dunewalk - Product Manager and more",
+      '"product manager": Dunewalk - Product Manager and more',
       "2026-10-12T07:45:00+02:00",
       `Your job alert for product manager in Netherlands
 23 new jobs match your preferences.

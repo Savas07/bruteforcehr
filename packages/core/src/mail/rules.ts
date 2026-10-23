@@ -81,9 +81,15 @@ const p = (re: RegExp, weight: 1 | 2 = 2): Pattern => ({ re, weight });
 const PATTERNS: Readonly<Record<RuleCategory, readonly Pattern[]>> = {
   rejection: [
     p(/regret to inform/),
-    p(/(?:not|won'?t|will not) (?:be )?(?:moving|move|progress(?:ing)?|proceed(?:ing)?) (?:forward )?with your (?:application|candidacy)/),
-    p(/(?:decided|chosen|decision) (?:not )?to (?:move forward|proceed|continue|go ahead) with (?:other|another|a different) (?:candidate|applicant)/),
-    p(/(?:pursue|pursuing|proceed with|progress with|move forward with) (?:other|another) (?:candidates?|applicants?|profiles?)/),
+    p(
+      /(?:not|won'?t|will not) (?:be )?(?:moving|move|progress(?:ing)?|proceed(?:ing)?) (?:forward )?with your (?:application|candidacy)/,
+    ),
+    p(
+      /(?:decided|chosen|decision) (?:not )?to (?:move forward|proceed|continue|go ahead) with (?:other|another|a different) (?:candidate|applicant)/,
+    ),
+    p(
+      /(?:pursue|pursuing|proceed with|progress with|move forward with) (?:other|another) (?:candidates?|applicants?|profiles?)/,
+    ),
     p(/(?:decided|decision) not to (?:move forward|proceed|progress|continue)/),
     p(/not (?:to )?(?:move|moving) forward with your/),
     p(/(?:position|role|vacancy) (?:has been|was|is now) (?:filled|closed|put on hold|cancelled)/),
@@ -98,7 +104,9 @@ const PATTERNS: Readonly<Record<RuleCategory, readonly Pattern[]>> = {
     p(/(?:baska|diger) (?:bir )?(?:aday|adaylar)(?:la|imiz| ile)/),
     p(/(?:surece|surecinize|degerlendirme surecine) devam (?:edemeyecegimizi|edilmeyecek|etmeme)/),
     p(/\b(?:uygun|uyumlu) (?:bulunmadi\w*|bulunmamistir|gorulmedi\w*)\b/),
-    p(/ilerleyemeyecegimizi|ilerlemeyecegimizi|ilerletemeyecegimizi|degerlendiremeyecegimizi|degerlendirmeye alamayacagimizi/),
+    p(
+      /ilerleyemeyecegimizi|ilerlemeyecegimizi|ilerletemeyecegimizi|degerlendiremeyecegimizi|degerlendirmeye alamayacagimizi/,
+    ),
     p(/pozisyon(?:umuz)? (?:doldu|dolduruldu|kapatildi|kapanmistir|askiya)/),
     p(/leider/, 1),
     p(/absage/),
@@ -127,11 +135,18 @@ const PATTERNS: Readonly<Record<RuleCategory, readonly Pattern[]>> = {
     p(/(?:wir )?(?:prufen|sichten) (?:ihre|deine) (?:unterlagen|bewerbung)/),
   ],
   interview_invite: [
-    p(/invit(?:e|ing|ation) (?:you )?(?:to|for) (?:an? |the )?(?:first |second |final |technical |video |phone |onsite |on-site )?(?:interview|call|conversation|chat|meeting)/),
-    p(/(?:schedule|book|arrange|set up) (?:an? |the |your )?(?:first |second |final |technical |video |phone )?(?:interview|call|phone screen|screening call|chat)/),
+    p(
+      /invit(?:e|ing|ation) (?:you )?(?:to|for) (?:an? |the )?(?:first |second |final |technical |video |phone |onsite |on-site )?(?:interview|call|conversation|chat|meeting)/,
+    ),
+    p(
+      /(?:schedule|book|arrange|set up) (?:an? |the |your )?(?:first |second |final |technical |video |phone )?(?:interview|call|phone screen|screening call|chat)/,
+    ),
     p(/interview (?:invitation|invite|request|confirmation|details|scheduled)/),
     p(/(?:phone|video|recruiter|intro(?:ductory)?) (?:screen|call|interview)/),
-    p(/(?:calendly\.com|cal\.com|goodtime\.io|meet\.google\.com|zoom\.us\/j|teams\.microsoft\.com\/l\/meetup)/, 1),
+    p(
+      /(?:calendly\.com|cal\.com|goodtime\.io|meet\.google\.com|zoom\.us\/j|teams\.microsoft\.com\/l\/meetup)/,
+      1,
+    ),
     p(/(?:your )?availability (?:for|to)/, 1),
     p(/reschedul/, 1),
     p(/mulakat(?:a|imiz|iniz)? (?:davet|daveti|tarihi|planla|icin)/),
@@ -144,22 +159,30 @@ const PATTERNS: Readonly<Record<RuleCategory, readonly Pattern[]>> = {
     p(/terminvorschlag|terminvorschlage|terminfindung|terminvereinbarung|telefonisch\w* kennenlernen/),
   ],
   assessment: [
-    p(/(?:online |technical |coding |skills? |cognitive |psychometric )(?:assessment|test|challenge|exercise)/),
+    p(
+      /(?:online |technical |coding |skills? |cognitive |psychometric )(?:assessment|test|challenge|exercise)/,
+    ),
     p(/(?:take-home|take home|home) (?:assignment|task|exercise|challenge|test)/),
     p(/(?:complete|start|finish) (?:the |your )?(?:assessment|test|challenge|case study)/),
     p(/case study/, 1),
     p(/(?:hackerrank|codility|testgorilla|coderbyte|codesignal|hirevue|devskiller)/, 1),
     p(/(?:degerlendirme|yetenek|online|teknik|kisilik) (?:testi|sinavi|envanteri)/),
     p(/(?:vaka calismasi|teknik odev|ev odevi|case calismasi)/),
-    p(/(?:online-?test|eignungstest|einstufungstest|fallstudie|programmieraufgabe|coding-?(?:aufgabe|challenge)|probeaufgabe)/),
+    p(
+      /(?:online-?test|eignungstest|einstufungstest|fallstudie|programmieraufgabe|coding-?(?:aufgabe|challenge)|probeaufgabe)/,
+    ),
   ],
   offer: [
-    p(/(?:pleased|delighted|happy|excited) to (?:extend|make|offer) (?:you )?(?:an? |the |our )?(?:formal |written )?(?:job |employment )?offer/),
+    p(
+      /(?:pleased|delighted|happy|excited) to (?:extend|make|offer) (?:you )?(?:an? |the |our )?(?:formal |written )?(?:job |employment )?offer/,
+    ),
     p(/(?:job|employment|formal|written) offer/),
     p(/offer letter/),
     p(/offer of employment/),
     p(/(?:is teklifi|teklif mektubu|size (?:bir )?teklif|teklifimizi)/),
-    p(/(?:vertragsangebot|arbeitsvertrag|ein angebot (?:unterbreiten|machen)|(?:ihnen|dir) die stelle anbieten|zusage fur die)/),
+    p(
+      /(?:vertragsangebot|arbeitsvertrag|ein angebot (?:unterbreiten|machen)|(?:ihnen|dir) die stelle anbieten|zusage fur die)/,
+    ),
   ],
   job_alert: [
     p(/(?:new )?jobs? (?:for you|alert|recommendations?|matching|that match)/),
@@ -185,8 +208,12 @@ const PATTERNS: Readonly<Record<RuleCategory, readonly Pattern[]>> = {
     p(/notice period/),
     p(/(?:references?|referees) (?:contact|details)|contact details (?:of|for) (?:your )?references/),
     p(/(?:missing|additional|following) (?:documents|information|details)/),
-    p(/maas beklenti|ucret beklenti|ihbar sure|referans (?:bilgi|iletisim)|eksik (?:belge|evrak)|(?:belge|evrak)lar(?:inizi|i) (?:iletmenizi|gondermenizi)/),
-    p(/gehaltsvorstellung|kundigungsfrist|fruhestmoglich|eintrittstermin|unterlagen (?:nachreichen|zusenden|vervollstandigen)|zeugnisse/),
+    p(
+      /maas beklenti|ucret beklenti|ihbar sure|referans (?:bilgi|iletisim)|eksik (?:belge|evrak)|(?:belge|evrak)lar(?:inizi|i) (?:iletmenizi|gondermenizi)/,
+    ),
+    p(
+      /gehaltsvorstellung|kundigungsfrist|fruhestmoglich|eintrittstermin|unterlagen (?:nachreichen|zusenden|vervollstandigen)|zeugnisse/,
+    ),
   ],
 };
 
@@ -225,7 +252,11 @@ function withoutQuotedHistory(body: string): string {
   const kept: string[] = [];
   for (const line of lines) {
     const folded = foldText(line.trim());
-    if (/^(?:on .+ wrote:|am .+ schrieb .+:|.+ tarihinde .+ yazdi:|-{2,} ?original message|-{2,} ?ursprungliche nachricht|from: .+@)/u.test(folded))
+    if (
+      /^(?:on .+ wrote:|am .+ schrieb .+:|.+ tarihinde .+ yazdi:|-{2,} ?original message|-{2,} ?ursprungliche nachricht|from: .+@)/u.test(
+        folded,
+      )
+    )
       break;
     if (!line.trimStart().startsWith(">")) kept.push(line);
   }
@@ -243,7 +274,9 @@ export function mailSignals(mail: MailInput, applications: readonly TrackedAppli
   const threadApplication = applications.find((application) =>
     application.threadRefs.some(
       (ref) =>
-        (mail.providerThreadId !== null && ref.accountId === mail.accountId && ref.threadId === mail.providerThreadId) ||
+        (mail.providerThreadId !== null &&
+          ref.accountId === mail.accountId &&
+          ref.threadId === mail.providerThreadId) ||
         (ref.rfc822MessageId !== null && replyIds.includes(ref.rfc822MessageId)),
     ),
   );
@@ -251,7 +284,10 @@ export function mailSignals(mail: MailInput, applications: readonly TrackedAppli
   const domainApplicationIds = applications
     .filter(
       (application) =>
-        application.companyDomain !== null && !ats && !jobBoard && domainMatches(domain, [application.companyDomain]),
+        application.companyDomain !== null &&
+        !ats &&
+        !jobBoard &&
+        domainMatches(domain, [application.companyDomain]),
     )
     .map((application) => application.id);
 
@@ -338,7 +374,11 @@ export function classifyByRules(mail: MailInput, signals: MailSignals): RuleClas
     signals.assessmentPlatform ||
     signals.domainApplicationIds.length > 0;
   const { hits, phrases } = signals;
-  const result = (category: MailCategory, confidence: number, evidence: string | null): RuleClassification => {
+  const result = (
+    category: MailCategory,
+    confidence: number,
+    evidence: string | null,
+  ): RuleClassification => {
     // Phrases of another status category make the rules unsure: such mail never changes the
     // tracker by rules alone. A receipt phrase next to a rejection is the usual "thank you for
     // applying … unfortunately" and doesn't count.
@@ -348,7 +388,10 @@ export function classifyByRules(mail: MailInput, signals: MailSignals): RuleClas
         hits[other] > 0 &&
         !(category === "rejection" && other === "application_received"),
     );
-    const capped = STATUS_CATEGORIES.includes(category as StatusCategory) && competing ? Math.min(confidence, AMBIGUOUS_CAP) : confidence;
+    const capped =
+      STATUS_CATEGORIES.includes(category as StatusCategory) && competing
+        ? Math.min(confidence, AMBIGUOUS_CAP)
+        : confidence;
     return {
       category,
       confidence: Math.round(capped * 100) / 100,
@@ -364,7 +407,8 @@ export function classifyByRules(mail: MailInput, signals: MailSignals): RuleClas
     return result("job_alert", signals.jobBoard ? 0.9 : 0.75, phrases.job_alert ?? signals.senderDomain);
 
   // Decisions first: "Thank you for applying … unfortunately" is a rejection, not a receipt.
-  if (hits.offer >= 2 && hits.rejection < 2) return result("offer", anchored ? 0.85 : 0.7, phrases.offer ?? null);
+  if (hits.offer >= 2 && hits.rejection < 2)
+    return result("offer", anchored ? 0.85 : 0.7, phrases.offer ?? null);
   if (hits.rejection >= 3 || (hits.rejection >= 2 && (anchored || hits.application_received > 0)))
     return result("rejection", anchored ? 0.93 : 0.8, phrases.rejection ?? null);
   if (hits.interview_invite >= 2 && !(mail.listUnsubscribe && signals.jobBoard))
@@ -382,7 +426,8 @@ export function classifyByRules(mail: MailInput, signals: MailSignals): RuleClas
   if (hits.rejection >= 2) return result("rejection", 0.7, phrases.rejection ?? null);
   if (signals.careerContent) return result("other_job", 0.6, null);
   // A candidate with job words but no phrase and no tie to an application: most likely not job mail.
-  if (!anchored && signals.namedApplicationIds.length === 0 && !signals.jobBoard) return result("not_job", 0.6, null);
+  if (!anchored && signals.namedApplicationIds.length === 0 && !signals.jobBoard)
+    return result("not_job", 0.6, null);
   return result("other_job", 0.5, null);
 }
 
@@ -405,7 +450,10 @@ export function extractByRules(
   if (company === null && !signals.jobBoard && mail.from.name !== null) {
     const name = mail.from.name
       .replace(/\s*(?:\(via [^)]+\)|via \S+|@ ?\S+)\s*$/iu, "")
-      .replace(/\b(?:careers?|recruiting|recruitment|talent(?: acquisition)?|hiring team|hr|people|jobs|kariyer|insan kaynaklar[ıi]|ik|personal(?:abteilung)?|karriere|bewerbermanagement)\b/giu, "")
+      .replace(
+        /\b(?:careers?|recruiting|recruitment|talent(?: acquisition)?|hiring team|hr|people|jobs|kariyer|insan kaynaklar[ıi]|ik|personal(?:abteilung)?|karriere|bewerbermanagement)\b/giu,
+        "",
+      )
       .replace(/[|·,–-]+\s*$/u, "")
       .trim();
     if (name.length >= 2 && name.split(/\s+/u).length <= 4) company = name;
@@ -425,7 +473,10 @@ const SUBJECT_ROLE_PATTERNS: readonly RegExp[] = [
 function roleFromSubject(subject: string): string | null {
   for (const pattern of SUBJECT_ROLE_PATTERNS) {
     const match = pattern.exec(subject);
-    const role = match?.[1]?.replace(/^(?:re|aw|fwd?|wg):\s*/iu, "").replace(/["“”„]/gu, "").trim();
+    const role = match?.[1]
+      ?.replace(/^(?:re|aw|fwd?|wg):\s*/iu, "")
+      .replace(/["“”„]/gu, "")
+      .trim();
     if (role !== undefined && role.length >= 3 && role.length <= 120) return role;
   }
   return null;
@@ -444,6 +495,7 @@ export function candidateApplications(
   ]);
   return applications.filter(
     (application) =>
-      ids.has(application.id) || (extractedCompany !== null && companiesMatch(application.company, extractedCompany)),
+      ids.has(application.id) ||
+      (extractedCompany !== null && companiesMatch(application.company, extractedCompany)),
   );
 }

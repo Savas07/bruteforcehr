@@ -98,7 +98,9 @@ export class GmailAdapter implements MailProviderAdapter {
 
   // https://developers.google.com/workspace/gmail/api/reference/rest/v1/users/getProfile
   async currentCursor(): Promise<string> {
-    const profile = await this.#client.json<{ historyId: string }>(`${BASE}/profile`, { scope: GMAIL_READ_SCOPE });
+    const profile = await this.#client.json<{ historyId: string }>(`${BASE}/profile`, {
+      scope: GMAIL_READ_SCOPE,
+    });
     return profile.historyId;
   }
 
@@ -148,10 +150,15 @@ export class GmailAdapter implements MailProviderAdapter {
       for (const record of page.history ?? []) {
         for (const { message } of record.messagesAdded ?? []) {
           if (message.labelIds?.some((label) => SKIPPED_LABELS[label] === true)) continue;
-          refs.set(message.id, { id: message.id, threadId: message.threadId ?? null, folder: gmailFolder(message.labelIds) });
+          refs.set(message.id, {
+            id: message.id,
+            threadId: message.threadId ?? null,
+            folder: gmailFolder(message.labelIds),
+          });
         }
       }
-      if (page.nextPageToken === undefined) return { refs: [...refs.values()], cursor: page.historyId, more: false };
+      if (page.nextPageToken === undefined)
+        return { refs: [...refs.values()], cursor: page.historyId, more: false };
       pageToken = page.nextPageToken;
       if (refs.size >= CHANGES_LIMIT) {
         const next: HistoryCursor = { historyId, pageToken };
@@ -164,10 +171,13 @@ export class GmailAdapter implements MailProviderAdapter {
   // (no batch endpoint for raw sources; format=raw returns base64url RFC 822)
   async fetch(refs: readonly MessageRef[]): Promise<FetchedMail[]> {
     const fetched = await mapConcurrent(refs, FETCH_CONCURRENCY, async (ref): Promise<FetchedMail | null> => {
-      const response = await this.#client.request(`${BASE}/messages/${encodeURIComponent(ref.id)}${query({ format: "raw" })}`, {
-        scope: GMAIL_READ_SCOPE,
-        pass: [404],
-      });
+      const response = await this.#client.request(
+        `${BASE}/messages/${encodeURIComponent(ref.id)}${query({ format: "raw" })}`,
+        {
+          scope: GMAIL_READ_SCOPE,
+          pass: [404],
+        },
+      );
       if (response.status === 404) {
         await response.body?.cancel();
         return null;

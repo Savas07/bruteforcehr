@@ -103,7 +103,9 @@ function parseDeltaCursor(cursor: string): DeltaCursor {
 }
 
 function recipients(addresses: readonly MailAddress[]) {
-  return addresses.map(({ name, address }) => ({ emailAddress: name === null ? { address } : { name, address } }));
+  return addresses.map(({ name, address }) => ({
+    emailAddress: name === null ? { address } : { name, address },
+  }));
 }
 
 export class GraphAdapter implements MailProviderAdapter {
@@ -147,7 +149,8 @@ export class GraphAdapter implements MailProviderAdapter {
   // https://learn.microsoft.com/graph/api/mailfolder-list-messages ($filter + $orderby on the
   // same property, $count: https://learn.microsoft.com/graph/query-parameters)
   async listSince(since: Date, pageToken: string | null): Promise<RefPage> {
-    const token: ListToken = pageToken === null ? { folder: "inbox", nextLink: null } : (JSON.parse(pageToken) as ListToken);
+    const token: ListToken =
+      pageToken === null ? { folder: "inbox", nextLink: null } : (JSON.parse(pageToken) as ListToken);
     const firstPageUrl = (folder: GraphFolder, top: number) =>
       `${BASE}/mailFolders/${folder}/messages${query({
         $filter: `receivedDateTime ge ${since.toISOString()}`,
@@ -161,7 +164,9 @@ export class GraphAdapter implements MailProviderAdapter {
       this.#client.json<GraphPage>(token.nextLink ?? firstPageUrl(token.folder, PAGE_SIZE), request),
       // The very first page reports the whole window: count junk alongside the inbox page.
       pageToken === null
-        ? this.#client.json<GraphPage>(firstPageUrl("junkemail", 1), request).then((junk) => junk["@odata.count"] ?? null)
+        ? this.#client
+            .json<GraphPage>(firstPageUrl("junkemail", 1), request)
+            .then((junk) => junk["@odata.count"] ?? null)
         : Promise.resolve(null),
     ]);
     const nextPage = page["@odata.nextLink"];
@@ -175,7 +180,8 @@ export class GraphAdapter implements MailProviderAdapter {
     return {
       refs: this.#refs(page, token.folder),
       nextPageToken: next === null ? null : JSON.stringify(next),
-      total: pageToken === null && inboxCount !== undefined && junkCount !== null ? inboxCount + junkCount : null,
+      total:
+        pageToken === null && inboxCount !== undefined && junkCount !== null ? inboxCount + junkCount : null,
     };
   }
 
@@ -246,14 +252,27 @@ export class GraphAdapter implements MailProviderAdapter {
       toRecipients: recipients(message.to),
       ccRecipients: recipients(message.cc),
     };
-    const write = { headers: { Prefer: IMMUTABLE_ID, "Content-Type": "application/json" }, scope: GRAPH_WRITE_SCOPE };
+    const write = {
+      headers: { Prefer: IMMUTABLE_ID, "Content-Type": "application/json" },
+      scope: GRAPH_WRITE_SCOPE,
+    };
     let draftId: string;
     if (message.replyTo === null) {
-      draftId = (await this.#client.json<{ id: string }>(`${BASE}/messages`, { ...write, method: "POST", body: JSON.stringify(content) })).id;
+      draftId = (
+        await this.#client.json<{ id: string }>(`${BASE}/messages`, {
+          ...write,
+          method: "POST",
+          body: JSON.stringify(content),
+        })
+      ).id;
     } else {
       const replyTo = encodeURIComponent(message.replyTo.providerMessageId);
       draftId = (
-        await this.#client.json<{ id: string }>(`${BASE}/messages/${replyTo}/createReply`, { ...write, method: "POST", body: "{}" })
+        await this.#client.json<{ id: string }>(`${BASE}/messages/${replyTo}/createReply`, {
+          ...write,
+          method: "POST",
+          body: "{}",
+        })
       ).id;
       // createReply fills in a quoted HTML body and the original recipients: replace both.
       await this.#client.json(`${BASE}/messages/${encodeURIComponent(draftId)}`, {
@@ -288,7 +307,11 @@ export class GraphAdapter implements MailProviderAdapter {
   // https://learn.microsoft.com/graph/api/attachment-createuploadsession (pre-authenticated
   // uploadUrl: no Authorization header; ranges in multiples of 320 KiB, ≤ 4 MB each).
   async #attach(draft: string, attachment: OutgoingAttachment): Promise<void> {
-    const write = { headers: { "Content-Type": "application/json" }, method: "POST", scope: GRAPH_WRITE_SCOPE };
+    const write = {
+      headers: { "Content-Type": "application/json" },
+      method: "POST",
+      scope: GRAPH_WRITE_SCOPE,
+    };
     if (attachment.content.length < SMALL_ATTACHMENT_LIMIT) {
       await this.#client.json(`${draft}/attachments`, {
         ...write,
@@ -302,12 +325,20 @@ export class GraphAdapter implements MailProviderAdapter {
       return;
     }
     const total = attachment.content.length;
-    const session = await this.#client.json<{ uploadUrl: string }>(`${draft}/attachments/createUploadSession`, {
-      ...write,
-      body: JSON.stringify({
-        AttachmentItem: { attachmentType: "file", name: attachment.fileName, size: total, contentType: attachment.contentType },
-      }),
-    });
+    const session = await this.#client.json<{ uploadUrl: string }>(
+      `${draft}/attachments/createUploadSession`,
+      {
+        ...write,
+        body: JSON.stringify({
+          AttachmentItem: {
+            attachmentType: "file",
+            name: attachment.fileName,
+            size: total,
+            contentType: attachment.contentType,
+          },
+        }),
+      },
+    );
     for (let start = 0; start < total; start += UPLOAD_CHUNK_SIZE) {
       const chunk = attachment.content.subarray(start, Math.min(start + UPLOAD_CHUNK_SIZE, total));
       const response = await this.#client.unauthenticated(session.uploadUrl, {
@@ -341,7 +372,8 @@ export class GraphAdapter implements MailProviderAdapter {
     const refs: MessageRef[] = [];
     for (const message of page.value) {
       if (message["@removed"] !== undefined) continue;
-      if (message.receivedDateTime !== undefined) this.#receivedAt.set(message.id, new Date(message.receivedDateTime));
+      if (message.receivedDateTime !== undefined)
+        this.#receivedAt.set(message.id, new Date(message.receivedDateTime));
       refs.push({ id: message.id, threadId: message.conversationId ?? null, folder: FOLDER_KIND[folder] });
     }
     return refs;

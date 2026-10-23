@@ -212,7 +212,13 @@ Diese E-Mail wurde automatisch versendet. Bitte antworten Sie nicht auf diese Na
 Datenschutzhinweise: https://nordlicht-logistik.jobs.personio.de/privacy`,
       ATS,
     ),
-    { category: "application_received", applicationId: "de-app-nordlicht", suggestedStatus: "acknowledged", company: "Nordlicht Logistik GmbH", role: "Senior Backend Engineer" },
+    {
+      category: "application_received",
+      applicationId: "de-app-nordlicht",
+      suggestedStatus: "acknowledged",
+      company: "Nordlicht Logistik GmbH",
+      role: "Senior Backend Engineer",
+    },
   ),
   c(
     2,
@@ -240,7 +246,13 @@ Betreff: Bewerbung als Full-Stack Entwickler – Deniz Aydın
 Sehr geehrte Damen und Herren, anbei sende ich Ihnen meine Bewerbungsunterlagen …`,
       { threadId: "thr-de-alpbau-1", inReplyTo: "<CAK1alpbau.bewerbung@mail.example>" },
     ),
-    { category: "application_received", applicationId: "de-app-alpbau", suggestedStatus: "acknowledged", company: "Alpbau Digital AG", role: "Full-Stack Entwickler" },
+    {
+      category: "application_received",
+      applicationId: "de-app-alpbau",
+      suggestedStatus: "acknowledged",
+      company: "Alpbau Digital AG",
+      role: "Full-Stack Entwickler",
+    },
   ),
   c(
     3,
@@ -263,7 +275,13 @@ Lena von Wolkenwerk
 Du erhältst diese E-Mail, weil du dich über unsere Karriereseite beworben hast.`,
       ATS,
     ),
-    { category: "application_received", applicationId: "de-app-wolkenwerk-be", suggestedStatus: "acknowledged", company: "Wolkenwerk", role: "Backend Engineer (Go)" },
+    {
+      category: "application_received",
+      applicationId: "de-app-wolkenwerk-be",
+      suggestedStatus: "acknowledged",
+      company: "Wolkenwerk",
+      role: "Backend Engineer (Go)",
+    },
   ),
   c(
     4,
@@ -286,7 +304,13 @@ Mit freundlichen Grüßen
 Ihr Sonnenhof Commerce Recruiting-Team`,
       ATS,
     ),
-    { category: "application_received", applicationId: null, suggestedStatus: "acknowledged", company: "Sonnenhof Commerce GmbH", role: "Senior Software Engineer (m/w/d)" },
+    {
+      category: "application_received",
+      applicationId: null,
+      suggestedStatus: "acknowledged",
+      company: "Sonnenhof Commerce GmbH",
+      role: "Senior Software Engineer (m/w/d)",
+    },
   ),
   c(
     5,
@@ -308,12 +332,18 @@ Personalabteilung
 Königstraße 10, 70173 Stuttgart`,
       { threadId: "thr-de-fichte-1", inReplyTo: "<fichte-bewerbung-01@mail.example>", bulk: true },
     ),
-    { category: "application_received", applicationId: "de-app-fichte", suggestedStatus: "acknowledged", company: "Fichte & Partner GmbH", role: "Softwareentwickler Java" },
+    {
+      category: "application_received",
+      applicationId: "de-app-fichte",
+      suggestedStatus: "acknowledged",
+      company: "Fichte & Partner GmbH",
+      role: "Softwareentwickler Java",
+    },
   ),
   c(
     6,
     "template",
-    "\"Vielen Dank für Ihre Bewerbung … wir werden prüfen\" — same opening as a rejection; tracker status is still preparing.",
+    '"Vielen Dank für Ihre Bewerbung … wir werden prüfen" — same opening as a rejection; tracker status is still preparing.',
     msg(
       "Taunus Bank Digital",
       "taunusbank@myworkday.com",
@@ -332,7 +362,13 @@ Talent Acquisition | Taunus Bank Digital
 Frankfurt am Main`,
       ATS,
     ),
-    { category: "application_received", applicationId: "de-app-taunus", suggestedStatus: "acknowledged", company: "Taunus Bank Digital", role: "Senior Product Manager" },
+    {
+      category: "application_received",
+      applicationId: "de-app-taunus",
+      suggestedStatus: "acknowledged",
+      company: "Taunus Bank Digital",
+      role: "Senior Product Manager",
+    },
   ),
   c(
     7,
@@ -355,7 +391,13 @@ The Kiezkraft Talent Team
 Kiezkraft GmbH · Oranienstraße 1 · 10997 Berlin`,
       ATS,
     ),
-    { category: "application_received", applicationId: null, suggestedStatus: "acknowledged", company: "Kiezkraft", role: "Senior Product Engineer" },
+    {
+      category: "application_received",
+      applicationId: null,
+      suggestedStatus: "acknowledged",
+      company: "Kiezkraft",
+      role: "Senior Product Engineer",
+    },
   ),
   c(
     8,
@@ -380,7 +422,13 @@ Dies ist eine automatisch generierte E-Mail. Antworten an diese Adresse können 
 Brandauer Automotive AG · Sitz der Gesellschaft: München · Registergericht München HRB 000000 · Vorsitzender des Aufsichtsrats: Dr. Hubert Lenz`,
       ATS,
     ),
-    { category: "application_received", applicationId: null, suggestedStatus: "acknowledged", company: "Brandauer Automotive AG", role: "Cloud Architect" },
+    {
+      category: "application_received",
+      applicationId: null,
+      suggestedStatus: "acknowledged",
+      company: "Brandauer Automotive AG",
+      role: "Cloud Architect",
+    },
   ),
   c(
     9,
@@ -401,14 +449,20 @@ Viele Grüße
 People & Culture | Isarwerk Software GmbH`,
       ATS,
     ),
-    { category: "application_received", applicationId: "de-app-isarwerk", suggestedStatus: null, company: "Isarwerk Software GmbH", role: "Product Manager Payments" },
+    {
+      category: "application_received",
+      applicationId: "de-app-isarwerk",
+      suggestedStatus: null,
+      company: "Isarwerk Software GmbH",
+      role: "Product Manager Payments",
+    },
   ),
 
   // ───────────── rejection ─────────────
   c(
     10,
     "template",
-    "\"Vielen Dank für Ihre Bewerbung … leider\" — opens like a confirmation, turns into a rejection.",
+    '"Vielen Dank für Ihre Bewerbung … leider" — opens like a confirmation, turns into a rejection.',
     msg(
       "Lindwurm Games GmbH",
       "noreply@personio.de",
@@ -426,12 +480,18 @@ Beste Grüße
 Ihr Lindwurm Games Recruiting-Team`,
       ATS,
     ),
-    { category: "rejection", applicationId: null, suggestedStatus: "rejected", company: "Lindwurm Games", role: "Senior Unity Developer" },
+    {
+      category: "rejection",
+      applicationId: null,
+      suggestedStatus: "rejected",
+      company: "Lindwurm Games",
+      role: "Senior Unity Developer",
+    },
   ),
   c(
     11,
     "synthetic",
-    "Rejection after final interviews wrapped in warm words (\"beeindruckt\", Talentpool) — no explicit \"Absage\".",
+    'Rejection after final interviews wrapped in warm words ("beeindruckt", Talentpool) — no explicit "Absage".',
     msg(
       "Sophie Brandt",
       "sophie.brandt@kranich-health.example",
@@ -449,7 +509,13 @@ Alles Gute und herzliche Grüße
 Sophie Brandt
 Senior Talent Partner | Kranich Health GmbH`,
     ),
-    { category: "rejection", applicationId: "de-app-kranich", suggestedStatus: "rejected", company: "Kranich Health GmbH", role: "Staff Engineer Platform" },
+    {
+      category: "rejection",
+      applicationId: "de-app-kranich",
+      suggestedStatus: "rejected",
+      company: "Kranich Health GmbH",
+      role: "Staff Engineer Platform",
+    },
   ),
   c(
     12,
@@ -472,7 +538,13 @@ Viele Grüße aus Hamburg
 Jonas Petersen
 Talent Acquisition | Elbtal Mobility GmbH`,
     ),
-    { category: "rejection", applicationId: "de-app-elbtal", suggestedStatus: "rejected", company: "Elbtal Mobility GmbH", role: "Senior Frontend Engineer (React)" },
+    {
+      category: "rejection",
+      applicationId: "de-app-elbtal",
+      suggestedStatus: "rejected",
+      company: "Elbtal Mobility GmbH",
+      role: "Senior Frontend Engineer (React)",
+    },
   ),
   c(
     13,
@@ -495,7 +567,13 @@ Freundliche Grüße
 Personalabteilung Möwe Reisen GmbH`,
       ATS,
     ),
-    { category: "rejection", applicationId: null, suggestedStatus: "rejected", company: "Möwe Reisen GmbH", role: "iOS Developer" },
+    {
+      category: "rejection",
+      applicationId: null,
+      suggestedStatus: "rejected",
+      company: "Möwe Reisen GmbH",
+      role: "iOS Developer",
+    },
   ),
   c(
     14,
@@ -518,7 +596,13 @@ Viele Grüße
 Lena von Wolkenwerk`,
       ATS,
     ),
-    { category: "rejection", applicationId: "de-app-wolkenwerk-po", suggestedStatus: "rejected", company: "Wolkenwerk", role: "Product Owner Data Platform" },
+    {
+      category: "rejection",
+      applicationId: "de-app-wolkenwerk-po",
+      suggestedStatus: "rejected",
+      company: "Wolkenwerk",
+      role: "Product Owner Data Platform",
+    },
   ),
   c(
     15,
@@ -538,7 +622,13 @@ Deine Daten löschen wir gemäß DSGVO nach Ablauf von sechs Monaten, sofern du 
 Beste Grüße
 Brezel Labs GmbH`,
     ),
-    { category: "rejection", applicationId: "de-app-brezel", suggestedStatus: null, company: "Brezel Labs GmbH", role: "Engineering Manager" },
+    {
+      category: "rejection",
+      applicationId: "de-app-brezel",
+      suggestedStatus: null,
+      company: "Brezel Labs GmbH",
+      role: "Engineering Manager",
+    },
   ),
   c(
     16,
@@ -562,12 +652,18 @@ Talent Acquisition
 Nordstern Versicherung AG`,
       ATS,
     ),
-    { category: "rejection", applicationId: null, suggestedStatus: "rejected", company: "Nordstern Versicherung AG", role: "Lead Developer Kundenportal" },
+    {
+      category: "rejection",
+      applicationId: null,
+      suggestedStatus: "rejected",
+      company: "Nordstern Versicherung AG",
+      role: "Lead Developer Kundenportal",
+    },
   ),
   c(
     17,
     "synthetic",
-    "Austrian phrasing (\"Absage\", \"nicht in die engere Auswahl\") in the e-mail thread of the application.",
+    'Austrian phrasing ("Absage", "nicht in die engere Auswahl") in the e-mail thread of the application.',
     msg(
       "Magdalena Gruber",
       "m.gruber@alpbau.example",
@@ -584,7 +680,13 @@ Magdalena Gruber
 Human Resources | Alpbau Digital AG`,
       { threadId: "thr-de-alpbau-1", inReplyTo: "<CAK1alpbau.bewerbung@mail.example>" },
     ),
-    { category: "rejection", applicationId: "de-app-alpbau", suggestedStatus: "rejected", company: "Alpbau Digital AG", role: "Full-Stack Entwickler" },
+    {
+      category: "rejection",
+      applicationId: "de-app-alpbau",
+      suggestedStatus: "rejected",
+      company: "Alpbau Digital AG",
+      role: "Full-Stack Entwickler",
+    },
   ),
   c(
     18,
@@ -605,7 +707,13 @@ Viele Grüße
 Felix
 Wolkenwerk GmbH`,
     ),
-    { category: "rejection", applicationId: null, suggestedStatus: "rejected", company: "Wolkenwerk GmbH", role: null },
+    {
+      category: "rejection",
+      applicationId: null,
+      suggestedStatus: "rejected",
+      company: "Wolkenwerk GmbH",
+      role: null,
+    },
   ),
 
   // ───────────── interview_invite ─────────────
@@ -696,7 +804,13 @@ Mit freundlichen Grüßen
 Ihr Recruiting-Team der Nordlicht Logistik GmbH`,
       ATS,
     ),
-    { category: "interview_invite", applicationId: "de-app-nordlicht", suggestedStatus: "screening", company: "Nordlicht Logistik GmbH", role: "Senior Backend Engineer" },
+    {
+      category: "interview_invite",
+      applicationId: "de-app-nordlicht",
+      suggestedStatus: "screening",
+      company: "Nordlicht Logistik GmbH",
+      role: "Senior Backend Engineer",
+    },
   ),
   c(
     22,
@@ -847,7 +961,13 @@ Viele Grüße
 Lena von Wolkenwerk`,
       ATS,
     ),
-    { category: "interview_invite", applicationId: "de-app-wolkenwerk-be", suggestedStatus: "interviewing", company: "Wolkenwerk", role: "Backend Engineer (Go)" },
+    {
+      category: "interview_invite",
+      applicationId: "de-app-wolkenwerk-be",
+      suggestedStatus: "interviewing",
+      company: "Wolkenwerk",
+      role: "Backend Engineer (Go)",
+    },
   ),
   c(
     27,
@@ -967,7 +1087,13 @@ Viel Erfolg!
 Das Team von Fjordlicht Energy`,
       ATS,
     ),
-    { category: "assessment", applicationId: null, suggestedStatus: "screening", company: "Fjordlicht Energy", role: "Product Analyst" },
+    {
+      category: "assessment",
+      applicationId: null,
+      suggestedStatus: "screening",
+      company: "Fjordlicht Energy",
+      role: "Product Analyst",
+    },
   ),
   c(
     31,
@@ -1090,9 +1216,7 @@ Senior Talent Partner | Kranich Health GmbH`,
       suggestedStatus: "offer",
       company: "Kranich Health GmbH",
       role: "Staff Engineer Platform",
-      dates: [
-        { kind: "start_date", at: "2026-12-01T00:00:00+01:00" },
-      ],
+      dates: [{ kind: "start_date", at: "2026-12-01T00:00:00+01:00" }],
     },
   ),
   c(
@@ -1124,9 +1248,7 @@ Head of People | Hafenkontor Analytics GmbH`,
       suggestedStatus: null,
       company: "Hafenkontor Analytics GmbH",
       role: "Data Engineer",
-      dates: [
-        { kind: "start_date", at: "2026-11-01T00:00:00+01:00" },
-      ],
+      dates: [{ kind: "start_date", at: "2026-11-01T00:00:00+01:00" }],
     },
   ),
   c(
@@ -1188,9 +1310,7 @@ Ihr Bergquell Software Recruiting-Team`,
       suggestedStatus: "offer",
       company: "Bergquell Software GmbH",
       role: "Senior iOS Engineer",
-      dates: [
-        { kind: "start_date", at: "2027-02-01T00:00:00+01:00" },
-      ],
+      dates: [{ kind: "start_date", at: "2027-02-01T00:00:00+01:00" }],
     },
   ),
 
@@ -1217,7 +1337,13 @@ Tobias Rehm
 Senior Consultant | Talentbrücke Personalberatung GmbH
 +49 151 55501234`,
     ),
-    { category: "recruiter_outreach", applicationId: null, suggestedStatus: null, company: null, role: "Head of Engineering" },
+    {
+      category: "recruiter_outreach",
+      applicationId: null,
+      suggestedStatus: null,
+      company: null,
+      role: "Head of Engineering",
+    },
   ),
   c(
     39,
@@ -1239,7 +1365,13 @@ Sabine Kurz
 Hirewerk Executive Search
 +49 151 55507788`,
     ),
-    { category: "recruiter_outreach", applicationId: null, suggestedStatus: null, company: null, role: "Lead Backend Engineer (Kotlin)" },
+    {
+      category: "recruiter_outreach",
+      applicationId: null,
+      suggestedStatus: null,
+      company: null,
+      role: "Lead Backend Engineer (Kotlin)",
+    },
   ),
   c(
     40,
@@ -1262,7 +1394,13 @@ Ihr XING-Team
 Benachrichtigungen verwalten | Abmelden`,
       ATS,
     ),
-    { category: "recruiter_outreach", applicationId: null, suggestedStatus: null, company: "Donaublick IT Services GmbH", role: "Senior DevOps Engineer" },
+    {
+      category: "recruiter_outreach",
+      applicationId: null,
+      suggestedStatus: null,
+      company: "Donaublick IT Services GmbH",
+      role: "Senior DevOps Engineer",
+    },
   ),
   c(
     41,
@@ -1285,7 +1423,13 @@ Viele Grüße
 Laura Winter
 Bavaria Cloud GmbH`,
     ),
-    { category: "recruiter_outreach", applicationId: null, suggestedStatus: null, company: "Bavaria Cloud", role: "Staff Product Manager" },
+    {
+      category: "recruiter_outreach",
+      applicationId: null,
+      suggestedStatus: null,
+      company: "Bavaria Cloud",
+      role: "Staff Product Manager",
+    },
   ),
   c(
     42,
@@ -1311,7 +1455,13 @@ Diese E-Mail ist für Deniz Aydın bestimmt. Abmelden
 © 2026 LinkedIn Corporation`,
       ATS,
     ),
-    { category: "recruiter_outreach", applicationId: null, suggestedStatus: null, company: "Halmbruch Technologies GmbH", role: "Senior Backend Engineer (Node.js/TypeScript)" },
+    {
+      category: "recruiter_outreach",
+      applicationId: null,
+      suggestedStatus: null,
+      company: "Halmbruch Technologies GmbH",
+      role: "Senior Backend Engineer (Node.js/TypeScript)",
+    },
   ),
 
   // ───────────── info_request ─────────────
@@ -1337,7 +1487,13 @@ Viele Grüße
 Jonas Petersen
 Elbtal Mobility GmbH`,
     ),
-    { category: "info_request", applicationId: "de-app-elbtal", suggestedStatus: null, company: "Elbtal Mobility GmbH", role: "Senior Frontend Engineer (React)" },
+    {
+      category: "info_request",
+      applicationId: "de-app-elbtal",
+      suggestedStatus: null,
+      company: "Elbtal Mobility GmbH",
+      role: "Senior Frontend Engineer (React)",
+    },
   ),
   c(
     44,
@@ -1361,7 +1517,13 @@ Herzliche Grüße
 Sophie Brandt
 Kranich Health GmbH`,
     ),
-    { category: "info_request", applicationId: "de-app-kranich", suggestedStatus: null, company: "Kranich Health GmbH", role: "Staff Engineer Platform" },
+    {
+      category: "info_request",
+      applicationId: "de-app-kranich",
+      suggestedStatus: null,
+      company: "Kranich Health GmbH",
+      role: "Staff Engineer Platform",
+    },
   ),
   c(
     45,
@@ -1381,7 +1543,13 @@ Magdalena Gruber
 Alpbau Digital AG`,
       { threadId: "thr-de-alpbau-1", inReplyTo: "<CAK1alpbau.bewerbung@mail.example>" },
     ),
-    { category: "info_request", applicationId: "de-app-alpbau", suggestedStatus: null, company: "Alpbau Digital AG", role: "Full-Stack Entwickler" },
+    {
+      category: "info_request",
+      applicationId: "de-app-alpbau",
+      suggestedStatus: null,
+      company: "Alpbau Digital AG",
+      role: "Full-Stack Entwickler",
+    },
   ),
   c(
     46,
@@ -1403,7 +1571,13 @@ Mit freundlichen Grüßen
 Ihr Recruiting-Team der Weißdorn Pharma GmbH`,
       ATS,
     ),
-    { category: "info_request", applicationId: null, suggestedStatus: null, company: "Weißdorn Pharma GmbH", role: "Software Engineer Laborsysteme" },
+    {
+      category: "info_request",
+      applicationId: null,
+      suggestedStatus: null,
+      company: "Weißdorn Pharma GmbH",
+      role: "Software Engineer Laborsysteme",
+    },
   ),
   c(
     47,
@@ -1422,7 +1596,13 @@ Besten Dank und freundliche Grüsse
 Nina Keller
 Seeblick Versicherungen AG, Zürich`,
     ),
-    { category: "info_request", applicationId: "de-app-seeblick", suggestedStatus: null, company: "Seeblick Versicherungen AG", role: "Software Engineer Mobile" },
+    {
+      category: "info_request",
+      applicationId: "de-app-seeblick",
+      suggestedStatus: null,
+      company: "Seeblick Versicherungen AG",
+      role: "Software Engineer Mobile",
+    },
   ),
 
   // ───────────── job_alert ─────────────
@@ -1476,7 +1656,7 @@ Sie erhalten diese E-Mail, weil Sie Job-Empfehlungen abonniert haben. Abmelden`,
   c(
     50,
     "template",
-    "Job alert titled like an invitation (\"Sie sind eingeladen, sich zu bewerben\").",
+    'Job alert titled like an invitation ("Sie sind eingeladen, sich zu bewerben").',
     msg(
       "LinkedIn Jobs",
       "jobs-noreply@linkedin.com",
@@ -1496,7 +1676,13 @@ Sie erhalten diese E-Mail, weil Sie Job-Empfehlungen aktiviert haben. Abmelden
 © 2026 LinkedIn Ireland Unlimited Company`,
       ATS,
     ),
-    { category: "job_alert", applicationId: null, suggestedStatus: null, company: "Wolkenwerk GmbH", role: "Senior Site Reliability Engineer" },
+    {
+      category: "job_alert",
+      applicationId: null,
+      suggestedStatus: null,
+      company: "Wolkenwerk GmbH",
+      role: "Senior Site Reliability Engineer",
+    },
   ),
   c(
     51,
@@ -1618,7 +1804,13 @@ Falls Sie diese Anfrage nicht gestellt haben, ignorieren Sie diese E-Mail bitte.
 Brandauer Automotive AG`,
       { bulk: true },
     ),
-    { category: "other_job", applicationId: null, suggestedStatus: null, company: "Brandauer Automotive AG", role: null },
+    {
+      category: "other_job",
+      applicationId: null,
+      suggestedStatus: null,
+      company: "Brandauer Automotive AG",
+      role: null,
+    },
   ),
   c(
     56,
@@ -1648,7 +1840,7 @@ Du möchtest keine Updates mehr? Abmelden`,
   c(
     57,
     "template",
-    "\"Vervollständigen Sie Ihr Profil\" nudge from a job board.",
+    '"Vervollständigen Sie Ihr Profil" nudge from a job board.',
     msg(
       "StepStone",
       "service@stepstone.de",
@@ -1691,7 +1883,13 @@ Mit freundlichen Grüßen
 Nordstern Versicherung AG – Talent Acquisition`,
       { bulk: true },
     ),
-    { category: "other_job", applicationId: null, suggestedStatus: null, company: "Nordstern Versicherung AG", role: null },
+    {
+      category: "other_job",
+      applicationId: null,
+      suggestedStatus: null,
+      company: "Nordstern Versicherung AG",
+      role: null,
+    },
   ),
   c(
     59,
@@ -1712,14 +1910,20 @@ Viele Grüße
 Spreewerk Energie GmbH – Recruiting`,
       ATS,
     ),
-    { category: "other_job", applicationId: "de-app-spreewerk", suggestedStatus: null, company: "Spreewerk Energie GmbH", role: "Platform Engineer" },
+    {
+      category: "other_job",
+      applicationId: "de-app-spreewerk",
+      suggestedStatus: null,
+      company: "Spreewerk Energie GmbH",
+      role: "Platform Engineer",
+    },
   ),
 
   // ───────────── not_job ─────────────
   c(
     60,
     "synthetic",
-    "Credit-card \"Antrag eingegangen\" reads like an application confirmation.",
+    'Credit-card "Antrag eingegangen" reads like an application confirmation.',
     msg(
       "Lindenbank Kreditkarten",
       "service@lindenbank.example",
@@ -1740,7 +1944,7 @@ Ihre Lindenbank`,
   c(
     61,
     "synthetic",
-    "Bank \"Ihr Antrag wurde abgelehnt\" — rejection wording, not job-related.",
+    'Bank "Ihr Antrag wurde abgelehnt" — rejection wording, not job-related.',
     msg(
       "Lindenbank Kreditservice",
       "kredit@lindenbank.example",
@@ -1760,7 +1964,7 @@ Ihre Lindenbank`,
   c(
     62,
     "synthetic",
-    "Retail \"Sonderangebot nur für Sie\" — offer wording, not a job offer.",
+    'Retail "Sonderangebot nur für Sie" — offer wording, not a job offer.',
     msg(
       "Kleiderkammer Online",
       "newsletter@kleiderkammer.example",
@@ -1783,7 +1987,7 @@ Kleiderkammer Online GmbH, Leipzig`,
   c(
     63,
     "synthetic",
-    "Podcast newsletter with \"Interview\" in the subject.",
+    'Podcast newsletter with "Interview" in the subject.',
     msg(
       "Code & Kaffee Podcast",
       "hallo@codeundkaffee.example",
@@ -1806,7 +2010,7 @@ Newsletter abbestellen`,
   c(
     64,
     "synthetic",
-    "Apartment application (Wohnungsbewerbung) confirmation and viewing \"Termin\".",
+    'Apartment application (Wohnungsbewerbung) confirmation and viewing "Termin".',
     msg(
       "Hausverwaltung Prenzlberg",
       "vermietung@hv-prenzlberg.example",
@@ -1826,7 +2030,7 @@ Hausverwaltung Prenzlberg GmbH`,
   c(
     65,
     "synthetic",
-    "University admission \"Bewerbung eingegangen\".",
+    'University admission "Bewerbung eingegangen".',
     msg(
       "Studierendenservice Universität Elbstadt",
       "bewerbung@uni-elbstadt.example",

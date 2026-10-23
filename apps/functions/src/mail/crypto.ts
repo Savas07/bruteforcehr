@@ -85,7 +85,13 @@ export function decryptSecret(keyring: Keyring, stored: unknown, aad: string): u
   const kek = keyring.keys.get(secret.kid);
   if (kek === undefined) throw new Error(`unknown KEK ${secret.kid}`);
   const wrapped = Buffer.from(secret.wrappedKey, "base64");
-  const dataKey = open(kek, wrapped.subarray(0, 12), wrapped.subarray(12, 44), wrapped.subarray(44), `${aad}#dek`);
+  const dataKey = open(
+    kek,
+    wrapped.subarray(0, 12),
+    wrapped.subarray(12, 44),
+    wrapped.subarray(44),
+    `${aad}#dek`,
+  );
   try {
     const plaintext = open(
       dataKey,

@@ -38,6 +38,7 @@
   "devDependencies": {
     "@bfhr/fixtures": "workspace:*",
     "@puppeteer/browsers": "3.2.2",
+    "@types/express": "^5.0.6",
     "@types/node": "^22.20.5",
     "esbuild": "^0.28.2",
     "imapkit": "^5.2.0",

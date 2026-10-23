@@ -52,7 +52,10 @@ export interface MailPromptEmail {
 /** Characters of the body sent to the model (≈ 2k tokens); the opening carries the decision. */
 export const MAIL_CLASSIFY_BODY_CHARS = 6_000;
 
-export function mailClassifyUserPrompt(email: MailPromptEmail, applications: readonly MailPromptApplication[]): string {
+export function mailClassifyUserPrompt(
+  email: MailPromptEmail,
+  applications: readonly MailPromptApplication[],
+): string {
   const from = email.fromName === null ? email.fromAddress : `${email.fromName} <${email.fromAddress}>`;
   const lines = [
     "<email>",
@@ -67,7 +70,9 @@ export function mailClassifyUserPrompt(email: MailPromptEmail, applications: rea
   if (applications.length > 0) {
     lines.push("<applications>");
     for (const application of applications)
-      lines.push(`- id: ${application.id} | company: ${application.company} | role: ${application.role} | status: ${application.status}`);
+      lines.push(
+        `- id: ${application.id} | company: ${application.company} | role: ${application.role} | status: ${application.status}`,
+      );
     lines.push("</applications>");
   }
   return lines.join("\n");

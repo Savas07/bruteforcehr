@@ -5,7 +5,14 @@ import { GMAIL_READ_SCOPE, GMAIL_SEND_SCOPE, gmailErrorDialect } from "../provid
 import { RestClient, retryAfterSeconds } from "../providers/rest";
 import { type Fetch, MailTransientError } from "../providers/types";
 import { OAuthErrorBody, postForm, requestTokens, type TokenEndpoint } from "./token-endpoint";
-import type { AuthorizeParams, OAuthCallbackError, OAuthClientConfig, OAuthProfile, OAuthProvider, OAuthTokens } from "./types";
+import type {
+  AuthorizeParams,
+  OAuthCallbackError,
+  OAuthClientConfig,
+  OAuthProfile,
+  OAuthProvider,
+  OAuthTokens,
+} from "./types";
 
 const AUTHORIZE_URL = "https://accounts.google.com/o/oauth2/v2/auth";
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
@@ -80,7 +87,10 @@ export function googleOAuth(config: OAuthClientConfig, options: { fetch?: Fetch 
       if (response.status === 400 && body.success && body.data.error === "invalid_token") return;
       const code = body.success ? ` ${body.data.error}` : "";
       if (response.status === 429 || response.status >= 500) {
-        throw new MailTransientError(`google revoke ${response.status}${code}`, retryAfterSeconds(response.headers));
+        throw new MailTransientError(
+          `google revoke ${response.status}${code}`,
+          retryAfterSeconds(response.headers),
+        );
       }
       throw new Error(`google revoke ${response.status}${code}`);
     },

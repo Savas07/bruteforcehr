@@ -50,7 +50,10 @@ export interface ResolvedHost {
 
 /** Resolves `host` and refuses non-public addresses (`allowPrivate` only for in-process tests). */
 export async function resolvePublicHost(host: string, allowPrivate = false): Promise<ResolvedHost> {
-  const addresses = isIP(host) === 0 ? await lookup(host, { all: true, verbatim: true }) : [{ address: host, family: isIP(host) }];
+  const addresses =
+    isIP(host) === 0
+      ? await lookup(host, { all: true, verbatim: true })
+      : [{ address: host, family: isIP(host) }];
   const first = addresses[0];
   if (first === undefined) throw new BlockedHostError(host);
   if (!allowPrivate) {

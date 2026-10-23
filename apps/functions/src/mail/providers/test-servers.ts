@@ -73,7 +73,8 @@ export async function startTestMailServers(): Promise<TestMailServers> {
   });
   await imap.start(0, "127.0.0.1");
   const address = imap.tlsServer?.address();
-  if (address === undefined || address === null || typeof address === "string") throw new Error("no TLS listener");
+  if (address === undefined || address === null || typeof address === "string")
+    throw new Error("no TLS listener");
   const imapPort = address.port;
 
   const smtpReceived: TestMailServers["smtpReceived"] = [];
@@ -82,7 +83,8 @@ export async function startTestMailServers(): Promise<TestMailServers> {
     secure: false,
     authMethods: ["PLAIN", "LOGIN"],
     onAuth(auth, _session, callback) {
-      if (auth.username === TEST_USER && auth.password === TEST_PASSWORD) callback(null, { user: auth.username });
+      if (auth.username === TEST_USER && auth.password === TEST_PASSWORD)
+        callback(null, { user: auth.username });
       else callback(new Error("535 5.7.8 Authentication credentials invalid"));
     },
     onData(stream, session, callback) {
@@ -95,7 +97,8 @@ export async function startTestMailServers(): Promise<TestMailServers> {
           to: session.envelope.rcptTo.map((rcpt) => rcpt.address),
           raw,
         });
-        if (session.envelope.rcptTo.some((rcpt) => rcpt.address === TEST_USER)) imap.control.addMessage("INBOX", { raw });
+        if (session.envelope.rcptTo.some((rcpt) => rcpt.address === TEST_USER))
+          imap.control.addMessage("INBOX", { raw });
         callback();
       });
     },
@@ -118,6 +121,7 @@ export async function startTestMailServers(): Promise<TestMailServers> {
       imap: { host: "127.0.0.1", port: imapPort, security: "tls" },
       smtp: { host: "127.0.0.1", port: smtpPort, security: "starttls" },
       smtpSavesSent: false,
+      smtpUsername: null,
     },
     test: { allowPrivateHosts: true, tls: { rejectUnauthorized: false } },
     smtpReceived,

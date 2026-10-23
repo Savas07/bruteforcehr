@@ -40,7 +40,8 @@ const model = (args.model ?? MAIL_CLASSIFY_MODEL) as ModelId;
 if (!(model in MODELS)) throw new Error(`unknown model ${model}`);
 
 const rulesResults: CaseResult[] = [];
-for (const testCase of MAIL_EVAL_CASES) rulesResults.push(scoreCase(testCase, await analyzeCase(testCase, null)));
+for (const testCase of MAIL_EVAL_CASES)
+  rulesResults.push(scoreCase(testCase, await analyzeCase(testCase, null)));
 const rules = { metrics: computeMetrics(rulesResults), results: rulesResults };
 
 let ai: { metrics: Metrics; results: CaseResult[] } | null = null;
@@ -97,8 +98,14 @@ if (!args["rules-only"]) {
   ai = { metrics: computeMetrics(results), results };
   await mkdir(new URL("recordings/", import.meta.url), { recursive: true });
   // Sorted keys keep the recording diffable between runs.
-  const sorted: Recording = { ...recording, entries: Object.fromEntries(Object.entries(recording.entries).sort(([a], [b]) => a.localeCompare(b))) };
-  await writeFile(new URL(`recordings/${model}.json`, import.meta.url), `${JSON.stringify(sorted, null, 1)}\n`);
+  const sorted: Recording = {
+    ...recording,
+    entries: Object.fromEntries(Object.entries(recording.entries).sort(([a], [b]) => a.localeCompare(b))),
+  };
+  await writeFile(
+    new URL(`recordings/${model}.json`, import.meta.url),
+    `${JSON.stringify(sorted, null, 1)}\n`,
+  );
 }
 
 const report = renderReport({
@@ -108,7 +115,11 @@ const report = renderReport({
   ai,
   rules,
 });
-const reportName = args["rules-only"] ? "report-rules-only.md" : model === MAIL_CLASSIFY_MODEL ? "report.md" : `report-${model}.md`;
+const reportName = args["rules-only"]
+  ? "report-rules-only.md"
+  : model === MAIL_CLASSIFY_MODEL
+    ? "report.md"
+    : `report-${model}.md`;
 await writeFile(new URL(reportName, import.meta.url), report);
 
 const summary = (label: string, metrics: Metrics) => {

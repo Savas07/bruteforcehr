@@ -31,6 +31,8 @@ export interface ImapCredentials {
   smtp: MailEndpoint | null;
   /** The provider files SMTP-sent mail in Sent itself (Gmail): skip the IMAP APPEND. */
   smtpSavesSent: boolean;
+  /** SMTP login when it differs from the IMAP one (iCloud: IMAP may take the local part, SMTP the address). */
+  smtpUsername: string | null;
 }
 
 /** Test seams: in-process servers listen on loopback with a self-signed certificate. */
@@ -73,25 +75,40 @@ export class ImapConnectError extends Error {
   }
 }
 
-const DISABLED_TEXT = /imap\b.{0,40}\b(?:disabled|not enabled|deaktiviert|nicht aktiviert|kapal[ıi]|devre d[ıi][şs][ıi])|enable imap|application-specific password required|web login required/iu;
+const DISABLED_TEXT =
+  /imap\b.{0,40}\b(?:disabled|not enabled|deaktiviert|nicht aktiviert|kapal[ıi]|devre d[ıi][şs][ıi])|enable imap|application-specific password required|web login required/iu;
 
 function errorCode(error: unknown): string {
-  return error !== null && typeof error === "object" && "code" in error && typeof error.code === "string" ? error.code : "";
+  return error !== null && typeof error === "object" && "code" in error && typeof error.code === "string"
+    ? error.code
+    : "";
 }
 
 /** Maps imapflow / nodemailer / socket errors to a connect failure, or null when unknown. */
 export function classifyConnectError(error: unknown, side: "imap" | "smtp"): ImapConnectError | null {
   const code = errorCode(error);
-  const text = error instanceof Error ? `${error.message} ${"response" in error ? String(error.response) : ""}` : "";
-  if (DISABLED_TEXT.test(text)) return new ImapConnectError("imap_disabled", side, "access disabled at the provider");
+  const text =
+    error instanceof Error ? `${error.message} ${"response" in error ? String(error.response) : ""}` : "";
+  if (DISABLED_TEXT.test(text))
+    return new ImapConnectError("imap_disabled", side, "access disabled at the provider");
   const authFailed =
     (error !== null && typeof error === "object" && "authenticationFailed" in error) ||
     code === "EAUTH" ||
     /AUTHENTICATIONFAILED|authentication failed|invalid credentials|535/iu.test(text);
   if (authFailed) return new ImapConnectError("auth_failed", side, "authentication failed");
-  if (/^(?:ERR_TLS|ERR_SSL|CERT_|UNABLE_TO_VERIFY|DEPTH_ZERO|SELF_SIGNED|ESOCKET_TLS)|ClosedAfterConnectTLS|UPGRADE_TIMEOUT/u.test(code) || /certificate|wrong version number|ssl3_get_record|tls/iu.test(text))
+  if (
+    /^(?:ERR_TLS|ERR_SSL|CERT_|UNABLE_TO_VERIFY|DEPTH_ZERO|SELF_SIGNED|ESOCKET_TLS)|ClosedAfterConnectTLS|UPGRADE_TIMEOUT/u.test(
+      code,
+    ) ||
+    /certificate|wrong version number|ssl3_get_record|tls/iu.test(text)
+  )
     return new ImapConnectError("tls_failed", side, "TLS negotiation failed");
-  if (/^(?:ENOTFOUND|ECONNREFUSED|ECONNRESET|EHOSTUNREACH|ENETUNREACH|ETIMEDOUT|EAI_AGAIN|CONNECT_TIMEOUT|GREETING_TIMEOUT|ETIMEOUT|ECONNECTION|EDNS|NoConnection|BlockedHost)$/u.test(code) || (error instanceof Error && error.name === "BlockedHostError"))
+  if (
+    /^(?:ENOTFOUND|ECONNREFUSED|ECONNRESET|EHOSTUNREACH|ENETUNREACH|ETIMEDOUT|EAI_AGAIN|CONNECT_TIMEOUT|GREETING_TIMEOUT|ETIMEOUT|ECONNECTION|EDNS|NoConnection|BlockedHost)$/u.test(
+      code,
+    ) ||
+    (error instanceof Error && error.name === "BlockedHostError")
+  )
     return new ImapConnectError("host_unreachable", side, "server unreachable");
   return null;
 }
@@ -147,7 +164,11 @@ export class ImapAdapter implements MailProviderAdapter {
       connectionTimeout: CONNECTION_TIMEOUT_MS,
       greetingTimeout: CONNECTION_TIMEOUT_MS,
       socketTimeout: 120_000,
-      clientInfo: { name: "BruteForceHR", vendor: "BruteForceHR", "support-url": "https://github.com/Savas07/bruteforcehr-releases/issues" },
+      clientInfo: {
+        name: "BruteForceHR",
+        vendor: "BruteForceHR",
+        "support-url": "https://github.com/Savas07/bruteforcehr-releases/issues",
+      },
       tls: { minVersion: "TLSv1.2", ...this.test.tls },
     };
     const client = new ImapFlow(options);
@@ -171,7 +192,10 @@ export class ImapAdapter implements MailProviderAdapter {
     const client = await this.connection();
     const list = await client.list();
     const junk = list.find((entry) => entry.specialUse === "\\Junk");
-    this.folders = [{ path: "INBOX", kind: "inbox" }, ...(junk === undefined ? [] : [{ path: junk.path, kind: "spam" as const }])];
+    this.folders = [
+      { path: "INBOX", kind: "inbox" },
+      ...(junk === undefined ? [] : [{ path: junk.path, kind: "spam" as const }]),
+    ];
     return this.folders;
   }
 
@@ -179,7 +203,11 @@ export class ImapAdapter implements MailProviderAdapter {
     const client = await this.connection();
     const cursor: Cursor = { v: 1, folders: {} };
     for (const folder of await this.mailFolders()) {
-      const status = await client.status(folder.path, { uidNext: true, uidValidity: true, highestModseq: true });
+      const status = await client.status(folder.path, {
+        uidNext: true,
+        uidValidity: true,
+        highestModseq: true,
+      });
       if (status === false || status.uidValidity === undefined || status.uidNext === undefined) continue;
       cursor.folders[folder.path] = {
         uidValidity: status.uidValidity.toString(),
@@ -193,7 +221,8 @@ export class ImapAdapter implements MailProviderAdapter {
   async listSince(since: Date, pageToken: string | null): Promise<RefPage> {
     const client = await this.connection();
     const folders = await this.mailFolders();
-    const position = pageToken === null ? { folder: 0, offset: 0 } : PageTokenSchema.parse(JSON.parse(pageToken));
+    const position =
+      pageToken === null ? { folder: 0, offset: 0 } : PageTokenSchema.parse(JSON.parse(pageToken));
     const folder = folders[position.folder];
     if (folder === undefined) return { refs: [], nextPageToken: null, total: null };
 
@@ -205,9 +234,11 @@ export class ImapAdapter implements MailProviderAdapter {
       if (mailbox === false) return { refs: [], nextPageToken: null, total: null };
       const found = await client.search({ since }, { uid: true });
       uids = (Array.isArray(found) ? found : []).sort((a, b) => b - a);
-      refs = uids
-        .slice(position.offset, position.offset + PAGE_SIZE)
-        .map((uid) => ({ id: refId(folder.path, mailbox.uidValidity, uid), threadId: null, folder: folder.kind }));
+      refs = uids.slice(position.offset, position.offset + PAGE_SIZE).map((uid) => ({
+        id: refId(folder.path, mailbox.uidValidity, uid),
+        threadId: null,
+        folder: folder.kind,
+      }));
     } finally {
       lock.release();
     }
@@ -240,7 +271,11 @@ export class ImapAdapter implements MailProviderAdapter {
     let more = false;
     for (const folder of await this.mailFolders()) {
       const known = stored.folders[folder.path];
-      const status = await client.status(folder.path, { uidNext: true, uidValidity: true, highestModseq: true });
+      const status = await client.status(folder.path, {
+        uidNext: true,
+        uidValidity: true,
+        highestModseq: true,
+      });
       if (status === false || status.uidValidity === undefined || status.uidNext === undefined) continue;
       const uidValidity = status.uidValidity.toString();
       const modseq = status.highestModseq?.toString() ?? null;
@@ -249,7 +284,8 @@ export class ImapAdapter implements MailProviderAdapter {
         next.folders[folder.path] = { uidValidity, uidNext: status.uidNext, modseq };
         continue;
       }
-      if (known.uidValidity !== uidValidity) throw new MailCursorExpiredError(`UIDVALIDITY of ${folder.path} changed`);
+      if (known.uidValidity !== uidValidity)
+        throw new MailCursorExpiredError(`UIDVALIDITY of ${folder.path} changed`);
       const unchanged = status.uidNext === known.uidNext && (modseq === null || modseq === known.modseq);
       if (unchanged || status.uidNext <= known.uidNext) {
         next.folders[folder.path] = { uidValidity, uidNext: Math.max(known.uidNext, status.uidNext), modseq };
@@ -258,14 +294,21 @@ export class ImapAdapter implements MailProviderAdapter {
       const lock = await client.getMailboxLock(folder.path, { readOnly: true });
       try {
         const found = await client.search({ uid: `${known.uidNext}:*` }, { uid: true });
-        const uids = (Array.isArray(found) ? found : []).filter((uid) => uid >= known.uidNext).sort((a, b) => a - b);
+        const uids = (Array.isArray(found) ? found : [])
+          .filter((uid) => uid >= known.uidNext)
+          .sort((a, b) => a - b);
         const room = MAX_CHANGES - refs.length;
         const taken = uids.slice(0, Math.max(0, room));
-        for (const uid of taken) refs.push({ id: refId(folder.path, status.uidValidity, uid), threadId: null, folder: folder.kind });
+        for (const uid of taken)
+          refs.push({ id: refId(folder.path, status.uidValidity, uid), threadId: null, folder: folder.kind });
         if (taken.length < uids.length) {
           more = true;
           const last = taken.at(-1);
-          next.folders[folder.path] = { uidValidity, uidNext: last === undefined ? known.uidNext : last + 1, modseq: known.modseq };
+          next.folders[folder.path] = {
+            uidValidity,
+            uidNext: last === undefined ? known.uidNext : last + 1,
+            modseq: known.modseq,
+          };
         } else {
           next.folders[folder.path] = { uidValidity, uidNext: status.uidNext, modseq };
         }
@@ -293,7 +336,11 @@ export class ImapAdapter implements MailProviderAdapter {
       const lock = await client.getMailboxLock(path, { readOnly: true });
       try {
         if (client.mailbox === false || client.mailbox.uidValidity.toString() !== entry.uidValidity) continue;
-        for await (const message of client.fetch(entry.uids.join(","), { uid: true, source: true, internalDate: true }, { uid: true })) {
+        for await (const message of client.fetch(
+          entry.uids.join(","),
+          { uid: true, source: true, internalDate: true },
+          { uid: true },
+        )) {
           if (message.source === undefined) continue;
           fetched.push({
             id: refId(path, BigInt(entry.uidValidity), message.uid),
@@ -317,7 +364,10 @@ export class ImapAdapter implements MailProviderAdapter {
     const transport = await smtpTransport(this.credentials, smtp, this.test);
     try {
       await transport.sendMail({
-        envelope: { from: this.address, to: [...message.to, ...message.cc].map((recipient) => recipient.address) },
+        envelope: {
+          from: this.address,
+          to: [...message.to, ...message.cc].map((recipient) => recipient.address),
+        },
         raw,
       });
     } catch (error) {
@@ -374,7 +424,7 @@ async function smtpTransport(credentials: ImapCredentials, smtp: MailEndpoint, t
     port: smtp.port,
     secure: smtp.security === "tls",
     requireTLS: smtp.security === "starttls",
-    auth: { user: credentials.username, pass: credentials.password },
+    auth: { user: credentials.smtpUsername ?? credentials.username, pass: credentials.password },
     connectionTimeout: CONNECTION_TIMEOUT_MS,
     greetingTimeout: CONNECTION_TIMEOUT_MS,
     socketTimeout: 60_000,
@@ -394,6 +444,7 @@ function refId(path: string, uidValidity: bigint, uid: number): string {
 
 function parseRefId(id: string): { path: string; uidValidity: string; uid: number } | null {
   const match = /^(.*):(\d+):(\d+)$/su.exec(id);
-  if (match === null || match[1] === undefined || match[2] === undefined || match[3] === undefined) return null;
+  if (match === null || match[1] === undefined || match[2] === undefined || match[3] === undefined)
+    return null;
   return { path: match[1], uidValidity: match[2], uid: Number(match[3]) };
 }

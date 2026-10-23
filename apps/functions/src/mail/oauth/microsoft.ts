@@ -5,7 +5,14 @@ import { GRAPH_READ_SCOPE, GRAPH_SEND_SCOPE, GRAPH_WRITE_SCOPE, graphErrorDialec
 import { RestClient } from "../providers/rest";
 import type { Fetch } from "../providers/types";
 import { requestTokens, type TokenEndpoint } from "./token-endpoint";
-import type { AuthorizeParams, OAuthCallbackError, OAuthClientConfig, OAuthProfile, OAuthProvider, OAuthTokens } from "./types";
+import type {
+  AuthorizeParams,
+  OAuthCallbackError,
+  OAuthClientConfig,
+  OAuthProfile,
+  OAuthProvider,
+  OAuthTokens,
+} from "./types";
 
 const AUTHORITY = "https://login.microsoftonline.com/common/oauth2/v2.0";
 const PROFILE_URL = "https://graph.microsoft.com/v1.0/me?$select=mail,userPrincipalName,displayName";
@@ -120,10 +127,11 @@ export function microsoftOAuth(config: OAuthClientConfig, options: { fetch?: Fet
         dialect: graphErrorDialect,
         retryUnauthorized: false,
       });
-      const me = await client.json<{ mail?: string | null; userPrincipalName: string; displayName?: string | null }>(
-        PROFILE_URL,
-        { scope: USER_READ_SCOPE },
-      );
+      const me = await client.json<{
+        mail?: string | null;
+        userPrincipalName: string;
+        displayName?: string | null;
+      }>(PROFILE_URL, { scope: USER_READ_SCOPE });
       return { address: me.mail ?? me.userPrincipalName, displayName: me.displayName ?? null };
     },
 
@@ -132,7 +140,8 @@ export function microsoftOAuth(config: OAuthClientConfig, options: { fetch?: Fet
     callbackError(error: string, description: string | null): OAuthCallbackError {
       const text = description ?? "";
       if (error === "access_denied" && text.includes("AADSTS65004")) return "cancelled";
-      if (error === "consent_required" || /AADSTS(90094|90095|65001)\b/.test(text)) return "admin_consent_required";
+      if (error === "consent_required" || /AADSTS(90094|90095|65001)\b/.test(text))
+        return "admin_consent_required";
       if (error === "access_denied") return "cancelled";
       return "failed";
     },

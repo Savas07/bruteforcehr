@@ -28,7 +28,12 @@ export interface TokenEndpoint {
   normalizeScope?: (scope: string) => string;
 }
 
-export async function postForm(fetch: Fetch, label: string, url: string, form: Record<string, string>): Promise<Response> {
+export async function postForm(
+  fetch: Fetch,
+  label: string,
+  url: string,
+  form: Record<string, string>,
+): Promise<Response> {
   try {
     return await fetch(url, {
       method: "POST",
@@ -40,16 +45,23 @@ export async function postForm(fetch: Fetch, label: string, url: string, form: R
   }
 }
 
-export async function requestTokens(endpoint: TokenEndpoint, form: Record<string, string>): Promise<OAuthTokens> {
+export async function requestTokens(
+  endpoint: TokenEndpoint,
+  form: Record<string, string>,
+): Promise<OAuthTokens> {
   const response = await postForm(endpoint.fetch, endpoint.label, endpoint.url, form);
   const body: unknown = await response.json().catch(() => null);
   if (!response.ok) {
     const error = OAuthErrorBody.safeParse(body);
     const code = error.success ? ` ${error.data.error}` : "";
     if (response.status === 429 || response.status >= 500) {
-      throw new MailTransientError(`${endpoint.label} token ${response.status}${code}`, retryAfterSeconds(response.headers));
+      throw new MailTransientError(
+        `${endpoint.label} token ${response.status}${code}`,
+        retryAfterSeconds(response.headers),
+      );
     }
-    if (error.success && endpoint.grantRevoked(error.data)) throw new MailAuthError(`${endpoint.label} token${code}`);
+    if (error.success && endpoint.grantRevoked(error.data))
+      throw new MailAuthError(`${endpoint.label} token${code}`);
     throw new Error(`${endpoint.label} token ${response.status}${code}`);
   }
   const tokens = TokenResponse.parse(body);
@@ -58,6 +70,9 @@ export async function requestTokens(endpoint: TokenEndpoint, form: Record<string
     accessToken: tokens.access_token,
     refreshToken: tokens.refresh_token ?? null,
     expiresAt: new Date(Date.now() + tokens.expires_in * 1000),
-    scopes: (tokens.scope ?? "").split(" ").filter((scope) => scope !== "").map(normalize),
+    scopes: (tokens.scope ?? "")
+      .split(" ")
+      .filter((scope) => scope !== "")
+      .map(normalize),
   };
 }

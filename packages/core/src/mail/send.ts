@@ -49,7 +49,9 @@ export const MailSendAttachmentSchema = z.discriminatedUnion("kind", [
   /** A file the client uploaded to `users/{uid}/mail-attachments/{fileId}`. */
   z.object({
     kind: z.literal("upload"),
-    storagePath: z.string().regex(/^users\/[^/]+\/mail-attachments\/[^/]+$/, "Expected a mail-attachments path"),
+    storagePath: z
+      .string()
+      .regex(/^users\/[^/]+\/mail-attachments\/[^/]+$/, "Expected a mail-attachments path"),
     fileName: z.string().min(1).max(255),
     contentType: z.enum(MAIL_ATTACHMENT_CONTENT_TYPES),
   }),

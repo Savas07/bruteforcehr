@@ -2,7 +2,13 @@
 // auth with one refresh-and-retry on 401, and the HTTP → mail error mapping of ./types.ts. Error
 // messages carry the provider label, the status and the provider error code only: never bodies,
 // subjects or addresses.
-import { type AccessTokenSource, type Fetch, MailAuthError, MailScopeError, MailTransientError } from "./types";
+import {
+  type AccessTokenSource,
+  type Fetch,
+  MailAuthError,
+  MailScopeError,
+  MailTransientError,
+} from "./types";
 
 /** Provider-specific reading of an error response. */
 export interface RestErrorDialect {

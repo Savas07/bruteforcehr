@@ -49,7 +49,8 @@ export interface MailDecision {
 
 export function decideMailAction(input: MailDecisionInput): MailDecision {
   const target = categoryTargetStatus(input.category, input.screening);
-  if (input.category === "job_alert") return { suggestedStatus: null, reviewState: "not_required", autoApply: false };
+  if (input.category === "job_alert")
+    return { suggestedStatus: null, reviewState: "not_required", autoApply: false };
 
   if (input.applicationStatus === null) {
     // Unlinked: a proposal to create the application (backfill review), or plain job mail to look at.
@@ -58,7 +59,9 @@ export function decideMailAction(input: MailDecisionInput): MailDecision {
 
   const check = target === null ? null : canTransition(input.applicationStatus, target, input.actor);
   const suggestedStatus =
-    target !== null && check?.allowed === true && (check.direction === "forward" || check.direction === "exit")
+    target !== null &&
+    check?.allowed === true &&
+    (check.direction === "forward" || check.direction === "exit")
       ? target
       : null;
 

@@ -24,8 +24,22 @@ describe("mail eval set", () => {
     expect(MAIL_EVAL_CASES.length).toBeGreaterThanOrEqual(150);
     expect(new Set(MAIL_EVAL_CASES.map((c) => c.language)).size).toBeGreaterThanOrEqual(2);
     expect(new Set(MAIL_EVAL_CASES.map((c) => c.id)).size).toBe(MAIL_EVAL_CASES.length);
-    for (const category of ["application_received", "rejection", "interview_invite", "assessment", "offer", "recruiter_outreach", "info_request", "job_alert", "other_job", "not_job"])
-      expect(MAIL_EVAL_CASES.filter((c) => c.expected.category === category).length, category).toBeGreaterThanOrEqual(10);
+    for (const category of [
+      "application_received",
+      "rejection",
+      "interview_invite",
+      "assessment",
+      "offer",
+      "recruiter_outreach",
+      "info_request",
+      "job_alert",
+      "other_job",
+      "not_job",
+    ])
+      expect(
+        MAIL_EVAL_CASES.filter((c) => c.expected.category === category).length,
+        category,
+      ).toBeGreaterThanOrEqual(10);
   });
 });
 
@@ -40,7 +54,12 @@ describe("mail classification gate", () => {
     const results = [];
     for (const testCase of MAIL_EVAL_CASES) {
       const provider = replayProvider(recording, () => testCase.id);
-      results.push(scoreCase(testCase, await analyzeCase(testCase, { provider, ledger: unlimitedLedger, model: MAIL_CLASSIFY_MODEL })));
+      results.push(
+        scoreCase(
+          testCase,
+          await analyzeCase(testCase, { provider, ledger: unlimitedLedger, model: MAIL_CLASSIFY_MODEL }),
+        ),
+      );
     }
     const metrics = computeMetrics(results);
     expect(metrics.macroF1).toBeGreaterThanOrEqual(MACRO_F1_GATE);
@@ -50,7 +69,8 @@ describe("mail classification gate", () => {
 
   it("AI off (rules only): automatic-change precision", async () => {
     const results = [];
-    for (const testCase of MAIL_EVAL_CASES) results.push(scoreCase(testCase, await analyzeCase(testCase, null)));
+    for (const testCase of MAIL_EVAL_CASES)
+      results.push(scoreCase(testCase, await analyzeCase(testCase, null)));
     const metrics = computeMetrics(results);
     expect(metrics.autoApplied).toBeGreaterThan(0);
     expect(metrics.autoPrecision).toBeGreaterThanOrEqual(AUTO_PRECISION_GATE);

@@ -13,7 +13,9 @@ export async function composeMime(message: OutgoingMail): Promise<{ raw: Buffer;
   const domain = message.from.address.slice(message.from.address.lastIndexOf("@") + 1);
   const messageId = `<${randomUUID()}@${domain}>`;
   const references = message.replyTo
-    ? [...message.replyTo.references, message.replyTo.rfc822MessageId].filter((id): id is string => id !== null)
+    ? [...message.replyTo.references, message.replyTo.rfc822MessageId].filter(
+        (id): id is string => id !== null,
+      )
     : [];
   const composer = new MailComposer({
     from: formatAddress(message.from),

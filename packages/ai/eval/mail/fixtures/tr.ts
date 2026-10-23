@@ -165,7 +165,14 @@ function c(
   message: MsgInput,
   expected: MailEvalExpected,
 ): MailEvalCase {
-  return { id: `tr-${String(n).padStart(3, "0")}`, language: "tr", origin, hard, message: msg(message), expected };
+  return {
+    id: `tr-${String(n).padStart(3, "0")}`,
+    language: "tr",
+    origin,
+    hard,
+    message: msg(message),
+    expected,
+  };
 }
 
 const ALERT_FOOTER =
@@ -185,7 +192,13 @@ export const CASES_TR: MailEvalCase[] = [
       receivedAt: "2026-07-22T10:17:00+03:00",
       bulk: true,
     },
-    { category: "application_received", applicationId: "tr-app-kervan", suggestedStatus: "acknowledged", company: "Kervan Teknoloji", role: "Backend Geliştirici" },
+    {
+      category: "application_received",
+      applicationId: "tr-app-kervan",
+      suggestedStatus: "acknowledged",
+      company: "Kervan Teknoloji",
+      role: "Backend Geliştirici",
+    },
   ),
   c(
     2,
@@ -199,7 +212,13 @@ export const CASES_TR: MailEvalCase[] = [
       receivedAt: "2026-08-03T14:22:00+03:00",
       bulk: true,
     },
-    { category: "application_received", applicationId: "tr-app-lale-pm", suggestedStatus: "acknowledged", company: "Lale Bank", role: "Dijital Ürün Yöneticisi" },
+    {
+      category: "application_received",
+      applicationId: "tr-app-lale-pm",
+      suggestedStatus: "acknowledged",
+      company: "Lale Bank",
+      role: "Dijital Ürün Yöneticisi",
+    },
   ),
   c(
     3,
@@ -209,13 +228,19 @@ export const CASES_TR: MailEvalCase[] = [
       from: { name: "Kariyer.net", address: "bildirim@kariyer.net" },
       subject: "Başvurunuz Trendova firmasına iletildi",
       bodyText:
-        "Merhaba Deniz,\n\nTrendova firmasının \"Kıdemli React Geliştirici\" ilanına başvurun başarıyla iletildi.\n\nFirma başvurunu görüntülediğinde sana haber vereceğiz. Başvuru durumunu Kariyer.net uygulamasındaki Başvurularım sayfasından takip edebilirsin.\n\nBaşarılar dileriz!\nKariyer.net Ekibi" +
+        'Merhaba Deniz,\n\nTrendova firmasının "Kıdemli React Geliştirici" ilanına başvurun başarıyla iletildi.\n\nFirma başvurunu görüntülediğinde sana haber vereceğiz. Başvuru durumunu Kariyer.net uygulamasındaki Başvurularım sayfasından takip edebilirsin.\n\nBaşarılar dileriz!\nKariyer.net Ekibi' +
         ALERT_FOOTER,
       receivedAt: "2026-08-12T19:03:00+03:00",
       listUnsubscribe: true,
       bulk: true,
     },
-    { category: "application_received", applicationId: null, suggestedStatus: "acknowledged", company: "Trendova", role: "Kıdemli React Geliştirici" },
+    {
+      category: "application_received",
+      applicationId: null,
+      suggestedStatus: "acknowledged",
+      company: "Trendova",
+      role: "Kıdemli React Geliştirici",
+    },
   ),
   c(
     4,
@@ -231,12 +256,18 @@ export const CASES_TR: MailEvalCase[] = [
       inReplyTo: "<CAK7tr.egeveri.0815@mail.example>",
       bulk: true,
     },
-    { category: "application_received", applicationId: "tr-app-egeveri", suggestedStatus: "acknowledged", company: "Ege Veri Analitik", role: null },
+    {
+      category: "application_received",
+      applicationId: "tr-app-egeveri",
+      suggestedStatus: "acknowledged",
+      company: "Ege Veri Analitik",
+      role: null,
+    },
   ),
   c(
     5,
     "synthetic",
-    "\"Başvurunuz için teşekkür ederiz… değerlendireceğiz\" — receipt, not rejection; application already acknowledged, so no move.",
+    '"Başvurunuz için teşekkür ederiz… değerlendireceğiz" — receipt, not rejection; application already acknowledged, so no move.',
     {
       from: { name: "Yıldız Market İşe Alım", address: "yildizmarket@successfactors.eu" },
       subject: "Başvurunuz için teşekkür ederiz",
@@ -245,7 +276,13 @@ export const CASES_TR: MailEvalCase[] = [
       receivedAt: "2026-09-04T11:30:00+03:00",
       bulk: true,
     },
-    { category: "application_received", applicationId: "tr-app-yildiz", suggestedStatus: null, company: "Yıldız Market", role: "Mühendislik Müdürü" },
+    {
+      category: "application_received",
+      applicationId: "tr-app-yildiz",
+      suggestedStatus: null,
+      company: "Yıldız Market",
+      role: "Mühendislik Müdürü",
+    },
   ),
   c(
     6,
@@ -259,7 +296,13 @@ export const CASES_TR: MailEvalCase[] = [
       receivedAt: "2026-09-10T22:14:00+03:00",
       bulk: true,
     },
-    { category: "application_received", applicationId: null, suggestedStatus: "acknowledged", company: "Marmara Telekom", role: "Bulut Platform Mühendisi" },
+    {
+      category: "application_received",
+      applicationId: null,
+      suggestedStatus: "acknowledged",
+      company: "Marmara Telekom",
+      role: "Bulut Platform Mühendisi",
+    },
   ),
   c(
     7,
@@ -274,7 +317,13 @@ export const CASES_TR: MailEvalCase[] = [
       threadId: "thr-tr-baskent-01",
       inReplyTo: "<CAK7tr.baskent.0902@mail.example>",
     },
-    { category: "application_received", applicationId: "tr-app-baskent", suggestedStatus: "acknowledged", company: "Başkent Savunma Yazılım", role: "Yazılım Geliştirme Uzmanı" },
+    {
+      category: "application_received",
+      applicationId: "tr-app-baskent",
+      suggestedStatus: "acknowledged",
+      company: "Başkent Savunma Yazılım",
+      role: "Yazılım Geliştirme Uzmanı",
+    },
   ),
   c(
     8,
@@ -289,7 +338,13 @@ export const CASES_TR: MailEvalCase[] = [
       listUnsubscribe: true,
       bulk: true,
     },
-    { category: "application_received", applicationId: null, suggestedStatus: "acknowledged", company: "Sardunya Health Tech", role: "Senior Product Engineer" },
+    {
+      category: "application_received",
+      applicationId: null,
+      suggestedStatus: "acknowledged",
+      company: "Sardunya Health Tech",
+      role: "Senior Product Engineer",
+    },
   ),
   c(
     9,
@@ -303,14 +358,20 @@ export const CASES_TR: MailEvalCase[] = [
       receivedAt: "2026-09-18T17:25:00+03:00",
       bulk: true,
     },
-    { category: "application_received", applicationId: "tr-app-mavi", suggestedStatus: "acknowledged", company: "Mavi Sigorta", role: "DevOps Mühendisi" },
+    {
+      category: "application_received",
+      applicationId: "tr-app-mavi",
+      suggestedStatus: "acknowledged",
+      company: "Mavi Sigorta",
+      role: "DevOps Mühendisi",
+    },
   ),
 
   // ───────────── rejection ─────────────
   c(
     10,
     "synthetic",
-    "Opens with \"Başvurunuz için teşekkür ederiz\" like a receipt, then \"maalesef\".",
+    'Opens with "Başvurunuz için teşekkür ederiz" like a receipt, then "maalesef".',
     {
       from: { name: "Pazarix Yetenek Ekibi", address: "no-reply@hire.lever.co" },
       subject: "Pazarix – Frontend Geliştirici başvurunuz hakkında",
@@ -319,12 +380,18 @@ export const CASES_TR: MailEvalCase[] = [
       receivedAt: "2026-09-08T18:10:00+03:00",
       bulk: true,
     },
-    { category: "rejection", applicationId: "tr-app-pazarix", suggestedStatus: "rejected", company: "Pazarix", role: "Frontend Geliştirici" },
+    {
+      category: "rejection",
+      applicationId: "tr-app-pazarix",
+      suggestedStatus: "rejected",
+      company: "Pazarix",
+      role: "Frontend Geliştirici",
+    },
   ),
   c(
     11,
     "synthetic",
-    "Rejection after final interviews wrapped in warm words (\"çok etkilendik\", \"özgeçmişinizi havuzumuzda tutacağız\").",
+    'Rejection after final interviews wrapped in warm words ("çok etkilendik", "özgeçmişinizi havuzumuzda tutacağız").',
     {
       from: { name: "Ece Karaca", address: "ece.karaca@lalebank.example" },
       subject: "Kıdemli Yazılım Mühendisi süreci hk.",
@@ -332,12 +399,18 @@ export const CASES_TR: MailEvalCase[] = [
         "Sayın Deniz Arslan,\n\nKıdemli Yazılım Mühendisi pozisyonu için son aşama görüşmelerimize katıldığınız ve ekibimizle değerli zamanınızı paylaştığınız için çok teşekkür ederiz. Teknik birikiminiz ve iletişim tarzınızdan ekip olarak gerçekten çok etkilendik.\n\nUzun değerlendirmeler sonucunda, bu pozisyon için ödeme altyapısı tecrübesi daha yoğun olan başka bir adayla ilerlemeye karar verdik. Bu kararın sizin için hayal kırıcı olabileceğinin farkındayız.\n\nÖzgeçmişinizi yetenek havuzumuzda tutacağız ve profilinize uygun yeni bir pozisyon açıldığında ilk olarak sizinle iletişime geçmek isteriz.\n\nSağlıklı ve başarılı günler dilerim.\n\nEce Karaca\nTeknoloji İşe Alım Uzmanı\nLale Bank",
       receivedAt: "2026-10-12T16:45:00+03:00",
     },
-    { category: "rejection", applicationId: "tr-app-lale-swe", suggestedStatus: "rejected", company: "Lale Bank", role: "Kıdemli Yazılım Mühendisi" },
+    {
+      category: "rejection",
+      applicationId: "tr-app-lale-swe",
+      suggestedStatus: "rejected",
+      company: "Lale Bank",
+      role: "Kıdemli Yazılım Mühendisi",
+    },
   ),
   c(
     12,
     "synthetic",
-    "Position filled internally — rejection without the word \"olumsuz\".",
+    'Position filled internally — rejection without the word "olumsuz".',
     {
       from: { name: "Anadolu Yazılım İK", address: "ik@anadoluyazilim.example" },
       subject: "Mobil Uygulama Geliştirici pozisyonu",
@@ -345,7 +418,13 @@ export const CASES_TR: MailEvalCase[] = [
         "Merhaba Deniz Bey,\n\nMobil Uygulama Geliştirici pozisyonumuza gösterdiğiniz ilgi için teşekkür ederiz. Pozisyon, şirket içi bir atama ile doldurulmuş olup işe alım süreci sonlandırılmıştır.\n\nBu nedenle başvurunuzla ilgili süreci ilerletemiyoruz. Yeni ilanlarımızı kariyer sayfamızdan takip edebilirsiniz.\n\nİyi çalışmalar,\nAnadolu Yazılım İnsan Kaynakları",
       receivedAt: "2026-09-22T10:05:00+03:00",
     },
-    { category: "rejection", applicationId: "tr-app-anadolu", suggestedStatus: "rejected", company: "Anadolu Yazılım", role: "Mobil Uygulama Geliştirici" },
+    {
+      category: "rejection",
+      applicationId: "tr-app-anadolu",
+      suggestedStatus: "rejected",
+      company: "Anadolu Yazılım",
+      role: "Mobil Uygulama Geliştirici",
+    },
   ),
   c(
     13,
@@ -359,7 +438,13 @@ export const CASES_TR: MailEvalCase[] = [
       receivedAt: "2026-09-25T13:12:00+03:00",
       bulk: true,
     },
-    { category: "rejection", applicationId: null, suggestedStatus: "rejected", company: "Netrota", role: "Site Reliability Engineer" },
+    {
+      category: "rejection",
+      applicationId: null,
+      suggestedStatus: "rejected",
+      company: "Netrota",
+      role: "Site Reliability Engineer",
+    },
   ),
   c(
     14,
@@ -373,7 +458,13 @@ export const CASES_TR: MailEvalCase[] = [
       receivedAt: "2026-08-30T20:40:00+03:00",
       bulk: true,
     },
-    { category: "rejection", applicationId: "tr-app-kapadokya", suggestedStatus: null, company: "Kapadokya Oyun Stüdyosu", role: "Oyun Sunucu Geliştirici" },
+    {
+      category: "rejection",
+      applicationId: "tr-app-kapadokya",
+      suggestedStatus: null,
+      company: "Kapadokya Oyun Stüdyosu",
+      role: "Oyun Sunucu Geliştirici",
+    },
   ),
   c(
     15,
@@ -386,7 +477,13 @@ export const CASES_TR: MailEvalCase[] = [
         "Sayın Deniz Arslan,\n\nŞirketimizin Ürün Analisti pozisyonu için yapmış olduğunuz başvuru değerlendirilmiş olup, mevcut ihtiyaçlarımız doğrultusunda olumlu sonuçlandırılamamıştır.\n\nGöstermiş olduğunuz ilgi için teşekkür eder, çalışma hayatınızda başarılar dileriz.\n\nÇınar Holding A.Ş.\nİnsan Kaynakları Direktörlüğü",
       receivedAt: "2026-08-28T09:15:00+03:00",
     },
-    { category: "rejection", applicationId: "tr-app-cinar", suggestedStatus: null, company: "Çınar Holding", role: "Ürün Analisti" },
+    {
+      category: "rejection",
+      applicationId: "tr-app-cinar",
+      suggestedStatus: null,
+      company: "Çınar Holding",
+      role: "Ürün Analisti",
+    },
   ),
   c(
     16,
@@ -396,13 +493,19 @@ export const CASES_TR: MailEvalCase[] = [
       from: { name: "Kariyer.net", address: "bildirim@kariyer.net" },
       subject: "Başvurunla ilgili bir güncelleme var",
       bodyText:
-        "Merhaba Deniz,\n\nDoruk Perakende firmasının \"Yazılım Test Uzmanı\" ilanına yaptığın başvuru firma tarafından değerlendirildi ve maalesef olumsuz sonuçlandı.\n\nÜzülme, sana uygun binlerce ilan seni bekliyor. Profilini güncel tutarak işverenlerin seni bulmasını kolaylaştırabilirsin.\n\nKariyer.net Ekibi" +
+        'Merhaba Deniz,\n\nDoruk Perakende firmasının "Yazılım Test Uzmanı" ilanına yaptığın başvuru firma tarafından değerlendirildi ve maalesef olumsuz sonuçlandı.\n\nÜzülme, sana uygun binlerce ilan seni bekliyor. Profilini güncel tutarak işverenlerin seni bulmasını kolaylaştırabilirsin.\n\nKariyer.net Ekibi' +
         ALERT_FOOTER,
       receivedAt: "2026-09-01T12:00:00+03:00",
       listUnsubscribe: true,
       bulk: true,
     },
-    { category: "rejection", applicationId: null, suggestedStatus: "rejected", company: "Doruk Perakende", role: "Yazılım Test Uzmanı" },
+    {
+      category: "rejection",
+      applicationId: null,
+      suggestedStatus: "rejected",
+      company: "Doruk Perakende",
+      role: "Yazılım Test Uzmanı",
+    },
   ),
   c(
     17,
@@ -416,7 +519,13 @@ export const CASES_TR: MailEvalCase[] = [
       receivedAt: "2026-08-19T15:33:00+03:00",
       bulk: true,
     },
-    { category: "rejection", applicationId: "tr-app-kervan", suggestedStatus: "rejected", company: "Kervan Teknoloji", role: "Backend Geliştirici" },
+    {
+      category: "rejection",
+      applicationId: "tr-app-kervan",
+      suggestedStatus: "rejected",
+      company: "Kervan Teknoloji",
+      role: "Backend Geliştirici",
+    },
   ),
   c(
     18,
@@ -430,7 +539,13 @@ export const CASES_TR: MailEvalCase[] = [
       receivedAt: "2026-10-02T19:20:00+03:00",
       bulk: true,
     },
-    { category: "rejection", applicationId: null, suggestedStatus: "rejected", company: "Dorukware", role: "Platform Engineer" },
+    {
+      category: "rejection",
+      applicationId: null,
+      suggestedStatus: "rejected",
+      company: "Dorukware",
+      role: "Platform Engineer",
+    },
   ),
 
   // ───────────── interview_invite ─────────────
@@ -479,7 +594,7 @@ export const CASES_TR: MailEvalCase[] = [
   c(
     21,
     "template",
-    "Only a \"pick a slot\" scheduling link, no concrete date or meeting URL.",
+    'Only a "pick a slot" scheduling link, no concrete date or meeting URL.',
     {
       from: { name: "Yıldız Market İşe Alım", address: "no-reply@us.greenhouse-mail.io" },
       subject: "Yıldız Market ile görüşme planlayalım",
@@ -488,7 +603,13 @@ export const CASES_TR: MailEvalCase[] = [
       receivedAt: "2026-09-29T14:12:00+03:00",
       bulk: true,
     },
-    { category: "interview_invite", applicationId: "tr-app-yildiz", suggestedStatus: "interviewing", company: "Yıldız Market", role: "Mühendislik Müdürü" },
+    {
+      category: "interview_invite",
+      applicationId: "tr-app-yildiz",
+      suggestedStatus: "interviewing",
+      company: "Yıldız Market",
+      role: "Mühendislik Müdürü",
+    },
   ),
   c(
     22,
@@ -647,7 +768,7 @@ export const CASES_TR: MailEvalCase[] = [
       from: { name: "HackerRank", address: "support@hackerrank.com" },
       subject: "Hatırlatma: Mavi Sigorta testinizi tamamlamak için 24 saatiniz kaldı",
       bodyText:
-        "Merhaba Deniz,\n\nMavi Sigorta tarafından gönderilen \"DevOps Mühendisi – Teknik Değerlendirme\" testini henüz tamamlamadınız.\n\nTestin süresi 25 Eylül 2026, 18:00 (GMT+03:00) tarihinde dolacak.\n\nTeste başla: https://www.hackerrank.com/tests/mvsg-devops-26/login\n\nTeşekkürler,\nHackerRank Ekibi\n\nBu e-postayı Mavi Sigorta'nın isteği üzerine aldınız.",
+        'Merhaba Deniz,\n\nMavi Sigorta tarafından gönderilen "DevOps Mühendisi – Teknik Değerlendirme" testini henüz tamamlamadınız.\n\nTestin süresi 25 Eylül 2026, 18:00 (GMT+03:00) tarihinde dolacak.\n\nTeste başla: https://www.hackerrank.com/tests/mvsg-devops-26/login\n\nTeşekkürler,\nHackerRank Ekibi\n\nBu e-postayı Mavi Sigorta\'nın isteği üzerine aldınız.',
       receivedAt: "2026-09-24T18:00:00+03:00",
       folder: "spam",
       bulk: true,
@@ -673,7 +794,13 @@ export const CASES_TR: MailEvalCase[] = [
       receivedAt: "2026-08-18T11:45:00+03:00",
       bulk: true,
     },
-    { category: "assessment", applicationId: null, suggestedStatus: "screening", company: "Trendova", role: "Kıdemli React Geliştirici" },
+    {
+      category: "assessment",
+      applicationId: null,
+      suggestedStatus: "screening",
+      company: "Trendova",
+      role: "Kıdemli React Geliştirici",
+    },
   ),
   c(
     31,
@@ -795,14 +922,20 @@ export const CASES_TR: MailEvalCase[] = [
         "Merhaba Deniz Bey,\n\nKıdemli Yazılım Mühendisi pozisyonu için yönetim onayını aldık ve size teklif sunmaya hazırız. Ücret ve yan haklar detaylarını telefonda konuşmak isterim; yarın gün içinde sizin için uygun bir saat var mı?\n\nResmi teklif mektubu görüşmemizin ardından e-posta ile iletilecektir.\n\nSaygılarımla,\nEce Karaca\nLale Bank",
       receivedAt: "2026-10-20T15:30:00+03:00",
     },
-    { category: "offer", applicationId: "tr-app-lale-swe", suggestedStatus: "offer", company: "Lale Bank", role: "Kıdemli Yazılım Mühendisi" },
+    {
+      category: "offer",
+      applicationId: "tr-app-lale-swe",
+      suggestedStatus: "offer",
+      company: "Lale Bank",
+      role: "Kıdemli Yazılım Mühendisi",
+    },
   ),
 
   // ───────────── recruiter_outreach ─────────────
   c(
     37,
     "synthetic",
-    "Recruiter outreach that mentions an interview (\"kısa bir ön görüşme\") but no application exists.",
+    'Recruiter outreach that mentions an interview ("kısa bir ön görüşme") but no application exists.',
     {
       from: { name: "Ayşe Polat via LinkedIn", address: "inmail-hit-reply@linkedin.com" },
       subject: "Ayşe Polat size bir mesaj gönderdi: Staff Engineer fırsatı",
@@ -811,7 +944,13 @@ export const CASES_TR: MailEvalCase[] = [
       receivedAt: "2026-09-09T10:12:00+03:00",
       listUnsubscribe: true,
     },
-    { category: "recruiter_outreach", applicationId: null, suggestedStatus: null, company: "Talentist İK Danışmanlık", role: "Staff Engineer" },
+    {
+      category: "recruiter_outreach",
+      applicationId: null,
+      suggestedStatus: null,
+      company: "Talentist İK Danışmanlık",
+      role: "Staff Engineer",
+    },
   ),
   c(
     38,
@@ -824,7 +963,13 @@ export const CASES_TR: MailEvalCase[] = [
         "Sayın Deniz Arslan,\n\nSeçkin Executive Search olarak, Türkiye'nin önde gelen dijital bankacılık girişimlerinden biri adına Engineering Lead pozisyonu için gizli bir arama yürütüyoruz.\n\nÖzgeçmişinizdeki ödeme sistemleri deneyimi müşterimizin aradığı profile oldukça yakın. Pozisyonun detaylarını sizinle paylaşmak isterim; uygun olduğunuz bir zamanı bildirirseniz memnun olurum.\n\nGüncel özgeçmişinizi de iletebilirseniz süreci hızlandırabiliriz.\n\nSaygılarımla,\nOğuz Kaplan\nOrtak, Seçkin Executive Search\n+90 555 301 77 45",
       receivedAt: "2026-09-19T09:05:00+03:00",
     },
-    { category: "recruiter_outreach", applicationId: null, suggestedStatus: null, company: "Seçkin Executive Search", role: "Engineering Lead" },
+    {
+      category: "recruiter_outreach",
+      applicationId: null,
+      suggestedStatus: null,
+      company: "Seçkin Executive Search",
+      role: "Engineering Lead",
+    },
   ),
   c(
     39,
@@ -837,7 +982,13 @@ export const CASES_TR: MailEvalCase[] = [
         "Merhaba Deniz,\n\nMarmara Telekom Yetenek Kazanımı ekibinden Elif. GitHub ve LinkedIn profilinde Kubernetes ve dağıtık sistemler konusundaki çalışmalarını gördüm.\n\nŞu anda Platform Takım Lideri pozisyonu için aday arıyoruz ve senin profilinin bu role çok uygun olduğunu düşünüyorum. İlgilenirsen kısa bir tanışma yapabilir miyiz?\n\nİyi çalışmalar,\nElif Taş\nTeknik İşe Alım Uzmanı",
       receivedAt: "2026-09-30T14:40:00+03:00",
     },
-    { category: "recruiter_outreach", applicationId: null, suggestedStatus: null, company: "Marmara Telekom", role: "Platform Takım Lideri" },
+    {
+      category: "recruiter_outreach",
+      applicationId: null,
+      suggestedStatus: null,
+      company: "Marmara Telekom",
+      role: "Platform Takım Lideri",
+    },
   ),
   c(
     40,
@@ -847,13 +998,19 @@ export const CASES_TR: MailEvalCase[] = [
       from: { name: "Kariyer.net", address: "bildirim@kariyer.net" },
       subject: "Bir işveren sana mesaj gönderdi",
       bodyText:
-        "Merhaba Deniz,\n\nSafran Yazılım firması özgeçmişini inceledi ve sana bir mesaj gönderdi:\n\n\"Merhaba Deniz Bey, Kıdemli .NET Geliştirici pozisyonumuz için profilinizi uygun bulduk. Görüşmek isterseniz bize dönüş yapabilir misiniz?\"\n\nMesajı görüntülemek ve yanıtlamak için Kariyer.net'e giriş yap.\n\nKariyer.net Ekibi" +
+        'Merhaba Deniz,\n\nSafran Yazılım firması özgeçmişini inceledi ve sana bir mesaj gönderdi:\n\n"Merhaba Deniz Bey, Kıdemli .NET Geliştirici pozisyonumuz için profilinizi uygun bulduk. Görüşmek isterseniz bize dönüş yapabilir misiniz?"\n\nMesajı görüntülemek ve yanıtlamak için Kariyer.net\'e giriş yap.\n\nKariyer.net Ekibi' +
         ALERT_FOOTER,
       receivedAt: "2026-10-06T20:18:00+03:00",
       listUnsubscribe: true,
       bulk: true,
     },
-    { category: "recruiter_outreach", applicationId: null, suggestedStatus: null, company: "Safran Yazılım", role: "Kıdemli .NET Geliştirici" },
+    {
+      category: "recruiter_outreach",
+      applicationId: null,
+      suggestedStatus: null,
+      company: "Safran Yazılım",
+      role: "Kıdemli .NET Geliştirici",
+    },
   ),
   c(
     41,
@@ -866,7 +1023,13 @@ export const CASES_TR: MailEvalCase[] = [
         "Hi Deniz,\n\nI'm Kerem, co-founder of Lojix — we're building routing software for last-mile delivery fleets in Istanbul and Ankara. We just closed our seed round and are hiring our first Founding Backend Engineer.\n\nYour background at payment companies caught my eye. Would you be open to a quick coffee in Maslak or a call next week?\n\nCheers,\nKerem",
       receivedAt: "2026-10-13T21:02:00+03:00",
     },
-    { category: "recruiter_outreach", applicationId: null, suggestedStatus: null, company: "Lojix", role: "Founding Backend Engineer" },
+    {
+      category: "recruiter_outreach",
+      applicationId: null,
+      suggestedStatus: null,
+      company: "Lojix",
+      role: "Founding Backend Engineer",
+    },
   ),
 
   // ───────────── info_request ─────────────
@@ -901,7 +1064,13 @@ export const CASES_TR: MailEvalCase[] = [
         "Merhaba Deniz,\n\nFull Stack Geliştirici süreciniz devam ederken değerlendirmemizi tamamlayabilmek için net aylık maaş beklentinizi ve mevcut ihbar sürenizi öğrenmek istiyoruz.\n\nAyrıca en erken ne zaman işe başlayabileceğinizi de paylaşırsanız seviniriz.\n\nTeşekkürler,\nBoğaziçi Ödeme Sistemleri İK",
       receivedAt: "2026-09-26T10:40:00+03:00",
     },
-    { category: "info_request", applicationId: "tr-app-bogazici", suggestedStatus: null, company: "Boğaziçi Ödeme Sistemleri", role: "Full Stack Geliştirici" },
+    {
+      category: "info_request",
+      applicationId: "tr-app-bogazici",
+      suggestedStatus: null,
+      company: "Boğaziçi Ödeme Sistemleri",
+      role: "Full Stack Geliştirici",
+    },
   ),
   c(
     44,
@@ -916,7 +1085,13 @@ export const CASES_TR: MailEvalCase[] = [
       threadId: "thr-tr-egeveri-01",
       inReplyTo: "<CAK7tr.egeveri.0815@mail.example>",
     },
-    { category: "info_request", applicationId: "tr-app-egeveri", suggestedStatus: null, company: "Ege Veri Analitik", role: "Veri Mühendisi" },
+    {
+      category: "info_request",
+      applicationId: "tr-app-egeveri",
+      suggestedStatus: null,
+      company: "Ege Veri Analitik",
+      role: "Veri Mühendisi",
+    },
   ),
   c(
     45,
@@ -929,14 +1104,20 @@ export const CASES_TR: MailEvalCase[] = [
         "Sayın Deniz Arslan,\n\nTeklifimizi değerlendirdiğiniz için teşekkür ederiz. İşe giriş işlemlerinizin zamanında tamamlanabilmesi için aşağıdaki belgeleri e-Devlet üzerinden alarak iletmenizi rica ederiz:\n\n- Adli sicil kaydı\n- SGK hizmet dökümü\n- İkametgâh belgesi\n- 2 adet vesikalık fotoğraf\n- IBAN bilgisi\n\nSaygılarımızla,\nGalata Fintech İnsan Kaynakları",
       receivedAt: "2026-10-19T10:00:00+03:00",
     },
-    { category: "info_request", applicationId: "tr-app-galata", suggestedStatus: null, company: "Galata Fintech", role: null },
+    {
+      category: "info_request",
+      applicationId: "tr-app-galata",
+      suggestedStatus: null,
+      company: "Galata Fintech",
+      role: null,
+    },
   ),
 
   // ───────────── job_alert ─────────────
   c(
     46,
     "template",
-    "Job alert titled like an invitation (\"başvurmaya davet edildiniz\").",
+    'Job alert titled like an invitation ("başvurmaya davet edildiniz").',
     {
       from: { name: "LinkedIn", address: "jobs-noreply@linkedin.com" },
       subject: "Deniz, Kuzgun Medya sizi başvurmaya davet ediyor",
@@ -946,7 +1127,13 @@ export const CASES_TR: MailEvalCase[] = [
       listUnsubscribe: true,
       bulk: true,
     },
-    { category: "job_alert", applicationId: null, suggestedStatus: null, company: "Kuzgun Medya", role: "Kıdemli Mobil Geliştirici" },
+    {
+      category: "job_alert",
+      applicationId: null,
+      suggestedStatus: null,
+      company: "Kuzgun Medya",
+      role: "Kıdemli Mobil Geliştirici",
+    },
   ),
   c(
     47,
@@ -954,15 +1141,21 @@ export const CASES_TR: MailEvalCase[] = [
     null,
     {
       from: { name: "Kariyer.net", address: "isalarmi@kariyer.net" },
-      subject: "\"Backend Developer\" iş alarmın için 14 yeni ilan",
+      subject: '"Backend Developer" iş alarmın için 14 yeni ilan',
       bodyText:
-        "Merhaba Deniz,\n\nKaydettiğin \"Backend Developer – İstanbul (Avrupa)\" iş alarmına uygun yeni ilanlar var:\n\n• Kıdemli Backend Developer – Pera Yazılım · Şişli\n• Java Developer – Atlas Sigorta Teknoloji · Maslak\n• Node.js Developer – Kuyu Oyun · Uzaktan\n• Python Developer – Sarp Analitik · Beşiktaş\n\nTüm ilanları gör\n\nKariyer.net" +
+        'Merhaba Deniz,\n\nKaydettiğin "Backend Developer – İstanbul (Avrupa)" iş alarmına uygun yeni ilanlar var:\n\n• Kıdemli Backend Developer – Pera Yazılım · Şişli\n• Java Developer – Atlas Sigorta Teknoloji · Maslak\n• Node.js Developer – Kuyu Oyun · Uzaktan\n• Python Developer – Sarp Analitik · Beşiktaş\n\nTüm ilanları gör\n\nKariyer.net' +
         ALERT_FOOTER,
       receivedAt: "2026-08-05T07:30:00+03:00",
       listUnsubscribe: true,
       bulk: true,
     },
-    { category: "job_alert", applicationId: null, suggestedStatus: null, company: null, role: "Backend Developer" },
+    {
+      category: "job_alert",
+      applicationId: null,
+      suggestedStatus: null,
+      company: null,
+      role: "Backend Developer",
+    },
   ),
   c(
     48,
@@ -988,13 +1181,19 @@ export const CASES_TR: MailEvalCase[] = [
       from: { name: "Yenibiriş", address: "noreply@yenibiris.com" },
       subject: "Kayıtlı aramana uygun 6 yeni ilan: DevOps Mühendisi",
       bodyText:
-        "Sayın Deniz Arslan,\n\n\"DevOps Mühendisi\" aramanız için son 24 saatte yayınlanan ilanlar:\n\n- DevOps Mühendisi – Gökkuşağı Bilişim · İzmir\n- Kıdemli DevOps Engineer – Yeşil Lojistik · İstanbul\n- Cloud Engineer – Turna Havacılık Teknolojileri · Ankara\n\nTümünü görüntüle\n\nYenibiriş.com" +
+        'Sayın Deniz Arslan,\n\n"DevOps Mühendisi" aramanız için son 24 saatte yayınlanan ilanlar:\n\n- DevOps Mühendisi – Gökkuşağı Bilişim · İzmir\n- Kıdemli DevOps Engineer – Yeşil Lojistik · İstanbul\n- Cloud Engineer – Turna Havacılık Teknolojileri · Ankara\n\nTümünü görüntüle\n\nYenibiriş.com' +
         ALERT_FOOTER,
       receivedAt: "2026-09-03T07:45:00+03:00",
       listUnsubscribe: true,
       bulk: true,
     },
-    { category: "job_alert", applicationId: null, suggestedStatus: null, company: null, role: "DevOps Mühendisi" },
+    {
+      category: "job_alert",
+      applicationId: null,
+      suggestedStatus: null,
+      company: null,
+      role: "DevOps Mühendisi",
+    },
   ),
   c(
     50,
@@ -1009,7 +1208,13 @@ export const CASES_TR: MailEvalCase[] = [
       listUnsubscribe: true,
       bulk: true,
     },
-    { category: "job_alert", applicationId: null, suggestedStatus: null, company: null, role: "Yazılım Mühendisi" },
+    {
+      category: "job_alert",
+      applicationId: null,
+      suggestedStatus: null,
+      company: null,
+      role: "Yazılım Mühendisi",
+    },
   ),
   c(
     51,
@@ -1024,7 +1229,13 @@ export const CASES_TR: MailEvalCase[] = [
       listUnsubscribe: true,
       bulk: true,
     },
-    { category: "job_alert", applicationId: null, suggestedStatus: null, company: null, role: "Frontend Developer" },
+    {
+      category: "job_alert",
+      applicationId: null,
+      suggestedStatus: null,
+      company: null,
+      role: "Frontend Developer",
+    },
   ),
   c(
     52,
@@ -1065,7 +1276,8 @@ export const CASES_TR: MailEvalCase[] = [
       from: { name: "Kariyer.net", address: "bildirim@kariyer.net" },
       subject: "Özgeçmişin %70 tamamlandı – işverenlerin seni bulmasını kolaylaştır",
       bodyText:
-        "Merhaba Deniz,\n\nÖzgeçmişini tamamlayan adaylar işverenlerden 3 kat daha fazla görüntülenme alıyor.\n\nEksik alanlar:\n✔ Yetkinlikler\n✘ Yabancı dil seviyesi\n✘ Referanslar\n\nÖzgeçmişimi tamamla\n\nKariyer.net" + ALERT_FOOTER,
+        "Merhaba Deniz,\n\nÖzgeçmişini tamamlayan adaylar işverenlerden 3 kat daha fazla görüntülenme alıyor.\n\nEksik alanlar:\n✔ Yetkinlikler\n✘ Yabancı dil seviyesi\n✘ Referanslar\n\nÖzgeçmişimi tamamla\n\nKariyer.net" +
+        ALERT_FOOTER,
       receivedAt: "2026-07-27T12:00:00+03:00",
       listUnsubscribe: true,
       bulk: true,
@@ -1085,7 +1297,13 @@ export const CASES_TR: MailEvalCase[] = [
       listUnsubscribe: true,
       bulk: true,
     },
-    { category: "other_job", applicationId: null, suggestedStatus: null, company: "Marmara Telekom", role: null },
+    {
+      category: "other_job",
+      applicationId: null,
+      suggestedStatus: null,
+      company: "Marmara Telekom",
+      role: null,
+    },
   ),
   c(
     56,
@@ -1095,7 +1313,8 @@ export const CASES_TR: MailEvalCase[] = [
       from: { name: "Yenibiriş Etkinlik", address: "etkinlik@yenibiris.com" },
       subject: "Yazılım Kariyer Zirvesi 2026 – ücretsiz online katılım",
       bodyText:
-        "Merhaba Deniz,\n\n5 Kasım 2026'da düzenlenecek Yazılım Kariyer Zirvesi'nde teknoloji liderleri CV hazırlama, mülakat teknikleri ve maaş pazarlığı üzerine konuşacak.\n\nÜcretsiz kayıt ol, canlı yayına katıl.\n\nYenibiriş" + ALERT_FOOTER,
+        "Merhaba Deniz,\n\n5 Kasım 2026'da düzenlenecek Yazılım Kariyer Zirvesi'nde teknoloji liderleri CV hazırlama, mülakat teknikleri ve maaş pazarlığı üzerine konuşacak.\n\nÜcretsiz kayıt ol, canlı yayına katıl.\n\nYenibiriş" +
+        ALERT_FOOTER,
       receivedAt: "2026-10-15T10:30:00+03:00",
       listUnsubscribe: true,
       bulk: true,
@@ -1113,14 +1332,20 @@ export const CASES_TR: MailEvalCase[] = [
         "Sayın Deniz Arslan,\n\nÜrün Analisti pozisyonuna ait başvurunuzu geri çekme talebiniz işleme alınmıştır. Kişisel verileriniz KVKK kapsamında yasal süre sonunda silinecektir.\n\nİlginiz için teşekkür ederiz.\n\nÇınar Holding İnsan Kaynakları",
       receivedAt: "2026-08-25T16:20:00+03:00",
     },
-    { category: "other_job", applicationId: "tr-app-cinar", suggestedStatus: null, company: "Çınar Holding", role: "Ürün Analisti" },
+    {
+      category: "other_job",
+      applicationId: "tr-app-cinar",
+      suggestedStatus: null,
+      company: "Çınar Holding",
+      role: "Ürün Analisti",
+    },
   ),
 
   // ───────────── not_job ─────────────
   c(
     58,
     "synthetic",
-    "Credit-card \"başvurunuz alınmıştır\" from Lale Bank, a tracked employer.",
+    'Credit-card "başvurunuz alınmıştır" from Lale Bank, a tracked employer.',
     {
       from: { name: "Lale Bank", address: "bilgilendirme@lalebank.example" },
       subject: "Kredi kartı başvurunuz alınmıştır",
@@ -1134,7 +1359,7 @@ export const CASES_TR: MailEvalCase[] = [
   c(
     59,
     "synthetic",
-    "Visa \"başvurunuz alındı\" — not a job application.",
+    'Visa "başvurunuz alındı" — not a job application.',
     {
       from: { name: "VizeKapı Başvuru Merkezi", address: "noreply@vizekapi.example" },
       subject: "Vize başvurunuz işleme alındı – Referans No: IST-DE-778102",
@@ -1148,7 +1373,7 @@ export const CASES_TR: MailEvalCase[] = [
   c(
     60,
     "synthetic",
-    "Apartment rental application with \"başvurunuz değerlendirilecek\" and an \"görüşme\" (viewing appointment).",
+    'Apartment rental application with "başvurunuz değerlendirilecek" and an "görüşme" (viewing appointment).',
     {
       from: { name: "Defne Emlak", address: "info@defneemlak.example" },
       subject: "Kiralık daire başvurunuz – Moda, Kadıköy",
@@ -1175,7 +1400,7 @@ export const CASES_TR: MailEvalCase[] = [
   c(
     62,
     "synthetic",
-    "\"Size özel teklif\" discount from Pazarix, a tracked employer (e-commerce marketing).",
+    '"Size özel teklif" discount from Pazarix, a tracked employer (e-commerce marketing).',
     {
       from: { name: "Pazarix", address: "kampanya@pazarix.example" },
       subject: "Deniz, sana özel teklif: Sepette %30 indirim! 🛒",
@@ -1190,7 +1415,7 @@ export const CASES_TR: MailEvalCase[] = [
   c(
     63,
     "synthetic",
-    "Podcast newsletter with \"mülakat\" in the subject.",
+    'Podcast newsletter with "mülakat" in the subject.',
     {
       from: { name: "Kod ve Kahve Podcast", address: "bulten@kodvekahve.example" },
       subject: "Yeni bölüm: Bir CTO ile mülakat – mikroservislerden geri dönüş",
@@ -1205,7 +1430,7 @@ export const CASES_TR: MailEvalCase[] = [
   c(
     64,
     "synthetic",
-    "Bank \"başvurunuz olumsuz sonuçlanmıştır\" for a consumer loan — reads like a rejection.",
+    'Bank "başvurunuz olumsuz sonuçlanmıştır" for a consumer loan — reads like a rejection.',
     {
       from: { name: "Ardıç Finans", address: "bilgi@ardicfinans.example" },
       subject: "İhtiyaç kredisi başvurunuz hakkında",
@@ -1224,7 +1449,7 @@ export const CASES_TR: MailEvalCase[] = [
       from: { name: "Personio", address: "newsletter@personio.com" },
       subject: "İK ekipleri için yeni: Otomatik izin onayları ve bordro entegrasyonu",
       bodyText:
-        "Merhaba,\n\nEkim sürüm notlarımızda: izin onay akışlarının otomatikleştirilmesi, yeni bordro entegrasyonları ve işe alım raporlarında yenilenen panolar.\n\nÜcretsiz webinar: \"2027'de İK süreçlerini dijitalleştirmek\" – 28 Ekim, 14:00\n\nPersonio SE & Co. KG · Münih\nAbonelikten çık | Tercihleri yönet",
+        'Merhaba,\n\nEkim sürüm notlarımızda: izin onay akışlarının otomatikleştirilmesi, yeni bordro entegrasyonları ve işe alım raporlarında yenilenen panolar.\n\nÜcretsiz webinar: "2027\'de İK süreçlerini dijitalleştirmek" – 28 Ekim, 14:00\n\nPersonio SE & Co. KG · Münih\nAbonelikten çık | Tercihleri yönet',
       receivedAt: "2026-10-14T15:00:00+03:00",
       listUnsubscribe: true,
       bulk: true,
@@ -1247,7 +1472,7 @@ export const CASES_TR: MailEvalCase[] = [
   c(
     67,
     "synthetic",
-    "Gym membership \"başvurunuz onaylandı\" welcome mail.",
+    'Gym membership "başvurunuz onaylandı" welcome mail.',
     {
       from: { name: "Form Spor Kulübü", address: "uyelik@formspor.example" },
       subject: "Üyelik başvurunuz onaylandı – Hoş geldiniz!",

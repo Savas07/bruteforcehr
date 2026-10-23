@@ -95,7 +95,10 @@ describe("userDataRoots", () => {
       serverOnlyPaths.jobAlert("u1", "j1"),
       serverOnlyPaths.jobQuotaDay("u1", "2026-10-24"),
     ]) {
-      expect(roots.some((root) => path.startsWith(`${root}/`)), path).toBe(true);
+      expect(
+        roots.some((root) => path.startsWith(`${root}/`)),
+        path,
+      ).toBe(true);
     }
   });
 

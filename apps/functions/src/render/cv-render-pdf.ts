@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { createConverters, firestorePaths, storagePaths } from "@bfhr/api";
+import { firestorePaths, storagePaths } from "@bfhr/api";
 import {
   type CvRenderErrorReason,
   type CvRenderPdfResponse,
@@ -7,20 +7,15 @@ import {
   CvRenderPdfResponseSchema,
 } from "@bfhr/core";
 import { renderCvHtml } from "@bfhr/cv-render";
-import { getFirestore, Timestamp } from "firebase-admin/firestore";
+import { getFirestore } from "firebase-admin/firestore";
 import { getStorage } from "firebase-admin/storage";
 import { logger } from "firebase-functions/v2";
 import { HttpsError, onCall } from "firebase-functions/v2/https";
 import { ReasonedHttpsError, verifiedUid } from "../callable";
+import { converters } from "../converters";
 import { type PdfRenderJob, pdfRenderJob, UnknownTemplateError } from "./input";
 import { loadCvPhoto, PhotoUnavailableError } from "./photo";
 import { pdfPageCount, printHtmlToPdf } from "./print";
-
-const converters = createConverters<Timestamp>({
-  fromDate: (date) => Timestamp.fromDate(date),
-  toDate: (value) => value.toDate(),
-  isTimestamp: (value): value is Timestamp => value instanceof Timestamp,
-});
 
 class RenderError extends ReasonedHttpsError<CvRenderErrorReason> {}
 

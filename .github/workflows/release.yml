@@ -1,0 +1,629 @@
+name: Release
+
+# One tag ships every platform (docs/adr/0004-release-updates-signing.md, docs/runbooks/release.md).
+# - Tag `vX.Y.Z` / `vX.Y.Z-beta.N`: version.yml dispatches this after the "Version packages" PR is
+#   merged; a tag pushed by the owner (betas) starts it directly.
+# - Dry run: builds and signs everything and assembles latest.json + SHA256SUMS.txt as a workflow
+#   artifact, but publishes and deploys nothing (`firebase deploy --dry-run`, appConfig read-only).
+#   Start it with `gh workflow run release.yml --ref <ref> -f dry_run=true -f version=X.Y.Z`, or by
+#   pushing a branch `release-dry-run/X.Y.Z`. The branch form tests pipeline changes before they
+#   reach main (workflow_dispatch only sees workflows that exist on the default branch).
+# Optional credentials (Apple Developer ID, App Store Connect) are detected per job: a missing
+# secret logs "skipped: …" and the job takes its documented fallback.
+on:
+  push:
+    tags: ["v*"]
+    branches: ["release-dry-run/**"]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Build, sign and assemble only; publish and deploy nothing"
+        type: boolean
+        default: true
+      version:
+        description: "Version to stamp in a dry run from a branch (X.Y.Z or X.Y.Z-beta.N); tag runs use the tag"
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  COREPACK_ENABLE_DOWNLOAD_PROMPT: "0"
+  CARGO_TERM_COLOR: always
+  RUST_TOOLCHAIN: "1.99.1"
+  FIREBASE_PROJECT: bruteforcehr
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  prepare:
+    name: Prepare (version, notes, draft release)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # create the draft release on tag runs
+    outputs:
+      version: ${{ steps.info.outputs.version }}
+      tag: ${{ steps.info.outputs.tag }}
+      channel: ${{ steps.info.outputs.channel }}
+      marketing_version: ${{ steps.info.outputs.marketing_version }}
+      dry_run: ${{ steps.mode.outputs.dry_run }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+      - run: corepack enable pnpm
+      - run: pnpm install --frozen-lockfile --filter "@bfhr/release-scripts..."
+
+      - name: Mode
+        id: mode
+        env:
+          DRY_RUN: ${{ (github.event_name == 'workflow_dispatch' && inputs.dry_run) || (github.event_name == 'push' && github.ref_type == 'branch') }}
+        run: |
+          if [ "$DRY_RUN" = true ]; then
+            echo "dry_run=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::Dry run: builds and signs everything, publishes and deploys nothing."
+          elif [ "$GITHUB_REF_TYPE" = tag ]; then
+            echo "dry_run=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "::error::Real releases run on a v* tag. From a branch, dispatch with dry_run=true."
+            exit 1
+          fi
+
+      - name: Version
+        id: info
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          if [ "$GITHUB_REF_TYPE" = tag ]; then
+            args=(--tag "$GITHUB_REF_NAME" --package ../../apps/desktop/package.json)
+          elif [ -n "$INPUT_VERSION" ]; then
+            args=(--version "$INPUT_VERSION")
+          elif [[ "$GITHUB_REF_NAME" == release-dry-run/* ]]; then
+            args=(--version "${GITHUB_REF_NAME#release-dry-run/}")
+          else
+            echo "::error::A dry run from a branch needs the version input."
+            exit 1
+          fi
+          pnpm --filter @bfhr/release-scripts -s release-info "${args[@]}"
+
+      - name: Release notes
+        env:
+          VERSION: ${{ steps.info.outputs.version }}
+        run: |
+          # Before the "Version packages" PR is merged (dry runs), the notes come from the pending
+          # changesets; afterwards from the CHANGELOG.md files Changesets wrote.
+          args=()
+          if [ "$(node -p 'require("./apps/desktop/package.json").version')" != "$VERSION" ]; then args=(--pending); fi
+          pnpm --filter @bfhr/release-scripts -s notes --root ../.. --version "$VERSION" --out "$RUNNER_TEMP/notes.md" "${args[@]}"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release-notes
+          path: ${{ runner.temp }}/notes.md
+          if-no-files-found: error
+
+      - name: Draft release
+        if: steps.mode.outputs.dry_run == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.info.outputs.tag }}
+          VERSION: ${{ steps.info.outputs.version }}
+          CHANNEL: ${{ steps.info.outputs.channel }}
+        run: |
+          # version.yml creates the draft for Changesets releases; this covers tags pushed by hand.
+          if is_draft=$(gh release view "$TAG" --json isDraft --jq .isDraft 2>/dev/null); then
+            if [ "$is_draft" != true ]; then
+              echo "::error::$TAG is already published. Never re-publish; ship the next patch version."
+              exit 1
+            fi
+            echo "Draft $TAG exists."
+          else
+            flags=(--draft --verify-tag --title "BruteForceHR $VERSION" --notes-file "$RUNNER_TEMP/notes.md")
+            if [ "$CHANNEL" = beta ]; then flags+=(--prerelease); fi
+            gh release create "$TAG" "${flags[@]}"
+          fi
+
+  verify:
+    name: Verify (CI)
+    needs: prepare
+    uses: ./.github/workflows/ci.yml
+    permissions:
+      contents: read
+
+  backend:
+    name: Backend (Firebase)
+    needs: [prepare, verify]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # Workload Identity Federation
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+      - run: corepack enable pnpm
+      - name: pnpm store path
+        id: pnpm-store
+        run: echo "path=$(pnpm store path)" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v6
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: pnpm-${{ runner.os }}-
+      - run: pnpm install --frozen-lockfile
+
+      - uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_DEPLOY_SERVICE_ACCOUNT }}
+      - name: Check deploy credentials (no-op)
+        run: firebase/tests/node_modules/.bin/firebase projects:list --non-interactive
+
+      - name: Deploy rules, indexes, functions (default codebase)
+        env:
+          DRY_RUN: ${{ needs.prepare.outputs.dry_run }}
+          BFHR_VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          # Expand-only changes (ADR 0002). No --force: functions missing from the source are never
+          # deleted by CI. Hosting is deployed by `website` after the release is published.
+          echo "skipped: functions codebase auth (Brevo, secret BREVO_API_KEY not configured; docs/runbooks/release.md)"
+          flags=(--only "firestore:rules,firestore:indexes,storage,functions:default" --project "$FIREBASE_PROJECT" --non-interactive)
+          if [ "$DRY_RUN" = true ]; then flags+=(--dry-run); fi
+          firebase/tests/node_modules/.bin/firebase deploy "${flags[@]}"
+
+  desktop-mac:
+    name: Desktop macOS (universal)
+    needs: prepare
+    runs-on: macos-26
+    defaults:
+      run:
+        # Job defaults replace the workflow's, so the shell is repeated (pwsh on Windows otherwise).
+        shell: bash
+        working-directory: apps/desktop
+    env:
+      VERSION: ${{ needs.prepare.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+      - run: corepack enable pnpm
+        working-directory: .
+      - name: pnpm store path
+        id: pnpm-store
+        run: echo "path=$(pnpm store path)" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v6
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: pnpm-${{ runner.os }}-
+      - run: pnpm install --frozen-lockfile
+        working-directory: .
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+          targets: aarch64-apple-darwin, x86_64-apple-darwin
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/desktop/src-tauri
+          key: universal
+      - name: Rust lint + unit tests
+        run: |
+          pnpm lint:rust
+          pnpm test:rust
+
+      - name: Signing configuration
+        id: signing
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_API_KEY_P8: ${{ secrets.APPLE_API_KEY_P8 }}
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+        run: |
+          missing=()
+          for name in APPLE_CERTIFICATE APPLE_CERTIFICATE_PASSWORD APPLE_SIGNING_IDENTITY; do
+            [ -n "${!name}" ] || missing+=("$name")
+          done
+          if [ ${#missing[@]} -eq 0 ]; then
+            echo "sign=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "sign=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::skipped: Developer ID signing, secret(s) ${missing[*]} not configured. The app is ad-hoc signed (Gatekeeper asks to \"Open Anyway\")."
+          fi
+          for name in APPLE_API_KEY_P8 APPLE_API_KEY_ID APPLE_API_ISSUER; do
+            [ -n "${!name}" ] || missing+=("$name")
+          done
+          if [ ${#missing[@]} -eq 0 ]; then
+            echo "notarize=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "notarize=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::skipped: notarization, secret(s) ${missing[*]} not configured."
+          fi
+
+      - name: Build, sign (updater + Apple) and notarize
+        env:
+          SIGN: ${{ steps.signing.outputs.sign }}
+          NOTARIZE: ${{ steps.signing.outputs.notarize }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          BFHR_APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          BFHR_APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          BFHR_APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          BFHR_APPLE_API_KEY_P8: ${{ secrets.APPLE_API_KEY_P8 }}
+          BFHR_APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          BFHR_APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+        run: |
+          if [ -z "$TAURI_SIGNING_PRIVATE_KEY" ]; then
+            echo "::error::secret TAURI_SIGNING_PRIVATE_KEY is not configured; updates can't be signed."
+            exit 1
+          fi
+          # Tauri signing variables (https://v2.tauri.app/distribute/sign/macos/).
+          if [ "$SIGN" = true ]; then
+            export APPLE_CERTIFICATE="$BFHR_APPLE_CERTIFICATE"
+            export APPLE_CERTIFICATE_PASSWORD="$BFHR_APPLE_CERTIFICATE_PASSWORD"
+            export APPLE_SIGNING_IDENTITY="$BFHR_APPLE_SIGNING_IDENTITY"
+          else
+            export APPLE_SIGNING_IDENTITY="-"
+          fi
+          if [ "$SIGN" = true ] && [ "$NOTARIZE" = true ]; then
+            printf '%s' "$BFHR_APPLE_API_KEY_P8" > "$RUNNER_TEMP/AuthKey.p8"
+            export APPLE_API_KEY_PATH="$RUNNER_TEMP/AuthKey.p8"
+            export APPLE_API_KEY="$BFHR_APPLE_API_KEY_ID"
+            export APPLE_API_ISSUER="$BFHR_APPLE_API_ISSUER"
+          fi
+          printf '{"version":"%s"}' "$VERSION" > "$RUNNER_TEMP/version.conf.json"
+          pnpm tauri build --target universal-apple-darwin --bundles app,dmg --config "$RUNNER_TEMP/version.conf.json"
+      - name: Remove the App Store Connect key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/AuthKey.p8"
+
+      - name: Collect release assets
+        env:
+          NOTARIZE: ${{ steps.signing.outputs.sign == 'true' && steps.signing.outputs.notarize == 'true' }}
+        run: |
+          bundle=src-tauri/target/universal-apple-darwin/release/bundle
+          assets="$RUNNER_TEMP/assets"
+          mkdir -p "$assets"
+          codesign --verify --deep --strict --verbose=2 "$bundle/macos/BruteForceHR.app"
+          if [ "$NOTARIZE" = true ]; then xcrun stapler validate "$bundle/macos/BruteForceHR.app"; fi
+          # The signature covers the content, not the name, so renaming the updater bundle is safe.
+          cp "$bundle/macos/BruteForceHR.app.tar.gz" "$assets/BruteForceHR_${VERSION}_universal.app.tar.gz"
+          cp "$bundle/macos/BruteForceHR.app.tar.gz.sig" "$assets/BruteForceHR_${VERSION}_universal.app.tar.gz.sig"
+          cp "$bundle/dmg/BruteForceHR_${VERSION}_universal.dmg" "$assets/"
+          ls -l "$assets"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: desktop-mac
+          path: ${{ runner.temp }}/assets/
+          if-no-files-found: error
+          retention-days: 14
+
+  desktop-win:
+    name: Desktop Windows (x64)
+    needs: prepare
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: apps/desktop
+    env:
+      VERSION: ${{ needs.prepare.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+      - run: corepack enable pnpm
+        working-directory: .
+      - name: pnpm store path
+        id: pnpm-store
+        run: echo "path=$(pnpm store path)" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v6
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: pnpm-${{ runner.os }}-
+      - run: pnpm install --frozen-lockfile
+        working-directory: .
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ env.RUST_TOOLCHAIN }}
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/desktop/src-tauri
+      - name: Rust lint + unit tests
+        run: |
+          pnpm lint:rust
+          pnpm test:rust
+
+      # No Authenticode signing until a certificate exists (ADR 0004 §3, SmartScreen accepted);
+      # updates are still verified with the Tauri updater signature.
+      - name: Build NSIS installer + updater signature
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: |
+          if [ -z "$TAURI_SIGNING_PRIVATE_KEY" ]; then
+            echo "::error::secret TAURI_SIGNING_PRIVATE_KEY is not configured; updates can't be signed."
+            exit 1
+          fi
+          echo "skipped: Authenticode signing, no Windows code-signing certificate (ADR 0004)"
+          printf '{"version":"%s"}' "$VERSION" > "$RUNNER_TEMP/version.conf.json"
+          pnpm tauri build --bundles nsis --config "$RUNNER_TEMP/version.conf.json"
+      - name: Collect release assets
+        run: |
+          assets="$RUNNER_TEMP/assets"
+          mkdir -p "$assets"
+          cp "src-tauri/target/release/bundle/nsis/BruteForceHR_${VERSION}_x64-setup.exe" "$assets/"
+          cp "src-tauri/target/release/bundle/nsis/BruteForceHR_${VERSION}_x64-setup.exe.sig" "$assets/"
+          ls -l "$assets"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: desktop-win
+          path: ${{ runner.temp }}/assets/
+          if-no-files-found: error
+          retention-days: 14
+
+  ios:
+    name: iOS (archive, TestFlight)
+    needs: prepare
+    runs-on: macos-26
+    outputs:
+      uploaded: ${{ steps.upload.outputs.uploaded }}
+    env:
+      MARKETING_VERSION: ${{ needs.prepare.outputs.marketing_version }}
+      BUILD_NUMBER: ${{ github.run_number }}
+      DRY_RUN: ${{ needs.prepare.outputs.dry_run }}
+    steps:
+      - uses: actions/checkout@v7
+      - run: xcodebuild -version
+
+      - name: TestFlight configuration
+        id: asc
+        env:
+          APPLE_API_KEY_P8: ${{ secrets.APPLE_API_KEY_P8 }}
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          missing=()
+          for name in APPLE_API_KEY_P8 APPLE_API_KEY_ID APPLE_API_ISSUER APPLE_TEAM_ID; do
+            [ -n "${!name}" ] || missing+=("$name")
+          done
+          if [ ${#missing[@]} -eq 0 ]; then
+            echo "upload=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "upload=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::skipped: TestFlight upload, secret(s) ${missing[*]} not configured. Building an unsigned device archive instead."
+          fi
+
+      - name: Archive (unsigned)
+        if: steps.asc.outputs.upload == 'false'
+        run: |
+          xcodebuild archive -project apps/ios/BruteForceHR.xcodeproj -scheme BruteForceHR \
+            -configuration Release -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/BruteForceHR.xcarchive" \
+            MARKETING_VERSION="$MARKETING_VERSION" CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO
+
+      - name: Archive (cloud signing)
+        if: steps.asc.outputs.upload == 'true'
+        env:
+          APPLE_API_KEY_P8: ${{ secrets.APPLE_API_KEY_P8 }}
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          printf '%s' "$APPLE_API_KEY_P8" > "$RUNNER_TEMP/AuthKey.p8"
+          xcodebuild archive -project apps/ios/BruteForceHR.xcodeproj -scheme BruteForceHR \
+            -configuration Release -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/BruteForceHR.xcarchive" \
+            -allowProvisioningUpdates -authenticationKeyPath "$RUNNER_TEMP/AuthKey.p8" \
+            -authenticationKeyID "$APPLE_API_KEY_ID" -authenticationKeyIssuerID "$APPLE_API_ISSUER" \
+            DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
+            MARKETING_VERSION="$MARKETING_VERSION" CURRENT_PROJECT_VERSION="$BUILD_NUMBER"
+
+      - name: Upload to TestFlight
+        id: upload
+        if: steps.asc.outputs.upload == 'true'
+        env:
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          if [ "$DRY_RUN" = true ]; then
+            echo "Dry run: archive signed; TestFlight upload skipped."
+            echo "uploaded=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # Build number = run number (manageAppVersionAndBuildNumber=false); internal testers only.
+          cat > "$RUNNER_TEMP/ExportOptions.plist" <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>destination</key><string>upload</string>
+            <key>signingStyle</key><string>automatic</string>
+            <key>teamID</key><string>${APPLE_TEAM_ID}</string>
+            <key>manageAppVersionAndBuildNumber</key><false/>
+            <key>testFlightInternalTestingOnly</key><true/>
+            <key>uploadSymbols</key><true/>
+          </dict>
+          </plist>
+          EOF
+          xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/BruteForceHR.xcarchive" \
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" -exportPath "$RUNNER_TEMP/export" \
+            -allowProvisioningUpdates -authenticationKeyPath "$RUNNER_TEMP/AuthKey.p8" \
+            -authenticationKeyID "$APPLE_API_KEY_ID" -authenticationKeyIssuerID "$APPLE_API_ISSUER"
+          echo "uploaded=true" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-node@v7
+        if: steps.upload.outputs.uploaded == 'true'
+        with:
+          node-version-file: .nvmrc
+      - uses: actions/download-artifact@v8
+        if: steps.upload.outputs.uploaded == 'true'
+        with:
+          name: release-notes
+          path: ${{ runner.temp }}
+      - name: TestFlight "What to Test"
+        if: steps.upload.outputs.uploaded == 'true'
+        env:
+          ASC_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.APPLE_API_ISSUER }}
+          ASC_KEY_PATH: ${{ runner.temp }}/AuthKey.p8
+        run: |
+          corepack enable pnpm
+          pnpm install --frozen-lockfile --filter "@bfhr/release-scripts..."
+          pnpm --filter @bfhr/release-scripts -s testflight-notes --version "$MARKETING_VERSION" \
+            --build-number "$BUILD_NUMBER" --notes "$RUNNER_TEMP/notes.md"
+      - name: Remove the App Store Connect key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/AuthKey.p8"
+
+  publish:
+    name: Publish
+    # Default `success()`: runs only when every job above passed. A failed build leaves the draft
+    # unpublished and no latest.json is served.
+    needs: [prepare, verify, backend, desktop-mac, desktop-win, ios]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # upload assets, publish the release
+      id-token: write # appConfig via Workload Identity Federation
+    env:
+      VERSION: ${{ needs.prepare.outputs.version }}
+      TAG: ${{ needs.prepare.outputs.tag }}
+      CHANNEL: ${{ needs.prepare.outputs.channel }}
+      DRY_RUN: ${{ needs.prepare.outputs.dry_run }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+      - run: corepack enable pnpm
+      - run: pnpm install --frozen-lockfile --filter "@bfhr/release-scripts..."
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: desktop-*
+          path: ${{ runner.temp }}/assets
+          merge-multiple: true
+      - uses: actions/download-artifact@v8
+        with:
+          name: release-notes
+          path: ${{ runner.temp }}
+
+      - name: latest.json (signatures verified against the app's public key) + SHA256SUMS.txt
+        run: |
+          assets="$RUNNER_TEMP/assets"
+          pnpm --filter @bfhr/release-scripts -s latest-json --version "$VERSION" --dir "$assets" \
+            --notes "$RUNNER_TEMP/notes.md" --tauri-config ../../apps/desktop/src-tauri/tauri.conf.json \
+            --out "$assets/latest.json"
+          (cd "$assets" && sha256sum BruteForceHR_* latest.json > SHA256SUMS.txt && cat SHA256SUMS.txt)
+          {
+            echo "### $TAG ($CHANNEL)"
+            echo '```'
+            cat "$assets/SHA256SUMS.txt"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Keep the assembled release (dry run)
+        if: env.DRY_RUN == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-assets-dry-run
+          path: ${{ runner.temp }}/assets/
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload assets and publish
+        if: env.DRY_RUN == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload "$TAG" "$RUNNER_TEMP"/assets/* --clobber
+          if [ "$CHANNEL" = stable ]; then
+            gh release edit "$TAG" --draft=false --latest
+          else
+            gh release edit "$TAG" --draft=false --prerelease --latest=false
+          fi
+          # Beta channel manifest: every release, stable and beta (ADR 0004 §4).
+          if ! gh release view updater-beta >/dev/null 2>&1; then
+            gh release create updater-beta --prerelease --latest=false --target "$GITHUB_SHA" \
+              --title "Beta update channel" --notes "Update manifest for the beta channel. Not a version."
+          fi
+          gh release upload updater-beta "$RUNNER_TEMP/assets/latest.json" --clobber
+
+      - uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_DEPLOY_SERVICE_ACCOUNT }}
+      - name: appConfig/{macos,windows,ios}
+        env:
+          IOS_UPLOADED: ${{ needs.ios.outputs.uploaded }}
+        run: |
+          if [ "$CHANNEL" != stable ]; then
+            echo "skipped: appConfig advertises stable releases only ($TAG is a beta)"
+            exit 0
+          fi
+          platforms=macos,windows
+          if [ "$IOS_UPLOADED" = true ]; then
+            platforms+=",ios"
+          else
+            echo "skipped: appConfig/ios, no build of $VERSION reached TestFlight"
+          fi
+          args=(--version "$VERSION" --platforms "$platforms" --project "$FIREBASE_PROJECT")
+          if [ "$DRY_RUN" = true ]; then args+=(--dry-run); fi
+          pnpm --filter @bfhr/release-scripts -s app-config "${args[@]}"
+
+  website:
+    name: Website (Hosting)
+    needs: [prepare, publish]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+      - run: corepack enable pnpm
+      - name: pnpm store path
+        id: pnpm-store
+        run: echo "path=$(pnpm store path)" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v6
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: pnpm-${{ runner.os }}-
+      - run: pnpm install --frozen-lockfile
+      # The download page and changelog read the GitHub Releases API at build time.
+      - run: |
+          pnpm --filter @bfhr/ui-tokens build
+          pnpm --filter @bfhr/web build
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_DEPLOY_SERVICE_ACCOUNT }}
+      - name: Deploy Hosting
+        env:
+          DRY_RUN: ${{ needs.prepare.outputs.dry_run }}
+        run: |
+          flags=(--only hosting --project "$FIREBASE_PROJECT" --non-interactive)
+          if [ "$DRY_RUN" = true ]; then flags+=(--dry-run); fi
+          firebase/tests/node_modules/.bin/firebase deploy "${flags[@]}"

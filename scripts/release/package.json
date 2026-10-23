@@ -1,0 +1,27 @@
+{
+  "name": "@bfhr/release-scripts",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Release pipeline helpers for .github/workflows/release.yml (ADR 0004): versions, notes, latest.json, updater signature checks, appConfig, TestFlight notes.",
+  "type": "module",
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "release-info": "tsx src/cli/release-info.ts",
+    "notes": "tsx src/cli/notes.ts",
+    "latest-json": "tsx src/cli/latest-json.ts",
+    "app-config": "tsx src/cli/app-config.ts",
+    "testflight-notes": "tsx src/cli/testflight-notes.ts"
+  },
+  "dependencies": {
+    "@bfhr/core": "workspace:*",
+    "firebase-admin": "^14.5.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "tsx": "^4.23.15",
+    "vitest": "^5.0.5"
+  }
+}

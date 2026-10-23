@@ -7,7 +7,7 @@
 // (firebase-functions needs firebase-admin even where our code doesn't import it).
 import { execFileSync } from "node:child_process";
 import { existsSync } from "node:fs";
-import { copyFile, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { copyFile, readFile, readdir, rm, symlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { build } from "esbuild";
@@ -132,6 +132,14 @@ for (const [codebase, entry] of Object.entries(CODEBASES)) {
   };
   await writeFile(path.join(outDir, "package.json"), `${JSON.stringify(manifest, null, 2)}\n`);
   await copyDotenvFiles(outDir);
+  // `firebase deploy` analyses a codebase by running `<source>/node_modules/.bin/firebase-functions`
+  // (or the project root's), which pnpm's isolated layout only has in apps/functions/node_modules.
+  // firebase.json's `ignore: ["node_modules"]` keeps the link out of the upload.
+  await symlink(
+    path.relative(outDir, path.join(packageDir, "node_modules")),
+    path.join(outDir, "node_modules"),
+    "dir",
+  );
   console.log(
     `built ${path.relative(packageDir, outDir)} (${version}): ${Object.keys(manifest.dependencies).join(", ")}`,
   );

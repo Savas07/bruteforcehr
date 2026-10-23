@@ -14,3 +14,4 @@ export * from "./csv";
 export * from "./insights";
 export * from "./jobs";
 export * from "./matching";
+export * from "./jobImport";

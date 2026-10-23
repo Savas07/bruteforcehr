@@ -10,11 +10,18 @@
   "scripts": {
     "build": "node scripts/build.ts",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "smoke:ai": "node scripts/smoke-ai.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^1.1.0",
+    "@bfhr/ai": "workspace:*",
+    "@bfhr/core": "workspace:*",
+    "fflate": "^0.8.3",
     "firebase-admin": "^14.5.0",
     "firebase-functions": "^7.4.0",
+    "mammoth": "^1.13.0",
+    "pdfjs-dist": "^6.4.299",
     "zod": "^4.6.7"
   },
   "devDependencies": {

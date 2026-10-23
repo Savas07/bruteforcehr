@@ -1,0 +1,33 @@
+{
+  "name": "@bfhr/ai",
+  "version": "0.1.1",
+  "private": true,
+  "description": "Server-side AI for BruteForceHR: Claude provider, versioned prompts, grounding checker, CV import and CV assists (docs/adr/0010-ai.md).",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "eval": "tsx eval/run.ts",
+    "eval:fixtures": "tsx eval/build-fixtures.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.1.0",
+    "@bfhr/core": "workspace:*",
+    "fflate": "^0.8.3",
+    "mammoth": "^1.13.0",
+    "pdfjs-dist": "^6.4.299",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@pdf-lib/fontkit": "^1.1.1",
+    "@types/node": "^22.20.5",
+    "docx": "~9.13.0",
+    "pdf-lib": "^1.17.1",
+    "tsx": "^4.23.15",
+    "vitest": "^5.0.5"
+  }
+}

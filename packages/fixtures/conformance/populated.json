@@ -173,6 +173,7 @@
     ],
     "defaultCvId": "cv-en",
     "onboardingCompletedAt": "2026-08-13T07:30:00.000Z",
+    "aiEnabled": true,
     "settings": {
       "ghostedAfterDays": 21,
       "followUpAfterDays": 7,

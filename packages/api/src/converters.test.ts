@@ -152,6 +152,15 @@ describe("fromFirestore", () => {
     const stored = { ...converters.job.toFirestore(job), embedding: { vector: [0.1, 0.2] } };
     expect(converters.job.fromFirestore(stored, { id: job.id })).not.toHaveProperty("embedding");
   });
+
+  it("reads a profile written before aiEnabled existed as AI enabled", () => {
+    const profile = { ...populatedDataset.profile, aiEnabled: false };
+    const { aiEnabled: _drop, ...older } = converters.profile.toFirestore(profile);
+    expect(converters.profile.fromFirestore(older, { id: uid }).aiEnabled).toBe(true);
+    expect(
+      converters.profile.fromFirestore(converters.profile.toFirestore(profile), { id: uid }).aiEnabled,
+    ).toBe(false);
+  });
 });
 
 describe("updates", () => {

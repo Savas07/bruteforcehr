@@ -10,7 +10,10 @@ import { IdSchema, LanguageTagSchema, Sha256Schema, TimestampSchema } from "./co
 /** JSON Resume `iso8601` date: `YYYY`, `YYYY-MM` or `YYYY-MM-DD`. */
 export const ResumeDateSchema = z
   .string()
-  .regex(/^(?:[12]\d{3}-[01]\d-[0-3]\d|[12]\d{3}-[01]\d|[12]\d{3})$/, "Expected YYYY, YYYY-MM or YYYY-MM-DD");
+  .regex(
+    /^[12]\d{3}(?:-(?:0[1-9]|1[0-2])(?:-(?:0[1-9]|[12]\d|3[01]))?)?$/,
+    "Expected YYYY, YYYY-MM or YYYY-MM-DD",
+  );
 
 const text = z.string().max(20_000);
 const shortText = z.string().max(500);

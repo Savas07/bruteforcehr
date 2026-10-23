@@ -193,6 +193,12 @@
       "collectionGroup": "coverLetters",
       "fieldPath": "body",
       "indexes": []
+    },
+    {
+      "collectionGroup": "aiUsageDays",
+      "fieldPath": "expireAt",
+      "ttl": true,
+      "indexes": []
     }
   ]
 }

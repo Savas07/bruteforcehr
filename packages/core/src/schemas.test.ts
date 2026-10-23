@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ApplicationEventSchema } from "./application";
 import { IdSchema, TimeZoneSchema } from "./common";
-import { CvContentSchema, RenderedFileSchema } from "./cv";
+import { CvContentSchema, RenderedFileSchema, ResumeDateSchema } from "./cv";
 import { JobMatchSchema, jobSourceKey, MATCH_BAND_THRESHOLDS, matchBand } from "./job";
 import { MAIL_MESSAGE_CLIENT_UPDATABLE_FIELDS, MailReviewUpdateSchema } from "./policy";
 
@@ -81,6 +81,15 @@ describe("ApplicationEventSchema", () => {
         revertsEventId: "e0",
       }).success,
     ).toBe(false);
+  });
+});
+
+describe("ResumeDateSchema", () => {
+  it.each(["2020", "2020-03", "2020-12-31"])("accepts %s", (date) => {
+    expect(ResumeDateSchema.safeParse(date).success).toBe(true);
+  });
+  it.each(["2020-13", "2020-00", "2020-3", "2020-02-00", "2020-02-32", "20-03"])("rejects %s", (date) => {
+    expect(ResumeDateSchema.safeParse(date).success).toBe(false);
   });
 });
 

@@ -351,7 +351,12 @@ describe("appConfig/{platform}: public read, server write", () => {
 });
 
 describe("serverOnly/**: no client access", () => {
-  it.each(["serverOnly/mail/tokens/acc-gmail", "serverOnly/jobSources/keys/adzuna"])("%s", async (path) => {
+  it.each([
+    "serverOnly/mail/tokens/acc-gmail",
+    "serverOnly/jobSources/keys/adzuna",
+    // The user's own AI spend ledger is server-only too: clients must not reset their daily cap.
+    "serverOnly/aiUsage/users/alice/aiUsageDays/2026-10-23",
+  ])("%s", async (path) => {
     await seed(path, { secret: true });
     await assertFails(client("alice").doc(path).get());
     await assertFails(client("alice").doc(path).set({ secret: false }));

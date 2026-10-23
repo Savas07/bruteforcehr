@@ -167,6 +167,7 @@
     ],
     "defaultCvId": null,
     "onboardingCompletedAt": "2026-10-22T07:24:00.000Z",
+    "aiEnabled": true,
     "settings": {
       "ghostedAfterDays": 21,
       "followUpAfterDays": 7,

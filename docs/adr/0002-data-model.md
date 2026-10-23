@@ -62,6 +62,8 @@ Storage paths (mirrored by `firebase/storage.rules` and `storagePaths` in `@bfhr
 
 **M5 push expand field** ([runbooks/notifications.md](../runbooks/notifications.md)): `users.settings.notifications` (`NotificationPreferences`: interviews, offers, assessments, autoApplied, jobAlerts — booleans) is `.nullable().default(null)`: null or missing means every category on (`DEFAULT_NOTIFICATION_PREFERENCES`); clients write the whole object. Decisions keep `settings.notifyRejections`. `devices.pushToken` holds the FCM registration token (not the raw APNs token); the push sender sets it to null when FCM answers `messaging/registration-token-not-registered`.
 
+**M5 mail expand field** ([ADR 0012](0012-mail-sync.md), "Interviews from invites"): `mailMessages.interviewSuggestion` (`InterviewSuggestion`: title, startsAt, durationMinutes, timezone, location, meetingUrl, source calendar/model/text, interviewId) is server-written (clients still update only the four review fields) and reads as null on older documents (`MAIL_MESSAGE_READ_DEFAULTS`). It is review-first: no `interviews` document exists until the user confirms the message; the review trigger then creates `interviews/{messageId}` (deterministic id, so a repeated confirm can't duplicate it) with an `interview_scheduled` user event and sets `interviewId`. Job-alert postings become `jobs` documents with one `alert_email` source (`sourceId` null, so `sourceKeys` is `alert_email:<canonical url>`, `isDirectFromEmployer` false, language `und`, empty description), deduplicated like any other listing.
+
 ### Immutability and append-only rules
 
 - **CV revisions** are create-only. "Restore" creates a new revision with `basedOnRevisionId` pointing at the restored one.

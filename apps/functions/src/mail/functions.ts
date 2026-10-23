@@ -27,6 +27,7 @@ import { loadMailSecret } from "./accounts";
 import { MAIL_SECRETS, oauthProvider } from "./config";
 import { MailCallableError } from "./errors";
 import { deleteSeenHashes } from "./pipeline";
+import { prepareInterviewFromMail } from "./interviews";
 import { enqueueSync, runSync, startBackfill, SYNC_BUDGET_MS, type SyncTaskData } from "./sync";
 
 /** One account's sync step; long lookback scans re-enqueue themselves until done. */
@@ -272,12 +273,23 @@ export async function reviewMailMessage(
     await after.ref.delete();
     return;
   }
+  const profile = await db.doc(firestorePaths.user(uid)).get();
+  const userTimeZone =
+    typeof profile.get("timezone") === "string" ? (profile.get("timezone") as string) : "UTC";
+  // "Add interview" on an automatically applied invite: the status change stays, the interview
+  // the invite proposes is created (review-first, ADR 0012).
+  if (before.get("reviewState") === "auto_applied" && state === "confirmed") {
+    await db.runTransaction(async (tx) => {
+      const write = await prepareInterviewFromMail(tx, db, { uid, message, userTimeZone, now: new Date() });
+      if (write !== null) tx.update(after.ref, { ...write(tx), updatedAt: FieldValue.serverTimestamp() });
+    });
+    return;
+  }
   // Undo of an automatic change: the client already wrote the reverting event (ADR 0002).
   if (before.get("reviewState") === "auto_applied" || state === "dismissed" || message.applicationId === null)
     return;
 
   const appRef = db.doc(firestorePaths.application(uid, message.applicationId));
-  const profile = await db.doc(firestorePaths.user(uid)).get();
   const retentionDays = Number(
     profile.get("settings.mailBodyRetentionDays") ?? DEFAULT_PROFILE_SETTINGS.mailBodyRetentionDays,
   );
@@ -286,6 +298,7 @@ export async function reviewMailMessage(
     if (!snapshot.exists) return;
     const application: Application = converters.application.fromSnapshot(snapshot);
     const now = new Date();
+    const interview = await prepareInterviewFromMail(tx, db, { uid, message, userTimeZone, now });
     const target =
       message.category === previousCategory && message.suggestedStatus !== null
         ? message.suggestedStatus
@@ -347,6 +360,7 @@ export async function reviewMailMessage(
       appliedEventId,
       suggestedStatus: appliedEventId === null ? message.suggestedStatus : null,
       bodyPurgeAt: message.bodyText === null || purgeAt === null ? null : Timestamp.fromDate(purgeAt),
+      ...interview?.(tx),
       updatedAt: FieldValue.serverTimestamp(),
     });
   });

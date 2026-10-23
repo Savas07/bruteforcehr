@@ -50,7 +50,9 @@ Free providers require phone or CAPTCHA verification to create a mailbox, so no 
 
 ## Operations
 
-- **Logs** (PII-free): `mail_sync`, `mail_poll`, `mail_connected`, `mail_send_scheduled`, `mail_sent`, `mail_send_failed`, `mail_sync_needs_reauth`, `mail_sync_failed`, `mail_body_purge`. `gcloud functions logs read mailSyncTask --region europe-west1 --project bruteforcehr`.
+- **Logs** (PII-free): `mail_sync`, `mail_poll`, `mail_connected`, `mail_send_scheduled`, `mail_sent`, `mail_send_failed`, `mail_sync_needs_reauth`, `mail_sync_failed`, `mail_body_purge`, `mail_alert_postings` (`found`, `created`, `updated` per alert), `mail_alert_postings_failed`. `gcloud functions logs read mailSyncTask --region europe-west1 --project bruteforcehr`.
+- **Job alerts without postings in Jobs:** check `mail_alert_postings` for the message's sync run. `found: 0` means the reader didn't recognize the layout: copy the alert (anonymized) into `packages/ai/eval/mail/fixtures/alerts.ts` with the expected postings, fix `packages/core/src/mail/alerts.ts` until `pnpm --filter @bfhr/ai test` passes, and regenerate the report with `pnpm --filter @bfhr/ai eval:mail-alerts`. Alert jobs get their `jobMatches` from the jobs pipeline (`jobMatchesRefresh`), not from the mail sync (ADR 0012 follow-up).
+- **Interviews from invites:** nothing is created until the user confirms the message (pending → confirmed/corrected, or "Add interview" on an auto-applied invite: auto_applied → confirmed). The interview id is the message id; `mailMessages/{id}.interviewSuggestion.interviewId` shows that it was created. A wrong or missing time: add the invite to `fixtures/invites.ts` and fix `packages/core/src/mail/calendar.ts`.
 - **Account stuck in `syncing`:** a crashed run holds the lease up to 9 minutes; the next poll continues.
 - **`needs_reauth`:** the user reconnects (IMAP: new app password through `mailConnectImap` with `accountId`; OAuth: `mailConnectStart`).
 - **Re-run a lookback scan:** `mailBackfillStart({ accountId, lookbackDays })`.

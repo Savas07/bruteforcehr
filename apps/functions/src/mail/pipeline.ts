@@ -1,5 +1,6 @@
 // Per-message processing shared by incremental sync and the lookback scan: dedupe → fetch →
-// parse → analyze (@bfhr/ai analyzeMail) → store job mail → apply or queue the transition.
+// parse → analyze (@bfhr/ai analyzeMail) → store job mail → apply or queue the transition;
+// job alerts add their postings to Jobs, interview invites carry an interview suggestion.
 import { createHash } from "node:crypto";
 import { analyzeMail, type AnalyzeMailAi, DailyCapError, type MailAnalysis } from "@bfhr/ai";
 import { firestorePaths, serverOnlyPaths } from "@bfhr/api";
@@ -9,7 +10,9 @@ import {
   DEFAULT_PROFILE_SETTINGS,
   type MailAccount,
   type MailMessage,
+  interviewSuggestionFromMail,
   mailBodyPurgeAt,
+  parseJobAlert,
   type TrackedApplication,
   transition,
 } from "@bfhr/core";
@@ -18,6 +21,7 @@ import { logger } from "firebase-functions/v2";
 import { aiProvider } from "../ai/common";
 import { firestoreUsageLedger } from "../ai/usage-ledger";
 import { converters } from "../converters";
+import { upsertAlertPostings } from "./job-alerts";
 import { type ParsedMail, parseMail } from "./parse";
 import type { MailProviderAdapter, MessageRef } from "./providers/types";
 
@@ -130,6 +134,17 @@ export async function processRefs(
     for (const fetched of await adapter.fetch(fresh)) {
       const parsed = await parseMail(context.account.id, fetched);
       const key = messageKey(context.account.id, fetched.id);
+      // Provider ids change when the IMAP UIDVALIDITY resets; the RFC 822 Message-ID doesn't, so
+      // a rescan never stores (or applies) the same mail twice.
+      if (parsed.rfc822MessageId !== null) {
+        const same = await db
+          .collection(firestorePaths.mailMessages(context.uid))
+          .where("accountId", "==", context.account.id)
+          .where("rfc822MessageId", "==", parsed.rfc822MessageId.slice(0, 998))
+          .limit(1)
+          .get();
+        if (!same.empty) continue;
+      }
       let analysis: MailAnalysis;
       const input = {
         mail: parsed.input,
@@ -201,6 +216,15 @@ async function storeJobMail(
       retentionDays: context.retentionDays,
       application,
     }),
+    interviewSuggestion: interviewSuggestionFromMail({
+      category: analysis.category,
+      subject: parsed.input.subject,
+      bodyText: parsed.input.bodyText,
+      calendars: parsed.calendars,
+      receivedAt: parsed.receivedAt,
+      userTimeZone: context.timeZone,
+      extracted: analysis.extracted,
+    }),
     createdAt: now,
     updatedAt: now,
   };
@@ -220,6 +244,7 @@ async function storeJobMail(
   if (application === null || !strong) {
     await messageRef.create(converters.mailMessage.toFirestore(message));
     if (message.reviewState === "pending") counts.pendingReview += 1;
+    if (analysis.category === "job_alert") await importAlertPostings(context, parsed, now);
     return;
   }
 
@@ -322,6 +347,23 @@ async function storeJobMail(
   if (applied.current !== null) context.applications.set(applied.current.id, applied.current);
   if (applied.applied) counts.autoApplied += 1;
   else if (message.reviewState === "pending") counts.pendingReview += 1;
+}
+
+/** Postings of a job alert into Jobs; a failure is logged and never loses the message. */
+async function importAlertPostings(context: PipelineContext, parsed: ParsedMail, now: Date): Promise<void> {
+  const postings = parseJobAlert({
+    fromAddress: parsed.input.from.address,
+    subject: parsed.input.subject,
+    text: parsed.input.bodyText,
+    html: parsed.html,
+    receivedAt: parsed.receivedAt,
+  });
+  try {
+    const result = await upsertAlertPostings(context.uid, postings, now);
+    logger.info("mail_alert_postings", { found: postings.length, ...result });
+  } catch (error) {
+    logger.warn("mail_alert_postings_failed", { name: error instanceof Error ? error.name : typeof error });
+  }
 }
 
 /** Deletes `serverOnly` dedupe hashes of an account (disconnect). */

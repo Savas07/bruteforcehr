@@ -4,6 +4,11 @@
  */
 import { createHash } from "node:crypto";
 import {
+  type AlertPosting,
+  type InterviewSuggestion,
+  interviewSuggestionFromMail,
+  interviewSlotInText,
+  parseJobAlert,
   foldText,
   MailCategorySchema,
   type MailCategory,
@@ -16,7 +21,9 @@ import type { AiProvider, StructuredRequest, StructuredResult } from "../../src/
 import { APPLICATIONS_DE, CASES_DE } from "./fixtures/de";
 import { APPLICATIONS_EN, CASES_EN } from "./fixtures/en";
 import { APPLICATIONS_TR, CASES_TR } from "./fixtures/tr";
-import type { MailEvalApplication, MailEvalCase } from "./types";
+import { ALERT_CASES } from "./fixtures/alerts";
+import { INVITE_CASES } from "./fixtures/invites";
+import type { AlertEvalCase, InviteEvalCase, MailEvalApplication, MailEvalCase } from "./types";
 
 /** BRIEF §4.7 acceptance thresholds (ADR 0012). */
 export const MACRO_F1_GATE = 0.9;
@@ -254,4 +261,196 @@ export function computeMetrics(results: readonly CaseResult[]): Metrics {
     },
     costMicroUsd: results.reduce((sum, r) => sum + r.analysis.costMicroUsd, 0),
   };
+}
+
+/* ------------------------------------------------------------------------------------------------
+ * Job alerts and interview invites (deterministic: no model; ADR 0012)
+ * ---------------------------------------------------------------------------------------------- */
+
+export { ALERT_CASES, INVITE_CASES };
+export const ALERT_RECALL_GATE = 0.9;
+export const ALERT_PRECISION_GATE = 0.95;
+export const INTERVIEW_START_GATE = 0.9;
+
+/** Folded, punctuation-insensitive equality for posting fields. */
+const sameField = (expected: string | null, actual: string | null): boolean =>
+  (expected === null) === (actual === null) &&
+  foldText(expected ?? "")
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .trim() ===
+    foldText(actual ?? "")
+      .replace(/[^\p{L}\p{N}]+/gu, " ")
+      .trim();
+
+export interface AlertCaseResult {
+  testCase: AlertEvalCase;
+  postings: AlertPosting[];
+  /** Expected postings found with the right URL, title, company and location. */
+  correct: number;
+  /** Correct postings whose salary and posting date also match (where labelled). */
+  detailsCorrect: number;
+  wrong: AlertPosting[];
+  missed: AlertEvalCase["expected"];
+}
+
+export function scoreAlertCase(testCase: AlertEvalCase): AlertCaseResult {
+  const { message } = testCase;
+  const postings = parseJobAlert({
+    fromAddress: message.from.address,
+    subject: message.subject,
+    text: message.text,
+    html: message.html,
+    receivedAt: new Date(message.receivedAt),
+  });
+  const matches = (expected: AlertEvalCase["expected"][number], posting: AlertPosting) =>
+    posting.url === expected.url &&
+    sameField(expected.title, posting.title) &&
+    sameField(expected.company, posting.company) &&
+    sameField(expected.location, posting.location);
+  const found = testCase.expected.filter((expected) =>
+    postings.some((posting) => matches(expected, posting)),
+  );
+  const detailsCorrect = found.filter((expected) => {
+    const posting = postings.find((candidate) => matches(expected, candidate));
+    if (posting === undefined) return false;
+    const salary = expected.salary;
+    const salaryOk =
+      salary === undefined
+        ? posting.salary === null
+        : posting.salary !== null &&
+          posting.salary.min === salary.min &&
+          posting.salary.max === salary.max &&
+          posting.salary.currency === salary.currency &&
+          posting.salary.period === salary.period;
+    const postedOk =
+      expected.postedAt === undefined ||
+      (posting.postedAt !== null &&
+        Math.abs(posting.postedAt.getTime() - new Date(expected.postedAt).getTime()) <= 3_600_000);
+    return salaryOk && postedOk;
+  }).length;
+  return {
+    testCase,
+    postings,
+    correct: found.length,
+    detailsCorrect,
+    wrong: postings.filter((posting) => !testCase.expected.some((expected) => matches(expected, posting))),
+    missed: testCase.expected.filter((expected) => !found.includes(expected)),
+  };
+}
+
+export interface AlertMetrics {
+  cases: number;
+  expected: number;
+  extracted: number;
+  correct: number;
+  precision: number;
+  recall: number;
+  /** Salary and posting date right among the correct postings. */
+  detailAccuracy: number;
+}
+
+export function computeAlertMetrics(results: readonly AlertCaseResult[]): AlertMetrics {
+  const expected = results.reduce((sum, r) => sum + r.testCase.expected.length, 0);
+  const extracted = results.reduce((sum, r) => sum + r.postings.length, 0);
+  const correct = results.reduce((sum, r) => sum + r.correct, 0);
+  const details = results.reduce((sum, r) => sum + r.detailsCorrect, 0);
+  return {
+    cases: results.length,
+    expected,
+    extracted,
+    correct,
+    precision: extracted === 0 ? 1 : correct / extracted,
+    recall: expected === 0 ? 1 : correct / expected,
+    detailAccuracy: correct === 0 ? 1 : details / correct,
+  };
+}
+
+export interface InviteCaseResult {
+  testCase: InviteEvalCase;
+  suggestion: InterviewSuggestion | null;
+  startOk: boolean;
+  timezoneOk: boolean;
+  durationOk: boolean;
+  meetingUrlOk: boolean;
+}
+
+export function scoreInviteCase(testCase: InviteEvalCase): InviteCaseResult {
+  const { message, expected } = testCase;
+  const suggestion = interviewSuggestionFromMail({
+    category: "interview_invite",
+    subject: message.subject,
+    bodyText: message.bodyText,
+    calendars: message.calendar === null ? [] : [message.calendar],
+    receivedAt: new Date(message.receivedAt),
+    userTimeZone: testCase.userTimeZone ?? EVAL_TIME_ZONE,
+    extracted: {
+      company: null,
+      role: null,
+      contactName: null,
+      contactEmail: null,
+      dates: [],
+      meetingUrls: [],
+    },
+  });
+  return {
+    testCase,
+    suggestion,
+    startOk:
+      suggestion !== null &&
+      Math.abs(suggestion.startsAt.getTime() - new Date(expected.startsAt).getTime()) <= 60_000,
+    timezoneOk: suggestion !== null && suggestion.timezone === expected.timezone,
+    durationOk: suggestion !== null && suggestion.durationMinutes === expected.durationMinutes,
+    meetingUrlOk: suggestion !== null && suggestion.meetingUrl === expected.meetingUrl,
+  };
+}
+
+export interface InviteMetrics {
+  cases: number;
+  suggested: number;
+  startAccuracy: number;
+  timezoneAccuracy: number;
+  durationAccuracy: number;
+  meetingUrlAccuracy: number;
+  /** Every field right. */
+  exact: number;
+}
+
+export function computeInviteMetrics(results: readonly InviteCaseResult[]): InviteMetrics {
+  const share = (pick: (result: InviteCaseResult) => boolean) =>
+    results.length === 0 ? 1 : results.filter(pick).length / results.length;
+  return {
+    cases: results.length,
+    suggested: results.filter((r) => r.suggestion !== null).length,
+    startAccuracy: share((r) => r.startOk),
+    timezoneAccuracy: share((r) => r.timezoneOk),
+    durationAccuracy: share((r) => r.durationOk),
+    meetingUrlAccuracy: share((r) => r.meetingUrlOk),
+    exact: share((r) => r.startOk && r.timezoneOk && r.durationOk && r.meetingUrlOk),
+  };
+}
+
+/**
+ * Held-out check of the text reader: interview invites of the classification set with exactly one
+ * labelled interview time (written for the classifier, not for this reader). Reported, not gated.
+ */
+export function heldOutInviteCheck(): { cases: number; correct: number; wrong: string[]; none: string[] } {
+  const wrong: string[] = [];
+  const none: string[] = [];
+  let cases = 0;
+  for (const testCase of MAIL_EVAL_CASES) {
+    const labelled = (testCase.expected.dates ?? []).filter((date) => date.kind === "interview");
+    const [label] = labelled;
+    if (testCase.expected.category !== "interview_invite" || labelled.length !== 1 || label === undefined)
+      continue;
+    cases += 1;
+    const slot = interviewSlotInText({
+      text: testCase.message.bodyText,
+      receivedAt: new Date(testCase.message.receivedAt),
+      userTimeZone: EVAL_TIME_ZONE,
+    });
+    if (slot === null) none.push(testCase.id);
+    else if (Math.abs(slot.startsAt.getTime() - new Date(label.at).getTime()) > 60_000)
+      wrong.push(testCase.id);
+  }
+  return { cases, correct: cases - wrong.length - none.length, wrong, none };
 }

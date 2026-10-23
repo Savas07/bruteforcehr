@@ -4,10 +4,13 @@ import {
   decideMailAction,
   extractByRules,
   foldText,
+  isIanaTimeZone,
   isJobCandidate,
   linkApplication,
   mailEvidenceReason,
   mailSignals,
+  wallTimeToInstant,
+  zoneOffsetMinutes,
   type LinkResult,
   type MailCategory,
   type MailDecision,
@@ -258,7 +261,7 @@ export function groundExtraction(
   for (const date of output.dates.slice(0, 20)) {
     const at = toInstant(date.local, date.utcOffset, date.timeZone ?? userTimeZone);
     if (at === null) continue;
-    const timeZone = date.timeZone !== null && isTimeZone(date.timeZone) ? date.timeZone : null;
+    const timeZone = date.timeZone !== null && isIanaTimeZone(date.timeZone) ? date.timeZone : null;
     dates.push({ kind: date.kind, at, timezone: timeZone, label: date.label.slice(0, 200) });
   }
   return {
@@ -274,53 +277,31 @@ export function groundExtraction(
   };
 }
 
-function isTimeZone(zone: string): boolean {
-  try {
-    new Intl.DateTimeFormat("en", { timeZone: zone });
-    return /^(?:UTC|[A-Z][A-Za-z_]+(?:\/[A-Za-z0-9_+-]+)+)$/u.test(zone);
-  } catch {
-    return false;
-  }
-}
-
 /** `YYYY-MM-DDTHH:MM` local time → instant, by explicit offset or else by IANA zone. */
 export function toInstant(local: string, utcOffset: string | null, timeZone: string): Date | null {
   const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/u.exec(local.trim());
   if (match === null) return null;
-  const [, y, mo, d, h, mi] = match.map(Number) as [number, number, number, number, number, number];
-  const asUtc = Date.UTC(y, mo - 1, d, h, mi);
-  if (Number.isNaN(asUtc) || mo < 1 || mo > 12 || d < 1 || d > 31 || h > 23 || mi > 59) return null;
+  const [, year, month, day, hour, minute] = match.map(Number) as [
+    number,
+    number,
+    number,
+    number,
+    number,
+    number,
+  ];
+  const wall = { year, month, day, hour, minute };
   const offset = utcOffset === null ? null : /^([+-])(\d{2}):?(\d{2})$/u.exec(utcOffset.trim());
   if (offset !== null) {
+    const asUtc = wallTimeToInstant(wall, "UTC");
     const minutes = (Number(offset[2]) * 60 + Number(offset[3])) * (offset[1] === "-" ? -1 : 1);
-    return new Date(asUtc - minutes * 60_000);
+    return asUtc === null ? null : new Date(asUtc.getTime() - minutes * 60_000);
   }
-  if (!isTimeZone(timeZone)) return null;
-  // Offset of the zone at that wall time (two passes settle DST edges).
-  let guess = asUtc;
-  for (let pass = 0; pass < 2; pass++) guess = asUtc - zoneOffsetMinutes(guess, timeZone) * 60_000;
-  return new Date(guess);
-}
-
-function zoneOffsetMinutes(instant: number, timeZone: string): number {
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone,
-    hourCycle: "h23",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).formatToParts(new Date(instant));
-  const part = (type: Intl.DateTimeFormatPartTypes) =>
-    Number(parts.find((entry) => entry.type === type)?.value);
-  const wall = Date.UTC(part("year"), part("month") - 1, part("day"), part("hour"), part("minute"));
-  return Math.round((wall - Math.floor(instant / 60_000) * 60_000) / 60_000);
+  return wallTimeToInstant(wall, timeZone);
 }
 
 /** `2026-10-14T09:12:00+03:00` in the user's zone, so relative dates resolve as the user reads them. */
 function isoWithZone(date: Date, timeZone: string): string {
-  const zone = isTimeZone(timeZone) ? timeZone : "UTC";
+  const zone = isIanaTimeZone(timeZone) ? timeZone : "UTC";
   const offset = zoneOffsetMinutes(date.getTime(), zone);
   const local = new Date(date.getTime() + offset * 60_000).toISOString().slice(0, 19);
   const sign = offset < 0 ? "-" : "+";

@@ -335,6 +335,12 @@ public enum ReviewState: String, Codable, Hashable, Sendable, CaseIterable {
     case dismissed
 }
 
+public enum InterviewSuggestionSource: String, Codable, Hashable, Sendable, CaseIterable {
+    case calendar
+    case model
+    case text
+}
+
 public enum Platform: String, Codable, Hashable, Sendable, CaseIterable {
     case ios
     case macos
@@ -3165,6 +3171,49 @@ public struct MailExtraction: Codable, Hashable, Sendable {
     }
 }
 
+public struct InterviewSuggestion: Codable, Hashable, Sendable {
+    public var title: String
+    public var startsAt: Date
+    public var durationMinutes: Int?
+    public var timezone: String?
+    public var location: String?
+    public var meetingUrl: String?
+    public var source: InterviewSuggestionSource
+    public var interviewId: String?
+
+    public init(
+        title: String,
+        startsAt: Date,
+        durationMinutes: Int?,
+        timezone: String?,
+        location: String?,
+        meetingUrl: String?,
+        source: InterviewSuggestionSource,
+        interviewId: String?
+    ) {
+        self.title = title
+        self.startsAt = startsAt
+        self.durationMinutes = durationMinutes
+        self.timezone = timezone
+        self.location = location
+        self.meetingUrl = meetingUrl
+        self.source = source
+        self.interviewId = interviewId
+    }
+
+    public func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(title, forKey: .title)
+        try container.encode(startsAt, forKey: .startsAt)
+        try container.encode(durationMinutes, forKey: .durationMinutes)
+        try container.encode(timezone, forKey: .timezone)
+        try container.encode(location, forKey: .location)
+        try container.encode(meetingUrl, forKey: .meetingUrl)
+        try container.encode(source, forKey: .source)
+        try container.encode(interviewId, forKey: .interviewId)
+    }
+}
+
 /// `users/{uid}/mailMessages/{id}`.
 public struct MailMessage: Codable, Hashable, Sendable, Identifiable {
     public var id: String
@@ -3190,6 +3239,7 @@ public struct MailMessage: Codable, Hashable, Sendable, Identifiable {
     public var reviewedAt: Date?
     public var bodyText: String?
     public var bodyPurgeAt: Date?
+    public var interviewSuggestion: InterviewSuggestion?
     public var createdAt: Date
     public var updatedAt: Date
 
@@ -3217,6 +3267,7 @@ public struct MailMessage: Codable, Hashable, Sendable, Identifiable {
         reviewedAt: Date?,
         bodyText: String?,
         bodyPurgeAt: Date?,
+        interviewSuggestion: InterviewSuggestion?,
         createdAt: Date,
         updatedAt: Date
     ) {
@@ -3243,6 +3294,7 @@ public struct MailMessage: Codable, Hashable, Sendable, Identifiable {
         self.reviewedAt = reviewedAt
         self.bodyText = bodyText
         self.bodyPurgeAt = bodyPurgeAt
+        self.interviewSuggestion = interviewSuggestion
         self.createdAt = createdAt
         self.updatedAt = updatedAt
     }
@@ -3272,6 +3324,7 @@ public struct MailMessage: Codable, Hashable, Sendable, Identifiable {
         try container.encode(reviewedAt, forKey: .reviewedAt)
         try container.encode(bodyText, forKey: .bodyText)
         try container.encode(bodyPurgeAt, forKey: .bodyPurgeAt)
+        try container.encode(interviewSuggestion, forKey: .interviewSuggestion)
         try container.encode(createdAt, forKey: .createdAt)
         try container.encode(updatedAt, forKey: .updatedAt)
     }

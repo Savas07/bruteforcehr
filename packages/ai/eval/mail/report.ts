@@ -1,5 +1,18 @@
 import { MailCategorySchema } from "@bfhr/core";
-import { AUTO_PRECISION_GATE, autoCorrect, type CaseResult, MACRO_F1_GATE, type Metrics } from "./score";
+import {
+  ALERT_PRECISION_GATE,
+  ALERT_RECALL_GATE,
+  type AlertCaseResult,
+  type AlertMetrics,
+  AUTO_PRECISION_GATE,
+  autoCorrect,
+  type CaseResult,
+  INTERVIEW_START_GATE,
+  type InviteCaseResult,
+  type InviteMetrics,
+  MACRO_F1_GATE,
+  type Metrics,
+} from "./score";
 
 const pct = (value: number) => `${(value * 100).toFixed(1)} %`;
 const pass = (ok: boolean) => (ok ? "✅ pass" : "❌ fail");
@@ -79,5 +92,70 @@ export function renderReport(input: {
     "## Errors with rules only",
     "",
     errorsTable(rules.results),
+  ].join("\n");
+}
+
+/** Report of the deterministic job-alert and interview-time eval (`eval/mail/report-alerts.md`). */
+export function renderAlertsReport(input: {
+  date: string;
+  alerts: { metrics: AlertMetrics; results: readonly AlertCaseResult[] };
+  invites: { metrics: InviteMetrics; results: readonly InviteCaseResult[] };
+  heldOut: { cases: number; correct: number; wrong: string[]; none: string[] };
+}): string {
+  const { alerts, invites, heldOut } = input;
+  const count = (rows: readonly { testCase: { language: string } }[], lang: string) =>
+    rows.filter((row) => row.testCase.language === lang).length;
+  const boards = [...new Set(alerts.results.map((r) => r.testCase.board))].join(", ");
+  const alertErrors = alerts.results.filter((r) => r.wrong.length > 0 || r.missed.length > 0);
+  const inviteErrors = invites.results.filter(
+    (r) => !(r.startOk && r.timezoneOk && r.durationOk && r.meetingUrlOk),
+  );
+  return [
+    "# Job-alert and interview-time eval",
+    "",
+    `- Date: ${input.date}. Deterministic (no model): \`parseJobAlert\` and \`interviewSuggestionFromMail\` in \`@bfhr/core\` (ADR 0012). CI: \`pnpm --filter @bfhr/ai test\` (\`alerts-gate.test.ts\`); report: \`pnpm --filter @bfhr/ai eval:mail-alerts\`.`,
+    `- Alerts: ${alerts.results.length} emails (EN ${count(alerts.results, "en")}, TR ${count(alerts.results, "tr")}, DE ${count(alerts.results, "de")}; ${boards}), ${alerts.metrics.expected} labelled postings. Invites: ${invites.results.length} (EN ${count(invites.results, "en")}, TR ${count(invites.results, "tr")}, DE ${count(invites.results, "de")}), calendar parts and explicit times. Development set: written alongside the parsers.`,
+    "",
+    "## Postings",
+    "",
+    "| Metric | Value | Gate |",
+    "| --- | --- | --- |",
+    `| Recall (URL, title, company, location all right) | ${pct(alerts.metrics.recall)} (${alerts.metrics.correct}/${alerts.metrics.expected}) | ≥ ${pct(ALERT_RECALL_GATE)} ${pass(alerts.metrics.recall >= ALERT_RECALL_GATE)} |`,
+    `| Precision | ${pct(alerts.metrics.precision)} (${alerts.metrics.correct}/${alerts.metrics.extracted}) | ≥ ${pct(ALERT_PRECISION_GATE)} ${pass(alerts.metrics.precision >= ALERT_PRECISION_GATE)} |`,
+    `| Salary and posting date right (correct postings) | ${pct(alerts.metrics.detailAccuracy)} | — |`,
+    "",
+    alertErrors.length === 0
+      ? "No posting errors.\n"
+      : [
+          "| Case | Wrong | Missed |",
+          "| --- | --- | --- |",
+          ...alertErrors.map(
+            (r) =>
+              `| ${r.testCase.id} | ${r.wrong.map((p) => `${p.title} · ${p.company}`).join("; ") || "—"} | ${r.missed.map((p) => `${p.title} · ${p.company}`).join("; ") || "—"} |`,
+          ),
+          "",
+        ].join("\n"),
+    "## Interview times",
+    "",
+    "| Metric | Value | Gate |",
+    "| --- | --- | --- |",
+    `| Start (± 1 min) | ${pct(invites.metrics.startAccuracy)} | ≥ ${pct(INTERVIEW_START_GATE)} ${pass(invites.metrics.startAccuracy >= INTERVIEW_START_GATE)} |`,
+    `| Organizer zone | ${pct(invites.metrics.timezoneAccuracy)} | — |`,
+    `| Duration | ${pct(invites.metrics.durationAccuracy)} | — |`,
+    `| Meeting link | ${pct(invites.metrics.meetingUrlAccuracy)} | — |`,
+    `| All fields | ${pct(invites.metrics.exact)} | — |`,
+    `| Held out: classification-set invites with one labelled time (text only) | ${heldOut.correct}/${heldOut.cases} right; wrong: ${heldOut.wrong.join(", ") || "—"}; none: ${heldOut.none.join(", ") || "—"} | reported |`,
+    "",
+    inviteErrors.length === 0
+      ? "No interview-time errors.\n"
+      : [
+          "| Case | Expected | Got |",
+          "| --- | --- | --- |",
+          ...inviteErrors.map(
+            (r) =>
+              `| ${r.testCase.id} | ${r.testCase.expected.startsAt} ${r.testCase.expected.timezone ?? "—"} ${r.testCase.expected.durationMinutes ?? "—"} min | ${r.suggestion === null ? "none" : `${r.suggestion.startsAt.toISOString()} ${r.suggestion.timezone ?? "—"} ${r.suggestion.durationMinutes ?? "—"} min`} |`,
+          ),
+          "",
+        ].join("\n"),
   ].join("\n");
 }

@@ -1,4 +1,10 @@
-import type { ApplicationStatus, ExtractedDateKind, MailCategory } from "@bfhr/core";
+import type {
+  AlertBoard,
+  ApplicationStatus,
+  ExtractedDateKind,
+  MailCategory,
+  SalaryPeriod,
+} from "@bfhr/core";
 
 /**
  * Labeled mail for the classification eval (BRIEF §4.7 acceptance: ≥ 150 messages, every
@@ -80,4 +86,63 @@ export interface MailEvalCase {
   hard: string | null;
   message: MailEvalMessage;
   expected: MailEvalExpected;
+}
+
+/**
+ * Job-alert email for the deterministic posting-extraction eval (no model; ADR 0012 "Job
+ * alerts"). Same fictional-party rules as above; board sender domains and URL shapes are real.
+ */
+export interface AlertEvalCase {
+  /** `alert-<lang>-<nn>`. */
+  id: string;
+  language: EvalLanguage;
+  /** Board the sender is, or `generic` for other senders. */
+  board: AlertBoard | "generic";
+  /** Which body carries the postings. */
+  format: "text" | "html";
+  hard: string | null;
+  message: {
+    from: { name: string | null; address: string };
+    subject: string;
+    /** Text part (for HTML-only mail: what a client shows without links). */
+    text: string;
+    html: string | null;
+    receivedAt: string;
+  };
+  /** Every posting the alert lists with a link; canonical URL, title, company, location as shown. */
+  expected: {
+    url: string;
+    title: string;
+    company: string;
+    location: string | null;
+    salary?: { min: number; max: number | null; currency: string; period: SalaryPeriod };
+    /** ISO 8601 instant (± 1 hour). */
+    postedAt?: string;
+  }[];
+}
+
+/** Interview invite for the deterministic interview-time eval (ICS part or explicit wording). */
+export interface InviteEvalCase {
+  /** `invite-<lang>-<nn>`. */
+  id: string;
+  language: EvalLanguage;
+  hard: string | null;
+  message: {
+    from: { name: string | null; address: string };
+    subject: string;
+    bodyText: string;
+    /** `text/calendar` part, when the invite carries one. */
+    calendar: string | null;
+    receivedAt: string;
+  };
+  /** Profile zone of the persona (default `Europe/Istanbul`). */
+  userTimeZone?: string;
+  expected: {
+    /** ISO 8601 instant. */
+    startsAt: string;
+    /** Organizer's zone as stated, null when the invite gives none. */
+    timezone: string | null;
+    durationMinutes: number | null;
+    meetingUrl: string | null;
+  };
 }

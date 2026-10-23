@@ -1,6 +1,6 @@
 {
   "name": "@bfhr/core",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "Domain types, zod schemas and the application status state machine (no platform dependencies).",
   "type": "module",

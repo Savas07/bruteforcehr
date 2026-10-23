@@ -82,9 +82,44 @@ Owner, when available: the Apple secrets above ([accounts.md §6](accounts.md#6-
    - `appConfig/macos` and `appConfig/windows` show `latestVersion: X.Y.Z` (and `appConfig/ios` once TestFlight uploads run).
    - TestFlight shows build `X.Y.Z (<run number>)` (once the Apple secrets exist).
    - `https://bruteforcehr.web.app/download` shows `X.Y.Z`.
-7. M1 acceptance (BRIEF §7): install `v0.1.0` on clean macOS and Windows, publish `v0.1.1`, confirm both update with only "Restart", TestFlight gets `0.1.1`, and the website shows `0.1.1`.
+7. M1 acceptance (BRIEF §7): install `v0.1.0` on clean macOS and Windows, publish `v0.1.1`, confirm both update with only "Restart", TestFlight gets `0.1.1`, and the website shows `0.1.1`. Repeatable on hosted runners: `gh workflow run update-acceptance.yml -f from=X.Y.Z -f target=X.Y.Z+1`. Results: [M1 acceptance](#m1-acceptance).
 
 **Raising `minSupportedVersion`:** edit `scripts/release/min-supported-versions.json` in the PR that needs it (never above the version being released; `publish` refuses that). It takes effect with that release's `appConfig` write.
+
+## M1 acceptance
+
+Done on 2026-10-23 with the real release flow (Changesets version PR → tag → `release.yml` → publish → website), without Apple secrets.
+
+| | v0.1.0 | v0.1.1 |
+|---|---|---|
+| Version PR | #1 (squash `b53afde`) | #5 |
+| Release run (all 11 jobs green) | [39895546394](https://github.com/Savas07/bruteforcehr/actions/runs/39895546394) (tag on `5a7fb5f`) | [39897066241](https://github.com/Savas07/bruteforcehr/actions/runs/39897066241) |
+| Published | 2026-10-23T03:45:13Z | 2026-10-23T04:00:17Z |
+| Assets | `BruteForceHR_0.1.0_universal.dmg`, `…_universal.app.tar.gz` + `.sig`, `…_x64-setup.exe` + `.sig`, `latest.json`, `SHA256SUMS.txt` | same for 0.1.1 |
+| DMG / setup.exe SHA-256 | `63da01a0…a6cd53b` / `30525f2f…b8d36f16` | `2d932223…ecaec4f1b` / `bfd6a1de…f12ae9` |
+| `appConfig/{macos,windows}` (read back over the Firestore REST API) | `latestVersion 0.1.0`, `minSupportedVersion 0.1.0` | `latestVersion 0.1.1`, `minSupportedVersion 0.1.0`, `downloadUrl` → v0.1.1 assets |
+| `bruteforcehr.web.app/download/` (curl) | "Version 0.1.0", both files with their SHA-256 | "Version 0.1.1", both files with their SHA-256 |
+
+After v0.1.1: `releases/latest/download/latest.json` and `updater-beta/latest.json` both say `0.1.1`, and every platform URL points to `v0.1.1`.
+
+**User-visible change in 0.1.1:** the job list salary line fits on one line at 1280 px ([critique r4](../design/critiques/desktop/job-detail/r4.md), before/after captures in runs 39887868069 / 39889474657).
+
+**Update proof:** [`update-acceptance.yml`](../../.github/workflows/update-acceptance.yml) run [39898240934](https://github.com/Savas07/bruteforcehr/actions/runs/39898240934), `from=0.1.0 target=0.1.1`, green on `macos-latest` and `windows-latest` (artifacts `update-acceptance-{macos,windows}`: stderr logs and screenshots before/after). On each clean runner it:
+
+1. checks that the stable `latest.json` says `0.1.1`, downloads the v0.1.0 installer from the release and checks it against `SHA256SUMS.txt`;
+2. installs like a user: macOS mounts the DMG and copies `BruteForceHR.app` to `/Applications` (`CFBundleShortVersionString` 0.1.0); Windows runs the NSIS installer per-user with `/S` (uninstall entry `DisplayVersion` 0.1.0, `bruteforcehr.exe` ProductVersion 0.1.0);
+3. launches the installed app; its own background check reads the real manifest, verifies the signature and downloads 0.1.1 (`update check: 0.1.1 downloaded, installs at quit` on stderr);
+4. quits the app the way a user does, and the app installs the update on its normal exit path (`installing update 0.1.1 at quit`): macOS sends the Quit Apple Event (`NSRunningApplication.terminate()`, the same event as ⌘Q / app menu Quit / Dock Quit); Windows sends `WM_CLOSE` to the main window (the title bar's close button / Alt+F4), and the app starts the downloaded installer in passive mode and exits 0;
+5. asserts the installed version: macOS `CFBundleShortVersionString` **0.1.1** and `codesign --verify --deep --strict` passes; Windows `DisplayVersion` **0.1.1** and `bruteforcehr.exe` ProductVersion / FileVersion **0.1.1**;
+6. relaunches: the app reports `update check: up to date`.
+
+Quit-then-relaunch is the "restart" of BRIEF §7: the in-app **Restart to update** button runs the same `Update::install` and then relaunches (`updater::restart_to_update`); the run drives quit because it needs no UI automation. The first run, [39898073734](https://github.com/Savas07/bruteforcehr/actions/runs/39898073734), passed on macOS and showed that Windows ends a step's processes when the step ends (the app was gone before the quit step), so the Windows launch, download and quit now share one step.
+
+What it doesn't prove, and what's pending:
+
+- **Developer ID signing + notarization** (Apple secrets pending): the macOS app is ad-hoc signed. `gh release download` sets no quarantine flag, so the runner doesn't show Gatekeeper's first-open block; a user who downloads the DMG with a browser has to choose **Open Anyway** once. The updater's own swap of the bundle doesn't involve Gatekeeper.
+- **Windows Authenticode** (no certificate, ADR 0004): SmartScreen may warn on the first install; updates are verified by the Tauri updater signature.
+- **TestFlight 0.1.1**: the `ios` job built an unsigned archive and uploaded nothing (`APPLE_API_KEY_*` / `APPLE_TEAM_ID` pending), so `appConfig/ios` wasn't written.
 
 ## App icon in CI builds
 

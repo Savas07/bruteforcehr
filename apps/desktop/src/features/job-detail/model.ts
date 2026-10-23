@@ -85,7 +85,7 @@ const COPY_MESSAGES = defineMessages({
     defaultMessage:
       "A rough guide to how this job fits your CV and preferences. It isn't a prediction of your chances.",
   },
-  aiSummary: { id: "job-detail.copy.aiSummary", defaultMessage: "AI summary · can be wrong" },
+  aiSummary: { id: "job-detail.copy.aiSummary", defaultMessage: "Summary · can be wrong" },
   aiFactor: { id: "job-detail.copy.aiFactor", defaultMessage: "AI · can be wrong" },
   notTopMatch: {
     id: "job-detail.copy.notTopMatch",
@@ -128,6 +128,11 @@ const messages = defineMessages({
   salaryNotStated: { id: "job-detail.salary.notStated", defaultMessage: "Salary not stated" },
   salaryEstimate: { id: "job-detail.salary.estimate", defaultMessage: "{amount} · estimate" },
   salaryFromEmployer: { id: "job-detail.salary.fromEmployer", defaultMessage: "{amount} · from employer" },
+  salaryFromEmployerShort: {
+    id: "job-detail.salary.fromEmployerShort",
+    defaultMessage: "{amount} · employer",
+    description: "Job list rows: short salary provenance; the full '· from employer' is in the tooltip",
+  },
   scoreCaption: { id: "job-detail.match.scoreCaption", defaultMessage: "{score} of 100" },
   sourceCount: {
     id: "job-detail.list.sourceCount",
@@ -275,23 +280,24 @@ export const SCOPE_MESSAGES: Readonly<Record<JobsScope, MessageDescriptor>> = de
   hidden: { id: "job-detail.scope.hidden", defaultMessage: "Hidden jobs" },
 });
 
-const CAUGHT_UP_MESSAGES: Readonly<Record<JobsScope, { title: MessageDescriptor; body: MessageDescriptor }>> = {
-  all: { title: messages.caughtUpTitle, body: messages.caughtUpBody },
-  saved: defineMessages({
-    title: { id: "job-detail.empty.savedTitle", defaultMessage: "No saved jobs" },
-    body: {
-      id: "job-detail.empty.savedBody",
-      defaultMessage: "Save a job with S or the bookmark and it stays here while you decide.",
-    },
-  }),
-  hidden: defineMessages({
-    title: { id: "job-detail.empty.hiddenTitle", defaultMessage: "No hidden jobs" },
-    body: {
-      id: "job-detail.empty.hiddenBody",
-      defaultMessage: "Jobs you mark Not for me move here, so you can bring one back any time.",
-    },
-  }),
-};
+const CAUGHT_UP_MESSAGES: Readonly<Record<JobsScope, { title: MessageDescriptor; body: MessageDescriptor }>> =
+  {
+    all: { title: messages.caughtUpTitle, body: messages.caughtUpBody },
+    saved: defineMessages({
+      title: { id: "job-detail.empty.savedTitle", defaultMessage: "No saved jobs" },
+      body: {
+        id: "job-detail.empty.savedBody",
+        defaultMessage: "Save a job with S or the bookmark and it stays here while you decide.",
+      },
+    }),
+    hidden: defineMessages({
+      title: { id: "job-detail.empty.hiddenTitle", defaultMessage: "No hidden jobs" },
+      body: {
+        id: "job-detail.empty.hiddenBody",
+        defaultMessage: "Jobs you mark Not for me move here, so you can bring one back any time.",
+      },
+    }),
+  };
 
 /** "Best match" order: band first, so 1–2 point differences don't reorder results. */
 const BAND_RANK: Readonly<Record<MatchBand, number>> = { strong: 0, good: 1, partial: 2, stretch: 3 };
@@ -353,6 +359,8 @@ export interface SalaryVM {
   readonly amount: string | null;
   /** "€55,000–€68,000 a year · from employer", "… · estimate", "Salary not stated". */
   readonly text: string;
+  /** List rows: "€55,000–€68,000 a year · employer", "… · estimate"; `text` is the tooltip. */
+  readonly shortText: string;
 }
 
 /** One row of the Jobs list pane (`JobRow`). */
@@ -656,12 +664,21 @@ function salaryAmount(salary: SalaryRange, ctx: ModelContext): string {
 
 function salaryVM(salary: SalaryRange | null, ctx: ModelContext): SalaryVM {
   const { intl } = ctx;
-  if (!salary)
-    return { provenance: "notStated", amount: null, text: intl.formatMessage(messages.salaryNotStated) };
+  if (!salary) {
+    const text = intl.formatMessage(messages.salaryNotStated);
+    return { provenance: "notStated", amount: null, text, shortText: text };
+  }
   const amount = salaryAmount(salary, ctx);
-  return salary.estimated
-    ? { provenance: "estimated", amount, text: intl.formatMessage(messages.salaryEstimate, { amount }) }
-    : { provenance: "stated", amount, text: intl.formatMessage(messages.salaryFromEmployer, { amount }) };
+  if (salary.estimated) {
+    const text = intl.formatMessage(messages.salaryEstimate, { amount });
+    return { provenance: "estimated", amount, text, shortText: text };
+  }
+  return {
+    provenance: "stated",
+    amount,
+    text: intl.formatMessage(messages.salaryFromEmployer, { amount }),
+    shortText: intl.formatMessage(messages.salaryFromEmployerShort, { amount }),
+  };
 }
 
 function locationLabel(job: Job): string | null {

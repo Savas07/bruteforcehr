@@ -13,7 +13,7 @@ const messages = defineMessages({
   },
   disclosure: {
     id: "shared.ui.aiBadge.disclosure",
-    defaultMessage: "AI summary · can be wrong",
+    defaultMessage: "Summary · can be wrong",
     description: "Default always-visible disclaimer under AI summaries",
   },
 });
@@ -31,7 +31,7 @@ export function AiBadge() {
 
 export interface AiDisclosureLineProps {
   /**
-   * The always-visible disclaimer. Default "AI summary · can be wrong" (match summaries); CV and
+   * The always-visible disclaimer. Default "Summary · can be wrong" (match summaries); CV and
    * cover-letter suggestions use "Suggested by Claude. Check names, numbers and dates before you use it."
    */
   text?: string;

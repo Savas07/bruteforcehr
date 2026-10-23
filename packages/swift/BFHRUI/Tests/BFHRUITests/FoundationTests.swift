@@ -24,6 +24,14 @@ struct FoundationTests {
         #expect(String(localized: MatchBand.scoreCaption(72)) == "72 of 100")
     }
 
+    @Test("Match bar fills Good and Strong with the accent, Partial and Stretch neutral")
+    func matchBandBarFill() {
+        #expect(MatchBandBar.fillsWithAccent(.strong))
+        #expect(MatchBandBar.fillsWithAccent(.good))
+        #expect(!MatchBandBar.fillsWithAccent(.partial))
+        #expect(!MatchBandBar.fillsWithAccent(.stretch))
+    }
+
     @Test("Both fixture datasets decode into UserData", arguments: FixtureDataset.allCases)
     func fixturesDecode(dataset: FixtureDataset) throws {
         let document = try FixtureStore.document(dataset)

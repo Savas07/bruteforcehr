@@ -2,7 +2,7 @@
 layout: ../layouts/LegalLayout.astro
 title: Privacy Policy
 description: What BruteForceHR collects, why, where it's kept, and how you can download or delete it.
-effective: "2026-10-22"
+effective: "2026-10-23"
 keyPoints:
   - "Only job-related email is kept. Other email is never stored."
   - "Nothing is sent from your email account until you've reviewed the message and pressed Send."
@@ -21,7 +21,7 @@ This policy covers the BruteForceHR apps for iPhone, Mac and Windows, the server
 
 </div>
 
-BruteForceHR is built and run by an individual developer (GitHub: [Savas07](https://github.com/Savas07)), who is responsible for your data (the "data controller") and is referred to as "we" in this policy. It is not a company.
+BruteForceHR is built and run by an individual developer, Savaş Altıntaş (GitHub: [Savas07](https://github.com/Savas07)), who is responsible for your data (the "data controller") and is referred to as "we" in this policy. It is not a company.
 
 BruteForceHR is made for personal job searching. It is free and is currently used by a small number of invited people. To contact us, see [Contact](#contact).
 
@@ -304,4 +304,4 @@ When we change this policy, we update the effective date at the top. If a change
 
 </div>
 
-You can do most things yourself in the app: download your data, delete it, or disconnect accounts. For questions about this policy, [open an issue on GitHub](https://github.com/Savas07/bruteforcehr-releases/issues/new). Issues are public, so don't include email addresses, CV content or message text. If your request needs personal details, say in the issue that you have a privacy request, without the details, and we'll arrange a private way to continue.
+Privacy requests are self-service in the app: Settings › Data & privacy › Export everything gives you a copy of all your data, and Delete account permanently deletes it (see [Your choices and rights](#your-choices-and-rights)). You can correct your data and disconnect accounts in the app too. For questions about this policy, [open an issue on GitHub](https://github.com/Savas07/bruteforcehr-releases/issues/new). Issues are public, so don't include email addresses, CV content or message text.

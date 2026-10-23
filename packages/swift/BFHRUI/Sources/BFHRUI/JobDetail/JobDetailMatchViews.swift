@@ -231,7 +231,7 @@ struct GlyphLayout<Content: View>: View {
     }
 }
 
-/// `AISummaryBlock`: "AI summary · can be wrong", the rationale, 👍 / 👎.
+/// `AISummaryBlock`: "Summary · can be wrong", the rationale, 👍 / 👎.
 struct AISummaryBlock: View {
     let rationale: String
     let feedback: JobDetailModel.SummaryFeedback?

@@ -1,5 +1,7 @@
 # M0 design checkpoint
 
+**Approved by the owner on 2026-10-23.** The taste answers are summarised under [Decisions (2026-10-23)](#decisions-2026-10-23) and recorded in [decisions.md](decisions.md#m0-checkpoint-taste-answers-q1q10).
+
 This is the design checkpoint from [BRIEF §5.6](../BRIEF.md#56-design-gates). Before broad implementation starts, please review the information architecture (IA), the design tokens and the five core screens: Today, Job detail, CV editor, Tracker board and Mail review. Each screen is shown on iOS (native SwiftUI) and on desktop (Tauri 2, macOS and Windows). For each screen you'll find the references it builds on, its critique log and the accessibility result.
 
 **What you're approving**
@@ -18,7 +20,7 @@ Data wiring isn't part of this review. Every screenshot comes from a design buil
 
 Please also answer the [taste questions](#taste-questions) at the end. A number plus "OK" or your choice is enough. Each question includes my recommendation.
 
-**Contents:** [IA](#information-architecture) · [Tokens](#tokens) · [Today](#1-today) · [Job detail](#2-job-detail--match-explanation) · [CV editor](#3-cv-editor) · [Tracker board](#4-tracker-board) · [Mail review](#5-mail-review-queue) · [Cross-cutting](#cross-cutting) · [Taste questions](#taste-questions) · [Known limitations](#known-limitations)
+**Contents:** [IA](#information-architecture) · [Tokens](#tokens) · [Today](#1-today) · [Job detail](#2-job-detail--match-explanation) · [CV editor](#3-cv-editor) · [Tracker board](#4-tracker-board) · [Mail review](#5-mail-review-queue) · [Cross-cutting](#cross-cutting) · [Decisions](#decisions-2026-10-23) · [Known limitations](#known-limitations)
 
 ## Information architecture
 
@@ -582,24 +584,20 @@ From [BRIEF §5.4](../BRIEF.md) and [system.md › Principles](system.md#princip
 
 ---
 
-## Taste questions
+## Decisions (2026-10-23)
 
-The critiques and audits collected these taste questions. None of them blocks approval; each one has my recommendation. Answer with the number plus "OK" (take the recommendation) or your choice.
+The owner answered the ten taste questions with the checkpoint approval ([decisions.md › Q1–Q10](decisions.md#m0-checkpoint-taste-answers-q1q10)).
 
-1. **Today: tint on the "Next up" card.** The selected Next up card has the teal `surface.selected` tint; when it isn't selected, it has a border. In dark mode the tint is the strongest surface on the screen. _Recommendation:_ **keep it.** The tint marks where the keyboard and the detail pane are, and it's the only accent block on Today. (Desktop and iOS Today.)
-2. **Today: the heading "Updated automatically · you can undo these".** This heading sits above the changes that mail applied automatically. It was the fix in desktop Today r1, and r2 praised it. _Recommendation:_ **keep it.** It says why these rows are there and that nothing is final. The shorter "Updated automatically" alone would lose the promise of Undo.
-3. **Job detail: Stretch band colour.** The match bar fills the current band's segment with the accent colour, so a "Stretch" job looks as positive as a "Strong" one ([desktop r2](critiques/desktop/job-detail/r2.md), [r3](critiques/desktop/job-detail/r3.md)). _Recommendation:_ **fill Partial and Stretch with the neutral `chart.neutral` tone, and keep the accent for Good and Strong.** It isn't red or alarming; it just stops a weak fit from reading as "good". This is the shared `MatchBandBar`, so the change applies to iOS and desktop together.
-4. **Job list: "· from employer" on salary.** In the 340 px job list, "€65,000–€78,000 a year · from employer" wraps onto two lines ([desktop r1](critiques/desktop/job-detail/r1.md), [r3](critiques/desktop/job-detail/r3.md)). The research requires showing where the salary figure comes from. _Recommendation:_ **use a short form on list rows**, "· employer" (or "· estimate" for estimates), with the full wording in a tooltip and on the detail page.
-5. **Job detail: "AI" appears twice.** The shared "AI-assisted" badge sits next to the label "AI summary · can be wrong" ([desktop r3](critiques/desktop/job-detail/r3.md)). _Recommendation:_ **keep the badge and shorten the label to "Summary · can be wrong".** The badge is the marker people learn across screens, and the disclaimer still says the text can be wrong.
-6. **Tracker on iPhone: no drag (D32).** On iPhone, applications move with Move to… (context menu, the status pill or a VoiceOver action) and swipe actions; there's no drag between stages. Drag stays on desktop. The integration owner recorded this decision during iOS tracker r4 and it hasn't been confirmed with you. _Recommendation:_ **confirm "no drag on iPhone in M0" and revisit in M3 with real usage.** Drag never started reliably in the list layout, and the alternatives are reachable in one or two taps.
-7. **Tracker on iPhone: status order.** The pipeline keeps stage order (Saved → … → Offer), so an urgent interview can sit far down the list ([iOS r1](critiques/ios/tracker-board/r1.md)). _Recommendation:_ **keep stage order.** The stage strip reaches Interviewing in one tap, and time-critical items already lead on Today › Next up (one home per object).
-8. **Tracker on desktop: column collapse buttons.** Each expanded column has a « collapse button; seven of them in a row add noise ([desktop r1](critiques/desktop/tracker-board/r1.md)). Since r5 they're hidden on first use. _Recommendation:_ **keep them, visible on hover and keyboard focus only.**
-9. **Turkish name for Mail: "Posta" or "E-posta".** The Mail screen and IA.md say "Posta", but the desktop sidebar says "E-posta" ([desktop mail r2](critiques/desktop/mail-review/r2.md)). _Recommendation:_ **"E-posta" everywhere** (and update IA.md). It's the common word for email in Turkish UIs; "Posta" also reads as postal mail. This should go through the native TR review.
-10. **Tracker on desktop: two small polish items** left for your taste review ([desktop r4](critiques/desktop/tracker-board/r4.md)):
-    - the German record-panel header truncates ("Eingang bestä…");
-    - the error card sits over columns that aren't dimmed.
-
-    _Recommendation:_ **fix both in M3.** Let the header wrap, because the system rule is that labels which carry meaning never truncate, and dim the columns behind the error card.
+1. **Today: tint on the "Next up" card:** kept as is.
+2. **Today: "Updated automatically · you can undo these":** kept as is.
+3. **Match bar colour:** the current segment uses the neutral `chart.neutral` tone for Partial and Stretch and the accent for Good and Strong (shared desktop and iOS `MatchBandBar`). Done.
+4. **Job list salary:** list rows say "· employer" / "· estimate"; the full wording is in the tooltip and accessible text; job detail unchanged. Done (desktop; iOS has no job list rows).
+5. **"AI" twice:** the badge stays; the label is now "Summary · can be wrong" (TR, DE equivalents). Done.
+6. **No drag on iPhone (D32):** kept as is; revisit in M3.
+7. **iPhone tracker status order:** kept as is (stage order).
+8. **Desktop column collapse buttons:** shown only on column hover and keyboard focus, still in the Tab order, no layout shift. Done.
+9. **Turkish "Mail":** "E-posta" everywhere, IA.md updated. Done.
+10. **Desktop tracker polish (DE header wrap, dimmed columns behind the error card):** scheduled for M3.
 
 ## Known limitations
 

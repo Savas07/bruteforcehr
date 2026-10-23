@@ -27,7 +27,7 @@ public struct MatchBandPill: View {
 }
 
 /// Four labelled segments (Stretch · Partial · Good · Strong) with a marker at the score. The
-/// segment the score falls in is filled. When the four labels don't fit on one line (large text
+/// segment the score falls in is filled: accent for Good and Strong, neutral for Partial and Stretch. When the four labels don't fit on one line (large text
 /// sizes, long translations) only the current band's label shows, never a word broken across
 /// lines. Decorative to VoiceOver: the card's label states the band and score.
 public struct MatchBandBar: View {
@@ -82,7 +82,7 @@ public struct MatchBandBar: View {
         return ZStack(alignment: .leading) {
             HStack(spacing: 2) {
                 ForEach(segments) { segment in
-                    let color: Color = segment.band == current ? BFHRColor.Chart.series : BFHRColor.Chart.grid
+                    let color: Color = segment.band == current ? Self.currentFill(current) : BFHRColor.Chart.grid
                     Capsule()
                         .fill(color)
                         .frame(width: max(0, width * segment.fraction - 2), height: barHeight)
@@ -95,6 +95,16 @@ public struct MatchBandBar: View {
                 .offset(x: markerX)
         }
         .frame(height: marker)
+    }
+
+    /// Whether the current segment uses the accent: only Good and Strong. Partial and Stretch fill
+    /// with the neutral chart tone so a weak fit never reads as "good" (checkpoint-m0 decision Q3).
+    static func fillsWithAccent(_ band: MatchBand) -> Bool {
+        band == .strong || band == .good
+    }
+
+    static func currentFill(_ band: MatchBand) -> Color {
+        fillsWithAccent(band) ? BFHRColor.Chart.series : BFHRColor.Chart.neutral
     }
 
     private func segmentLabel(_ segment: Segment) -> some View {

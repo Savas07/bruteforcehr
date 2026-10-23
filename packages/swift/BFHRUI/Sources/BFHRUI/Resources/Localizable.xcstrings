@@ -492,19 +492,19 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "KI-Zusammenfassung · kann Fehler enthalten"
+            "value" : "Zusammenfassung · kann Fehler enthalten"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AI summary · can be wrong"
+            "value" : "Summary · can be wrong"
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "YZ özeti · hatalı olabilir"
+            "value" : "Özet · hatalı olabilir"
           }
         }
       }

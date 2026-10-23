@@ -65,6 +65,17 @@ const segments: readonly { band: MatchBand; from: number; to: number }[] = [
   { band: "strong", from: MATCH_BAND_THRESHOLDS.strong, to: 100 },
 ];
 
+/**
+ * Current-segment fill: accent only for the bands worth acting on; Partial and Stretch use the
+ * neutral chart tone so a weak fit never reads as "good" (checkpoint-m0 decision Q3).
+ */
+const barFill: Record<MatchBand, string> = {
+  strong: "bg-accent-solid",
+  good: "bg-accent-solid",
+  partial: "bg-chart-neutral",
+  stretch: "bg-chart-neutral",
+};
+
 export interface MatchBandBarProps {
   /** Score and band from `matchVM`; the marker sits at the score inside its band. */
   match: MatchVM;
@@ -73,7 +84,7 @@ export interface MatchBandBarProps {
 /**
  * Segmented band bar (Chime pattern): four labelled segments Stretch · Partial · Good · Strong with
  * a marker at the score. The current band's segment and label are emphasised (weight, not only
- * color). The whole bar is `aria-hidden`; pair it with `MatchBandPill` or the "72 of 100" caption.
+ * color); Partial and Stretch fill with the neutral chart tone. The whole bar is `aria-hidden`; pair it with `MatchBandPill` or the "72 of 100" caption.
  */
 export function MatchBandBar({ match }: MatchBandBarProps) {
   const intl = useIntl();
@@ -87,7 +98,7 @@ export function MatchBandBar({ match }: MatchBandBarProps) {
             style={{ flexGrow: to - from }}
             className={cx(
               "h-full basis-0 first:rounded-l-full last:rounded-r-full",
-              band === match.band ? "bg-accent-solid" : "bg-surface-sunken",
+              band === match.band ? barFill[band] : "bg-surface-sunken",
             )}
           />
         ))}

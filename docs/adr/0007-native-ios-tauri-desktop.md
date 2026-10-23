@@ -71,6 +71,7 @@ Negative / risks
 - **The Windows chrome design changes** (native title bar instead of an overlay). The desktop-chrome research and critique rows need a re-check.
 - **Static `latest.json` has no staged rollout percentage** (BRIEF §7.3 `stagingPercentage`). Halting a rollout means replacing `latest.json` ([ADR 0004](0004-release-updates-signing.md) §5).
 - **Losing the updater private key** means installed apps can't accept new updates ("you will NOT be able to publish new updates" — [Updater](https://v2.tauri.app/plugin/updater/)). The key needs an offline backup ([runbooks/release.md](../runbooks/release.md)).
+- **The macOS app icon is an Icon Composer `.icon`**, which Tauri compiles with `actool` into `Assets.car`. On GitHub's macos-26 runners the `actool` that `tauri build` starts crashes on it every time, while the same call from a shell works. CI builds therefore precompile `Assets.car` (`apps/desktop/scripts/compile-app-icon.sh`) and pass it through `bundle.icon`; local builds use the `.icon` directly ([runbooks/release.md](../runbooks/release.md#app-icon-in-ci-builds)).
 - **Offline CV PDF export on desktop is open** (see below). Electron's `printToPDF` assumption in BRIEF §6.5, PRD M2-CV-7 and ADR 0002 (`renderedFiles`) no longer holds.
 
 ### Open: offline CV PDF export on desktop (decide before M2)

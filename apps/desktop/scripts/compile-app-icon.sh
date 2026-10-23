@@ -6,9 +6,8 @@
 #
 # Why: on GitHub's macos-26 runners (Xcode 26.6), the actool that `tauri build` starts throws
 # "-[__NSPlaceholderArray initWithObjects:count:]: attempt to insert nil object" on this icon in
-# every run, while the same actool call from a shell compiles it (debug runs 39891582181,
-# 39891883545, 39892408284, 39892805795; docs/runbooks/release.md "App icon in CI builds").
-# Local builds keep using the .icon directly.
+# every run, while the same actool call from a shell compiles it (docs/runbooks/release.md
+# "App icon in CI builds" has the runs). Local builds keep using the .icon directly.
 #
 #   conf=$(scripts/compile-app-icon.sh "$RUNNER_TEMP/app-icon")
 #   pnpm tauri build … --config "$conf"

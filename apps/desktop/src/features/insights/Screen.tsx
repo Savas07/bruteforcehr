@@ -58,6 +58,8 @@ const messages = defineMessages({
   },
   funnelQuestion: { id: "insights.screen.funnelQuestion", defaultMessage: "How far do my applications get?" },
   funnelChart: { id: "insights.screen.funnelChart", defaultMessage: "Funnel" },
+  funnelTable: { id: "insights.screen.funnelTable", defaultMessage: "Funnel table" },
+  breakdownTable: { id: "insights.screen.breakdownTable", defaultMessage: "Responses by {dimension}" },
   stageHeader: { id: "insights.screen.stageHeader", defaultMessage: "Stage" },
   reachedHeader: { id: "insights.screen.reachedHeader", defaultMessage: "Reached" },
   ofAppliedHeader: { id: "insights.screen.ofAppliedHeader", defaultMessage: "Of applied" },
@@ -109,7 +111,6 @@ const messages = defineMessages({
   exported: { id: "insights.screen.exported", defaultMessage: "Insights exported" },
   keysGroup: { id: "insights.keys.group", defaultMessage: "Insights" },
   keyFilters: { id: "insights.keys.filters", defaultMessage: "Focus the filters" },
-  noData: { id: "insights.screen.noData", defaultMessage: "No data" },
 });
 
 /** Search changes for the current route; `undefined` removes a key. */
@@ -172,7 +173,7 @@ function LoadingSkeleton() {
   return (
     <div className="flex flex-col gap-5">
       <SkeletonBlock className="h-8 w-96" />
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(10rem,1fr))] gap-3">
+      <div className="grid grid-cols-2 gap-3 @min-[52rem]:grid-cols-5">
         {[0, 1, 2, 3, 4].map((index) => (
           <SkeletonBlock key={index} className="h-24" />
         ))}
@@ -226,49 +227,54 @@ function Ready({ model, title, stale }: { model: InsightsModel; title: string; s
           <div id="insights-title">
             <ScreenTitle title={title} />
           </div>
-          <p className="text-fg-secondary text-callout tabular-nums">{model.rangeLabel}</p>
+          {model.empty !== "firstUse" && (
+            <p className="text-fg-secondary text-callout tabular-nums">{model.rangeLabel}</p>
+          )}
           {stale && <StaleStamp prefix="updated" time={stale.updatedAt} clock={stale.updatedClock} />}
         </div>
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-          <SegmentedControl<DesktopRange>
-            label={intl.formatMessage(messages.range)}
-            options={model.ranges}
-            value={model.params.range}
-            onValueChange={(range) =>
-              patch(
-                range === "custom"
-                  ? { range, from: model.customFrom, to: model.customTo }
-                  : { range, from: undefined, to: undefined },
-              )
-            }
-          />
-          {model.params.range === "custom" && (
-            <CustomRange
-              from={model.customFrom}
-              to={model.customTo}
-              max={model.today}
-              onChange={(from, to) => patch({ from, to })}
+        {model.empty !== "firstUse" && (
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <SegmentedControl<DesktopRange>
+              label={intl.formatMessage(messages.range)}
+              options={model.ranges}
+              value={model.params.range}
+              onValueChange={(range) =>
+                patch(
+                  range === "custom"
+                    ? { range, from: model.customFrom, to: model.customTo }
+                    : { range, from: undefined, to: undefined },
+                )
+              }
             />
-          )}
-          <label className="text-callout text-fg-primary inline-flex items-center gap-2">
-            <input
-              type="checkbox"
-              className="accent-(--bfhr-color-accent-solid) size-4"
-              checked={model.params.compare}
-              disabled={model.params.range === "all"}
-              onChange={(event) => patch({ compare: event.target.checked ? "1" : undefined })}
-            />
-            {intl.formatMessage(messages.compare)}
-          </label>
-          <div className="ms-auto">
-            <ExportButton
-              formats={[{ id: "csv", label: intl.formatMessage(messages.exportCsv) }]}
-              onExport={exportCsv}
-              disabledReason={model.empty === "firstUse" ? intl.formatMessage(messages.noData) : null}
-            />
+            {model.params.range === "custom" && (
+              <CustomRange
+                from={model.customFrom}
+                to={model.customTo}
+                max={model.today}
+                onChange={(from, to) => patch({ from, to })}
+              />
+            )}
+            <label className="text-callout text-fg-primary inline-flex items-center gap-2">
+              <input
+                type="checkbox"
+                className="accent-(--bfhr-color-accent-solid) size-4"
+                checked={model.params.compare}
+                disabled={model.params.range === "all"}
+                onChange={(event) => patch({ compare: event.target.checked ? "1" : undefined })}
+              />
+              {intl.formatMessage(messages.compare)}
+            </label>
+            <div className="ms-auto">
+              <ExportButton
+                formats={[{ id: "csv", label: intl.formatMessage(messages.exportCsv) }]}
+                onExport={exportCsv}
+              />
+            </div>
           </div>
-        </div>
-        <Filters ref={filtersRef} filters={model.filters} active={model.filtersActive} onPatch={patch} />
+        )}
+        {model.empty !== "firstUse" && (
+          <Filters ref={filtersRef} filters={model.filters} active={model.filtersActive} onPatch={patch} />
+        )}
       </header>
 
       {model.empty === "firstUse" ? (
@@ -522,6 +528,10 @@ function DefinitionButton({
   );
 }
 
+/**
+ * A datum that opens its applications in the Tracker table. The accessible name is the visible
+ * content (WCAG 2.5.3); `label`, the full sentence with every number, is its description.
+ */
 function DrillButton({
   drill,
   label,
@@ -540,15 +550,19 @@ function DrillButton({
   "data-index"?: number;
 }) {
   const intl = useIntl();
+  const descriptionId = useId();
   return (
     <button
       type="button"
       {...rest}
-      aria-label={intl.formatMessage(messages.openInTracker, { label })}
+      aria-describedby={descriptionId}
       onClick={() => onDrill(drill)}
       className={cx("cursor-default text-start", className)}
     >
       {children}
+      <span id={descriptionId} hidden>
+        {intl.formatMessage(messages.openInTracker, { label })}
+      </span>
     </button>
   );
 }
@@ -558,7 +572,7 @@ function KpiStrip({ kpis, onDrill }: { kpis: readonly KpiVM[]; onDrill: (drill: 
   return (
     <ul
       aria-label={intl.formatMessage(messages.kpis)}
-      className="grid grid-cols-[repeat(auto-fit,minmax(11rem,1fr))] gap-3"
+      className="grid grid-cols-2 gap-3 @min-[52rem]:grid-cols-5"
     >
       {kpis.map((kpi) => (
         <li
@@ -598,6 +612,7 @@ function FunnelCard({ model, onDrill }: { model: InsightsModel; onDrill: (drill:
   const intl = useIntl();
   const { funnel } = model;
   const steps = funnel.steps;
+  const lowSample = funnel.lowSampleNote !== null;
   return (
     <Card
       title={intl.formatMessage(messages.funnelQuestion)}
@@ -618,7 +633,7 @@ function FunnelCard({ model, onDrill }: { model: InsightsModel; onDrill: (drill:
         <ol aria-label={funnel.title} className="hidden h-52 items-end gap-14 @min-[560px]:flex">
           {steps.map((step, index) => (
             <li key={step.stage} className="relative flex h-full min-w-0 flex-1">
-              {index > 0 && <StepChip step={step} />}
+              {index > 0 && step.stepLabel !== null && <StepChip label={step.stepLabel} />}
               <DrillButton
                 drill={step.drill}
                 label={step.accessibleLabel}
@@ -626,8 +641,8 @@ function FunnelCard({ model, onDrill }: { model: InsightsModel; onDrill: (drill:
                 className="hover:bg-surface-hover flex h-full min-w-0 flex-1 flex-col justify-end gap-1 rounded-md p-1"
               >
                 <span className="text-callout text-fg-primary tabular-nums">
-                  <span className="text-headline">{step.reached}</span>{" "}
-                  <span className="text-fg-secondary">· {step.shareLabel}</span>
+                  <span className="text-headline">{step.reached}</span>
+                  {!lowSample && <span className="text-fg-secondary"> · {step.shareLabel}</span>}
                 </span>
                 <span className="flex w-full flex-1 items-end">
                   <span
@@ -648,7 +663,7 @@ function FunnelCard({ model, onDrill }: { model: InsightsModel; onDrill: (drill:
                 drill={step.drill}
                 label={step.accessibleLabel}
                 onDrill={onDrill}
-                className="hover:bg-surface-hover grid w-full grid-cols-[6rem_1fr_auto] items-center gap-3 rounded-md p-1"
+                className="hover:bg-surface-hover grid w-full grid-cols-[6rem_1fr_5.5rem] items-center gap-3 rounded-md p-1"
               >
                 <span className="text-footnote text-fg-secondary">{step.label}</span>
                 <span className="bg-surface-sunken flex h-3 overflow-hidden rounded-sm">
@@ -658,8 +673,9 @@ function FunnelCard({ model, onDrill }: { model: InsightsModel; onDrill: (drill:
                     style={{ width: `${step.share * 100}%` }}
                   />
                 </span>
-                <span className="text-callout tabular-nums">
-                  {step.reached} · {step.shareLabel}
+                <span className="text-callout text-end tabular-nums">
+                  {step.reached}
+                  {!lowSample && ` · ${step.shareLabel}`}
                 </span>
               </DrillButton>
             </li>
@@ -687,14 +703,14 @@ function FunnelCard({ model, onDrill }: { model: InsightsModel; onDrill: (drill:
   );
 }
 
-function StepChip({ step }: { step: FunnelStepVM }) {
+function StepChip({ label }: { label: string }) {
   // Sits in the gap before its bar: the share of the previous stage that reached this one.
   return (
     <span
       aria-hidden="true"
       className="text-caption1 text-fg-secondary bg-surface-sunken absolute top-1/2 -start-7 -translate-x-1/2 rounded-full px-1.5 py-0.5 whitespace-nowrap tabular-nums rtl:translate-x-1/2"
     >
-      {step.stepLabel ?? "—"} →
+      {label} →
     </span>
   );
 }
@@ -710,7 +726,12 @@ function FunnelTable({
   const th = "text-footnote text-fg-secondary px-2 py-1.5 font-normal";
   const td = "px-2 py-1.5 text-callout tabular-nums";
   return (
-    <div className="overflow-x-auto">
+    <div
+      className="overflow-x-auto"
+      tabIndex={0}
+      role="region"
+      aria-label={intl.formatMessage(messages.funnelTable)}
+    >
       <table className="w-full border-collapse">
         <thead>
           <tr className="border-line-subtle border-b">
@@ -783,7 +804,12 @@ function BreakdownCard({
         />
       }
     >
-      <div className="overflow-x-auto">
+      <div
+        className="overflow-x-auto"
+        tabIndex={0}
+        role="region"
+        aria-label={intl.formatMessage(messages.breakdownTable, { dimension: breakdown.keyHeader })}
+      >
         <table className="w-full border-collapse">
           <thead>
             <tr className="border-line-subtle border-b">
@@ -916,6 +942,7 @@ function ActivityCard({
               data-index={index}
               className="hover:bg-surface-hover flex h-full flex-col items-center justify-end gap-1 rounded-t-md px-0.5"
             >
+              <span className="sr-only">{week.longLabel}: </span>
               <span className="text-caption1 text-fg-secondary tabular-nums">{week.value}</span>
               <span
                 aria-hidden="true"

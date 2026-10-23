@@ -332,6 +332,16 @@ Explicitly **not stored**:
 - **Decision:** computed on the client from `applicationEvents` in v1 (works offline). Revisit above a few thousand events. The low-sample threshold is fixed at n < 5, not configurable. iOS ranges are `4W · 12W · All` and desktop ranges are `30D · 90D · 6M · 12M · All · Custom…`; the platforms differ on purpose, so each fits its width.
 - **Affects:** insights OQ4, OQ6.
 
+### D36 · Insights implementation rules (M3)
+
+- **Applied date:** the application's `appliedAt` (the spreadsheet date for CSV imports), counted only when a kept (not undone) `created` / `status_changed` event reached Applied or later, or a `created` into a closed status with `appliedAt` set. Stages reached by the `created` event itself count, but their time is unknown (excluded from medians).
+- **Mail responses (D30 rule 2) before F10:** `mail_received` events resolve their category through `evidence.mailMessageId` → `mailMessages/{id}.category`. Clients pass `mailCategories`; desktop and iOS live data don't sync mail messages yet (M5), so until then only status moves count.
+- **Market:** keyword match of `applications.location` against the target markets' countries and main cities (diacritics folded), else `remote`, else none (`@bfhr/core` `marketOf`).
+- **Funnel monotonic:** interview = reached Interviewing or later, offer = reached Offer or later.
+- **Weekly activity:** 12 weeks ending this week, independent of the range; follow-ups = `mail_sent` more than 1 h after applying; interviews = `interviews.startsAt` up to now.
+- **Drill-down URL:** `stage` (applied · responded · interview · offer · waiting · no_response · withdrawn) or `activity` (applied · follow_up · interview), `from`/`to` (YYYY-MM-DD), `source`/`channel`/`cv`/`market` (`none` = unset); resolved by `selectDrillDownIds` on both platforms.
+- **Affects:** insights, tracker (table drill-down chip), conformance `packages/core/conformance/insights.json`.
+
 ## Tracker
 
 ### D32 · No drag-to-move on iPhone in M0

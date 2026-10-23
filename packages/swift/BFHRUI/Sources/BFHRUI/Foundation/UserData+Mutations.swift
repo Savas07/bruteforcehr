@@ -9,11 +9,12 @@ public enum UserDataError: Error, Hashable {
     case missingApplication(String)
     case missingEvent(String)
     case missingMailMessage(String)
+    case missingInterview(String)
+    case missingContact(String)
 }
 
 extension UserData {
-    /// A new local document id (Firestore assigns real ids later).
-    public static func makeID(_ prefix: String) -> String { "\(prefix)-local-\(UUID().uuidString.prefix(8).lowercased())" }
+    // MARK: Status moves
 
     /// Moves an application through the state machine and appends the event. Throws
     /// `TransitionError` for a move the actor may not make.
@@ -141,7 +142,7 @@ extension UserData {
     }
 
     private mutating func apply(_ result: TransitionResult, at index: Int) -> ApplicationEvent {
-        let event = result.event.event(id: Self.makeID("evt"))
+        let event = result.event.event(id: Self.makeID())
         applicationEvents.append(event)
         applications[index].status = result.applicationPatch.status
         applications[index].statusChangedAt = result.applicationPatch.statusChangedAt

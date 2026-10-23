@@ -36,9 +36,9 @@ FCM delivers to iOS only with an APNs authentication key uploaded to the Firebas
 
 1. Apple Developer → Certificates, Identifiers & Profiles → **Identifiers** → `com.savas07.bruteforcehr` → enable **Push Notifications** → Save.
 2. **Keys** → **+** → name `BruteForceHR APNs`, enable **Apple Push Notifications service (APNs)** → Continue → Register → **Download** the `.p8` (only downloadable once). Note the **Key ID** and your **Team ID** (top right / Membership).
-3. Firebase console → project `bruteforcehr` → Project settings → **General**: if no iOS app is registered, **Add app** → iOS, bundle ID `com.savas07.bruteforcehr` (the downloaded `GoogleService-Info.plist` is for the iOS agents; its `GCM_SENDER_ID` must match the project).
+3. Firebase console → project `bruteforcehr` → Project settings → **General**: the iOS app `com.savas07.bruteforcehr` must be registered (done: `1:33654863934:ios:509e9f24c37d8dab7c796f`).
 4. Project settings → **Cloud Messaging** → Apple app configuration → `com.savas07.bruteforcehr` → **APNs Authentication Key** → Upload the `.p8` with Key ID and Team ID. One key serves both development and production builds.
-5. Make sure the FCM v1 API is on: `gcloud services enable fcm.googleapis.com --project bruteforcehr`.
+5. The FCM v1 API must be on: `gcloud services enable fcm.googleapis.com --project bruteforcehr` (done 2026-10-24).
 6. Store the `.p8` in the password manager; never commit it.
 
 The Firebase Cloud Messaging API uses the functions' default service account; no extra secret or IAM role is needed. Enqueueing `pushDeliver` / `pushJobAlertDigest` uses the same Cloud Tasks permissions as `mailSyncTask`.

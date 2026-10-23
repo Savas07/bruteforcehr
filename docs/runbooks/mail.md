@@ -55,4 +55,25 @@ Free providers require phone or CAPTCHA verification to create a mailbox, so no 
 - **`needs_reauth`:** the user reconnects (IMAP: new app password through `mailConnectImap` with `accountId`; OAuth: `mailConnectStart`).
 - **Re-run a lookback scan:** `mailBackfillStart({ accountId, lookbackDays })`.
 - **Eval:** `ANTHROPIC_API_KEY=$(gcloud secrets versions access latest --secret ANTHROPIC_API_KEY --project bruteforcehr) pnpm --filter @bfhr/ai eval:mail` (≈ $0.05); commit `eval/mail/recordings/*.json` and `report.md`.
-- **Account deletion** must call `revokeAllMailAccounts(uid)` (apps/functions/src/mail/functions.ts) before deleting `userDataRoots(uid)`.
+- **Account deletion** must call `revokeAllMailAccounts(uid)` (apps/functions/src/mail/functions.ts) before deleting `userDataRoots(uid)`. JobsBackend's `deleteUserData` (apps/functions/src/account/user-data.ts) is not on main yet; whichever of m4/jobs-backend and m4/mail-backend lands on main second wires the call in before its roots loop (agreed with JobsBackend, 2026-10-24). All mail `serverOnly` data lives under `serverOnlyPaths.mailRoot(uid)`, which is one of the `userDataRoots` (packages/api/src/paths.test.ts checks this).
+
+## Live check
+
+`pnpm --filter @bfhr/functions smoke:mail` (ADC owner credentials) runs the deployed callables with a throwaway email-link user and deletes the user and every `userDataRoots` tree afterwards. Nothing is sent. **No test IMAP account exists**, so the successful connect, sync and real send paths aren't covered (see "Live IMAP check" above). The script seeds an IMAP account without credentials plus a job, so email apply can be scheduled and cancelled without any mailbox.
+
+**2026-10-24**, functions deployed from `da1ebbc`: all 12 expectations met.
+
+| Call | Expected | Result |
+| --- | --- | --- |
+| `mailConnectStart({provider:'google'})` | `failed-precondition` / `provider_not_configured` | pass |
+| `mailConnectImap` icloud, wrong app password | `permission-denied` / `auth_failed`, field `password` | pass |
+| `mailConnectImap` outlook preset | `failed-precondition` / `oauth_required` | pass |
+| `mailConnectImap` `imap.host` 169.254.169.254 | `unavailable` / `host_unreachable`, field `imapHost` | pass |
+| `mailSend`, nonexistent `accountId` | `not-found` / `account_not_found` | pass |
+| `mailSend` (seeded account, `applicationId` null, `jobId`) | `{state:'scheduled', applicationId, sendAt}`, outbox doc exists | pass |
+| `mailSendCancel` 1.1 s later | `{state:'cancelled'}`; `emailSend.state` `cancelled`, status `preparing`; outbox doc gone | pass |
+| second `mailSendCancel` | `failed-precondition` / `already_sent` | pass |
+| 15 s after `mailSend` | still `cancelled` (dispatch task deleted) | pass |
+| cleanup | Auth user deleted, nothing left under `userDataRoots` | pass |
+
+The first run, against the build deployed on 2026-10-23, returned `host_unreachable` instead of `auth_failed` for iCloud: the host guard (`providers/net-guard.ts`) had an IPv6 rule for `::ffff:0:0/96`. Node's `BlockList` checks IPv4 addresses against IPv6 rules in their IPv4-mapped form, so that rule refused **every** IPv4 mail server. With the rule removed (`64d0cf0`; the IPv4 rules already catch mapped addresses, and a test now covers this), `mailConnectImap`, `mailSyncTask`, `mailSendDispatch`, `mailSendNow` and `mailDisconnect` were redeployed from a clean checkout and the check passed.

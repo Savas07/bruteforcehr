@@ -99,7 +99,9 @@ export async function requestLink(email: string): Promise<void> {
   const field = $('input[type="email"]');
   await field.waitForDisplayed();
   await field.setValue(email);
-  await browser.keys(Key.Enter);
+  // The embedded WebDriver sends keys as script events, and a script Enter doesn't submit a form
+  // (only trusted key presses do), so press the button.
+  await $('button[type="submit"]').click();
   const sent = await browser
     .waitUntil(async () => (await heading().getText()) === "Check your email", { timeout: 15_000 })
     .catch(() => false);

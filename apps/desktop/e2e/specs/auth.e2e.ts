@@ -67,11 +67,11 @@ describe("Sign-in", () => {
 
     const field = $('input[type="email"]');
     await field.setValue("someone-else@example.com");
-    await browser.keys(Key.Enter);
+    await $('button[type="submit"]').click();
     await expect($("p*=This link was sent to a different address")).toBeDisplayed();
 
     await field.setValue(email);
-    await browser.keys(Key.Enter);
+    await $('button[type="submit"]').click();
     await expect(heading()).toHaveText("Today", { wait: 20_000 });
   });
 

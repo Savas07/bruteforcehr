@@ -56,11 +56,7 @@ function CvEditor() {
     };
   }, [store]);
   const spec = useMemo(
-    () => ({
-      ...cvEditorScreen,
-      build: (_: unknown, ctx: ModelContext, params: Readonly<Record<string, string | undefined>>) =>
-        buildCvEditorModel(version, ctx, params),
-    }),
+    () => ({ ...cvEditorScreen, build: (_: unknown, ctx: ModelContext, params: Readonly<Record<string, string | undefined>>) => buildCvEditorModel(version, ctx, params) }),
     [version],
   );
   return (

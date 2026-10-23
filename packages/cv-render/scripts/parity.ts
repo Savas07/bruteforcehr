@@ -4,19 +4,27 @@
 //   webkit   — WKWebView + NSPrintOperation (scripts/webkit-print.swift; the macOS desktop and iOS path),
 //   server   — the Cloud Functions renderer (scripts/parity-server.ts): PDFs from
 //              BFHR_PARITY_SERVER_DIR (CI prints them on Linux with @sparticuz/chromium), else printed
-//              here with chrome-headless-shell of the same version,
-// rasterises every PDF with one rasteriser (Quartz, scripts/pdf-raster.swift) at 150 dpi and compares
-// each pair of engines: page counts must be equal, and on every page the share of pixels that still
-// differ after an anti-aliasing blur and a small per-band alignment must stay within MAX_DIFF_RATIO.
-// Failing pages get PNGs of both engines and a diff. macOS only. Output (gitignored):
-// artifacts/cv-parity/ (report.md, report.json, <case>/{cv.html,<engine>.pdf,p<N>-*.png}).
-// Usage: pnpm --filter @bfhr/cv-render parity
+//              here with chrome-headless-shell of the same version.
+// Cross-engine gate (what a reader or an ATS sees; engines measure text up to ~0.1 % apart, so a line
+// ending within ~0.5 pt of the edge may wrap differently and pixels can't match exactly):
+//   1. the same page count;
+//   2. every section heading and entry of `outline` starts on the same page;
+//   3. the same extracted text (pdf.js), ignoring whitespace;
+//   4. per page at most MAX_CROSS_ENGINE_RATIO of pixels differ (sanity bound; ratios reported).
+// Same-engine regression gate: Chromium's PDFs against the committed baseline
+// (test/parity-baseline/<case>.pdf) within MAX_BASELINE_RATIO, so template changes are caught.
+// Update the baseline after an intended visual change: `pnpm --filter @bfhr/cv-render parity --update-baseline`.
+// Pixels: one rasteriser (Quartz, scripts/pdf-raster.swift) at 150 dpi, a 2 × 3×3 box blur, 1-inch
+// bands aligned within ±2 pt; failing pages and every cross-engine page get PNGs and a diff.
+// macOS only. Output (gitignored): artifacts/cv-parity/ (report.md, report.json, <case>/…).
 import { execFileSync } from "node:child_process";
 import { appendFile, copyFile, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { constants, crc32, deflateSync } from "node:zlib";
+import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
 import type { CvRenderResult } from "../src/index";
+import { PT_PER_MM } from "../src/themes";
 import { launchChromium, printPdf } from "../test/pdf";
 import { PARITY_CASES } from "./parity-cases";
 import { printServerPdfs } from "./parity-server";
@@ -29,21 +37,22 @@ const BLUR_PASSES = 2;
 /** A pixel differs when its blurred grey levels (0–255) differ by more than this. */
 const PIXEL_THRESHOLD = 48;
 /**
- * Each engine snaps text baselines and line boxes to its own grid (Chromium: whole CSS px = 0.75 pt;
- * WebKit print: whole px = 0.8 pt, font ascent/descent rounded), so the same layout lands up to
- * ~1.5 pt apart vertically. Every 1-inch band of the page may therefore shift by up to MAX_SHIFT_PT
- * vertically and one pixel horizontally before pixels are compared. A different line break, word,
- * font, size or page break moves far more than that and still fails.
+ * Engines snap baselines and line boxes to their own grids (Chromium: whole CSS px = 0.75 pt; WebKit
+ * print: whole px = 0.8 pt, font ascent/descent rounded), so every 1-inch band may shift by up to
+ * MAX_SHIFT_PT vertically and one pixel horizontally before pixels are compared.
  */
 const BAND_PX = DPI;
 const MAX_SHIFT_PT = 2;
 const MAX_SHIFT_Y = Math.round((MAX_SHIFT_PT / 72) * DPI);
 const MAX_SHIFT_X = 1;
-/** Per page: at most this share of all pixels may differ (1.5 %). */
-const MAX_DIFF_RATIO = 0.015;
+/** Cross-engine sanity bound per page (10 %): a re-wrapped line stays well below, a missing block doesn't. */
+const MAX_CROSS_ENGINE_RATIO = 0.1;
+/** Same engine against its committed baseline, per page (1.5 %). */
+const MAX_BASELINE_RATIO = 0.015;
 
 const ENGINES = ["chromium", "webkit", "server"] as const;
 type Engine = (typeof ENGINES)[number];
+type Source = Engine | "baseline";
 const PAIRS: readonly (readonly [Engine, Engine])[] = [
   ["chromium", "webkit"],
   ["chromium", "server"],
@@ -54,6 +63,8 @@ if (process.platform !== "darwin") {
   console.error("parity needs macOS (WebKit print and the Quartz rasteriser)");
   process.exit(2);
 }
+const updateBaseline = process.argv.includes("--update-baseline");
+const baselineDir = fileURLToPath(new URL("../test/parity-baseline", import.meta.url));
 
 const repoRoot = fileURLToPath(new URL("../../..", import.meta.url));
 const out = join(repoRoot, "artifacts/cv-parity");
@@ -89,9 +100,19 @@ const versions: Record<Engine, string> = {
   webkit: `WKWebView, macOS ${execFileSync("sw_vers", ["-productVersion"], { encoding: "utf8" }).trim()}`,
   server: "",
 };
-for (const item of cases)
+for (const item of cases) {
   await writeFile(join(item.dir, "chromium.pdf"), await printPdf(browser, item.result));
+}
 await browser.close();
+if (updateBaseline) {
+  await rm(baselineDir, { recursive: true, force: true });
+  await mkdir(baselineDir, { recursive: true });
+  for (const item of cases)
+    await copyFile(join(item.dir, "chromium.pdf"), join(baselineDir, `${item.name}.pdf`));
+  await writeFile(join(baselineDir, "VERSION"), `${versions.chromium}\n`);
+}
+for (const item of cases)
+  await copyFile(join(baselineDir, `${item.name}.pdf`), join(item.dir, "baseline.pdf"));
 
 for (const item of cases) {
   execFileSync(
@@ -120,7 +141,68 @@ for (const item of cases) {
   await copyFile(join(serverDir, `${item.name}.pdf`), join(item.dir, "server.pdf"));
 }
 
-// 2. Rasterise and compare.
+// 2. Text: per-page text layer, where each outline item starts.
+const squash = (text: string) => text.replace(/\s+/gu, "");
+
+interface PageTexts {
+  /** Per page: the text inside the page box (whitespace removed). */
+  readonly pages: string[];
+  /**
+   * Text drawn below the page box's bottom margin. WebKit paints the top of the next page's first
+   * block, clipped, into the foot of the page before (invisible, but in the text layer); reported,
+   * not compared.
+   */
+  readonly outside: string[];
+}
+
+async function pageTexts(file: string, result: CvRenderResult): Promise<PageTexts> {
+  const bottomPt = result.page.marginsMm.bottom * PT_PER_MM;
+  const task = getDocument({
+    data: new Uint8Array(await readFile(file)),
+    useSystemFonts: false,
+    verbosity: 0,
+  });
+  const document = await task.promise;
+  const pages: string[] = [];
+  const outside: string[] = [];
+  for (let number = 1; number <= document.numPages; number += 1) {
+    const content = await (await document.getPage(number)).getTextContent();
+    let inside = "";
+    for (const item of content.items) {
+      if (!("str" in item) || item.str.trim() === "") continue;
+      // transform[5]: baseline, from the bottom of the paper.
+      if ((item.transform[5] as number) < bottomPt - 1) outside.push(`p${number}: ${item.str.trim()}`);
+      else inside += item.str;
+    }
+    pages.push(squash(inside));
+  }
+  await task.destroy();
+  return { pages, outside };
+}
+
+/** Page (1-based) on which each heading and entry of the outline starts, in outline order; 0 = not found. */
+function outlinePages(result: CvRenderResult, pages: readonly string[]): number[] {
+  const starts: number[] = [];
+  let page = 0;
+  let offset = 0;
+  for (const section of result.outline) {
+    for (const needle of [section.heading, ...section.entries].map(squash)) {
+      let found = 0;
+      for (let index = page; index < pages.length && found === 0; index += 1) {
+        const at = (pages[index] ?? "").indexOf(needle, index === page ? offset : 0);
+        if (at >= 0) {
+          found = index + 1;
+          page = index;
+          offset = at + needle.length;
+        }
+      }
+      starts.push(found);
+    }
+  }
+  return starts;
+}
+
+// 3. Pixels.
 interface Raster {
   readonly width: number;
   readonly height: number;
@@ -192,8 +274,9 @@ function comparePage(left: Raster, right: Raster): PageComparison {
         let count = 0;
         for (let y = y0; y < y1; y += 2) {
           for (let x = 0; x < width; x += 2) {
-            if (Math.abs((left.pixels[y * width + x] ?? 255) - rightAt(x + dx, y + dy)) > PIXEL_THRESHOLD)
+            if (Math.abs((left.pixels[y * width + x] ?? 255) - rightAt(x + dx, y + dy)) > PIXEL_THRESHOLD) {
               count += 1;
+            }
           }
         }
         const closer = Math.abs(dy) + Math.abs(dx) < Math.abs(best.dy) + Math.abs(best.dx);
@@ -218,8 +301,9 @@ function comparePage(left: Raster, right: Raster): PageComparison {
 function png(width: number, height: number, channels: 1 | 3, pixels: Uint8Array): Buffer {
   const stride = width * channels;
   const raw = Buffer.alloc((stride + 1) * height);
-  for (let y = 0; y < height; y += 1)
+  for (let y = 0; y < height; y += 1) {
     raw.set(pixels.subarray(y * stride, (y + 1) * stride), y * (stride + 1) + 1);
+  }
   const chunk = (type: string, data: Buffer): Buffer => {
     const typed = Buffer.concat([Buffer.from(type, "latin1"), data]);
     const framed = Buffer.alloc(typed.length + 8);
@@ -241,7 +325,7 @@ function png(width: number, height: number, channels: 1 | 3, pixels: Uint8Array)
 }
 
 /** Both pages as printed, and the diff: a pale left page, red = ink only left, blue = ink only right. */
-async function writeDiff(base: string, a: Engine, b: Engine, left: Raster, right: Raster, mask: Int8Array) {
+async function writeDiff(base: string, a: Source, b: Source, left: Raster, right: Raster, mask: Int8Array) {
   const { width, height } = left;
   const rgb = new Uint8Array(width * height * 3);
   for (let index = 0; index < width * height; index += 1) {
@@ -254,37 +338,19 @@ async function writeDiff(base: string, a: Engine, b: Engine, left: Raster, right
   await writeFile(`${base}-diff-${a}-${b}.png`, png(width, height, 3, rgb));
 }
 
-interface PageResult {
-  readonly page: number;
-  readonly ratio: number;
-  readonly offsetPt: number;
-  readonly ok: boolean;
-}
-interface PairResult {
-  readonly pair: `${Engine}/${Engine}`;
-  readonly pages: readonly [number, number];
-  readonly results: readonly PageResult[];
-  readonly ok: boolean;
-}
-interface CaseResult {
-  readonly name: string;
-  readonly pages: Readonly<Record<Engine, number>>;
-  readonly pairs: readonly PairResult[];
-  readonly ok: boolean;
-}
-
-async function rasterise(item: Case): Promise<Record<Engine, Raster[]>> {
+async function rasterise(item: Case): Promise<Record<Source, Raster[]>> {
+  const sources: readonly Source[] = [...ENGINES, "baseline"];
   const lines = execFileSync(
     pdfRaster,
-    [String(DPI), item.dir, ...ENGINES.map((engine) => `${engine}=${join(item.dir, `${engine}.pdf`)}`)],
+    [String(DPI), item.dir, ...sources.map((source) => `${source}=${join(item.dir, `${source}.pdf`)}`)],
     { encoding: "utf8" },
   )
     .trim()
     .split("\n");
-  const rasters: Record<Engine, Raster[]> = { chromium: [], webkit: [], server: [] };
+  const rasters: Record<Source, Raster[]> = { chromium: [], webkit: [], server: [], baseline: [] };
   for (const line of lines) {
     const parsed = JSON.parse(line) as {
-      name: Engine;
+      name: Source;
       pages: { file: string; width: number; height: number }[];
     };
     for (const { file, width, height } of parsed.pages) {
@@ -295,73 +361,163 @@ async function rasterise(item: Case): Promise<Record<Engine, Raster[]>> {
   return rasters;
 }
 
+interface PixelResult {
+  readonly pages: readonly [number, number];
+  /** Per page: share of differing pixels and the largest band alignment (pt). */
+  readonly ratios: readonly number[];
+  readonly offsetsPt: readonly number[];
+  readonly ok: boolean;
+}
+
+/** Pixel comparison of two page sequences; writes PNGs for failing pages (or every page with `always`). */
+async function comparePixels(
+  item: Case,
+  rasters: Record<Source, Raster[]>,
+  a: Source,
+  b: Source,
+  limit: number,
+  always: boolean,
+): Promise<PixelResult> {
+  const ratios: number[] = [];
+  const offsetsPt: number[] = [];
+  const count = Math.min(rasters[a].length, rasters[b].length);
+  for (let index = 0; index < count; index += 1) {
+    const left = rasters[a][index] as Raster;
+    const right = rasters[b][index] as Raster;
+    // Chromium writes A4 as 594.96 × 841.92 pt (whole CSS px), WebKit as 595 × 842 pt: sizes may
+    // differ by one raster px. More than that is a different paper size.
+    if (Math.abs(left.width - right.width) > 1 || Math.abs(left.height - right.height) > 1) {
+      ratios.push(1);
+      offsetsPt.push(0);
+      continue;
+    }
+    const width = Math.min(left.width, right.width);
+    const height = Math.min(left.height, right.height);
+    const leftPage = crop(left, width, height);
+    const rightPage = crop(right, width, height);
+    const { ratio, offsetPt, mask } = comparePage(blur(leftPage), blur(rightPage));
+    if (always || ratio > limit)
+      await writeDiff(join(item.dir, `p${index + 1}`), a, b, leftPage, rightPage, mask);
+    ratios.push(ratio);
+    offsetsPt.push(offsetPt);
+  }
+  const pages = [rasters[a].length, rasters[b].length] as const;
+  return {
+    pages,
+    ratios,
+    offsetsPt,
+    ok: pages[0] > 0 && pages[0] === pages[1] && ratios.every((r) => r <= limit),
+  };
+}
+
+interface PairResult {
+  readonly pair: `${Engine}/${Engine}`;
+  readonly samePageCount: boolean;
+  /** Outline items (heading or entry) that start on different pages, or aren't found. */
+  readonly outlineMismatches: readonly string[];
+  readonly sameText: boolean;
+  readonly pixels: PixelResult;
+  readonly ok: boolean;
+}
+interface CaseResult {
+  readonly name: string;
+  readonly pages: Readonly<Record<Engine, number>>;
+  readonly pairs: readonly PairResult[];
+  readonly baseline: PixelResult;
+  /** Text each engine drew outside the page box (see PageTexts.outside). */
+  readonly outside: Readonly<Record<Engine, readonly string[]>>;
+  readonly ok: boolean;
+}
+
 const results: CaseResult[] = [];
 for (const item of cases) {
   const rasters = await rasterise(item);
+  const extracted = {} as Record<Engine, PageTexts>;
+  for (const engine of ENGINES)
+    extracted[engine] = await pageTexts(join(item.dir, `${engine}.pdf`), item.result);
+  const texts = {
+    chromium: extracted.chromium.pages,
+    webkit: extracted.webkit.pages,
+    server: extracted.server.pages,
+  };
+  const labels = item.result.outline.flatMap((section) => [section.heading, ...section.entries]);
   const pairs: PairResult[] = [];
   for (const [a, b] of PAIRS) {
-    const pageResults: PageResult[] = [];
-    const count = Math.min(rasters[a].length, rasters[b].length);
-    for (let index = 0; index < count; index += 1) {
-      const left = rasters[a][index] as Raster;
-      const right = rasters[b][index] as Raster;
-      // Chromium writes A4 as 594.96 × 841.92 pt (whole CSS px), WebKit as 595 × 842 pt: sizes may
-      // differ by one raster px. More than that is a different paper size.
-      if (Math.abs(left.width - right.width) > 1 || Math.abs(left.height - right.height) > 1) {
-        pageResults.push({ page: index + 1, ratio: 1, offsetPt: 0, ok: false });
-        continue;
-      }
-      const width = Math.min(left.width, right.width);
-      const height = Math.min(left.height, right.height);
-      const leftPage = crop(left, width, height);
-      const rightPage = crop(right, width, height);
-      const { ratio, offsetPt, mask } = comparePage(blur(leftPage), blur(rightPage));
-      const ok = ratio <= MAX_DIFF_RATIO;
-      if (!ok) await writeDiff(join(item.dir, `p${index + 1}`), a, b, leftPage, rightPage, mask);
-      pageResults.push({ page: index + 1, ratio, offsetPt, ok });
-    }
-    const pages = [rasters[a].length, rasters[b].length] as const;
+    const startsA = outlinePages(item.result, texts[a]);
+    const startsB = outlinePages(item.result, texts[b]);
+    const outlineMismatches = labels.filter(
+      (_, index) => startsA[index] === 0 || startsA[index] !== startsB[index],
+    );
+    const samePageCount = texts[a].length === texts[b].length;
+    const sameText = texts[a].join("") === texts[b].join("");
+    const pixels = await comparePixels(item, rasters, a, b, MAX_CROSS_ENGINE_RATIO, true);
     pairs.push({
       pair: `${a}/${b}`,
-      pages,
-      results: pageResults,
-      ok: pages[0] > 0 && pages[0] === pages[1] && pageResults.every((result) => result.ok),
+      samePageCount,
+      outlineMismatches,
+      sameText,
+      pixels,
+      ok: samePageCount && outlineMismatches.length === 0 && sameText && pixels.ok,
     });
   }
-  const pages = {
-    chromium: rasters.chromium.length,
-    webkit: rasters.webkit.length,
-    server: rasters.server.length,
-  };
-  results.push({ name: item.name, pages, pairs, ok: pairs.every((pair) => pair.ok) });
+  const baseline = await comparePixels(item, rasters, "chromium", "baseline", MAX_BASELINE_RATIO, false);
+  const pages = { chromium: texts.chromium.length, webkit: texts.webkit.length, server: texts.server.length };
+  results.push({
+    name: item.name,
+    pages,
+    pairs,
+    baseline,
+    outside: {
+      chromium: extracted.chromium.outside,
+      webkit: extracted.webkit.outside,
+      server: extracted.server.outside,
+    },
+    ok: baseline.ok && pairs.every((pair) => pair.ok),
+  });
 }
 
-// 3. Report.
+// 4. Report.
 const percent = (ratio: number) => `${(ratio * 100).toFixed(2)} %`;
-const worst = (pair: PairResult) => {
-  const ratio = Math.max(0, ...pair.results.map((result) => result.ratio));
-  const offset = Math.max(0, ...pair.results.map((result) => result.offsetPt));
-  return `${percent(ratio)} (${offset.toFixed(1)} pt)`;
-};
+const worst = ({ ratios, offsetsPt }: PixelResult) =>
+  `${percent(Math.max(0, ...ratios))} (${Math.max(0, ...offsetsPt).toFixed(1)} pt)`;
+const pairCell = (pair: PairResult) =>
+  [
+    pair.samePageCount ? "" : "pages ≠",
+    pair.outlineMismatches.length === 0 ? "" : `starts ≠: ${pair.outlineMismatches.join("; ")}`,
+    pair.sameText ? "" : "text ≠",
+    worst(pair.pixels),
+  ]
+    .filter(Boolean)
+    .join(", ");
 const passed = results.filter((result) => result.ok).length;
 const report = [
   `# CV print parity`,
   "",
   `Engines: chromium = ${versions.chromium}; webkit = ${versions.webkit}; server = ${versions.server}.`,
   "",
-  `${DPI} dpi (Quartz), box blur r=${BLUR_RADIUS} ×${BLUR_PASSES}, pixel threshold ${PIXEL_THRESHOLD}/255, ` +
-    `1-inch bands aligned within ±${MAX_SHIFT_PT} pt vertically and ±${MAX_SHIFT_X} px horizontally; ` +
-    `tolerance ≤ ${percent(MAX_DIFF_RATIO)} of a page's pixels. Page counts must match exactly.`,
+  `Cross-engine gate: same page count, every outline heading/entry starts on the same page, same ` +
+    `text (whitespace ignored), every page ≤ ${percent(MAX_CROSS_ENGINE_RATIO)} differing pixels. ` +
+    `Regression gate: Chromium vs committed baseline ≤ ${percent(MAX_BASELINE_RATIO)} per page. ` +
+    `Pixels: ${DPI} dpi (Quartz), box blur r=${BLUR_RADIUS} ×${BLUR_PASSES}, threshold ${PIXEL_THRESHOLD}/255, ` +
+    `1-inch bands aligned within ±${MAX_SHIFT_PT} pt; cells show the worst page (largest alignment).`,
   "",
-  `| Case | Pages (chromium/webkit/server) | ${PAIRS.map(([a, b]) => `${a}↔${b}: worst page (alignment)`).join(" | ")} | Result |`,
-  `|---|---|${PAIRS.map(() => "---|").join("")}---|`,
+  `| Case | Pages (chromium/webkit/server) | ${PAIRS.map(([a, b]) => `${a}↔${b}`).join(" | ")} | chromium↔baseline | Result |`,
+  `|---|---|${PAIRS.map(() => "---|").join("")}---|---|`,
   ...results.map(
     (result) =>
       `| ${result.name} | ${ENGINES.map((engine) => result.pages[engine]).join(" / ")} | ` +
-      `${result.pairs.map(worst).join(" | ")} | ${result.ok ? "pass" : "**FAIL**"} |`,
+      `${result.pairs.map(pairCell).join(" | ")} | ${worst(result.baseline)} | ${result.ok ? "pass" : "**FAIL**"} |`,
   ),
   "",
-  `${passed}/${results.length} cases within tolerance.`,
+  `${passed}/${results.length} cases pass.`,
+  "",
+  "Text drawn outside the page box (clipped, invisible, but in the PDF text layer; not compared):",
+  "",
+  ...results.flatMap((result) =>
+    ENGINES.filter((engine) => result.outside[engine].length > 0).map(
+      (engine) => `- ${result.name} ${engine}: ${result.outside[engine].join(" | ")}`,
+    ),
+  ),
   "",
 ].join("\n");
 await writeFile(join(out, "report.md"), report);

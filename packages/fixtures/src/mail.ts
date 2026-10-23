@@ -60,9 +60,21 @@ const noExtraction: MailExtraction = {
 
 type MessageInput = Omit<
   MailMessage,
-  "createdAt" | "updatedAt" | "extracted" | "inReplyTo" | "rfc822MessageId" | "providerThreadId" | "folder"
+  | "createdAt"
+  | "updatedAt"
+  | "extracted"
+  | "inReplyTo"
+  | "rfc822MessageId"
+  | "providerThreadId"
+  | "folder"
+  | "interviewSuggestion"
 > &
-  Partial<Pick<MailMessage, "extracted" | "inReplyTo" | "rfc822MessageId" | "providerThreadId" | "folder">>;
+  Partial<
+    Pick<
+      MailMessage,
+      "extracted" | "inReplyTo" | "rfc822MessageId" | "providerThreadId" | "folder" | "interviewSuggestion"
+    >
+  >;
 
 function message(input: MessageInput): MailMessage {
   return {
@@ -71,6 +83,7 @@ function message(input: MessageInput): MailMessage {
     rfc822MessageId: null,
     inReplyTo: null,
     extracted: noExtraction,
+    interviewSuggestion: null,
     ...input,
     createdAt: new Date(input.receivedAt.getTime() + 4 * 60_000),
     updatedAt: input.reviewedAt ?? new Date(input.receivedAt.getTime() + 4 * 60_000),
@@ -220,6 +233,16 @@ export const mailMessages: MailMessage[] = [
     bodyText:
       "Hi Deniz,\n\nGreat talking last week! I'd like to set up a 45-minute conversation with me (Head of Frontend) about how we build the editor.\n\nDoes Wednesday 28 October at 10:00 ET (17:00 in Istanbul) work? Here's the link: https://meet.google.com/bwq-ztkx-rmh\n\nBest,\nMarcus",
     bodyPurgeAt: null,
+    interviewSuggestion: {
+      title: "Hiring manager interview",
+      startsAt: wallClock(6, "10:00", -4),
+      durationMinutes: 45,
+      timezone: "America/New_York",
+      location: null,
+      meetingUrl: "https://meet.google.com/bwq-ztkx-rmh",
+      source: "model",
+      interviewId: "int-brightwave-1",
+    },
   }),
   message({
     id: "mail-nordlicht-invite",
@@ -258,6 +281,16 @@ export const mailMessages: MailMessage[] = [
     bodyText:
       "Hallo Deniz,\n\nvielen Dank für deine Bewerbung als Frontend Engineer! Wir würden dich gern in einem 30-minütigen Videocall kennenlernen.\n\nPasst dir Freitag, 23.10., um 16:00 Uhr? Den Link schicke ich nach deiner Bestätigung.\n\nViele Grüße\nLena Vogel, People & Culture",
     bodyPurgeAt: null,
+    interviewSuggestion: {
+      title: "Kennenlerngespräch (30 Min.)",
+      startsAt: wallClock(1, "16:00", 2),
+      durationMinutes: 30,
+      timezone: "Europe/Berlin",
+      location: null,
+      meetingUrl: null,
+      source: "model",
+      interviewId: null,
+    },
   }),
   message({
     id: "mail-grachten-assessment",

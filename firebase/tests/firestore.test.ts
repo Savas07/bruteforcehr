@@ -67,6 +67,37 @@ describe("users/{uid}: owner only", () => {
     await assertFails(client("alice").doc("users/alice/unknown/doc1").set({ any: true }));
     await assertFails(client("alice").doc("users/alice/applications/a1/notes/n1").set({ any: true }));
   });
+
+  // Push client contract (docs/runbooks/notifications.md): the app registers its FCM token on its
+  // own device document and mutes categories on its profile; pending job alerts stay server-only.
+  it("lets a user register an FCM token and mute push categories", async () => {
+    const device = "users/alice/devices/ios-1";
+    await seed("users/alice", { settings: { notifyRejections: true, notifications: null } });
+    await assertSucceeds(
+      client("alice")
+        .doc(device)
+        .set({ platform: "ios", pushToken: null, locale: "de-DE", schemaVersion: 1 }),
+    );
+    await assertSucceeds(
+      client("alice").doc(device).update({ pushToken: "fcm-token-1", lastSeenAt: new Date() }),
+    );
+    await assertFails(client("bob").doc(device).update({ pushToken: "fcm-token-mallory" }));
+    await assertSucceeds(
+      client("alice")
+        .doc("users/alice")
+        .update({
+          "settings.notifications": {
+            interviews: true,
+            offers: true,
+            assessments: true,
+            autoApplied: false,
+            jobAlerts: false,
+          },
+          "settings.notifyRejections": false,
+        }),
+    );
+    await assertFails(client("alice").doc("serverOnly/jobAlerts/users/alice/jobAlertItems/j1").get());
+  });
 });
 
 describe("users/{uid}/renderedFiles: create-only", () => {
@@ -450,5 +481,51 @@ describe("unknown top-level paths", () => {
   it("are denied", async () => {
     await assertFails(client("alice").doc("jobs/j1").get());
     await assertFails(client("alice").doc("jobs/j1").set({ title: "Engineer" }));
+  });
+});
+
+describe("users/{uid}/applications: emailSend is server-written (decisions.md F6)", () => {
+  const application = "users/alice/applications/a1";
+  const emailSend = { state: "scheduled", sendId: "s1", accountId: "acc1", sendAt: new Date() };
+
+  it("lets the client create applications without or with a null emailSend only", async () => {
+    await assertSucceeds(client("alice").doc(application).set({ status: "saved", appliedAt: null }));
+    await assertSucceeds(
+      client("alice")
+        .doc("users/alice/applications/a2")
+        .set({ status: "saved", appliedAt: null, emailSend: null }),
+    );
+    await assertFails(
+      client("alice").doc("users/alice/applications/a3").set({ status: "saved", appliedAt: null, emailSend }),
+    );
+  });
+
+  it("forbids clients to set, change or clear emailSend but allows other edits", async () => {
+    await seed(application, { status: "preparing", appliedAt: null, emailSend });
+    await assertFails(
+      client("alice")
+        .doc(application)
+        .update({ emailSend: { ...emailSend, state: "sent" } }),
+    );
+    await assertFails(client("alice").doc(application).update({ emailSend: null }));
+    await assertSucceeds(client("alice").doc(application).update({ notes: "Sending today" }));
+    await seed("users/alice/applications/a4", { status: "saved", appliedAt: null });
+    await assertFails(client("alice").doc("users/alice/applications/a4").update({ emailSend }));
+  });
+});
+
+describe("serverOnly mail data: no client access", () => {
+  it.each([
+    "serverOnly/mail/users/alice/mailTokens/acc1",
+    "serverOnly/mail/users/alice/mailSeen/abc",
+    "serverOnly/mail/users/alice/mailOutbox/s1",
+    "serverOnly/mail/users/alice/mailSendDays/2026-10-24",
+    "serverOnly/mail/users/alice/mailCorrections/c1",
+    "serverOnly/mailConnect/mailConnectNonces/n1",
+  ])("denies %s to its owner", async (path) => {
+    await seed(path, { secret: "x" });
+    await assertFails(client("alice").doc(path).get());
+    await assertFails(client("alice").doc(path).set({ secret: "y" }));
+    await assertFails(client("alice").doc(path).delete());
   });
 });

@@ -154,6 +154,31 @@ export const MailExtractionSchema = z.object({
 });
 export type MailExtraction = z.infer<typeof MailExtractionSchema>;
 
+/** Where an interview suggestion's time came from (most reliable first). */
+export const InterviewSuggestionSourceSchema = z.enum(["calendar", "model", "text"]);
+export type InterviewSuggestionSource = z.infer<typeof InterviewSuggestionSourceSchema>;
+
+/**
+ * The interview an invite proposes (review-first, ADR 0012 "Interviews from invites"). Nothing is
+ * created until the user confirms the message; the review trigger then creates
+ * `interviews/{messageId}` from it and sets `interviewId`.
+ */
+export const InterviewSuggestionSchema = z.object({
+  /** ICS SUMMARY, the model's date label, or the subject. */
+  title: z.string().min(1).max(200),
+  startsAt: TimestampSchema,
+  /** null when the mail gives neither an end time nor a length. */
+  durationMinutes: z.int().min(5).max(600).nullable(),
+  /** Organizer's zone as stated (ICS TZID or a zone in the text); null when the mail gave none. */
+  timezone: TimeZoneSchema.nullable(),
+  location: z.string().max(300).nullable(),
+  meetingUrl: UrlSchema.nullable(),
+  source: InterviewSuggestionSourceSchema,
+  /** The interview created on confirm; null until then. */
+  interviewId: IdSchema.nullable(),
+});
+export type InterviewSuggestion = z.infer<typeof InterviewSuggestionSchema>;
+
 /** Strength of the evidence linking a message to an application (§4.7 step 5, strongest first). */
 export const LinkStrengthSchema = z.enum(["thread", "ats_company_role", "company_domain", "llm", "none"]);
 export type LinkStrength = z.infer<typeof LinkStrengthSchema>;
@@ -192,7 +217,17 @@ export const MailMessageSchema = z.object({
   reviewedAt: TimestampSchema.nullable(),
   bodyText: z.string().max(200_000).nullable(),
   bodyPurgeAt: TimestampSchema.nullable(),
+  /**
+   * Interview an `interview_invite` proposes (server-written). Added in M5: older documents read
+   * it as null (`MAIL_MESSAGE_READ_DEFAULTS`).
+   */
+  interviewSuggestion: InterviewSuggestionSchema.nullable(),
   createdAt: TimestampSchema,
   updatedAt: TimestampSchema,
 });
 export type MailMessage = z.infer<typeof MailMessageSchema>;
+
+/** Values for `MailMessage` fields added after the first documents were written. */
+export const MAIL_MESSAGE_READ_DEFAULTS = {
+  interviewSuggestion: null,
+} as const satisfies Partial<MailMessage>;

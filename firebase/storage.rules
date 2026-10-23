@@ -55,5 +55,19 @@ service firebase.storage {
       allow create: if isOwner(uid)
         && isUpload(5 * 1024 * 1024, ['image/jpeg', 'image/png', 'image/heic']);
     }
+
+    // Files attached from the device to an email apply (`mailSend`); the owner may remove them.
+    // Types mirror MAIL_ATTACHMENT_CONTENT_TYPES in @bfhr/core; 18 MB = MAIL_SEND_MAX_ATTACHMENT_BYTES.
+    match /users/{uid}/mail-attachments/{fileId} {
+      allow create: if isOwner(uid)
+        && isUpload(18 * 1024 * 1024, pdfOrDocx().concat([
+          'application/msword',
+          'application/rtf',
+          'text/plain',
+          'image/png',
+          'image/jpeg'
+        ]));
+      allow delete: if isOwner(uid);
+    }
   }
 }

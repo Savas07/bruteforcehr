@@ -639,14 +639,14 @@ describe("secrets", () => {
 });
 
 describe("deleteUserData", () => {
-  it("recursively deletes every per-user root and the Storage prefix", async () => {
-    const deleted: string[] = [];
+  it("revokes mail first, then deletes every per-user root and the Storage prefix", async () => {
+    const steps: string[] = [];
     let prefix = "";
     await deleteUserData(
       {
         doc: ((path: string) => ({ path })) as never,
         recursiveDelete: (async (ref: { path: string }) => {
-          deleted.push(ref.path);
+          steps.push(ref.path);
         }) as never,
       },
       {
@@ -655,15 +655,19 @@ describe("deleteUserData", () => {
         },
       },
       "u1",
+      async (uid) => {
+        steps.push(`revokeMail:${uid}`);
+      },
     );
-    expect(deleted).toEqual([
+    expect(steps).toEqual([
+      "revokeMail:u1",
       "users/u1",
       "serverOnly/aiUsage/users/u1",
       "serverOnly/jobAlerts/users/u1",
       "serverOnly/jobQuota/users/u1",
       "serverOnly/mail/users/u1",
     ]);
-    expect(deleted.some((root) => serverOnlyPaths.jobAlert("u1", "j").startsWith(root))).toBe(true);
+    expect(steps.some((root) => serverOnlyPaths.jobAlert("u1", "j").startsWith(root))).toBe(true);
     expect(prefix).toBe("users/u1/");
   });
 });

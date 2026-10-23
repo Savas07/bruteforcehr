@@ -44,12 +44,18 @@ export function robotsVerdict(robotsTxt: string, productToken: string, pathWithQ
     if (value !== "") current.rules.push({ allow: field === "allow", pattern: value });
   }
   const token = productToken.toLowerCase();
-  const own = groups.filter((group) => group.agents.some((agent) => agent !== "*" && token.startsWith(agent)));
+  const own = groups.filter((group) =>
+    group.agents.some((agent) => agent !== "*" && token.startsWith(agent)),
+  );
   const chosen = own.length > 0 ? own : groups.filter((group) => group.agents.includes("*"));
   let best: Rule | null = null;
   for (const rule of chosen.flatMap((group) => group.rules)) {
     if (!matches(rule.pattern, pathWithQuery)) continue;
-    if (best === null || rule.pattern.length > best.pattern.length || (rule.pattern.length === best.pattern.length && rule.allow)) {
+    if (
+      best === null ||
+      rule.pattern.length > best.pattern.length ||
+      (rule.pattern.length === best.pattern.length && rule.allow)
+    ) {
       best = rule;
     }
   }

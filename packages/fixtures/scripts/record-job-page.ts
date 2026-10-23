@@ -26,16 +26,27 @@ const response = await fetch(url, {
 const body = await response.text();
 const day = new Date().toISOString().slice(0, 10);
 if (flag === "--json") {
-  await writeFile(new URL(`../job-pages/${name}.json`, import.meta.url), `${JSON.stringify(JSON.parse(body), null, 2)}\n`);
+  await writeFile(
+    new URL(`../job-pages/${name}.json`, import.meta.url),
+    `${JSON.stringify(JSON.parse(body), null, 2)}\n`,
+  );
 } else {
-  const trimmed = flag === "--raw" ? body : body
-    .replace(/<script\b(?![^>]*ld\+json)[^>]*>[\s\S]*?<\/script>/gi, "")
-    .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, "")
-    .replace(/<svg\b[^>]*>[\s\S]*?<\/svg>/gi, "<svg></svg>")
-    .replace(/<!--(?!\s*recorded)[\s\S]*?-->/g, "")
-    .replace(/<link\b[^>]*rel="(?:stylesheet|preload|modulepreload|prefetch|dns-prefetch|preconnect|icon)"[^>]*>/gi, "")
-    .replace(/\n\s*\n+/g, "\n");
+  const trimmed =
+    flag === "--raw"
+      ? body
+      : body
+          .replace(/<script\b(?![^>]*ld\+json)[^>]*>[\s\S]*?<\/script>/gi, "")
+          .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, "")
+          .replace(/<svg\b[^>]*>[\s\S]*?<\/svg>/gi, "<svg></svg>")
+          .replace(/<!--(?!\s*recorded)[\s\S]*?-->/g, "")
+          .replace(
+            /<link\b[^>]*rel="(?:stylesheet|preload|modulepreload|prefetch|dns-prefetch|preconnect|icon)"[^>]*>/gi,
+            "",
+          )
+          .replace(/\n\s*\n+/g, "\n");
   const header = `<!-- recorded ${day} from ${url} (HTTP ${response.status}, final ${response.url}) -->\n`;
   await writeFile(new URL(`../job-pages/${name}.html`, import.meta.url), header + trimmed);
 }
-console.log(`${name}: HTTP ${response.status}, ${body.length} bytes → job-pages/${name}.${flag === "--json" ? "json" : "html"}`);
+console.log(
+  `${name}: HTTP ${response.status}, ${body.length} bytes → job-pages/${name}.${flag === "--json" ? "json" : "html"}`,
+);

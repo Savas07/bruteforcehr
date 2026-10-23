@@ -40,7 +40,11 @@ const sourceKeysMatch = (
 ): void => {
   const expected = job.sources.map(jobSourceKey);
   if (expected.length !== job.sourceKeys.length || expected.some((key, i) => job.sourceKeys[i] !== key)) {
-    ctx.addIssue({ code: "custom", message: "sourceKeys must equal sources.map(jobSourceKey)", path: ["sourceKeys"] });
+    ctx.addIssue({
+      code: "custom",
+      message: "sourceKeys must equal sources.map(jobSourceKey)",
+      path: ["sourceKeys"],
+    });
   }
 };
 

@@ -56,7 +56,8 @@ function record(
   method: JobImportMethod,
 ): void {
   const had = new Set(filledFields(before));
-  for (const field of filledFields(after)) if (!had.has(field) && fieldMethods[field] === undefined) fieldMethods[field] = method;
+  for (const field of filledFields(after))
+    if (!had.has(field) && fieldMethods[field] === undefined) fieldMethods[field] = method;
   // A longer description from a later extractor replaces a shorter one.
   if (after.description !== before.description && after.description !== "") fieldMethods.description = method;
 }
@@ -74,8 +75,20 @@ export function extractFromHtml(page: { url: string; html: string }): PageExtrac
   let method: JobImportMethod | null = null;
 
   const steps: [JobImportMethod, () => ExtractedPosting | null][] = [
-    ["json_ld", () => jsonLdJobPostings(document).map(postingFromSchemaOrg).find((item) => item.title !== null) ?? null],
-    ["microdata", () => microdataJobPostings(document).map(postingFromSchemaOrg).find((item) => item.title !== null) ?? null],
+    [
+      "json_ld",
+      () =>
+        jsonLdJobPostings(document)
+          .map(postingFromSchemaOrg)
+          .find((item) => item.title !== null) ?? null,
+    ],
+    [
+      "microdata",
+      () =>
+        microdataJobPostings(document)
+          .map(postingFromSchemaOrg)
+          .find((item) => item.title !== null) ?? null,
+    ],
     ["site", () => site?.parseHtml?.(document, url) ?? null],
   ];
   for (const [step, run] of steps) {

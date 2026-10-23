@@ -22,9 +22,15 @@ const CHALLENGE_MARKERS: readonly RegExp[] = [
 const CAPTCHA_WIDGET = /g-recaptcha|h-captcha|hcaptcha\.com|recaptcha\/api\.js|turnstile/i;
 
 /** Login walls reached by redirect (LinkedIn authwall, generic sign-in pages). */
-const LOGIN_PATH = /\/(authwall|login|signin|sign-in|sign_in|uas\/login|account\/login|checkpoint|auth\/login)(\/|$|\?)/i;
+const LOGIN_PATH =
+  /\/(authwall|login|signin|sign-in|sign_in|uas\/login|account\/login|checkpoint|auth\/login)(\/|$|\?)/i;
 
-export function detectBlock(page: { status: number; url: string; html: string; visibleTextLength: number }): PageBlock | null {
+export function detectBlock(page: {
+  status: number;
+  url: string;
+  html: string;
+  visibleTextLength: number;
+}): PageBlock | null {
   let path = "";
   try {
     const url = new URL(page.url);

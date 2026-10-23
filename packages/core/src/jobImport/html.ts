@@ -43,7 +43,17 @@ const VOID = names(
 );
 
 /** Content is raw text up to the matching end tag. */
-const RAW_TEXT = names("script", "style", "textarea", "title", "noscript", "xmp", "iframe", "noembed", "template");
+const RAW_TEXT = names(
+  "script",
+  "style",
+  "textarea",
+  "title",
+  "noscript",
+  "xmp",
+  "iframe",
+  "noembed",
+  "template",
+);
 /** Raw text elements whose content is still entity-decoded. */
 const ESCAPABLE_RAW_TEXT = names("textarea", "title");
 
@@ -201,21 +211,24 @@ const LEGACY_ENTITIES = names("amp", "lt", "gt", "quot", "nbsp", "copy", "reg");
 /** Decodes character references (`&amp;`, `&#246;`, `&#x27;`, `&nbsp`). */
 export function decodeEntities(text: string): string {
   if (!text.includes("&")) return text;
-  return text.replace(/&(#[xX][0-9a-fA-F]{1,6};?|#[0-9]{1,7};?|[a-zA-Z][a-zA-Z0-9]{1,31};?)/g, (match, body: string) => {
-    if (body.startsWith("#")) {
-      const hex = body[1] === "x" || body[1] === "X";
-      const code = Number.parseInt(body.slice(hex ? 2 : 1).replace(";", ""), hex ? 16 : 10);
-      if (!Number.isFinite(code) || code === 0 || code > 0x10ffff || (code >= 0xd800 && code <= 0xdfff)) {
-        return "\ufffd";
+  return text.replace(
+    /&(#[xX][0-9a-fA-F]{1,6};?|#[0-9]{1,7};?|[a-zA-Z][a-zA-Z0-9]{1,31};?)/g,
+    (match, body: string) => {
+      if (body.startsWith("#")) {
+        const hex = body[1] === "x" || body[1] === "X";
+        const code = Number.parseInt(body.slice(hex ? 2 : 1).replace(";", ""), hex ? 16 : 10);
+        if (!Number.isFinite(code) || code === 0 || code > 0x10ffff || (code >= 0xd800 && code <= 0xdfff)) {
+          return "\ufffd";
+        }
+        return String.fromCodePoint(code);
       }
-      return String.fromCodePoint(code);
-    }
-    const terminated = body.endsWith(";");
-    const name = terminated ? body.slice(0, -1) : body;
-    const value = NAMED_ENTITIES[name];
-    if (value !== undefined && (terminated || LEGACY_ENTITIES[name] === true)) return value;
-    return match;
-  });
+      const terminated = body.endsWith(";");
+      const name = terminated ? body.slice(0, -1) : body;
+      const value = NAMED_ENTITIES[name];
+      if (value !== undefined && (terminated || LEGACY_ENTITIES[name] === true)) return value;
+      return match;
+    },
+  );
 }
 
 interface MutableElement {
@@ -229,7 +242,10 @@ interface MutableElement {
 const TAG_NAME = /^[a-zA-Z][a-zA-Z0-9:-]*/;
 
 /** Parses attributes from `source` starting at `start` until the tag's `>`; returns them and the index after `>`. */
-function readAttributes(source: string, start: number): { attrs: Record<string, string>; end: number; selfClosing: boolean } {
+function readAttributes(
+  source: string,
+  start: number,
+): { attrs: Record<string, string>; end: number; selfClosing: boolean } {
   const attrs: Record<string, string> = {};
   let i = start;
   let selfClosing = false;
@@ -237,7 +253,7 @@ function readAttributes(source: string, start: number): { attrs: Record<string, 
   while (i < length) {
     const char = source[i];
     if (char === ">") return { attrs, end: i + 1, selfClosing };
-    if (char === "/" ) {
+    if (char === "/") {
       selfClosing = source[i + 1] === ">";
       i++;
       continue;
@@ -341,7 +357,11 @@ export function parseHtml(source: string): HtmlElement {
       const rest = source.slice(i);
       const match = close.exec(rest);
       const raw = match === null ? rest : rest.slice(0, match.index);
-      if (raw !== "") element.children.push({ type: "text", text: ESCAPABLE_RAW_TEXT[tag] === true ? decodeEntities(raw) : raw });
+      if (raw !== "")
+        element.children.push({
+          type: "text",
+          text: ESCAPABLE_RAW_TEXT[tag] === true ? decodeEntities(raw) : raw,
+        });
       i = match === null ? length : i + match.index + match[0].length;
       continue;
     }
@@ -365,7 +385,10 @@ export function findAll(node: HtmlElement, predicate: (element: HtmlElement) => 
   return found;
 }
 
-export function find(node: HtmlElement, predicate: (element: HtmlElement) => boolean): HtmlElement | undefined {
+export function find(
+  node: HtmlElement,
+  predicate: (element: HtmlElement) => boolean,
+): HtmlElement | undefined {
   for (const element of elements(node)) if (predicate(element)) return element;
   return undefined;
 }
@@ -380,7 +403,17 @@ export function rawText(node: HtmlElement): string {
   return node.children.map((child) => (child.type === "text" ? child.text : rawText(child))).join("");
 }
 
-const SKIPPED_IN_TEXT = names("script", "style", "noscript", "template", "svg", "iframe", "head", "button", "select");
+const SKIPPED_IN_TEXT = names(
+  "script",
+  "style",
+  "noscript",
+  "template",
+  "svg",
+  "iframe",
+  "head",
+  "button",
+  "select",
+);
 const PARAGRAPH_BLOCKS = names(
   "p",
   "h1",
@@ -421,7 +454,9 @@ const LINE_BLOCKS = names(
 /** Single-line text of an element: whitespace collapsed, trimmed. */
 export function textOf(node: HtmlElement | undefined): string {
   if (node === undefined) return "";
-  return rawTextVisible(node).replace(/[\s\u00a0]+/g, " ").trim();
+  return rawTextVisible(node)
+    .replace(/[\s\u00a0]+/g, " ")
+    .trim();
 }
 
 function rawTextVisible(node: HtmlElement): string {
@@ -430,11 +465,13 @@ function rawTextVisible(node: HtmlElement): string {
       if (child.type === "text") return child.text;
       if (SKIPPED_IN_TEXT[child.tag] === true) return "";
       if (child.tag === "br") return " ";
-      return rawTextVisible(child) + (LINE_BLOCKS[child.tag] === true || PARAGRAPH_BLOCKS[child.tag] === true ? " " : "");
+      return (
+        rawTextVisible(child) +
+        (LINE_BLOCKS[child.tag] === true || PARAGRAPH_BLOCKS[child.tag] === true ? " " : "")
+      );
     })
     .join("");
 }
-
 
 /**
  * Readable plain text with paragraph breaks: paragraphs and headings are separated by a blank
@@ -454,9 +491,9 @@ export function blockText(node: HtmlElement, skip: (element: HtmlElement) => boo
         continue;
       }
       if (child.tag === "li") {
-        parts.push("\n• ");
-        visit(child);
-        parts.push("\n");
+        // Paragraphs inside an item become line breaks under one bullet; empty items vanish.
+        const item = blockText(child, skip).replace(/\n{2,}/g, "\n");
+        if (item !== "") parts.push(`\n• ${item}\n`);
         continue;
       }
       if (child.tag === "td" || child.tag === "th") {
@@ -472,15 +509,17 @@ export function blockText(node: HtmlElement, skip: (element: HtmlElement) => boo
     }
   };
   visit(node);
-  return parts
-    .join("")
-    .split("\n")
-    .map((line) => line.replace(/ +/g, " ").trim())
-    .join("\n")
-    .replace(/^(• *\n)+/gm, "")
-    .replace(/\n• *(?=\n)/g, "")
-    .replace(/\n{3,}/g, "\n\n")
-    .trim();
+  return (
+    parts
+      .join("")
+      .split("\n")
+      .map((line) => line.replace(/ +/g, " ").trim())
+      .join("\n")
+      // Consecutive list items sit on consecutive lines.
+      .replace(/(?<=^• [^\n]*)\n{2,}(?=• )/gm, "\n")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim()
+  );
 }
 
 /** `<meta name|property="key" content>` lookup (first match). */
@@ -490,7 +529,7 @@ export function metaContent(document: HtmlElement, key: string): string | undefi
     document,
     (element) =>
       element.tag === "meta" &&
-      ((element.attrs.property ?? element.attrs.name ?? element.attrs.itemprop)?.toLowerCase() === lower),
+      (element.attrs.property ?? element.attrs.name ?? element.attrs.itemprop)?.toLowerCase() === lower,
   );
   const content = meta?.attrs.content?.trim();
   return content === undefined || content === "" ? undefined : content;
@@ -500,7 +539,8 @@ export function metaContent(document: HtmlElement, key: string): string | undefi
 export function canonicalUrl(document: HtmlElement, base: string): string | undefined {
   const link = find(
     document,
-    (element) => element.tag === "link" && (element.attrs.rel ?? "").toLowerCase().split(/\s+/).includes("canonical"),
+    (element) =>
+      element.tag === "link" && (element.attrs.rel ?? "").toLowerCase().split(/\s+/).includes("canonical"),
   );
   const href = link?.attrs.href;
   if (href === undefined || href.trim() === "") return undefined;

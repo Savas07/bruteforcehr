@@ -51,7 +51,11 @@ export function parseDate(value: unknown): Date | null {
   const text = String(value).trim();
   if (text === "") return null;
   const date =
-    typeof value === "number" ? new Date(value) : /^\d{4}-\d{2}-\d{2}$/.test(text) ? new Date(`${text}T00:00:00Z`) : new Date(text);
+    typeof value === "number"
+      ? new Date(value)
+      : /^\d{4}-\d{2}-\d{2}$/.test(text)
+        ? new Date(`${text}T00:00:00Z`)
+        : new Date(text);
   if (!Number.isFinite(date.getTime())) return null;
   const year = date.getUTCFullYear();
   return year >= 2000 && year <= 2100 ? date : null;
@@ -77,16 +81,28 @@ const PERIOD_BY_UNIT: Readonly<Record<string, SalaryPeriod>> = {
  * A published salary from loose values (schema.org `QuantitativeValue`, ATS compensation): positive
  * ordered numbers, an ISO currency and a known period (missing unit = per year). Null otherwise.
  */
-export function salaryRange(input: { min: unknown; max: unknown; currency: unknown; unit: unknown }): SalaryRange | null {
+export function salaryRange(input: {
+  min: unknown;
+  max: unknown;
+  currency: unknown;
+  unit: unknown;
+}): SalaryRange | null {
   const amount = (value: unknown): number | null => {
     const parsed =
-      typeof value === "number" ? value : typeof value === "string" ? Number(value.replace(/[, ]/g, "")) : Number.NaN;
+      typeof value === "number"
+        ? value
+        : typeof value === "string"
+          ? Number(value.replace(/[, ]/g, ""))
+          : Number.NaN;
     return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
   };
   const min = amount(input.min);
   const max = amount(input.max);
   const currency = typeof input.currency === "string" ? input.currency.trim().toUpperCase() : "";
-  const period = typeof input.unit === "string" && input.unit.trim() !== "" ? PERIOD_BY_UNIT[input.unit.trim().toLowerCase()] : "year";
+  const period =
+    typeof input.unit === "string" && input.unit.trim() !== ""
+      ? PERIOD_BY_UNIT[input.unit.trim().toLowerCase()]
+      : "year";
   if ((min === null && max === null) || !/^[A-Z]{3}$/.test(currency) || period === undefined) return null;
   if (min !== null && max !== null && min > max) return null;
   return { min, max, currency, period, estimated: false };

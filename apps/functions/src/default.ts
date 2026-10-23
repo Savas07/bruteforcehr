@@ -5,4 +5,5 @@ import "./options";
 export { cvAssist } from "./ai/cv-assist";
 export { cvImport } from "./ai/cv-import";
 export { health } from "./health";
+export { jobImportUrl } from "./jobImport/job-import-url";
 export { cvRenderPdf } from "./render/cv-render-pdf";

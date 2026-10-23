@@ -29,8 +29,10 @@ export interface SiteAdapter {
 }
 
 type Obj = Record<string, unknown>;
-const obj = (value: unknown): Obj => (typeof value === "object" && value !== null && !Array.isArray(value) ? (value as Obj) : {});
-const str = (value: unknown): string | null => (typeof value === "string" && value.trim() !== "" ? value : null);
+const obj = (value: unknown): Obj =>
+  typeof value === "object" && value !== null && !Array.isArray(value) ? (value as Obj) : {};
+const str = (value: unknown): string | null =>
+  typeof value === "string" && value.trim() !== "" ? value : null;
 const list = (value: unknown): unknown[] => (Array.isArray(value) ? value : []);
 
 const byAttr = (name: string, value: string) => (element: HtmlElement) => element.attrs[name] === value;
@@ -91,22 +93,37 @@ const linkedin: SiteAdapter = {
     return id !== null && /^\d{6,}$/.test(id) ? `https://www.linkedin.com/jobs/view/${id}` : null;
   },
   parseHtml(document) {
-    const title = textOf(find(document, byClass("top-card-layout__title")) ?? find(document, byClass("topcard__title")));
+    const title = textOf(
+      find(document, byClass("top-card-layout__title")) ?? find(document, byClass("topcard__title")),
+    );
     const company = textOf(find(document, byClass("topcard__org-name-link")));
     const location = textOf(
-      find(document, (element) => hasClass(element, "topcard__flavor--bullet") && !hasClass(element, "num-applicants__figure")),
+      find(
+        document,
+        (element) =>
+          hasClass(element, "topcard__flavor--bullet") && !hasClass(element, "num-applicants__figure"),
+      ),
     );
-    const markup = find(document, byClass("show-more-less-html__markup")) ?? find(document, byClass("description__text"));
+    const markup =
+      find(document, byClass("show-more-less-html__markup")) ?? find(document, byClass("description__text"));
     const criteria = new Map<string, string>();
     for (const item of findAll(document, byClass("description__job-criteria-item"))) {
-      criteria.set(textOf(find(item, byClass("description__job-criteria-subheader"))), textOf(find(item, byClass("description__job-criteria-text"))));
+      criteria.set(
+        textOf(find(item, byClass("description__job-criteria-subheader"))),
+        textOf(find(item, byClass("description__job-criteria-text"))),
+      );
     }
     return posting({
       title,
       company,
       location,
       description: markup === undefined ? "" : blockText(markup),
-      employment: [criteria.get("Employment type") ?? criteria.get("Beschäftigungsverhältnis") ?? criteria.get("İstihdam türü") ?? ""],
+      employment: [
+        criteria.get("Employment type") ??
+          criteria.get("Beschäftigungsverhältnis") ??
+          criteria.get("İstihdam türü") ??
+          "",
+      ],
       // The company link points at LinkedIn's company page, not the employer's site: no companyUrl.
     });
   },
@@ -126,13 +143,20 @@ const indeed: SiteAdapter = {
         find(document, byClass("jobsearch-JobInfoHeader-title")),
     );
     const company = textOf(
-      find(document, byAttr("data-testid", "inlineHeader-companyName")) ?? find(document, byAttr("data-company-name", "true")),
+      find(document, byAttr("data-testid", "inlineHeader-companyName")) ??
+        find(document, byAttr("data-company-name", "true")),
     );
     const location = textOf(
-      find(document, byAttr("data-testid", "inlineHeader-companyLocation")) ?? find(document, byAttr("data-testid", "job-location")),
+      find(document, byAttr("data-testid", "inlineHeader-companyLocation")) ??
+        find(document, byAttr("data-testid", "job-location")),
     );
     const description = find(document, (element) => element.attrs.id === "jobDescriptionText");
-    return posting({ title, company, location, description: description === undefined ? "" : blockText(description) });
+    return posting({
+      title,
+      company,
+      location,
+      description: description === undefined ? "" : blockText(description),
+    });
   },
 };
 
@@ -161,12 +185,17 @@ const stepstone: SiteAdapter = {
     return /\/stellenangebote--|\/job\//.test(url.pathname) ? `${url.origin}${url.pathname}` : null;
   },
   parseHtml(document) {
-    const sections = findAll(document, (element) => /^section-text-.*-content$/.test(element.attrs["data-at"] ?? ""));
+    const sections = findAll(document, (element) =>
+      /^section-text-.*-content$/.test(element.attrs["data-at"] ?? ""),
+    );
     return posting({
       title: textOf(find(document, byAttr("data-at", "header-job-title"))),
       company: textOf(find(document, byAttr("data-at", "metadata-company-name"))),
       location: textOf(find(document, byAttr("data-at", "metadata-location"))),
-      employment: [textOf(find(document, byAttr("data-at", "metadata-contract-type"))), textOf(find(document, byAttr("data-at", "metadata-work-type")))],
+      employment: [
+        textOf(find(document, byAttr("data-at", "metadata-contract-type"))),
+        textOf(find(document, byAttr("data-at", "metadata-work-type"))),
+      ],
       remoteText: textOf(find(document, byAttr("data-at", "metadata-work-type"))),
       description: sections.map((section) => blockText(section)).join("\n\n"),
     });
@@ -192,10 +221,14 @@ const kariyer: SiteAdapter = {
   hosts: ["kariyer.net"],
   isDirectFromEmployer: false,
   canonicalUrl(url) {
-    return /^\/is-ilani\/[^/]+-\d+\/?$/.test(url.pathname) ? `https://www.kariyer.net${url.pathname.replace(/\/$/, "")}` : null;
+    return /^\/is-ilani\/[^/]+-\d+\/?$/.test(url.pathname)
+      ? `https://www.kariyer.net${url.pathname.replace(/\/$/, "")}`
+      : null;
   },
   parseHtml(document) {
-    const features = findAll(document, byAttr("data-test", "job-feature-item")).map((element) => textOf(element));
+    const features = findAll(document, byAttr("data-test", "job-feature-item")).map((element) =>
+      textOf(element),
+    );
     const description = find(document, byAttr("data-test", "qualifications-and-job-description"));
     const detail = find(document, (element) => element.attrs.worktype !== undefined);
     const companyLink = find(document, byAttr("data-test", "company-name"));
@@ -241,7 +274,10 @@ const greenhouse: SiteAdapter = {
     return posting({
       title,
       company: str(job.company_name),
-      location: location !== null ? location.split(/\s*;\s*/) : offices.filter((office): office is string => office !== null),
+      location:
+        location !== null
+          ? location.split(/\s*[;|]\s*/)
+          : offices.filter((office): office is string => office !== null),
       description: htmlToText(str(job.content) ?? ""),
       datePosted: parseDate(job.first_published ?? job.updated_at),
       validThrough: parseDate(job.application_deadline),
@@ -279,8 +315,15 @@ const lever: SiteAdapter = {
       title,
       // The postings API has no company name; JSON-LD on the page provides it.
       company: null,
-      location: list(categories.allLocations).length > 0 ? (list(categories.allLocations) as string[]) : str(categories.location),
-      description: [str(job.descriptionPlain) ?? htmlToText(str(job.description) ?? ""), ...sections, str(job.additionalPlain) ?? ""]
+      location:
+        list(categories.allLocations).length > 0
+          ? (list(categories.allLocations) as string[])
+          : str(categories.location),
+      description: [
+        str(job.descriptionPlain) ?? htmlToText(str(job.description) ?? ""),
+        ...sections,
+        str(job.additionalPlain) ?? "",
+      ]
         .map((part) => part.trim())
         .filter((part) => part !== "")
         .join("\n\n"),
@@ -310,11 +353,16 @@ const ashby: SiteAdapter = {
     const match = /^\/([^/]+)\/([0-9a-f-]{36})/.exec(url.pathname);
     return match === null
       ? null
-      : { url: `https://api.ashbyhq.com/posting-api/job-board/${match[1]}?includeCompensation=true`, method: "GET" };
+      : {
+          url: `https://api.ashbyhq.com/posting-api/job-board/${match[1]}?includeCompensation=true`,
+          method: "GET",
+        };
   },
   parseApi(json, url) {
     const id = /\/([0-9a-f-]{36})/.exec(url.pathname)?.[1];
-    const job = obj(list(obj(json).jobs).find((item) => obj(item).id === id || str(obj(item).jobUrl)?.includes(id ?? "?")));
+    const job = obj(
+      list(obj(json).jobs).find((item) => obj(item).id === id || str(obj(item).jobUrl)?.includes(id ?? "?")),
+    );
     const title = str(job.title);
     if (title === null) return null;
     const secondary = list(job.secondaryLocations).map((item) => str(obj(item).location));
@@ -372,7 +420,12 @@ const smartrecruiters: SiteAdapter = {
   isDirectFromEmployer: true,
   apiRequest(url) {
     const match = /^\/([^/]+)\/(\d{6,})/.exec(url.pathname);
-    return match === null ? null : { url: `https://api.smartrecruiters.com/v1/companies/${match[1]}/postings/${match[2]}`, method: "GET" };
+    return match === null
+      ? null
+      : {
+          url: `https://api.smartrecruiters.com/v1/companies/${match[1]}/postings/${match[2]}`,
+          method: "GET",
+        };
   },
   parseApi(json) {
     const job = obj(json);
@@ -383,7 +436,9 @@ const smartrecruiters: SiteAdapter = {
     return posting({
       title,
       company: str(obj(job.company).name),
-      location: str(location.fullLocation) ?? [str(location.city), str(location.country)?.toUpperCase()].filter(Boolean).join(", "),
+      location:
+        str(location.fullLocation) ??
+        [str(location.city), str(location.country)?.toUpperCase()].filter(Boolean).join(", "),
       description: ["companyDescription", "jobDescription", "qualifications", "additionalInformation"]
         .map((key) => htmlToText(str(obj(sections[key]).text) ?? ""))
         .filter((part) => part !== "")
@@ -439,7 +494,14 @@ export const SITE_ADAPTERS: readonly SiteAdapter[] = [
 ];
 
 /** Job boards whose ToS restrict automated access: user-shared single postings only (ADR 0005). */
-export const RESTRICTED_SITES: readonly string[] = ["linkedin", "indeed", "glassdoor", "stepstone", "xing", "kariyer_net"];
+export const RESTRICTED_SITES: readonly string[] = [
+  "linkedin",
+  "indeed",
+  "glassdoor",
+  "stepstone",
+  "xing",
+  "kariyer_net",
+];
 
 /** Hosts that never are the employer's own domain (job boards, ATS, link shorteners). */
 export const NOT_EMPLOYER_HOSTS: readonly string[] = [
@@ -461,7 +523,8 @@ export const NOT_EMPLOYER_HOSTS: readonly string[] = [
 export function siteFor(url: URL): SiteAdapter | null {
   const host = url.hostname.toLowerCase();
   return (
-    SITE_ADAPTERS.find((adapter) => adapter.hosts.some((suffix) => host === suffix || host.endsWith(`.${suffix}`))) ??
-    null
+    SITE_ADAPTERS.find((adapter) =>
+      adapter.hosts.some((suffix) => host === suffix || host.endsWith(`.${suffix}`)),
+    ) ?? null
   );
 }

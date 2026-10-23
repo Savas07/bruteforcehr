@@ -16,7 +16,9 @@ const asArray = (value: Json | undefined): Json[] =>
 /** `@type` matches (`JobPosting`, `schema:JobPosting`, `["JobPosting", …]`, full IRI). */
 function hasType(node: JsonObject, type: string): boolean {
   return asArray(node["@type"]).some(
-    (value) => typeof value === "string" && (value === type || value.endsWith(`/${type}`) || value.endsWith(`:${type}`)),
+    (value) =>
+      typeof value === "string" &&
+      (value === type || value.endsWith(`/${type}`) || value.endsWith(`:${type}`)),
   );
 }
 
@@ -106,7 +108,8 @@ function locationOf(place: Json): JobLocation | null {
   const parsed = parseLocation(parts.join(", "));
   return {
     label: parsed.label,
-    city: parsed.city ?? (locality === null ? null : locality.split(",")[0]?.trim() || null),
+    // Workday writes "US, CA, Santa Clara" as the locality; only a single-part locality is a city.
+    city: parsed.city ?? (locality === null || locality.includes(",") ? null : locality),
     countryCode: parsed.countryCode ?? (country !== null && /^[A-Z]{2}$/.test(country) ? country : null),
   };
 }
@@ -118,18 +121,25 @@ function locationOf(place: Json): JobLocation | null {
 export function postingFromSchemaOrg(node: JsonObject): ExtractedPosting {
   const title = cleanLine(text(node.title) ?? text(node.name));
   const organization = asArray(node.hiringOrganization)[0];
-  const company = cleanLine(typeof organization === "string" ? organization : text(organization ?? null));
-  const companyUrl = isObject(organization)
-    ? (text(organization.sameAs) ?? text(organization.url))
-    : null;
+  // Workday names the legal entity with a numeric company code ("2100 NVIDIA USA").
+  const company = cleanLine(
+    (typeof organization === "string" ? organization : text(organization ?? null))?.replace(
+      /^\d{2,6}\s+(?=\p{L})/u,
+      "",
+    ),
+  );
+  const companyUrl = isObject(organization) ? (text(organization.sameAs) ?? text(organization.url)) : null;
 
   const locations: JobLocation[] = [];
   for (const place of asArray(node.jobLocation)) {
     const location = locationOf(place);
-    if (location !== null && !locations.some((known) => known.label === location.label)) locations.push(location);
+    if (location !== null && !locations.some((known) => known.label === location.label))
+      locations.push(location);
   }
 
-  const locationType = asArray(node.jobLocationType).map((value) => text(value) ?? "").join(" ");
+  const locationType = asArray(node.jobLocationType)
+    .map((value) => text(value) ?? "")
+    .join(" ");
   const eligibility = asArray(node.applicantLocationRequirements)
     .map((value) => text(value))
     .filter((value): value is string => value !== null);
@@ -193,7 +203,8 @@ function microdataItem(scope: HtmlElement): JsonObject {
         if (isScope) value = microdataItem(child);
         else if (child.tag === "meta") value = child.attrs.content ?? "";
         else if (["a", "link", "area"].includes(child.tag)) value = child.attrs.href ?? "";
-        else if (["img", "audio", "video", "source", "iframe"].includes(child.tag)) value = child.attrs.src ?? "";
+        else if (["img", "audio", "video", "source", "iframe"].includes(child.tag))
+          value = child.attrs.src ?? "";
         else if (child.tag === "time") value = child.attrs.datetime ?? textOf(child);
         else if (child.tag === "data" || child.tag === "meter") value = child.attrs.value ?? textOf(child);
         else if (props.includes("description")) value = serialize(child);

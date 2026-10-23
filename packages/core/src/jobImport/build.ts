@@ -43,7 +43,8 @@ export function buildImportedJob(posting: ExtractedPosting, context: ImportedJob
   const isDirect = context.site?.isDirectFromEmployer ?? true;
   const pageHost = hostOf(context.url);
   // An unknown host is the employer's own careers site.
-  const ownDomain = context.site === null && pageHost !== null ? pageHost.replace(CAREERS_SUBDOMAIN, "") : null;
+  const ownDomain =
+    context.site === null && pageHost !== null ? pageHost.replace(CAREERS_SUBDOMAIN, "") : null;
   const companyDomain = companyDomainOf(posting.companyUrl, NOT_EMPLOYER_HOSTS) ?? ownDomain;
 
   const truncated = posting.description.length > MAX_DESCRIPTION_CHARS;
@@ -66,7 +67,13 @@ export function buildImportedJob(posting: ExtractedPosting, context: ImportedJob
     applyEmail: posting.applyEmail,
     isDirectFromEmployer: isDirect,
     title,
-    locationText: posting.locations.length === 0 ? null : posting.locations.map((location) => location.label).join(" · ").slice(0, 300),
+    locationText:
+      posting.locations.length === 0
+        ? null
+        : posting.locations
+            .map((location) => location.label)
+            .join(" · ")
+            .slice(0, 300),
     salary: posting.salary,
     postedAt: posting.datePosted,
     firstSeenAt: context.at,
@@ -93,7 +100,10 @@ export function buildImportedJob(posting: ExtractedPosting, context: ImportedJob
     relocationSupport: detectRelocationSupport(description),
     language,
     description,
-    skills: (posting.skills.length > 0 ? posting.skills : extractSkills(`${title}\n${description}`)).slice(0, 100),
+    skills: (posting.skills.length > 0 ? posting.skills : extractSkills(`${title}\n${description}`)).slice(
+      0,
+      100,
+    ),
     postedAt: posting.datePosted,
     expiresAt: posting.validThrough,
     fingerprint: jobFingerprint(fields),

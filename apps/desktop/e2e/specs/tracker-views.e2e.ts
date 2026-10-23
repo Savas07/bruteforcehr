@@ -77,10 +77,27 @@ async function capture(name: string): Promise<void> {
   }
 }
 
-/** Chooses `value` in the native select labelled `label` (the label's `for` names it). */
+/**
+ * Chooses `value` in the native select labelled `label` (the label's `for` names it). WebDriver's
+ * option clicks don't reach React's `onChange` in WKWebView or WebView2, so set the value and
+ * dispatch `change` as the browser does after a real pick.
+ */
 async function selectByLabel(label: string, value: string): Promise<void> {
   const id = await $(`label=${label}`).getAttribute("for");
-  await $(`[id="${id}"]`).selectByAttribute("value", value);
+  if (id === null) throw new Error(`no select labelled "${label}"`);
+  await browser.execute(
+    (selectId: string, next: string) => {
+      const select = document.getElementById(selectId);
+      if (!(select instanceof HTMLSelectElement)) throw new Error(`no select #${selectId}`);
+      select.value = next;
+      select.dispatchEvent(new Event("change", { bubbles: true }));
+    },
+    id,
+    value,
+  );
+  await browser.waitUntil(async () => (await $(`[id="${id}"]`).getValue()) === value, {
+    timeoutMsg: `"${label}" didn't change to ${value}`,
+  });
 }
 
 describe("Tracker table + CSV import", () => {

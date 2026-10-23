@@ -641,6 +641,11 @@ function isKnownSource(slug: string): slug is KnownJobSource {
   return Object.hasOwn(SOURCE_NAMES, slug);
 }
 
+/** Display name of a job source slug ("greenhouse" → "Greenhouse"); null for unnamed or unknown sources. */
+export function jobSourceName(slug: string): string | null {
+  return isKnownSource(slug) ? SOURCE_NAMES[slug] : null;
+}
+
 function sourceName(link: JobSourceLink): string {
   return (isKnownSource(link.source) ? SOURCE_NAMES[link.source] : null) ?? sourceHost(link.url);
 }

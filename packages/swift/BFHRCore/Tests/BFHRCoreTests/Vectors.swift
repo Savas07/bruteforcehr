@@ -66,6 +66,17 @@ struct Subject: StatusTracked, Decodable, Equatable {
     let statusChangedAt: Date
 }
 
+struct SuggestionSubject: SuggestionTracked, Decodable, Equatable {
+    let id: String
+    let status: ApplicationStatus
+    let appliedAt: Date?
+    let statusChangedAt: Date
+    let followUpSnoozedUntil: Date?
+    let followUpDismissedAt: Date?
+    let ghostedSnoozedUntil: Date?
+    let ghostedDismissedAt: Date?
+}
+
 struct StateMachineVectors: Decodable {
     struct StatusRow: Decodable {
         let status: ApplicationStatus
@@ -118,6 +129,15 @@ struct StateMachineVectors: Decodable {
         let cases: [Case]
     }
 
+    struct VisibleSuggestionCase: Decodable {
+        let name: String
+        let application: SuggestionSubject
+        let history: String
+        let now: Date
+        let settings: SuggestionSettings
+        let expected: VisibleSuggestions
+    }
+
     struct MatchBandCase: Decodable {
         let score: Int
         let band: MatchBand
@@ -130,6 +150,7 @@ struct StateMachineVectors: Decodable {
     let transition: [TransitionCase]
     let revert: [RevertCase]
     let suggestions: Suggestions
+    let visibleSuggestions: [VisibleSuggestionCase]
     let matchBand: [MatchBandCase]
 }
 

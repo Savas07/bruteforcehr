@@ -34,7 +34,8 @@ export function fakeFetch(recorded: readonly Recorded[]): FakeFetch {
     calls.push({ url, method, headers, body: typeof init?.body === "string" ? init.body : null });
     const hit = recorded.find(
       (entry) =>
-        (entry.method ?? "GET") === method && (typeof entry.url === "string" ? entry.url === url : entry.url.test(url)),
+        (entry.method ?? "GET") === method &&
+        (typeof entry.url === "string" ? entry.url === url : entry.url.test(url)),
     );
     if (hit === undefined) {
       if (url.endsWith("/robots.txt")) return new Response("", { status: 404 });

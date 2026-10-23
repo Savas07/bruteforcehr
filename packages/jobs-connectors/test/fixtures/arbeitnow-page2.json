@@ -1,0 +1,44 @@
+{
+  "data": [
+    {
+      "slug": "auftragskoordinator-produktionsplanung-munich-276757",
+      "company_name": "MY Humancapital GmbH",
+      "title": "Auftragskoordinator Produktionsplanung (m/w/d)",
+      "description": "<p><strong>Auftragskoordinator Produktionsplanung (m/w/d) - Vollzeit | München</strong></p> <p>Im Auftrag unseres Partnerunternehmens in München suchen wir Sie zum nächstmöglichen Zeitpunkt als <strong>„Auftragskoordinator Produktionsplanung (m/w/d)“</strong>. </p> <h2><strong>Aufgaben</strong></h2> <ul> <li>Als Produktionsplaner (m/w/d) erstellen und steuern Sie standortübergreifende Produktions- und Grobplanungen unter Berücksichtigung von Kapazitäten und Terminen</li> <li>Sie prüfen Kundenaufträge auf Realisierbarkeit, steuern die Einlastung im ERP-System und überwachen Fertigungsressourcen sowie Produktionsabläufe</li> <li>Darüber hinaus optimieren Sie Bestände, Dispositionsparameter und Bevorratungskonzepte für Eigenfertigungs- und Fremdbeschaffungskomponenten</li> <li>Zusätzlich koordinieren Sie Bedarfstermine, Änderungsprozesse und Reklamationen in enger Zusammenarbeit mit Fertigung, Einkauf, Logistik und Arbeitsvorbereitung</li> <li>Sie analysieren Kapazitätsrisiken, erstellen Forecasts und unterstützen die kontinuierliche Verbesserung von Planungs- und Steuerungsprozessen</li> </ul> <h2><strong>Qualifikation</strong></h2> <ul> <li>Sie verfügen über ein abgeschlossenes Studium im Bereich Maschinenbau, Elektrotechnik, Fahrzeugtechnik, Wirtschaftsingenieurwesen oder eine vergleichbare Qualifikation</li> <li>Idealerweise bringen Sie Berufserfahrung als Produktionsplaner (m/w/d), Fertigungsplaner (m/w/d), Arbeitsvorbereiter (m/w/d) oder Produktionssteuerer (m/w/d) mit</li",
+      "remote": false,
+      "url": "https://www.arbeitnow.com/jobs/companies/my-humancapital-gmbh/auftragskoordinator-produktionsplanung-munich-276757",
+      "tags": ["Consulting"],
+      "job_types": ["Unbefristeter arbeitsvertrag"],
+      "location": "Munich",
+      "created_at": 1792774841
+    },
+    {
+      "slug": "it-support-specialist-2nd-level-munich-201344",
+      "company_name": "MY Humancapital GmbH",
+      "title": "IT Support Specialist 2nd Level (m/w/d)",
+      "description": "<p><strong>IT Support Specialist 2nd Level (m/w/d) - Vollzeit | Festanstellung | München </strong></p> <p>Im Auftrag unseres Partnerunternehmens in München suchen wir Sie zum nächstmöglichen Zeitpunkt als <strong>„IT Support Specialist 2nd Level (m/w/d)“</strong>.</p> <h2><strong>Aufgaben</strong></h2> <ul> <li>Als Technischer IT-Support (m/w/d) übernehmen den Second-Level-Support für Mitarbeitende sowie angebundene Außenstellen und Tochtergesellschaften bei technischen IT-Anfragen</li> <li>Sie stellen den reibungslosen Betrieb der Client-Infrastruktur sicher und analysieren sowie beheben technische Störungen</li> <li>Serviceanfragen bearbeiten Sie eigenständig und entwickeln nachhaltige Lösungen im Client-Umfeld</li> <li>Als kompetenter Ansprechpartner unterstützen Sie Anwender bei komplexen IT-Problemen und sorgen für eine hohe Servicequalität</li> <li>Darüber hinaus wirken Sie an der Optimierung des operativen IT-Betriebs und der Supportprozesse mit</li> </ul> <h2><strong>Qualifikation</strong></h2> <ul> <li>Grundlage bildet eine abgeschlossene Ausbildung, beispielsweise als Fachinformatiker für Systemintegration (m/w/d), Kaufmann für Digitalisierungsmanagement (m/w/d), IT-Systemelektroniker (m/w/d) oder eine vergleichbare Qualifikation</li> <li>Sie bringen bereits Berufserfahrung als IT-Systemadministrator (m/w/d), IT-Support-Mitarbeiter (m/w/d), IT-Service-Desk-Mitarbeiter (m/w/d), Fachinformatiker Systemintegration (m/w/d) oder IT-Administrator (m/w/d) mit</li> <li>Sie ",
+      "remote": false,
+      "url": "https://www.arbeitnow.com/jobs/companies/my-humancapital-gmbh/it-support-specialist-2nd-level-munich-201344",
+      "tags": ["Information Systems"],
+      "job_types": ["Unbefristeter arbeitsvertrag"],
+      "location": "Munich",
+      "created_at": 1792774841
+    }
+  ],
+  "links": {
+    "first": "https://www.arbeitnow.com/api/job-board-api?page=1",
+    "last": null,
+    "prev": "https://www.arbeitnow.com/api/job-board-api?page=1",
+    "next": "https://www.arbeitnow.com/api/job-board-api?page=3"
+  },
+  "meta": {
+    "current_page": 2,
+    "current_page_url": "https://www.arbeitnow.com/api/job-board-api?page=2",
+    "from": 101,
+    "path": "https://www.arbeitnow.com/api/job-board-api",
+    "per_page": 2,
+    "to": 2,
+    "terms": "This is a free public API for jobs, please do not abuse. I would appreciate linking back to the site. By using the API, you agree to the terms of service present on Arbeitnow.com",
+    "info": "Jobs are updated every hour and order by the `created_at` timestamp. Use `?page=` to paginate. Read more information here: https://www.arbeitnow.com/blog/job-board-api"
+  }
+}

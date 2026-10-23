@@ -559,7 +559,7 @@ describe("scheduler", () => {
   it("picks one due search per user", () => {
     const doc = (uid: string, id: string) => ({
       id,
-      ref: { parent: { parent: { id: uid } } },
+      ref: { path: `users/${uid}/savedSearches/${id}`, parent: { parent: { id: uid } } },
       exists: true,
       data: () => ({
         name: "Backend",
@@ -623,7 +623,7 @@ describe("secrets", () => {
         ),
       ).toBe(true);
     } finally {
-      for (const secret of JOB_SOURCE_SECRETS) delete process.env[secret.name];
+      for (const secret of JOB_SOURCE_SECRETS) Reflect.deleteProperty(process.env, secret.name);
     }
   });
 

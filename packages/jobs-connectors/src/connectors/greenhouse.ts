@@ -34,14 +34,21 @@ export const greenhouse: BoardConnector = {
   attribution: { label: "Greenhouse", url: "https://www.greenhouse.com", minSize: null },
   async list(board, context): Promise<Listing[]> {
     const url = `https://boards-api.greenhouse.io/v1/boards/${encodeURIComponent(board.boardToken)}/jobs?content=true`;
-    const response = await context.http.request(url, { acceptStatus: [404], headers: { Accept: "application/json" } });
+    const response = await context.http.request(url, {
+      acceptStatus: [404],
+      headers: { Accept: "application/json" },
+    });
     if (response.status === 404) throw new SourceError("invalid_response", "board not found");
     const parsed = GreenhouseJobsSchema.safeParse(JSON.parse(response.body));
     if (!parsed.success) throw new SourceError("invalid_response", "unexpected Greenhouse payload");
     return parsed.data.jobs.map((job) => {
       // `location.name` is the board's wording; offices only fill in when it is empty.
       const named = (job.location?.name ?? "").split(";");
-      const locations = (named.some((value) => value.trim() !== "") ? named : (job.offices ?? []).map((office) => office.location ?? office.name ?? ""))
+      const locations = (
+        named.some((value) => value.trim() !== "")
+          ? named
+          : (job.offices ?? []).map((office) => office.location ?? office.name ?? "")
+      )
         .map((value) => value.trim())
         .filter((value) => value !== "");
       return {

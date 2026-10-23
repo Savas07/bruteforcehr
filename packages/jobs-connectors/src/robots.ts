@@ -53,7 +53,9 @@ function patternMatches(pattern: string, path: string): boolean {
  */
 export function isAllowedByRobots(rules: RobotsRules, agent: string, path: string): boolean {
   const name = agent.toLowerCase();
-  const own = rules.groups.filter((group) => group.agents.some((value) => value !== "*" && name.includes(value)));
+  const own = rules.groups.filter((group) =>
+    group.agents.some((value) => value !== "*" && name.includes(value)),
+  );
   const groups = own.length > 0 ? own : rules.groups.filter((group) => group.agents.includes("*"));
   let best: { allow: boolean; length: number } | null = null;
   for (const group of groups) {

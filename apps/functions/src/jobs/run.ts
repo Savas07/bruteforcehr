@@ -25,7 +25,7 @@ import { collectListings, type WatchedBoard } from "./collect";
 import { type Embedder, profileEmbeddingText } from "./embeddings";
 import { type MatchOutcome, matchJobs } from "./matcher";
 import { loadMatchingContext, type MatchingContext } from "./profile-context";
-import { UserQuota } from "./quota";
+import type { UserQuota } from "./quota";
 import { SourceState, storageFeedCache } from "./source-state";
 import { JobStore } from "./store";
 

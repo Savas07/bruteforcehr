@@ -53,25 +53,30 @@ export interface HttpClientOptions {
   onRobots?: (record: RobotsRecord) => void;
 }
 
-/** Markers of bot challenges and CAPTCHAs. Seeing one stops the fetch: we never solve them. */
-const CHALLENGE_MARKERS = [
-  /captcha/i,
+/** Markers that only appear on bot-challenge interstitials (any status). */
+const CHALLENGE_PAGE_MARKERS = [
   /cf-chl|challenge-platform|cf_chl_opt/i,
   /Attention Required! \| Cloudflare/i,
   /<title>Just a moment\.\.\.<\/title>/i,
   /px-captcha|perimeterx/i,
-  /datadome/i,
-  /Access Denied.{0,200}Reference #/is,
-  /are you a robot|unusual traffic|verify you are human/i,
+  /are you a robot|unusual traffic from your|verify you are human/i,
 ];
 
+/**
+ * Markers that mean a block only on an error/interstitial status: real job pages may embed a
+ * CAPTCHA widget on their application form or mention one in a script.
+ */
+const BLOCK_STATUS_MARKERS = [/captcha/i, /datadome/i, /Access Denied.{0,200}Reference #/is];
+
+/** A bot challenge or CAPTCHA page. Seeing one stops the fetch: we never solve them (ADR 0005). */
 export function isBotChallenge(response: Pick<HttpResponse, "status" | "body" | "headers">): boolean {
   if (response.headers["cf-mitigated"] === "challenge") return true;
   if (![200, 202, 403, 429, 503].includes(response.status)) return false;
-  // A real page may mention "captcha" in a script name; only short or error-status pages count.
+  // Challenge interstitials are small; a full page that merely mentions a marker is not one.
+  if (response.body.length > 200_000) return false;
   const sample = response.body.slice(0, 20_000);
-  if (response.status === 200 && response.body.length > 200_000) return false;
-  return CHALLENGE_MARKERS.some((marker) => marker.test(sample));
+  if (CHALLENGE_PAGE_MARKERS.some((marker) => marker.test(sample))) return true;
+  return response.status !== 200 && BLOCK_STATUS_MARKERS.some((marker) => marker.test(sample));
 }
 
 /** Parses `Retry-After` (seconds or HTTP date) into milliseconds from `now`. */

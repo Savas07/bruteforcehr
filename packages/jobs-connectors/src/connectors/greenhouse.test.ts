@@ -29,7 +29,11 @@ describe("greenhouse", () => {
     expect(draft?.remoteType).toBe("remote");
     expect(draft?.locations[0]?.countryCode).toBe("FR");
     expect(draft?.description).not.toMatch(/<|&lt;/);
-    expect(listings[2]?.locations).toEqual(["Remote, Canada", "Remote, United Kingdom", "Remote, United States"]);
+    expect(listings[2]?.locations).toEqual([
+      "Remote, Canada",
+      "Remote, United Kingdom",
+      "Remote, United States",
+    ]);
     expect(context.fake.calls[0]?.headers["user-agent"]).toMatch(/^BruteForceHR\//);
   });
 
@@ -42,6 +46,8 @@ describe("greenhouse", () => {
 
   it("reports a missing board", async () => {
     const context = testContext([{ url: URL_US.replace("gitlab", "nope"), status: 404, body: "{}" }]);
-    await expect(greenhouse.list({ boardToken: "nope", region: "us" }, context)).rejects.toBeInstanceOf(SourceError);
+    await expect(greenhouse.list({ boardToken: "nope", region: "us" }, context)).rejects.toBeInstanceOf(
+      SourceError,
+    );
   });
 });

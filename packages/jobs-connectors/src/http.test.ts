@@ -75,7 +75,14 @@ describe("HttpClient", () => {
     const context = testContext([{ url: "https://board.example/jobs", status: 403, body: page }]);
     expect(await reason(context.http.getText("https://board.example/jobs"))).toBe("blocked");
     expect(context.fake.calls).toHaveLength(1);
-    expect(isBotChallenge({ status: 200, body: "<form><div class='g-recaptcha'></div>", headers: {} })).toBe(
+    expect(isBotChallenge({ status: 403, body: "<form><div class='g-recaptcha'></div>", headers: {} })).toBe(
+      true,
+    );
+    // A real page with a CAPTCHA on its application form is not a challenge.
+    expect(
+      isBotChallenge({ status: 200, body: "<h1>Engineer</h1><div class='g-recaptcha'></div>", headers: {} }),
+    ).toBe(false);
+    expect(isBotChallenge({ status: 200, body: "<p>Please verify you are human</p>", headers: {} })).toBe(
       true,
     );
     expect(isBotChallenge({ status: 200, body: "<h1>Jobs</h1>", headers: {} })).toBe(false);

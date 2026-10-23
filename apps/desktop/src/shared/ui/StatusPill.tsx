@@ -144,7 +144,9 @@ export function InteractiveStatusPill({
 }: InteractiveStatusPillProps) {
   const intl = useIntl();
   return (
+    // Non-modal like SnoozeMenu: no aria-hidden app behind the open menu (axe aria-hidden-focus).
     <DropdownMenu.Root
+      modal={false}
       {...(open === undefined ? {} : { open })}
       {...(onOpenChange === undefined ? {} : { onOpenChange })}
     >

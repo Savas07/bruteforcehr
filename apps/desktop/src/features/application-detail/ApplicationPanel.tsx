@@ -7,7 +7,7 @@
  */
 import { useNavigate } from "@tanstack/react-router";
 import { FileQuestion, Maximize2 } from "lucide-react";
-import { type RefObject, useRef, useState } from "react";
+import { type RefObject, useEffect, useRef, useState } from "react";
 import { defineMessages, useIntl } from "react-intl";
 import { useTrackerModel } from "../../data/tracker/model";
 import { useKeyBindings } from "../../shared/keyboard/useKeyBindings";
@@ -185,6 +185,22 @@ function PanelDetail({
     },
   ]);
 
+  // As on the full page: answering, snoozing or restoring the suggestion removes the focused
+  // control; focus goes to what replaced it, or to the panel itself so its keys keep working.
+  const upNextRef = useRef<HTMLDivElement>(null);
+  const upNext = suggestion !== null ? "card" : detail.snoozed !== null ? "snoozed" : "none";
+  const previousUpNext = useRef(upNext);
+  useEffect(() => {
+    if (previousUpNext.current === upNext) return;
+    previousUpNext.current = upNext;
+    if (document.activeElement !== document.body) return;
+    const target =
+      upNext === "none"
+        ? panelRef.current?.closest<HTMLElement>('[tabindex="-1"]')
+        : upNextRef.current?.querySelector("button");
+    target?.focus();
+  }, [upNext, panelRef]);
+
   return (
     <>
       <RecordHeader
@@ -203,19 +219,21 @@ function PanelDetail({
         onNextAction={() => undefined}
         onOpenPosting={actions.openLink}
       />
-      {suggestion && (
-        <SuggestionCard
-          suggestion={suggestion}
-          actions={actions}
-          snoozeMinDate={detail.snoozeMinDate}
-          timeZone={detail.timeZone}
-          snoozeOpen={snoozeOpen}
-          onSnoozeOpenChange={setSnoozeOpen}
-        />
-      )}
-      {detail.snoozed && (
-        <SnoozedLine snoozed={detail.snoozed} applicationId={applicationId} actions={actions} />
-      )}
+      <div ref={upNextRef} className="contents">
+        {suggestion && (
+          <SuggestionCard
+            suggestion={suggestion}
+            actions={actions}
+            snoozeMinDate={detail.snoozeMinDate}
+            timeZone={detail.timeZone}
+            snoozeOpen={snoozeOpen}
+            onSnoozeOpenChange={setSnoozeOpen}
+          />
+        )}
+        {detail.snoozed && (
+          <SnoozedLine snoozed={detail.snoozed} applicationId={applicationId} actions={actions} />
+        )}
+      </div>
       <ApplicationSummaryBlock summary={detail.summary} />
       <TimelineSection
         composer={false}

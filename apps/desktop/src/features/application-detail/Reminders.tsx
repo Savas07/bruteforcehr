@@ -6,7 +6,7 @@
  */
 import { BellRing } from "lucide-react";
 import { Switch } from "radix-ui";
-import { useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { defineMessages, useIntl } from "react-intl";
 import { useInterviewReminderSetting } from "../../data/tracker/InterviewReminders";
 import { chrome } from "../../lib/desktop";
@@ -103,15 +103,30 @@ export function RemindersSection({
 }) {
   const intl = useIntl();
   const { reminder, applicationId } = detail;
+  // Save, Cancel, Esc and Remove each replace the focused control (the editor, the Remove button).
+  // Focus goes to the line's first button (Change / Set a reminder) once the line shows the
+  // expected state, which for Save and Remove can arrive a render later from the store.
+  const line = editing ? "editing" : reminder.label === null ? "none" : "set";
+  const yoursRef = useRef<HTMLDivElement>(null);
+  const refocusWhen = useRef<"set" | "none" | null>(null);
+  useEffect(() => {
+    if (refocusWhen.current !== line) return;
+    refocusWhen.current = null;
+    yoursRef.current?.querySelector<HTMLElement>("button")?.focus();
+  }, [line]);
   return (
     <Section title={intl.formatMessage(messages.title)}>
-      <div className="flex flex-col gap-2">
+      <div ref={yoursRef} className="flex flex-col gap-2">
         <h3 className="text-footnote text-fg-secondary font-medium">{intl.formatMessage(messages.yours)}</h3>
         {editing ? (
           <ReminderEditor
             initial={reminder.draft}
-            onCancel={() => onEditingChange(false)}
+            onCancel={() => {
+              refocusWhen.current = reminder.label === null ? "none" : "set";
+              onEditingChange(false);
+            }}
             onSave={(draft) => {
+              refocusWhen.current = "set";
               onEditingChange(false);
               actions.setReminder(applicationId, reminderPatch(draft, detail.timeZone), reminder.restore);
             }}
@@ -120,9 +135,10 @@ export function RemindersSection({
           <ReminderLine
             reminder={reminder}
             onEdit={() => onEditingChange(true)}
-            onRemove={() =>
-              actions.setReminder(applicationId, { nextAction: null, nextActionAt: null }, reminder.restore)
-            }
+            onRemove={() => {
+              refocusWhen.current = "none";
+              actions.setReminder(applicationId, { nextAction: null, nextActionAt: null }, reminder.restore);
+            }}
           />
         )}
       </div>
@@ -218,7 +234,11 @@ function ReminderEditor({
           <TextInput
             type="date"
             value={draft.date}
-            onChange={(event) => setDraft({ ...draft, date: event.target.value })}
+            // A picked day shows its default time (the hint's 09:00) instead of the engine's grey
+            // placeholder, which reads as the current time in WebKit.
+            onChange={(event) =>
+              setDraft({ ...draft, date: event.target.value, time: draft.time || (event.target.value ? "09:00" : "") })
+            }
           />
         </Field>
         <Field
@@ -261,7 +281,10 @@ function PrepRemindersToggle({ rules }: { rules: ApplicationDetailVM["reminderRu
   const setting = useInterviewReminderSetting();
   const labelId = useId();
   const bodyId = useId();
-  const unavailable = setting.permission === "unsupported" || setting.permission === "denied";
+  const statusId = useId();
+  // Denied stays switchable: after the user allows notifications in the OS settings, switching
+  // on asks again (the alert says so). Only a plain browser (no shell) can't switch at all.
+  const blocked = setting.permission === "denied" || setting.permission === "unsupported";
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-start gap-3">
@@ -280,9 +303,9 @@ function PrepRemindersToggle({ rules }: { rules: ApplicationDetailVM["reminderRu
         </div>
         <Switch.Root
           aria-labelledby={labelId}
-          aria-describedby={bodyId}
+          aria-describedby={blocked ? `${bodyId} ${statusId}` : bodyId}
           checked={setting.enabled}
-          disabled={unavailable || setting.permission === "unknown"}
+          disabled={setting.permission === "unsupported" || setting.permission === "unknown"}
           onCheckedChange={(checked) => {
             if (checked) void setting.enable();
             else setting.disable();
@@ -293,12 +316,16 @@ function PrepRemindersToggle({ rules }: { rules: ApplicationDetailVM["reminderRu
         </Switch.Root>
       </div>
       {setting.permission === "denied" && (
-        <InlineAlert tone="warning" title={intl.formatMessage(messages.deniedTitle)}>
-          {intl.formatMessage(chrome.platform === "macos" ? messages.deniedMac : messages.deniedWindows)}
-        </InlineAlert>
+        <div id={statusId}>
+          <InlineAlert tone="warning" title={intl.formatMessage(messages.deniedTitle)}>
+            {intl.formatMessage(chrome.platform === "macos" ? messages.deniedMac : messages.deniedWindows)}
+          </InlineAlert>
+        </div>
       )}
       {setting.permission === "unsupported" && (
-        <p className="text-footnote text-fg-tertiary">{intl.formatMessage(messages.unsupported)}</p>
+        <p id={statusId} className="text-footnote text-fg-tertiary">
+          {intl.formatMessage(messages.unsupported)}
+        </p>
       )}
     </div>
   );

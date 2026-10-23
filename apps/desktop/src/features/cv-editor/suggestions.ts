@@ -7,7 +7,7 @@
 import { defineMessages, type IntlShape, type MessageDescriptor } from "react-intl";
 import { textAt, type CvDraft, type CvTextTarget } from "./draft";
 
-export type CvSuggestionMode = "shorten" | "strongerVerb" | "addResult" | "rewrite";
+export type CvSuggestionMode = "shorten" | "strongerVerb" | "addResult" | "rewrite" | "translate";
 
 /** A suggestion as the AI service returns it: where it applies and the proposed text. */
 export interface CvSuggestionInput {
@@ -66,7 +66,10 @@ const messages = defineMessages({
   },
 });
 
-const MODE_MESSAGES: Readonly<Record<CvSuggestionMode, { label: MessageDescriptor; reason: MessageDescriptor }>> = {
+/** Label ("Shorten") and one-line reason per mode; the label also names the "Improve with AI" action. */
+export const SUGGESTION_MODE_MESSAGES: Readonly<
+  Record<CvSuggestionMode, { label: MessageDescriptor; reason: MessageDescriptor }>
+> = {
   shorten: defineMessages({
     label: { id: "cv-editor.suggestion.mode.shorten", defaultMessage: "Shorten" },
     reason: { id: "cv-editor.suggestion.reason.shorten", defaultMessage: "Same facts in fewer words." },
@@ -88,6 +91,13 @@ const MODE_MESSAGES: Readonly<Record<CvSuggestionMode, { label: MessageDescripto
   rewrite: defineMessages({
     label: { id: "cv-editor.suggestion.mode.rewrite", defaultMessage: "Rewrite" },
     reason: { id: "cv-editor.suggestion.reason.rewrite", defaultMessage: "Clearer wording, same meaning." },
+  }),
+  translate: defineMessages({
+    label: { id: "cv-editor.suggestion.mode.translate", defaultMessage: "Translate" },
+    reason: {
+      id: "cv-editor.suggestion.reason.translate",
+      defaultMessage: "Same facts, in the language you chose. Check names and titles read right.",
+    },
   }),
 };
 
@@ -166,6 +176,7 @@ export function wordDiff(before: string, after: string): DiffToken[] {
   return merged;
 }
 
+/** Distinct bracketed placeholders ("[X%]", "[X]", "[date]", "[team size]") in order of appearance. */
 export function findPlaceholders(text: string): string[] {
   return [...new Set(text.match(PLACEHOLDER) ?? [])];
 }
@@ -227,8 +238,8 @@ export function buildSuggestionVMs(
       id: input.id,
       target: input.target,
       mode: input.mode,
-      modeLabel: intl.formatMessage(MODE_MESSAGES[input.mode].label),
-      reason: intl.formatMessage(MODE_MESSAGES[input.mode].reason),
+      modeLabel: intl.formatMessage(SUGGESTION_MODE_MESSAGES[input.mode].label),
+      reason: intl.formatMessage(SUGGESTION_MODE_MESSAGES[input.mode].reason),
       location,
       original,
       proposed: input.proposed,

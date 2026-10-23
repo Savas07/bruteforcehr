@@ -12,6 +12,8 @@ fn main() {
             "take_auth_link",
             "set_signed_in",
             "open_mail_inbox",
+            "print_cv_pdf",
+            "save_export",
         ]),
     ))
     .expect("failed to run tauri-build");

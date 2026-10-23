@@ -9,7 +9,7 @@
  */
 import { useNavigate } from "@tanstack/react-router";
 import { Eye, FileUp, History, PanelRight, PenLine, Sparkles } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { defineMessage, defineMessages, useIntl } from "react-intl";
 import { destinationMessages } from "../../lib/destinations";
 import { useConnectivity } from "../../shared/connectivity";
@@ -27,7 +27,7 @@ import { useToast } from "../../shared/ui/Toast";
 import { useUnsavedChanges } from "../../shared/unsavedChanges";
 import { keywordCoverage } from "./coverage";
 import { CvListPane } from "./CvListPane";
-import { designSuggestions } from "./design-suggestions";
+import { CvSuggestionSeedContext } from "./suggestionSeed";
 import {
   addSkillKeyword,
   emptyItem,
@@ -42,11 +42,15 @@ import {
 } from "./draft";
 import { EditorPane, type EditorOps } from "./EditorPane";
 import { Inspector, type InspectorTab } from "./Inspector";
-import type { CvEditorModel, CvEditorVM, CvFirstUseVM } from "./model";
+import type { CvEditorModel, CvEditorVM, CvFirstUseVM, CvRevisionVM } from "./model";
+import { useCvBackend, type CvMetadataPatch } from "./backend";
+import { CompareDialog, ConflictBanner, conflictMessages } from "./Compare";
+import { useCvSession } from "./session";
+import { useCvCreation, type CvCreation } from "./useCvCreation";
 import type { TimeVM } from "../../shared/model/types";
 import { PreviewPane } from "./PreviewPane";
 import type { CvPreviewBlock } from "./preview-document";
-import { buildSuggestionVMs, fillPlaceholders, hasUnfilledPlaceholders } from "./suggestions";
+import { buildSuggestionVMs, fillPlaceholders, hasUnfilledPlaceholders, type CvSuggestionInput } from "./suggestions";
 import { useWindowQuery } from "./useWindowWidth";
 
 /** Names this CV in "Save your changes before restarting?" (also used by src/design/updates.tsx). */
@@ -77,16 +81,6 @@ const messages = defineMessages({
   restored: { id: "cv-editor.toast.restored", defaultMessage: "Restored the version from {date}" },
   skillAdded: { id: "cv-editor.toast.skillAdded", defaultMessage: "Added {keyword} to Skills" },
   excluded: { id: "cv-editor.toast.excluded", defaultMessage: "Left {keyword} out of the check" },
-  harnessImport: {
-    id: "cv-editor.harness.import",
-    defaultMessage: "Import opens the file picker, then the review step.",
-    description: "Design build only: what Import a CV will do",
-  },
-  harnessScratch: {
-    id: "cv-editor.harness.scratch",
-    defaultMessage: "Start from scratch opens a blank CV with a template picker.",
-    description: "Design build only: what Start from scratch will do",
-  },
   moved: {
     id: "cv-editor.move.moved",
     defaultMessage: "Moved {name} to position {position, number} of {total, number}",
@@ -113,8 +107,27 @@ const messages = defineMessages({
   keysGroup: { id: "cv-editor.keys.group", defaultMessage: "CV editor" },
   openBase: { id: "cv-editor.variant.openBase", defaultMessage: "Open base CV" },
   archivedNote: { id: "cv-editor.archivedNote", defaultMessage: "Archived {time}" },
+  editedSections: {
+    id: "cv-editor.revision.edited",
+    defaultMessage: "Edited {sections}",
+    description: "Version history sentence of a saved editing session; {sections}: 'Summary and Experience'",
+  },
+  updateFailed: {
+    id: "cv-editor.toast.updateFailed",
+    defaultMessage: "That change didn't save. Your CV is as it was; try again in a moment.",
+  },
+  compareConflictTitle: { id: "cv-editor.compare.conflictTitle", defaultMessage: "Compare the two versions" },
+  compareConflictBody: {
+    id: "cv-editor.compare.conflictBody",
+    defaultMessage: "From the other device's version to yours. Whichever you choose, the other stays in Version history.",
+  },
+  compareRevisionTitle: { id: "cv-editor.compare.revisionTitle", defaultMessage: "Compare with now" },
+  compareRevisionBody: {
+    id: "cv-editor.compare.revisionBody",
+    defaultMessage: "From the version of {date} to your CV as it is now.",
+  },
+  save: { id: "cv-editor.keys.save", defaultMessage: "Save now" },
 });
-
 type Fills = Readonly<Record<string, Readonly<Record<string, string>>>>;
 
 function LoadingLayout({ iconsOnly }: { iconsOnly: boolean }) {
@@ -148,9 +161,7 @@ function LoadingLayout({ iconsOnly }: { iconsOnly: boolean }) {
   );
 }
 
-function FirstUse({ firstUse }: { firstUse: CvFirstUseVM }) {
-  const intl = useIntl();
-  const toast = useToast();
+function FirstUse({ firstUse, creation }: { firstUse: CvFirstUseVM; creation: CvCreation }) {
   return (
     <div className="flex min-h-0 flex-1 items-start justify-center overflow-y-auto px-8 py-16">
       <div className="flex w-full max-w-160 flex-col gap-6">
@@ -165,12 +176,7 @@ function FirstUse({ firstUse }: { firstUse: CvFirstUseVM }) {
               <li key={choice.id}>
                 <button
                   type="button"
-                  onClick={() =>
-                    toast.show({
-                      variant: "info",
-                      message: intl.formatMessage(choice.id === "import" ? messages.harnessImport : messages.harnessScratch),
-                    })
-                  }
+                  onClick={choice.id === "import" ? creation.openImport : creation.openNew}
                   className={cx(
                     "hover:bg-surface-hover flex h-full w-full flex-col items-start gap-2 rounded-lg border p-4 text-left",
                     choice.primary ? "border-accent-solid" : "border-line-control",
@@ -217,19 +223,40 @@ function Workspace({
   const docked = useWindowQuery("inspectorDocked");
   const cvId = editor.cvId;
 
-  // Per-CV working copies survive switching CVs (M0: local only).
-  const [drafts, setDrafts] = useState<Readonly<Record<string, CvDraft>>>({});
-  const draft = drafts[cvId] ?? editor.draft;
-  const change = (update: (current: CvDraft) => CvDraft) =>
-    setDrafts((previous) => ({ ...previous, [cvId]: update(previous[cvId] ?? editor.draft) }));
-
+  const backend = useCvBackend();
   const sectionTitles = useMemo(
-    () => Object.fromEntries(editor.sections.map((section) => [section.key, section.title])),
+    (): Readonly<Record<string, string>> => ({
+      ...Object.fromEntries(editor.sections.map((section) => [section.key, section.title])),
+      basics: editor.sections.find((section) => section.key === "header")?.title ?? "",
+    }),
     [editor.sections],
   );
+  const describe = useCallback(
+    (keys: readonly string[]) =>
+      intl.formatMessage(messages.editedSections, {
+        sections: intl.formatList(
+          keys.map((key) => sectionTitles[key] ?? key),
+          { type: "conjunction" },
+        ),
+      }),
+    [intl, sectionTitles],
+  );
+  const session = useCvSession(backend, editor, describe);
+  const { store } = session;
+  const draft = session.draft;
+  const change = (update: (current: CvDraft) => CvDraft) => store.edit(cvId, update);
+  const commit = () => store.commit(cvId);
+
+  const [compare, setCompare] = useState<{ readonly kind: "conflict" } | { readonly kind: "revision"; readonly revision: CvRevisionVM } | null>(
+    null,
+  );
+  const seed = useContext(CvSuggestionSeedContext);
+  // Suggestions `cvAssist` returned in this window (they are proposals, never stored).
+  const [requested, setRequested] = useState<readonly CvSuggestionInput[]>([]);
+  const [assistBusy, setAssistBusy] = useState<ReadonlySet<string>>(new Set());
   const suggestions = useMemo(
-    () => buildSuggestionVMs(designSuggestions, editor.draft, sectionTitles, intl),
-    [editor.draft, sectionTitles, intl],
+    () => buildSuggestionVMs([...seed, ...requested], draft, sectionTitles, intl),
+    [seed, requested, draft, sectionTitles, intl],
   );
   const [decided, setDecided] = useState<Readonly<Record<string, true>>>({});
   const [fills, setFills] = useState<Fills>({});
@@ -243,9 +270,16 @@ function Workspace({
   const [tab, setTab] = useState<InspectorTab>(pending.length > 0 ? "suggestions" : "design");
   const [previewShown, setPreviewShown] = useState(false);
   const [announcement, setAnnouncement] = useState("");
-  const [saveState, setSaveState] = useState<SaveState | null>(null);
-  const [hidden, setHidden] = useState<ReadonlySet<string>>(new Set());
-  const [titles, setTitles] = useState<Readonly<Record<string, string>>>({});
+  const saveState: SaveState | null =
+    session.status === "editing"
+      ? "local"
+      : session.status === "saving"
+        ? offline || editor.pendingSync
+          ? "local"
+          : "saving"
+        : session.status === "failed"
+          ? "failed"
+          : null;
   const [jobId, setJobId] = useState(editor.check.defaultJobId);
   const [excluded, setExcluded] = useState<ReadonlySet<string>>(new Set());
 
@@ -261,26 +295,15 @@ function Workspace({
     target?.focus({ preventScroll: true });
   });
 
-  // Optimistic save: "Saving…" briefly, then "Saved" (or "Saved on this device" offline).
-  const saveTimer = useRef<number | undefined>(undefined);
-  const edited = (update: (current: CvDraft) => CvDraft) => {
-    change(update);
-    setSaveState("saving");
-    window.clearTimeout(saveTimer.current);
-    saveTimer.current = window.setTimeout(() => setSaveState(offline ? "local" : "saved"), 700);
-  };
-  useEffect(() => () => {
-    window.clearTimeout(saveTimer.current);
-  }, []);
-  // While "Saving…" shows, "Restart to update" asks first (src/shared/unsavedChanges.ts); saving
-  // finishes the optimistic write now.
+  const edited = change;
+  // While a session is open, "Restart to update" asks first (src/shared/unsavedChanges.ts);
+  // saving ends the session now.
   useUnsavedChanges(
-    saveState === "saving"
+    session.status === "editing"
       ? {
           label: intl.formatMessage(unsavedLabelMessage, { title: editor.title }),
           save: () => {
-            window.clearTimeout(saveTimer.current);
-            setSaveState(offline ? "local" : "saved");
+            commit();
             return Promise.resolve();
           },
         }
@@ -525,6 +548,14 @@ function Workspace({
       run: () => stepSuggestion(-1),
     },
     {
+      id: "cv-editor.save",
+      keys: "Mod+S",
+      label: intl.formatMessage(messages.save),
+      group: keysGroup,
+      inTextFields: true,
+      run: commit,
+    },
+    {
       id: "cv-editor.inspector.toggle",
       keys: "Mod+Shift+D",
       label: intl.formatMessage(messages.toggleInspector),
@@ -547,13 +578,22 @@ function Workspace({
     setTab("history");
     setInspectorOpen(true);
   };
-  const allRows = [...model.list.groups.flatMap((group) => [group.base, ...group.variants]), ...model.list.archived];
-  const titleOf = (id: string) => titles[id] ?? allRows.find((row) => row.cvId === id)?.title ?? id;
+  const titleOf = (id: string) => model.records[id]?.title ?? id;
+  // Rename and archive write on the latest version this device knows (`version + 1`, like saves).
+  const writeMetadata = (id: string, patch: CvMetadataPatch) => {
+    const record = model.records[id];
+    if (!record) return;
+    backend.updateCv({ id, version: record.version }, patch).done.catch((error: unknown) => {
+      console.error("Couldn't update the CV", error);
+      toast.show({ variant: "info", message: intl.formatMessage(messages.updateFailed) });
+    });
+  };
+  const creation = useCvCreation(model);
 
   const job = editor.check.jobs.find((candidate) => candidate.jobId === jobId) ?? null;
   const coverage = job ? keywordCoverage(job.keywords, draft, excluded, intl) : null;
 
-  const title = titles[cvId] ?? editor.title;
+  const title = editor.title;
   const previewOnly = breakpoints.previewToggle && previewShown;
   const editorVisible = !previewOnly;
   const previewVisible = !breakpoints.previewToggle || previewShown;
@@ -569,6 +609,7 @@ function Workspace({
               variant="editor"
               state={saveState ?? editor.saveStatus.state}
               {...(saveState === null && editor.saveStatus.state === "saved" && { savedAt: editor.saveStatus.time })}
+              {...(saveState === "failed" && { onRetry: commit })}
             />
             {fromCache && <StaleStamp prefix="updated" time={updatedAt} clock={updatedClock} />}
             {editor.archivedAt && <span>{intl.formatMessage(messages.archivedNote, { time: editor.archivedAt.label })}</span>}
@@ -625,8 +666,19 @@ function Workspace({
           </Button>
         </p>
       )}
+      {session.conflict && (
+        <ConflictBanner
+          onKeepMine={() => store.keepMine(cvId)}
+          onUseTheirs={() => store.useTheirs(cvId)}
+          onCompare={() => setCompare({ kind: "conflict" })}
+        />
+      )}
     </header>
   );
+
+  const comparedRevision = compare?.kind === "revision" ? compare.revision : null;
+  const comparedContent = comparedRevision ? editor.revisionContents[comparedRevision.revisionId] : undefined;
+  const workingContent = comparedRevision ? store.content(cvId) : null;
 
   return (
     <div className="flex min-h-0 flex-1">
@@ -634,46 +686,38 @@ function Workspace({
         list={model.list}
         selectedCvId={cvId}
         iconsOnly={iconsOnly}
-        hiddenIds={hidden}
-        titles={titles}
         actions={{
           onSelect: select,
           onRename: (id, next) => {
-            const previous = titles[id];
-            setTitles((current) => ({ ...current, [id]: next }));
+            const record = model.records[id];
+            if (!record) return;
+            const previous = record.title;
+            writeMetadata(id, { title: next });
             toast.show({
               message: intl.formatMessage(messages.renamed, { title: next }),
-              action: undo(() =>
-                setTitles((current) => (previous === undefined ? without(current, id) : { ...current, [id]: previous })),
-              ),
+              action: undo(() => writeMetadata(id, { title: previous })),
             });
           },
           onHistory: openHistory,
           onArchive: (id) => {
-            setHidden((current) => new Set(current).add(id));
+            writeMetadata(id, { archivedAt: new Date() });
             if (id === cvId) {
-              const other = allRows.find((row) => row.cvId !== id && !row.archived && !hidden.has(row.cvId));
+              const other = Object.values(model.records).find((record) => record.cvId !== id && !record.archived);
               if (other) select(other.cvId);
             }
             toast.show({
               message: intl.formatMessage(messages.archived, { title: titleOf(id) }),
-              action: undo(() =>
-                setHidden((current) => {
-                  const next = new Set(current);
-                  next.delete(id);
-                  return next;
-                }),
-              ),
+              action: undo(() => writeMetadata(id, { archivedAt: null })),
             });
           },
           onUnarchive: (id) => {
-            setHidden((current) => {
-              const next = new Set(current);
-              next.delete(id);
-              return next;
-            });
+            writeMetadata(id, { archivedAt: null });
             toast.show({ variant: "info", message: intl.formatMessage(messages.unarchived, { title: titleOf(id) }) });
           },
+          onDuplicate: creation.duplicate,
+          onVariant: creation.openVariant,
+          onNew: creation.openNew,
+          onImport: creation.openImport,
         }}
       />
       <div ref={editorRef} className="relative flex min-h-0 min-w-0 flex-1">
@@ -747,21 +791,75 @@ function Workspace({
             onKeepAll={keepAll}
             onShow={showSuggestion}
             onRestore={(revision) => {
-              const restored = editor.revisionDrafts[revision.revisionId];
-              if (!restored) return;
-              const previous = draft;
-              edited(() => restored);
-              toast.show({
-                message: intl.formatMessage(messages.restored, { date: revision.time.absolute }),
-                action: undo(() => change(() => previous)),
-              });
+              store.restore(cvId, revision.revisionId, intl.formatMessage(messages.restored, { date: revision.time.absolute }));
+              toast.show({ message: intl.formatMessage(messages.restored, { date: revision.time.absolute }) });
             }}
+            onCompare={(revision) => setCompare({ kind: "revision", revision })}
           />
         )}
       </div>
+      {creation.dialogs}
+      {compare?.kind === "conflict" && session.conflict && (
+        <CompareDialog
+          open
+          onOpenChange={(open) => !open && setCompare(null)}
+          title={intl.formatMessage(messages.compareConflictTitle)}
+          description={intl.formatMessage(messages.compareConflictBody)}
+          before={editor.revisionContents[session.conflict.theirsRevisionId] ?? session.conflict.ours}
+          after={session.conflict.ours}
+          sectionTitles={sectionTitles}
+          actions={
+            <>
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  store.useTheirs(cvId);
+                  setCompare(null);
+                }}
+              >
+                {intl.formatMessage(conflictMessages.useTheirs)}
+              </Button>
+              <Button
+                variant="primary"
+                onClick={() => {
+                  store.keepMine(cvId);
+                  setCompare(null);
+                }}
+              >
+                {intl.formatMessage(conflictMessages.keepMine)}
+              </Button>
+            </>
+          }
+        />
+      )}
+      {comparedRevision && comparedContent && workingContent && (
+        <CompareDialog
+          open
+          onOpenChange={(open) => !open && setCompare(null)}
+          title={intl.formatMessage(messages.compareRevisionTitle)}
+          description={intl.formatMessage(messages.compareRevisionBody, { date: comparedRevision.time.absolute })}
+          before={comparedContent}
+          after={workingContent}
+          sectionTitles={sectionTitles}
+        />
+      )}
       <p role="status" className="sr-only">
         {announcement}
       </p>
+    </div>
+  );
+}
+
+/** No CVs yet, or none to open (all archived): the start choices. */
+function NoCvOpen({ model, sectionTitle }: { model: CvEditorModel; sectionTitle: string }) {
+  const creation = useCvCreation(model);
+  return (
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="px-8 pt-5">
+        <ScreenTitle title={sectionTitle} />
+      </div>
+      {model.firstUse && <FirstUse firstUse={model.firstUse} creation={creation} />}
+      {creation.dialogs}
     </div>
   );
 }
@@ -794,16 +892,7 @@ export default function CvEditorScreen({ model }: ScreenProps<CvEditorModel>) {
     );
   }
   const { data } = model;
-  if (data.firstUse || !data.editor) {
-    return (
-      <div className="flex min-h-0 flex-1 flex-col">
-        <div className="px-8 pt-5">
-          <ScreenTitle title={sectionTitle} />
-        </div>
-        {data.firstUse && <FirstUse firstUse={data.firstUse} />}
-      </div>
-    );
-  }
+  if (data.firstUse || !data.editor) return <NoCvOpen model={data} sectionTitle={sectionTitle} />;
   return (
     <Workspace
       model={data}

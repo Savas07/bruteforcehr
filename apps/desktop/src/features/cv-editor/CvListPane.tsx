@@ -4,7 +4,7 @@
  * Version history (Mod+Shift+H), Archive. Below 1280 px window width it collapses to icons with
  * tooltips. J / K / ↑ / ↓ move between CVs.
  */
-import { Archive, ArchiveRestore, FileText, History, MoreHorizontal, PencilLine } from "lucide-react";
+import { Archive, ArchiveRestore, Copy, FilePlus2, FileText, GitBranch, History, MoreHorizontal, PencilLine, Plus } from "lucide-react";
 import { ContextMenu, DropdownMenu } from "radix-ui";
 import { useRef, useState, type ReactNode } from "react";
 import { defineMessages, useIntl } from "react-intl";
@@ -36,6 +36,11 @@ const messages = defineMessages({
   renameField: { id: "cv-editor.list.renameField", defaultMessage: "CV name" },
   history: { id: "cv-editor.list.history", defaultMessage: "Version history" },
   archive: { id: "cv-editor.list.archive", defaultMessage: "Archive" },
+  duplicate: { id: "cv-editor.list.duplicate", defaultMessage: "Duplicate" },
+  variant: { id: "cv-editor.list.variant", defaultMessage: "New variant…" },
+  newCv: { id: "cv-editor.list.new", defaultMessage: "New CV" },
+  newBlank: { id: "cv-editor.list.newBlank", defaultMessage: "Start a new CV…" },
+  newImport: { id: "cv-editor.list.newImport", defaultMessage: "Import a CV…" },
   unarchive: { id: "cv-editor.list.unarchive", defaultMessage: "Move back to your CVs" },
   noArchived: {
     id: "cv-editor.list.noArchived",
@@ -54,6 +59,11 @@ export interface CvListActions {
   readonly onHistory: (cvId: string) => void;
   readonly onArchive: (cvId: string) => void;
   readonly onUnarchive: (cvId: string) => void;
+  readonly onDuplicate: (cvId: string) => void;
+  /** Variants are made from base CVs only (one level, like the list's grouping). */
+  readonly onVariant: (cvId: string) => void;
+  readonly onNew: () => void;
+  readonly onImport: () => void;
 }
 
 function RowMenu({
@@ -76,6 +86,14 @@ function RowMenu({
       <MenuItem icon={History} shortcut="Mod+Shift+H" onSelect={() => actions.onHistory(row.cvId)}>
         {intl.formatMessage(messages.history)}
       </MenuItem>
+      <MenuItem icon={Copy} onSelect={() => actions.onDuplicate(row.cvId)}>
+        {intl.formatMessage(messages.duplicate)}
+      </MenuItem>
+      {row.kind === "base" && !row.archived && (
+        <MenuItem icon={GitBranch} onSelect={() => actions.onVariant(row.cvId)}>
+          {intl.formatMessage(messages.variant)}
+        </MenuItem>
+      )}
       {row.archived ? (
         <MenuItem icon={ArchiveRestore} onSelect={() => actions.onUnarchive(row.cvId)}>
           {intl.formatMessage(messages.unarchive)}
@@ -249,36 +267,19 @@ export function CvListPane({
   list,
   selectedCvId,
   iconsOnly,
-  hiddenIds,
-  titles,
   actions,
 }: {
   list: CvListVM;
   selectedCvId: string | null;
   iconsOnly: boolean;
-  /** Archived on this device (optimistic). */
-  hiddenIds: ReadonlySet<string>;
-  /** Renamed on this device (optimistic). */
-  titles: Readonly<Record<string, string>>;
   actions: CvListActions;
 }) {
   const intl = useIntl();
   const [filter, setFilter] = useState<"all" | "archived">("all");
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const containerRef = useRef<HTMLUListElement>(null);
-  const retitle = (row: CvListRowVM): CvListRowVM => ({ ...row, title: titles[row.cvId] ?? row.title });
-
-  const groups = list.groups
-    .filter((group) => !hiddenIds.has(group.base.cvId))
-    .map((group) => ({
-      base: retitle(group.base),
-      variants: group.variants.filter((row) => !hiddenIds.has(row.cvId)).map(retitle),
-    }));
-  const allRows = [...list.groups.flatMap((group) => [group.base, ...group.variants]), ...list.archived];
-  const archived = [
-    ...list.archived,
-    ...allRows.filter((row) => hiddenIds.has(row.cvId) && !row.archived).map((row) => ({ ...row, archived: true })),
-  ].map(retitle);
+  const groups = list.groups;
+  const archived = list.archived;
   const visible =
     filter === "all"
       ? groups.flatMap((group) => [
@@ -311,6 +312,21 @@ export function CvListPane({
     all: groups.reduce((total, group) => total + 1 + group.variants.length, 0),
     archived: archived.length,
   };
+  const newMenu = (
+    <DropdownMenu.Root>
+      <DropdownMenu.Trigger asChild>
+        <IconButton size="sm" icon={Plus} label={intl.formatMessage(messages.newCv)} />
+      </DropdownMenu.Trigger>
+      <MenuContent aria-label={intl.formatMessage(messages.newCv)} align={iconsOnly ? "start" : "end"}>
+        <MenuItem icon={FilePlus2} onSelect={actions.onNew}>
+          {intl.formatMessage(messages.newBlank)}
+        </MenuItem>
+        <MenuItem icon={FileText} onSelect={actions.onImport}>
+          {intl.formatMessage(messages.newImport)}
+        </MenuItem>
+      </MenuContent>
+    </DropdownMenu.Root>
+  );
   return (
     <nav
       aria-label={intl.formatMessage(messages.heading)}
@@ -319,9 +335,13 @@ export function CvListPane({
         iconsOnly ? "w-16 items-center" : "w-66",
       )}
     >
+      {iconsOnly && <div className="pt-3">{newMenu}</div>}
       {!iconsOnly && (
         <div className="flex flex-col gap-2 px-3 pt-3 pb-2">
-          <h2 className="text-headline">{intl.formatMessage(messages.heading)}</h2>
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="text-headline">{intl.formatMessage(messages.heading)}</h2>
+            {newMenu}
+          </div>
           <SegmentedControl
             size="sm"
             label={intl.formatMessage(messages.filter)}

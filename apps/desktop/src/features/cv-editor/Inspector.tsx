@@ -26,6 +26,7 @@ export type InspectorTab = "design" | "check" | "suggestions" | "history";
 const messages = defineMessages({
   label: { id: "cv-editor.inspector.label", defaultMessage: "Inspector" },
   close: { id: "cv-editor.inspector.close", defaultMessage: "Hide inspector" },
+  compare: { id: "cv-editor.history.compare", defaultMessage: "Compare with now" },
   design: { id: "cv-editor.inspector.design", defaultMessage: "Design" },
   check: { id: "cv-editor.inspector.check", defaultMessage: "Check" },
   suggestions: { id: "cv-editor.inspector.suggestions", defaultMessage: "Suggestions" },
@@ -504,9 +505,11 @@ function RestoreButton({ revision, onRestore }: { revision: CvRevisionVM; onRest
 function HistoryTab({
   editor,
   onRestore,
+  onCompare,
 }: {
   editor: CvEditorVM;
   onRestore: (revision: CvRevisionVM) => void;
+  onCompare: (revision: CvRevisionVM) => void;
 }) {
   const intl = useIntl();
   return (
@@ -533,7 +536,12 @@ function HistoryTab({
                   </time>
                   {revision.pendingSync && <SyncGlyph />}
                 </p>
-                <div className="mt-1 -ml-2">
+                <div className="mt-1 -ml-2 flex flex-wrap gap-1">
+                  {!revision.isLatest && (
+                    <Button size="sm" variant="plain" onClick={() => onCompare(revision)}>
+                      {intl.formatMessage(messages.compare)}
+                    </Button>
+                  )}
                   <RestoreButton revision={revision} onRestore={() => onRestore(revision)} />
                 </div>
               </li>
@@ -584,6 +592,7 @@ export function Inspector({
   onKeepAll,
   onShow,
   onRestore,
+  onCompare,
 }: {
   editor: CvEditorVM;
   draft: CvDraft;
@@ -606,6 +615,8 @@ export function Inspector({
   onKeepAll: () => void;
   onShow: (id: string) => void;
   onRestore: (revision: CvRevisionVM) => void;
+  /** Opens the line diff between this revision and the working copy. */
+  onCompare: (revision: CvRevisionVM) => void;
 }) {
   const intl = useIntl();
   const tabs: readonly { value: InspectorTab; label: string; count?: number }[] = [
@@ -677,7 +688,7 @@ export function Inspector({
             />
           </Tabs.Content>
           <Tabs.Content value="history">
-            <HistoryTab editor={editor} onRestore={onRestore} />
+            <HistoryTab editor={editor} onRestore={onRestore} onCompare={onCompare} />
           </Tabs.Content>
         </div>
       </Tabs.Root>

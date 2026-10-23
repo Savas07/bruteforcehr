@@ -4,10 +4,13 @@
 use serde::Serialize;
 use std::time::Instant;
 
-use tauri::{AppHandle, Runtime, State};
+use tauri::ipc::{InvokeBody, Request, Response};
+use tauri::{AppHandle, Runtime, State, WebviewWindow};
 use tauri_plugin_opener::OpenerExt;
 
 use crate::auth_link::{AuthLinkDelivery, PendingAuthLink};
+use crate::cv_pdf::{self, Paper, PrintError};
+use crate::export_file::{self, ExportError};
 use crate::external_url::{self, ExternalUrlError};
 use crate::job_url::{self, JobUrlError, RateLimiter};
 use crate::mail_inbox::{self, MailProvider};
@@ -19,12 +22,56 @@ use crate::updater::{self, RestartError, UpdateSnapshot};
 #[derive(Debug, Serialize)]
 #[serde(tag = "kind", rename_all = "kebab-case")]
 pub enum CommandError {
-    UrlNotAllowed { message: String },
-    RateLimited { message: String },
-    OpenFailed { message: String },
-    NoUpdateReady { message: String },
-    InstallFailed { message: String },
-    PreferenceNotSaved { message: String },
+    UrlNotAllowed {
+        message: String,
+    },
+    RateLimited {
+        message: String,
+    },
+    OpenFailed {
+        message: String,
+    },
+    NoUpdateReady {
+        message: String,
+    },
+    InstallFailed {
+        message: String,
+    },
+    PreferenceNotSaved {
+        message: String,
+    },
+    /// Arguments of `print_cv_pdf` / `save_export` that can't be printed or saved.
+    InvalidExport {
+        message: String,
+    },
+    PrintFailed {
+        message: String,
+    },
+    SaveFailed {
+        message: String,
+    },
+}
+
+impl From<PrintError> for CommandError {
+    fn from(error: PrintError) -> Self {
+        let message = error.to_string();
+        match error {
+            PrintError::EmptyHtml | PrintError::HtmlTooLarge { .. } => {
+                Self::InvalidExport { message }
+            }
+            _ => Self::PrintFailed { message },
+        }
+    }
+}
+
+impl From<ExportError> for CommandError {
+    fn from(error: ExportError) -> Self {
+        let message = error.to_string();
+        match error {
+            ExportError::Dialog(_) | ExportError::Write(_) => Self::SaveFailed { message },
+            _ => Self::InvalidExport { message },
+        }
+    }
 }
 
 impl From<RestartError> for CommandError {
@@ -165,4 +212,35 @@ pub fn open_mail_inbox<R: Runtime>(
     email: &str,
 ) -> Result<(), CommandError> {
     open(&app, &mail_inbox::inbox_url(provider, email))
+}
+
+/// The CV's self-contained HTML (`@bfhr/cv-render`) printed to a PDF on A4 or Letter pages,
+/// offline, by the OS webview (`src/cv_pdf.rs`). Returns the PDF's bytes as the raw response body.
+#[tauri::command]
+pub async fn print_cv_pdf<R: Runtime>(
+    app: AppHandle<R>,
+    html: String,
+    paper: Paper,
+) -> Result<Response, CommandError> {
+    let pdf = cv_pdf::print(&app, html, paper).await?;
+    Ok(Response::new(pdf))
+}
+
+/// Saves an exported CV through the native Save dialog (`src/export_file.rs`). The file's bytes are
+/// the raw request body; the suggested file name (percent-encoded) and the kind (`pdf`, `docx`,
+/// `json`) are the `bfhr-file-name` and `bfhr-export-kind` headers. Returns the saved path, or
+/// null when the dialog is cancelled.
+#[tauri::command]
+pub async fn save_export<R: Runtime>(
+    window: WebviewWindow<R>,
+    request: Request<'_>,
+) -> Result<Option<String>, CommandError> {
+    let InvokeBody::Raw(bytes) = request.body() else {
+        return Err(ExportError::NotRawBody.into());
+    };
+    export_file::validate_bytes(bytes)?;
+    let kind = export_file::kind_from_headers(request.headers())?;
+    let file_name = export_file::file_name_from_headers(request.headers(), kind)?;
+    let path = export_file::save(&window, bytes, &file_name, kind).await?;
+    Ok(path.map(|path| path.to_string_lossy().into_owned()))
 }

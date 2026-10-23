@@ -88,7 +88,7 @@ Owner, when available: the Apple secrets above ([accounts.md §6](accounts.md#6-
 
 ## M1 acceptance
 
-Done on 2026-10-23 with the real release flow (Changesets version PR → tag → `release.yml` → publish → website), without Apple secrets.
+Done on 2026-10-23 with the real release flow (Changesets version PR → tag → `release.yml` → publish → website), without Apple secrets. The first two v0.1.0 runs stopped before `publish`, with the release still a draft: [39889637285](https://github.com/Savas07/bruteforcehr/actions/runs/39889637285) (gitleaks' full-history scan on `workflow_dispatch` flagged two false positives → `.gitleaksignore`) and [39890227250](https://github.com/Savas07/bruteforcehr/actions/runs/39890227250) (actool, [below](#app-icon-in-ci-builds)). After each fix landed on `main`, the unpublished tag `v0.1.0` was moved to the fixed commit (same version, nothing had shipped).
 
 | | v0.1.0 | v0.1.1 |
 |---|---|---|

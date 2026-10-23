@@ -1,5 +1,14 @@
 # @bfhr/release-scripts
 
+## 0.3.0
+
+### Patch Changes
+
+- Updated dependencies [1c3a3aa]
+- Updated dependencies [ffcd3ed]
+- Updated dependencies [fad8a90]
+  - @bfhr/core@0.3.0
+
 ## 0.2.2
 
 ### Patch Changes

@@ -1,5 +1,13 @@
 # @bfhr/core
 
+## 0.3.0
+
+### Minor Changes
+
+- 1c3a3aa: Tracker on real data (M3, desktop): Firestore listeners and batched writes for applications, events, interviews and contacts (offline, waiting-to-sync state); board moves by drag, keyboard and Move to… through the core state machine with durable Undo; full-page application detail (timeline with automatic events and Undo, documents used, contacts, interview rounds with .ics export, notes, reminders); Log an application (⌘N); follow-up and no-response suggestions with Later / Not needed / Keep waiting persisted on the application (`visibleSuggestions`, ported to BFHRCore); opt-in interview prep notifications; Today on live data.
+- ffcd3ed: Insights (M3): pure metrics in `@bfhr/core` (funnel by apply date, response rate by source / channel / CV / market, median time to first response, 12-week activity, Tracker drill-downs) with conformance vectors ported to BFHRCore; desktop Insights screen (sidebar ⌘6) and iOS Insights pushed from the Tracker, both on live data.
+- fad8a90: iPhone Tracker on real data: Pipeline with Move to… and Undo, application detail with interviews, contacts, notes and reminders, Log an application, a Calendar agenda with Add to Calendar (.ics), local reminders for follow-ups and interview prep, and Today on real data.
+
 ## 0.2.2
 
 No changes in this release.

@@ -22,8 +22,8 @@ fn main() {
     tauri_build::try_build(attributes).expect("failed to run tauri-build");
 }
 
-/// Embeds windows-app-manifest.xml (Common Controls v6) into every Windows executable this
-/// package links, test binaries included: without it, tests/print_pdf.rs, which starts a Tauri
+/// Embeds `windows-app-manifest.xml` (Common Controls v6) into every Windows executable this
+/// package links, test binaries included: without it, `tests/print_pdf.rs`, which starts a Tauri
 /// app, fails to load (`STATUS_ENTRYPOINT_NOT_FOUND`).
 fn embed_windows_manifest() {
     println!("cargo:rerun-if-changed=windows-app-manifest.xml");

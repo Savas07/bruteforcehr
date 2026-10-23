@@ -1,0 +1,9 @@
+# Default gitleaks rules plus an allowlist for values that are public by design.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Public Firebase client configuration (restricted by referrer/bundle id and Security Rules), not a secret"
+regexes = [
+  '''AIzaSyBlJk949tJEB9HUmmRGoE8EsqQ2tEA41ag''',
+]

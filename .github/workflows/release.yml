@@ -394,6 +394,13 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - run: xcodebuild -version
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+      - run: corepack enable pnpm
+      - run: pnpm install --frozen-lockfile
+      # The app bundles cv-render's JavaScriptCore build (its Xcode phase fails if it's missing or stale).
+      - run: pnpm --filter @bfhr/cv-render build
 
       - name: TestFlight configuration
         id: asc

@@ -1,2 +1,4 @@
-/** Printed in `<meta name="generator">`; kept equal to package.json `version` (version.test.ts). */
-export const CV_RENDER_VERSION = "0.1.0";
+import pkg from "../package.json" with { type: "json" };
+
+/** Printed in `<meta name="generator">`; read from package.json so version bumps never drift. */
+export const CV_RENDER_VERSION: string = pkg.version;

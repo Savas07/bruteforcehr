@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import { describe, expect, it } from "vitest";
 import { renderFontsModule } from "../scripts/fonts";
 import { EMBEDDED_FONTS } from "./fonts.generated";
-import { CV_RENDER_VERSION, listAccents, listFontPairs, listTemplates } from "./index";
+import { listAccents, listFontPairs, listTemplates } from "./index";
 import { contrastOnWhite, FONT_PAIRS, MARGINS_PT, pageGeometry, printableAccent, PT_PER_MM } from "./themes";
 
 describe("themes", () => {
@@ -76,12 +76,5 @@ describe("themes", () => {
     expect(listTemplates().map((item) => item.id)).toEqual(["classic", "modern", "compact"]);
     expect(listTemplates("de-DE")[0]?.name).toBe("Klassisch");
     expect(listTemplates("tr")[2]?.description).toContain("Tek sütun");
-  });
-
-  it("keeps CV_RENDER_VERSION equal to package.json", async () => {
-    const pkg = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8")) as {
-      version: string;
-    };
-    expect(CV_RENDER_VERSION).toBe(pkg.version);
   });
 });

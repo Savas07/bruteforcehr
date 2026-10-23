@@ -8,6 +8,8 @@
 	<array>
 		<string>remote-notification</string>
 	</array>
+	<key>BFHRKeychainAccessGroup</key>
+	<string>$(AppIdentifierPrefix)com.savas07.bruteforcehr.shared</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>

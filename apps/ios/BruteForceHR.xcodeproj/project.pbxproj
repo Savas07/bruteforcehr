@@ -15,6 +15,13 @@
 		BF0000000000000000000052 /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = BF0000000000000000000050 /* FirebaseStorage */; };
 		BF0000000000000000000053 /* FirebaseFunctions in Frameworks */ = {isa = PBXBuildFile; productRef = BF0000000000000000000051 /* FirebaseFunctions */; };
 		BF00000000000000000000C1 /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = BF00000000000000000000C0 /* FirebaseMessaging */; };
+		BF00000000000000000000A0 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = BF00000000000000000000B6 /* FirebaseAuth */; };
+		BF00000000000000000000A1 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = BF00000000000000000000B7 /* FirebaseFirestore */; };
+		BF00000000000000000000A2 /* FirebaseFunctions in Frameworks */ = {isa = PBXBuildFile; productRef = BF00000000000000000000B8 /* FirebaseFunctions */; };
+		BF00000000000000000000A3 /* BFHRCore in Frameworks */ = {isa = PBXBuildFile; productRef = BF00000000000000000000B9 /* BFHRCore */; };
+		BF00000000000000000000A4 /* BFHRUI in Frameworks */ = {isa = PBXBuildFile; productRef = BF00000000000000000000BA /* BFHRUI */; };
+		BF00000000000000000000A5 /* BFHRDesignTokens in Frameworks */ = {isa = PBXBuildFile; productRef = BF00000000000000000000BB /* BFHRDesignTokens */; };
+		BF00000000000000000000A7 /* BruteForceHRShare.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = BF00000000000000000000AA /* BruteForceHRShare.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -25,11 +32,33 @@
 			remoteGlobalIDString = BF0000000000000000000010;
 			remoteInfo = BruteForceHR;
 		};
+		BF00000000000000000000A8 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = BF0000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = BF00000000000000000000AF;
+			remoteInfo = BruteForceHRShare;
+		};
 /* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		BF00000000000000000000A9 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				BF00000000000000000000A7 /* BruteForceHRShare.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		BF0000000000000000000004 /* BruteForceHR.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BruteForceHR.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		BF0000000000000000000005 /* BruteForceHRUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BruteForceHRUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		BF00000000000000000000AA /* BruteForceHRShare.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = BruteForceHRShare.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -39,6 +68,13 @@
 				Info.plist,
 			);
 			target = BF0000000000000000000010 /* BruteForceHR */;
+		};
+		BF00000000000000000000AB /* Exceptions for "BruteForceHRShare" folder in "BruteForceHRShare" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = BF00000000000000000000AF /* BruteForceHRShare */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
@@ -54,6 +90,19 @@
 		BF0000000000000000000007 /* BruteForceHRUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = BruteForceHRUITests;
+			sourceTree = "<group>";
+		};
+		BF00000000000000000000AC /* BruteForceHRShare */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				BF00000000000000000000AB /* Exceptions for "BruteForceHRShare" folder in "BruteForceHRShare" target */,
+			);
+			path = BruteForceHRShare;
+			sourceTree = "<group>";
+		};
+		BF00000000000000000000AD /* Shared */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Shared;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -81,6 +130,19 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		BF00000000000000000000AE /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BF00000000000000000000A0 /* FirebaseAuth in Frameworks */,
+				BF00000000000000000000A1 /* FirebaseFirestore in Frameworks */,
+				BF00000000000000000000A2 /* FirebaseFunctions in Frameworks */,
+				BF00000000000000000000A3 /* BFHRCore in Frameworks */,
+				BF00000000000000000000A4 /* BFHRUI in Frameworks */,
+				BF00000000000000000000A5 /* BFHRDesignTokens in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -89,6 +151,8 @@
 			children = (
 				BF0000000000000000000006 /* BruteForceHR */,
 				BF0000000000000000000007 /* BruteForceHRUITests */,
+				BF00000000000000000000AC /* BruteForceHRShare */,
+				BF00000000000000000000AD /* Shared */,
 				BF0000000000000000000003 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -98,6 +162,7 @@
 			children = (
 				BF0000000000000000000004 /* BruteForceHR.app */,
 				BF0000000000000000000005 /* BruteForceHRUITests.xctest */,
+				BF00000000000000000000AA /* BruteForceHRShare.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -114,13 +179,16 @@
 				BF0000000000000000000013 /* Resources */,
 				BF0000000000000000000014 /* Copy design fixtures (Debug only) */,
 				BF0000000000000000000015 /* Copy cv-render bundle */,
+				BF00000000000000000000A9 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				BF00000000000000000000B2 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				BF0000000000000000000006 /* BruteForceHR */,
+				BF00000000000000000000AD /* Shared */,
 			);
 			name = BruteForceHR;
 			packageProductDependencies = (
@@ -160,6 +228,35 @@
 			productReference = BF0000000000000000000005 /* BruteForceHRUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
+		BF00000000000000000000AF /* BruteForceHRShare */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = BF00000000000000000000B5 /* Build configuration list for PBXNativeTarget "BruteForceHRShare" */;
+			buildPhases = (
+				BF00000000000000000000B0 /* Sources */,
+				BF00000000000000000000AE /* Frameworks */,
+				BF00000000000000000000B1 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				BF00000000000000000000AC /* BruteForceHRShare */,
+				BF00000000000000000000AD /* Shared */,
+			);
+			name = BruteForceHRShare;
+			packageProductDependencies = (
+				BF00000000000000000000B6 /* FirebaseAuth */,
+				BF00000000000000000000B7 /* FirebaseFirestore */,
+				BF00000000000000000000B8 /* FirebaseFunctions */,
+				BF00000000000000000000B9 /* BFHRCore */,
+				BF00000000000000000000BA /* BFHRUI */,
+				BF00000000000000000000BB /* BFHRDesignTokens */,
+			);
+			productName = BruteForceHRShare;
+			productReference = BF00000000000000000000AA /* BruteForceHRShare.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -176,6 +273,9 @@
 					BF0000000000000000000020 = {
 						CreatedOnToolsVersion = 26.6;
 						TestTargetID = BF0000000000000000000010;
+					};
+					BF00000000000000000000AF = {
+						CreatedOnToolsVersion = 26.6;
 					};
 				};
 			};
@@ -203,6 +303,7 @@
 			targets = (
 				BF0000000000000000000010 /* BruteForceHR */,
 				BF0000000000000000000020 /* BruteForceHRUITests */,
+				BF00000000000000000000AF /* BruteForceHRShare */,
 			);
 		};
 /* End PBXProject section */
@@ -216,6 +317,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		BF0000000000000000000023 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BF00000000000000000000B1 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -291,6 +399,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		BF00000000000000000000B0 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -298,6 +413,11 @@
 			isa = PBXTargetDependency;
 			target = BF0000000000000000000010 /* BruteForceHR */;
 			targetProxy = BF0000000000000000000024 /* PBXContainerItemProxy */;
+		};
+		BF00000000000000000000B2 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = BF00000000000000000000AF /* BruteForceHRShare */;
+			targetProxy = BF00000000000000000000A8 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -537,6 +657,62 @@
 			};
 			name = Release;
 		};
+		BF00000000000000000000B3 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = BruteForceHRShare/BruteForceHRShare.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = BruteForceHRShare/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = BruteForceHR;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 0.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.savas07.bruteforcehr.share;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		BF00000000000000000000B4 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = BruteForceHRShare/BruteForceHRShare.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = BruteForceHRShare/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = BruteForceHR;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 0.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.savas07.bruteforcehr.share;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -563,6 +739,15 @@
 			buildConfigurations = (
 				BF0000000000000000000037 /* Debug */,
 				BF0000000000000000000038 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		BF00000000000000000000B5 /* Build configuration list for PBXNativeTarget "BruteForceHRShare" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BF00000000000000000000B3 /* Debug */,
+				BF00000000000000000000B4 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -632,6 +817,33 @@
 			isa = XCSwiftPackageProductDependency;
 			package = BF0000000000000000000040 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseMessaging;
+		};
+		BF00000000000000000000B6 /* FirebaseAuth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = BF0000000000000000000040 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAuth;
+		};
+		BF00000000000000000000B7 /* FirebaseFirestore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = BF0000000000000000000040 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseFirestore;
+		};
+		BF00000000000000000000B8 /* FirebaseFunctions */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = BF0000000000000000000040 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseFunctions;
+		};
+		BF00000000000000000000B9 /* BFHRCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = BFHRCore;
+		};
+		BF00000000000000000000BA /* BFHRUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = BFHRUI;
+		};
+		BF00000000000000000000BB /* BFHRDesignTokens */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = BFHRDesignTokens;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

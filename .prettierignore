@@ -3,3 +3,6 @@ packages/*/conformance/
 
 # Generated base64 fonts (pnpm --filter @bfhr/cv-render fonts)
 packages/cv-render/src/fonts.generated.ts
+
+# Recorded HTTP responses: kept byte-for-byte as the sources sent them
+packages/jobs-connectors/test/fixtures/

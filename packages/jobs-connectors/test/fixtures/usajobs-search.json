@@ -1,0 +1,106 @@
+{
+  "LanguageCode": "EN",
+  "SearchParameters": {},
+  "SearchResult": {
+    "SearchResultCount": 2,
+    "SearchResultCountAll": 2,
+    "SearchResultItems": [
+      {
+        "MatchedObjectId": "21947200",
+        "MatchedObjectDescriptor": {
+          "PositionID": "SW62210-05-1716110PB411413H",
+          "PositionTitle": "IT SPECIALIST (INFOSEC/NETWORK)",
+          "PositionURI": "https://www.usajobs.gov/GetJob/ViewDetails/21947200",
+          "ApplyURI": ["https://www.usajobs.gov/GetJob/ViewDetails/21947200?PostingChannelID=RESTAPI"],
+          "PositionLocationDisplay": "Point Loma Complex, San Diego, California",
+          "PositionLocation": [
+            {
+              "LocationName": "Point Loma Complex, San Diego, California",
+              "CountryCode": "United States",
+              "CountrySubDivisionCode": "California",
+              "CityName": "Point Loma Complex, San Diego, California",
+              "Longitude": -117.194382,
+              "Latitude": 32.7042961
+            }
+          ],
+          "OrganizationName": "Space and Naval Warfare Systems Command",
+          "DepartmentName": "Department of the Navy",
+          "JobCategory": [
+            { "Name": "Information Technology", "Code": "2200" },
+            { "Name": "Information Technology Management", "Code": "2210" }
+          ],
+          "JobGrade": [{ "Code": "NO" }],
+          "PositionSchedule": [{ "Name": "Full Time", "Code": "1" }],
+          "PositionOfferingType": [{ "Name": "Permanent", "Code": "15317" }],
+          "QualificationSummary": "...",
+          "PositionRemuneration": [
+            {
+              "MinimumRange": "92108",
+              "MaximumRange": "119746",
+              "RateIntervalCode": "PA",
+              "Description": "Per Year"
+            }
+          ],
+          "PositionStartDate": "2016-06-05T00:00:00Z",
+          "PositionEndDate": "2016-12-01T00:00:00Z",
+          "PublicationStartDate": "2016-06-05T00:00:00Z",
+          "ApplicationCloseDate": "2016-12-01T00:00:00Z",
+          "PositionFormattedDescription": [
+            {
+              "Content": "This announcement is being used to recruit qualified individuals, under the Office of Personnel Management (OPM) Direct Hire Authority...",
+              "Label": "Dynamic Teaser",
+              "LabelDescription": "Hit highlighting for keyword searches."
+            }
+          ],
+          "UserArea": {
+            "Details": {
+              "MajorDuties": "Major Duties and Responsibilities: ...",
+              "Education": "EDUCATION: ...",
+              "Requirements": "",
+              "KeyRequirements": [],
+              "JobSummary": "Network and information security specialist supporting Navy command systems.",
+              "WhoMayApply": { "Name": "United States Citizens", "Code": "15514" },
+              "LowGrade": "05",
+              "HighGrade": "05",
+              "SubAgencyName": "Space and Naval Warfare System Command Pacific",
+              "OrganizationCodes": "DD/NV/NV39"
+            },
+            "IsRadialSearch": false
+          }
+        },
+        "RelevanceRank": 0.0
+      },
+      {
+        "MatchedObjectId": "845120300",
+        "MatchedObjectDescriptor": {
+          "PositionID": "TR-26-12345678-DH",
+          "PositionTitle": "Information Technology Specialist (APPSW)",
+          "PositionURI": "https://www.usajobs.gov:443/job/845120300",
+          "ApplyURI": ["https://www.usajobs.gov:443/job/845120300/apply"],
+          "PositionLocationDisplay": "Multiple Locations",
+          "PositionLocation": [
+            { "LocationName": "Washington, District of Columbia", "CountryCode": "United States" },
+            { "LocationName": "Atlanta, Georgia", "CountryCode": "United States" }
+          ],
+          "OrganizationName": "Internal Revenue Service",
+          "DepartmentName": "Department of the Treasury",
+          "JobCategory": [{ "Name": "Information Technology Management", "Code": "2210" }],
+          "PositionSchedule": [{ "Name": "Part-time", "Code": "2" }],
+          "PositionRemuneration": [
+            {
+              "MinimumRange": "38.50",
+              "MaximumRange": "50.05",
+              "RateIntervalCode": "PH",
+              "Description": "Per Hour"
+            }
+          ],
+          "PublicationStartDate": "2026-10-15T00:00:00.0000",
+          "ApplicationCloseDate": "2026-11-14T23:59:59.9970",
+          "UserArea": { "Details": { "JobSummary": "Develop and maintain tax processing applications." } }
+        },
+        "RelevanceRank": 0.0
+      }
+    ],
+    "UserArea": { "NumberOfPages": "1", "IsRadialSearch": false }
+  }
+}

@@ -41,8 +41,11 @@ export const WatchedCompanySchema = z.object({
 });
 export type WatchedCompany = z.infer<typeof WatchedCompanySchema>;
 
-/** Fields a client may set; everything else on a watchlist entry is server-written. */
-export const WATCHLIST_CLIENT_FIELDS = ["name", "careersUrl", "enabled", "createdAt", "updatedAt"] as const;
+/**
+ * Fields a client may change on update (mirrored by firestore.rules). On create the client also
+ * sets `createdAt` and `WATCHLIST_PENDING_FIELDS`; everything else is server-written.
+ */
+export const WATCHLIST_CLIENT_FIELDS = ["name", "careersUrl", "enabled", "updatedAt"] as const;
 
 /** Server-written fields; a client create sets them to `WATCHLIST_PENDING_FIELDS`. */
 export const WATCHLIST_PENDING_FIELDS = {

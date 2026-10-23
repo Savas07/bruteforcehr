@@ -1,0 +1,40 @@
+{
+  "results": [
+    {
+      "jobId": 55012345,
+      "employerId": 612344,
+      "employerName": "Hays Technology",
+      "employerProfileId": null,
+      "employerProfileName": null,
+      "jobTitle": "Senior Backend Engineer - TypeScript",
+      "locationName": "Manchester",
+      "minimumSalary": 65000.0,
+      "maximumSalary": 80000.0,
+      "currency": "GBP",
+      "expirationDate": "05/12/2026",
+      "date": "21/10/2026",
+      "jobDescription": " Senior Backend Engineer - TypeScript, Node.js, AWS. Our client, a fast-growing fintech in Manchester, is looking for a Senior Backend Engineer to join a hybrid team (2 days in office)... ",
+      "applications": 14,
+      "jobUrl": "https://www.reed.co.uk/jobs/senior-backend-engineer-typescript/55012345"
+    },
+    {
+      "jobId": 55019876,
+      "employerId": 381209,
+      "employerName": "NHS Digital",
+      "employerProfileId": 4501,
+      "employerProfileName": "NHS Digital",
+      "jobTitle": "Software Developer",
+      "locationName": "Leeds",
+      "minimumSalary": null,
+      "maximumSalary": null,
+      "currency": null,
+      "expirationDate": "15/11/2026",
+      "date": "02/10/2026",
+      "jobDescription": " We are recruiting a Software Developer to build citizen-facing services in C# and React... ",
+      "applications": 52,
+      "jobUrl": "https://www.reed.co.uk/jobs/software-developer/55019876"
+    }
+  ],
+  "ambiguousLocations": [],
+  "totalResults": 2
+}

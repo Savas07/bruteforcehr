@@ -1,5 +1,14 @@
 # @bfhr/functions
 
+## 0.2.2
+
+### Patch Changes
+
+- @bfhr/ai@0.2.2
+  - @bfhr/api@0.2.2
+  - @bfhr/core@0.2.2
+  - @bfhr/cv-render@0.2.2
+
 ## 0.2.1
 
 ### Patch Changes

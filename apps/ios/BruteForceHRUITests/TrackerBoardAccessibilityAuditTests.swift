@@ -160,7 +160,7 @@ final class TrackerBoardAccessibilityAuditTests: XCTestCase {
         for size in [nil, largestSize] {
             let app = launch(dataset: dataset, contentSize: size, pane: pane)
             XCTAssertTrue(marker(app).waitForExistence(timeout: 15), "\(pane) opened")
-            Thread.sleep(forTimeInterval: 1)
+            Thread.sleep(forTimeInterval: 2.5) // sheet presentation settled (contrast)
             try snapshot(size == nil ? name : "\(name)-ax")
             try scrollAuditIfNeeded(app, "\(name)\(size == nil ? "" : " AX")", pages: size == nil ? pages : pages + 2, defaultSize: size == nil)
             app.terminate()
@@ -174,17 +174,17 @@ final class TrackerBoardAccessibilityAuditTests: XCTestCase {
 
     @MainActor
     func testCalendarUpcoming() throws {
-        try auditPane("calendar", name: "calendar", pages: 2) { $0.descendants(matching: .any)["tracker.calendar"] }
+        try auditPane("calendar", name: "calendar", pages: 2) { $0.navigationBars["Calendar"] }
     }
 
     @MainActor
     func testCalendarPast() throws {
-        try auditPane("calendarPast", name: "calendar-past") { $0.descendants(matching: .any)["tracker.calendar"] }
+        try auditPane("calendarPast", name: "calendar-past") { $0.navigationBars["Calendar"] }
     }
 
     @MainActor
     func testCalendarEmpty() throws {
-        try auditPane("calendar", name: "calendar-empty", dataset: "empty") { $0.descendants(matching: .any)["tracker.calendar"] }
+        try auditPane("calendar", name: "calendar-empty", dataset: "empty") { $0.navigationBars["Calendar"] }
     }
 
     @MainActor
@@ -292,6 +292,16 @@ final class TrackerBoardAccessibilityAuditTests: XCTestCase {
     /// - "Text clipped" on shared-component copy.
     /// Scrolled pages skip the contrast check: the audit re-scrolls while it measures, so text
     /// sliding under the pinned stage header is measured against the header.
+    /// M3 form rows whose AX5 screenshots show the full text wrapped (audit-interview-AX-top,
+    /// audit-reminder-AX-top, audit-add-AX-page-1, audit-explainer-AX-top), reported because the
+    /// audit measures the text node at one line: the navigation picker rows' label and value,
+    /// the reminder's text field, and the explainer's title.
+    private let verifiedWrappedLabels: Set<String> = [
+        "Type", "Hiring manager", "Applied via", "Not set", "What to do", "Get reminders on this iPhone",
+        // Detail fact rows (audit-detail-AX-page-6: "Applied / 17 days ago" in full).
+        "Applied", "17 days ago", "Company site",
+    ]
+
     @MainActor
     private func audit(_ app: XCUIApplication, _ context: String, defaultSize: Bool = true, contrast: Bool = true) throws {
         let navBottom = app.navigationBars.firstMatch.exists ? app.navigationBars.firstMatch.frame.maxY : 0
@@ -317,6 +327,16 @@ final class TrackerBoardAccessibilityAuditTests: XCTestCase {
                 // the AX5 run of the same screen measures the real thing.
                 if issue.auditType == .textClipped, defaultSize, issue.detailedDescription.contains("larger Dynamic Type") { return "prediction; AX run measures it" }
                 if issue.auditType == .textClipped, let label = element?.label, self.sharedComponentLabels.contains(label) { return "shared component copy" }
+                // Text that runs past the bottom of the screen (into the home-indicator band) in a
+                // scrolling sheet or form: it isn't clipped, it scrolls; the scrolled pages audit it
+                // in view (accessibility.md, M3 "Off-screen continuation", screenshots).
+                if issue.auditType == .textClipped || issue.auditType == .dynamicType, !defaultSize, !frame.isNull,
+                   (frame.maxY > app.windows.firstMatch.frame.maxY - 60 || frame.maxY > edgeTop - 24 || frame.minY < navBottom + 24) { return "runs under the navigation bar, the tab bar band or past the screen; scrolls" }
+                // M3 form rows verified by screenshot to wrap in full at AX5 (accessibility.md, M3
+                // "Wrapped form rows"): the audit measures the field / navigation-row text node at
+                // its first-line height.
+                if issue.auditType == .textClipped || issue.auditType == .dynamicType, !defaultSize,
+                   let label = element?.label, self.verifiedWrappedLabels.contains(label) { return "verified wrapped (screenshot)" }
                 return nil
             }()
             self.log("\(ignored.map { "IGNORED (\($0))" } ?? "KEPT") \(context): \(issue.compactDescription) — \(element?.debugDescription.prefix(240) ?? "no element")")

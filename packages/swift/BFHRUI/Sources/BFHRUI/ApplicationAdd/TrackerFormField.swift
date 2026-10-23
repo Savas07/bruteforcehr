@@ -93,49 +93,93 @@ struct TrackerFieldError: View {
 }
 
 /// A picker row for the Tracker's forms: the system menu picker (label left, value right) up to
-/// the largest standard size. At accessibility sizes the system menu button clips long values, so
-/// the row is a `Menu` whose label is the field label above the current value (`value`), both
-/// wrapping; the menu holds the same options as an inline picker.
-struct TrackerPickerRow<Value: Hashable, Options: View>: View {
+/// the largest standard size. At accessibility sizes the system controls clip long values, so the
+/// row is a navigation row (label above the current value, both wrapping) that pushes a list of
+/// the options with a checkmark on the current one. The forms sit in a `NavigationStack`.
+struct TrackerPickerRow<Value: Hashable>: View {
     private let label: LocalizedStringResource
     @Binding private var selection: Value
-    private let value: Text
-    private let options: Options
+    private let options: [Value]
+    private let title: (Value) -> Text
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
-    init(_ label: LocalizedStringResource, selection: Binding<Value>, value: Text, @ViewBuilder options: () -> Options) {
+    init(_ label: LocalizedStringResource, selection: Binding<Value>, options: [Value], title: @escaping (Value) -> Text) {
         self.label = label
         _selection = selection
-        self.value = value
-        self.options = options()
+        self.options = options
+        self.title = title
     }
 
     var body: some View {
         if dynamicTypeSize.isAccessibilitySize {
-            Menu {
-                Picker(selection: $selection) { options } label: { Text(label) }
-                    .pickerStyle(.inline)
+            NavigationLink {
+                TrackerOptionList(label: label, selection: $selection, options: options, title: title)
             } label: {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(label)
                         .font(.bfhr(.footnote))
                         .foregroundStyle(BFHRColor.Fg.secondary)
                         .fixedSize(horizontal: false, vertical: true)
-                    value
+                    title(selection)
                         .font(.bfhr(.body))
-                        .foregroundStyle(BFHRColor.Accent.text)
+                        .foregroundStyle(BFHRColor.Fg.primary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 .frame(maxWidth: .infinity, minHeight: BFHRHitTarget.minimum, alignment: .leading)
-                .contentShape(Rectangle())
             }
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(Text(label))
-            .accessibilityValue(value)
+            .accessibilityValue(title(selection))
             .accessibilityAddTraits(.isButton)
         } else {
-            Picker(selection: $selection) { options } label: { Text(label) }
+            Picker(selection: $selection) {
+                ForEach(options, id: \.self) { option in title(option).tag(option) }
+            } label: {
+                Text(label)
+            }
         }
+    }
+}
+
+/// The options of a `TrackerPickerRow` at accessibility sizes: one wrapping row each, ✓ on the
+/// current one (also its VoiceOver Selected trait); choosing goes back.
+private struct TrackerOptionList<Value: Hashable>: View {
+    let label: LocalizedStringResource
+    @Binding var selection: Value
+    let options: [Value]
+    let title: (Value) -> Text
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        List {
+            ForEach(options, id: \.self) { option in
+                Button {
+                    selection = option
+                    dismiss()
+                } label: {
+                    HStack(alignment: .firstTextBaseline, spacing: BFHRSpace.s2) {
+                        title(option)
+                            .font(.bfhr(.body))
+                            .foregroundStyle(BFHRColor.Fg.primary)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        if option == selection {
+                            Image(systemName: "checkmark")
+                                .font(.bfhr(.body, emphasized: true))
+                                .foregroundStyle(BFHRColor.Accent.text)
+                                .accessibilityHidden(true)
+                        }
+                    }
+                    .frame(minHeight: BFHRHitTarget.minimum)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityAddTraits(option == selection ? .isSelected : [])
+            }
+        }
+        .bfhrInsetGroupedList()
+        .navigationTitle(Text(label))
+        .bfhrInlineTitle()
     }
 }
 

@@ -90,3 +90,23 @@ The detail runs keep two element-less findings, both on the shared timeline auto
 
 ### Final run (2026-10-23, IosFoundation, `5c9e0ca`)
 The element-less detail reports came from list cells XCUITest can't resolve (kept off screen); the probe showed the same counts with `TimelineRow` reduced to a single `Text`. They are now logged as "no element" like every other iOS audit. Shared fixes landed at the same time: `TimelineRow` exposes View source / Undo as separate elements, `CompactLabelStyle` hides decorative icons from VoiceOver, `RelativeTimeText` overrides its label only for dates. **Result: `TrackerBoardAccessibilityAuditTests` passes in full on iPhone 17e (with Today and Mail review: 20 passed, 0 failed, 2 capture-only skipped).**
+
+## M3 (2026-10-23, IosTracker): Calendar, Log an application, detail editors, notifications explainer
+
+New audits in `TrackerBoardAccessibilityAuditTests` (`-BFHRTrackerPane …`, default size and AX5, scrolled page by page): `testCalendarUpcoming`, `testCalendarPast`, `testCalendarEmpty`, `testLogApplication`, `testLogApplicationFlow`, `testDetailEditorsReminder`, `testDetailEditorsInterview`, `testDetailEditorsContact`, `testDetailEditorsNotes`, `testNotificationExplainer`, `testDetailM3`. Screenshots: `artifacts/screens/ios/tracker-audit/` (gitignored).
+
+### Fixed from the first run (real findings)
+- **Pickers clipped at AX5** ("Hiring manager", "Not set" next to their labels; the system menu button then clipped the value inside a `Menu` label). At accessibility sizes every Tracker form picker is now a navigation row (label above the current value, both wrapping) that pushes an options list with ✓ and the Selected trait (`TrackerPickerRow`).
+- **Remove / Delete rows** used the system destructive red, which only nearly passed contrast on the grouped background and didn't wrap: now `TrackerDestructiveRow` (danger-tone text, `.bfhr(.body)`, wraps, ≥ 44 pt).
+- **Detail facts** ("Applied via", "17 days ago") clipped at AX5 on the longer M3 detail: `FactRow` texts take their full height.
+- **Reminder and explainer sheets** opened at the medium detent at AX5, cutting the form: they open at the large detent at accessibility sizes; the explainer title drops to title3 there.
+- **Insights filter chip** ✕ was 17 × 17 pt (reported by the Insights audit): 44 × 44.
+- **Placeholder repeated the label** ("Company" above "Company"): fields show no placeholder unless it's an example.
+
+### Exemptions added (each verified by screenshot)
+- **System navigation bar items** (a sheet's Cancel / Save and title): iOS caps their size; same policy as the CV editor and Job detail audits.
+- **Off-screen continuation**: at AX5 a text or button whose frame runs past the bottom of the window (explainer body 278→1023 pt, "Remove reminder" 720→875 pt, contact "Remove from this application" ending in the home-indicator band) scrolls rather than clips; the scrolled pages audit it in view. Evidence: `audit-explainer-AX-top`, `audit-reminder-AX-top`.
+- **Wrapped form rows** (`verifiedWrappedLabels`): "Type" / "Hiring manager" (interview picker row), "Applied via" / "Not set" (Log an application), "What to do" (reminder field), "Get reminders on this iPhone" (explainer title), and the detail facts "Applied" / "17 days ago" / "Company site" (`audit-detail-AX-page-6` shows them in full). The AX5 screenshots show each one wrapped in full; the audit measures the node at one line height. Evidence: `audit-interview-AX-top`, `audit-add-AX-page-1`, `audit-reminder-AX-top`, `audit-explainer-AX-top`.
+- **"Applied on / Applied via" contrast at the default size** came from measuring while the sheet was still presenting (the rows passed once pane audits wait 2.5 s for the presentation to settle); nothing exempted.
+- **Real: Log an application footers** ("Company and role are needed…") failed contrast in Fg.secondary on the iOS 26 sheet background in every settled run. They now use Fg.primary at footnote size (the size keeps the hierarchy).
+- **Bands at the screen edges** (scrolled AX5 pages): a fact row half under the tab bar's edge band ("Company site", `audit-detail-m3-AX-page-3`) and a contact's email half under the navigation bar ("marcus@brightwave.io", page 4) are reported while they slide under the bar; the neighbouring pages show them in full.

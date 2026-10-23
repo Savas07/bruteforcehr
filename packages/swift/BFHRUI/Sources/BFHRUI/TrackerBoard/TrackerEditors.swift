@@ -137,9 +137,7 @@ struct InterviewEditorSheet: View {
                     if showsErrors && titleMissing {
                         TrackerFieldError(TrackerBoardStrings.titleRequired)
                     }
-                    TrackerPickerRow(TrackerBoardStrings.fieldKind, selection: $interview.kind, value: Text(interview.kind.label)) {
-                        ForEach(InterviewKind.allCases, id: \.self) { kind in Text(kind.label).tag(kind) }
-                    }
+                    TrackerPickerRow(TrackerBoardStrings.fieldKind, selection: $interview.kind, options: InterviewKind.allCases) { Text($0.label) }
                     Stepper(value: $interview.round, in: 1...20) {
                         Text("\(Text(TrackerBoardStrings.fieldRound)): \(interview.round)")
                     }
@@ -147,12 +145,8 @@ struct InterviewEditorSheet: View {
                 Section {
                     DatePicker(selection: $interview.startsAt) { Text(TrackerBoardStrings.fieldStarts) }
                         .accessibilityIdentifier("interview.starts")
-                    TrackerPickerRow(TrackerBoardStrings.fieldDuration, selection: $interview.durationMinutes, value: Text(TrackerBoardStrings.minutes(interview.durationMinutes))) {
-                        ForEach(durations, id: \.self) { minutes in Text(TrackerBoardStrings.minutes(minutes)).tag(minutes) }
-                    }
-                    TrackerPickerRow(TrackerBoardStrings.fieldTimeZone, selection: $interview.timezone, value: Text(verbatim: zoneLabel(interview.timezone))) {
-                        ForEach(timeZones, id: \.self) { zone in Text(verbatim: zoneLabel(zone)).tag(zone) }
-                    }
+                    TrackerPickerRow(TrackerBoardStrings.fieldDuration, selection: $interview.durationMinutes, options: durations) { Text(TrackerBoardStrings.minutes($0)) }
+                    TrackerPickerRow(TrackerBoardStrings.fieldTimeZone, selection: $interview.timezone, options: timeZones) { Text(verbatim: zoneLabel($0)) }
                     TrackerFormField(TrackerBoardStrings.fieldLocation, text: $location)
                     TrackerFormField(TrackerBoardStrings.fieldMeeting, text: $meetingURL, kind: .url)
                         .accessibilityIdentifier("interview.meeting")
@@ -179,10 +173,7 @@ struct InterviewEditorSheet: View {
                 }
                 Section {
                     TrackerFormField(TrackerBoardStrings.fieldPrep, text: $interview.prepNotes, multiline: true)
-                    TrackerPickerRow(TrackerBoardStrings.remindMe, selection: $prep, value: Text(prep?.label ?? TrackerBoardStrings.noPrepReminder)) {
-                        Text(TrackerBoardStrings.noPrepReminder).tag(InterviewPrepLead?.none)
-                        ForEach(InterviewPrepLead.allCases) { lead in Text(lead.label).tag(InterviewPrepLead?.some(lead)) }
-                    }
+                    TrackerPickerRow(TrackerBoardStrings.remindMe, selection: $prep, options: [nil] + InterviewPrepLead.allCases.map(Optional.some)) { Text($0?.label ?? TrackerBoardStrings.noPrepReminder) }
                     .accessibilityIdentifier("interview.prep")
                 }
                 if !isNew {

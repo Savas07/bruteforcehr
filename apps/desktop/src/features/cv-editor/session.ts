@@ -77,7 +77,11 @@ interface Session {
   draft: CvDraft;
   design: CvDesignChoice;
   dirty: boolean;
-  /** Revisions this device wrote or already decided on in a conflict (not remote edits). */
+  /**
+   * Revisions this session wrote, built on, or decided on in a conflict. An editor that still
+   * points at one of them is behind the session, not a remote edit: right after a write, the store
+   * is read with the last rendered editor until Firestore's snapshot of that write arrives.
+   */
   readonly own: Set<string>;
   /** The revision our next commit builds on (the last one we wrote, else `baseRevisionId`). */
   headRevisionId: string;
@@ -253,10 +257,7 @@ export class CvSessionStore {
     }
     const orphan = conflict.orphanRevisionId;
     const { done } = this.backend.adoptRevision({ id: cvId, version: editor.version }, orphan, conflict.ours);
-    session.own.add(orphan);
-    session.headRevisionId = orphan;
-    session.version += 1;
-    session.status = "saving";
+    this.advance(session, orphan);
     this.refresh(session);
     done.then(
       () => {
@@ -388,6 +389,15 @@ export class CvSessionStore {
     window.localStorage.removeItem(storageKey(this.backend.uid, session.cvId));
   }
 
+  /** Moves the session onto a revision it wrote or adopted; the revision it leaves stays its own. */
+  private advance(session: Session, revisionId: string): void {
+    session.own.add(session.headRevisionId);
+    session.own.add(revisionId);
+    session.headRevisionId = revisionId;
+    session.version += 1;
+    session.status = "saving";
+  }
+
   private write(session: Session, content: CvContent, source: CvRevisionSource, basedOn: string, diffSummary: string | null): void {
     const { ids, done } = this.backend.commitRevision({
       cv: { id: session.cvId, version: session.version },
@@ -397,10 +407,7 @@ export class CvSessionStore {
       diffSummary,
     });
     trace("SESSION write", { id: ids.revisionId, version: session.version, basedOn, previousHead: session.headRevisionId, summary: content.basics?.summary ?? null });
-    session.own.add(ids.revisionId);
-    session.headRevisionId = ids.revisionId;
-    session.version += 1;
-    session.status = "saving";
+    this.advance(session, ids.revisionId);
     this.refresh(session);
     trace("SESSION write emitted", { id: ids.revisionId, conflict: session.conflict?.theirsRevisionId ?? null });
     done.then(

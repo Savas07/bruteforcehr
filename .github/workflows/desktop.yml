@@ -133,12 +133,23 @@ jobs:
       - run: echo "BFHR_E2E_EXPORT_DIR=$RUNNER_TEMP/exports" >> "$GITHUB_ENV"
       # DIAGNOSTIC ONLY (branch diag/cv-e2e-macos): the CV Studio spec, several times.
       - run: |
-          scripts/with-emulators.sh bash -c 'for i in 1 2 3 4 5 6; do echo "=== ITERATION $i"; pnpm exec wdio run e2e/wdio.conf.ts --spec e2e/specs/cv-studio.e2e.ts && echo "=== ITERATION $i PASSED" || echo "=== ITERATION $i FAILED"; done'
+          cat > "$RUNNER_TEMP/loop.sh" <<'EOF'
+          for i in 1 2 3 4 5 6 7 8; do
+            rm -rf ~/Library/WebKit/com.savas07.bruteforcehr ~/Library/Caches/com.savas07.bruteforcehr "$HOME/Library/Application Support/com.savas07.bruteforcehr"
+            if [ $((i % 2)) -eq 0 ]; then export BFHR_REMOTE_EDIT=commit; else export BFHR_REMOTE_EDIT=two-requests; fi
+            echo "=== ITERATION $i ($BFHR_REMOTE_EDIT)"
+            pnpm exec wdio run e2e/wdio.conf.ts --spec e2e/specs/cv-studio.e2e.ts && echo "=== ITERATION $i ($BFHR_REMOTE_EDIT) PASSED" || echo "=== ITERATION $i ($BFHR_REMOTE_EDIT) FAILED"
+          done
+          EOF
+          scripts/with-emulators.sh bash "$RUNNER_TEMP/loop.sh"
       - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: desktop-screens-${{ matrix.os }}
-          path: artifacts/screens/desktop/
+          path: |
+            artifacts/screens/desktop/
+            firestore-debug.log
+            ${{ runner.temp }}/emulators.log
           if-no-files-found: ignore
           retention-days: 3
 

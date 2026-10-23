@@ -95,23 +95,38 @@ export async function remoteEdit(cvName: string, summary: string): Promise<strin
   fields["content"] = { mapValue: { fields: content } };
   fields["basedOnRevisionId"] = { stringValue: current.name.split("/").at(-1) ?? "" };
   fields["createdAt"] = { timestampValue: new Date().toISOString() };
+  const version = Number(plain(cv.fields["version"]));
+  const cvFields = {
+    currentRevisionId: { stringValue: "" },
+    version: { integerValue: String(version + 1) },
+    updatedAt: { timestampValue: new Date().toISOString() },
+  };
+  if (process.env["BFHR_REMOTE_EDIT"] === "commit") {
+    // DIAGNOSTIC variant: one atomic commit, like the apps' write batch.
+    const revisionId = Array.from({ length: 20 }, () => "abcdefghijklmnopqrstuvwxyz0123456789"[Math.floor(Math.random() * 36)]).join("");
+    cvFields.currentRevisionId = { stringValue: revisionId };
+    await request(`${BASE}:commit`, {
+      method: "POST",
+      body: JSON.stringify({
+        writes: [
+          { update: { name: `${cvName}/revisions/${revisionId}`, fields }, currentDocument: { exists: false } },
+          { update: { name: cvName, fields: cvFields }, updateMask: { fieldPaths: Object.keys(cvFields) } },
+        ],
+      }),
+    });
+    return revisionId;
+  }
   const created = await request<FirestoreDoc>(`${BASE}/${cvPath}/revisions`, {
     method: "POST",
     body: JSON.stringify({ fields }),
   });
   const revisionId = created.name.split("/").at(-1) ?? "";
-  const version = Number(plain(cv.fields["version"]));
+  cvFields.currentRevisionId = { stringValue: revisionId };
   await request(
     `${BASE}/${cvPath}?updateMask.fieldPaths=currentRevisionId&updateMask.fieldPaths=version&updateMask.fieldPaths=updatedAt`,
     {
       method: "PATCH",
-      body: JSON.stringify({
-        fields: {
-          currentRevisionId: { stringValue: revisionId },
-          version: { integerValue: String(version + 1) },
-          updatedAt: { timestampValue: new Date().toISOString() },
-        },
-      }),
+      body: JSON.stringify({ fields: cvFields }),
     },
   );
   return revisionId;

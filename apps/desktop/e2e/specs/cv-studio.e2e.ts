@@ -78,10 +78,17 @@ describe("CV Studio", () => {
     const entries = await browser.execute(() => window.__bfhrTrace ?? []).catch(() => [] as string[]);
     const fresh = entries.slice(printed);
     printed = entries.length;
-    const shown = fresh.filter((line) => failed || !/ FS /u.test(line));
+    const verbose = failed || (this.currentTest?.title ?? "").includes("conflict");
+    const shown = fresh.filter((line) => (verbose ? !/ SimpleDb | IndexedDbPersistence /u.test(line) : !/ FS /u.test(line)));
     console.log(
       `TRACE ${failed ? "FAILED" : "passed"} "${this.currentTest?.title ?? ""}" (${fresh.length} entries, ${shown.length} shown)\n${shown.join("\n")}\nEND TRACE`,
     );
+    if (failed && cv) {
+      const server = await getDoc(cvPath());
+      console.log(
+        `TRACE server ${new Date().toISOString().slice(11, 23)} cv current ${String(plain(server.fields["currentRevisionId"]))} version ${String(plain(server.fields["version"]))}; revisions ${(await listRevisions(cv.name)).length}`,
+      );
+    }
   });
 
   before(async () => {

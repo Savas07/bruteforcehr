@@ -36,6 +36,7 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@tanstack/react-router": "^1.170.45",
     "@tauri-apps/api": "^2.12.4",
+    "@tauri-apps/plugin-notification": "2.7.0",
     "cmdk": "^1.1.1",
     "firebase": "^13.1.0",
     "get-nonce": "^1.0.1",

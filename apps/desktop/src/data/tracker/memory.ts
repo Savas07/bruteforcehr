@@ -28,6 +28,7 @@ import {
   planDeleteInterview,
   planDismissSuggestion,
   planLinkContact,
+  planLogFollowUp,
   planMoves,
   planSaveContact,
   planSaveInterview,
@@ -152,6 +153,10 @@ export function createMemoryTrackerStore(seed: MemoryTrackerSeed, clock: () => D
     },
     addNote(applicationId, text) {
       const plan = planAddNote(applicationId, text, clock(), newId);
+      return pending({ eventId: plan.eventIds[0] ?? "" }, plan.writes);
+    },
+    logFollowUp(applicationId) {
+      const plan = planLogFollowUp(applicationId, clock(), newId);
       return pending({ eventId: plan.eventIds[0] ?? "" }, plan.writes);
     },
     snoozeSuggestion(applicationId, kind, until) {

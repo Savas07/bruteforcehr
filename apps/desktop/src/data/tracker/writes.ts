@@ -312,6 +312,24 @@ export function planAddNote(applicationId: string, text: string, at: Date, newId
   };
 }
 
+/**
+ * "I followed up": the user records a follow-up they sent outside the app (a `mail_sent` event
+ * without a subject), which starts a new follow-up round (`followUpDue`).
+ */
+export function planLogFollowUp(applicationId: string, at: Date, newId: NewId): MovePlan {
+  const eventId = newId("applicationEvents");
+  return {
+    writes: [
+      {
+        op: "create",
+        collection: "applicationEvents",
+        entity: { id: eventId, ...userEvent(applicationId, "mail_sent", at) },
+      },
+    ],
+    eventIds: [eventId],
+  };
+}
+
 // ─── Suggestions (decisions.md F9) ─────────────────────────────────────────────────────────────
 
 export type SuggestionKind = "followUp" | "noResponse";

@@ -28,6 +28,7 @@ import {
   planDeleteInterview,
   planDismissSuggestion,
   planLinkContact,
+  planLogFollowUp,
   planMoves,
   planSaveContact,
   planSaveInterview,
@@ -330,6 +331,10 @@ export function createFirestoreTrackerRepository(uid: string): TrackerRepository
     },
     addNote(applicationId, text) {
       const plan = planAddNote(applicationId, text, new Date(), newId);
+      return pending({ eventId: plan.eventIds[0] ?? "" }, [plan.writes]);
+    },
+    logFollowUp(applicationId) {
+      const plan = planLogFollowUp(applicationId, new Date(), newId);
       return pending({ eventId: plan.eventIds[0] ?? "" }, [plan.writes]);
     },
     snoozeSuggestion(applicationId, kind, until) {

@@ -22,11 +22,16 @@ export const TrackerSourceContext = createContext<TrackerSource | null>(null);
 const signedOut: LiveTrackerState = { status: "loading" };
 const idleSource: TrackerSource = { subscribe: () => () => undefined, getState: () => signedOut };
 
-/** The tracker data of the signed-in user (or of the design build's store). */
-export function useTrackerData(): LiveTrackerState {
+/** The tracker source in context (the design build's store), else the signed-in user's listeners. */
+export function useTrackerSource(): TrackerSource {
   const provided = useContext(TrackerSourceContext);
   const uid = provided ? null : currentUid();
-  const source = provided ?? (uid === null ? idleSource : firestoreTrackerSource(uid));
+  return provided ?? (uid === null ? idleSource : firestoreTrackerSource(uid));
+}
+
+/** The tracker data of the signed-in user (or of the design build's store). */
+export function useTrackerData(): LiveTrackerState {
+  const source = useTrackerSource();
   return useSyncExternalStore(source.subscribe, source.getState);
 }
 

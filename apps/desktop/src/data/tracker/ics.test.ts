@@ -111,7 +111,7 @@ describe("interviewsToIcs", () => {
     expect(
       icsFileName({
         interview: { ...interview, title: "Round 2: Tech/Design" },
-        application: { company: "A*B" },
+        application: { company: "A*B", role: "Engineer" },
       }),
     ).toBe("Interview-A B-Round 2 Tech Design.ics");
   });

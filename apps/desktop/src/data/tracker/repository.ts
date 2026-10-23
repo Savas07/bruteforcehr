@@ -80,6 +80,8 @@ export interface TrackerRepository {
   /** Deletes applications (Undo import); a server trigger deletes their events. */
   deleteApplications(applicationIds: readonly string[]): PendingWrite;
   addNote(applicationId: string, text: string): PendingWrite<{ readonly eventId: string }>;
+  /** Records a follow-up sent outside the app ("I followed up"). */
+  logFollowUp(applicationId: string): PendingWrite<{ readonly eventId: string }>;
   /** "Later" on a suggestion card; `null` ends the snooze (Undo). */
   snoozeSuggestion(applicationId: string, kind: SuggestionKind, until: Date | null): PendingWrite;
   /** "Not needed" / "Keep waiting"; `dismissed: false` undoes it. */

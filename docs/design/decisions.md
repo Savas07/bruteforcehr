@@ -341,6 +341,13 @@ Explicitly **not stored**:
 - **Why:** in the Pipeline (a `List` whose rows also carry a context menu), the long press opens the menu instead of lifting the row. Three implementations failed under XCUITest: `.draggable` on the row, `onDrag`, and `.draggable` on the row content, each with the stage strip as drop targets. Both remaining paths reach every status, work with VoiceOver and Switch Control, and go through the same state machine with Undo (critiques/ios/tracker-board r2–r4).
 - **Affects:** tracker (iOS decision, OQ5 → "no for now"), components.md `StageIndexStrip` (no drop-chip mode on iPhone).
 
+### D37 · No Undo for "I followed up"
+
+- **Options:** (a) Undo as a reverting event, like a status move (D11, D16); (b) no Undo: the follow-up stays on the timeline and the suggestion asks again after the next round.
+- **Decision:** (b) in M3. "I followed up" appends a user `mail_sent` event; its toast reads "Follow-up noted · {company}" with no Undo, on desktop and iPhone.
+- **Why:** `applicationEvents` are append-only and `revertsEventId` is reserved for user `status_changed` events (ADR 0002, `ApplicationEventSchema`): a reverting `mail_sent` would be refused by the schema on every shipped client, so older builds would drop the retraction and keep counting the follow-up. Allowing it is a contract change (schema rule + BFHRCore + rules tests) for a low-stakes action: a mistaken tap only moves the next follow-up suggestion by `followUpAfterDays`, and the user can still answer "Not needed" or snooze it. Revisit with M5, when follow-ups sent from the app write the same event.
+- **Affects:** today-home, tracker (application detail suggestion card), states (toast without Undo).
+
 ## Other open questions resolved
 
 | Question                                                   | Decision                                                                                                                                                                                                           | Doc                      |

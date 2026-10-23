@@ -438,3 +438,34 @@ Layout implications: DE "Vorstellungsgespräch" (20) must fit a 272 px column he
 5. **iPhone drag distance:** ~~is the drop-chip strip enough, or should drag be dropped entirely on iPhone in favour of Move to… + swipe?~~ **Resolved (D32):** no drag on iPhone for now; Move to… + swipe. Revisit with real usage in M3.
 6. **Calendar on iPhone:** a view inside Tracker (decided here), or should upcoming interviews also surface on Today? Coordinate with Today research to avoid two calendars.
 7. **Column width and DE:** confirm 272 px with DE strings in the exploration prototype at 1280 px windows on Windows (125 % scaling).
+
+## M3 additions — iOS (2026-10-23)
+
+Same protocol (Mobbin MCP, `platform: ios`, `mode: deep`, judged from images). Calendar and detail references above (iOS-4, iOS-5, iOS-7) still apply.
+
+### iOS-8 Log an application (add-record form sheet)
+
+Query: "add new record form sheet with company, role, status and date fields" — 8 examined, 4 kept.
+
+| App | Screen | mobbin_url | What we borrow | Why |
+|---|---|---|---|---|
+| Fi | Edit Details: Cancel / Save in the nav bar, grouped fields with labels inside | https://mobbin.com/screens/109a7879-53ee-4e40-a7e9-a560d8cd3da0 | Native sheet with Cancel / Add, grouped form | Familiar, keyboard-friendly, nothing custom to learn |
+| Flighty | Add Missing Flight: required fields named in the subtitle, sections with captions, Notes last | https://mobbin.com/screens/55d50e10-56ff-4923-9d33-c06ca2c432e5 | Say what's required in plain text; notes at the end | The disabled Add never needs explaining |
+| Public | Employment status chips + employer / job title fields | https://mobbin.com/screens/de69730e-8054-4aa6-9efc-03ed407622e1 | Company and role as the first two fields | They identify the application everywhere else |
+| Bevel | "Started on" date row under the choice | https://mobbin.com/screens/eded1c90-3e8b-478c-a188-adab0c388d44 | One date row whose label follows the stage ("Applied on" / "Since") | Suggestions count from it |
+
+Rejected: Jomo (type menu over a half-filled sheet), Life Reset (two add buttons with different meanings), Fuse and Family (single-field contact popups; too small for this form).
+
+### iOS-9 Notification permission explainer
+
+Query: "notification permission explainer screen shown before the system prompt" — 8 examined, 3 kept.
+
+| App | Screen | mobbin_url | What we borrow | Why |
+|---|---|---|---|---|
+| Tempo | "Want a reminder when your live classes are about to start?" with the exact timing and a sample notification | https://mobbin.com/screens/28a98c51-2efc-4489-8d14-2f31cd4db383 | Say exactly when we notify; preview the notification | Trust: nothing beyond what the user set |
+| Atoms | Sheet with a sample notification card, Allow Notifications / Maybe later | https://mobbin.com/screens/10e80f9a-ea1d-4c26-9f5a-54e5e48fac34 | Sheet over the context, primary + calm secondary | Asked in context, not at launch |
+| Babbel | "You can always turn them off in Settings", Remind me / Maybe later | https://mobbin.com/screens/6822290a-66cc-4897-a4cf-c265bab0f9d2 | The way back is stated | Calm, no pressure |
+
+Rejected: Ladder, Gymshark (marketing all-caps), BeReal (fake system prompt), Chick-fil-A (red), Particle (digest promo over content).
+
+**Decision (iOS, M3):** Log an application is a native form sheet (company, role, location; stage, date, applied via; notes) with visible labels above the fields; the explainer is a medium sheet shown once, the first time a reminder is set, previewing that reminder (decisions.md D33). Calendar is the dated agenda (D34).

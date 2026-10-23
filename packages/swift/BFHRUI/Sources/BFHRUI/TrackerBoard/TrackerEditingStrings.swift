@@ -26,6 +26,13 @@ extension TrackerBoardStrings {
     static func fromInsights(_ label: String) -> LocalizedStringResource {
         .bfhr("tracker.filter.fromInsights", default: "From Insights: \(label)", table: "TrackerBoard", comment: "Pipeline filter chip after an Insights drill-down. %@ = what was drilled into.")
     }
+
+    static func showView(_ view: TrackerView) -> LocalizedStringResource {
+        switch view {
+        case .pipeline: .bfhr("tracker.view.showPipeline", default: "Show Pipeline", table: "TrackerBoard", comment: "Toolbar button on the Calendar: back to the stage list.")
+        case .calendar: .bfhr("tracker.view.showCalendar", default: "Show Calendar", table: "TrackerBoard", comment: "Toolbar button on the Pipeline: the dated agenda.")
+        }
+    }
     static func logged(_ company: String, status: ApplicationStatus) -> LocalizedStringResource {
         .bfhr("tracker.toast.logged", default: "\(company) · added to \(status.label)", table: "TrackerBoard", comment: "Toast after Log an application. %1$@ = company, %2$@ = status.")
     }

@@ -4,7 +4,7 @@ import Foundation
 // Local notifications for the Tracker (M3): a reminder set on an application ("Follow up with
 // Acme", Fri 09:00) and interview prep before a round. Both are the user's own choices; nothing
 // is scheduled because of a suggestion (automation never runs on clients). The permission is
-// asked the first time the user sets one, after an in-app explainer (decisions.md D36).
+// asked the first time the user sets one, after an in-app explainer (decisions.md D33).
 
 /// When to remind before an interview round. Chosen per round, on this device.
 public enum InterviewPrepLead: String, CaseIterable, Identifiable, Codable, Hashable, Sendable {

@@ -151,6 +151,96 @@ final class TrackerBoardAccessibilityAuditTests: XCTestCase {
         try snapshot("not-selected-toast")
     }
 
+    // MARK: M3 panes (Calendar, Log an application, detail editors, notifications explainer)
+
+    /// Opens a `-BFHRTrackerPane`, waits for `marker`, saves `name[-ax]` and audits it at the
+    /// default and the largest accessibility size.
+    @MainActor
+    private func auditPane(_ pane: String, name: String, dataset: String = "populated", pages: Int = 0, marker: (XCUIApplication) -> XCUIElement) throws {
+        for size in [nil, largestSize] {
+            let app = launch(dataset: dataset, contentSize: size, pane: pane)
+            XCTAssertTrue(marker(app).waitForExistence(timeout: 15), "\(pane) opened")
+            Thread.sleep(forTimeInterval: 1)
+            try snapshot(size == nil ? name : "\(name)-ax")
+            try scrollAuditIfNeeded(app, "\(name)\(size == nil ? "" : " AX")", pages: size == nil ? pages : pages + 2, defaultSize: size == nil)
+            app.terminate()
+        }
+    }
+
+    @MainActor
+    private func scrollAuditIfNeeded(_ app: XCUIApplication, _ context: String, pages: Int, defaultSize: Bool) throws {
+        if pages == 0 { try audit(app, context, defaultSize: defaultSize) } else { try scrollAudit(app, context, pages: pages, defaultSize: defaultSize) }
+    }
+
+    @MainActor
+    func testCalendarUpcoming() throws {
+        try auditPane("calendar", name: "calendar", pages: 2) { $0.descendants(matching: .any)["tracker.calendar"] }
+    }
+
+    @MainActor
+    func testCalendarPast() throws {
+        try auditPane("calendarPast", name: "calendar-past") { $0.descendants(matching: .any)["tracker.calendar"] }
+    }
+
+    @MainActor
+    func testCalendarEmpty() throws {
+        try auditPane("calendar", name: "calendar-empty", dataset: "empty") { $0.descendants(matching: .any)["tracker.calendar"] }
+    }
+
+    @MainActor
+    func testLogApplication() throws {
+        try auditPane("add", name: "add") { $0.navigationBars["Log an application"] }
+    }
+
+    /// Add stays disabled until company and role are filled; Add opens the new application.
+    @MainActor
+    func testLogApplicationFlow() throws {
+        let app = launch(dataset: "empty", contentSize: nil, pane: "add")
+        XCTAssertTrue(app.navigationBars["Log an application"].waitForExistence(timeout: 15))
+        let add = app.buttons["add.save"]
+        XCTAssertFalse(add.isEnabled)
+        app.descendants(matching: .any).matching(NSPredicate(format: "label == %@ AND (elementType == %d OR elementType == %d)", "Company", XCUIElement.ElementType.textView.rawValue, XCUIElement.ElementType.textField.rawValue)).firstMatch.tap()
+        app.typeText("Acme")
+        app.descendants(matching: .any).matching(NSPredicate(format: "label == %@ AND (elementType == %d OR elementType == %d)", "Role", XCUIElement.ElementType.textView.rawValue, XCUIElement.ElementType.textField.rawValue)).firstMatch.tap()
+        app.typeText("Frontend Engineer")
+        XCTAssertTrue(add.isEnabled)
+        add.tap()
+        XCTAssertTrue(app.navigationBars["Acme"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["Acme · added to Applied"].waitForExistence(timeout: 5))
+        try snapshot("added")
+    }
+
+    @MainActor
+    func testDetailEditorsReminder() throws {
+        try auditPane("reminder", name: "reminder") { $0.navigationBars["Reminder"] }
+    }
+
+    @MainActor
+    func testDetailEditorsInterview() throws {
+        try auditPane("interview", name: "interview", pages: 2) { $0.navigationBars.matching(NSPredicate(format: "identifier BEGINSWITH %@", "Interview")).firstMatch }
+    }
+
+    @MainActor
+    func testDetailEditorsContact() throws {
+        try auditPane("contact", name: "contact") { $0.navigationBars.matching(NSPredicate(format: "identifier BEGINSWITH %@", "Contact")).firstMatch }
+    }
+
+    @MainActor
+    func testDetailEditorsNotes() throws {
+        try auditPane("notes", name: "notes") { $0.navigationBars.matching(NSPredicate(format: "identifier BEGINSWITH %@", "Notes")).firstMatch }
+    }
+
+    @MainActor
+    func testNotificationExplainer() throws {
+        try auditPane("explainer", name: "explainer") { $0.descendants(matching: .any)["notifications.explainer"] }
+    }
+
+    /// The M3 detail (reminder, interviews, notes, contacts, documents) scrolled page by page.
+    @MainActor
+    func testDetailM3() throws {
+        try auditPane("detail", name: "detail-m3", pages: 5) { $0.navigationBars["Brightwave"] }
+    }
+
     // MARK: Helpers
 
     /// The sheet's title (a navigation subtitle names the application).
@@ -216,6 +306,9 @@ final class TrackerBoardAccessibilityAuditTests: XCTestCase {
             let ignored: String? = {
                 if let element, element.elementType == .tabBar || element.elementType == .statusBar { return "system bar" }
                 if let element, !element.isEnabled { return "disabled control" }
+                // The system navigation bar's own title and Cancel / Save buttons (a sheet's or the
+                // screen's): iOS caps their size by design, as in the CV editor and Job detail audits.
+                if !frame.isNull, app.navigationBars.allElementsBoundByIndex.contains(where: { $0.exists && $0.frame.contains(frame) }) { return "system navigation bar item" }
                 if issue.auditType == .contrast, !frame.isNull,
                    frame.minY < navBottom || frame.maxY > edgeTop || frame.intersects(toast) { return "under a bar, the edge band or the toast" }
                 if issue.auditType == .dynamicType, defaultSize { return "default size; AX run covers scaling" }
@@ -269,14 +362,16 @@ final class TrackerBoardAccessibilityAuditTests: XCTestCase {
     }
 
     @MainActor
-    private func launch(dataset: String, contentSize: String?) -> XCUIApplication {
+    private func launch(dataset: String, contentSize: String?, pane: String? = nil) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments += ["-AppleLanguages", "(en)", "-AppleLocale", "en_US", "-BFHRScreen", "tracker-board", "-BFHRDesign", dataset]
+        if let pane { app.launchArguments += ["-BFHRTrackerPane", pane] }
         if let contentSize {
             app.launchArguments += ["-UIPreferredContentSizeCategoryName", contentSize]
         }
         app.launch()
-        XCTAssertTrue(app.descendants(matching: .any)["design.tracker-board"].waitForExistence(timeout: 20))
+        // A pane may push the detail over the design root, which then leaves the tree.
+        XCTAssertTrue((pane == nil ? app.descendants(matching: .any)["design.tracker-board"] : app.tabBars.firstMatch).waitForExistence(timeout: 20))
         Thread.sleep(forTimeInterval: 1.0)
         return app
     }

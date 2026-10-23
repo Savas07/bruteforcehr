@@ -51,7 +51,9 @@ struct TrackerFormField: View {
 
     @ViewBuilder
     private var field: some View {
-        let base = TextField(text: multiline ? $text : singleLine, prompt: prompt.map { Text($0) }, axis: .vertical) { Text(label) }
+        // The label is visible above the field, so an empty field shows no placeholder unless one
+        // is given (an example value), instead of repeating the label.
+        let base = TextField(text: multiline ? $text : singleLine, prompt: prompt.map { Text($0) } ?? Text(verbatim: ""), axis: .vertical) { Text(label) }
             .accessibilityLabel(Text(label))
         #if os(iOS)
         switch kind {
@@ -87,5 +89,77 @@ struct TrackerFieldError: View {
             .labelStyle(.bfhrCompact)
             .font(.bfhr(.footnote))
             .foregroundStyle(BFHRTone.danger.text)
+    }
+}
+
+/// A picker row for the Tracker's forms: the system menu picker (label left, value right) up to
+/// the largest standard size. At accessibility sizes the system menu button clips long values, so
+/// the row is a `Menu` whose label is the field label above the current value (`value`), both
+/// wrapping; the menu holds the same options as an inline picker.
+struct TrackerPickerRow<Value: Hashable, Options: View>: View {
+    private let label: LocalizedStringResource
+    @Binding private var selection: Value
+    private let value: Text
+    private let options: Options
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    init(_ label: LocalizedStringResource, selection: Binding<Value>, value: Text, @ViewBuilder options: () -> Options) {
+        self.label = label
+        _selection = selection
+        self.value = value
+        self.options = options()
+    }
+
+    var body: some View {
+        if dynamicTypeSize.isAccessibilitySize {
+            Menu {
+                Picker(selection: $selection) { options } label: { Text(label) }
+                    .pickerStyle(.inline)
+            } label: {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(label)
+                        .font(.bfhr(.footnote))
+                        .foregroundStyle(BFHRColor.Fg.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    value
+                        .font(.bfhr(.body))
+                        .foregroundStyle(BFHRColor.Accent.text)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .frame(maxWidth: .infinity, minHeight: BFHRHitTarget.minimum, alignment: .leading)
+                .contentShape(Rectangle())
+            }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(Text(label))
+            .accessibilityValue(value)
+            .accessibilityAddTraits(.isButton)
+        } else {
+            Picker(selection: $selection) { options } label: { Text(label) }
+        }
+    }
+}
+
+/// "Remove …" / "Delete application" at the end of a form: the danger tone on the row (not the
+/// system red, which only nearly passes contrast on the grouped background), wrapping at
+/// accessibility sizes.
+struct TrackerDestructiveRow: View {
+    private let title: LocalizedStringResource
+    private let action: () -> Void
+
+    init(_ title: LocalizedStringResource, action: @escaping () -> Void) {
+        self.title = title
+        self.action = action
+    }
+
+    var body: some View {
+        Button(role: .destructive, action: action) {
+            Text(title)
+                .font(.bfhr(.body))
+                .foregroundStyle(BFHRTone.danger.text)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, minHeight: BFHRHitTarget.minimum, alignment: .leading)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 }

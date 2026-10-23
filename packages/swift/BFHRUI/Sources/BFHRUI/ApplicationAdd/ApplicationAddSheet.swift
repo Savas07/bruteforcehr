@@ -36,25 +36,21 @@ public struct ApplicationAddSheet: View {
                         .foregroundStyle(BFHRColor.Fg.secondary)
                 }
                 Section {
-                    Picker(selection: $draft.status) {
+                    TrackerPickerRow(ApplicationAddStrings.stage, selection: $draft.status, value: Text(draft.status.label)) {
                         ForEach(ApplicationDraft.statuses, id: \.self) { status in
                             Text(status.label).tag(status)
                         }
-                    } label: {
-                        Text(ApplicationAddStrings.stage)
                     }
                     .accessibilityIdentifier("add.status")
                     DatePicker(selection: $draft.date, in: ...now, displayedComponents: .date) {
                         Text(draft.hasApplied ? ApplicationAddStrings.appliedOn : ApplicationAddStrings.addedOn)
                     }
                     .accessibilityIdentifier("add.date")
-                    Picker(selection: $draft.channel) {
+                    TrackerPickerRow(Strings.fieldChannel, selection: $draft.channel, value: Text(draft.channel?.label ?? ApplicationAddStrings.channelNone)) {
                         Text(ApplicationAddStrings.channelNone).tag(Channel?.none)
                         ForEach(Channel.allCases, id: \.self) { channel in
                             Text(channel.label).tag(Channel?.some(channel))
                         }
-                    } label: {
-                        Text(Strings.fieldChannel)
                     }
                     .accessibilityIdentifier("add.channel")
                 } footer: {

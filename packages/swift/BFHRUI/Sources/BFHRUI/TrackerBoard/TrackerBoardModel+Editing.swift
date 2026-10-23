@@ -42,13 +42,16 @@ extension TrackerBoardModel {
 
     // MARK: Reminder and notes
 
-    /// The reminder sheet's starting values: the current reminder, or "Follow up" tomorrow 09:00.
+    /// The reminder sheet's starting values: the current reminder (or blank), tomorrow 09:00;
+    /// from the follow-up suggestion, "Follow up with {company}".
     public func reminderDraft(for applicationId: String, followUp: Bool = false) -> (text: String, dueAt: Date) {
         let application = data.application(id: applicationId)
         let tomorrow = calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: now)) ?? now
         let nine = calendar.date(bySettingHour: 9, minute: 0, second: 0, of: tomorrow) ?? tomorrow
-        if !followUp, let text = application?.nextAction, !text.isEmpty {
-            return (text, application?.nextActionAt ?? nine)
+        if !followUp {
+            // The current reminder, or a blank one (the user says what to do).
+            let text = application?.nextAction ?? ""
+            return (text, text.isEmpty ? nine : application?.nextActionAt ?? nine)
         }
         return (String(localized: TrackerBoardStrings.followUpReminderText(application?.company ?? "")), nine)
     }

@@ -21,6 +21,7 @@ struct ReminderEditorSheet: View {
     @State private var text: String
     @State private var dueAt: Date
     @Environment(\.openURL) private var openURL
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     init(
         draft: ReminderDraft,
@@ -68,7 +69,7 @@ struct ReminderEditorSheet: View {
                 }
                 if draft.exists {
                     Section {
-                        Button(role: .destructive, action: onRemove) { Text(TrackerBoardStrings.removeReminder) }
+                        TrackerDestructiveRow(TrackerBoardStrings.removeReminder, action: onRemove)
                     }
                 }
             }
@@ -85,7 +86,7 @@ struct ReminderEditorSheet: View {
                 }
             }
         }
-        .presentationDetents([.medium, .large])
+        .presentationDetents(dynamicTypeSize.isAccessibilitySize ? [.large] : [.medium, .large])
         .presentationBackground(BFHRColor.groupedBackground)
     }
 }
@@ -136,10 +137,8 @@ struct InterviewEditorSheet: View {
                     if showsErrors && titleMissing {
                         TrackerFieldError(TrackerBoardStrings.titleRequired)
                     }
-                    Picker(selection: $interview.kind) {
+                    TrackerPickerRow(TrackerBoardStrings.fieldKind, selection: $interview.kind, value: Text(interview.kind.label)) {
                         ForEach(InterviewKind.allCases, id: \.self) { kind in Text(kind.label).tag(kind) }
-                    } label: {
-                        Text(TrackerBoardStrings.fieldKind)
                     }
                     Stepper(value: $interview.round, in: 1...20) {
                         Text("\(Text(TrackerBoardStrings.fieldRound)): \(interview.round)")
@@ -148,15 +147,11 @@ struct InterviewEditorSheet: View {
                 Section {
                     DatePicker(selection: $interview.startsAt) { Text(TrackerBoardStrings.fieldStarts) }
                         .accessibilityIdentifier("interview.starts")
-                    Picker(selection: $interview.durationMinutes) {
+                    TrackerPickerRow(TrackerBoardStrings.fieldDuration, selection: $interview.durationMinutes, value: Text(TrackerBoardStrings.minutes(interview.durationMinutes))) {
                         ForEach(durations, id: \.self) { minutes in Text(TrackerBoardStrings.minutes(minutes)).tag(minutes) }
-                    } label: {
-                        Text(TrackerBoardStrings.fieldDuration)
                     }
-                    Picker(selection: $interview.timezone) {
+                    TrackerPickerRow(TrackerBoardStrings.fieldTimeZone, selection: $interview.timezone, value: Text(verbatim: zoneLabel(interview.timezone))) {
                         ForEach(timeZones, id: \.self) { zone in Text(verbatim: zoneLabel(zone)).tag(zone) }
-                    } label: {
-                        Text(TrackerBoardStrings.fieldTimeZone)
                     }
                     TrackerFormField(TrackerBoardStrings.fieldLocation, text: $location)
                     TrackerFormField(TrackerBoardStrings.fieldMeeting, text: $meetingURL, kind: .url)
@@ -184,17 +179,15 @@ struct InterviewEditorSheet: View {
                 }
                 Section {
                     TrackerFormField(TrackerBoardStrings.fieldPrep, text: $interview.prepNotes, multiline: true)
-                    Picker(selection: $prep) {
+                    TrackerPickerRow(TrackerBoardStrings.remindMe, selection: $prep, value: Text(prep?.label ?? TrackerBoardStrings.noPrepReminder)) {
                         Text(TrackerBoardStrings.noPrepReminder).tag(InterviewPrepLead?.none)
                         ForEach(InterviewPrepLead.allCases) { lead in Text(lead.label).tag(InterviewPrepLead?.some(lead)) }
-                    } label: {
-                        Text(TrackerBoardStrings.remindMe)
                     }
                     .accessibilityIdentifier("interview.prep")
                 }
                 if !isNew {
                     Section {
-                        Button(role: .destructive, action: onRemove) { Text(TrackerBoardStrings.removeInterview) }
+                        TrackerDestructiveRow(TrackerBoardStrings.removeInterview, action: onRemove)
                     }
                 }
             }
@@ -304,7 +297,7 @@ struct ContactEditorSheet: View {
                 }
                 if !isNew {
                     Section {
-                        Button(role: .destructive, action: onRemove) { Text(TrackerBoardStrings.removeContact) }
+                        TrackerDestructiveRow(TrackerBoardStrings.removeContact, action: onRemove)
                     }
                 }
             }
@@ -398,6 +391,7 @@ struct NotificationExplainerSheet: View {
     @Environment(\.locale) private var locale
     @Environment(\.calendar) private var calendar
     @Environment(\.bfhrNow) private var now
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         ScrollView {
@@ -407,7 +401,7 @@ struct NotificationExplainerSheet: View {
                     .foregroundStyle(BFHRColor.Accent.text)
                     .accessibilityHidden(true)
                 Text(TrackerBoardStrings.explainerTitle)
-                    .font(.bfhr(.title2, emphasized: true))
+                    .font(.bfhr(dynamicTypeSize.isAccessibilitySize ? .title3 : .title2, emphasized: true))
                     .foregroundStyle(BFHRColor.Fg.primary)
                     .accessibilityAddTraits(.isHeader)
                     .fixedSize(horizontal: false, vertical: true)
@@ -430,7 +424,7 @@ struct NotificationExplainerSheet: View {
             }
             .padding(BFHRSpace.s5)
         }
-        .presentationDetents([.medium, .large])
+        .presentationDetents(dynamicTypeSize.isAccessibilitySize ? [.large] : [.medium, .large])
         .presentationBackground(BFHRColor.groupedBackground)
         .accessibilityIdentifier("notifications.explainer")
     }

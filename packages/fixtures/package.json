@@ -5,7 +5,8 @@
   "description": "Dev/test-only realistic data typed by @bfhr/core. Never import from production code.",
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./csv/*": "./csv/*"
   },
   "scripts": {
     "conformance": "tsx scripts/conformance.ts",

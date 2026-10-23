@@ -84,7 +84,7 @@ export interface NudgeVM {
   readonly role: string;
   /** "Applied 8 days ago · no reply yet" / "No reply in 21 days. Mark as no response?" */
   readonly message: string;
-  /** "Draft follow-up" / "Mark as no response". */
+  /** "I followed up" / "Mark as no response". */
   readonly primaryLabel: string;
   /** "Not needed" / "Keep waiting". */
   readonly secondaryLabel: string;

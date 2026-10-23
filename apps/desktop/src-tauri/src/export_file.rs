@@ -1,4 +1,5 @@
-//! Saving an exported CV (PDF, DOCX or JSON Resume): the native Save dialog, then the file.
+//! Saving an exported file (CV as PDF, DOCX or JSON Resume; interviews as an iCalendar file;
+//! applications as CSV): the native Save dialog, then the file.
 //!
 //! The bytes arrive as the raw IPC request body; the suggested file name and the kind arrive as
 //! headers (src/lib/cvExport.ts). In E2E builds, `BFHR_E2E_EXPORT_DIR` replaces the dialog.
@@ -17,7 +18,7 @@ use tokio::sync::oneshot;
 
 /// The suggested file name, percent-encoded (`encodeURIComponent`).
 pub const FILE_NAME_HEADER: &str = "bfhr-file-name";
-/// `pdf`, `docx` or `json`.
+/// `pdf`, `docx`, `json`, `ics` or `csv`.
 pub const KIND_HEADER: &str = "bfhr-export-kind";
 
 /// Upper bound for an exported file; CVs are well below 1 MB.
@@ -37,6 +38,10 @@ pub enum ExportKind {
     Pdf,
     Docx,
     Json,
+    /// iCalendar (RFC 5545) interview events.
+    Ics,
+    /// Applications as a spreadsheet (Tracker table export).
+    Csv,
 }
 
 impl ExportKind {
@@ -45,6 +50,8 @@ impl ExportKind {
             "pdf" => Some(Self::Pdf),
             "docx" => Some(Self::Docx),
             "json" => Some(Self::Json),
+            "ics" => Some(Self::Ics),
+            "csv" => Some(Self::Csv),
             _ => None,
         }
     }
@@ -54,6 +61,8 @@ impl ExportKind {
             Self::Pdf => "pdf",
             Self::Docx => "docx",
             Self::Json => "json",
+            Self::Ics => "ics",
+            Self::Csv => "csv",
         }
     }
 
@@ -63,6 +72,8 @@ impl ExportKind {
             Self::Pdf => "PDF",
             Self::Docx => "Word (DOCX)",
             Self::Json => "JSON Resume",
+            Self::Ics => "iCalendar",
+            Self::Csv => "CSV",
         }
     }
 }
@@ -75,7 +86,7 @@ pub enum ExportError {
     Empty,
     /// The file is larger than [`MAX_EXPORT_BYTES`].
     TooLarge { bytes: usize },
-    /// The kind header is missing or not `pdf`, `docx` or `json`.
+    /// The kind header is missing or not `pdf`, `docx`, `json`, `ics` or `csv`.
     InvalidKind,
     /// The suggested file name is missing or not a plain file name with the kind's extension.
     InvalidFileName(&'static str),
@@ -94,7 +105,7 @@ impl fmt::Display for ExportError {
                 f,
                 "the file is {bytes} bytes; at most {MAX_EXPORT_BYTES} are accepted"
             ),
-            Self::InvalidKind => f.write_str("the export kind must be pdf, docx or json"),
+            Self::InvalidKind => f.write_str("the export kind must be pdf, docx, json, ics or csv"),
             Self::InvalidFileName(reason) => write!(f, "the file name {reason}"),
             Self::Dialog(message) => write!(f, "the Save dialog failed: {message}"),
             Self::Write(error) => write!(f, "the file could not be written: {error}"),
@@ -252,6 +263,8 @@ mod tests {
             ("pdf", ExportKind::Pdf),
             ("docx", ExportKind::Docx),
             ("json", ExportKind::Json),
+            ("ics", ExportKind::Ics),
+            ("csv", ExportKind::Csv),
         ] {
             assert_eq!(kind.extension(), name);
             assert_eq!(
@@ -307,6 +320,8 @@ mod tests {
             ),
             ("Ada-Lovelace-CV.docx", ExportKind::Docx),
             ("Ada-Lovelace-CV.json", ExportKind::Json),
+            ("Interview-Acme-Round 2.ics", ExportKind::Ics),
+            ("BruteForceHR-applications-2026-10-23.csv", ExportKind::Csv),
             ("Console.pdf", ExportKind::Pdf),
         ] {
             assert!(validate_file_name(name, kind).is_ok(), "{name}");
@@ -316,6 +331,7 @@ mod tests {
             ("cv", ExportKind::Pdf),
             ("cv.docx", ExportKind::Pdf),
             ("cv.pdf", ExportKind::Json),
+            ("interview.csv", ExportKind::Ics),
             ("../cv.pdf", ExportKind::Pdf),
             ("dir/cv.pdf", ExportKind::Pdf),
             ("dir\\cv.pdf", ExportKind::Pdf),

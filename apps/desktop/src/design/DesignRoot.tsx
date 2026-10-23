@@ -3,6 +3,7 @@ import { useSearch } from "@tanstack/react-router";
 import { useEffect, useMemo } from "react";
 import { RawIntlProvider, useIntl } from "react-intl";
 import { AppShell } from "../components/AppShell";
+import { AddApplicationHost } from "../features/application-add";
 import { createAppIntl } from "../i18n/intl";
 import { resolveAppLocale } from "../i18n/locale";
 import { type Connectivity, ConnectivityContext } from "../shared/connectivity";
@@ -11,6 +12,7 @@ import { relativeTime } from "../shared/model/format";
 import { OFFLINE_PENDING_WRITES } from "./screens";
 import { readDesignParams } from "./search";
 import { DesignAuth } from "./auth";
+import { DesignTrackerProviders } from "./tracker";
 import { DesignUpdates } from "./updates";
 
 const MINUTE_MS = 60_000;
@@ -62,7 +64,13 @@ export function DesignRoot() {
     <ConnectivityContext.Provider value={connectivity}>
       <DesignUpdates state={params.rest["update"]}>
         <DesignAuth state={params.rest["auth"]}>
-          <AppShell />
+          <AppShell
+            hosts={
+              <DesignTrackerProviders>
+                <AddApplicationHost />
+              </DesignTrackerProviders>
+            }
+          />
         </DesignAuth>
       </DesignUpdates>
     </ConnectivityContext.Provider>

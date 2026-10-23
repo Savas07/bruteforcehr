@@ -2004,6 +2004,10 @@ public struct Application: Codable, Hashable, Sendable, Identifiable {
     public var nextActionAt: Date?
     public var priority: ApplicationPriority
     public var notes: String
+    public var followUpSnoozedUntil: Date?
+    public var followUpDismissedAt: Date?
+    public var ghostedSnoozedUntil: Date?
+    public var ghostedDismissedAt: Date?
     public var createdAt: Date
     public var updatedAt: Date
 
@@ -2030,6 +2034,10 @@ public struct Application: Codable, Hashable, Sendable, Identifiable {
         nextActionAt: Date?,
         priority: ApplicationPriority,
         notes: String,
+        followUpSnoozedUntil: Date?,
+        followUpDismissedAt: Date?,
+        ghostedSnoozedUntil: Date?,
+        ghostedDismissedAt: Date?,
         createdAt: Date,
         updatedAt: Date
     ) {
@@ -2055,6 +2063,10 @@ public struct Application: Codable, Hashable, Sendable, Identifiable {
         self.nextActionAt = nextActionAt
         self.priority = priority
         self.notes = notes
+        self.followUpSnoozedUntil = followUpSnoozedUntil
+        self.followUpDismissedAt = followUpDismissedAt
+        self.ghostedSnoozedUntil = ghostedSnoozedUntil
+        self.ghostedDismissedAt = ghostedDismissedAt
         self.createdAt = createdAt
         self.updatedAt = updatedAt
     }
@@ -2083,6 +2095,10 @@ public struct Application: Codable, Hashable, Sendable, Identifiable {
         try container.encode(nextActionAt, forKey: .nextActionAt)
         try container.encode(priority, forKey: .priority)
         try container.encode(notes, forKey: .notes)
+        try container.encode(followUpSnoozedUntil, forKey: .followUpSnoozedUntil)
+        try container.encode(followUpDismissedAt, forKey: .followUpDismissedAt)
+        try container.encode(ghostedSnoozedUntil, forKey: .ghostedSnoozedUntil)
+        try container.encode(ghostedDismissedAt, forKey: .ghostedDismissedAt)
         try container.encode(createdAt, forKey: .createdAt)
         try container.encode(updatedAt, forKey: .updatedAt)
     }

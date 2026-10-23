@@ -30,14 +30,17 @@ export function plain(value: Value | undefined): unknown {
   if ("nullValue" in value) return null;
   if ("timestampValue" in value) return value.timestampValue;
   if ("mapValue" in value) {
-    return Object.fromEntries(Object.entries(value.mapValue.fields ?? {}).map(([key, inner]) => [key, plain(inner)]));
+    return Object.fromEntries(
+      Object.entries(value.mapValue.fields ?? {}).map(([key, inner]) => [key, plain(inner)]),
+    );
   }
   return (value.arrayValue.values ?? []).map(plain);
 }
 
 async function request<T>(url: string, init?: RequestInit): Promise<T> {
   const response = await fetch(url, { ...init, headers: HEADERS });
-  if (!response.ok) throw new Error(`${init?.method ?? "GET"} ${url}: ${response.status} ${await response.text()}`);
+  if (!response.ok)
+    throw new Error(`${init?.method ?? "GET"} ${url}: ${response.status} ${await response.text()}`);
   return (await response.json()) as T;
 }
 
@@ -63,7 +66,9 @@ export async function getDoc(path: string): Promise<FirestoreDoc> {
 }
 
 export async function listRevisions(cvPath: string): Promise<FirestoreDoc[]> {
-  const { documents } = await request<{ documents?: FirestoreDoc[] }>(`${BASE}/${relative(cvPath)}/revisions?pageSize=300`);
+  const { documents } = await request<{ documents?: FirestoreDoc[] }>(
+    `${BASE}/${relative(cvPath)}/revisions?pageSize=300`,
+  );
   return documents ?? [];
 }
 
@@ -90,7 +95,10 @@ export async function remoteEdit(cvName: string, summary: string): Promise<strin
   fields["content"] = { mapValue: { fields: content } };
   fields["basedOnRevisionId"] = { stringValue: current.name.split("/").at(-1) ?? "" };
   fields["createdAt"] = { timestampValue: new Date().toISOString() };
-  const created = await request<FirestoreDoc>(`${BASE}/${cvPath}/revisions`, { method: "POST", body: JSON.stringify({ fields }) });
+  const created = await request<FirestoreDoc>(`${BASE}/${cvPath}/revisions`, {
+    method: "POST",
+    body: JSON.stringify({ fields }),
+  });
   const revisionId = created.name.split("/").at(-1) ?? "";
   const version = Number(plain(cv.fields["version"]));
   await request(
@@ -113,3 +121,20 @@ export async function remoteEdit(cvName: string, summary: string): Promise<strin
 function mapFields(value: Value | undefined): Record<string, Value> {
   return value !== undefined && "mapValue" in value ? { ...value.mapValue.fields } : {};
 }
+
+/** Documents of `collectionId` (any user) whose `field` equals `value`. */
+export async function findDocs(collectionId: string, field: string, value: string): Promise<FirestoreDoc[]> {
+  const results = await request<{ document?: FirestoreDoc }[]>(`${BASE}:runQuery`, {
+    method: "POST",
+    body: JSON.stringify({
+      structuredQuery: {
+        from: [{ collectionId, allDescendants: true }],
+        where: { fieldFilter: { field: { fieldPath: field }, op: "EQUAL", value: { stringValue: value } } },
+      },
+    }),
+  });
+  return results.flatMap((result) => (result.document ? [result.document] : []));
+}
+
+/** The document id of a REST document name. */
+export const docId = (doc: FirestoreDoc) => doc.name.split("/").at(-1) ?? "";

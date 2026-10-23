@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { describe, expect, it } from "vitest";
+import { buildInsightsVectors } from "./insights-vectors";
 import { buildStateMachineVectors } from "./state-machine-vectors";
 import { renderSwiftModels } from "./swift-models";
 
@@ -10,6 +11,13 @@ describe("committed conformance outputs", () => {
       await readFile(new URL("../conformance/state-machine.json", import.meta.url), "utf8"),
     );
     expect(committed).toEqual(JSON.parse(JSON.stringify(buildStateMachineVectors())));
+  });
+
+  it("insights.json matches the TypeScript Insights metrics", async () => {
+    const committed: unknown = JSON.parse(
+      await readFile(new URL("../conformance/insights.json", import.meta.url), "utf8"),
+    );
+    expect(committed).toEqual(JSON.parse(JSON.stringify(buildInsightsVectors())));
   });
 
   it("BFHRCore Models.swift matches the zod schemas", async () => {

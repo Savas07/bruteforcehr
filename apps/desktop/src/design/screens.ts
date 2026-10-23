@@ -5,9 +5,9 @@
  */
 import { buildCvEditorModel, type CvEditorModel } from "../features/cv-editor/model";
 import { buildJobDetailModel, type JobDetailModel } from "../features/job-detail/model";
+import { buildInsightsModel, type InsightsModel } from "../features/insights/model";
 import { buildMailReviewModel, type MailReviewModel } from "../features/mail-review/model";
 import { buildTodayModel, type TodayModel } from "../features/today/model";
-import { buildTrackerBoardModel, type TrackerBoardModel } from "../features/tracker-board/model";
 import type { DesignScreenSpec } from "./DesignScreen";
 
 /** Local writes in the offline state: the sidebar says "2 changes waiting to sync". */
@@ -53,16 +53,6 @@ export const cvEditorScreen: DesignScreenSpec<CvEditorModel> = {
   },
 };
 
-export const trackerBoardScreen: DesignScreenSpec<TrackerBoardModel> = {
-  id: "tracker-board",
-  destination: "tracker",
-  build: buildTrackerBoardModel,
-  offlinePending: (data, ctx) =>
-    buildTrackerBoardModel(data, ctx, {})
-      .columns.flatMap((column) => column.cards.slice(0, 1).map((card) => card.applicationId))
-      .slice(0, OFFLINE_PENDING_WRITES),
-};
-
 export const mailReviewScreen: DesignScreenSpec<MailReviewModel> = {
   id: "mail-review",
   destination: "mail",
@@ -71,4 +61,12 @@ export const mailReviewScreen: DesignScreenSpec<MailReviewModel> = {
     buildMailReviewModel(data, ctx, {})
       .rows.flatMap((row) => (row.kind === "review" ? [row.messageId] : []))
       .slice(0, OFFLINE_PENDING_WRITES),
+};
+
+export const insightsScreen: DesignScreenSpec<InsightsModel> = {
+  id: "insights",
+  destination: "insights",
+  build: buildInsightsModel,
+  // Insights is read-only: nothing it shows is a local write.
+  offlinePending: () => [],
 };

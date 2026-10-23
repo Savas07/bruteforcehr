@@ -9,11 +9,10 @@ import {
   canRevert,
   type Channel,
   type ExtractedDateKind,
-  followUpDue,
   type LinkStrength,
   type MailCategory,
   type MailMessage,
-  suggestGhosted,
+  visibleSuggestions,
 } from "@bfhr/core";
 import { defineMessages, type MessageDescriptor } from "react-intl";
 import type {
@@ -27,7 +26,7 @@ import type {
   UndoVM,
 } from "./blocks";
 import { calendarDaysFromNow, dayAndTime, relativeTime, shortDate } from "./format";
-import type { ModelContext, UserData } from "./types";
+import type { ModelContext, ScreenData } from "./types";
 import { companyVM, sourceVM, STATUS_MESSAGES, statusVM } from "./vocabulary";
 
 /** Mail categories as shown in the UI; `rejection` reads "Decision" (D18). */
@@ -237,7 +236,11 @@ const messages = defineMessages({
       "{days, plural, =0 {Applied today · no reply yet} =1 {Applied yesterday · no reply yet} other {Applied # days ago · no reply yet}}",
     description: "Follow-up suggestion; {days} is whole calendar days since applying (days, never weeks)",
   },
-  followUpPrimary: { id: "shared.blocks.nudge.followUp.primary", defaultMessage: "Draft follow-up" },
+  followUpPrimary: {
+    id: "shared.blocks.nudge.followUp.primary",
+    defaultMessage: "I followed up",
+    description: "Button: the user sent a follow-up outside the app; records it and starts a new round",
+  },
   followUpSecondary: { id: "shared.blocks.nudge.followUp.secondary", defaultMessage: "Not needed" },
   timelineAddedAs: {
     id: "shared.blocks.timeline.addedAs",
@@ -302,7 +305,7 @@ function linkReason(
 
 export function reviewProposalVM(
   message: MailMessage,
-  data: Pick<UserData, "applications" | "mailAccounts" | "profile">,
+  data: Pick<ScreenData, "applications" | "mailAccounts" | "profile">,
   ctx: ModelContext,
 ): ReviewProposalVM {
   const application = data.applications.find((candidate) => candidate.id === message.applicationId);
@@ -365,7 +368,7 @@ function undoVM(
 /** The automatic status change behind `event`, or null if it isn't one (user moves, notes). */
 export function autoChangeVM(
   event: ApplicationEvent,
-  data: Pick<UserData, "applications" | "applicationEvents" | "mailMessages">,
+  data: Pick<ScreenData, "applications" | "applicationEvents" | "mailMessages">,
   ctx: ModelContext,
 ): AutoChangeVM | null {
   const application = data.applications.find((candidate) => candidate.id === event.applicationId);
@@ -400,12 +403,15 @@ export function autoChangeVM(
   };
 }
 
-/** Follow-up and no-response suggestions for active applications, oldest first (D15). */
+/**
+ * Follow-up and no-response suggestions for active applications, oldest first (D15), minus the
+ * ones the user snoozed or answered (`visibleSuggestions`). No response wins when both are due.
+ */
 export function nudgeVMs(
-  data: Pick<UserData, "applications" | "applicationEvents" | "profile">,
+  data: Pick<ScreenData, "applications" | "applicationEvents" | "profile">,
   ctx: ModelContext,
 ): NudgeVM[] {
-  const { followUpAfterDays, ghostedAfterDays } = data.profile.settings;
+  const { settings } = data.profile;
   const nudges: { at: Date; nudge: NudgeVM }[] = [];
   for (const application of data.applications) {
     const base = {
@@ -414,7 +420,7 @@ export function nudgeVMs(
       role: application.role,
       pendingSync: ctx.pendingWrites.has(application.id),
     };
-    const ghosted = suggestGhosted(application, data.applicationEvents, ctx.now, ghostedAfterDays);
+    const { ghosted, followUp } = visibleSuggestions(application, data.applicationEvents, ctx.now, settings);
     if (ghosted) {
       nudges.push({
         at: ghosted.silentSince,
@@ -429,7 +435,6 @@ export function nudgeVMs(
       });
       continue;
     }
-    const followUp = followUpDue(application, data.applicationEvents, ctx.now, followUpAfterDays);
     if (followUp) {
       const since = relativeTime(followUp.since, ctx);
       nudges.push({
@@ -493,7 +498,7 @@ function timelineTitle(event: ApplicationEvent, ctx: ModelContext): string {
 /** An application's history, newest first (`TimelineRow`). */
 export function timelineVMs(
   application: Application,
-  data: Pick<UserData, "applicationEvents">,
+  data: Pick<ScreenData, "applicationEvents">,
   ctx: ModelContext,
 ): TimelineEventVM[] {
   const events = data.applicationEvents.filter((event) => event.applicationId === application.id);
@@ -519,8 +524,10 @@ export function timelineVMs(
           : sourceVM("you", ctx.intl),
         mailMessageId: event.evidence?.mailMessageId ?? null,
         move,
-        reason: automatic ? (event.evidence?.reason ?? null) : null,
-        undo: automatic && move ? undoVM(application, event, events, ctx) : null,
+        // Automatic rows say why; the user's own rows only when they recorded a reason (imports).
+        reason: event.evidence?.reason ?? null,
+        // Durable Undo for every status move, automatic or manual (D11), never for an undo itself.
+        undo: move && event.revertsEventId === null ? undoVM(application, event, events, ctx) : null,
         reverted: reverted.has(event.id),
         pendingSync: ctx.pendingWrites.has(event.id),
       };
@@ -530,7 +537,7 @@ export function timelineVMs(
 /** Status, channel, date, documents and "what usually happens next" (`ApplicationSummaryBlock`). */
 export function applicationSummaryVM(
   application: Application,
-  data: Pick<UserData, "cvs" | "coverLetters">,
+  data: Pick<ScreenData, "cvs" | "coverLetters">,
   ctx: ModelContext,
 ): ApplicationSummaryVM {
   const cv = data.cvs.find((candidate) => candidate.id === application.cvId);

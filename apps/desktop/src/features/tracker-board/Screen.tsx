@@ -1,9 +1,10 @@
 /**
  * Tracker board (`/tracker`, research/tracker.md "Decision — Desktop"): the 7 active stages as
  * 272 px columns that scroll horizontally with the next column peeking, empty columns collapsed to
- * rails, the Closed rail pinned right, and the record detail in a right panel (Enter). Cards move by
- * drag (dnd-kit), "Move to…" (`M`) or one stage at a time (Mod+Shift+→ / ←); every move is checked
- * by `@bfhr/core` (`checkBoardMove`), applied optimistically and undoable (toast, Mod+Z).
+ * rails, the Closed rail pinned right, and the application in a right panel (Enter; the detail's
+ * `ApplicationPanel`). Cards move by drag (dnd-kit), "Move to…" (`M`) or one stage at a time
+ * (Mod+Shift+→ / ←); every move goes through `useTrackerActions` (core state machine, one batch with
+ * its event, applied locally at once, durable Undo from the toast, Mod+Z or the timeline).
  */
 import type { ApplicationStatus } from "@bfhr/core";
 import {
@@ -17,38 +18,42 @@ import {
   type DragEndEvent,
 } from "@dnd-kit/core";
 import { useNavigate } from "@tanstack/react-router";
-import { ArrowRight, Inbox } from "lucide-react";
-import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { Inbox, Plus } from "lucide-react";
+import { useEffect, useId, useRef, useState } from "react";
 import { defineMessages, useIntl } from "react-intl";
+import { useTrackerActions } from "../../data/tracker/useTrackerActions";
 import { destinationMessages } from "../../lib/destinations";
-import { useConnectivity } from "../../shared/connectivity";
 import { useKeyBindings } from "../../shared/keyboard/useKeyBindings";
-import type { TimelineEventVM } from "../../shared/model/blocks";
 import type { StatusVM } from "../../shared/model/types";
 import { PHASE_MESSAGES } from "../../shared/model/vocabulary";
 import type { ScreenProps } from "../../shared/screen";
+import { Button } from "../../shared/ui/Button";
 import { EmptyState, GhostRow } from "../../shared/ui/EmptyState";
 import { PaneError } from "../../shared/ui/PaneError";
 import { ScreenTitle } from "../../shared/ui/ScreenTitle";
 import { BoardCardSkeleton, useSkeletonGate } from "../../shared/ui/Skeleton";
-import { DetailSidePanel } from "../../shared/ui/SplitView";
 import { StaleStamp } from "../../shared/ui/StaleStamp";
-import { useToast } from "../../shared/ui/Toast";
 import { ApplicationCard, CardBody, DropPlaceholder } from "./ApplicationCard";
 import { BoardColumn, type DropRole } from "./BoardColumn";
 import { ClosedRail } from "./ClosedRail";
+import { openAddApplication } from "../application-add";
+import { openCsvImport } from "../tracker-csv";
+import { TrackerViewSwitch } from "../tracker-table/ViewSwitch";
+import { ApplicationPanel } from "../application-detail/ApplicationPanel";
 import {
-  applyBoardMoves,
-  type BoardMove,
   boardStatuses,
-  checkBoardMove,
+  previewDrop,
   type TrackerBoardModel,
   type TrackerCardVM,
   type TrackerColumnVM,
 } from "./model";
-import { RecordDetail } from "./RecordDetail";
 
 const messages = defineMessages({
+  importCsv: {
+    id: "tracker-board.firstUse.importCsv",
+    defaultMessage: "Import CSV",
+    description: "Board empty state: import applications from a spreadsheet",
+  },
   boardLabel: { id: "tracker-board.screen.boardLabel", defaultMessage: "Application board" },
   summary: {
     id: "tracker-board.screen.summary",
@@ -68,26 +73,7 @@ const messages = defineMessages({
       "Press Enter for details, M to move to another stage, or Command or Control with Shift and an arrow key to move one stage.",
     description: "Screen-reader description of every board card",
   },
-  panelLabel: { id: "tracker-board.screen.panelLabel", defaultMessage: "Application details" },
-  moved: {
-    id: "tracker-board.toast.moved",
-    defaultMessage:
-      "{outcome, select, rejected {{company} · marked as not selected} ghosted {{company} · marked as no response} withdrawn {{company} · marked as withdrawn} other {{company} · moved to {status}}}",
-    description: "Undo toast after a move; {outcome} is the status key, {status} its display name",
-  },
-  undidAutomatic: {
-    id: "tracker-board.toast.undidAutomatic",
-    defaultMessage: "{company} · back to {status}",
-    description: "Toast after undoing an automatic move; {status} is the status it returned to",
-  },
-  undo: { id: "tracker-board.toast.undo", defaultMessage: "Undo" },
-  nudgeHidden: { id: "tracker-board.toast.nudgeHidden", defaultMessage: "{company} · suggestion hidden" },
-  notYet: {
-    id: "tracker-board.toast.notYet",
-    defaultMessage:
-      "{action, select, add {Adding applications} import {Importing a CSV} other {Drafting follow-ups}} isn't available in this build yet.",
-    description: "Info toast for actions that arrive in a later milestone",
-  },
+  addApplication: { id: "tracker-board.toolbar.add", defaultMessage: "Add application" },
   groupTracker: { id: "tracker-board.keys.group", defaultMessage: "Tracker" },
   keyNextColumn: { id: "tracker-board.keys.nextColumn", defaultMessage: "Next column" },
   keyPreviousColumn: { id: "tracker-board.keys.previousColumn", defaultMessage: "Previous column" },
@@ -136,16 +122,28 @@ function Toolbar({ title, model }: { title: string; model: Model }) {
   return (
     <div className="flex shrink-0 flex-wrap items-baseline gap-x-4 gap-y-1 px-6 pt-5 pb-4">
       <ScreenTitle title={title} />
+      <span className="self-center">
+        <TrackerViewSwitch current="board" />
+      </span>
       {data && data.firstUse === null && (
         <p className="text-fg-secondary text-callout tabular-nums">
           {intl.formatMessage(messages.summary, { active, closed: data.closedRail.count })}
         </p>
       )}
-      {model.status === "ready" && model.fromCache && (
-        <span className="ms-auto">
+      <span className="ms-auto flex items-center gap-3 self-center">
+        {model.status === "ready" && model.fromCache && (
           <StaleStamp prefix="updated" time={model.updatedAt} clock={model.updatedClock} />
-        </span>
-      )}
+        )}
+        <Button
+          variant="secondary"
+          size="md"
+          icon={Plus}
+          shortcut="Mod+N"
+          onClick={() => openAddApplication()}
+        >
+          {intl.formatMessage(messages.addApplication)}
+        </Button>
+      </span>
     </div>
   );
 }
@@ -218,9 +216,8 @@ const inCard = (event: KeyboardEvent) =>
 
 function ReadyBoard({ model }: { model: TrackerBoardModel }) {
   const intl = useIntl();
-  const toast = useToast();
+  const actions = useTrackerActions();
   const navigate = useNavigate();
-  const offline = useConnectivity().status === "offline";
   const instructionsId = useId();
   const boardRef = useRef<HTMLDivElement>(null);
   // Which board edges have more columns beyond them (the fades). Re-measured on scroll, on resize
@@ -244,19 +241,15 @@ function ReadyBoard({ model }: { model: TrackerBoardModel }) {
   }, []);
   const panelRef = useRef<HTMLDivElement>(null);
   const cardRefs = useRef(new Map<string, HTMLButtonElement>());
-  const moveCounter = useRef(0);
 
-  const [moves, setMoves] = useState<readonly BoardMove[]>([]);
   const [collapsed, setCollapsed] = useState<Readonly<Partial<Record<ApplicationStatus, boolean>>>>({});
   const [closedExpanded, setClosedExpanded] = useState(false);
   const [focusedId, setFocusedId] = useState<string | null>(null);
   const [menuFor, setMenuFor] = useState<string | null>(null);
-  const [panelMenuOpen, setPanelMenuOpen] = useState(false);
-  const [hiddenNudges, setHiddenNudges] = useState<ReadonlySet<string>>(new Set());
   const [activeId, setActiveId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
 
-  const board = applyBoardMoves(model, moves, intl, { pendingSync: offline });
+  const board = model;
   const allColumns = [...board.columns, ...board.closedRail.outcomes];
   const allCards = allColumns.flatMap((column) => column.cards);
   const findCard = (id: string | null) => allCards.find((card) => card.applicationId === id) ?? null;
@@ -308,49 +301,21 @@ function ReadyBoard({ model }: { model: TrackerBoardModel }) {
   const commitMove = (
     card: TrackerCardVM,
     to: ApplicationStatus,
-    options: { readonly revertsEventId?: string; readonly keepFocus?: boolean } = {},
+    options: { readonly keepFocus?: boolean } = {},
   ) => {
-    const check = checkBoardMove(card.status.key, to, intl);
-    if (!check.allowed) {
-      if (check.reason !== null) toast.show({ variant: "info", message: check.reason });
-      return;
-    }
-    moveCounter.current += 1;
-    const entry: BoardMove = {
-      id: `local-move-${moveCounter.current}`,
-      applicationId: card.applicationId,
-      from: card.status.key,
-      to,
-      revertsEventId: options.revertsEventId ?? null,
-    };
     // Where focus goes if the card leaves the visible board (into the folded Closed rail).
     const position = laneOf(card.applicationId);
     const sourceCards = position ? (lanes[position.lane]?.cards ?? []) : [];
     const neighbor =
       sourceCards[(position?.index ?? 0) + 1]?.applicationId ??
       sourceCards[(position?.index ?? 0) - 1]?.applicationId;
-    setMoves((previous) => [...previous, entry]);
+    if (!actions.move(card.applicationId, to, { openAfterUndo: () => focusCard(card.applicationId) })) return;
     if (!isClosed(to)) setCollapsed((previous) => ({ ...previous, [to]: false }));
     if (options.keepFocus) {
       if (!isClosed(to) || closedExpanded) focusCard(card.applicationId);
       else if (neighbor) focusCard(neighbor);
     }
-    const toLabel = card.moves.find((target) => target.status.key === to)?.status.label ?? to;
-    toast.show({
-      message: options.revertsEventId
-        ? intl.formatMessage(messages.undidAutomatic, { company: card.company.name, status: toLabel })
-        : intl.formatMessage(messages.moved, { company: card.company.name, status: toLabel, outcome: to }),
-      glyph: ArrowRight,
-      action: {
-        label: intl.formatMessage(messages.undo),
-        run: () => setMoves((previous) => previous.filter((move) => move.id !== entry.id)),
-      },
-      openAfterUndo: () => focusCard(card.applicationId),
-    });
   };
-
-  const notYet = (action: "add" | "import" | "draft") =>
-    toast.show({ variant: "info", message: intl.formatMessage(messages.notYet, { action }) });
 
   const inPanel = (event: KeyboardEvent) =>
     event.target instanceof Node && panelRef.current?.contains(event.target) === true;
@@ -420,10 +385,9 @@ function ReadyBoard({ model }: { model: TrackerBoardModel }) {
       keys: "M",
       label: intl.formatMessage(messages.keyMoveTo),
       group,
-      when: (event) => inCard(event) || inPanel(event),
-      run: (event) => {
-        if (inPanel(event)) setPanelMenuOpen(true);
-        else if (focusedId) setMenuFor(focusedId);
+      when: inCard,
+      run: () => {
+        if (focusedId) setMenuFor(focusedId);
       },
     },
     {
@@ -495,26 +459,10 @@ function ReadyBoard({ model }: { model: TrackerBoardModel }) {
       : { kind: "valid", over, from: activeCard.status };
   };
   // The hovered target as it would look after the drop: the placeholder sits where the card lands.
-  const preview = (() => {
-    if (!activeCard || overId === null || overId === activeCard.status.key) return null;
-    const to = allColumns.find((column) => column.status.key === overId)?.status.key;
-    if (!to || !checkBoardMove(activeCard.status.key, to, intl).allowed) return null;
-    const next = applyBoardMoves(
-      board,
-      [
-        {
-          id: "preview",
-          applicationId: activeCard.applicationId,
-          from: activeCard.status.key,
-          to,
-          revertsEventId: null,
-        },
-      ],
-      intl,
-      { pendingSync: false },
-    );
-    return [...next.columns, ...next.closedRail.outcomes].find((column) => column.status.key === to) ?? null;
-  })();
+  const preview =
+    activeCard && overId !== null
+      ? previewDrop(board, activeCard.applicationId, overId as ApplicationStatus, intl)
+      : null;
 
   // ─── Columns ────────────────────────────────────────────────────────────────────────────────
   const firstUse = board.firstUse;
@@ -546,7 +494,10 @@ function ReadyBoard({ model }: { model: TrackerBoardModel }) {
         footer={
           firstUse ? (
             <div className="px-2 pb-2">
-              <GhostRow label={firstUse.columnAddLabel} onClick={() => notYet("add")} />
+              <GhostRow
+                label={firstUse.columnAddLabel}
+                onClick={() => openAddApplication({ status: column.status.key })}
+              />
             </div>
           ) : undefined
         }
@@ -582,94 +533,20 @@ function ReadyBoard({ model }: { model: TrackerBoardModel }) {
   };
 
   // ─── Panel ──────────────────────────────────────────────────────────────────────────────────
-  const selectedColumn = selected
-    ? allColumns.find((column) => column.cards.some((card) => card.applicationId === selected.applicationId))
-    : undefined;
-  const selectedCard = findCard(selected?.applicationId ?? null);
-  const panelIndex =
-    selectedColumn?.cards.findIndex((card) => card.applicationId === selected?.applicationId) ?? -1;
-  const undoEvent = (event: TimelineEventVM) => {
-    if (selectedCard && event.move)
-      commitMove(selectedCard, event.move.from.key, { revertsEventId: event.id });
-  };
-
-  let panel: ReactNode = null;
-  if (selected && selectedCard && selectedColumn) {
-    const nudge = selected.nudge;
-    panel = (
-      <div ref={panelRef} className="contents">
-        <DetailSidePanel
-          open
-          label={intl.formatMessage(messages.panelLabel)}
-          onClose={() => {
-            select(null);
-            // The record's card, even if a move re-mounted it in another column since it opened.
-            focusCard(selected.applicationId);
-          }}
-          nav={{
-            position: panelIndex + 1,
-            total: selectedColumn.cards.length,
-            scopeLabel: selectedColumn.status.label,
-            onPrevious: () => {
-              if (selected.position.previousId) select(selected.position.previousId);
-            },
-            onNext: () => {
-              if (selected.position.nextId) select(selected.position.nextId);
-            },
-          }}
-        >
-          <RecordDetail
-            selected={selected}
-            nudgeHidden={hiddenNudges.has(selected.applicationId)}
-            menuOpen={panelMenuOpen}
-            onMenuOpenChange={setPanelMenuOpen}
-            onMove={(to) => commitMove(selectedCard, to)}
-            onUndoEvent={undoEvent}
-            onViewSource={(messageId) =>
-              void navigate({
-                to: "/mail/review/$messageId",
-                params: { messageId },
-                search: (previous: Readonly<Record<string, unknown>>) => ({
-                  ...previous,
-                  applicationId: undefined,
-                }),
-              })
-            }
-            onNudgePrimary={() => {
-              if (nudge?.kind === "noResponse") commitMove(selectedCard, "ghosted");
-              else notYet("draft");
-            }}
-            onNudgeSecondary={() => {
-              const id = selected.applicationId;
-              setHiddenNudges((previous) => new Set(previous).add(id));
-              toast.show({
-                message: intl.formatMessage(messages.nudgeHidden, { company: selected.company.name }),
-                action: {
-                  label: intl.formatMessage(messages.undo),
-                  run: () =>
-                    setHiddenNudges((previous) => {
-                      const next = new Set(previous);
-                      next.delete(id);
-                      return next;
-                    }),
-                },
-              });
-            }}
-            onOpenCv={(cvId) =>
-              void navigate({
-                to: "/cvs/$cvId",
-                params: { cvId },
-                search: (previous: Readonly<Record<string, unknown>>) => ({
-                  ...previous,
-                  applicationId: undefined,
-                }),
-              })
-            }
-          />
-        </DetailSidePanel>
-      </div>
-    );
-  }
+  const panel = selected ? (
+    <div ref={panelRef} className="contents">
+      <ApplicationPanel
+        applicationId={selected.applicationId}
+        nav={selected.position}
+        onSelect={select}
+        onClose={() => {
+          select(null);
+          // The record's card, even if a move re-mounted it in another column since it opened.
+          focusCard(selected.applicationId);
+        }}
+      />
+    </div>
+  ) : null;
 
   return (
     <div className="relative flex min-h-0 flex-1">
@@ -747,9 +624,9 @@ function ReadyBoard({ model }: { model: TrackerBoardModel }) {
                 primary={{
                   label: firstUse.primary.label,
                   keys: firstUse.primary.shortcut,
-                  onClick: () => notYet("add"),
+                  onClick: () => openAddApplication(),
                 }}
-                secondary={{ label: firstUse.secondary.label, onClick: () => notYet("import") }}
+                secondary={{ label: intl.formatMessage(messages.importCsv), onClick: () => openCsvImport() }}
                 className="bg-surface-base border-line-subtle shadow-raised w-full max-w-120 rounded-lg border"
               />
             </div>

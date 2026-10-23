@@ -8,17 +8,19 @@ import Foundation
 //
 //   -BFHRDesign populated|empty            dataset (default populated)
 //   -BFHRState loading|error|offline       forced condition (default none)
-//   -BFHRScreen today|job-detail|cv-editor|tracker-board|mail-review   tab to open at launch
+//   -BFHRScreen today|job-detail|cv-editor|tracker-board|mail-review|insights   tab to open at launch
+//                                      (insights opens the Tracker tab with Insights pushed)
 //
 // Any one of them turns design mode on. Release builds compile none of this.
 
-/// The five M0 core screens.
+/// The five M0 core screens, plus Insights (M3, pushed on the Tracker).
 public enum DesignScreen: String, CaseIterable, Identifiable, Sendable {
     case today
     case jobDetail = "job-detail"
     case cvEditor = "cv-editor"
     case trackerBoard = "tracker-board"
     case mailReview = "mail-review"
+    case insights
 
     public var id: Self { self }
 }

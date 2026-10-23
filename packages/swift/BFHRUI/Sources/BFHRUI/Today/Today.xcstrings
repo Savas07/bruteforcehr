@@ -277,6 +277,30 @@
         }
       }
     },
+    "today.coming.note" : {
+      "comment" : "Quiet footnote until mail (M5) and matching (M4) are switched on.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Antworten von Arbeitgebern und neue passende Jobs erscheinen hier, sobald E-Mail und Jobsuche verbunden sind."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Replies from employers and new job matches will show up here once email and job search are connected."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "E-posta ve iş arama bağlandığında işverenlerden gelen yanıtlar ve yeni eşleşen ilanlar burada görünür."
+          }
+        }
+      }
+    },
     "today.connect.action" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -553,6 +577,30 @@
         }
       }
     },
+    "today.firstRun.logApplication" : {
+      "comment" : "First-run action while job search isn't on yet: opens Log an application in Tracker.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bewerbung eintragen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Log an application"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Başvuru ekleyin"
+          }
+        }
+      }
+    },
     "today.firstRun.title" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -595,6 +643,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Daha eski öneriler (%lld)"
+          }
+        }
+      }
+    },
+    "today.insights.link" : {
+      "comment" : "Footer link to Insights. No scores, no streaks.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deine letzten 4 Wochen in der Auswertung"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your last 4 weeks in Insights"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Son 4 haftanız Analizler'de"
           }
         }
       }

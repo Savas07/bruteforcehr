@@ -89,6 +89,15 @@ struct StateMachineConformanceTests {
         }
     }
 
+    @Test func visibleSuggestionsMatch() throws {
+        #expect(!vectors.visibleSuggestions.isEmpty)
+        for vector in vectors.visibleSuggestions {
+            let events = try #require(vectors.suggestions.histories[vector.history], "history \(vector.history)")
+            let actual = try visibleSuggestions(vector.application, events: events, now: vector.now, settings: vector.settings)
+            #expect(actual == vector.expected, "visibleSuggestions: \(vector.name), now \(ISO8601Timestamp.string(from: vector.now))")
+        }
+    }
+
     @Test func matchBandMatches() {
         for vector in vectors.matchBand {
             #expect(matchBand(vector.score) == vector.band, "score \(vector.score)")

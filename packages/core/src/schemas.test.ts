@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { ApplicationEventSchema } from "./application";
 import { IdSchema, TimeZoneSchema } from "./common";
 import { CvContentSchema, RenderedFileSchema, ResumeDateSchema } from "./cv";
-import { JobMatchSchema, jobSourceKey, MATCH_BAND_THRESHOLDS, matchBand } from "./job";
+import { JobMatchSchema, JobSchema, jobSourceKey, manualJob, MATCH_BAND_THRESHOLDS, matchBand } from "./job";
 import { MAIL_MESSAGE_CLIENT_UPDATABLE_FIELDS, MailReviewUpdateSchema } from "./policy";
 
 const at = new Date("2026-10-01T09:00:00.000Z");
@@ -250,5 +250,26 @@ describe("policy", () => {
     });
     expect(Object.keys(update).sort()).toEqual([...MAIL_MESSAGE_CLIENT_UPDATABLE_FIELDS].sort());
     expect(MailReviewUpdateSchema.safeParse({ ...update, reviewState: "auto_applied" }).success).toBe(false);
+  });
+});
+
+describe("manualJob", () => {
+  it("builds a valid job with one manual source for the link", () => {
+    const at = new Date("2026-10-23T10:00:00.000Z");
+    const job = manualJob({
+      company: "Acme Robotics",
+      title: "Senior  Frontend Engineer",
+      url: "https://jobs.acme.example/123",
+      location: "Berlin",
+      at,
+    });
+    expect(JobSchema.parse({ id: "job-1", ...job })).toMatchObject({
+      sourceKeys: ["manual:https://jobs.acme.example/123"],
+      applyUrl: "https://jobs.acme.example/123",
+      language: "und",
+      fingerprint: "manual|acme robotics|senior frontend engineer",
+      locations: [{ label: "Berlin", city: null, countryCode: null }],
+    });
+    expect(job.sources[0]).toMatchObject({ source: "manual", sourceId: null, isDirectFromEmployer: false });
   });
 });

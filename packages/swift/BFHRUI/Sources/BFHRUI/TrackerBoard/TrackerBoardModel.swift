@@ -25,17 +25,54 @@ public final class TrackerBoardModel: ScreenModel {
 
     public let calendar: Calendar
 
-    public private(set) var data: UserData = .empty
+    public internal(set) var data: UserData = .empty
+
+    /// Pipeline or Calendar (the title menu, tracker.md "Decision — iOS").
+    public var view: TrackerView = .pipeline
+    /// A deep link or notification waiting to be shown; the screen consumes it once loaded.
+    public var route: TrackerRoute?
+
+    /// Insights is pushed on the Tracker's stack (decisions.md D03): true shows it, false pops.
+    public var showsInsights = false
+    /// The range a `bruteforcehr://insights?range=` link asked for (Insights reads it).
+    public var insightsRange: String?
+    /// An Insights drill-down: only these applications, across every stage, with a dismissible
+    /// "From Insights: …" chip.
+    public internal(set) var filter: PipelineFilter? {
+        didSet { rebuild() }
+    }
+
+    /// Persists every mutation (the app's Firestore store); nil in tests and design mode.
+    public weak var writer: (any UserDataWriter)?
+    /// Live data: writes are stamped with the system clock instead of `now`, which the data layer
+    /// only advances every 30 s.
+    public var usesSystemClock = false
+    /// Counts writes the server refused; the screen shows a toast when it changes. The listener
+    /// has already put the server's state back.
+    public private(set) var writeFailures = 0
+
+    /// Local notifications for reminders and interview prep (nil in tests and design mode).
+    public var reminderScheduler: (any ReminderScheduler)?
+    /// Whether this device may show notifications, as last read from the system.
+    public var notificationAuthorization: ReminderAuthorization = .notDetermined
+    /// Interview prep reminders chosen on this device, by interview id.
+    public var interviewPrep: [String: InterviewPrepLead] = [:] {
+        didSet { scheduleReminders() }
+    }
+    /// The permission explainer was shown once (it asks only when a reminder is first set).
+    public var hasShownNotificationExplainer = false
+    /// Saves `interviewPrep` / `hasShownNotificationExplainer` on the device.
+    public var onPreferencesChange: (@MainActor (TrackerDevicePreferences) -> Void)?
+
+    /// The time stamped on writes.
+    var writeTime: Date { usesSystemClock ? .now : now }
 
     /// One section per status of `scope`, in status order.
     public private(set) var sections: [PipelineSection] = []
     /// One tab per section.
     public private(set) var stageStrip: [StageCount] = []
-    /// Follow-up and no-response suggestions, minus the ones dismissed here.
+    /// Follow-up and no-response suggestions the user hasn't answered.
     public private(set) var nudges: [NudgeItem] = []
-
-    /// Suggestions dismissed with Not needed / Keep waiting (local only).
-    private var dismissedNudgeIDs: Set<String> = []
 
     public init(now: Date = .now, calendar: Calendar = .current) {
         self.now = now
@@ -47,6 +84,31 @@ public final class TrackerBoardModel: ScreenModel {
         self.data = data
         rebuild()
         phase = .loaded
+        scheduleReminders()
+    }
+
+    // MARK: Writes
+
+    /// Runs a mutation on `data`, recomputes, and hands the changed documents to `writer` as one
+    /// batch. Rows it touched while offline show `SyncGlyph` until the write lands.
+    @discardableResult
+    func mutate<Result>(_ body: (inout UserData) throws -> Result) rethrows -> Result {
+        let before = data
+        let result = try body(&data)
+        let changes = UserDataChanges(from: before, to: data)
+        for id in changes.touchedIDs { recordWrite(id) }
+        rebuild()
+        scheduleReminders()
+        if !changes.isEmpty, let writer {
+            Task { [weak self] in
+                do {
+                    try await writer.commit(changes)
+                } catch {
+                    self?.writeFailures += 1
+                }
+            }
+        }
+        return result
     }
 
     // MARK: Pipeline
@@ -98,8 +160,7 @@ public final class TrackerBoardModel: ScreenModel {
     /// denies (e.g. Applied → Accepted). Not selected gets the calm "your notes stay" toast.
     @discardableResult
     public func move(_ applicationId: String, to status: ApplicationStatus) throws -> ToastItem {
-        let event = try data.moveApplication(applicationId, to: status, actor: .user, at: now)
-        commit(applicationId)
+        let event = try mutate { try $0.moveApplication(applicationId, to: status, actor: .user, at: writeTime) }
         let company = data.application(id: applicationId)?.company ?? ""
         return ToastItem(
             glyph: ToastGlyph.moved,
@@ -133,10 +194,11 @@ public final class TrackerBoardModel: ScreenModel {
         guard let event = data.applicationEvents.first(where: { $0.id == eventId }) else {
             throw UserDataError.missingEvent(eventId)
         }
-        let revert = event.actor == .user
-            ? try data.revertEvent(eventId, at: now)
-            : try data.undoAutoChange(eventId, at: now)
-        commit(event.applicationId)
+        let revert = try mutate { data in
+            event.actor == .user
+                ? try data.revertEvent(eventId, at: writeTime)
+                : try data.undoAutoChange(eventId, at: writeTime)
+        }
         let application = data.application(id: event.applicationId)
         return ToastItem(
             glyph: ToastGlyph.restored,
@@ -144,18 +206,18 @@ public final class TrackerBoardModel: ScreenModel {
         )
     }
 
-    /// Not needed / Keep waiting on a suggestion. Local; Undo brings it back.
+    /// Not now (follow-up) / Keep waiting (no response) on a suggestion: kept on the application
+    /// (decisions.md F9), so other devices stop asking too. Undo clears the answer.
     @discardableResult
     public func dismissNudge(_ nudge: NudgeItem) -> ToastItem {
-        dismissedNudgeIDs.insert(nudge.id)
-        rebuild()
+        let kind: SuggestionKind = if case .followUp = nudge.kind { .followUp } else { .noResponse }
+        _ = try? mutate { try $0.answerSuggestion(nudge.applicationId, kind, .dismissed, now: writeTime) }
         return ToastItem(
             glyph: ToastGlyph.hidden,
             message: TrackerBoardStrings.suggestionDismissed(nudge.company.name),
             action: .undo { [weak self] in
                 guard let self else { return }
-                dismissedNudgeIDs.remove(nudge.id)
-                rebuild()
+                _ = try? mutate { try $0.answerSuggestion(nudge.applicationId, kind, nil, now: self.writeTime) }
             }
         )
     }
@@ -184,6 +246,9 @@ public final class TrackerBoardModel: ScreenModel {
             }
         }
 
+        let followUp = nudges.first { nudge in
+            if case .followUp = nudge.kind { nudge.applicationId == applicationId } else { false }
+        }
         return ApplicationDetail(
             id: application.id,
             header: ApplicationDetail.Header(
@@ -203,21 +268,37 @@ public final class TrackerBoardModel: ScreenModel {
             nextStep: nextStep(application, events: events).step,
             nudges: nudges.filter { $0.applicationId == applicationId },
             timeline: days,
-            interviews: data.interviews(forApplication: applicationId),
-            contacts: data.contacts(forApplication: applicationId),
+            interviews: data.interviews(forApplication: applicationId).map { interview in
+                ApplicationDetail.InterviewItem(
+                    interview: interview,
+                    isPast: interview.endsAt <= now,
+                    prep: interviewPrep[interview.id],
+                    pendingSync: pendingSyncIDs.contains(interview.id)
+                )
+            },
+            contacts: data.contacts(forApplication: applicationId).sorted { $0.createdAt < $1.createdAt },
             cv: application.cvId.flatMap { data.cv(id: $0) }.map { .init(id: $0.id, title: $0.title) },
             coverLetter: application.coverLetterId
                 .flatMap { id in data.coverLetters.first { $0.id == id } }
-                .map { .init(id: $0.id, title: $0.title) }
+                .map { .init(id: $0.id, title: $0.title) },
+            reminder: application.nextAction.flatMap { text in
+                text.isEmpty ? nil : ApplicationDetail.Reminder(
+                    text: text,
+                    dueAt: application.nextActionAt,
+                    isOverdue: application.nextActionAt.map { $0 < now } ?? false
+                )
+            },
+            followUp: followUp,
+            notes: application.notes
         )
     }
 
     // MARK: Derivation
 
-    private func rebuild() {
-        let statuses = scope.statuses
+    func rebuild() {
+        let statuses = filter == nil ? scope.statuses : PipelineScope.all.statuses
         let rows = data.applications
-            .filter { statuses.contains($0.status) }
+            .filter { statuses.contains($0.status) && (filter?.applicationIds.contains($0.id) ?? true) }
             .map(row(for:))
         let byStatus = Dictionary(grouping: rows, by: \.status)
         sections = statuses.map { status in
@@ -229,23 +310,13 @@ public final class TrackerBoardModel: ScreenModel {
             )
         }
         stageStrip = sections.map { StageCount(status: $0.status, count: $0.count) }
-        nudges = data.nudges(at: now).filter { !dismissedNudgeIDs.contains($0.id) }
-    }
-
-    /// Marks the write for sync and recomputes (once: an offline write recomputes through
-    /// `pendingSyncIDs`).
-    private func commit(_ applicationId: String) {
-        let pendingBefore = pendingSyncIDs
-        recordWrite(applicationId)
-        if pendingSyncIDs == pendingBefore { rebuild() }
+        nudges = data.nudges(at: now)
     }
 
     /// Toast Undo: a no-op when a newer move superseded the event.
     private func revertSilently(_ eventId: String) {
-        guard let applicationId = data.applicationEvents.first(where: { $0.id == eventId })?.applicationId,
-              (try? data.revertEvent(eventId, at: now)) != nil
-        else { return }
-        commit(applicationId)
+        guard data.applicationEvents.contains(where: { $0.id == eventId }) else { return }
+        _ = try? mutate { try $0.revertEvent(eventId, at: writeTime) }
     }
 
     private func row(for application: Application) -> PipelineRow {

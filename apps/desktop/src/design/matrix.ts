@@ -23,14 +23,24 @@ export const designSearchByState: Readonly<Record<DesignState, DesignSearch>> = 
   offline: { fixture: "populated", state: "offline" },
 };
 
-/** Capturable screens and the route each opens on. `demo` is the shared-component demo. */
+/**
+ * Capturable screens and the route each opens on (with its own search params, if any). `demo` is
+ * the shared-component demo.
+ */
 export const designScreenPaths = {
   demo: "/design/demo",
   today: "/today",
   "job-detail": "/jobs",
   "cv-editor": "/cvs",
   "tracker-board": "/tracker",
+  /** An application with an automatic move (Undo), an interview, a contact and a pinned CV. */
+  "application-detail": "/tracker/applications/app-brightwave",
+  /** Log an application, open over the board. */
+  "application-add": "/tracker?add=1",
+  "tracker-table": "/tracker?view=table",
+  "tracker-calendar": "/tracker?view=calendar",
   "mail-review": "/mail",
+  insights: "/insights",
 } as const;
 export type DesignScreenName = keyof typeof designScreenPaths;
 
@@ -63,8 +73,14 @@ export function designHash(
   state: DesignState,
   extra: Readonly<Record<string, string>> = {},
 ): string {
-  const params = new URLSearchParams({ ...designSearchByState[state], ...extra });
-  return `#${designScreenPaths[screen]}?${params.toString()}`;
+  // A screen path may carry its own params (`/tracker?add=1`); the state's and `extra` come after.
+  const [path, own = ""] = designScreenPaths[screen].split("?");
+  const params = new URLSearchParams({
+    ...Object.fromEntries(new URLSearchParams(own)),
+    ...designSearchByState[state],
+    ...extra,
+  });
+  return `#${path}?${params.toString()}`;
 }
 
 /** `<screen>-<state>-<theme>-<w>x<h>.png`: one name scheme for every capture tool. */
@@ -169,4 +185,25 @@ export function authCaptureFileName(
   size: { readonly width: number; readonly height: number },
 ): string {
   return `sign-in-${state}-${theme}-${size.width}x${size.height}.png`;
+}
+
+/**
+ * CSV import steps (`?csv=<state>` over the table, src/design/tracker-views.tsx) with the Turkish
+ * Excel sample: the picker, a workbook dropped by mistake, column mapping, status words, review.
+ */
+export const csvDesignStates = ["pick", "workbook", "columns", "statuses", "preview"] as const;
+export type CsvDesignState = (typeof csvDesignStates)[number];
+
+/** The hash route of a CSV import step (the populated table plus `csv=`). */
+export function csvDesignHash(state: CsvDesignState, extra: Readonly<Record<string, string>> = {}): string {
+  return designHash("tracker-table", "populated", { csv: state, ...extra });
+}
+
+/** `tracker-csv-<state>-<theme>-<w>x<h>.png`. */
+export function csvCaptureFileName(
+  state: CsvDesignState,
+  theme: CaptureTheme,
+  size: { readonly width: number; readonly height: number },
+): string {
+  return `tracker-csv-${state}-${theme}-${size.width}x${size.height}.png`;
 }

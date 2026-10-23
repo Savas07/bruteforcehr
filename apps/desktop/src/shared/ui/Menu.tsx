@@ -299,6 +299,39 @@ export function MenuRadioItem({ value, children, leading, disabledReason }: Menu
   );
 }
 
+export interface MenuCheckboxItemProps {
+  checked: boolean;
+  /** Called with the new state; the menu stays open so several items can be toggled. */
+  onCheckedChange: (checked: boolean) => void;
+  /** Visible label; it names the item. */
+  children: ReactNode;
+  /** Decorative content between the ✓ column and the label (a status dot). */
+  leading?: ReactNode;
+}
+
+/** A toggle in a multi-select menu (filters): ✓ column (`menuitemcheckbox`, `aria-checked`), label. */
+export function MenuCheckboxItem({ checked, onCheckedChange, children, leading }: MenuCheckboxItemProps) {
+  const kind = useContext(MenuKindContext);
+  const Item = kind === "context" ? ContextMenu.CheckboxItem : DropdownMenu.CheckboxItem;
+  const Indicator = kind === "context" ? ContextMenu.ItemIndicator : DropdownMenu.ItemIndicator;
+  return (
+    <Item
+      checked={checked}
+      onCheckedChange={onCheckedChange}
+      className={itemClass}
+      onSelect={(event: Event) => event.preventDefault()}
+    >
+      <span className="flex size-4 shrink-0 items-center justify-center">
+        <Indicator>
+          <Check aria-hidden="true" className={iconClass} strokeWidth={1.75} />
+        </Indicator>
+      </span>
+      {leading}
+      <span className="flex-1">{children}</span>
+    </Item>
+  );
+}
+
 /** Non-interactive heading inside a menu; may hold trailing keycaps ("Move to…  M"). */
 export function MenuLabel({
   children,

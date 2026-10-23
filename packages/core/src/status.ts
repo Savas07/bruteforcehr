@@ -417,3 +417,59 @@ export function followUpDue(
     ? { kind: "follow_up", since: new Date(since), dueAt: new Date(dueAt) }
     : null;
 }
+
+/** The user's answers on the suggestion cards (decisions.md F9, D15, D19). */
+export type SuggestionState = Pick<
+  Application,
+  "followUpSnoozedUntil" | "followUpDismissedAt" | "ghostedSnoozedUntil" | "ghostedDismissedAt"
+>;
+
+export interface SuggestionSettings {
+  readonly followUpAfterDays: number;
+  readonly ghostedAfterDays: number;
+}
+
+export const DEFAULT_SUGGESTION_SETTINGS: SuggestionSettings = {
+  followUpAfterDays: DEFAULT_FOLLOW_UP_AFTER_DAYS,
+  ghostedAfterDays: DEFAULT_GHOSTED_AFTER_DAYS,
+};
+
+export interface VisibleSuggestions {
+  readonly followUp: FollowUpSuggestion | null;
+  readonly ghosted: GhostedSuggestion | null;
+}
+
+/**
+ * The suggestions to show after the user's answers on the cards:
+ * - follow-up: hidden while snoozed ("Later") and once marked "Not needed" for the current round
+ *   (a newer follow-up sent starts a new round, which is asked about again);
+ * - no response: hidden while snoozed, and for `ghostedAfterDays` after "Keep waiting".
+ */
+export function visibleSuggestions(
+  application: SuggestionApplication & SuggestionState,
+  events: readonly ApplicationEvent[],
+  now: Date,
+  settings: SuggestionSettings = DEFAULT_SUGGESTION_SETTINGS,
+): VisibleSuggestions {
+  const at = now.getTime();
+  const snoozed = (until: Date | null) => until !== null && until.getTime() > at;
+
+  const followUp = followUpDue(application, events, now, settings.followUpAfterDays);
+  const followUpHidden =
+    followUp !== null &&
+    (snoozed(application.followUpSnoozedUntil) ||
+      (application.followUpDismissedAt !== null &&
+        application.followUpDismissedAt.getTime() >= followUp.since.getTime()));
+
+  const ghosted = suggestGhosted(application, events, now, settings.ghostedAfterDays);
+  const ghostedHidden =
+    ghosted !== null &&
+    (snoozed(application.ghostedSnoozedUntil) ||
+      (application.ghostedDismissedAt !== null &&
+        at < application.ghostedDismissedAt.getTime() + settings.ghostedAfterDays * DAY_MS));
+
+  return {
+    followUp: followUpHidden ? null : followUp,
+    ghosted: ghostedHidden ? null : ghosted,
+  };
+}

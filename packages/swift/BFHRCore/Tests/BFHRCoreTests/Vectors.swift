@@ -13,6 +13,7 @@ enum ConformanceFile {
         .deletingLastPathComponent()
 
     static let stateMachine = packages.appendingPathComponent("core/conformance/state-machine.json")
+    static let insights = packages.appendingPathComponent("core/conformance/insights.json")
     static let populated = packages.appendingPathComponent("fixtures/conformance/populated.json")
     static let empty = packages.appendingPathComponent("fixtures/conformance/empty.json")
 
@@ -64,6 +65,17 @@ struct Subject: StatusTracked, Decodable, Equatable {
     let status: ApplicationStatus
     let appliedAt: Date?
     let statusChangedAt: Date
+}
+
+struct SuggestionSubject: SuggestionTracked, Decodable, Equatable {
+    let id: String
+    let status: ApplicationStatus
+    let appliedAt: Date?
+    let statusChangedAt: Date
+    let followUpSnoozedUntil: Date?
+    let followUpDismissedAt: Date?
+    let ghostedSnoozedUntil: Date?
+    let ghostedDismissedAt: Date?
 }
 
 struct StateMachineVectors: Decodable {
@@ -118,6 +130,15 @@ struct StateMachineVectors: Decodable {
         let cases: [Case]
     }
 
+    struct VisibleSuggestionCase: Decodable {
+        let name: String
+        let application: SuggestionSubject
+        let history: String
+        let now: Date
+        let settings: SuggestionSettings
+        let expected: VisibleSuggestions
+    }
+
     struct MatchBandCase: Decodable {
         let score: Int
         let band: MatchBand
@@ -130,6 +151,7 @@ struct StateMachineVectors: Decodable {
     let transition: [TransitionCase]
     let revert: [RevertCase]
     let suggestions: Suggestions
+    let visibleSuggestions: [VisibleSuggestionCase]
     let matchBand: [MatchBandCase]
 }
 

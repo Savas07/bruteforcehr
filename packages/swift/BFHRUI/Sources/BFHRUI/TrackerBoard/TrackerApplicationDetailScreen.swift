@@ -2,17 +2,24 @@ import BFHRCore
 import BFHRDesignTokens
 import SwiftUI
 
-/// Application detail, pushed from a Pipeline row (tracker.md "Detail (push from row)"): header
-/// with the status pill (tap = Move to…) and the one next step, the stage progress strip, a
-/// no-response suggestion when due, interviews, the day-grouped timeline (automatic changes name
-/// their source and reason, with Undo while it's still the latest move), details and contacts.
+/// Application detail, pushed from a Pipeline row, a Calendar row or a link (tracker.md "Detail
+/// (push from row)"): the header with the status pill (tap = Move to…) and the one next step, the
+/// reminder, the stage progress strip, a suggestion when due, interview rounds (editor, prep
+/// reminder, Add to Calendar), the day-grouped timeline (automatic changes name their source and
+/// reason, with Undo while it's still the latest move), notes, contacts, documents and details.
 struct TrackerApplicationDetailScreen: View {
     let model: TrackerBoardModel
     let applicationId: String
+    /// Scrolls to this round on appear (`bruteforcehr://interviews/{id}`, a prep notification).
+    var focusInterviewId: String?
     @Environment(ToastCenter.self) private var toasts: ToastCenter?
     @Environment(\.openURL) private var openURL
     @Environment(\.dismiss) private var dismiss
     @State private var sheet: TrackerSheet?
+    @State private var editor: DetailEditor?
+    @State private var explainer: LocalReminderPreview?
+    @State private var sharing: InterviewCalendarFile?
+    @State private var confirmsDelete = false
     @State private var errorCount = 0
 
     var body: some View {
@@ -39,78 +46,287 @@ struct TrackerApplicationDetailScreen: View {
                 self.sheet = nil
             }
         }
+        .sheet(item: $editor) { editor in
+            editorSheet(editor)
+        }
+        .sheet(item: $explainer) { preview in
+            NotificationExplainerSheet(preview: preview) {
+                explainer = nil
+                Task { await model.requestNotifications() }
+            } onNotNow: {
+                explainer = nil
+            }
+        }
+        .sheet(item: $sharing) { file in
+            InterviewShareSheet(file: file)
+        }
+        .confirmationDialog(Text(TrackerBoardStrings.deleteApplication), isPresented: $confirmsDelete, titleVisibility: .visible) {
+            Button(role: .destructive) {
+                run { try model.deleteApplication(applicationId) }
+                dismiss()
+            } label: {
+                Text(TrackerBoardStrings.deleteApplication)
+            }
+        } message: {
+            Text(TrackerBoardStrings.deleteMessage)
+        }
         .bfhrHaptic(.error, trigger: errorCount)
         .bfhrToastHost()
         .environment(\.bfhrNow, model.now)
     }
 
+    // MARK: Content
+
     private func content(_ detail: ApplicationDetail) -> some View {
-        List {
-            ConnectionBannerSection(model.connection)
-            Section {
-                DetailHeader(detail: detail, now: model.now) { sheet = .move(detail.id) }
-            }
-            Section {
-                StageProgressStrip(steps: detail.progress)
-            } header: {
-                DetailSectionTitle(TrackerBoardStrings.progress)
-            }
-            // Follow-ups live on Today with their draft; the Tracker asks only about no response.
-            let noResponse = detail.nudges.filter { if case .noResponse = $0.kind { true } else { false } }
-            if !noResponse.isEmpty {
+        ScrollViewReader { proxy in
+            List {
+                ConnectionBannerSection(model.connection)
                 Section {
-                    ForEach(noResponse) { nudge in
+                    DetailHeader(detail: detail, now: model.now) { sheet = .move(detail.id) }
+                }
+                reminderSection(detail)
+                Section {
+                    StageProgressStrip(steps: detail.progress)
+                } header: {
+                    DetailSectionTitle(TrackerBoardStrings.progress)
+                }
+                suggestionSection(detail)
+                interviewSection(detail)
+                timelineSections(detail)
+                notesSection(detail)
+                contactSection(detail)
+                documentSection(detail)
+                DetailFacts(detail: detail)
+                Section {
+                    Button(role: .destructive) { confirmsDelete = true } label: {
+                        Text(TrackerBoardStrings.deleteApplication)
+                            .frame(maxWidth: .infinity, minHeight: BFHRHitTarget.minimum, alignment: .leading)
+                    }
+                    .accessibilityIdentifier("detail.delete")
+                }
+            }
+            .bfhrInsetGroupedList()
+            .onAppear {
+                #if DEBUG
+                openDesignPane(detail)
+                #endif
+                guard let focusInterviewId else { return }
+                Task {
+                    try? await Task.sleep(for: .milliseconds(350))
+                    withAnimation { proxy.scrollTo(focusInterviewId, anchor: .top) }
+                }
+            }
+        }
+    }
+
+    // MARK: Reminder
+
+    @ViewBuilder
+    private func reminderSection(_ detail: ApplicationDetail) -> some View {
+        Section {
+            if let reminder = detail.reminder {
+                Button { editReminder(detail) } label: {
+                    ReminderRow(reminder: reminder, pendingSync: detail.header.pendingSync)
+                }
+                .buttonStyle(.plain)
+                .accessibilityHint(Text(TrackerBoardStrings.editReminder))
+                .bfhrRowActions([
+                    RowAction(TrackerBoardStrings.reminderDone, systemImage: "checkmark", edge: .leading, haptic: .confirm) {
+                        run { try model.clearReminder(detail.id) }
+                    },
+                    RowAction(TrackerBoardStrings.editReminder, systemImage: "pencil", edge: .menuOnly) { editReminder(detail) },
+                ])
+                .accessibilityIdentifier("detail.reminder")
+            } else if detail.header.status.isActive {
+                GhostRow(TrackerBoardStrings.setReminder) { editReminder(detail) }
+                    .accessibilityIdentifier("detail.setReminder")
+            }
+        } header: {
+            if detail.reminder != nil || detail.header.status.isActive {
+                DetailSectionTitle(TrackerBoardStrings.reminder)
+            }
+        }
+    }
+
+    private func editReminder(_ detail: ApplicationDetail, followUp: Bool = false) {
+        let draft = model.reminderDraft(for: detail.id, followUp: followUp)
+        editor = .reminder(ReminderDraft(
+            applicationId: detail.id,
+            text: draft.text,
+            dueAt: draft.dueAt,
+            exists: detail.reminder != nil && !followUp
+        ))
+    }
+
+    // MARK: Suggestion
+
+    @ViewBuilder
+    private func suggestionSection(_ detail: ApplicationDetail) -> some View {
+        if !detail.nudges.isEmpty {
+            Section {
+                ForEach(detail.nudges) { nudge in
+                    switch nudge.kind {
+                    case .followUp:
+                        // Compose arrives with mail sending (M5); until then the follow-up becomes
+                        // a reminder the user sets.
+                        NudgeCard(nudge, now: model.now, primaryTitle: TrackerBoardStrings.setFollowUpReminder) {
+                            editReminder(detail, followUp: true)
+                        } onDismiss: {
+                            toasts?.show(model.dismissNudge(nudge))
+                        }
+                    case .noResponse:
                         NudgeCard(nudge, now: model.now) {
                             run { try model.markNoResponse(nudge) }
                         } onDismiss: {
                             toasts?.show(model.dismissNudge(nudge))
                         }
                     }
-                } header: {
-                    DetailSectionTitle(TrackerBoardStrings.suggestion)
                 }
+            } header: {
+                DetailSectionTitle(TrackerBoardStrings.suggestion)
             }
-            if !detail.interviews.isEmpty {
-                Section {
-                    ForEach(detail.interviews) { interview in
-                        InterviewRow(interview: interview)
-                    }
-                } header: {
-                    DetailSectionTitle(TrackerBoardStrings.interviews)
+        }
+    }
+
+    // MARK: Interviews
+
+    @ViewBuilder
+    private func interviewSection(_ detail: ApplicationDetail) -> some View {
+        Section {
+            ForEach(detail.interviews) { item in
+                Button { editor = .interview(item.interview) } label: {
+                    InterviewRow(item: item)
                 }
+                .buttonStyle(.plain)
+                .accessibilityHint(Text(TrackerBoardStrings.edit))
+                .bfhrRowActions(interviewActions(item))
+                .id(item.id)
             }
-            ForEach(Array(detail.timeline.enumerated()), id: \.element.id) { index, day in
-                Section {
-                    ForEach(day.entries) { entry in
-                        TimelineRow(
-                            entry,
-                            onUndo: entry.undo == .allowed ? { run { try model.undo(eventId: entry.id) } } : nil,
-                            onViewSource: entry.mailMessageId.map { messageId in
-                                { if let url = URL(string: "bruteforcehr://mail/review/\(messageId)") { openURL(url) } }
-                            }
-                        )
-                    }
-                } header: {
-                    VStack(alignment: .leading, spacing: BFHRSpace.s1) {
-                        if index == 0 {
-                            DetailSectionTitle(TrackerBoardStrings.activity)
+            if detail.header.status.isActive {
+                GhostRow(TrackerBoardStrings.addInterview) { editor = .interview(model.newInterview(for: detail.id)) }
+                    .accessibilityIdentifier("detail.addInterview")
+            }
+        } header: {
+            if !detail.interviews.isEmpty || detail.header.status.isActive {
+                DetailSectionTitle(TrackerBoardStrings.interviews)
+            }
+        }
+    }
+
+    private func interviewActions(_ item: ApplicationDetail.InterviewItem) -> [RowAction] {
+        let interview = item.interview
+        var actions = [
+            RowAction(TrackerBoardStrings.addToCalendar, systemImage: "calendar.badge.plus", edge: .leading, id: "ics") {
+                sharing = model.calendarFile(for: interview)
+            },
+            RowAction(TrackerBoardStrings.edit, systemImage: "pencil", edge: .menuOnly) { editor = .interview(interview) },
+            RowAction(TrackerBoardStrings.remove, systemImage: "trash", edge: .trailing, role: .destructive) {
+                run { try model.deleteInterview(interview.id) }
+            },
+        ]
+        if !item.isPast, let link = interview.meetingUrl.flatMap(URL.init(string:)) {
+            actions.insert(RowAction(TrackerBoardStrings.joinCall, systemImage: "video", edge: .menuOnly) { openURL(link) }, at: 1)
+        }
+        return actions
+    }
+
+    // MARK: Timeline
+
+    @ViewBuilder
+    private func timelineSections(_ detail: ApplicationDetail) -> some View {
+        ForEach(Array(detail.timeline.enumerated()), id: \.element.id) { index, day in
+            Section {
+                ForEach(day.entries) { entry in
+                    TimelineRow(
+                        entry,
+                        onUndo: entry.undo == .allowed ? { run { try model.undo(eventId: entry.id) } } : nil,
+                        onViewSource: entry.mailMessageId.map { messageId in
+                            { if let url = URL(string: "bruteforcehr://mail/review/\(messageId)") { openURL(url) } }
                         }
-                        TimelineDayHeader(day.day)
-                    }
+                    )
                 }
-            }
-            DetailFacts(detail: detail)
-            if !detail.contacts.isEmpty {
-                Section {
-                    ForEach(detail.contacts) { contact in
-                        ContactRow(contact: contact)
+            } header: {
+                VStack(alignment: .leading, spacing: BFHRSpace.s1) {
+                    if index == 0 {
+                        DetailSectionTitle(TrackerBoardStrings.activity)
                     }
-                } header: {
-                    DetailSectionTitle(TrackerBoardStrings.contacts)
+                    TimelineDayHeader(day.day)
                 }
             }
         }
-        .bfhrInsetGroupedList()
+    }
+
+    // MARK: Notes, contacts, documents
+
+    private func notesSection(_ detail: ApplicationDetail) -> some View {
+        Section {
+            Button { editor = .notes(detail.notes) } label: {
+                Group {
+                    if detail.notes.isEmpty {
+                        Text(TrackerBoardStrings.notesPlaceholder)
+                            .foregroundStyle(BFHRColor.Fg.secondary)
+                    } else {
+                        Text(verbatim: detail.notes)
+                            .foregroundStyle(BFHRColor.Fg.primary)
+                    }
+                }
+                .font(.bfhr(.body))
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, minHeight: BFHRHitTarget.minimum, alignment: .leading)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Text(TrackerBoardStrings.notesLabel))
+            .accessibilityValue(Text(verbatim: detail.notes))
+            .accessibilityHint(Text(TrackerBoardStrings.edit))
+            .accessibilityIdentifier("detail.notes")
+        } header: {
+            DetailSectionTitle(TrackerBoardStrings.notes)
+        }
+    }
+
+    private func contactSection(_ detail: ApplicationDetail) -> some View {
+        Section {
+            ForEach(detail.contacts) { contact in
+                ContactRow(contact: contact)
+                    .bfhrRowActions([
+                        RowAction(TrackerBoardStrings.edit, systemImage: "pencil", edge: .menuOnly) { editor = .contact(contact) },
+                        RowAction(TrackerBoardStrings.removeContact, systemImage: "person.badge.minus", edge: .trailing) {
+                            run { try model.removeContact(contact.id, from: detail.id) }
+                        },
+                    ])
+                    .onTapGesture { editor = .contact(contact) }
+            }
+            GhostRow(TrackerBoardStrings.addContact) { editor = .contact(model.newContact(for: detail.id)) }
+                .accessibilityIdentifier("detail.addContact")
+        } header: {
+            DetailSectionTitle(TrackerBoardStrings.contacts)
+        }
+    }
+
+    private func documentSection(_ detail: ApplicationDetail) -> some View {
+        Section {
+            if detail.cv == nil && detail.coverLetter == nil {
+                Text(TrackerBoardStrings.noDocuments)
+                    .font(.bfhr(.subheadline))
+                    .foregroundStyle(BFHRColor.Fg.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            if let cv = detail.cv {
+                Button {
+                    if let url = URL(string: "bruteforcehr://cvs/\(cv.id)") { openURL(url) }
+                } label: {
+                    FactRow(Strings.fieldCV, value: Text(verbatim: cv.title))
+                }
+                .buttonStyle(.plain)
+                .accessibilityHint(Text(TrackerBoardStrings.openCV))
+            }
+            if let coverLetter = detail.coverLetter {
+                FactRow(Strings.fieldCoverLetter, value: Text(verbatim: coverLetter.title))
+            }
+        } header: {
+            DetailSectionTitle(TrackerBoardStrings.documents)
+        }
     }
 
     private func actionsMenu(_ detail: ApplicationDetail) -> some View {
@@ -128,8 +344,107 @@ struct TrackerApplicationDetailScreen: View {
                     Label { Text(TrackerBoardStrings.closeApplication) } icon: { Image(systemName: "archivebox") }
                 }
             }
+            Divider()
+            Button(role: .destructive) { confirmsDelete = true } label: {
+                Label { Text(TrackerBoardStrings.deleteApplication) } icon: { Image(systemName: "trash") }
+            }
         } label: {
             Label { Text(TrackerBoardStrings.actions) } icon: { Image(systemName: "ellipsis") }
+        }
+    }
+
+    // MARK: Editors
+
+    @ViewBuilder
+    private func editorSheet(_ editor: DetailEditor) -> some View {
+        switch editor {
+        case .reminder(let draft):
+            ReminderEditorSheet(draft: draft, authorization: model.notificationAuthorization, usesNotifications: model.reminderScheduler != nil) { text, date in
+                self.editor = nil
+                run { try model.setReminder(draft.applicationId, text: text, at: date) }
+                offerNotifications(title: text, at: date, company: detail?.header.company.name)
+            } onRemove: {
+                self.editor = nil
+                run { try model.clearReminder(draft.applicationId) }
+            } onCancel: {
+                self.editor = nil
+            }
+        case .interview(let interview):
+            InterviewEditorSheet(
+                interview: interview,
+                isNew: model.isNewInterview(interview.id),
+                prep: model.interviewPrep[interview.id],
+                company: detail?.header.company.name ?? ""
+            ) { saved, prep in
+                self.editor = nil
+                toasts?.show(model.saveInterview(saved))
+                if prep != model.interviewPrep[saved.id] {
+                    model.setPrep(prep, for: saved.id)
+                    if let prep {
+                        offerNotifications(
+                            title: String(localized: TrackerBoardStrings.prepNotificationTitle(detail?.header.company.name ?? "")),
+                            at: saved.startsAt.addingTimeInterval(-prep.interval),
+                            company: saved.title
+                        )
+                    }
+                }
+            } onRemove: {
+                self.editor = nil
+                run { try model.deleteInterview(interview.id) }
+            } onCancel: {
+                self.editor = nil
+            }
+        case .contact(let contact):
+            ContactEditorSheet(contact: contact, isNew: model.isNewContact(contact.id)) { saved in
+                self.editor = nil
+                toasts?.show(model.saveContact(saved))
+            } onRemove: {
+                self.editor = nil
+                run { try model.removeContact(contact.id, from: applicationId) }
+            } onCancel: {
+                self.editor = nil
+            }
+        case .notes(let notes):
+            NotesEditorSheet(notes: notes, company: detail?.header.company.name ?? "") { text in
+                self.editor = nil
+                run { try model.setNotes(applicationId, notes: text); return nil }
+            } onCancel: {
+                self.editor = nil
+            }
+        }
+    }
+
+    private var detail: ApplicationDetail? { model.detail(for: applicationId) }
+
+    #if DEBUG
+    /// `-BFHRTrackerPane reminder|interview|contact|notes|explainer|share` (design mode).
+    private func openDesignPane(_ detail: ApplicationDetail) {
+        guard let pane = TrackerDesignPane.takeDetailPane() else { return }
+        switch pane {
+        case .reminder: editReminder(detail)
+        case .interview: editor = .interview(detail.interviews.first?.interview ?? model.newInterview(for: detail.id))
+        case .contact: editor = .contact(detail.contacts.first ?? model.newContact(for: detail.id))
+        case .notes: editor = .notes(detail.notes)
+        case .explainer:
+            explainer = LocalReminderPreview(
+                title: detail.reminder?.text ?? String(localized: TrackerBoardStrings.followUpReminderText(detail.header.company.name)),
+                subtitle: "\(detail.header.company.name) · \(detail.header.role)",
+                at: detail.reminder?.dueAt
+            )
+        case .share:
+            if let interview = detail.interviews.first?.interview { sharing = model.calendarFile(for: interview) }
+        case .detail, .calendar, .calendarPast, .add: break
+        }
+    }
+    #endif
+
+    /// The permission explainer the first time a reminder is set (decisions.md D36).
+    private func offerNotifications(title: String, at date: Date?, company: String?) {
+        guard model.takeNotificationExplainer() else { return }
+        Task {
+            // After the editor's dismissal, so the two sheets don't collide.
+            try? await Task.sleep(for: .milliseconds(450))
+            explainer = LocalReminderPreview(title: title, subtitle: company, at: date)
         }
     }
 
@@ -143,6 +458,159 @@ struct TrackerApplicationDetailScreen: View {
     }
 }
 
+/// The editor sheet open over the detail.
+enum DetailEditor: Identifiable {
+    case reminder(ReminderDraft)
+    case interview(Interview)
+    case contact(Contact)
+    case notes(String)
+
+    var id: String {
+        switch self {
+        case .reminder(let draft): "reminder.\(draft.applicationId)"
+        case .interview(let interview): "interview.\(interview.id)"
+        case .contact(let contact): "contact.\(contact.id)"
+        case .notes: "notes"
+        }
+    }
+}
+
+/// The reminder editor's input.
+struct ReminderDraft: Hashable {
+    var applicationId: String
+    var text: String
+    var dueAt: Date
+    /// Editing an existing reminder (offers Remove).
+    var exists: Bool
+}
+
+/// The reminder just set, previewed in the permission explainer as the notification it becomes.
+struct LocalReminderPreview: Identifiable, Hashable {
+    var title: String
+    var subtitle: String?
+    var at: Date?
+    var id: String { title + (at?.description ?? "") }
+}
+
+// MARK: - Rows
+
+/// The reminder: bell, what to do, when; "Overdue" in the amber tone once its time has passed
+/// (never red).
+private struct ReminderRow: View {
+    let reminder: ApplicationDetail.Reminder
+    let pendingSync: Bool
+    @Environment(\.bfhrNow) private var now
+    @Environment(\.locale) private var locale
+    @Environment(\.calendar) private var calendar
+    @ScaledMetric(relativeTo: .body) private var glyphColumn = BFHRIconSize.lg
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: BFHRSpace.s3) {
+            Image(systemName: "bell")
+                .font(.bfhr(.body))
+                .foregroundStyle(BFHRColor.Fg.secondary)
+                .frame(width: glyphColumn)
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(verbatim: reminder.text)
+                    .font(.bfhr(.body))
+                    .foregroundStyle(BFHRColor.Fg.primary)
+                    .fixedSize(horizontal: false, vertical: true)
+                HStack(spacing: BFHRSpace.s2) {
+                    if let dueAt = reminder.dueAt {
+                        Text(verbatim: DateText.dayAndTime(dueAt, now: now, locale: locale, calendar: calendar))
+                            .font(.bfhr(.footnote))
+                            .foregroundStyle(BFHRColor.Fg.secondary)
+                    }
+                    if reminder.isOverdue {
+                        Text(TrackerBoardStrings.overdue)
+                            .font(.bfhr(.footnote, emphasized: true))
+                            .foregroundStyle(BFHRTone.warning.text)
+                    }
+                    if pendingSync { SyncGlyph() }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(.vertical, BFHRSpace.s1)
+        .contentShape(Rectangle())
+        .accessibilityElement(children: .combine)
+    }
+}
+
+/// One interview round: title, type · round, when, interviewers, the prep reminder; "Done" once
+/// it has ended.
+private struct InterviewRow: View {
+    let item: ApplicationDetail.InterviewItem
+    @Environment(\.bfhrNow) private var now
+    @Environment(\.locale) private var locale
+    @Environment(\.calendar) private var calendar
+
+    var body: some View {
+        let interview = item.interview
+        VStack(alignment: .leading, spacing: 2) {
+            Text(verbatim: interview.title.isEmpty ? String(localized: interview.kind.label) : interview.title)
+                .font(.bfhr(.body))
+                .foregroundStyle(item.isPast ? BFHRColor.Fg.secondary : BFHRColor.Fg.primary)
+                .fixedSize(horizontal: false, vertical: true)
+            // One Text, so it wraps as a sentence and the "·" isn't a lone glyph.
+            Text("\(Text(interview.kind.label)) · \(Text(TrackerBoardStrings.round(interview.round))) · \(DateText.dayAndTime(interview.startsAt, now: now, locale: locale, calendar: calendar))")
+                .font(.bfhr(.footnote))
+                .foregroundStyle(BFHRColor.Fg.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            if !interview.people.isEmpty {
+                Text(verbatim: interview.people.map(\.name).joined(separator: ", "))
+                    .font(.bfhr(.footnote))
+                    .foregroundStyle(BFHRColor.Fg.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            HStack(spacing: BFHRSpace.s2) {
+                if item.isPast {
+                    Label { Text(TrackerBoardStrings.pastRound) } icon: { Image(systemName: "checkmark") }
+                        .labelStyle(.bfhrCompact)
+                } else if let prep = item.prep {
+                    Label { Text(TrackerBoardStrings.prepAt(prep)) } icon: { Image(systemName: "bell") }
+                        .labelStyle(.bfhrCompact)
+                }
+                if item.pendingSync { SyncGlyph() }
+            }
+            .font(.bfhr(.footnote))
+            .foregroundStyle(BFHRColor.Fg.secondary)
+        }
+        .padding(.vertical, 2)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
+        .accessibilityElement(children: .combine)
+    }
+}
+
+/// Applied via, Applied, Found on: only the facts that exist. Label and value sit side by side
+/// and stack at accessibility sizes.
+private struct DetailFacts: View {
+    let detail: ApplicationDetail
+    @Environment(\.bfhrNow) private var now
+    @Environment(\.locale) private var locale
+    @Environment(\.calendar) private var calendar
+
+    var body: some View {
+        let header = detail.header
+        if header.channel != nil || header.appliedAt != nil || header.source != nil {
+            Section {
+                if let channel = header.channel {
+                    FactRow(Strings.fieldChannel, value: Text(channel.label))
+                }
+                if let appliedAt = header.appliedAt {
+                    FactRow(Strings.fieldApplied, value: Text(verbatim: DateText.relativeDay(appliedAt, now: now, locale: locale, calendar: calendar)))
+                }
+                if let source = header.source {
+                    FactRow(TrackerBoardStrings.foundOn, value: source == "manual" ? Text(TrackerBoardStrings.sourceManual) : Text(verbatim: source.capitalized))
+                }
+            } header: {
+                DetailSectionTitle(TrackerBoardStrings.details)
+            }
+        }
+    }
+}
 // MARK: - Parts
 
 /// `RecordHeader`: monogram, role, company · location, the status pill (tap = Move to…) with
@@ -273,61 +741,6 @@ private struct StageProgressStrip: View {
                 .frame(width: currentDot, height: currentDot)
         case .upcoming:
             Circle().strokeBorder(BFHRColor.Line.control, lineWidth: BFHRBorderWidth.thin).frame(width: dot, height: dot)
-        }
-    }
-}
-
-private struct InterviewRow: View {
-    let interview: Interview
-    @Environment(\.bfhrNow) private var now
-    @Environment(\.locale) private var locale
-    @Environment(\.calendar) private var calendar
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(verbatim: interview.title)
-                .font(.bfhr(.body))
-                .foregroundStyle(BFHRColor.Fg.primary)
-            // One Text, so it wraps as a sentence and the "·" isn't a lone glyph.
-            Text("\(Text(TrackerBoardStrings.round(interview.round))) · \(DateText.dayAndTime(interview.startsAt, now: now, locale: locale, calendar: calendar))")
-                .font(.bfhr(.footnote))
-                .foregroundStyle(BFHRColor.Fg.secondary)
-        }
-        .padding(.vertical, 2)
-        .accessibilityElement(children: .combine)
-    }
-}
-
-/// Applied via, Applied, CV, Cover letter, Found on: only the facts that exist. Label and value
-/// sit side by side and stack when they don't fit (German, AX sizes).
-private struct DetailFacts: View {
-    let detail: ApplicationDetail
-    @Environment(\.bfhrNow) private var now
-    @Environment(\.locale) private var locale
-    @Environment(\.calendar) private var calendar
-
-    var body: some View {
-        let header = detail.header
-        if header.channel != nil || header.appliedAt != nil || detail.cv != nil || detail.coverLetter != nil || header.source != nil {
-            Section {
-                if let channel = header.channel {
-                    FactRow(Strings.fieldChannel, value: Text(channel.label))
-                }
-                if let appliedAt = header.appliedAt {
-                    FactRow(Strings.fieldApplied, value: Text(verbatim: DateText.relativeDay(appliedAt, now: now, locale: locale, calendar: calendar)))
-                }
-                if let cv = detail.cv {
-                    FactRow(Strings.fieldCV, value: Text(verbatim: cv.title))
-                }
-                if let coverLetter = detail.coverLetter {
-                    FactRow(Strings.fieldCoverLetter, value: Text(verbatim: coverLetter.title))
-                }
-                if let source = header.source {
-                    FactRow(TrackerBoardStrings.foundOn, value: Text(verbatim: source.capitalized))
-                }
-            } header: {
-                DetailSectionTitle(TrackerBoardStrings.details)
-            }
         }
     }
 }

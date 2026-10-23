@@ -12,6 +12,13 @@ export interface ScreenProps<Model> {
   readonly params: Readonly<Record<string, string | undefined>>;
 }
 
-/** The five core screens of M0, also the `src/features/<id>` folder names. */
-export const screenIds = ["today", "job-detail", "cv-editor", "tracker-board", "mail-review"] as const;
+/** The core screens (M0's five plus Insights), also the `src/features/<id>` folder names. */
+export const screenIds = [
+  "today",
+  "job-detail",
+  "cv-editor",
+  "tracker-board",
+  "mail-review",
+  "insights",
+] as const;
 export type ScreenId = (typeof screenIds)[number];

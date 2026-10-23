@@ -8,7 +8,13 @@ import { useEffect, useMemo, useSyncExternalStore } from "react";
 import { CvBackendContext } from "../features/cv-editor/backend";
 import { designSuggestions } from "../features/cv-editor/design-suggestions";
 import { createMemoryCvStore, type MemoryCvStore } from "../features/cv-editor/memoryBackend";
+import { buildApplicationDetailModel } from "../features/application-detail/model";
+import ApplicationDetailScreen from "../features/application-detail/Screen";
 import { buildCvEditorModel } from "../features/cv-editor/model";
+import { buildTodayModel } from "../features/today/model";
+import TodayScreen from "../features/today/Screen";
+import { buildTrackerBoardModel } from "../features/tracker-board/model";
+import TrackerBoardScreen from "../features/tracker-board/Screen";
 import { CvSuggestionSeedContext } from "../features/cv-editor/suggestionSeed";
 import type { ModelContext } from "../shared/model/types";
 import type { RouteViews } from "../router";
@@ -17,16 +23,18 @@ import { Demo } from "./Demo";
 import { DesignIndex } from "./DesignIndex";
 import { DesignRoot } from "./DesignRoot";
 import { DesignScreen } from "./DesignScreen";
-import {
-  cvEditorScreen,
-  jobDetailScreen,
-  mailReviewScreen,
-  todayScreen,
-  trackerBoardScreen,
-} from "./screens";
+import { cvEditorScreen, insightsScreen, jobDetailScreen, mailReviewScreen } from "./screens";
+import { DesignTrackerProviders, DesignTrackerScreen } from "./tracker";
+import { DesignTrackerCalendar, DesignTrackerTable } from "./tracker-views";
+import { TrackerViewsRoute } from "../features/tracker-table/ViewSwitch";
 
+/** Today, the board and the application detail run on the design tracker store (src/design/tracker.tsx). */
 function Today() {
-  return <DesignScreen spec={todayScreen} />;
+  return (
+    <DesignTrackerProviders>
+      <DesignTrackerScreen id="today" build={buildTodayModel} view={TodayScreen} />
+    </DesignTrackerProviders>
+  );
 }
 function JobDetail() {
   return <DesignScreen spec={jobDetailScreen} />;
@@ -55,7 +63,11 @@ function CvEditor() {
     };
   }, [store]);
   const spec = useMemo(
-    () => ({ ...cvEditorScreen, build: (_: unknown, ctx: ModelContext, params: Readonly<Record<string, string | undefined>>) => buildCvEditorModel(version, ctx, params) }),
+    () => ({
+      ...cvEditorScreen,
+      build: (_: unknown, ctx: ModelContext, params: Readonly<Record<string, string | undefined>>) =>
+        buildCvEditorModel(version, ctx, params),
+    }),
     [version],
   );
   return (
@@ -66,8 +78,35 @@ function CvEditor() {
     </CvBackendContext.Provider>
   );
 }
-function TrackerBoard() {
-  return <DesignScreen spec={trackerBoardScreen} />;
+function DesignTrackerBoard() {
+  return <DesignTrackerScreen id="tracker-board" build={buildTrackerBoardModel} view={TrackerBoardScreen} />;
+}
+const designTrackerViews = {
+  board: DesignTrackerBoard,
+  table: DesignTrackerTable,
+  calendar: DesignTrackerCalendar,
+} as const;
+/** Tracker › Board · Table · Calendar (`?view=`) on the design tracker store. */
+function Tracker() {
+  return (
+    <DesignTrackerProviders>
+      <TrackerViewsRoute views={designTrackerViews} />
+    </DesignTrackerProviders>
+  );
+}
+function ApplicationDetail() {
+  return (
+    <DesignTrackerProviders>
+      <DesignTrackerScreen
+        id="application-detail"
+        build={buildApplicationDetailModel}
+        view={ApplicationDetailScreen}
+      />
+    </DesignTrackerProviders>
+  );
+}
+function Insights() {
+  return <DesignScreen spec={insightsScreen} />;
 }
 function MailReview() {
   return <DesignScreen spec={mailReviewScreen} />;
@@ -79,11 +118,13 @@ export const designViews: RouteViews = {
     today: Today,
     jobs: JobDetail,
     job: JobDetail,
-    tracker: TrackerBoard,
+    tracker: Tracker,
+    application: ApplicationDetail,
     cvs: CvEditor,
     cv: CvEditor,
     mail: MailReview,
     mailReview: MailReview,
+    insights: Insights,
     design: DesignIndex,
     designDemo: Demo,
   },

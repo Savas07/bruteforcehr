@@ -1,5 +1,5 @@
 import { Outlet, useNavigate } from "@tanstack/react-router";
-import { useCallback, useEffect, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useState } from "react";
 import { defineMessages, useIntl } from "react-intl";
 import { chrome, onMenuCommand } from "../lib/desktop";
 import { destinations, type DestinationId } from "../lib/destinations";
@@ -28,20 +28,24 @@ const messages = defineMessages({
   },
 });
 
-/** The signed-in app; signed out, the sign-in screen (src/features/auth). */
-export function AppShell() {
+/**
+ * The signed-in app; signed out, the sign-in screen (src/features/auth). `hosts` are app-wide
+ * pieces that need the signed-in shell (toasts, keymap) but no route: the Log an application
+ * dialog and the interview reminder scheduler (src/router.tsx, src/design/DesignRoot.tsx).
+ */
+export function AppShell({ hosts }: { readonly hosts?: ReactNode }) {
   return (
     <UpdatesProvider>
       <AuthGate>
         <ToastProvider>
-          <Shell />
+          <Shell hosts={hosts} />
         </ToastProvider>
       </AuthGate>
     </UpdatesProvider>
   );
 }
 
-function Shell() {
+function Shell({ hosts }: { readonly hosts: ReactNode }) {
   const navigate = useNavigate();
   const intl = useIntl();
   const toast = useToast();
@@ -157,41 +161,42 @@ function Shell() {
 
   const isMac = chrome.platform === "macos";
   return (
-      <div className="text-fg-primary flex h-full flex-col">
-        <div className="flex min-h-0 flex-1">
-          <Sidebar
-            onOpenPalette={() => setPaletteOpen(true)}
-            onOpenShortcuts={openShortcuts}
-            updateCard={<UpdateCard controller={updates} />}
-          />
-          <main
-            className={`bg-surface-base border-line-subtle relative flex min-w-0 flex-1 flex-col border-l ${
-              isMac ? "" : "rounded-tl-md border-t"
-            }`}
-          >
-            {/* macOS: the toolbar row under the hidden title bar moves the window. */}
-            {isMac && <div data-tauri-drag-region className="h-(--chrome-height) shrink-0" />}
-            {/* 28 px offline strip across the content (states.md); renders nothing while online. */}
-            <ConnectionBanner />
-            <Outlet />
-            {/* Toasts sit bottom-left of the content area, not the window (D12). */}
-            <ToastViewport />
-          </main>
-        </div>
-        <CommandPalette
-          open={paletteOpen}
-          onOpenChange={setPaletteOpen}
-          onNavigate={(id) => void goTo(id)}
+    <div className="text-fg-primary flex h-full flex-col">
+      <div className="flex min-h-0 flex-1">
+        <Sidebar
+          onOpenPalette={() => setPaletteOpen(true)}
           onOpenShortcuts={openShortcuts}
-          onCheckForUpdates={checkNow}
-          onSignOut={requestSignOut}
+          updateCard={<UpdateCard controller={updates} />}
         />
-        <ShortcutsSheet open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
-        <CheckForUpdatesDialog controller={updates} />
-        <ReleaseNotesDialog controller={updates} />
-        <UpdateRequired controller={updates} />
-        {/* After the gate, so "Save and restart" opens above it. */}
-        <SaveFirstDialog controller={updates} />
+        <main
+          className={`bg-surface-base border-line-subtle relative flex min-w-0 flex-1 flex-col border-l ${
+            isMac ? "" : "rounded-tl-md border-t"
+          }`}
+        >
+          {/* macOS: the toolbar row under the hidden title bar moves the window. */}
+          {isMac && <div data-tauri-drag-region className="h-(--chrome-height) shrink-0" />}
+          {/* 28 px offline strip across the content (states.md); renders nothing while online. */}
+          <ConnectionBanner />
+          <Outlet />
+          {/* Toasts sit bottom-left of the content area, not the window (D12). */}
+          <ToastViewport />
+        </main>
       </div>
+      <CommandPalette
+        open={paletteOpen}
+        onOpenChange={setPaletteOpen}
+        onNavigate={(id) => void goTo(id)}
+        onOpenShortcuts={openShortcuts}
+        onCheckForUpdates={checkNow}
+        onSignOut={requestSignOut}
+      />
+      <ShortcutsSheet open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
+      <CheckForUpdatesDialog controller={updates} />
+      <ReleaseNotesDialog controller={updates} />
+      <UpdateRequired controller={updates} />
+      {/* After the gate, so "Save and restart" opens above it. */}
+      <SaveFirstDialog controller={updates} />
+      {hosts}
+    </div>
   );
 }

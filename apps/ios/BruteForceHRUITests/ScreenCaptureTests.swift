@@ -144,7 +144,7 @@ final class ScreenCaptureTests: XCTestCase {
         switch screen {
         case "job-detail": "Jobs"
         case "cv-editor": "CVs"
-        case "tracker-board": "Tracker"
+        case "tracker-board", "insights": "Tracker"
         case "mail-review": "Mail"
         default: "Today"
         }

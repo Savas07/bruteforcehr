@@ -17,6 +17,13 @@ const ENTITIES: readonly (readonly [z.ZodType, string])[] = [
   [core.JobSchema, "`users/{uid}/jobs/{jobId}` (the server-only `embedding` field is not modelled)."],
   [core.JobMatchSchema, "`users/{uid}/jobMatches/{jobId}`."],
   [core.SavedSearchSchema, "`users/{uid}/savedSearches/{id}`."],
+  [core.WatchedCompanySchema, '`users/{uid}/watchlist/{id}` ("Companies you follow").'],
+  [core.JobSourceStatusSchema, "`jobSources/{sourceId}` (source health; client read-only)."],
+  [core.JobsSearchRequestSchema, "Request of the `jobsSearch` callable."],
+  [core.JobsSearchResponseSchema, "Response of the `jobsSearch` and `savedSearchRunNow` callables."],
+  [core.SavedSearchRunNowRequestSchema, "Request of the `savedSearchRunNow` callable."],
+  [core.JobMatchesRefreshRequestSchema, "Request of the `jobMatchesRefresh` callable."],
+  [core.JobMatchesRefreshResponseSchema, "Response of the `jobMatchesRefresh` callable."],
   [core.ApplicationSchema, "`users/{uid}/applications/{id}`."],
   [core.ApplicationEventSchema, "`users/{uid}/applicationEvents/{id}` (append-only)."],
   [core.InterviewSchema, "`users/{uid}/interviews/{id}`."],
@@ -41,6 +48,10 @@ const INLINE_NAMES: Readonly<Record<string, string>> = {
   "SavedSearchFilters.salaryMin": "SalaryMinimum",
   "MatchEvidence.from": "MatchEvidenceOrigin",
   "MatchFactor.source": "MatchFactorSource",
+  "JobSourceAttribution.minSize": "AttributionMinSize",
+  "JobSourceStatus.quota": "JobSourceQuota",
+  "JobsSearchResponse.counts": "JobsSearchCounts",
+  "SourceRunReport.status": "SourceRunStatus",
 };
 
 /** Swift keywords an enum case name could collide with (escaped with backticks). */

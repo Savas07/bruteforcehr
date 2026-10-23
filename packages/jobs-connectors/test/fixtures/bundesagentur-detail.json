@@ -1,0 +1,50 @@
+{
+  "stellenangebotsart": "ARBEIT",
+  "stellenangebotsTitel": "Softwareentwicklerin (w/m/d)",
+  "stellenangebotsBeschreibung": "Wir suchen dich an unserem Standort in Berlin-Schöneberg **zum nächstmöglichen Zeitpunkt,befristet für 2 Jahre und in Vollzeit (38,5h)** als\n\n## **Softwareentwicklerin (w/m/d)**\n\n**Deine Vorteile:**\n\n- **Gehalt:** Wir bezahlen dich nach Haustarifvertrag. Dein Einstiegsgehalt liegt bei ca. **72.600 €**, mit Entwicklungsmöglichkeiten auf bis zu **83.000 €**. Du hast die Möglichkeit einen Teil deiner Vergütung in 5 freie Tage umzuwandeln. Wir statten dich mit einer umfangreichen betrieblichen Altersversorgung und anderen frei wählbaren Benefits, wie dem ÖPNV-Ticket, Essenszuschuss, Jobrad u. v. m. aus.\n- **Flexibel:** Arbeitszeiten und -ort passen zu dir und können sich an deine Bedürfnisse anpassen. Digitales & hybrides Arbeiten ist für uns Standard – sogar aus dem europäischen Ausland.\n- **Urlaub:** 30 Tage Jahresurlaub + zusätzlich sind der 24.12 und 31.12 immer frei.\n- **Sicherer Arbeitsplatz:** Seit über 175 Jahren sind wir ein zuverlässiger Arbeitgeber in der Region Berlin-Brandenburg und ein Profi im Bereich Energie.\n- **Nachhaltig sinnvoll:** Du gestaltest aktiv die Energiewende mit. Als Teil der GASAG-Gruppe bist du damit Teil von etwas Wichtigem.\n- **Ausgezeichneter Arbeitgeber:** Als Top Company auf kununu zählen wir auch in diesem Jahr wieder zu den beliebtesten Arbeitgebern in Deutschland. Alle Bewertungen und weitere Einblicke findest du auf unserem [Arbeitgeberprofil bei kununu.](https://www.kununu.com/de/gasag-gruppe/kommentare \"https://www.kununu.com/de/gasag-gruppe/kommentare, öffnet in neuem Tab\")\n\n**Dein Bereich:**\n\n- Du **analysierst, konzipierst, entwickelst und optimierst Weblösungen** auf Basis eines **CMS** oder einer **Single-Page-Application** für komplexe digitale Plattformen\n- Du **setzt Content-Management-Workflows** und **funktionale Erweiterungen um** und **entwickelst bestehende Lösungen** kontinuierlich **weiter**\n- Du **erstellst und optimierst Templates** und **Module in Velocity (VTL)** sowie mit **HTML, CSS und JavaScript**\n- Du **bindest externe Systeme** und **Webservices an** und unterstützt bei der **Integration von APIs** zur Erweiterung bestehender Funktionalitäten\n- Du achtest auf die **Einhaltung gängiger Coding-Standards** und **dokumentierst** deinen Code nachvollziehbar und **sauber**\n- Du **arbeitest im agilen Team** eng mit Product Owner, Tester\\*innen und anderen Entwickler\\*innen **zusammen** und bringst dich auch in DevOps-nahe Themen wie Code Reviews, Continuous Integration und automatisiertes Testing ein\n\n**Deine Energie:**\n\n- Du hast ein **abgeschlossenes Studium der Informatik oder Wirtschaftsinformatik,** eine **abgeschlossene Ausbildung im IT-Umfeld** oder eine vergleichbare Qualifikation\n- Du hast **mehrjährige Erfahrungen in der Softwareentwicklung** gesammelt und möchtest dich in diesem Umfeld **fachlich weiterentwickeln**\n- Du bringst **sehr gute Kenntnisse in TypeScript/JavaScript, HTML, CSS, Java, XML** und **SPA-Frameworks wie Vue.js oder React** mit\n- Du hast bereits mit **C#, .NET,",
+  "arbeitszeitSchichtNachtWochenende": false,
+  "arbeitszeitTeilzeitAbend": false,
+  "arbeitszeitTeilzeitNachmittag": false,
+  "arbeitszeitTeilzeitVormittag": false,
+  "arbeitszeitTeilzeitFlexibel": false,
+  "arbeitszeitVollzeit": true,
+  "eintrittszeitraum": {
+    "von": "2026-10-22"
+  },
+  "verguetungsangabe": "JAHRESGEHALT",
+  "artDerVerguetung": "FESTGEHALT",
+  "festgehalt": 72600.0,
+  "vertragsdauer": "BEFRISTET",
+  "befristungInMonaten": 24,
+  "stellenlokationen": [
+    {
+      "adresse": {
+        "strasse": "EUREF-Campus",
+        "hausnummer": "23-24",
+        "plz": "10829",
+        "ort": "Berlin",
+        "region": "BERLIN",
+        "land": "DEUTSCHLAND"
+      },
+      "breite": 52.480611,
+      "laenge": 13.356027
+    }
+  ],
+  "homeofficemoeglich": true,
+  "homeofficetyp": "ANGABE_IN_PROZENT",
+  "homeofficeprozent": 50,
+  "chiffrenummer": "21498",
+  "veroeffentlichungszeitraum": {
+    "von": "2026-10-21"
+  },
+  "datumErsteVeroeffentlichung": "2026-10-21",
+  "aenderungsdatum": "2026-10-22T12:54:32.215",
+  "istBetreut": true,
+  "hauptberuf": "Softwareentwickler/in",
+  "alternativBeruf1": "Softwareentwickler/in",
+  "firma": "GASAG AG",
+  "arbeitgeberKundennummerHash": "btN-WZbWKD098381aM0762_KHx3lkP1Xne2OL2sVVvo=",
+  "allianzpartnerUrl": "http://www.arbeitsagentur.de",
+  "allianzpartnerName": "arbeitsagentur.de",
+  "referenznummer": "10001-1003891446-S"
+}

@@ -1,0 +1,89 @@
+{
+  "id": "744000157567254",
+  "name": "Coordinador/a Trade Marketing",
+  "uuid": "31e13ba1-3997-452c-8de5-192011bdd9fe",
+  "jobId": "c16407a7-093c-47ad-a768-3e27536cd5f3",
+  "jobAdId": "0244d149-0b82-4b28-ac6a-4e418986501f",
+  "defaultJobAd": true,
+  "refNumber": "REF296598Y",
+  "company": {
+    "name": "Bosch Group",
+    "identifier": "BoschGroup"
+  },
+  "location": {
+    "city": "Ciudad de México",
+    "region": "CDMX",
+    "country": "mx",
+    "address": "Avenida Santa Fe",
+    "remote": false,
+    "hybrid": false,
+    "latitude": "19.3662005",
+    "longitude": "-99.2620075",
+    "fullLocation": "Ciudad de México, CDMX, Mexico"
+  },
+  "customField": [
+    {
+      "fieldId": "5abe2a4ab60a5e486a2d9b1d",
+      "fieldLabel": "Contract type",
+      "valueId": "1e46492b-d24f-460c-b095-38cf08a778d8",
+      "valueLabel": "Unlimited"
+    },
+    {
+      "fieldId": "5abe28e96d8bc56863dd9746",
+      "fieldLabel": "Tariff Area",
+      "valueId": "540ff3f7-a953-4856-97e3-f2202d80c57c",
+      "valueLabel": "Mexico Local Grades"
+    }
+  ],
+  "releasedDate": "2026-10-23T20:49:45.356Z",
+  "creator": {
+    "name": "",
+    "avatarUrl": ""
+  },
+  "postingUrl": "https://jobs.smartrecruiters.com/BoschGroup/744000157567254-coordinador-a-trade-marketing",
+  "applyUrl": "https://jobs.smartrecruiters.com/BoschGroup/744000157567254-coordinador-a-trade-marketing?oga=true",
+  "referralUrl": "https://jobs.smartrecruiters.com/external-referrals/company/BoschGroup/publication/31e13ba1-3997-452c-8de5-192011bdd9fe?dcr_ci=BoschGroup",
+  "jobAd": {
+    "sections": {
+      "companyDescription": {
+        "title": "Descripción de la empresa",
+        "text": ""
+      },
+      "jobDescription": {
+        "title": "Descripción del empleo",
+        "text": "<p>Responsable de la gestión estratégica de la Promotoría nacional, liderando un equipo de campo con foco en la ejecución de las estrategias de Marketing y Comercial, así como en la generación de ventas para el negocio.</p><p>Desarrollar e implementar el Plan Estratégico Anual de Promotoría, definiendo prioridades, cobertura, canales, regiones, puntos de venta (PDV) y planes tácticos alineados con las estrategias corporativas, de marcas y canales.&#xa0; &#xa0; &#xa0; &#xa0; &#xa0; &#xa0;&#xa0;<br>\nGestionar y analizar indicadores clave de desempeño (KPIs), dashboards, productividad, sell-out, ejecución y retorno sobre la inversión (ROI), transformando los datos de campo en insights y recomendaciones para apoyar la toma de decisiones.&#xa0; &#xa0; &#xa0; &#xa0; &#xa0; &#xa0;&#xa0;<br>\nColaborar con la operación nacional de campo, garantizando la estandarización, excelencia en la ejecución, productividad y alto desempeño de los equipos.&#xa0; &#xa0; &#xa0; &#xa0; &#xa0; &#xa0;&#xa0;<br>\nGestionar la relación con áreas multidisciplinarias, clientes y demás stakeholders, promoviendo el alineamiento estratégico y el desarrollo de soluciones para el negocio&#xa0; &#xa0; &#xa0; &#xa0; &#xa0; &#xa0;&#xa0;<br>\nAnalizar el potencial del mercado y definir cobertura, estructura, rutas y frecuencia de visitas a los puntos de venta, maximizando la eficiencia operativa y el retorno de la inversión.&#xa0; &#xa0; &#xa0; &#xa0; &#xa0; &#xa0;&#xa0;<br>\nTraducir las estrategias de marca y de neg…"
+      },
+      "qualifications": {
+        "title": "Requisitos",
+        "text": "<p>Ingles -&#xa0;Comprensión y comunicación básica en situaciones laborales cotidianas, lectura de información sencilla y seguimiento de instrucciones simples</p><p>Microsoft Office, Word, PowerPoint, excel y Outlook.</p>"
+      },
+      "additionalInformation": {
+        "title": "Información adicional",
+        "text": "<p><strong>Conoce más sobre cómo trabajamos en Bosch y las nuevas vacantes en nuestras redes sociales:</strong></p><ul><li>Facebook: <a href=\"https://www.facebook.com/BoschTalentoMexico\" rel=\"noopener noreferrer\">Bosch Talento México</a></li><li>Instagram: <a href=\"https://www.instagram.com/bosch_campus_mexico/\" rel=\"noopener noreferrer\">Bosch Campus México</a></li><li>LinkedIn: <a href=\"https://www.linkedin.com/company/2563257/\" rel=\"noopener noreferrer\">Bosch México</a></li><li>Tiktok: <a href=\"https://www.tiktok.com/@bosch_talento_mexico?lang=en\" rel=\"noopener noreferrer\">Bosch Talento México</a></li></ul>"
+      }
+    }
+  },
+  "active": true,
+  "visibility": "PUBLIC",
+  "industry": {
+    "id": "marketing_and_advertising",
+    "label": "Marketing And Advertising"
+  },
+  "function": {
+    "id": "administrative",
+    "label": "Administrative"
+  },
+  "experienceLevel": {
+    "id": "associate",
+    "label": "Associate"
+  },
+  "typeOfEmployment": {
+    "id": "permanent",
+    "label": "Full-time"
+  },
+  "language": {
+    "code": "es",
+    "label": "Spanish",
+    "labelNative": "español"
+  }
+}

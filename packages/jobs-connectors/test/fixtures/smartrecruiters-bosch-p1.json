@@ -1,0 +1,198 @@
+{
+  "offset": 0,
+  "limit": 100,
+  "totalFound": 5087,
+  "content": [
+    {
+      "id": "744000157567254",
+      "name": "Coordinador/a Trade Marketing",
+      "uuid": "31e13ba1-3997-452c-8de5-192011bdd9fe",
+      "jobAdId": "0244d149-0b82-4b28-ac6a-4e418986501f",
+      "defaultJobAd": true,
+      "refNumber": "REF296598Y",
+      "company": {
+        "identifier": "BoschGroup",
+        "name": "Bosch Group"
+      },
+      "releasedDate": "2026-10-23T20:49:45.356Z",
+      "location": {
+        "city": "Ciudad de México",
+        "region": "CDMX",
+        "country": "mx",
+        "address": "Avenida Santa Fe",
+        "remote": false,
+        "hybrid": false,
+        "latitude": "19.3662005",
+        "longitude": "-99.2620075",
+        "fullLocation": "Ciudad de México, CDMX, Mexico"
+      },
+      "industry": {
+        "id": "marketing_and_advertising",
+        "label": "Marketing And Advertising"
+      },
+      "department": {},
+      "function": {
+        "id": "administrative",
+        "label": "Administrative"
+      },
+      "typeOfEmployment": {
+        "id": "permanent",
+        "label": "Full-time"
+      },
+      "experienceLevel": {
+        "id": "associate",
+        "label": "Associate"
+      },
+      "customField": [
+        {
+          "fieldId": "5abe2a4ab60a5e486a2d9b1d",
+          "fieldLabel": "Contract type",
+          "valueId": "1e46492b-d24f-460c-b095-38cf08a778d8",
+          "valueLabel": "Unlimited"
+        },
+        {
+          "fieldId": "5abe28e96d8bc56863dd9746",
+          "fieldLabel": "Tariff Area",
+          "valueId": "540ff3f7-a953-4856-97e3-f2202d80c57c",
+          "valueLabel": "Mexico Local Grades"
+        }
+      ],
+      "visibility": "PUBLIC",
+      "ref": "https://api.smartrecruiters.com/v1/companies/BoschGroup/postings/744000157567254",
+      "language": {
+        "code": "es",
+        "label": "Spanish",
+        "labelNative": "español"
+      }
+    },
+    {
+      "id": "744000157557544",
+      "name": "PROMOTOR TECNICO COMERCIAL SR (36273)",
+      "uuid": "87c5c11b-1fe8-44a9-b1a0-95e7dbca9bd8",
+      "jobAdId": "e2c60d3a-a4a9-4205-b95b-9260d5d5f4b2",
+      "defaultJobAd": true,
+      "refNumber": "REF299347R",
+      "company": {
+        "identifier": "BoschGroup",
+        "name": "Bosch Group"
+      },
+      "releasedDate": "2026-10-23T19:46:32.566Z",
+      "location": {
+        "city": "Campinas",
+        "region": "SP",
+        "country": "br",
+        "address": "Avenida Robert Bosch",
+        "postalCode": "13064-765",
+        "remote": false,
+        "hybrid": false,
+        "latitude": "-22.8992722",
+        "longitude": "-47.1170748",
+        "fullLocation": "Campinas, SP, Brazil"
+      },
+      "industry": {
+        "id": "marketing_and_advertising",
+        "label": "Marketing And Advertising"
+      },
+      "department": {},
+      "function": {
+        "id": "advertising",
+        "label": "Advertising"
+      },
+      "typeOfEmployment": {
+        "id": "permanent",
+        "label": "Full-time"
+      },
+      "experienceLevel": {
+        "id": "not_applicable",
+        "label": "Not Applicable"
+      },
+      "customField": [
+        {
+          "fieldId": "5abe2a4ab60a5e486a2d9b1d",
+          "fieldLabel": "Contract type",
+          "valueId": "1e46492b-d24f-460c-b095-38cf08a778d8",
+          "valueLabel": "Unlimited"
+        },
+        {
+          "fieldId": "5abe28e96d8bc56863dd9746",
+          "fieldLabel": "Tariff Area",
+          "valueId": "89e3308f-77ac-4db2-9957-49b221a76b0f",
+          "valueLabel": "Brazil Local Grades"
+        }
+      ],
+      "visibility": "PUBLIC",
+      "ref": "https://api.smartrecruiters.com/v1/companies/BoschGroup/postings/744000157557544",
+      "creator": {
+        "name": "GIOVANA LETICIA YOSHINAGA ALVES (GS/HRS1-LA)"
+      },
+      "language": {
+        "code": "pt-BR",
+        "label": "Portuguese (Brazil)",
+        "labelNative": "português (Brasil)"
+      }
+    },
+    {
+      "id": "744000157551979",
+      "name": "Applied HVAC Solutions Engineer",
+      "uuid": "40c9644e-fc40-4679-89b5-e481ddd0a8bd",
+      "jobAdId": "bad61598-5dcd-4202-9bca-280c66dd06a8",
+      "defaultJobAd": false,
+      "refNumber": "REF289708F",
+      "company": {
+        "identifier": "BoschGroup",
+        "name": "Bosch Group"
+      },
+      "releasedDate": "2026-10-23T19:11:24.330Z",
+      "location": {
+        "city": "Norman",
+        "region": "OK",
+        "country": "us",
+        "address": "5005 York Drive",
+        "postalCode": "73069",
+        "remote": true,
+        "hybrid": false,
+        "latitude": "35.2811922",
+        "longitude": "-97.48198649999999",
+        "fullLocation": "Norman, OK, United States"
+      },
+      "industry": {
+        "id": "mechanical_engineering",
+        "label": "Mechanical Or Industrial Engineering"
+      },
+      "department": {},
+      "function": {
+        "id": "engineering",
+        "label": "Engineering"
+      },
+      "typeOfEmployment": {
+        "id": "permanent",
+        "label": "Full-time"
+      },
+      "experienceLevel": {
+        "id": "mid_senior_level",
+        "label": "Mid-Senior Level"
+      },
+      "customField": [
+        {
+          "fieldId": "5abe2a4ab60a5e486a2d9b1d",
+          "fieldLabel": "Contract type",
+          "valueId": "1e46492b-d24f-460c-b095-38cf08a778d8",
+          "valueLabel": "Unlimited"
+        },
+        {
+          "fieldId": "5abe28e96d8bc56863dd9746",
+          "fieldLabel": "Tariff Area",
+          "valueId": "82f1dd4b-de9d-4134-9f1a-8d315be380ae",
+          "valueLabel": "United States Local Grades"
+        }
+      ],
+      "visibility": "PUBLIC",
+      "ref": "https://api.smartrecruiters.com/v1/companies/BoschGroup/postings/744000157551979",
+      "language": {
+        "code": "en",
+        "label": "English",
+        "labelNative": "English (US)"
+      }
+    }
+  ]
+}

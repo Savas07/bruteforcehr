@@ -1,0 +1,41 @@
+{
+  "totalCount": 3,
+  "jobs": [
+    {
+      "id": 1234567890,
+      "title": "Sales Manager",
+      "location": "Kyiv",
+      "snippet": "This is a great opportunity to join our team...",
+      "salary": "17,600 UAH",
+      "source": "jooble",
+      "type": "Full-time",
+      "link": "https://ua.jooble.org/jdp/12345",
+      "company": "ABC Corp",
+      "updated": "2023-09-15T12:55:35.3870000"
+    },
+    {
+      "id": -4711093284110239,
+      "title": "Senior TypeScript Engineer",
+      "location": "Austin, TX",
+      "snippet": "&nbsp;...build <b>TypeScript</b> services on Node.js and PostgreSQL for our payments platform...&nbsp;",
+      "salary": "$120k - $150k",
+      "source": "example-careers.com",
+      "type": "Full-time",
+      "link": "https://jooble.org/desc/-4711093284110239",
+      "company": "Acme Payments",
+      "updated": "2026-10-20T09:14:02.5130000"
+    },
+    {
+      "id": 802211937465512,
+      "title": "Backend Developer (Contract)",
+      "location": "Remote",
+      "snippet": "...six-month contract, Go and Kubernetes...",
+      "salary": "$60 - $75 per hour",
+      "source": "dice.com",
+      "type": "Contract",
+      "link": "https://jooble.org/desc/802211937465512",
+      "company": "Northwind Staffing",
+      "updated": "2026-10-22T16:40:00.0000000"
+    }
+  ]
+}

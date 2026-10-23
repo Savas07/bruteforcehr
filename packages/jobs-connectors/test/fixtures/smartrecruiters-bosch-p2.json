@@ -1,0 +1,135 @@
+{
+  "offset": 100,
+  "limit": 100,
+  "totalFound": 5087,
+  "content": [
+    {
+      "id": "744000157166541",
+      "name": "PROMOTOR TECNICO COMERCIAL JR (36237)",
+      "uuid": "e6daf863-0136-4fc7-be93-b7bfe3c1f45e",
+      "jobAdId": "8a88d3b4-66d9-406e-afea-ea9bc6f704e4",
+      "defaultJobAd": true,
+      "refNumber": "REF299052I",
+      "company": {
+        "identifier": "BoschGroup",
+        "name": "Bosch Group"
+      },
+      "releasedDate": "2026-10-22T15:19:55.901Z",
+      "location": {
+        "city": "Cascavel",
+        "region": "PR",
+        "country": "br",
+        "address": "Rua Paraná 5000",
+        "postalCode": "85810-011",
+        "remote": false,
+        "hybrid": false,
+        "latitude": "-24.9539644",
+        "longitude": "-53.4771714",
+        "fullLocation": "Cascavel, PR, Brazil"
+      },
+      "industry": {
+        "id": "mechanical_engineering",
+        "label": "Mechanical Or Industrial Engineering"
+      },
+      "department": {},
+      "function": {
+        "id": "customer_service",
+        "label": "Customer Service"
+      },
+      "typeOfEmployment": {
+        "id": "permanent",
+        "label": "Full-time"
+      },
+      "experienceLevel": {
+        "id": "executive",
+        "label": "Executive"
+      },
+      "customField": [
+        {
+          "fieldId": "5abe2a4ab60a5e486a2d9b1d",
+          "fieldLabel": "Contract type",
+          "valueId": "1e46492b-d24f-460c-b095-38cf08a778d8",
+          "valueLabel": "Unlimited"
+        },
+        {
+          "fieldId": "5abe28e96d8bc56863dd9746",
+          "fieldLabel": "Tariff Area",
+          "valueId": "89e3308f-77ac-4db2-9957-49b221a76b0f",
+          "valueLabel": "Brazil Local Grades"
+        }
+      ],
+      "visibility": "PUBLIC",
+      "ref": "https://api.smartrecruiters.com/v1/companies/BoschGroup/postings/744000157166541",
+      "creator": {
+        "name": "GIOVANA LETICIA YOSHINAGA ALVES (GS/HRS1-LA)"
+      },
+      "language": {
+        "code": "pt-BR",
+        "label": "Portuguese (Brazil)",
+        "labelNative": "português (Brasil)"
+      }
+    },
+    {
+      "id": "744000157161069",
+      "name": "Design Engineer Advanced Apprentice (Graduate)",
+      "uuid": "8e6fc75d-7b35-4ba8-b27f-8322e5457489",
+      "jobAdId": "67f51cba-1ba7-4825-8f8b-96d47acd0b66",
+      "defaultJobAd": true,
+      "refNumber": "REF299195T",
+      "company": {
+        "identifier": "BoschGroup",
+        "name": "Bosch Group"
+      },
+      "releasedDate": "2026-10-22T14:48:46.020Z",
+      "location": {
+        "city": "Worcester",
+        "region": "England",
+        "country": "gb",
+        "address": "Cotswold Way",
+        "remote": false,
+        "hybrid": false,
+        "latitude": "52.2154288",
+        "longitude": "-2.1875122",
+        "fullLocation": "Worcester, England, United Kingdom"
+      },
+      "industry": {
+        "id": "consumer_electronics",
+        "label": "Consumer Electronics"
+      },
+      "department": {},
+      "function": {
+        "id": "engineering",
+        "label": "Engineering"
+      },
+      "typeOfEmployment": {
+        "id": "permanent",
+        "label": "Full-time"
+      },
+      "experienceLevel": {
+        "id": "associate",
+        "label": "Associate"
+      },
+      "customField": [
+        {
+          "fieldId": "5abe2a4ab60a5e486a2d9b1d",
+          "fieldLabel": "Contract type",
+          "valueId": "98487475-2a49-44f5-a615-408b525b3821",
+          "valueLabel": "Limited"
+        },
+        {
+          "fieldId": "5abe28e96d8bc56863dd9746",
+          "fieldLabel": "Tariff Area",
+          "valueId": "6be1389b-3b89-46a0-ab4a-b51338ddae47",
+          "valueLabel": "United Kingdom Local Grades"
+        }
+      ],
+      "visibility": "PUBLIC",
+      "ref": "https://api.smartrecruiters.com/v1/companies/BoschGroup/postings/744000157161069",
+      "language": {
+        "code": "en",
+        "label": "English",
+        "labelNative": "English (US)"
+      }
+    }
+  ]
+}

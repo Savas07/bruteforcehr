@@ -36,6 +36,9 @@ public final class InsightsModel: ScreenModel {
     /// Weekly activity series.
     public var series: InsightsSeries = .applied
 
+    /// Scrolls to this card when the screen appears (design captures of the lower cards).
+    public var scrollTarget: InsightsCard?
+
     /// Weekly activity as a running total (small numbers read better cumulatively).
     public var isCumulative = false
 
@@ -156,6 +159,11 @@ public final class InsightsModel: ScreenModel {
         let calendar = InsightsCalendar(timeZoneIdentifier: tz)
         appliedEver = insightsJourneys(input, calendar: calendar, filters: [:]).filter { $0.appliedDate != nil }.count
     }
+}
+
+/// The cards below the KPI grid; a KPI tile scrolls to its card.
+public enum InsightsCard: String, Hashable, Sendable {
+    case funnel, breakdown, firstResponse = "first-response", activity
 }
 
 /// Weekly activity series (research/insights.md: applications, with follow-ups and interviews as a

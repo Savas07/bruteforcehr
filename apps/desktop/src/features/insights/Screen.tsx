@@ -58,6 +58,8 @@ const messages = defineMessages({
   },
   funnelQuestion: { id: "insights.screen.funnelQuestion", defaultMessage: "How far do my applications get?" },
   funnelChart: { id: "insights.screen.funnelChart", defaultMessage: "Funnel" },
+  funnelTable: { id: "insights.screen.funnelTable", defaultMessage: "Funnel table" },
+  breakdownTable: { id: "insights.screen.breakdownTable", defaultMessage: "Responses by {dimension}" },
   stageHeader: { id: "insights.screen.stageHeader", defaultMessage: "Stage" },
   reachedHeader: { id: "insights.screen.reachedHeader", defaultMessage: "Reached" },
   ofAppliedHeader: { id: "insights.screen.ofAppliedHeader", defaultMessage: "Of applied" },
@@ -171,7 +173,7 @@ function LoadingSkeleton() {
   return (
     <div className="flex flex-col gap-5">
       <SkeletonBlock className="h-8 w-96" />
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(10rem,1fr))] gap-3">
+      <div className="grid grid-cols-2 gap-3 @min-[52rem]:grid-cols-5">
         {[0, 1, 2, 3, 4].map((index) => (
           <SkeletonBlock key={index} className="h-24" />
         ))}
@@ -570,7 +572,7 @@ function KpiStrip({ kpis, onDrill }: { kpis: readonly KpiVM[]; onDrill: (drill: 
   return (
     <ul
       aria-label={intl.formatMessage(messages.kpis)}
-      className="grid grid-cols-[repeat(auto-fit,minmax(11rem,1fr))] gap-3"
+      className="grid grid-cols-2 gap-3 @min-[52rem]:grid-cols-5"
     >
       {kpis.map((kpi) => (
         <li
@@ -661,7 +663,7 @@ function FunnelCard({ model, onDrill }: { model: InsightsModel; onDrill: (drill:
                 drill={step.drill}
                 label={step.accessibleLabel}
                 onDrill={onDrill}
-                className="hover:bg-surface-hover grid w-full grid-cols-[6rem_1fr_auto] items-center gap-3 rounded-md p-1"
+                className="hover:bg-surface-hover grid w-full grid-cols-[6rem_1fr_5.5rem] items-center gap-3 rounded-md p-1"
               >
                 <span className="text-footnote text-fg-secondary">{step.label}</span>
                 <span className="bg-surface-sunken flex h-3 overflow-hidden rounded-sm">
@@ -671,7 +673,7 @@ function FunnelCard({ model, onDrill }: { model: InsightsModel; onDrill: (drill:
                     style={{ width: `${step.share * 100}%` }}
                   />
                 </span>
-                <span className="text-callout tabular-nums">
+                <span className="text-callout text-end tabular-nums">
                   {step.reached}
                   {!lowSample && ` · ${step.shareLabel}`}
                 </span>
@@ -724,7 +726,12 @@ function FunnelTable({
   const th = "text-footnote text-fg-secondary px-2 py-1.5 font-normal";
   const td = "px-2 py-1.5 text-callout tabular-nums";
   return (
-    <div className="overflow-x-auto">
+    <div
+      className="overflow-x-auto"
+      tabIndex={0}
+      role="region"
+      aria-label={intl.formatMessage(messages.funnelTable)}
+    >
       <table className="w-full border-collapse">
         <thead>
           <tr className="border-line-subtle border-b">
@@ -797,7 +804,12 @@ function BreakdownCard({
         />
       }
     >
-      <div className="overflow-x-auto">
+      <div
+        className="overflow-x-auto"
+        tabIndex={0}
+        role="region"
+        aria-label={intl.formatMessage(messages.breakdownTable, { dimension: breakdown.keyHeader })}
+      >
         <table className="w-full border-collapse">
           <thead>
             <tr className="border-line-subtle border-b">

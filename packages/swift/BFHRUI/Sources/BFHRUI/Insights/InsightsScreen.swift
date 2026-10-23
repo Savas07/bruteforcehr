@@ -50,23 +50,25 @@ public struct InsightsScreen: View {
             List {
                 ConnectionBannerSection(model.connection)
                 Section {
-                    Picker(selection: $model.range) {
-                        ForEach(InsightsRangePreset.ios, id: \.self) { range in
-                            Text(range.shortLabel)
-                                .accessibilityLabel(Text(range.spokenLabel))
-                                .tag(range)
+                    VStack(alignment: .leading, spacing: BFHRSpace.s2) {
+                        Picker(selection: $model.range) {
+                            ForEach(InsightsRangePreset.ios, id: \.self) { range in
+                                Text(range.shortLabel)
+                                    .accessibilityLabel(Text(range.spokenLabel))
+                                    .tag(range)
+                            }
+                        } label: {
+                            Text(InsightsStrings.rangeLabel)
                         }
-                    } label: {
-                        Text(InsightsStrings.rangeLabel)
+                        .pickerStyle(.segmented)
+                        .labelsHidden()
+                        .accessibilityLabel(Text(InsightsStrings.rangeLabel))
+                        if !model.isFirstUse {
+                            Text(rangeLine)
+                                .font(.bfhr(.footnote))
+                                .foregroundStyle(BFHRColor.Fg.secondary)
+                        }
                     }
-                    .pickerStyle(.segmented)
-                    .labelsHidden()
-                    .accessibilityLabel(Text(InsightsStrings.rangeLabel))
-                    .listRowSeparator(.hidden)
-                    Text(rangeLine)
-                        .font(.bfhr(.footnote))
-                        .foregroundStyle(BFHRColor.Fg.secondary)
-                        .listRowSeparator(.hidden)
                 }
                 if model.isFirstUse {
                     Section {
@@ -97,10 +99,17 @@ public struct InsightsScreen: View {
                 }
             }
             .bfhrInsetGroupedList()
+            #if os(iOS)
+            .listSectionSpacing(.compact)
+            #endif
+            .onAppear {
+                if let card = model.scrollTarget { proxy.scrollTo(card, anchor: .top) }
+            }
         }
     }
 
-    private enum Card: Hashable { case funnel, breakdown, firstResponse, activity }
+    private typealias Card = InsightsCard
+
 
     private var rangeLine: String {
         let range = model.resolvedRange

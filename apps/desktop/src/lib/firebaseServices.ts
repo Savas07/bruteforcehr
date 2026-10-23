@@ -6,7 +6,13 @@
  * ADR 0002). Test builds (`__BFHR_E2E__`) talk to the emulators started by
  * scripts/with-emulators.sh (firebase.json `emulators`).
  */
-import { connectFirestoreEmulator, type Firestore, initializeFirestore, persistentLocalCache, persistentSingleTabManager } from "firebase/firestore";
+import {
+  connectFirestoreEmulator,
+  type Firestore,
+  initializeFirestore,
+  persistentLocalCache,
+  persistentSingleTabManager,
+} from "firebase/firestore";
 import { connectFunctionsEmulator, type Functions, getFunctions } from "firebase/functions";
 import { connectStorageEmulator, type FirebaseStorage, getStorage } from "firebase/storage";
 import { firebaseApp } from "./firebase";

@@ -33,12 +33,22 @@ import { jobSourceName } from "../job-detail/model";
 import type { ModelContext, UserData } from "../../shared/model/types";
 
 /** Desktop ranges (D31) plus a custom date range. */
-export const DESKTOP_RANGES = ["30d", "90d", "6m", "12m", "all"] as const satisfies readonly InsightsRangePreset[];
+export const DESKTOP_RANGES = [
+  "30d",
+  "90d",
+  "6m",
+  "12m",
+  "all",
+] as const satisfies readonly InsightsRangePreset[];
 export type DesktopRange = (typeof DESKTOP_RANGES)[number] | "custom";
 export const DEFAULT_RANGE: DesktopRange = "90d";
 
 /** Breakdown tabs (the "Market" dimension is a filter only, IA.md). */
-export const BREAKDOWN_DIMENSIONS = ["source", "channel", "cv"] as const satisfies readonly InsightsDimension[];
+export const BREAKDOWN_DIMENSIONS = [
+  "source",
+  "channel",
+  "cv",
+] as const satisfies readonly InsightsDimension[];
 export type BreakdownDimension = (typeof BREAKDOWN_DIMENSIONS)[number];
 
 export const ACTIVITY_SERIES = ["applied", "follow_up", "interview"] as const;
@@ -304,7 +314,8 @@ const messages = defineMessages({
   stageOffer: { id: "insights.stage.offer", defaultMessage: "Offer" },
   funnelTitle: {
     id: "insights.funnel.title",
-    defaultMessage: "{responded} of {applied, plural, one {# application} other {# applications}} got a response",
+    defaultMessage:
+      "{responded} of {applied, plural, one {# application} other {# applications}} got a response",
   },
   funnelStepAccessible: {
     id: "insights.funnel.stepAccessible",
@@ -352,7 +363,6 @@ const messages = defineMessages({
   csvValue: { id: "insights.csv.value", defaultMessage: "Value" },
   csvCount: { id: "insights.csv.count", defaultMessage: "Count" },
   csvOf: { id: "insights.csv.of", defaultMessage: "Out of" },
-  csvGroup: { id: "insights.csv.group", defaultMessage: "Group" },
   csvApplications: { id: "insights.csv.applications", defaultMessage: "Applications" },
   csvResponses: { id: "insights.csv.responses", defaultMessage: "Responses" },
   csvRate: { id: "insights.csv.rate", defaultMessage: "Response rate" },
@@ -469,7 +479,9 @@ export function localeWeekStart(locale: string): IsoWeekday {
 }
 
 function civilFormat(date: CivilDate, locale: string, options: Intl.DateTimeFormatOptions): string {
-  return new Intl.DateTimeFormat(locale, { timeZone: "UTC", ...options }).format(new Date(`${date}T12:00:00Z`));
+  return new Intl.DateTimeFormat(locale, { timeZone: "UTC", ...options }).format(
+    new Date(`${date}T12:00:00Z`),
+  );
 }
 
 const percent = (value: number, locale: string) =>
@@ -479,7 +491,9 @@ const oneDecimal = (value: number, locale: string) =>
   new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }).format(value);
 
 const signed = (value: number, locale: string, fractionDigits = 0) =>
-  new Intl.NumberFormat(locale, { signDisplay: "exceptZero", maximumFractionDigits: fractionDigits }).format(value);
+  new Intl.NumberFormat(locale, { signDisplay: "exceptZero", maximumFractionDigits: fractionDigits }).format(
+    value,
+  );
 
 function rateLabel(rate: Rate, intl: IntlShape): string {
   return rate.value === null ? intl.formatMessage(messages.dash) : percent(rate.value, intl.locale);
@@ -505,7 +519,10 @@ export function dimensionValueLabel(
 ): string {
   switch (dimension) {
     case "source":
-      return jobSourceName(key) ?? (SOURCE_FALLBACK_MESSAGES[key] ? intl.formatMessage(SOURCE_FALLBACK_MESSAGES[key]) : key);
+      return (
+        jobSourceName(key) ??
+        (SOURCE_FALLBACK_MESSAGES[key] ? intl.formatMessage(SOURCE_FALLBACK_MESSAGES[key]) : key)
+      );
     case "channel": {
       const message = CHANNEL_MESSAGES[key];
       return message === undefined ? key : intl.formatMessage(message);
@@ -575,16 +592,24 @@ export function buildInsightsModel(
   const appliedDates = insightsJourneys(input, { timeZone: ctx.timeZone }).flatMap((journey) =>
     journey.appliedDate === null ? [] : [journey.appliedDate],
   );
-  const firstApplied = appliedDates.reduce<CivilDate | null>((min, date) => (min === null || date < min ? date : min), null);
+  const firstApplied = appliedDates.reduce<CivilDate | null>(
+    (min, date) => (min === null || date < min ? date : min),
+    null,
+  );
 
   // Filter options: values present in this range, counted with the other filters applied.
   const filters = INSIGHTS_DIMENSIONS.map((dimension): FilterVM => {
-    const others: Partial<Record<InsightsDimension, string>> = { ...params.filters };
-    delete others[dimension];
+    const others: InsightsFilters = Object.fromEntries(
+      Object.entries(params.filters).filter(([key]) => key !== dimension),
+    );
     const rows = computeInsights(input, { ...options, filters: others }).breakdowns[dimension];
     const value = params.filters[dimension] ?? null;
     const optionsVM = rows
-      .map((row) => ({ value: row.key, label: dimensionValueLabel(dimension, row.key, intl, labels), count: row.applications }))
+      .map((row) => ({
+        value: row.key,
+        label: dimensionValueLabel(dimension, row.key, intl, labels),
+        count: row.applications,
+      }))
       .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, intl.locale));
     if (value !== null && !optionsVM.some((option) => option.value === value)) {
       optionsVM.push({ value, label: dimensionValueLabel(dimension, value, intl, labels), count: 0 });
@@ -594,7 +619,9 @@ export function buildInsightsModel(
       label: intl.formatMessage(DIMENSION_MESSAGES[dimension]),
       value,
       valueLabel:
-        value === null ? intl.formatMessage(messages.filterAll) : dimensionValueLabel(dimension, value, intl, labels),
+        value === null
+          ? intl.formatMessage(messages.filterAll)
+          : dimensionValueLabel(dimension, value, intl, labels),
       options: optionsVM,
     };
   });
@@ -614,7 +641,14 @@ export function buildInsightsModel(
           days: daysInclusive(range.from, range.to),
         });
 
-  const rateKpi = (id: KpiId, label: MessageDescriptor, definition: MessageDescriptor, rate: Rate, previousRate: Rate | null, drill: DrillSearch): KpiVM => {
+  const rateKpi = (
+    id: KpiId,
+    label: MessageDescriptor,
+    definition: MessageDescriptor,
+    rate: Rate,
+    previousRate: Rate | null,
+    drill: DrillSearch,
+  ): KpiVM => {
     const value = rateLabel(rate, intl);
     const context = intl.formatMessage(rate.value === null ? messages.rateLowContext : messages.rateContext, {
       count: rate.count,
@@ -674,9 +708,30 @@ export function buildInsightsModel(
       }),
       drill: stageDrill("applied"),
     },
-    rateKpi("response", messages.kpiResponse, messages.defResponse, report.responseRate, before?.responseRate ?? null, stageDrill("responded")),
-    rateKpi("interview", messages.kpiInterview, messages.defInterview, report.interviewRate, before?.interviewRate ?? null, stageDrill("interview")),
-    rateKpi("offer", messages.kpiOffer, messages.defOffer, report.offerRate, before?.offerRate ?? null, stageDrill("offer")),
+    rateKpi(
+      "response",
+      messages.kpiResponse,
+      messages.defResponse,
+      report.responseRate,
+      before?.responseRate ?? null,
+      stageDrill("responded"),
+    ),
+    rateKpi(
+      "interview",
+      messages.kpiInterview,
+      messages.defInterview,
+      report.interviewRate,
+      before?.interviewRate ?? null,
+      stageDrill("interview"),
+    ),
+    rateKpi(
+      "offer",
+      messages.kpiOffer,
+      messages.defOffer,
+      report.offerRate,
+      before?.offerRate ?? null,
+      stageDrill("offer"),
+    ),
     {
       id: "firstResponse",
       label: firstResponseLabel,
@@ -703,7 +758,10 @@ export function buildInsightsModel(
   const steps = report.funnel.map((step): FunnelStepVM => {
     const share = report.applications === 0 ? 0 : step.reached / report.applications;
     const shareLabel = rateLabel(step.ofApplied, intl);
-    const stepLabel = step.fromPrevious === null || step.fromPrevious.value === null ? null : percent(step.fromPrevious.value, intl.locale);
+    const stepLabel =
+      step.fromPrevious === null || step.fromPrevious.value === null
+        ? null
+        : percent(step.fromPrevious.value, intl.locale);
     const stage = intl.formatMessage(STAGE_MESSAGES[step.stage]);
     return {
       stage: step.stage,
@@ -712,7 +770,10 @@ export function buildInsightsModel(
       share,
       shareLabel,
       stepLabel,
-      medianLabel: step.daysFromPrevious === null ? intl.formatMessage(messages.dash) : daysLabel(step.daysFromPrevious, intl),
+      medianLabel:
+        step.daysFromPrevious === null
+          ? intl.formatMessage(messages.dash)
+          : daysLabel(step.daysFromPrevious, intl),
       accessibleLabel: intl.formatMessage(messages.funnelStepAccessible, {
         stage,
         reached: step.reached,
@@ -765,7 +826,11 @@ export function buildInsightsModel(
     });
 
   const seriesValue = (week: InsightsReport["weekly"][number]) =>
-    params.series === "applied" ? week.applied : params.series === "follow_up" ? week.followUps : week.interviews;
+    params.series === "applied"
+      ? week.applied
+      : params.series === "follow_up"
+        ? week.followUps
+        : week.interviews;
   const lastWeek = report.weekly.at(-1)?.weekStart ?? today;
   const weeks = report.weekly.map((week): WeekVM => {
     const end = week.weekStart === lastWeek ? today : addDays(week.weekStart, 6);
@@ -800,28 +865,58 @@ export function buildInsightsModel(
             from: civilFormat(firstApplied, intl.locale, { day: "numeric", month: "short", year: "numeric" }),
           })
       : intl.formatMessage(messages.rangeSpan, {
-          from: civilFormat(range.from, intl.locale, { day: "numeric", month: "short", ...(range.from.slice(0, 4) === range.to.slice(0, 4) ? {} : { year: "numeric" }) }),
+          from: civilFormat(range.from, intl.locale, {
+            day: "numeric",
+            month: "short",
+            ...(range.from.slice(0, 4) === range.to.slice(0, 4) ? {} : { year: "numeric" }),
+          }),
           to: civilFormat(range.to, intl.locale, { day: "numeric", month: "short", year: "numeric" }),
         });
 
   const empty = firstApplied === null ? "firstUse" : report.applications === 0 ? "noneInRange" : null;
-  const breakdownTabs = BREAKDOWN_DIMENSIONS.map((value) => ({ value, label: intl.formatMessage(DIMENSION_MESSAGES[value]) }));
+  const breakdownTabs = BREAKDOWN_DIMENSIONS.map((value) => ({
+    value,
+    label: intl.formatMessage(DIMENSION_MESSAGES[value]),
+  }));
 
   // CSV: one table per block, blank line between, header rows in the UI language.
   const csvLines: (string | number)[][] = [
     [intl.formatMessage(messages.csvRange), rangeLabel],
     [],
-    [intl.formatMessage(messages.csvMetric), intl.formatMessage(messages.csvValue), intl.formatMessage(messages.csvCount), intl.formatMessage(messages.csvOf)],
+    [
+      intl.formatMessage(messages.csvMetric),
+      intl.formatMessage(messages.csvValue),
+      intl.formatMessage(messages.csvCount),
+      intl.formatMessage(messages.csvOf),
+    ],
     [applicationsLabel, report.applications, report.applications, report.applications],
-    ...([
-      [messages.kpiResponse, report.responseRate],
-      [messages.kpiInterview, report.interviewRate],
-      [messages.kpiOffer, report.offerRate],
-    ] as const).map(([label, rate]) => [intl.formatMessage(label), rate.value === null ? "" : Math.round(rate.value * 1000) / 1000, rate.count, rate.of]),
-    [intl.formatMessage(messages.csvMedian), median.days === null ? "" : Math.round(median.days * 10) / 10, median.n, ""],
+    ...(
+      [
+        [messages.kpiResponse, report.responseRate],
+        [messages.kpiInterview, report.interviewRate],
+        [messages.kpiOffer, report.offerRate],
+      ] as const
+    ).map(([label, rate]) => [
+      intl.formatMessage(label),
+      rate.value === null ? "" : Math.round(rate.value * 1000) / 1000,
+      rate.count,
+      rate.of,
+    ]),
+    [
+      intl.formatMessage(messages.csvMedian),
+      median.days === null ? "" : Math.round(median.days * 10) / 10,
+      median.n,
+      "",
+    ],
     ...BREAKDOWN_DIMENSIONS.flatMap((dimension) => [
       [],
-      [intl.formatMessage(DIMENSION_MESSAGES[dimension]), intl.formatMessage(messages.csvApplications), intl.formatMessage(messages.csvResponses), intl.formatMessage(messages.csvRate), intl.formatMessage(messages.csvMedian)],
+      [
+        intl.formatMessage(DIMENSION_MESSAGES[dimension]),
+        intl.formatMessage(messages.csvApplications),
+        intl.formatMessage(messages.csvResponses),
+        intl.formatMessage(messages.csvRate),
+        intl.formatMessage(messages.csvMedian),
+      ],
       ...report.breakdowns[dimension].map((row) => [
         dimensionValueLabel(dimension, row.key, intl, labels),
         row.applications,
@@ -834,7 +929,10 @@ export function buildInsightsModel(
 
   return {
     params,
-    ranges: [...DESKTOP_RANGES, "custom" as const].map((value) => ({ value, label: intl.formatMessage(RANGE_MESSAGES[value]) })),
+    ranges: [...DESKTOP_RANGES, "custom" as const].map((value) => ({
+      value,
+      label: intl.formatMessage(RANGE_MESSAGES[value]),
+    })),
     rangeLabel,
     customFrom: range.from ?? rangeForPreset("90d", today).from ?? today,
     customTo: range.to,
@@ -850,7 +948,10 @@ export function buildInsightsModel(
       }),
       steps,
       buckets,
-      lowSampleNote: report.applications > 0 && report.applications < 5 ? intl.formatMessage(messages.lowSampleNote) : null,
+      lowSampleNote:
+        report.applications > 0 && report.applications < 5
+          ? intl.formatMessage(messages.lowSampleNote)
+          : null,
     },
     breakdown: {
       by: params.by,
@@ -860,7 +961,10 @@ export function buildInsightsModel(
     },
     weekly: {
       series: params.series,
-      seriesOptions: ACTIVITY_SERIES.map((value) => ({ value, label: intl.formatMessage(SERIES_MESSAGES[value]) })),
+      seriesOptions: ACTIVITY_SERIES.map((value) => ({
+        value,
+        label: intl.formatMessage(SERIES_MESSAGES[value]),
+      })),
       weeks,
       max: Math.max(0, ...weeks.map((week) => week.value)),
       summary: intl.formatMessage(messages.weeklySummary, {

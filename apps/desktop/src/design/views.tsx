@@ -19,6 +19,7 @@ import { DesignRoot } from "./DesignRoot";
 import { DesignScreen } from "./DesignScreen";
 import {
   cvEditorScreen,
+  insightsScreen,
   jobDetailScreen,
   mailReviewScreen,
   todayScreen,
@@ -55,7 +56,11 @@ function CvEditor() {
     };
   }, [store]);
   const spec = useMemo(
-    () => ({ ...cvEditorScreen, build: (_: unknown, ctx: ModelContext, params: Readonly<Record<string, string | undefined>>) => buildCvEditorModel(version, ctx, params) }),
+    () => ({
+      ...cvEditorScreen,
+      build: (_: unknown, ctx: ModelContext, params: Readonly<Record<string, string | undefined>>) =>
+        buildCvEditorModel(version, ctx, params),
+    }),
     [version],
   );
   return (
@@ -68,6 +73,9 @@ function CvEditor() {
 }
 function TrackerBoard() {
   return <DesignScreen spec={trackerBoardScreen} />;
+}
+function Insights() {
+  return <DesignScreen spec={insightsScreen} />;
 }
 function MailReview() {
   return <DesignScreen spec={mailReviewScreen} />;
@@ -84,6 +92,7 @@ export const designViews: RouteViews = {
     cv: CvEditor,
     mail: MailReview,
     mailReview: MailReview,
+    insights: Insights,
     design: DesignIndex,
     designDemo: Demo,
   },

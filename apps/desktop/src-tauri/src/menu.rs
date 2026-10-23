@@ -14,12 +14,13 @@ pub const MENU_COMMAND_EVENT: &str = "menu-command";
 
 /// Sidebar destinations `(id, label)` in sidebar order; position `n` is ⌘/Ctrl+`n`.
 /// Mirrors `destinations` in src/lib/destinations.ts (checked by the tests below).
-pub const DESTINATIONS: [(&str, &str); 5] = [
+pub const DESTINATIONS: [(&str, &str); 6] = [
     ("today", "Today"),
     ("jobs", "Jobs"),
     ("tracker", "Tracker"),
     ("cvs", "CVs"),
     ("mail", "Mail"),
+    ("insights", "Insights"),
 ];
 
 const PALETTE_ID: &str = "command-palette";

@@ -10,6 +10,7 @@ import { AppShell } from "./components/AppShell";
 import { RouteContainer } from "./components/RouteContainer";
 import { destinations, type DestinationId } from "./lib/destinations";
 import LiveCvStudio from "./features/cv-editor/LiveCvStudio";
+import LiveInsights from "./features/insights/LiveInsights";
 
 const startPath = destinations[0].path;
 
@@ -27,6 +28,7 @@ export const appRoutes = {
   cv: { path: "/cvs/$cvId", destination: "cvs" },
   mail: { path: "/mail", destination: "mail" },
   mailReview: { path: "/mail/review/$messageId", destination: "mail" },
+  insights: { path: "/insights", destination: "insights" },
   /** Design builds only: the screen × state index and the shared-component demo. */
   design: { path: "/design", destination: null },
   designDemo: { path: "/design/demo", destination: null },
@@ -50,16 +52,16 @@ function sectionTitle(id: AppRouteId): ComponentType {
   };
 }
 
-/** Production: the CVs area runs on live data (M2); other areas show their title until their milestone. */
+/** Production: CVs (M2) and Insights (M3) run on live data; other areas show their title until their milestone. */
 export const productionViews: RouteViews = {
   root: AppShell,
   routes: {
-    ...(Object.fromEntries(Object.keys(appRoutes).map((id) => [id, sectionTitle(id as AppRouteId)])) as Record<
-      AppRouteId,
-      ComponentType
-    >),
+    ...(Object.fromEntries(
+      Object.keys(appRoutes).map((id) => [id, sectionTitle(id as AppRouteId)]),
+    ) as Record<AppRouteId, ComponentType>),
     cvs: LiveCvStudio,
     cv: LiveCvStudio,
+    insights: LiveInsights,
   },
 };
 
@@ -94,6 +96,7 @@ export const router = createRouter({
     route("cv"),
     route("mail"),
     route("mailReview"),
+    route("insights"),
     route("design"),
     route("designDemo"),
   ]),

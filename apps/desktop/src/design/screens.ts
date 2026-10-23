@@ -5,6 +5,7 @@
  */
 import { buildCvEditorModel, type CvEditorModel } from "../features/cv-editor/model";
 import { buildJobDetailModel, type JobDetailModel } from "../features/job-detail/model";
+import { buildInsightsModel, type InsightsModel } from "../features/insights/model";
 import { buildMailReviewModel, type MailReviewModel } from "../features/mail-review/model";
 import { buildTodayModel, type TodayModel } from "../features/today/model";
 import { buildTrackerBoardModel, type TrackerBoardModel } from "../features/tracker-board/model";
@@ -71,4 +72,12 @@ export const mailReviewScreen: DesignScreenSpec<MailReviewModel> = {
     buildMailReviewModel(data, ctx, {})
       .rows.flatMap((row) => (row.kind === "review" ? [row.messageId] : []))
       .slice(0, OFFLINE_PENDING_WRITES),
+};
+
+export const insightsScreen: DesignScreenSpec<InsightsModel> = {
+  id: "insights",
+  destination: "insights",
+  build: buildInsightsModel,
+  // Insights is read-only: nothing it shows is a local write.
+  offlinePending: () => [],
 };

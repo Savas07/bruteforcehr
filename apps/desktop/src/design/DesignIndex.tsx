@@ -9,6 +9,7 @@ const screenTitles: Readonly<Record<DesignScreenName, MessageDescriptor>> = defi
   "cv-editor": { id: "design.index.screen.cvEditor", defaultMessage: "CV editor" },
   "tracker-board": { id: "design.index.screen.trackerBoard", defaultMessage: "Tracker board" },
   "mail-review": { id: "design.index.screen.mailReview", defaultMessage: "Mail review" },
+  insights: { id: "design.index.screen.insights", defaultMessage: "Insights" },
 });
 
 const messages = defineMessages({

@@ -28,13 +28,14 @@ export interface Shortcut {
   readonly command: MenuCommand;
 }
 
-/** Second key of the `G` go-to sequence per destination (IA.md: Today, Jobs, tRacker, CVs, Mail). */
+/** Second key of the `G` go-to sequence per destination (IA.md: Today, Jobs, tRacker, CVs, Mail, Insights). */
 const goToLetters: Record<DestinationId, string> = {
   today: "T",
   jobs: "J",
   tracker: "R",
   cvs: "C",
   mail: "M",
+  insights: "I",
 };
 
 /**
@@ -78,6 +79,7 @@ export const shortcutMessages: Readonly<Record<string, MessageDescriptor>> = def
   "go-tracker": { id: "shell.shortcut.goTracker", defaultMessage: "Go to Tracker" },
   "go-cvs": { id: "shell.shortcut.goCvs", defaultMessage: "Go to CVs" },
   "go-mail": { id: "shell.shortcut.goMail", defaultMessage: "Go to Mail" },
+  "go-insights": { id: "shell.shortcut.goInsights", defaultMessage: "Go to Insights" },
   "command-palette": { id: "shell.shortcut.commandPalette", defaultMessage: "Open command palette" },
   "keyboard-shortcuts": { id: "shell.shortcut.keyboardShortcuts", defaultMessage: "Show keyboard shortcuts" },
 });

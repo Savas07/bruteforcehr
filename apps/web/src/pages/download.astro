@@ -1,0 +1,272 @@
+---
+/**
+ * Download (website.md › Download). Built from the latest GitHub Release at build time: an
+ * OS-detected primary (Linear), then one row per installer with size and SHA-256 (Linear + Norma),
+ * the invite-only iPhone card (hilos) and how to verify a download. Before the first release the
+ * desktop section says so instead of offering files.
+ */
+import ChecksumValue from "../components/ChecksumValue.astro";
+import PlatformIcon from "../components/PlatformIcon.astro";
+import SiteLayout from "../layouts/SiteLayout.astro";
+import { formatDate, formatSize, getLatestRelease, installerFor, isoDate, type Installer } from "../releases.ts";
+import {
+  MAC_BUILD_NOTARIZED,
+  RELEASES_URL,
+  REPO_URL,
+  TESTFLIGHT_APP_URL,
+  WINDOWS_BUILD_SIGNED,
+} from "../site.ts";
+
+const latest = await getLatestRelease();
+const mac = installerFor(latest, "mac");
+const windows = installerFor(latest, "windows");
+
+interface Row {
+  installer: Installer;
+  platform: "mac" | "windows";
+  name: string;
+  /** Label on the detected primary button. */
+  osName: string;
+  requirement: string;
+  fileType: string;
+  /** First-launch steps exist while the build is unsigned. */
+  firstOpenId: string | undefined;
+}
+
+const rows: Row[] = [
+  mac && {
+    installer: mac,
+    platform: "mac" as const,
+    name: "macOS",
+    osName: "Mac",
+    requirement: "Apple silicon and Intel",
+    fileType: "Disk image (.dmg)",
+    firstOpenId: MAC_BUILD_NOTARIZED ? undefined : "mac-first-open",
+  },
+  windows && {
+    installer: windows,
+    platform: "windows" as const,
+    name: "Windows",
+    osName: "Windows",
+    requirement: "Windows 10 and 11, 64-bit",
+    fileType: "Installer (.exe)",
+    firstOpenId: WINDOWS_BUILD_SIGNED ? undefined : "windows-first-open",
+  },
+].filter((row) => row !== undefined);
+
+const strong = "font-semibold text-fg-primary";
+---
+
+<SiteLayout
+  title="Download"
+  description="Download BruteForceHR for Mac and Windows with SHA-256 checksums, and how to join the invite-only iPhone beta."
+>
+  <div class="mx-auto max-w-6xl px-5 pt-10 md:px-6 md:pt-16">
+    <header class="max-w-3xl">
+      <h1 class="font-display text-display text-fg-primary">Download BruteForceHR</h1>
+      <p class="mt-4 text-lead text-fg-secondary">
+        For Mac, Windows and iPhone. Sign in with the same email address and your jobs, CVs and applications are on
+        every device.
+      </p>
+      {
+        latest && (
+          <p class="mt-5 text-prose text-fg-secondary">
+            <span class="font-semibold text-fg-primary">Version {latest.version}</span> · Released{" "}
+            <time datetime={isoDate(latest.publishedAt)}>{formatDate(latest.publishedAt)}</time> ·{" "}
+            <a class="prose-link" href={`/changelog/#${latest.anchor}`}>
+              What's new
+            </a>
+          </p>
+        )
+      }
+      {
+        rows.map((row) => (
+          <div data-os-only={row.platform} class="mt-8">
+            <a href={row.installer.url} class="button button-primary button-large">
+              Download for {row.osName}
+            </a>
+            <p class="mt-3 text-subheadline text-fg-secondary">
+              {row.requirement} · {formatSize(row.installer.sizeBytes)}
+              {
+                row.firstOpenId !== undefined && (
+                  <>
+                    {" · "}
+                    <a class="prose-link" href={`#${row.firstOpenId}`}>
+                      Read this before you open it
+                    </a>
+                  </>
+                )
+              }
+            </p>
+          </div>
+        ))
+      }
+    </header>
+
+    <div class="mt-12 flex flex-col gap-6 md:mt-16 xl:grid xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] xl:items-start">
+      <section aria-labelledby="desktop-title" class="rounded-lg border border-line-subtle bg-surface-base p-5 md:p-8">
+        <h2 id="desktop-title" class="font-display text-title1 text-fg-primary">Mac and Windows</h2>
+        {
+          latest === null || rows.length === 0 ? (
+            <div class="mt-4 space-y-4 text-prose text-fg-secondary">
+              <p>
+                <span class={strong}>No release yet.</span> The first version of BruteForceHR hasn't been published.
+                When it is, the Mac and Windows downloads appear here, each with its SHA-256 checksum.
+              </p>
+              <p>
+                To hear about it, watch the project on GitHub: select <span class={strong}>Watch</span>, then{" "}
+                <span class={strong}>Custom</span>, then <span class={strong}>Releases</span>.
+              </p>
+              <a href={REPO_URL} class="button button-secondary">
+                Open BruteForceHR on GitHub
+              </a>
+            </div>
+          ) : (
+            <>
+              <p class="mt-2 text-prose text-fg-secondary">
+                Version {latest.version}. Once installed, the app updates itself.
+              </p>
+              <ul class="mt-4">
+                {rows.map((row) => (
+                  <li class="border-t border-line-subtle py-6 last:pb-0">
+                    <div class="flex flex-wrap items-center justify-between gap-4">
+                      <div class="flex min-w-0 items-center gap-4">
+                        <span class="grid size-12 shrink-0 place-items-center rounded-md bg-surface-sunken text-fg-secondary">
+                          <PlatformIcon platform={row.platform} class="size-6" />
+                        </span>
+                        <div class="min-w-0">
+                          <h3 class="text-title2 text-fg-primary">{row.name}</h3>
+                          <p class="text-subheadline text-fg-secondary">
+                            {row.requirement} · {row.fileType} · {formatSize(row.installer.sizeBytes)}
+                          </p>
+                        </div>
+                      </div>
+                      <a href={row.installer.url} class="button button-secondary">
+                        Download<span class="sr-only"> for {row.name}</span>
+                      </a>
+                    </div>
+                    <ChecksumValue sha256={row.installer.sha256} fileName={row.installer.fileName} />
+                    {row.platform === "mac" && !MAC_BUILD_NOTARIZED && (
+                      <div id="mac-first-open" class="mt-5 rounded-md bg-info-subtle px-4 py-4 text-prose text-fg-primary">
+                        <h4 class="font-semibold">Opening it the first time</h4>
+                        <p class="mt-1 text-fg-secondary">
+                          This build isn't notarized by Apple yet, so macOS asks you to confirm before it opens.
+                        </p>
+                        <ol class="mt-3 list-decimal space-y-2 ps-5 text-fg-secondary marker:text-fg-tertiary">
+                          <li>Open the downloaded file and drag BruteForceHR to Applications.</li>
+                          <li>
+                            Open BruteForceHR. macOS says it can't check the app for malware. Select{" "}
+                            <span class={strong}>Done</span>.
+                          </li>
+                          <li>
+                            Open <span class={strong}>System Settings › Privacy & Security</span>, scroll to{" "}
+                            <span class={strong}>Security</span> and select <span class={strong}>Open Anyway</span>.
+                            The button is there for about an hour after you tried to open the app.
+                          </li>
+                          <li>Enter your Mac login password. From then on, BruteForceHR opens like any other app.</li>
+                        </ol>
+                        <p class="mt-3 text-fg-secondary">
+                          More detail:{" "}
+                          <a
+                            class="prose-link"
+                            href="https://support.apple.com/guide/mac-help/open-a-mac-app-from-an-unknown-developer-mh40616/mac"
+                          >
+                            Apple's guide to opening an app from an unknown developer
+                          </a>
+                          .
+                        </p>
+                      </div>
+                    )}
+                    {row.platform === "windows" && !WINDOWS_BUILD_SIGNED && (
+                      <div
+                        id="windows-first-open"
+                        class="mt-5 rounded-md bg-info-subtle px-4 py-4 text-prose text-fg-primary"
+                      >
+                        <h4 class="font-semibold">If Windows shows a warning</h4>
+                        <p class="mt-1 text-fg-secondary">
+                          The installer isn't code-signed yet, so Windows may show “Windows protected your PC”. Select{" "}
+                          <span class={strong}>More info</span>, then <span class={strong}>Run anyway</span>.
+                        </p>
+                      </div>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )
+        }
+      </section>
+
+      <section
+        id="iphone"
+        aria-labelledby="iphone-title"
+        class="iphone-card rounded-lg border border-line-subtle bg-surface-base p-5 md:p-8"
+      >
+        <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
+          <span class="grid size-12 shrink-0 place-items-center rounded-md bg-surface-sunken text-fg-secondary">
+            <PlatformIcon platform="iphone" class="size-6" />
+          </span>
+          <h2 id="iphone-title" class="font-display text-title1 text-fg-primary">iPhone</h2>
+          <span class="rounded-full bg-surface-sunken px-3 py-1 text-subheadline font-semibold text-fg-secondary">
+            Invite only
+          </span>
+        </div>
+        <p class="mt-4 text-prose text-fg-secondary">
+          The iPhone app is in a private beta on TestFlight, Apple's app for testing new apps. It isn't on the App Store
+          and there's no public sign-up.
+        </p>
+        <p class="mt-4 text-prose font-semibold text-fg-primary">If you've been invited:</p>
+        <ol class="mt-2 list-decimal space-y-2 ps-5 text-prose text-fg-secondary marker:text-fg-tertiary">
+          <li>
+            Install <a class="prose-link" href={TESTFLIGHT_APP_URL}>TestFlight from the App Store</a>.
+          </li>
+          <li>On your iPhone, open the invitation email sent to your Apple Account address and follow its link.</li>
+          <li>Install BruteForceHR in TestFlight. New versions arrive there too.</li>
+        </ol>
+      </section>
+    </div>
+
+    {
+      latest && rows.length > 0 && (
+        <section id="verify" aria-labelledby="verify-title" class="mt-16 max-w-3xl">
+          <h2 id="verify-title" class="font-display text-section text-fg-primary">
+            Check your download
+          </h2>
+          <p class="mt-4 text-prose text-fg-secondary">
+            A checksum confirms the file arrived complete and unchanged. Run the command for your system, then compare
+            the result with the SHA-256 above. If they don't match, delete the file and download it again.
+          </p>
+          <dl class="mt-6 space-y-5">
+            {rows.map((row) => (
+              <div>
+                <dt class="text-prose font-semibold text-fg-primary">
+                  {row.platform === "mac" ? "macOS (Terminal)" : "Windows (PowerShell)"}
+                </dt>
+                <dd class="mt-2">
+                  <code class="block rounded-md bg-surface-sunken px-4 py-3 font-mono text-footnote break-all text-fg-primary">
+                    {row.platform === "mac"
+                      ? `shasum -a 256 ~/Downloads/${row.installer.fileName}`
+                      : `Get-FileHash $HOME\\Downloads\\${row.installer.fileName}`}
+                  </code>
+                </dd>
+              </div>
+            ))}
+          </dl>
+          <p class="mt-6 text-prose text-fg-secondary">
+            {latest.checksumsUrl && (
+              <>
+                <a class="prose-link" href={latest.checksumsUrl}>
+                  All checksums for version {latest.version}
+                </a>{" "}
+                (SHA256SUMS.txt) ·{" "}
+              </>
+            )}
+            <a class="prose-link" href={RELEASES_URL}>
+              Older versions on GitHub
+            </a>
+          </p>
+        </section>
+      )
+    }
+  </div>
+</SiteLayout>

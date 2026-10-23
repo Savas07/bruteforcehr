@@ -1,0 +1,91 @@
+---
+/**
+ * Changelog (website.md › Changelog). One entry per published GitHub Release, newest first, rendered
+ * from GitHub's own HTML of the release notes at build time. Entry header: version, date and a Beta
+ * badge for pre-releases (Webflow, 1Password); from 1280 px the header sits in a sticky left column
+ * (Campsite). Every entry has an anchor (`#v0-1-1`) for deep links from the apps.
+ */
+import SiteLayout from "../layouts/SiteLayout.astro";
+import { formatDate, getReleases, isoDate } from "../releases.ts";
+import { RELEASES_URL, REPO_URL } from "../site.ts";
+
+const releases = await getReleases();
+---
+
+<SiteLayout title="Changelog" description="What's new in each version of BruteForceHR, newest first.">
+  <link slot="head" rel="alternate" type="application/atom+xml" title="BruteForceHR changelog" href="/changelog.xml" />
+  <div class="mx-auto max-w-6xl px-5 pt-10 md:px-6 md:pt-16">
+    <header class="max-w-3xl">
+      <h1 class="font-display text-display text-fg-primary">Changelog</h1>
+      <p class="mt-4 text-lead text-fg-secondary">What's new in each version of BruteForceHR, newest first.</p>
+      <p class="mt-5 text-prose text-fg-secondary">
+        <a class="prose-link" href="/changelog.xml">Subscribe with a feed reader</a> ·{" "}
+        <a class="prose-link" href={RELEASES_URL}>All releases on GitHub</a>
+      </p>
+    </header>
+
+    {
+      releases.length === 0 ? (
+        <section
+          aria-labelledby="empty-title"
+          class="mt-12 max-w-3xl rounded-lg border border-line-subtle bg-surface-base p-6 md:p-8"
+        >
+          <h2 id="empty-title" class="font-display text-title1 text-fg-primary">
+            No releases yet
+          </h2>
+          <p class="mt-3 text-prose text-fg-secondary">
+            The first version of BruteForceHR hasn't been published. When it is, its release notes appear here and in
+            the feed.
+          </p>
+          <p class="mt-4 text-prose text-fg-secondary">
+            To hear about it, watch the project on GitHub: select <span class="font-semibold text-fg-primary">Watch</span>,
+            then <span class="font-semibold text-fg-primary">Custom</span>, then{" "}
+            <span class="font-semibold text-fg-primary">Releases</span>.
+          </p>
+          <a href={REPO_URL} class="button button-secondary mt-6">
+            Open BruteForceHR on GitHub
+          </a>
+        </section>
+      ) : (
+        <ol class="mt-12 md:mt-16">
+          {releases.map((release) => (
+            <li>
+              <article
+                id={release.anchor}
+                aria-labelledby={`${release.anchor}-title`}
+                class="border-t border-line-subtle py-10 xl:grid xl:grid-cols-[15rem_minmax(0,1fr)] xl:gap-x-16"
+              >
+                <header class="xl:sticky xl:top-24 xl:self-start">
+                  <h2 id={`${release.anchor}-title`} class="font-display text-title1 text-fg-primary">
+                    Version {release.version}
+                  </h2>
+                  <p class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-2 text-subheadline text-fg-secondary">
+                    <time datetime={isoDate(release.publishedAt)}>{formatDate(release.publishedAt)}</time>
+                    {release.prerelease && (
+                      <span class="rounded-full bg-info-subtle px-3 py-0.5 font-semibold text-info-text">Beta</span>
+                    )}
+                  </p>
+                  {release.title !== release.tag && release.title !== release.version && (
+                    <p class="mt-2 text-prose font-semibold text-fg-primary">{release.title}</p>
+                  )}
+                </header>
+                <div class="mt-5 xl:mt-0">
+                  {release.notesHtml === "" ? (
+                    <p class="text-prose text-fg-secondary">No notes for this version.</p>
+                  ) : (
+                    <div class="release-notes" set:html={release.notesHtml} />
+                  )}
+                  <p class="mt-4 text-subheadline">
+                    <a class="prose-link inline-flex min-h-11 items-center" href={release.htmlUrl}>
+                      Version {release.version} on GitHub
+                    </a>
+                  </p>
+                </div>
+              </article>
+            </li>
+          ))}
+        </ol>
+      )
+    }
+  </div>
+</SiteLayout>

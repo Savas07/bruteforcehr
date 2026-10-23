@@ -17,14 +17,30 @@ export const THEME_COLOR = {
   dark: color.dark.surface.canvas,
 } as const;
 
-/** Public repo that hosts the binaries, the release notes and (user decision U4) support issues. */
-export const RELEASES_REPO_URL = "https://github.com/Savas07/bruteforcehr-releases";
+/**
+ * Public GitHub repo: source, release binaries + notes (the Download and Changelog pages read its
+ * Releases at build time) and, per user decision U4, support issues.
+ */
+export const GITHUB_REPO = "Savas07/bruteforcehr";
+export const REPO_URL = `https://github.com/${GITHUB_REPO}`;
+export const RELEASES_URL = `${REPO_URL}/releases`;
+
+/**
+ * Code-signing state of the published desktop builds (docs/adr/0004-release-updates-signing.md).
+ * The Download page shows first-launch instructions while a build is unsigned. Set to `true` in the
+ * same change that configures the signing secrets (docs/runbooks/release.md).
+ */
+export const MAC_BUILD_NOTARIZED = false;
+export const WINDOWS_BUILD_SIGNED = false;
+
+/** Apple's TestFlight app on the App Store (needed to install the iPhone beta). */
+export const TESTFLIGHT_APP_URL = "https://apps.apple.com/app/testflight/id899247664";
 
 /**
  * New-issue link with a prefilled body. Issues are public, so the template itself repeats the
  * "no personal details" warning shown on the Support page.
  */
-export const NEW_ISSUE_URL = `${RELEASES_REPO_URL}/issues/new?${new URLSearchParams({
+export const NEW_ISSUE_URL = `${REPO_URL}/issues/new?${new URLSearchParams({
   body: [
     "### What happened?",
     "",
@@ -41,21 +57,29 @@ export const NEW_ISSUE_URL = `${RELEASES_REPO_URL}/issues/new?${new URLSearchPar
 }).toString()}`;
 
 /** Existing issues, so a visitor can check whether the problem is already known. */
-export const ISSUES_URL = `${RELEASES_REPO_URL}/issues?q=is%3Aissue`;
+export const ISSUES_URL = `${REPO_URL}/issues?q=is%3Aissue`;
 
 export interface NavItem {
   href: string;
   label: string;
 }
 
-/**
- * Header navigation. Only pages that exist are listed; Features, Download and Changelog join this
- * list when those pages ship.
- */
-export const HEADER_NAV: readonly NavItem[] = [{ href: "/support/", label: "Support" }];
+/** Header navigation. Only pages that exist are listed; Features joins when that page ships. */
+export const HEADER_NAV: readonly NavItem[] = [
+  { href: "/download/", label: "Download" },
+  { href: "/changelog/", label: "Changelog" },
+  { href: "/support/", label: "Support" },
+];
 
 /** Footer link groups. Legal links stay on every page (OAuth consent screen and App Store reviewers). */
 export const FOOTER_NAV: readonly { title: string; items: readonly NavItem[] }[] = [
+  {
+    title: "Product",
+    items: [
+      { href: "/download/", label: "Download" },
+      { href: "/changelog/", label: "Changelog" },
+    ],
+  },
   {
     title: "Help",
     items: [

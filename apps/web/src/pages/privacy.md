@@ -304,4 +304,4 @@ When we change this policy, we update the effective date at the top. If a change
 
 </div>
 
-Privacy requests are self-service in the app: Settings › Data & privacy › Export everything gives you a copy of all your data, and Delete account permanently deletes it (see [Your choices and rights](#your-choices-and-rights)). You can correct your data and disconnect accounts in the app too. For questions about this policy, [open an issue on GitHub](https://github.com/Savas07/bruteforcehr-releases/issues/new). Issues are public, so don't include email addresses, CV content or message text.
+Privacy requests are self-service in the app: Settings › Data & privacy › Export everything gives you a copy of all your data, and Delete account permanently deletes it (see [Your choices and rights](#your-choices-and-rights)). You can correct your data and disconnect accounts in the app too. For questions about this policy, [open an issue on GitHub](https://github.com/Savas07/bruteforcehr/issues/new). Issues are public, so don't include email addresses, CV content or message text.

@@ -1,13 +1,15 @@
 ---
 /**
- * Floating pill header (website.md › Site header, Serus). Lists only pages that exist (`HEADER_NAV`);
- * the Menu disclosure for narrow widths arrives with Features, Download and Changelog, when the
- * links no longer fit on one row at 375 px.
+ * Floating pill header (website.md › Site header, Serus). Lists only pages that exist (`HEADER_NAV`).
+ * From 768 px the links sit in the bar, Download as the one filled pill; below 768 px they move into a
+ * Menu sheet. The sheet is a native popover: it opens without JavaScript, Esc and outside clicks close
+ * it, focus returns to the Menu button, and the button exposes its expanded state.
  */
 import { HEADER_NAV, SITE_NAME } from "../site.ts";
 import BrandMark from "./BrandMark.astro";
 
 const current = Astro.url.pathname.replace(/\/?$/, "/");
+const isCurrent = (href: string): boolean => current === href;
 ---
 
 <header class="sticky top-0 z-(--bfhr-layer-sticky) px-3 pt-3 md:px-6">
@@ -22,22 +24,70 @@ const current = Astro.url.pathname.replace(/\/?$/, "/");
       <BrandMark class="size-7 shrink-0" />
       <span>{SITE_NAME}</span>
     </a>
-    <nav aria-label="Main">
+
+    <nav aria-label="Main" class="hidden md:block">
       <ul class="flex items-center gap-1">
         {
-          HEADER_NAV.map((item) => (
-            <li>
-              <a
-                href={item.href}
-                class="inline-flex min-h-11 items-center rounded-full px-4 text-prose font-medium text-fg-secondary transition-colors duration-(--bfhr-duration-fast) ease-standard hover:bg-surface-hover hover:text-fg-primary aria-[current=page]:bg-surface-selected aria-[current=page]:text-accent-text"
-                aria-current={current === item.href ? "page" : undefined}
-              >
-                {item.label}
-              </a>
-            </li>
-          ))
+          HEADER_NAV.map((item) =>
+            item.href === "/download/" ? (
+              <li class="order-last ml-1">
+                <a
+                  href={item.href}
+                  class="inline-flex min-h-11 items-center rounded-full bg-accent-solid px-5 text-prose font-semibold text-fg-on-accent transition-colors duration-(--bfhr-duration-fast) ease-standard hover:bg-accent-hover active:bg-accent-pressed"
+                  aria-current={isCurrent(item.href) ? "page" : undefined}
+                >
+                  {item.label}
+                </a>
+              </li>
+            ) : (
+              <li>
+                <a
+                  href={item.href}
+                  class="inline-flex min-h-11 items-center rounded-full px-4 text-prose font-medium text-fg-secondary transition-colors duration-(--bfhr-duration-fast) ease-standard hover:bg-surface-hover hover:text-fg-primary aria-[current=page]:bg-surface-selected aria-[current=page]:text-accent-text"
+                  aria-current={isCurrent(item.href) ? "page" : undefined}
+                >
+                  {item.label}
+                </a>
+              </li>
+            ),
+          )
         }
       </ul>
     </nav>
+
+    <button
+      type="button"
+      popovertarget="site-menu"
+      class="inline-flex min-h-11 items-center gap-2 rounded-full border border-line-control px-4 text-prose font-medium text-fg-primary transition-colors duration-(--bfhr-duration-fast) ease-standard hover:bg-surface-hover md:hidden"
+    >
+      <svg class="size-5" viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+        <path d="M3.5 6h13M3.5 10h13M3.5 14h13" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"
+        ></path>
+      </svg>
+      Menu
+    </button>
   </div>
+
+  <nav
+    id="site-menu"
+    popover
+    aria-label="Main"
+    class="site-menu m-0 w-auto rounded-xl border border-line-subtle bg-surface-elevated p-2 text-fg-primary shadow-overlay md:hidden"
+  >
+    <ul>
+      {
+        HEADER_NAV.map((item) => (
+          <li>
+            <a
+              href={item.href}
+              class="flex min-h-12 items-center rounded-lg px-4 text-headline text-fg-primary transition-colors duration-(--bfhr-duration-fast) ease-standard hover:bg-surface-hover aria-[current=page]:bg-surface-selected aria-[current=page]:text-accent-text"
+              aria-current={isCurrent(item.href) ? "page" : undefined}
+            >
+              {item.label}
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </nav>
 </header>

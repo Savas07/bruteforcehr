@@ -1,0 +1,88 @@
+---
+/**
+ * OS-detected download call to action for the Home hero and closing section (website.md › Hero:
+ * Spline one primary + quiet secondary, heyclicky requirement line). Every variant is rendered at
+ * build time; `BaseLayout` sets `data-os` on `<html>` and CSS shows the matching one. Without
+ * JavaScript, on other systems, or before the first release, the generic variant links to /download/.
+ */
+import { installerFor, formatSize, type LatestRelease } from "../releases.ts";
+import { MAC_BUILD_NOTARIZED, WINDOWS_BUILD_SIGNED } from "../site.ts";
+
+interface Props {
+  latest: LatestRelease | null;
+}
+
+const { latest } = Astro.props;
+const mac = installerFor(latest, "mac");
+const windows = installerFor(latest, "windows");
+const detected = [mac && "mac", windows && "windows", "ios"].filter(Boolean).join(" ");
+---
+
+<div class="flex flex-col items-center text-center">
+  {
+    mac && latest && (
+      <div data-os-only="mac" class="cta-variant">
+        <a href={mac.url} class="button button-primary button-large">
+          Download for Mac
+        </a>
+        <p class="mt-3 text-subheadline text-fg-secondary">
+          Version {latest.version} · Apple silicon and Intel · {formatSize(mac.sizeBytes)}
+        </p>
+        <p class="mt-1 text-subheadline text-fg-secondary">
+          {!MAC_BUILD_NOTARIZED && (
+            <>
+              <a class="prose-link" href="/download/#mac-first-open">
+                How to open it the first time
+              </a>
+              {" · "}
+            </>
+          )}
+          <a class="prose-link" href="/download/">
+            Windows, iPhone and checksums
+          </a>
+        </p>
+      </div>
+    )
+  }
+  {
+    windows && latest && (
+      <div data-os-only="windows" class="cta-variant">
+        <a href={windows.url} class="button button-primary button-large">
+          Download for Windows
+        </a>
+        <p class="mt-3 text-subheadline text-fg-secondary">
+          Version {latest.version} · Windows 10 and 11, 64-bit · {formatSize(windows.sizeBytes)}
+        </p>
+        <p class="mt-1 text-subheadline text-fg-secondary">
+          {!WINDOWS_BUILD_SIGNED && (
+            <>
+              <a class="prose-link" href="/download/#windows-first-open">
+                If Windows shows a warning
+              </a>
+              {" · "}
+            </>
+          )}
+          <a class="prose-link" href="/download/">
+            Mac, iPhone and checksums
+          </a>
+        </p>
+      </div>
+    )
+  }
+  <div data-os-only="ios" class="cta-variant">
+    <a href="/download/#iphone" class="button button-primary button-large">Get it on iPhone</a>
+    <p class="mt-3 text-subheadline text-fg-secondary">Invite only, through Apple's TestFlight</p>
+  </div>
+  <div data-os-fallback={detected} class="cta-variant">
+    <a href="/download/" class="button button-primary button-large">
+      {latest === null ? "See download options" : "Download BruteForceHR"}
+    </a>
+    <p class="mt-3 text-subheadline text-fg-secondary">
+      {
+        latest === null
+          ? "The first release hasn't been published yet."
+          : `Version ${latest.version} for Mac and Windows · iPhone by invite`
+      }
+    </p>
+  </div>
+</div>

@@ -36,6 +36,8 @@ struct ChromeInfo {
     /// The OS's preferred locale as a BCP 47 tag ("tr-TR"); the UI picks its language from it
     /// (src/i18n/locale.ts). Null when the OS doesn't report one.
     locale: Option<String>,
+    /// The app version ("0.1.0", from package.json); the minimum-version gate compares it.
+    version: String,
 }
 
 const PLATFORM: Platform = if cfg!(target_os = "macos") {
@@ -116,6 +118,7 @@ pub fn create_main<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
         platform: PLATFORM,
         material: material(),
         locale: sys_locale::get_locale(),
+        version: app.package_info().version.to_string(),
     };
     let dev_url = if tauri::is_dev() {
         app.config().build.dev_url.clone()
@@ -153,10 +156,11 @@ mod tests {
             platform: Platform::Windows,
             material: Material::Mica,
             locale: Some("tr-TR".to_owned()),
+            version: "0.1.0".to_owned(),
         });
         assert_eq!(
             script,
-            r#"Object.defineProperty(window, "__BFHR_CHROME__", { value: Object.freeze({"platform":"windows","material":"mica","locale":"tr-TR"}) });"#
+            r#"Object.defineProperty(window, "__BFHR_CHROME__", { value: Object.freeze({"platform":"windows","material":"mica","locale":"tr-TR","version":"0.1.0"}) });"#
         );
     }
 

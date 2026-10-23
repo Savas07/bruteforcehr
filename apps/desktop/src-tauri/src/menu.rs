@@ -26,15 +26,20 @@ const PALETTE_ID: &str = "command-palette";
 const PALETTE_KEY: &str = "K";
 const SHORTCUTS_ID: &str = "keyboard-shortcuts";
 const SHORTCUTS_KEY: &str = "/";
+const CHECK_UPDATES_ID: &str = "check-for-updates";
 const GO_PREFIX: &str = "go-";
 
 /// Payload of [`MENU_COMMAND_EVENT`]; matches `MenuCommand` in src/lib/shortcuts.ts.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(tag = "type", rename_all = "kebab-case")]
 pub enum MenuCommand {
-    Navigate { destination: &'static str },
+    Navigate {
+        destination: &'static str,
+    },
     OpenPalette,
     OpenShortcuts,
+    /// "Check for Updates…": the UI shows the check's progress and result (src/updater.rs).
+    CheckForUpdates,
 }
 
 /// Maps a menu item id to its command; ids that aren't ours (predefined items) map to `None`.
@@ -42,6 +47,7 @@ pub fn command_for(id: &str) -> Option<MenuCommand> {
     match id {
         PALETTE_ID => Some(MenuCommand::OpenPalette),
         SHORTCUTS_ID => Some(MenuCommand::OpenShortcuts),
+        CHECK_UPDATES_ID => Some(MenuCommand::CheckForUpdates),
         _ => {
             let destination = id.strip_prefix(GO_PREFIX)?;
             DESTINATIONS
@@ -64,6 +70,9 @@ pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
     let shortcuts = MenuItemBuilder::with_id(SHORTCUTS_ID, "Keyboard Shortcuts…")
         .accelerator(accelerator(SHORTCUTS_KEY))
         .build(app)?;
+    // macOS: in the app menu, under About (the platform convention); Windows: in Help.
+    let check_updates =
+        MenuItemBuilder::with_id(CHECK_UPDATES_ID, "Check for Updates…").build(app)?;
 
     let mut go = SubmenuBuilder::new(app, "Go");
     for (index, (id, label)) in DESTINATIONS.iter().enumerate() {
@@ -79,12 +88,16 @@ pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
     let view = view.separator().fullscreen();
     let view = view.build()?;
 
-    let help = SubmenuBuilder::new(app, "Help").item(&shortcuts).build()?;
+    let help = SubmenuBuilder::new(app, "Help").item(&shortcuts);
+    #[cfg(not(target_os = "macos"))]
+    let help = help.separator().item(&check_updates);
+    let help = help.build()?;
 
     #[cfg(target_os = "macos")]
     {
         let app_menu = SubmenuBuilder::new(app, "BruteForceHR")
             .about(None)
+            .item(&check_updates)
             .separator()
             .services()
             .separator()
@@ -194,6 +207,10 @@ mod tests {
             command_for("keyboard-shortcuts"),
             Some(MenuCommand::OpenShortcuts)
         );
+        assert_eq!(
+            command_for("check-for-updates"),
+            Some(MenuCommand::CheckForUpdates)
+        );
         assert_eq!(command_for("go-settings"), None);
         assert_eq!(command_for("today"), None);
         assert_eq!(command_for("quit"), None);
@@ -210,6 +227,10 @@ mod tests {
         assert_eq!(
             json(MenuCommand::OpenShortcuts),
             r#"{"type":"open-shortcuts"}"#
+        );
+        assert_eq!(
+            json(MenuCommand::CheckForUpdates),
+            r#"{"type":"check-for-updates"}"#
         );
     }
 }

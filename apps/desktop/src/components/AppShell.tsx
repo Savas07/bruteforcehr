@@ -12,12 +12,27 @@ import { CommandPalette } from "./CommandPalette";
 import { ROUTE_TITLE_ID } from "./RouteContainer";
 import { ShortcutsSheet } from "./ShortcutsSheet";
 import { Sidebar } from "./Sidebar";
+import { UpdatesProvider } from "./updates/context";
+import { UpdateCard } from "./updates/UpdateCard";
+import { CheckForUpdatesDialog, ReleaseNotesDialog, SaveFirstDialog } from "./updates/UpdateDialogs";
+import { UpdateRequired } from "./updates/UpdateRequired";
+import { useUpdateController } from "./updates/useUpdateController";
 
 export function AppShell() {
+  return (
+    <UpdatesProvider>
+      <Shell />
+    </UpdatesProvider>
+  );
+}
+
+function Shell() {
   const navigate = useNavigate();
   const intl = useIntl();
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const updates = useUpdateController();
+  const { checkNow, blocking } = updates;
 
   /** Keyboard-driven navigation moves focus to the new section's heading. */
   const goTo = useCallback(
@@ -39,6 +54,8 @@ export function AppShell() {
 
   const runCommand = useCallback(
     (command: MenuCommand) => {
+      // Behind "Update required" only the update check still works.
+      if (blocking && command.type !== "check-for-updates") return;
       switch (command.type) {
         case "navigate":
           void goTo(command.destination);
@@ -50,9 +67,14 @@ export function AppShell() {
         case "open-shortcuts":
           openShortcuts();
           break;
+        case "check-for-updates":
+          setPaletteOpen(false);
+          setShortcutsOpen(false);
+          checkNow();
+          break;
       }
     },
-    [goTo, openShortcuts],
+    [goTo, openShortcuts, checkNow, blocking],
   );
 
   // Native menu clicks (src-tauri/src/menu.rs).
@@ -95,19 +117,24 @@ export function AppShell() {
   // Every other key goes through the keymap (src/shared/keyboard/keymap.ts), in the bubble phase
   // so menus, comboboxes and dialogs that handle a key themselves (and preventDefault) win.
   useEffect(() => {
+    if (blocking) return;
     const onKeyDown = (event: KeyboardEvent) => {
       keymap.dispatch(event, chrome.platform);
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, []);
+  }, [blocking]);
 
   const isMac = chrome.platform === "macos";
   return (
     <ToastProvider>
       <div className="text-fg-primary flex h-full flex-col">
         <div className="flex min-h-0 flex-1">
-          <Sidebar onOpenPalette={() => setPaletteOpen(true)} onOpenShortcuts={openShortcuts} />
+          <Sidebar
+            onOpenPalette={() => setPaletteOpen(true)}
+            onOpenShortcuts={openShortcuts}
+            updateCard={<UpdateCard controller={updates} />}
+          />
           <main
             className={`bg-surface-base border-line-subtle relative flex min-w-0 flex-1 flex-col border-l ${
               isMac ? "" : "rounded-tl-md border-t"
@@ -127,8 +154,14 @@ export function AppShell() {
           onOpenChange={setPaletteOpen}
           onNavigate={(id) => void goTo(id)}
           onOpenShortcuts={openShortcuts}
+          onCheckForUpdates={checkNow}
         />
         <ShortcutsSheet open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
+        <CheckForUpdatesDialog controller={updates} />
+        <ReleaseNotesDialog controller={updates} />
+        <UpdateRequired controller={updates} />
+        {/* After the gate, so "Save and restart" opens above it. */}
+        <SaveFirstDialog controller={updates} />
       </div>
     </ToastProvider>
   );

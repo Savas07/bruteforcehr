@@ -1,5 +1,5 @@
 import { Command } from "cmdk";
-import { Keyboard, Search } from "lucide-react";
+import { Keyboard, RefreshCw, Search } from "lucide-react";
 import { Dialog } from "radix-ui";
 import { useRef, type ReactNode } from "react";
 import { defineMessages, useIntl } from "react-intl";
@@ -23,6 +23,7 @@ const messages = defineMessages({
   },
   help: { id: "shell.commandPalette.help", defaultMessage: "Help", description: "Group heading" },
   keyboardShortcuts: { id: "shell.commandPalette.keyboardShortcuts", defaultMessage: "Keyboard shortcuts" },
+  checkForUpdates: { id: "shell.commandPalette.checkForUpdates", defaultMessage: "Check for updates" },
   move: {
     id: "shell.commandPalette.move",
     defaultMessage: "to move",
@@ -68,11 +69,13 @@ export function CommandPalette({
   onOpenChange,
   onNavigate,
   onOpenShortcuts,
+  onCheckForUpdates,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onNavigate: (destination: DestinationId) => void;
   onOpenShortcuts: () => void;
+  onCheckForUpdates: () => void;
 }) {
   // After choosing a command, focus moves to its target instead of back to the opener.
   const intl = useIntl();
@@ -147,6 +150,18 @@ export function CommandPalette({
                   />
                   <span className="flex-1 truncate">{intl.formatMessage(messages.keyboardShortcuts)}</span>
                   <Keycaps keys={shortcutKeys(shortcutById("keyboard-shortcuts"))} />
+                </Command.Item>
+                <Command.Item
+                  value={intl.formatMessage(messages.checkForUpdates)}
+                  onSelect={() => run(onCheckForUpdates)}
+                  className={itemClass}
+                >
+                  <RefreshCw
+                    aria-hidden="true"
+                    className="text-fg-secondary size-4 shrink-0"
+                    strokeWidth={1.75}
+                  />
+                  <span className="flex-1 truncate">{intl.formatMessage(messages.checkForUpdates)}</span>
                 </Command.Item>
               </Command.Group>
             </Command.List>

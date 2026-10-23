@@ -4,5 +4,5 @@
  */
 if (typeof window !== "undefined")
   Object.defineProperty(window, "__BFHR_CHROME__", {
-    value: Object.freeze({ platform: "macos", material: "none", locale: "en-GB" }),
+    value: Object.freeze({ platform: "macos", material: "none", locale: "en-GB", version: "0.1.0" }),
   });

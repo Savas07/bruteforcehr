@@ -6,7 +6,9 @@ import { destinations, type DestinationId } from "./destinations";
 export type MenuCommand =
   | { readonly type: "navigate"; readonly destination: DestinationId }
   | { readonly type: "open-palette" }
-  | { readonly type: "open-shortcuts" };
+  | { readonly type: "open-shortcuts" }
+  /** "Check for Updates…" in the app menu (macOS) or Help (Windows); no shortcut. */
+  | { readonly type: "check-for-updates" };
 
 export type ShortcutGroup = "Navigation" | "General";
 

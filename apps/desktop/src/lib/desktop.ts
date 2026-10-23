@@ -1,6 +1,7 @@
 /**
  * The UI's whole surface to the Tauri backend (src-tauri). Capabilities grant exactly these
- * calls: listening for menu commands and the `open_external` command.
+ * calls: listening for menu commands and update-status events, `open_external`,
+ * `open_job_url` and the update commands (src-tauri/src/updater.rs).
  */
 import { invoke, isTauri } from "@tauri-apps/api/core";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
@@ -16,6 +17,8 @@ export interface ChromeInfo {
   readonly material: Material;
   /** The OS's preferred locale ("tr-TR"), null when unknown (src/i18n/locale.ts picks the UI language). */
   readonly locale: string | null;
+  /** The running app's version ("0.1.0"), for the minimum-version gate and update copy. */
+  readonly version: string;
 }
 
 declare global {
@@ -40,7 +43,13 @@ function designChrome(): ChromeInfo {
       : navigator.userAgent.includes("Mac OS X")
         ? "macos"
         : "windows";
-  return { platform, material: "none", locale: params.get("locale") ?? navigator.language };
+  // The design persona runs 0.1.0; the update states offer 0.1.1 (src/design/updates.ts).
+  return {
+    platform,
+    material: "none",
+    locale: params.get("locale") ?? navigator.language,
+    version: params.get("version") ?? "0.1.0",
+  };
 }
 
 function readChrome(): ChromeInfo {
@@ -94,4 +103,73 @@ export function openJobUrl(url: string): Promise<void> {
     return Promise.resolve();
   }
   return invoke("open_job_url", { url });
+}
+
+/** Which release manifest the updater reads; Stable unless the user opts into Beta in Settings. */
+export type UpdateChannel = "stable" | "beta";
+
+/** The step of an update that failed. */
+export type UpdateFailedStep = "check" | "download" | "install";
+
+/** Mirrors `UpdateStatus` in src-tauri/src/updater.rs. */
+export type UpdateStatus =
+  | { readonly state: "idle" }
+  | { readonly state: "checking" }
+  | { readonly state: "up-to-date" }
+  | {
+      readonly state: "downloading";
+      readonly version: string;
+      readonly downloaded: number;
+      /** Bytes; null when the server doesn't send a size. */
+      readonly total: number | null;
+    }
+  | {
+      readonly state: "ready";
+      readonly version: string;
+      /** Release notes from the manifest (Changesets markdown); null when empty. */
+      readonly notes: string | null;
+      /** RFC 3339. */
+      readonly publishedAt: string | null;
+    }
+  | { readonly state: "failed"; readonly step: UpdateFailedStep };
+
+export interface UpdateSnapshot {
+  readonly status: UpdateStatus;
+  readonly channel: UpdateChannel;
+}
+
+/** Event emitted by src-tauri/src/updater.rs whenever the status changes. */
+const UPDATE_STATUS_EVENT = "update-status";
+
+/** The updater's status now; later changes arrive through `onUpdateStatus`. */
+export function updateStatus(): Promise<UpdateSnapshot> {
+  return invoke("update_status");
+}
+
+/** Subscribes to update-status changes; returns the unsubscribe function. */
+export function onUpdateStatus(listener: (snapshot: UpdateSnapshot) => void): () => void {
+  const unlisten = getCurrentWebviewWindow().listen<UpdateSnapshot>(UPDATE_STATUS_EVENT, (event) =>
+    listener(event.payload),
+  );
+  return () => {
+    void unlisten.then((stop) => stop());
+  };
+}
+
+/** Starts a check (and the download of a newer version) unless one is already running. */
+export function checkForUpdates(): Promise<void> {
+  return invoke("check_for_updates");
+}
+
+/**
+ * Installs the downloaded update and relaunches. Call only after unsaved edits are saved
+ * (src/shared/unsavedChanges.ts). Rejects with `{ kind: "no-update-ready" | "install-failed" }`.
+ */
+export function restartToUpdate(): Promise<void> {
+  return invoke("restart_to_update");
+}
+
+/** Saves the Stable/Beta preference and checks the new channel right away. */
+export function setUpdateChannel(channel: UpdateChannel): Promise<void> {
+  return invoke("set_update_channel", { channel });
 }

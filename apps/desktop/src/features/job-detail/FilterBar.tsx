@@ -2,17 +2,24 @@
  * The Jobs filter bar (job-feed-search.md "Decision — Desktop" 2): pills for work mode, location,
  * seniority, salary, posted, match, visa and source; each opens a popover whose choices apply at
  * once (the list and its count update live), with Reset and "Show 42 jobs" to close. Active pills
- * are filled and name their value. Clear all and the right-aligned Save search follow. `F`
- * focuses the first pill.
+ * are filled and name their value. Clear all follows the pills; Save search stays at the right end
+ * of the first line while the pills wrap. `F` focuses the first pill. The open popover is the
+ * screen's (`?filters=<facet>`), like its dialogs.
  */
 import type { RemoteType, SavedSearchFilters, Seniority } from "@bfhr/core";
 import { ChevronDown, X } from "lucide-react";
 import { Popover } from "radix-ui";
-import { useId, useState, type ReactNode } from "react";
+import { useId, type ReactNode } from "react";
 import { defineMessages, useIntl } from "react-intl";
 import { cx } from "../../shared/cx";
 import { Button } from "../../shared/ui/Button";
-import type { FilterBarVM, FilterFacet, FilterOptionVM, FilterPillVM } from "./filterBarModel";
+import {
+  clearFacet,
+  type FilterBarVM,
+  type FilterFacet,
+  type FilterOptionVM,
+  type FilterPillVM,
+} from "./filterBarModel";
 import { type JobsFilterState, type MinBand, NO_FILTERS } from "./filters";
 
 const messages = defineMessages({
@@ -69,17 +76,20 @@ function OptionRow<Value extends string | number>({
 
 function FacetPopover({
   pill,
+  open,
+  onOpenChange: setOpen,
   resultCount,
   onReset,
   children,
 }: {
   pill: FilterPillVM;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   resultCount: number;
   onReset: () => void;
   children: ReactNode;
 }) {
   const intl = useIntl();
-  const [open, setOpen] = useState(false);
   const titleId = useId();
   return (
     <Popover.Root open={open} onOpenChange={setOpen}>
@@ -139,6 +149,8 @@ export function FilterBar({
   bar,
   state,
   resultCount,
+  openFacet,
+  onOpenFacetChange,
   onChange,
   trailing,
 }: {
@@ -146,6 +158,9 @@ export function FilterBar({
   state: JobsFilterState;
   /** Rows the list shows with the current filters ("Show 42 jobs"). */
   resultCount: number;
+  /** The pill whose popover is open. */
+  openFacet: FilterFacet | null;
+  onOpenFacetChange: (facet: FilterFacet | null) => void;
   onChange: (next: JobsFilterState) => void;
   /** Right-aligned: Save search. */
   trailing?: ReactNode;
@@ -159,217 +174,200 @@ export function FilterBar({
     <p className="text-fg-tertiary text-footnote px-2 py-1">{intl.formatMessage(messages.noOptions)}</p>
   );
 
-  const content: Readonly<Record<FilterFacet, { body: ReactNode; reset: () => void }>> = {
-    workMode: {
-      reset: () => setFilters({ remoteTypes: [] }),
-      body: bar.workModes.map((option) => (
-        <OptionRow
-          key={option.value}
-          option={option}
-          type="checkbox"
-          name={`${groupName}-remote`}
-          onChange={(on) =>
-            setFilters({ remoteTypes: toggled<RemoteType>(filters.remoteTypes, option.value, on) })
-          }
-        />
-      )),
-    },
-    location: {
-      reset: () => setFilters({ countryCodes: [] }),
-      body:
-        bar.countries.length === 0
-          ? empty
-          : bar.countries.map((option) => (
-              <OptionRow
-                key={option.value}
-                option={option}
-                type="checkbox"
-                name={`${groupName}-country`}
-                onChange={(on) =>
-                  setFilters({ countryCodes: toggled(filters.countryCodes, option.value, on) })
-                }
-              />
-            )),
-    },
-    seniority: {
-      reset: () => setFilters({ seniority: [] }),
-      body: bar.seniority.map((option) => (
-        <OptionRow
-          key={option.value}
-          option={option}
-          type="checkbox"
-          name={`${groupName}-level`}
-          onChange={(on) =>
-            setFilters({ seniority: toggled<Seniority>(filters.seniority, option.value, on) })
-          }
-        />
-      )),
-    },
-    salary: {
-      reset: () => setFilters({ salaryMin: null }),
-      body: (
-        <div className="flex flex-col gap-2 px-2 py-1">
-          <div className="flex gap-2">
-            <label className="text-footnote text-fg-secondary flex min-w-0 flex-1 flex-col gap-1">
-              {intl.formatMessage(messages.salaryAmount)}
-              <input
-                type="number"
-                inputMode="numeric"
-                min={0}
-                step={1000}
-                value={bar.salary.amount ?? ""}
-                onChange={(event) => {
-                  const amount = Number(event.target.value);
-                  setFilters({
-                    salaryMin:
-                      event.target.value === "" || !Number.isFinite(amount) || amount <= 0
-                        ? null
-                        : { amount: Math.round(amount), currency: bar.salary.currency, period: "year" },
-                  });
-                }}
-                className="bg-surface-base border-line-control text-body text-fg-primary h-8 w-full rounded-md border px-2 tabular-nums"
-              />
-            </label>
-            <label className="text-footnote text-fg-secondary flex flex-col gap-1">
-              {intl.formatMessage(messages.salaryCurrency)}
-              <select
-                value={bar.salary.currency}
-                onChange={(event) =>
-                  setFilters({
-                    salaryMin:
-                      bar.salary.amount === null
-                        ? null
-                        : { amount: bar.salary.amount, currency: event.target.value, period: "year" },
-                  })
-                }
-                className="bg-surface-base border-line-control text-body text-fg-primary h-8 rounded-md border px-1"
-              >
-                {bar.salary.currencies.map((currency) => (
-                  <option key={currency} value={currency}>
-                    {currency}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-          <p className="text-fg-tertiary text-caption1">{intl.formatMessage(messages.salaryNote)}</p>
+  const content: Readonly<Record<FilterFacet, ReactNode>> = {
+    workMode: bar.workModes.map((option) => (
+      <OptionRow
+        key={option.value}
+        option={option}
+        type="checkbox"
+        name={`${groupName}-remote`}
+        onChange={(on) =>
+          setFilters({ remoteTypes: toggled<RemoteType>(filters.remoteTypes, option.value, on) })
+        }
+      />
+    )),
+    location:
+      bar.countries.length === 0
+        ? empty
+        : bar.countries.map((option) => (
+            <OptionRow
+              key={option.value}
+              option={option}
+              type="checkbox"
+              name={`${groupName}-country`}
+              onChange={(on) => setFilters({ countryCodes: toggled(filters.countryCodes, option.value, on) })}
+            />
+          )),
+    seniority: bar.seniority.map((option) => (
+      <OptionRow
+        key={option.value}
+        option={option}
+        type="checkbox"
+        name={`${groupName}-level`}
+        onChange={(on) => setFilters({ seniority: toggled<Seniority>(filters.seniority, option.value, on) })}
+      />
+    )),
+    salary: (
+      <div className="flex flex-col gap-2 px-2 py-1">
+        <div className="flex gap-2">
+          <label className="text-footnote text-fg-secondary flex min-w-0 flex-1 flex-col gap-1">
+            {intl.formatMessage(messages.salaryAmount)}
+            <input
+              type="number"
+              inputMode="numeric"
+              min={0}
+              step={1000}
+              value={bar.salary.amount ?? ""}
+              onChange={(event) => {
+                const amount = Number(event.target.value);
+                setFilters({
+                  salaryMin:
+                    event.target.value === "" || !Number.isFinite(amount) || amount <= 0
+                      ? null
+                      : { amount: Math.round(amount), currency: bar.salary.currency, period: "year" },
+                });
+              }}
+              className="bg-surface-base border-line-control text-body text-fg-primary h-8 w-full rounded-md border px-2 tabular-nums"
+            />
+          </label>
+          <label className="text-footnote text-fg-secondary flex flex-col gap-1">
+            {intl.formatMessage(messages.salaryCurrency)}
+            <select
+              value={bar.salary.currency}
+              onChange={(event) =>
+                setFilters({
+                  salaryMin:
+                    bar.salary.amount === null
+                      ? null
+                      : { amount: bar.salary.amount, currency: event.target.value, period: "year" },
+                })
+              }
+              className="bg-surface-base border-line-control text-body text-fg-primary h-8 rounded-md border px-1"
+            >
+              {bar.salary.currencies.map((currency) => (
+                <option key={currency} value={currency}>
+                  {currency}
+                </option>
+              ))}
+            </select>
+          </label>
         </div>
-      ),
-    },
-    posted: {
-      reset: () => setFilters({ postedWithinDays: null }),
-      body: [
+        <p className="text-fg-tertiary text-caption1">{intl.formatMessage(messages.salaryNote)}</p>
+      </div>
+    ),
+    posted: [
+      <OptionRow
+        key="any"
+        option={{
+          value: 0,
+          label: intl.formatMessage(messages.anyTime),
+          selected: filters.postedWithinDays === null,
+        }}
+        type="radio"
+        name={`${groupName}-posted`}
+        onChange={() => setFilters({ postedWithinDays: null })}
+      />,
+      ...bar.posted.map((option) => (
         <OptionRow
-          key="any"
-          option={{
-            value: 0,
-            label: intl.formatMessage(messages.anyTime),
-            selected: filters.postedWithinDays === null,
-          }}
+          key={option.value}
+          option={option}
           type="radio"
           name={`${groupName}-posted`}
-          onChange={() => setFilters({ postedWithinDays: null })}
-        />,
-        ...bar.posted.map((option) => (
-          <OptionRow
-            key={option.value}
-            option={option}
-            type="radio"
-            name={`${groupName}-posted`}
-            onChange={() => setFilters({ postedWithinDays: option.value })}
-          />
-        )),
-      ],
-    },
-    match: {
-      reset: () => onChange({ ...state, minBand: null }),
-      body: [
+          onChange={() => setFilters({ postedWithinDays: option.value })}
+        />
+      )),
+    ],
+    match: [
+      <OptionRow
+        key="any"
+        option={{
+          value: "any",
+          label: intl.formatMessage(messages.anyMatch),
+          selected: state.minBand === null,
+        }}
+        type="radio"
+        name={`${groupName}-match`}
+        onChange={() => onChange({ ...state, minBand: null })}
+      />,
+      ...bar.bands.map((option) => (
         <OptionRow
-          key="any"
-          option={{
-            value: "any",
-            label: intl.formatMessage(messages.anyMatch),
-            selected: state.minBand === null,
-          }}
+          key={option.value}
+          option={option}
           type="radio"
           name={`${groupName}-match`}
-          onChange={() => onChange({ ...state, minBand: null })}
-        />,
-        ...bar.bands.map((option) => (
-          <OptionRow
-            key={option.value}
-            option={option}
-            type="radio"
-            name={`${groupName}-match`}
-            onChange={() => onChange({ ...state, minBand: option.value satisfies MinBand })}
-          />
-        )),
-      ],
-    },
-    visa: {
-      reset: () => setFilters({ visaSponsorship: null }),
-      body: (
-        <>
-          <OptionRow
-            option={{
-              value: "visa",
-              label: intl.formatMessage(messages.visaOnly),
-              selected: filters.visaSponsorship === true,
-            }}
-            type="checkbox"
-            name={`${groupName}-visa`}
-            onChange={(on) => setFilters({ visaSponsorship: on ? true : null })}
-          />
-          <p className="text-fg-tertiary text-caption1 px-2 pt-1">{intl.formatMessage(messages.visaNote)}</p>
-        </>
-      ),
-    },
-    source: {
-      reset: () => setFilters({ sources: [] }),
-      body:
-        bar.sources.length === 0
-          ? empty
-          : bar.sources.map((option) => (
-              <OptionRow
-                key={option.value}
-                option={option}
-                type="checkbox"
-                name={`${groupName}-source`}
-                onChange={(on) => setFilters({ sources: toggled(filters.sources, option.value, on) })}
-              />
-            )),
-    },
+          onChange={() => onChange({ ...state, minBand: option.value satisfies MinBand })}
+        />
+      )),
+    ],
+    visa: (
+      <>
+        <OptionRow
+          option={{
+            value: "visa",
+            label: intl.formatMessage(messages.visaOnly),
+            selected: filters.visaSponsorship === true,
+          }}
+          type="checkbox"
+          name={`${groupName}-visa`}
+          onChange={(on) => setFilters({ visaSponsorship: on ? true : null })}
+        />
+        <p className="text-fg-tertiary text-caption1 px-2 pt-1">{intl.formatMessage(messages.visaNote)}</p>
+      </>
+    ),
+    source:
+      bar.sources.length === 0
+        ? empty
+        : bar.sources.map((option) => (
+            <OptionRow
+              key={option.value}
+              option={option}
+              type="checkbox"
+              name={`${groupName}-source`}
+              onChange={(on) => setFilters({ sources: toggled(filters.sources, option.value, on) })}
+            />
+          )),
   };
 
   return (
-    <div role="group" aria-label={bar.label} className="flex flex-wrap items-center gap-2" data-filter-bar="">
-      {bar.pills.map((pill) => (
-        <FacetPopover
-          key={pill.facet}
-          pill={pill}
-          resultCount={resultCount}
-          onReset={content[pill.facet].reset}
-        >
-          {content[pill.facet].body}
-        </FacetPopover>
-      ))}
-      {bar.activeCount > 0 && (
-        <Button
-          size="sm"
-          variant="plain"
-          icon={X}
-          onClick={() =>
-            onChange({
-              ...state,
-              minBand: null,
-              filters: NO_FILTERS,
-            })
-          }
-        >
-          {bar.clearAllLabel}
-        </Button>
-      )}
-      {trailing && <div className="ml-auto">{trailing}</div>}
+    <div className="flex items-start gap-2">
+      <div
+        role="group"
+        aria-label={bar.label}
+        className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5 py-0.5"
+        data-filter-bar=""
+      >
+        {bar.pills.map((pill) => (
+          <FacetPopover
+            key={pill.facet}
+            pill={pill}
+            open={openFacet === pill.facet}
+            onOpenChange={(open) =>
+              onOpenFacetChange(open ? pill.facet : openFacet === pill.facet ? null : openFacet)
+            }
+            resultCount={resultCount}
+            onReset={() => onChange(clearFacet(state, pill.facet))}
+          >
+            {content[pill.facet]}
+          </FacetPopover>
+        ))}
+        {bar.activeCount > 0 && (
+          <Button
+            size="sm"
+            variant="plain"
+            icon={X}
+            onClick={() =>
+              onChange({
+                ...state,
+                minBand: null,
+                filters: NO_FILTERS,
+              })
+            }
+          >
+            {bar.clearAllLabel}
+          </Button>
+        )}
+      </div>
+      {trailing && <div className="shrink-0">{trailing}</div>}
     </div>
   );
 }

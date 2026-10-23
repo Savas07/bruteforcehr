@@ -45,8 +45,10 @@ import type {
 import { companyVM, matchVM, sourceVM, statusVM } from "../../shared/model/vocabulary";
 import {
   buildFilterBar,
+  clearFacet,
   type FilterBarVM,
-  type FilterPillVM,
+  removableChips,
+  type RemovableChipVM,
   savedSearchItems,
   type SavedSearchItemVM,
 } from "./filterBarModel";
@@ -247,6 +249,10 @@ const messages = defineMessages({
   noFilterResultsBody: {
     id: "job-detail.empty.noFilterResultsBody",
     defaultMessage: "Try removing one, or search the job sites for more.",
+  },
+  noFilterResultsBodyNoQuery: {
+    id: "job-detail.empty.noFilterResultsBodyNoQuery",
+    defaultMessage: "Try removing one to see more of your jobs.",
   },
   noFilterResultsAction: {
     id: "job-detail.empty.noFilterResultsAction",
@@ -667,7 +673,7 @@ export interface JobsEmptyVM {
   /** Primary CTA: focuses the search field (first use) or clears the search / filters (no results); null for caught-up. */
   readonly action: string | null;
   /** No results: the active filters as removable chips (job-feed-search.md 7). */
-  readonly chips: readonly FilterPillVM[];
+  readonly chips: readonly RemovableChipVM[];
   /** "Search job sites for “react”" while there is search text; else null. */
   readonly searchAction: string | null;
 }
@@ -1220,15 +1226,21 @@ export function buildJobDetailModel(
     .map((job) => rowVM(job, matches.get(job.id), applications.get(job.id), ctx))
     .filter((row) => scope !== "saved" || row.saved);
   const jobsById = new Map(data.jobs.map((job) => [job.id, job]));
-  const minRank = search.minBand ? BAND_RANK[search.minBand] : null;
-  const rows = feed
-    .filter((row) => {
+  /** Feed rows that pass `state`'s search and filters, unsorted. */
+  const visibleRows = (state: JobsFilterState) => {
+    const minRank = state.minBand ? BAND_RANK[state.minBand] : null;
+    return feed.filter((row) => {
       const job = jobsById.get(row.jobId);
-      if (!job || !matchesQuery(job, query, ctx.locale) || !passesSearchFilters(job, search.filters, ctx.now))
+      if (
+        !job ||
+        !matchesQuery(job, state.query, ctx.locale) ||
+        !passesSearchFilters(job, state.filters, ctx.now)
+      )
         return false;
       return minRank === null || (row.match !== null && BAND_RANK[row.match.band] <= minRank);
-    })
-    .sort(search.sort === "newest" ? compareNewest : compareRows);
+    });
+  };
+  const rows = visibleRows(search).sort(search.sort === "newest" ? compareNewest : compareRows);
 
   const requested = params.jobId === undefined ? undefined : jobsById.get(params.jobId);
   const selectedJobId = requested?.id ?? rows[0]?.jobId ?? null;
@@ -1259,12 +1271,14 @@ export function buildJobDetailModel(
         ? intl.formatMessage(messages.noFilterResultsTitle)
         : intl.formatMessage(messages.noResultsTitle, { query }),
       body: filtered
-        ? intl.formatMessage(messages.noFilterResultsBody)
+        ? intl.formatMessage(
+            query === "" ? messages.noFilterResultsBodyNoQuery : messages.noFilterResultsBody,
+          )
         : intl.formatMessage(messages.noResultsBody),
       action: filtered
         ? intl.formatMessage(messages.noFilterResultsAction)
         : intl.formatMessage(messages.noResultsAction),
-      chips: filterBar.pills.filter((pill) => pill.active),
+      chips: removableChips(filterBar.pills, (facet) => visibleRows(clearFacet(search, facet)).length, ctx),
       searchAction,
     };
   } else if (rows.length === 0) {

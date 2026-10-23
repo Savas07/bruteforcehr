@@ -149,9 +149,35 @@ describe("buildJobDetailModel — search and reasons", () => {
     expect(model.list.empty).toMatchObject({
       kind: "noResults",
       title: "No jobs match all of these filters",
+      body: "Try removing one to see more of your jobs.",
       action: "Remove all filters",
+      searchAction: null,
     });
-    expect(model.list.empty?.chips.map((chip) => chip.facet)).toEqual(["seniority", "posted", "match"]);
+    const chips = model.list.empty?.chips ?? [];
+    expect(chips.map((chip) => chip.facet)).toEqual(["seniority", "posted", "match"]);
+    expect(chips[0]?.removeLabel).toBe("Remove filter: Seniority: Intern");
+    // Each chip's count is what the list shows with only that filter removed.
+    for (const chip of chips) {
+      const without = buildJobDetailModel(populatedDataset, ctx, {
+        posted: chip.facet === "posted" ? undefined : "1",
+        match: chip.facet === "match" ? undefined : "strong",
+        level: chip.facet === "seniority" ? undefined : "intern",
+      });
+      const count = without.list.rows.length;
+      expect(chip.count?.label ?? null, chip.facet).toBe(count > 0 ? `+${count}` : null);
+    }
+  });
+
+  it("offers the job-site search on zero results while there is search text", () => {
+    const model = buildJobDetailModel(populatedDataset, ctx, {
+      q: "react",
+      level: "intern",
+      match: "strong",
+    });
+    expect(model.list.empty).toMatchObject({
+      body: "Try removing one, or search the job sites for more.",
+      searchAction: "Search job sites for “react”",
+    });
   });
 
   it("matches multi-word and OR searches against title, company, places and skills", () => {

@@ -59,6 +59,11 @@ const messages = defineMessages({
     defaultMessage: "Remove filter: {filter}",
     description: "Accessible name of a zero-results chip",
   },
+  chipCount: {
+    id: "job-detail.filters.chipCount",
+    defaultMessage: "{count, plural, one {Shows # more job} other {Shows # more jobs}}",
+    description: "Tooltip of a zero-results chip's “+3”: jobs that come back without this filter alone",
+  },
 });
 
 const REMOTE_OPTION_MESSAGES: Readonly<Record<RemoteType, MessageDescriptor>> = defineMessages({
@@ -99,8 +104,17 @@ export interface FilterOptionVM<Value extends string | number> {
   readonly selected: boolean;
 }
 
-export type FilterFacet =
-  "workMode" | "location" | "seniority" | "salary" | "posted" | "match" | "visa" | "source";
+export const FILTER_FACETS = [
+  "workMode",
+  "location",
+  "seniority",
+  "salary",
+  "posted",
+  "match",
+  "visa",
+  "source",
+] as const;
+export type FilterFacet = (typeof FILTER_FACETS)[number];
 
 export interface FilterPillVM {
   readonly facet: FilterFacet;
@@ -109,8 +123,69 @@ export interface FilterPillVM {
   /** "Work mode: Remote", "Location (2)", or the title when unset. */
   readonly label: string;
   readonly active: boolean;
-  /** Shown as removable chips in the zero-results state: "Remove filter: Work mode: Remote". */
+}
+
+/** A zero-results chip (job-feed-search.md "Decision — Desktop" 7): one active filter, removable. */
+export interface RemovableChipVM {
+  readonly facet: FilterFacet;
+  /** The pill's label: "Work mode: On-site". */
+  readonly label: string;
+  /** "+3" and "Shows 3 more jobs": what removing only this filter brings back; null for none. */
+  readonly count: { readonly label: string; readonly hint: string } | null;
+  /** "Remove filter: Work mode: On-site". */
   readonly removeLabel: string;
+}
+
+/** `state` without the filter behind one pill (its Reset, its zero-results chip). */
+export function clearFacet(state: JobsFilterState, facet: FilterFacet): JobsFilterState {
+  const { filters } = state;
+  switch (facet) {
+    case "workMode":
+      return { ...state, filters: { ...filters, remoteTypes: [] } };
+    case "location":
+      return { ...state, filters: { ...filters, countryCodes: [] } };
+    case "seniority":
+      return { ...state, filters: { ...filters, seniority: [] } };
+    case "salary":
+      return { ...state, filters: { ...filters, salaryMin: null } };
+    case "posted":
+      return { ...state, filters: { ...filters, postedWithinDays: null } };
+    case "match":
+      return { ...state, minBand: null };
+    case "visa":
+      return { ...state, filters: { ...filters, visaSponsorship: null } };
+    case "source":
+      return { ...state, filters: { ...filters, sources: [] } };
+  }
+}
+
+/**
+ * The active pills as zero-results chips, each with the jobs removing it alone brings back
+ * (`countWithout`, cheap on the client: the feed is already in memory).
+ */
+export function removableChips(
+  pills: readonly FilterPillVM[],
+  countWithout: (facet: FilterFacet) => number,
+  ctx: Pick<ModelContext, "intl">,
+): RemovableChipVM[] {
+  const { intl } = ctx;
+  return pills
+    .filter((pill) => pill.active)
+    .map((pill) => {
+      const count = countWithout(pill.facet);
+      return {
+        facet: pill.facet,
+        label: pill.label,
+        count:
+          count > 0
+            ? {
+                label: intl.formatNumber(count, { signDisplay: "always" }),
+                hint: intl.formatMessage(messages.chipCount, { count }),
+              }
+            : null,
+        removeLabel: intl.formatMessage(messages.removeFilter, { filter: pill.label }),
+      };
+    });
 }
 
 export interface FilterBarVM {
@@ -175,13 +250,7 @@ export function buildFilterBar(
         : values.length === 1
           ? intl.formatMessage(messages.pillValue, { facet: name, value: values[0] })
           : intl.formatMessage(messages.pillCount, { facet: name, count: values.length });
-    return {
-      facet,
-      title: name,
-      label,
-      active: values.length > 0,
-      removeLabel: intl.formatMessage(messages.removeFilter, { filter: label }),
-    };
+    return { facet, title: name, label, active: values.length > 0 };
   };
   const salaryValue = filters.salaryMin
     ? `${intl.formatMessage(messages.salaryAtLeast, {

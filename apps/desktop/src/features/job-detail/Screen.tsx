@@ -37,9 +37,10 @@ import { EmailApplyPanel } from "../apply";
 import { ImportJobDialog } from "../jobs-import";
 import { SavedSearchesDialog, SaveSearchButton } from "../saved-searches";
 import { DetailPane } from "./DetailPane";
+import { clearFacet, FILTER_FACETS, type FilterFacet } from "./filterBarModel";
 import { FilterBar } from "./FilterBar";
 import { FILTER_PARAM_KEYS, filterSearchParams, type JobsFilterState, NO_FILTERS } from "./filters";
-import { JobList, type HiddenPlaceholder } from "./JobList";
+import { EmptyResults, JobList, type HiddenPlaceholder } from "./JobList";
 import {
   JOBS_SCOPES,
   SCOPE_MESSAGES,
@@ -65,11 +66,26 @@ const messages = defineMessages({
   focusSearch: { id: "job-detail.view.focusSearch", defaultMessage: "Search jobs" },
   focusFilters: { id: "job-detail.view.focusFilters", defaultMessage: "Focus the filters" },
   searchSites: { id: "job-detail.view.searchSites", defaultMessage: "Search job sites" },
+  searchSitesNeedsQuery: {
+    id: "job-detail.view.searchSitesNeedsQuery",
+    defaultMessage: "Type a role or skill in the search field first.",
+  },
   searching: { id: "job-detail.view.searching", defaultMessage: "Searching job sites for “{query}”…" },
+  searchingBody: {
+    id: "job-detail.view.searchingBody",
+    defaultMessage: "New jobs show up in the list as they're found.",
+  },
   searchDone: {
     id: "job-detail.view.searchDone",
     defaultMessage:
-      "{found, plural, =0 {No new postings for “{query}”.} one {# posting found for “{query}”} other {# postings found for “{query}”}}{created, plural, =0 {.} other {, # new.}}",
+      "{created, plural, =0 {No new jobs for “{query}”} one {# new job for “{query}”} other {# new jobs for “{query}”}}",
+  },
+  searchChecked: {
+    id: "job-detail.view.searchChecked",
+    defaultMessage:
+      "{found, plural, =0 {The job sites had no postings for this search.} one {Checked # posting, {updated} already in your list.} other {Checked # postings, {updated} already in your list.}}",
+    description:
+      "After a live search: postings the sources returned, and how many were jobs the user already had",
   },
   searchSkipped: {
     id: "job-detail.view.searchSkipped",
@@ -156,7 +172,19 @@ export default function JobDetailScreen({ model, params }: ScreenProps<JobDetail
   const [run, setRun] = useState<SearchRun | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [reasonsOpen, setReasonsOpen] = useState(false);
-  const [query, setQuery] = useState(params.q ?? "");
+  const routeQuery = params.q ?? "";
+  const [query, setQuery] = useState(routeQuery);
+  // The field follows the route when the search changes from outside (a link, Back, a saved search).
+  const [syncedQuery, setSyncedQuery] = useState(routeQuery);
+  if (routeQuery !== syncedQuery) {
+    setSyncedQuery(routeQuery);
+    setQuery(routeQuery);
+  }
+  /** `?filters=<facet>` opens that filter's popover (any other value: the first one). */
+  const openFacet: FilterFacet | null =
+    params.filters === undefined
+      ? null
+      : (FILTER_FACETS.find((facet) => facet === params.filters) ?? FILTER_FACETS[0]);
   const listRef = useRef<HTMLUListElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const data = model.status === "ready" ? model.data : null;
@@ -239,7 +267,6 @@ export default function JobDetailScreen({ model, params }: ScreenProps<JobDetail
     });
   const showSavedSearch = (searchParams: Readonly<Record<string, string | undefined>>) => {
     const cleared = Object.fromEntries(FILTER_PARAM_KEYS.map((key) => [key, undefined]));
-    setQuery(searchParams["q"] ?? "");
     void navigate({
       to: "/jobs",
       search: (previous: Readonly<Record<string, unknown>>) => ({
@@ -418,89 +445,109 @@ export default function JobDetailScreen({ model, params }: ScreenProps<JobDetail
           .filter((source) => source.status === "skipped" && source.reason === "no_key")
           .map((source) => jobSources.find((status) => status.id === source.source)?.label ?? source.source)
       : [];
-  const runBanner = run && (
-    <div className="px-6 pb-2" role="status">
-      {run.state === "failed" ? (
-        <InlineAlert tone="warning" title={run.message} onDismiss={() => setRun(null)} />
-      ) : run.state === "running" ? (
-        <InlineAlert tone="info" title={intl.formatMessage(messages.searching, { query: run.query })} />
-      ) : (
+  // One polite live region that stays mounted, so starting, finishing and failing are all announced;
+  // each alert is keyed by its state so only this region (not the alert's own) reports the change.
+  const runBanner = (
+    <div aria-live="polite" className={run ? "px-6 pb-2" : undefined}>
+      {run?.state === "failed" ? (
+        <InlineAlert key="failed" tone="warning" title={run.message} onDismiss={() => setRun(null)} />
+      ) : run?.state === "running" ? (
         <InlineAlert
+          key="running"
+          tone="info"
+          title={intl.formatMessage(messages.searching, { query: run.query })}
+        >
+          {intl.formatMessage(messages.searchingBody)}
+        </InlineAlert>
+      ) : run?.state === "done" ? (
+        <InlineAlert
+          key="done"
           tone="info"
           title={intl.formatMessage(messages.searchDone, {
             query: run.query,
-            found: run.response.counts.found,
             created: run.response.counts.created,
           })}
           onDismiss={() => setRun(null)}
         >
-          {skippedNames.length > 0 &&
-            intl.formatMessage(messages.searchSkipped, {
-              names: intl.formatList(skippedNames, { type: "conjunction" }),
-            })}
+          {[
+            intl.formatMessage(messages.searchChecked, {
+              found: run.response.counts.found,
+              updated: run.response.counts.updated,
+            }),
+            ...(skippedNames.length > 0
+              ? [
+                  intl.formatMessage(messages.searchSkipped, {
+                    names: intl.formatList(skippedNames, { type: "conjunction" }),
+                  }),
+                ]
+              : []),
+          ].join(" ")}
         </InlineAlert>
-      )}
+      ) : null}
     </div>
   );
 
   const header = (
     <header className="flex shrink-0 flex-col gap-3 px-6 pt-4 pb-3">
-      <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         <ScreenTitle
           title={scopeTitle}
           documentTitle={detail ? `${detail.title} · ${detail.company.name}` : scopeTitle}
         />
+        {/* The field and "Search job sites" are one search: Enter in the field runs it too. */}
         <form
           role="search"
-          className="relative flex w-full max-w-96 items-center"
+          className="flex min-w-0 flex-1 basis-96 items-center gap-2"
           onSubmit={(event) => {
             event.preventDefault();
             searchSites();
           }}
         >
-          <label className="contents">
-            <span className="sr-only">{intl.formatMessage(messages.search)}</span>
-            <Search
-              aria-hidden="true"
-              className="text-fg-tertiary pointer-events-none absolute left-2.5 size-4"
-              strokeWidth={1.75}
-            />
-            <input
-              ref={searchRef}
-              type="search"
-              value={query}
-              disabled={data === null}
-              placeholder={intl.formatMessage(messages.searchPlaceholder)}
-              onChange={(event) => setSearch(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Escape" && query !== "") {
-                  event.preventDefault();
-                  setSearch("");
-                }
-              }}
-              className="bg-surface-base border-line-control text-body placeholder:text-fg-tertiary h-8 w-full rounded-md border pr-9 pl-8 outline-offset-0 focus-visible:outline-2 disabled:opacity-60"
-            />
-          </label>
-          <span className="pointer-events-none absolute right-2" aria-hidden="true">
-            <Keycaps keys="/" />
-          </span>
+          <div className="relative flex max-w-96 min-w-48 flex-1 items-center">
+            <label className="contents">
+              <span className="sr-only">{intl.formatMessage(messages.search)}</span>
+              <Search
+                aria-hidden="true"
+                className="text-fg-tertiary pointer-events-none absolute left-2.5 size-4"
+                strokeWidth={1.75}
+              />
+              <input
+                ref={searchRef}
+                type="search"
+                value={query}
+                disabled={data === null}
+                placeholder={intl.formatMessage(messages.searchPlaceholder)}
+                onChange={(event) => setSearch(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Escape" && query !== "") {
+                    event.preventDefault();
+                    setSearch("");
+                  }
+                }}
+                className="bg-surface-base border-line-control text-body placeholder:text-fg-tertiary h-8 w-full rounded-md border pr-9 pl-8 text-ellipsis outline-offset-0 focus-visible:outline-2 disabled:opacity-60"
+              />
+            </label>
+            <span className="pointer-events-none absolute right-2" aria-hidden="true">
+              <Keycaps keys="/" />
+            </span>
+          </div>
+          <Button
+            icon={Search}
+            onClick={searchSites}
+            loading={run?.state === "running"}
+            loadingLabel={intl.formatMessage(messages.searchSites)}
+            disabledReason={
+              offline
+                ? (data?.copy.needsConnection ?? null)
+                : query.trim() === ""
+                  ? intl.formatMessage(messages.searchSitesNeedsQuery)
+                  : null
+            }
+          >
+            {intl.formatMessage(messages.searchSites)}
+          </Button>
         </form>
-        <Button
-          icon={Search}
-          onClick={searchSites}
-          loading={run?.state === "running"}
-          loadingLabel={intl.formatMessage(messages.searchSites)}
-          disabledReason={
-            offline
-              ? (data?.copy.needsConnection ?? null)
-              : query.trim() === ""
-                ? intl.formatMessage(messages.searchPlaceholder)
-                : null
-          }
-        >
-          {intl.formatMessage(messages.searchSites)}
-        </Button>
-        <span className="ml-auto flex items-center gap-2">
+        <span className="ml-auto flex shrink-0 items-center gap-2">
           <Button icon={ListFilter} variant="plain" onClick={() => setSearchParams({ searches: "manage" })}>
             {intl.formatMessage(messages.manageSearches)}
           </Button>
@@ -514,6 +561,8 @@ export default function JobDetailScreen({ model, params }: ScreenProps<JobDetail
           bar={data.filterBar}
           state={data.search}
           resultCount={rows.length}
+          openFacet={openFacet}
+          onOpenFacetChange={(facet) => setSearchParams({ filters: facet ?? undefined })}
           onChange={setFilters}
           trailing={<SaveSearchButton query={data.search.query} filters={data.search.filters} />}
         />
@@ -659,32 +708,24 @@ export default function JobDetailScreen({ model, params }: ScreenProps<JobDetail
 
   const empty = ready.list.empty;
   const list = empty ? (
-    <div className="flex flex-col gap-3 px-5 pt-6">
-      <EmptyState
-        kind={empty.kind}
-        title={empty.title}
-        body={empty.body}
-        {...(empty.action && {
-          primary: {
-            label: empty.action,
-            // "Remove all filters" when filters hide everything, else "Clear search".
-            onClick: () =>
-              empty.chips.length > 0
-                ? setFilters({ ...ready.search, filters: NO_FILTERS, minBand: null })
-                : setSearch(""),
-          },
-        })}
-      />
-      {empty.searchAction && (
-        <Button
-          icon={Search}
-          onClick={searchSites}
-          disabledReason={offline ? ready.copy.needsConnection : null}
-        >
-          {empty.searchAction}
-        </Button>
-      )}
-    </div>
+    <EmptyResults
+      empty={empty}
+      searchDisabledReason={offline ? ready.copy.needsConnection : null}
+      onRemoveFacet={(facet) => {
+        setFilters(clearFacet(ready.search, facet));
+        // The chip goes away; continue from that filter's pill in the bar.
+        requestAnimationFrame(() =>
+          document.querySelector<HTMLElement>(`[data-filter-bar] [data-filter-pill="${facet}"]`)?.focus(),
+        );
+      }}
+      // "Remove all filters" when filters hide everything, else "Clear search".
+      onAction={() =>
+        empty.chips.length > 0
+          ? setFilters({ ...ready.search, filters: NO_FILTERS, minBand: null })
+          : setSearch("")
+      }
+      onSearchSites={searchSites}
+    />
   ) : (
     <JobList
       model={ready}
@@ -704,6 +745,7 @@ export default function JobDetailScreen({ model, params }: ScreenProps<JobDetail
       onToggleSave={(row) => actions.toggleSave(row.jobId)}
       onNotForMe={(row) => hide(row, false)}
       onOpenOriginal={(row) => openUrl(row.originalUrl)}
+      onSortChange={(sort) => setFilters({ ...ready.search, sort })}
       stamp={stamp}
     />
   );
@@ -801,7 +843,7 @@ export default function JobDetailScreen({ model, params }: ScreenProps<JobDetail
             }),
         }}
       />
-    ) : (
+    ) : empty ? null : (
       <div className="flex flex-1 flex-col items-center justify-center gap-2 p-8 text-center">
         <p className="text-title3">{ready.noSelection.title}</p>
         <p className="text-fg-secondary text-callout">{ready.noSelection.hint}</p>

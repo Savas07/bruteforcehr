@@ -20,3 +20,5 @@ allowBuilds:
 # bundle); 1.9.x has GHSA-m9gg-hp2v-232j, fixed only in >=1.13.6. Same major, API-compatible.
 overrides:
   "@firebase/firestore>@grpc/grpc-js": "^1.14.6"
+  # express 5 (firebase-functions) allows body-parser ^2.3.0; <2.4.0 has GHSA-27r3-jxmh-p828.
+  "body-parser@>=2.0.0 <2.4.0": "^2.4.0"

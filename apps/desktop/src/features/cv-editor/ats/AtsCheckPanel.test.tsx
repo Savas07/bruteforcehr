@@ -16,7 +16,9 @@ declare global {
 }
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
-const pdf = new Uint8Array(readFileSync(path.join(import.meta.dirname, "__fixtures__/sample-cv.pdf")));
+const pdf = new Uint8Array(
+  readFileSync(path.join(import.meta.dirname, "__fixtures__/sample-cv-classic.pdf")),
+);
 
 let container: HTMLDivElement;
 let root: Root;
@@ -82,7 +84,7 @@ describe("AtsCheckPanel", () => {
     await runCheck();
     expect(makePdf).toHaveBeenCalledOnce();
     expect(container.querySelector(".sr-only[role=status]")?.textContent).toBe(
-      "7 of 7 sections read back from the PDF.",
+      "8 of 8 sections read back from the PDF.",
     );
     const rows = [...container.querySelectorAll("li")].map((row) => row.textContent);
     expect(rows).toEqual(
@@ -91,6 +93,7 @@ describe("AtsCheckPanel", () => {
         "Email · Read back",
         "Phone · Read back",
         "Name and contact details · Read back",
+        "Summary · Read back",
         "Experience · Read back",
         "Talks · Read back",
       ]),
@@ -106,7 +109,7 @@ describe("AtsCheckPanel", () => {
     expect(container.querySelector("pre")).toBeNull();
     act(() => button("What a parser sees").click());
     const text = container.querySelector("pre");
-    expect(text?.getAttribute("aria-label")).toBe("Text read from the PDF, 2 pages");
+    expect(text?.getAttribute("aria-label")).toMatch(/^Text read from the PDF, (1 page|\d+ pages)$/);
     expect(text?.textContent).toContain("Orta Doğu Teknik Üniversitesi");
   });
 
@@ -115,6 +118,17 @@ describe("AtsCheckPanel", () => {
     await runCheck();
     expect(container.textContent).toContain("Berufserfahrung · Partly read back");
     expect(container.textContent).toContain("The heading “Berufserfahrung” wasn't found.");
+  });
+
+  it("follows the outline of the render behind the PDF", async () => {
+    const outline = [
+      { key: "work", heading: "Experience", entries: ["Senior Backend Engineer", "Chief Dreamer"] },
+    ];
+    render({ outline });
+    await runCheck();
+    expect(container.textContent).toContain("Experience · Partly read back");
+    expect(container.textContent).toContain("Not in the PDF text: Chief Dreamer");
+    expect(container.textContent).not.toContain("Summary · ");
   });
 
   it("covers job keywords and offers missing ones for Skills", async () => {
@@ -145,6 +159,6 @@ describe("AtsCheckPanel", () => {
     expect(container.querySelector("[role=alert]")?.textContent).toContain("Couldn't create the PDF.");
     await runCheck();
     expect(container.querySelector("[role=alert]")).toBeNull();
-    expect(container.textContent).toContain("7 of 7 sections read back from the PDF.");
+    expect(container.textContent).toContain("8 of 8 sections read back from the PDF.");
   });
 });

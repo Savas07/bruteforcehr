@@ -172,7 +172,9 @@ interface SectionPlan {
 /** The heading cv-render prints for a section key, `null` for keys it doesn't render. */
 function standardHeading(content: CvContent, key: string, language: CvLanguage): string | null {
   if (key.startsWith("custom:"))
-    return content.meta.customSections.find((section) => `custom:${section.id}` === key)?.title.trim() ?? null;
+    return (
+      content.meta.customSections.find((section) => `custom:${section.id}` === key)?.title.trim() ?? null
+    );
   return SECTION_HEADINGS[language][key as HeadedSection] ?? null;
 }
 
@@ -195,14 +197,15 @@ function plan(content: CvContent, language: CvLanguage, outline?: readonly Outli
   for (const { key, title, printed } of sections) {
     if (title === null) continue;
     const seen = new Set<string>();
-    const facts = [...printed.flatMap((entry) => text(entry)), ...contentFacts(content, key, language)].filter(
-      (fact) => {
-        const folded = foldText(fact.label);
-        if (seen.has(folded)) return false;
-        seen.add(folded);
-        return true;
-      },
-    );
+    const facts = [
+      ...printed.flatMap((entry) => text(entry)),
+      ...contentFacts(content, key, language),
+    ].filter((fact) => {
+      const folded = foldText(fact.label);
+      if (seen.has(folded)) return false;
+      seen.add(folded);
+      return true;
+    });
     // A section the renderer printed is checked even when it has no facts (its heading still counts).
     if (facts.length > 0 || outline) plans.push({ key, title, facts });
   }
@@ -215,11 +218,7 @@ const SUFFIX_LETTERS: Readonly<Record<CvLanguage, number>> = { en: 2, de: 2, tr:
 /** Keywords shorter than this match exactly: suffix tolerance would turn "Java" into "Javas…". */
 const INFLECTABLE_MIN_LENGTH = 5;
 
-function keywordCoverage(
-  index: TextIndex,
-  jobDescription: string,
-  language: CvLanguage,
-): AtsKeywordCoverage {
+function keywordCoverage(index: TextIndex, jobDescription: string, language: CvLanguage): AtsKeywordCoverage {
   const keywords = extractJobKeywords(jobDescription, language);
   const matched: JobKeyword[] = [];
   const missing: JobKeyword[] = [];

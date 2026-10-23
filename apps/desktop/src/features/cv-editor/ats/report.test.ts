@@ -1,7 +1,6 @@
 import type { CvContent } from "@bfhr/core";
 import { describe, expect, it } from "vitest";
 import { sampleCv } from "./__fixtures__/sampleCv";
-import { STANDARD_HEADINGS } from "./headings";
 import { extractJobKeywords } from "./keywords";
 import { foldText, TextIndex } from "./normalize";
 import { atsReport, type AtsReport } from "./report";
@@ -75,9 +74,14 @@ describe("TextIndex", () => {
 describe("atsReport", () => {
   it("reports every visible section as read back from clean text", () => {
     const report = atsReport({ text: cleanText, content: sampleCv, language: "en" });
-    expect(report.sections.map((section) => section.key)).toEqual(sampleCv.meta.sectionOrder);
+    expect(report.sections.map((section) => section.key)).toEqual([
+      "basics",
+      "summary",
+      ...sampleCv.meta.sectionOrder.slice(1),
+    ]);
     for (const section of report.sections) expect(section).toMatchObject({ status: "ok", missing: [] });
-    expect(statusOf(report, "basics")).toMatchObject({ title: null, headingFound: true });
+    expect(statusOf(report, "basics")).toMatchObject({ title: null, headingFound: null, total: 5 });
+    expect(statusOf(report, "summary")).toMatchObject({ title: "Summary", headingFound: true });
     expect(statusOf(report, "work")).toMatchObject({
       title: "Experience",
       headingFound: true,
@@ -131,7 +135,7 @@ describe("atsReport", () => {
   it("looks for the standard heading in the CV's language", () => {
     const content: CvContent = { ...sampleCv, meta: { ...sampleCv.meta, sectionOrder: ["work", "skills"] } };
     const tr = atsReport({
-      text: cleanText.replace("EXPERIENCE", "İŞ DENEYİMİ").replace("SKILLS", "YETENEKLER"),
+      text: cleanText.replace("EXPERIENCE", "DENEYİM").replace("SKILLS", "YETENEKLER"),
       content,
       language: "tr",
     });
@@ -144,6 +148,29 @@ describe("atsReport", () => {
       ["Berufserfahrung", false],
       ["Kenntnisse", false],
     ]);
+  });
+
+  it("checks exactly what the renderer printed when given its outline", () => {
+    const content: CvContent = { ...sampleCv, meta: { ...sampleCv.meta, sectionOrder: ["basics", "work"] } };
+    const outline = [
+      { key: "work", heading: "Work history", entries: ["Senior Backend Engineer", "Staff Engineer"] },
+    ];
+    const report = atsReport({
+      text: cleanText.replace("EXPERIENCE", "WORK HISTORY"),
+      content,
+      language: "en",
+      outline,
+    });
+    // Header first, then the outline's sections only: no summary, because the outline has none.
+    expect(report.sections.map((section) => section.key)).toEqual(["basics", "work"]);
+    expect(statusOf(report, "work")).toMatchObject({
+      title: "Work history",
+      headingFound: true,
+      status: "partial",
+      // Printed titles and the content's own facts, each once.
+      total: 9,
+      missing: ["Staff Engineer"],
+    });
   });
 
   it("skips hidden and empty sections and flags contact details the CV doesn't have", () => {
@@ -227,12 +254,5 @@ describe("extractJobKeywords", () => {
     expect(report.keywords?.matched.map((keyword) => keyword.keyword)).toEqual(
       expect.arrayContaining(["Yazılım", "mikroservis"]),
     );
-  });
-});
-
-describe("STANDARD_HEADINGS", () => {
-  it("has a printed heading per language for every section", () => {
-    for (const headings of Object.values(STANDARD_HEADINGS))
-      for (const language of ["en", "tr", "de"] as const) expect(headings[language][0]).toMatch(/\p{L}/u);
   });
 });

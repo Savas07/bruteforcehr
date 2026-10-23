@@ -18,7 +18,10 @@ declare global {
   var BFHRCvRender: typeof CvRender;
 }
 
-const iife = path.resolve(import.meta.dirname, "../../../../../../../packages/cv-render/dist/cv-render.iife.js");
+const iife = path.resolve(
+  import.meta.dirname,
+  "../../../../../../../packages/cv-render/dist/cv-render.iife.js",
+);
 const templates: readonly TemplateId[] = ["classic", "modern", "compact"];
 const { meta, ...resume } = sampleCv;
 

@@ -11,6 +11,14 @@ enum TodayStrings {
     static let firstRunTitle = LocalizedStringResource.bfhr("today.firstRun.title", default: "Nothing needs you yet", table: "Today")
     static let firstRunBody = LocalizedStringResource.bfhr("today.firstRun.body", default: "Interviews, replies to review, follow-ups and new matches will show up here.", table: "Today")
     static let findJobs = LocalizedStringResource.bfhr("today.firstRun.findJobs", default: "Find jobs", table: "Today")
+    static let logApplication = LocalizedStringResource.bfhr("today.firstRun.logApplication", default: "Log an application", table: "Today", comment: "First-run action while job search isn't on yet: opens Log an application in Tracker.")
+    static let insightsLink = LocalizedStringResource.bfhr("today.insights.link", default: "Your last 4 weeks in Insights", table: "Today", comment: "Footer link: opens Insights (range 4 weeks) in Tracker. No scores, no streaks.")
+    static let comingNote = LocalizedStringResource.bfhr(
+        "today.coming.note",
+        default: "Replies from employers and new job matches will show up here once email and job search are connected.",
+        table: "Today",
+        comment: "Quiet footnote until mail (M5) and matching (M4) are switched on. Calm, no promise of a date."
+    )
     static let connectTitle = LocalizedStringResource.bfhr("today.connect.title", default: "Connect your email", table: "Today")
     static let connectBody = LocalizedStringResource.bfhr("today.connect.body", default: "See interview invites and replies here. About 2 minutes.", table: "Today")
     static let connectAction = LocalizedStringResource.bfhr("today.connect.action", default: "Connect email", table: "Today")
@@ -110,6 +118,8 @@ enum TodayLink {
     static let jobs = URL(string: "bruteforcehr://jobs")!
     static let mail = URL(string: "bruteforcehr://mail")!
     static let settings = URL(string: "bruteforcehr://settings")!
+    static let logApplication = URL(string: "bruteforcehr://tracker/new")!
+    static let insights = URL(string: "bruteforcehr://insights?range=4w")!
 
     static func application(_ id: String) -> URL { link("applications/\(id)") }
     static func job(_ id: String) -> URL { link("jobs/\(id)") }

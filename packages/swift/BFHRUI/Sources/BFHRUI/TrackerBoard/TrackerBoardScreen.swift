@@ -2,10 +2,11 @@ import BFHRCore
 import BFHRDesignTokens
 import SwiftUI
 
-/// The Tracker tab's Pipeline (tracker.md "Decision — iOS"): one grouped list instead of a column
-/// pager. Scope tabs (Active · Closed · All), a scrolling stage strip with counts, sticky
+/// The Tracker tab (tracker.md "Decision — iOS"): the title menu switches **Pipeline** and
+/// **Calendar**; + logs an application. The Pipeline is one grouped list instead of a column
+/// pager: scope tabs (Active · Closed · All), a scrolling stage strip with counts, sticky
 /// collapsible stage sections, and two equal ways to move an application: long-press → Move to…
-/// (also the VoiceOver action) and swipe actions. Drag is not offered on iPhone in M0 (decisions.md
+/// (also the VoiceOver action) and swipe actions. Drag is not offered on iPhone (decisions.md
 /// D28). Every move goes through BFHRCore's state machine as the user and offers Undo. Rows push
 /// the Application detail.
 public struct TrackerBoardScreen: View {
@@ -13,25 +14,84 @@ public struct TrackerBoardScreen: View {
     @Environment(ToastCenter.self) private var toasts: ToastCenter?
     @Environment(\.openURL) private var openURL
     @State private var sheet: TrackerSheet?
+    @State private var adding: ApplicationDraft?
+    @State private var sharing: InterviewCalendarFile?
+    @State private var opened: OpenedApplication?
+    @State private var agendaScope: AgendaScope = .upcoming
     /// Sections the user opened or closed; others follow `collapsedByDefault`.
     @State private var expansion: [ApplicationStatus: Bool] = [:]
     @State private var errorCount = 0
+    /// Insights, pushed on this stack from the toolbar (decisions.md D03); nil hides the button.
+    private let insights: AnyView?
 
     public init(model: TrackerBoardModel) {
         self.model = model
+        self.insights = nil
+    }
+
+    /// With an Insights destination: the toolbar's chart button pushes it.
+    public init<Insights: View>(model: TrackerBoardModel, @ViewBuilder insights: () -> Insights) {
+        self.model = model
+        self.insights = AnyView(insights())
     }
 
     public var body: some View {
         PhaseContainer(model.phase, loadingLabel: TrackerBoardStrings.loading) {
-            if model.isEmpty {
-                emptyPipeline
-            } else {
-                pipeline
+            switch model.view {
+            case .pipeline:
+                if model.isEmpty {
+                    emptyPipeline
+                } else {
+                    pipeline
+                }
+            case .calendar:
+                TrackerCalendarView(model: model, scope: $agendaScope) { applicationId in
+                    opened = OpenedApplication(id: applicationId)
+                } onShare: { interview in
+                    sharing = model.calendarFile(for: interview)
+                }
             }
         } skeleton: {
             TrackerSkeleton()
         } failure: { failure in
             PaneError(failure, title: TrackerBoardStrings.errorTitle, retry: reload)
+        }
+        .navigationTitle(Text(model.view.label))
+        .toolbarTitleMenu {
+            ForEach(TrackerView.allCases) { view in
+                Button {
+                    model.view = view
+                } label: {
+                    Label { Text(view.label) } icon: { Image(systemName: view.systemImage) }
+                }
+            }
+        }
+        .toolbar {
+            if insights != nil {
+                ToolbarItem(placement: .bfhrTrailing) {
+                    Button {
+                        model.showsInsights = true
+                    } label: {
+                        Label { Text(TrackerBoardStrings.insights) } icon: { Image(systemName: "chart.bar.xaxis") }
+                    }
+                    .accessibilityIdentifier("tracker.insights")
+                }
+            }
+            ToolbarItem(placement: .bfhrTrailing) {
+                Button {
+                    adding = model.newApplicationDraft()
+                } label: {
+                    Label { Text(TrackerBoardStrings.add) } icon: { Image(systemName: "plus") }
+                }
+                .disabled(!model.isLoaded)
+                .accessibilityIdentifier("tracker.add")
+            }
+        }
+        .navigationDestination(isPresented: $model.showsInsights) {
+            if let insights { insights }
+        }
+        .navigationDestination(item: $opened) { opened in
+            TrackerApplicationDetailScreen(model: model, applicationId: opened.id, focusInterviewId: opened.interviewId)
         }
         .bfhrToastHost()
         .environment(\.bfhrNow, model.now)
@@ -44,22 +104,72 @@ public struct TrackerBoardScreen: View {
                 self.sheet = nil
             }
         }
+        .sheet(item: $adding) { draft in
+            ApplicationAddSheet(draft: draft, now: model.now) { draft in
+                adding = nil
+                let id = model.logApplication(draft)
+                if let toast = model.loggedToast(id) { toasts?.show(toast) }
+                opened = OpenedApplication(id: id)
+            } onCancel: {
+                adding = nil
+            }
+        }
+        .sheet(item: $sharing) { file in
+            InterviewShareSheet(file: file)
+        }
+        .onChange(of: model.writeFailures) {
+            errorCount += 1
+            toasts?.show(ToastItem(glyph: ToastGlyph.info, message: TrackerBoardStrings.saveFailed))
+        }
+        .onChange(of: model.route, initial: true) { consumeRoute() }
+        // A link that arrived before the data opens once it's loaded.
+        .onChange(of: model.phase) { consumeRoute() }
+        #if DEBUG
+        .onAppear { if TrackerDesignPane.requested == .calendarPast { agendaScope = .past } }
+        #endif
+    }
+
+    private func consumeRoute() {
+        guard let route = model.route, model.isLoaded else { return }
+        model.route = nil
+        switch route {
+        case .application(let id, let interviewId):
+            model.view = .pipeline
+            // An interview link that arrived before the data names no application yet.
+            let resolved = id.isEmpty ? model.data.interviews.first { $0.id == interviewId }?.applicationId ?? id : id
+            opened = OpenedApplication(id: resolved, interviewId: interviewId)
+        case .add:
+            adding = model.newApplicationDraft()
+        case .calendar:
+            opened = nil
+            model.view = .calendar
+        case .insights(let range):
+            opened = nil
+            model.insightsRange = range
+            model.showsInsights = insights != nil
+        }
     }
 
     // MARK: Empty
 
     private var emptyPipeline: some View {
-        VStack(spacing: 0) {
-            ConnectionBanner(model.connection)
-            EmptyState(
-                .firstUse,
-                glyph: "rectangle.split.3x1",
-                title: TrackerBoardStrings.emptyTitle,
-                message: TrackerBoardStrings.emptyBody,
-                primary: .init(TrackerBoardStrings.findJobs) {
-                    if let url = URL(string: "bruteforcehr://jobs") { openURL(url) }
-                }
-            )
+        ScrollView {
+            VStack(spacing: 0) {
+                ConnectionBanner(model.connection)
+                EmptyState(
+                    .firstUse,
+                    glyph: "rectangle.split.3x1",
+                    title: TrackerBoardStrings.emptyTitle,
+                    message: TrackerBoardStrings.emptyBodyLog,
+                    primary: .init(TrackerBoardStrings.add) { adding = model.newApplicationDraft() }
+                )
+                Text(TrackerBoardStrings.csvOnDesktop)
+                    .font(.bfhr(.footnote))
+                    .foregroundStyle(BFHRColor.Fg.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, BFHRSpace.s6)
+                    .padding(.bottom, BFHRSpace.s6)
+            }
         }
     }
 
@@ -69,6 +179,12 @@ public struct TrackerBoardScreen: View {
         ScrollViewReader { proxy in
             List {
                 ConnectionBannerSection(model.connection)
+                if let filter = model.filter {
+                    Section {
+                        FilterChipRow(label: filter.label) { model.clearFilter() }
+                            .listRowSeparator(.hidden)
+                    }
+                }
                 Section {
                     Picker(selection: $model.scope) {
                         ForEach(PipelineScope.allCases) { scope in Text(scope.label).tag(scope) }
@@ -165,6 +281,52 @@ public struct TrackerBoardScreen: View {
     }
 }
 
+/// An application pushed programmatically (deep link, Calendar row, after Log an application),
+/// optionally scrolled to one interview round.
+struct OpenedApplication: Identifiable, Hashable {
+    var id: String
+    var interviewId: String?
+}
+
+/// Where a `bruteforcehr://` link (or a notification) asks the Tracker to go.
+public enum TrackerRoute: Hashable, Sendable {
+    /// `applications/{id}` or `interviews/{id}` (then `interviewId` is set).
+    case application(String, interviewId: String?)
+    /// `tracker/new`: Log an application.
+    case add
+    /// `tracker?view=calendar`.
+    case calendar
+    /// `insights?range=4w|12w|…`: Insights pushed on the Tracker.
+    case insights(range: String?)
+}
+
+/// "From Insights: Applied in the last 4 weeks ✕": the Pipeline shows a drill-down; ✕ clears it.
+private struct FilterChipRow: View {
+    let label: String
+    let onClear: () -> Void
+
+    var body: some View {
+        HStack(spacing: BFHRSpace.s2) {
+            Text(TrackerBoardStrings.fromInsights(label))
+                .font(.bfhr(.subheadline))
+                .foregroundStyle(BFHRColor.Fg.primary)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            Button(action: onClear) {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.bfhr(.body))
+                    .foregroundStyle(BFHRColor.Fg.secondary)
+                    .frame(minWidth: BFHRHitTarget.minimum, minHeight: BFHRHitTarget.minimum)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Text(TrackerBoardStrings.clearFilter))
+            .accessibilityIdentifier("tracker.clearFilter")
+        }
+        .padding(.horizontal, BFHRSpace.s3)
+        .background(BFHRColor.Accent.subtle, in: Capsule())
+    }
+}
+
 /// Move to… (every status) or Close… (outcomes only).
 enum TrackerSheet: Identifiable, Hashable {
     case move(String)
@@ -177,6 +339,10 @@ enum TrackerSheet: Identifiable, Hashable {
         case .move(let id), .close(let id): id
         }
     }
+}
+
+extension ApplicationDraft: Identifiable {
+    public var id: Date { date }
 }
 
 extension TrackerBoardStrings {
@@ -242,7 +408,7 @@ struct TrackerMoveSheet: View {
 }
 
 /// The system navigation subtitle (iOS 26) under the sheet's title.
-private struct SheetSubtitle: ViewModifier {
+struct SheetSubtitle: ViewModifier {
     let subtitle: String?
 
     init(_ subtitle: String?) {

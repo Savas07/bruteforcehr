@@ -14,6 +14,8 @@ struct BruteForceHRApp: App {
         let settings = Firestore.firestore().settings
         settings.cacheSettings = PersistentCacheSettings()
         Firestore.firestore().settings = settings
+        // Before launch finishes, so a reminder tap that launched the app is delivered.
+        NotificationRouter.shared.install()
     }
 
     var body: some Scene {

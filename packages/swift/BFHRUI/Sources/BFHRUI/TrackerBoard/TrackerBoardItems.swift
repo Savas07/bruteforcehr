@@ -147,6 +147,25 @@ public struct ApplicationDetail: Identifiable, Hashable, Sendable {
         public var title: String
     }
 
+    /// One interview round with this device's prep reminder.
+    public struct InterviewItem: Identifiable, Hashable, Sendable {
+        public var interview: Interview
+        /// Ended before now.
+        public var isPast: Bool
+        /// The prep reminder set on this device, if any.
+        public var prep: InterviewPrepLead?
+        public var pendingSync: Bool
+
+        public var id: String { interview.id }
+    }
+
+    /// The application's reminder (`nextAction` + `nextActionAt`).
+    public struct Reminder: Hashable, Sendable {
+        public var text: String
+        public var dueAt: Date?
+        public var isOverdue: Bool
+    }
+
     /// The application id.
     public var id: String
     public var header: Header
@@ -159,10 +178,37 @@ public struct ApplicationDetail: Identifiable, Hashable, Sendable {
     /// Newest day first.
     public var timeline: [TimelineDay]
     /// Earliest first, past rounds included.
-    public var interviews: [Interview]
+    public var interviews: [InterviewItem]
+    /// Oldest first.
     public var contacts: [Contact]
     public var cv: DocumentRef?
     public var coverLetter: DocumentRef?
+    public var reminder: Reminder?
+    /// The follow-up suggestion when one is due (7 days in Applied without a reply).
+    public var followUp: NudgeItem?
+    public var notes: String
+}
+
+/// The Tracker's two views on iPhone, switched from the title menu.
+public enum TrackerView: String, CaseIterable, Identifiable, Hashable, Sendable {
+    case pipeline
+    case calendar
+
+    public var id: Self { self }
+
+    public var label: LocalizedStringResource {
+        switch self {
+        case .pipeline: .bfhr("tracker.view.pipeline", default: "Pipeline", table: "TrackerBoard", comment: "Tracker title menu: the list of applications by stage.")
+        case .calendar: .bfhr("tracker.view.calendar", default: "Calendar", table: "TrackerBoard", comment: "Tracker title menu: interviews, reminders and deadlines by date.")
+        }
+    }
+
+    public var systemImage: String {
+        switch self {
+        case .pipeline: "rectangle.split.3x1"
+        case .calendar: "calendar"
+        }
+    }
 }
 
 public enum TrackerBoardError: Error, Hashable, Sendable {

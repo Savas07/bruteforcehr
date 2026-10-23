@@ -13,6 +13,7 @@ import {
   transition,
   TransitionError,
   type TransitionErrorCode,
+  visibleSuggestions,
 } from "./status";
 
 const ALL = ApplicationStatusSchema.options;
@@ -559,5 +560,66 @@ describe("followUpDue", () => {
   it("only applies to Applied", () => {
     expect(followUpDue({ ...app, status: "acknowledged" }, [], day(30))).toBeNull();
     expect(followUpDue({ ...app, status: "saved" }, [], day(30))).toBeNull();
+  });
+});
+
+describe("visibleSuggestions", () => {
+  const none = {
+    followUpSnoozedUntil: null,
+    followUpDismissedAt: null,
+    ghostedSnoozedUntil: null,
+    ghostedDismissedAt: null,
+  };
+  const app = { id: "app1", status: "applied" as const, appliedAt: T0, statusChangedAt: T0, ...none };
+  const sent = (at: Date): ApplicationEvent =>
+    ApplicationEventSchema.parse({
+      id: "sent",
+      applicationId: "app1",
+      type: "mail_sent",
+      fromStatus: null,
+      toStatus: null,
+      actor: "user",
+      confidence: null,
+      evidence: null,
+      text: "Following up",
+      revertsEventId: null,
+      occurredAt: at,
+      createdAt: at,
+    });
+
+  it("passes the computed suggestions through when nothing was answered", () => {
+    expect(visibleSuggestions(app, [], day(8))).toEqual({
+      followUp: followUpDue(app, [], day(8)),
+      ghosted: null,
+    });
+    expect(visibleSuggestions(app, [], day(21)).ghosted).toEqual(suggestGhosted(app, [], day(21)));
+  });
+
+  it("hides a snoozed follow-up until the snooze ends", () => {
+    const snoozed = { ...app, followUpSnoozedUntil: day(10) };
+    expect(visibleSuggestions(snoozed, [], day(9)).followUp).toBeNull();
+    expect(visibleSuggestions(snoozed, [], day(10)).followUp).not.toBeNull();
+  });
+
+  it("keeps a follow-up marked Not needed hidden until a newer follow-up round", () => {
+    const dismissed = { ...app, followUpDismissedAt: day(8) };
+    expect(visibleSuggestions(dismissed, [], day(20)).followUp).toBeNull();
+    // A follow-up sent on day 9 starts a new round, due on day 16.
+    expect(visibleSuggestions(dismissed, [sent(day(9))], day(16)).followUp?.since).toEqual(day(9));
+  });
+
+  it("asks about No response again only after another full silence period", () => {
+    const waiting = { ...app, ghostedDismissedAt: day(21) };
+    expect(visibleSuggestions(waiting, [], day(41)).ghosted).toBeNull();
+    expect(visibleSuggestions(waiting, [], day(42)).ghosted?.silentDays).toBe(42);
+    const snoozed = { ...app, ghostedSnoozedUntil: day(25) };
+    expect(visibleSuggestions(snoozed, [], day(24)).ghosted).toBeNull();
+    expect(visibleSuggestions(snoozed, [], day(25)).ghosted).not.toBeNull();
+  });
+
+  it("uses the profile's day settings", () => {
+    const result = visibleSuggestions(app, [], day(3), { followUpAfterDays: 3, ghostedAfterDays: 3 });
+    expect(result.followUp?.dueAt).toEqual(day(3));
+    expect(result.ghosted?.silentDays).toBe(3);
   });
 });

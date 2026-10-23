@@ -82,9 +82,29 @@ public final class TodayModel: ScreenModel {
     public var connection: ConnectionState = .online
     public var pendingSyncIDs: Set<String> = []
 
-    public let now: Date
+    /// The clock for relative values and for the time stamped on writes. The data layer advances it.
+    public var now: Date {
+        didSet { recompute() }
+    }
     public let calendar: Calendar
     public private(set) var data = UserData.empty
+
+    /// Persists every mutation (the app's Firestore store); nil in tests and design mode.
+    public weak var writer: (any UserDataWriter)?
+    /// Live data: writes are stamped with the system clock.
+    public var usesSystemClock = false
+    /// Counts writes the server refused; the screen shows a toast when it changes.
+    public private(set) var writeFailures = 0
+    /// Email (M5) and job matching (M4) are switched on. Until then Today says so calmly instead
+    /// of offering a connect card or "Find jobs" that lead nowhere.
+    public var mailAvailable = true
+    public var matchesAvailable = true
+
+    var writeTime: Date { usesSystemClock ? .now : now }
+    /// Insights is wired into the Tracker (the host sets it): Today's footer links to it once
+    /// there is something to count.
+    public var insightsAvailable = false
+    public var showsInsightsLink: Bool { insightsAvailable && !data.applications.isEmpty }
 
     public private(set) var nextUp: NextUp?
     public private(set) var toReview: [ReviewProposal] = []
@@ -109,6 +129,25 @@ public final class TodayModel: ScreenModel {
         self.data = data
         recompute()
         phase = .loaded
+    }
+
+    /// Runs a mutation on `data`, recomputes and hands the changed documents to `writer` as one
+    /// batch (see `TrackerBoardModel.mutate`).
+    @discardableResult
+    func mutate<Result>(_ body: (inout UserData) throws -> Result) rethrows -> Result {
+        let before = data
+        let result = try body(&data)
+        let changes = UserDataChanges(from: before, to: data)
+        if !changes.isEmpty, let writer {
+            Task { [weak self] in
+                do {
+                    try await writer.commit(changes)
+                } catch {
+                    self?.writeFailures += 1
+                }
+            }
+        }
+        return result
     }
 
     // MARK: Derived
@@ -136,14 +175,18 @@ public final class TodayModel: ScreenModel {
         data.mailAccounts.contains { $0.status == .needsReauth || $0.status == .error }
     }
 
-    /// No mail account yet: show the dismissible "Connect your email" card.
-    public var showsConnectMailCard: Bool { !hasMailAccount && !dismissed.contains(Self.connectCardID) }
+    /// No mail account yet: show the dismissible "Connect your email" card (once email is
+    /// available, M5).
+    public var showsConnectMailCard: Bool { mailAvailable && !hasMailAccount && !dismissed.contains(Self.connectCardID) }
+
+    /// Email or matching isn't switched on yet: the quiet line under Today says what will appear.
+    public var showsComingNote: Bool { !mailAvailable || !matchesAvailable }
 
     /// Everything handled: "You're all caught up."
     public var isCaughtUp: Bool { sections.isEmpty }
 
     /// Nothing to show because nothing exists yet (no mail account, no applications, no matches):
-    /// the first-use empty state ("Find jobs") instead of "You're all caught up".
+    /// the first-use empty state instead of "You're all caught up".
     public var isFirstRun: Bool {
         isCaughtUp && !hasMailAccount && data.applications.isEmpty && data.jobMatches.isEmpty
     }
@@ -283,7 +326,7 @@ public final class TodayModel: ScreenModel {
     public func confirm(_ proposalId: String) throws -> ToastItem {
         guard let proposal = toReview.first(where: { $0.id == proposalId }) else { throw UserDataError.missingMailMessage(proposalId) }
         let before = data.mailMessage(id: proposalId)
-        let event = try data.confirmReview(proposalId, at: now)
+        let event = try mutate { try $0.confirmReview(proposalId, at: writeTime) }
         recordWrite(proposalId)
         markDone(proposalId, company: proposal.company, summary: proposal.subject)
         recompute()
@@ -307,7 +350,7 @@ public final class TodayModel: ScreenModel {
     public func acknowledge(_ autoChangeId: String) -> ToastItem? {
         guard let item = autoChanges.first(where: { $0.id == autoChangeId }) else { return nil }
         let before = item.mailMessageId.flatMap { data.mailMessage(id: $0) }
-        if let messageId = item.mailMessageId { try? data.setReviewState(messageId, to: .confirmed, at: now) }
+        if let messageId = item.mailMessageId { _ = try? mutate { try $0.setReviewState(messageId, to: .confirmed, at: writeTime) } }
         recordWrite(autoChangeId)
         markDone(autoChangeId, company: item.company, summary: item.role)
         recompute()
@@ -329,7 +372,7 @@ public final class TodayModel: ScreenModel {
         guard let proposal = toReview.first(where: { $0.id == proposalId }), let before = data.mailMessage(id: proposalId) else {
             throw UserDataError.missingMailMessage(proposalId)
         }
-        try data.setReviewState(proposalId, to: .dismissed, at: now)
+        try mutate { try $0.setReviewState(proposalId, to: .dismissed, at: writeTime) }
         recordWrite(proposalId)
         markDone(proposalId, company: proposal.company, summary: proposal.subject)
         recompute()
@@ -381,7 +424,7 @@ public final class TodayModel: ScreenModel {
     /// Undoes an automatic change (reverse event; the email goes back for review).
     public func undoAutoChange(_ autoChangeId: String) throws -> ToastItem {
         guard let item = autoChanges.first(where: { $0.id == autoChangeId }) else { throw UserDataError.missingEvent(autoChangeId) }
-        try data.undoAutoChange(autoChangeId, at: now)
+        try mutate { try $0.undoAutoChange(autoChangeId, at: writeTime) }
         recordWrite(autoChangeId)
         recompute()
         let back = item.from ?? item.to
@@ -390,60 +433,111 @@ public final class TodayModel: ScreenModel {
         ))
     }
 
-    /// Hides an item until `date`. Undo brings it back.
+    /// Hides an item until `date`. A follow-up's snooze and a reminder's new date are kept on the
+    /// application; other items are snoozed on this device. Undo brings it back.
     public func snooze(_ itemId: String, until date: Date) -> ToastItem {
         let company = companyName(for: itemId)
-        snoozedUntil[itemId] = date
-        recordWrite(itemId)
+        let undo: @MainActor () -> Void
+        if let applicationId = followUpApplication(itemId) {
+            _ = try? mutate { try $0.answerSuggestion(applicationId, .followUp, .snoozed(until: date), now: writeTime) }
+            undo = { [weak self] in
+                guard let self else { return }
+                _ = try? mutate { try $0.answerSuggestion(applicationId, .followUp, nil, now: self.writeTime) }
+                recompute()
+            }
+        } else if let application = reminderApplication(itemId) {
+            let previous = application.nextActionAt
+            _ = try? mutate { try $0.setReminder(application.id, text: application.nextAction, at: date, now: writeTime) }
+            undo = { [weak self] in
+                guard let self else { return }
+                _ = try? mutate { try $0.setReminder(application.id, text: application.nextAction, at: previous, now: self.writeTime) }
+                recompute()
+            }
+        } else {
+            snoozedUntil[itemId] = date
+            recordWrite(itemId)
+            undo = { [weak self] in
+                self?.snoozedUntil[itemId] = nil
+                self?.recompute()
+            }
+        }
         recompute()
         return ToastItem(
             glyph: ToastGlyph.snoozed,
             message: .bfhr("today.toast.snoozed", default: "\(company) · snoozed", table: "Today"),
-            action: .undo { [weak self] in
-                self?.snoozedUntil[itemId] = nil
-                self?.recompute()
-            }
+            action: .undo(perform: undo)
         )
     }
 
-    /// "Not needed" for a follow-up suggestion.
+    /// "Not needed" for a follow-up suggestion: kept on the application (decisions.md F9).
     public func notNeeded(_ nudgeId: String) -> ToastItem {
         let company = companyName(for: nudgeId)
-        dismissed.insert(nudgeId)
-        recordWrite(nudgeId)
+        let applicationId = followUpApplication(nudgeId)
+        if let applicationId {
+            _ = try? mutate { try $0.answerSuggestion(applicationId, .followUp, .dismissed, now: writeTime) }
+        } else {
+            dismissed.insert(nudgeId)
+            recordWrite(nudgeId)
+        }
         markDone(nudgeId, company: CompanyIdentity(name: company), summary: "")
         recompute()
         return ToastItem(
             glyph: ToastGlyph.hidden,
             message: .bfhr("today.toast.notNeeded", default: "\(company) · follow-up not needed", table: "Today"),
             action: .undo { [weak self] in
-                self?.dismissed.remove(nudgeId)
-                self?.undoDone(nudgeId)
+                guard let self else { return }
+                if let applicationId {
+                    _ = try? mutate { try $0.answerSuggestion(applicationId, .followUp, nil, now: self.writeTime) }
+                }
+                dismissed.remove(nudgeId)
+                undoDone(nudgeId)
             }
         )
     }
 
-    /// Marks a deadline handled.
+    /// Marks a deadline handled. A reminder (next action) is cleared on the application; Undo
+    /// puts it back.
     public func markDone(deadline deadlineId: String) -> ToastItem? {
         guard let deadline = deadlines.first(where: { $0.id == deadlineId }) else { return nil }
-        dismissed.insert(deadlineId)
-        recordWrite(deadlineId)
+        let reminder = reminderApplication(deadlineId)
+        if let reminder {
+            _ = try? mutate { try $0.setReminder(reminder.id, text: nil, at: nil, now: writeTime) }
+        } else {
+            dismissed.insert(deadlineId)
+            recordWrite(deadlineId)
+        }
         markDone(deadlineId, company: deadline.company, summary: deadline.title)
         recompute()
         return ToastItem(
             glyph: ToastGlyph.confirmed,
             message: .bfhr("today.toast.done", default: "\(deadline.company.name) · done", table: "Today"),
             action: .undo { [weak self] in
-                self?.dismissed.remove(deadlineId)
-                self?.undoDone(deadlineId)
+                guard let self else { return }
+                if let reminder {
+                    _ = try? mutate { try $0.setReminder(reminder.id, text: reminder.nextAction, at: reminder.nextActionAt, now: self.writeTime) }
+                }
+                dismissed.remove(deadlineId)
+                undoDone(deadlineId)
             }
         )
+    }
+
+    /// The application of a follow-up suggestion id (`<applicationId>.followUp`).
+    private func followUpApplication(_ itemId: String) -> String? {
+        (followUps + olderFollowUps).first { $0.id == itemId }?.applicationId
+    }
+
+    /// The application whose reminder a deadline id is (`<applicationId>.nextAction`).
+    private func reminderApplication(_ itemId: String) -> Application? {
+        guard let deadline = deadlines.first(where: { $0.id == itemId }), case .nextAction = deadline.kind,
+              let applicationId = deadline.applicationId else { return nil }
+        return data.application(id: applicationId)
     }
 
     /// Saves a new match (`confirm` haptic in the view).
     public func saveMatch(_ jobId: String) -> ToastItem {
         let company = companyName(for: jobId)
-        data.setMatchState(jobId, to: .saved, at: now)
+        mutate { $0.setMatchState(jobId, to: .saved, at: writeTime) }
         recordWrite(jobId)
         recompute()
         return ToastItem(
@@ -451,7 +545,7 @@ public final class TodayModel: ScreenModel {
             message: .bfhr("today.toast.saved", default: "\(company) · saved to Jobs", table: "Today"),
             action: .undo { [weak self] in
                 guard let self else { return }
-                self.data.setMatchState(jobId, to: .new, at: self.now)
+                self.mutate { $0.setMatchState(jobId, to: .new, at: self.writeTime) }
                 self.recompute()
             }
         )
@@ -459,7 +553,7 @@ public final class TodayModel: ScreenModel {
 
     /// "Not for me" on a new match: hidden from the feed, silent.
     public func notForMe(_ jobId: String) -> ToastItem {
-        data.setMatchState(jobId, to: .dismissed, at: now)
+        mutate { $0.setMatchState(jobId, to: .dismissed, at: writeTime) }
         recordWrite(jobId)
         recompute()
         return ToastItem(
@@ -467,7 +561,7 @@ public final class TodayModel: ScreenModel {
             message: .bfhr("today.toast.hidden", default: "Hidden from your feed", table: "Today"),
             action: .undo { [weak self] in
                 guard let self else { return }
-                self.data.setMatchState(jobId, to: .new, at: self.now)
+                self.mutate { $0.setMatchState(jobId, to: .new, at: self.writeTime) }
                 self.recompute()
             }
         )

@@ -19,8 +19,10 @@ import {
   statusPhase,
   statusRank,
   suggestGhosted,
+  type SuggestionState,
   transition,
   TransitionError,
+  visibleSuggestions,
 } from "../src/index";
 
 /** Bumped when the vector file layout changes (not when the expected values change). */
@@ -510,9 +512,86 @@ function suggestionVectors() {
   };
 }
 
+interface VisibleSuggestionCase {
+  readonly name: string;
+  readonly application: Subject & SuggestionState;
+  readonly history: string;
+  readonly now: Date;
+  readonly settings: { readonly followUpAfterDays: number; readonly ghostedAfterDays: number };
+}
+
+/**
+ * `visibleSuggestions`: the user's answers on the cards (Later / Not needed / Keep waiting) over
+ * the same histories as `suggestions`.
+ */
+function visibleSuggestionVectors(histories: Readonly<Record<string, readonly ApplicationEvent[]>>) {
+  const none: SuggestionState = {
+    followUpSnoozedUntil: null,
+    followUpDismissedAt: null,
+    ghostedSnoozedUntil: null,
+    ghostedDismissedAt: null,
+  };
+  const applied: Subject = { id: "app-1", status: "applied", appliedAt: T0, statusChangedAt: T0 };
+  const states: { name: string; state: SuggestionState }[] = [
+    { name: "no answers", state: none },
+    { name: "follow-up later until day 10", state: { ...none, followUpSnoozedUntil: day(10) } },
+    { name: "follow-up not needed on day 7", state: { ...none, followUpDismissedAt: day(7) } },
+    { name: "follow-up not needed before applying", state: { ...none, followUpDismissedAt: day(-1) } },
+    { name: "no response later until day 25", state: { ...none, ghostedSnoozedUntil: day(25) } },
+    { name: "keep waiting on day 21", state: { ...none, ghostedDismissedAt: day(21) } },
+    {
+      name: "everything answered",
+      state: {
+        followUpSnoozedUntil: day(9),
+        followUpDismissedAt: day(8),
+        ghostedSnoozedUntil: day(22),
+        ghostedDismissedAt: day(23),
+      },
+    },
+  ];
+  const subjects: { name: string; application: Subject }[] = [
+    { name: "applied", application: applied },
+    { name: "screening", application: { ...applied, status: "screening" } },
+  ];
+  const settingsList = [
+    { followUpAfterDays: 7, ghostedAfterDays: 21 },
+    { followUpAfterDays: 3, ghostedAfterDays: 10 },
+  ];
+  const nows = [day(6), day(7), day(10), day(21), day(24), day(25), day(42), day(60)];
+  const cases: VisibleSuggestionCase[] = [];
+  for (const subject of subjects)
+    for (const { name, state } of states)
+      for (const history of ["no events", "follow-up sent"])
+        for (const settings of settingsList)
+          for (const now of nows)
+            cases.push({
+              name: `${subject.name}, ${name}, ${history}, ${settings.followUpAfterDays}/${settings.ghostedAfterDays} days`,
+              application: { ...subject.application, ...state },
+              history,
+              now,
+              settings,
+            });
+  return cases.map((input) => ({
+    ...input,
+    expected: visibleSuggestions(
+      input.application,
+      histories[input.history] ?? [],
+      input.now,
+      input.settings,
+    ),
+  }));
+}
+
 /** The complete vector document written to `packages/core/conformance/state-machine.json`. */
 export function buildStateMachineVectors() {
   nextEventId = 0;
+  const transitions = transitionCases();
+  const reverts = revertScenarios().map((scenario) => ({
+    ...scenario,
+    expectedCanRevert: canRevert(scenario),
+    expected: outcome(() => revert(scenario)),
+  }));
+  const suggestions = suggestionVectors();
   return {
     format: STATE_MACHINE_VECTORS_FORMAT,
     statuses: STATUSES.map((status) => ({ status, rank: statusRank(status), phase: statusPhase(status) })),
@@ -522,13 +601,10 @@ export function buildStateMachineVectors() {
         STATUSES.map((to) => ({ from, to, actor, expected: canTransition(from, to, actor) })),
       ),
     ),
-    transition: transitionCases(),
-    revert: revertScenarios().map((scenario) => ({
-      ...scenario,
-      expectedCanRevert: canRevert(scenario),
-      expected: outcome(() => revert(scenario)),
-    })),
-    suggestions: suggestionVectors(),
+    transition: transitions,
+    revert: reverts,
+    suggestions,
+    visibleSuggestions: visibleSuggestionVectors(suggestions.histories),
     matchBand: [-5, ...Array.from({ length: 101 }, (_, score) => score), 101, 150].map((score) => ({
       score,
       band: matchBand(score),

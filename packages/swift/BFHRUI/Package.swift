@@ -42,6 +42,8 @@ let package = Package(
                 .process("Resources"),
                 // One string table per screen, owned by that screen's folder.
                 .process("Today/Today.xcstrings"),
+                .process("TrackerCalendar/TrackerCalendar.xcstrings"),
+                .process("ApplicationAdd/ApplicationAdd.xcstrings"),
                 .process("JobDetail/JobDetail.xcstrings"),
                 .process("CVEditor/CVEditor.xcstrings"),
                 .process("TrackerBoard/TrackerBoard.xcstrings"),

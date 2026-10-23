@@ -16,6 +16,9 @@ struct RootView: View {
     /// Email-link sign-in and the session (ADR 0003).
     @State private var signIn = RootView.makeSignIn()
     @State private var authListener: AuthStateDidChangeListenerHandle?
+    /// Today and the Tracker on Firestore for the signed-in user (M3), shared by both tabs.
+    @State private var live: LiveUserData?
+    @State private var notifications = NotificationRouter.shared
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
@@ -36,12 +39,26 @@ struct RootView: View {
         .bfhrUpdateGate(updateGate)
         // At launch and on every return to the foreground (PRD M1-UPD-2).
         .onChange(of: scenePhase, initial: true) { _, phase in
-            guard phase == .active, RootView.readsAppConfig else { return }
-            Task { await updateGate.check(AppConfigReader.iosVersions) }
+            guard phase == .active else { return }
+            if RootView.readsAppConfig {
+                Task { await updateGate.check(AppConfigReader.iosVersions) }
+            }
+            if let live {
+                Task { await live.refreshNotifications() }
+            }
         }
         .onAppear {
             guard authListener == nil, RootView.usesFirebaseAuth else { return }
             authListener = FirebaseEmailLinkService.observe(signIn)
+        }
+        // The live data follows the session: created at sign-in, dropped (with this device's
+        // reminders) at sign-out.
+        .onChange(of: signIn.isSignedIn, initial: true) { _, _ in syncSession() }
+        // A tapped reminder notification opens its application.
+        .onChange(of: notifications.pendingLink, initial: true) { _, link in
+            guard let link else { return }
+            notifications.pendingLink = nil
+            open(link)
         }
     }
 
@@ -49,7 +66,7 @@ struct RootView: View {
         TabView(selection: $selection) {
             ForEach(AppTab.allCases) { tab in
                 Tab(tab.title, systemImage: tab.systemImage, value: tab) {
-                    TabRootView(tab: tab)
+                    TabRootView(tab: tab, live: live)
                         .onPreferenceChange(BFHRTabBadgeKey.self) { badges[tab] = $0 }
                         .bfhrUpdateBanner(updateGate)
                 }
@@ -62,8 +79,8 @@ struct RootView: View {
         // `bruteforcehr://` links opened inside the app (`@Environment(\.openURL)`) navigate here
         // directly instead of a round trip through the system; other URLs go to the system.
         .environment(\.openURL, OpenURLAction { url in
-            guard let tab = AppTab(deepLink: url) else { return .systemAction }
-            selection = tab
+            guard AppTab(deepLink: url) != nil else { return .systemAction }
+            navigate(to: url)
             return .handled
         })
     }
@@ -72,9 +89,35 @@ struct RootView: View {
     private func open(_ url: URL) {
         if SignInModel.handles(url) {
             Task { await signIn.open(url) }
-        } else if let tab = AppTab(deepLink: url) {
-            selection = tab
+        } else if AppTab(deepLink: url) != nil {
+            navigate(to: url)
         }
+    }
+
+    /// Selects the link's tab; Tracker links (applications, interviews, Log an application, the
+    /// calendar) also open their destination.
+    private func navigate(to url: URL) {
+        guard let tab = AppTab(deepLink: url) else { return }
+        selection = tab
+        if tab == .tracker, let live, let route = live.tracker.route(for: url) {
+            live.tracker.route = route
+        }
+    }
+
+    private func syncSession() {
+        #if DEBUG
+        if DesignScenario.launch != nil || DesignUpdateState.launch != nil || DesignSignInState.launch != nil { return }
+        #endif
+        let uid = signIn.isSignedIn ? Auth.auth().currentUser?.uid : nil
+        guard let uid else {
+            if live != nil { NotificationReminderScheduler.removeAll() }
+            live = nil
+            return
+        }
+        guard live?.uid != uid else { return }
+        let session = LiveUserData(uid: uid)
+        live = session
+        Task { await session.refreshNotifications() }
     }
 
     /// Release: the tabs only with a session. Debug design mode shows the fixture screens without
@@ -128,11 +171,12 @@ struct RootView: View {
     }
 }
 
-/// Root screen of one tab. The CVs tab shows live data (M2); the other tabs' screens land with
-/// their milestones (docs/STATUS.md). Debug builds launched with design arguments show the
+/// Root screen of one tab. Today, Tracker (M3) and CVs (M2) show live data; Jobs and Mail land
+/// with their milestones (docs/STATUS.md). Debug builds launched with design arguments show the
 /// fixture-backed screens instead (DesignMode.swift).
 struct TabRootView: View {
     let tab: AppTab
+    let live: LiveUserData?
     @Environment(\.bfhrAccount) private var account
 
     var body: some View {
@@ -140,18 +184,27 @@ struct TabRootView: View {
         if let scenario = DesignScenario.launch {
             DesignTabRoot(tab: tab, scenario: scenario)
         } else {
-            live
+            content
         }
         #else
-        live
+        content
         #endif
     }
 
     @ViewBuilder
-    private var live: some View {
-        if tab == .cvs, let uid = Auth.auth().currentUser?.uid {
-            CVsTabRoot(uid: uid).id(uid)
-        } else {
+    private var content: some View {
+        switch tab {
+        case .cvs:
+            if let uid = Auth.auth().currentUser?.uid {
+                CVsTabRoot(uid: uid).id(uid)
+            } else {
+                shell
+            }
+        case .today:
+            if let live { TodayTabRoot(live: live) } else { shell }
+        case .tracker:
+            if let live { TrackerTabRoot(live: live) } else { shell }
+        case .jobs, .mail:
             shell
         }
     }

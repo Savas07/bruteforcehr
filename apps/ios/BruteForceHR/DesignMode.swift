@@ -14,7 +14,7 @@ extension AppTab {
         case .today: self = .today
         case .jobDetail: self = .jobs
         case .cvEditor: self = .cvs
-        case .trackerBoard: self = .tracker
+        case .trackerBoard, .insights: self = .tracker
         case .mailReview: self = .mail
         }
     }

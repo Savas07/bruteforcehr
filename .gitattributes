@@ -1,0 +1,2 @@
+# Spreadsheet fixtures keep their exact bytes (code pages, UTF-16, CRLF)
+packages/fixtures/csv/*.csv binary

@@ -26,9 +26,16 @@ describe("BruteForceHR desktop", () => {
     await expect(browser).toHaveTitle("Today · BruteForceHR");
   });
 
-  it("lists the five M0 destinations in the sidebar", async () => {
+  it("lists the six destinations in the sidebar", async () => {
     const links = $$('nav[aria-label="Sections"] a');
-    expect(await links.map((link) => link.getText())).toEqual(["Today", "Jobs", "Tracker", "CVs", "Mail"]);
+    expect(await links.map((link) => link.getText())).toEqual([
+      "Today",
+      "Jobs",
+      "Tracker",
+      "CVs",
+      "Mail",
+      "Insights",
+    ]);
     await expect(links[0]).toHaveAttribute("aria-current", "page");
 
     const tracker = $('nav[aria-label="Sections"] a[href$="/tracker"]');
@@ -58,12 +65,13 @@ describe("BruteForceHR desktop", () => {
     expect(await browser.execute(() => window.location.hash)).toBe("#/mail");
   });
 
-  it("switches sections with Mod+1 to Mod+5", async () => {
+  it("switches sections with Mod+1 to Mod+6", async () => {
     for (const [key, title] of [
       ["2", "Jobs"],
       ["3", "Tracker"],
       ["4", "CVs"],
       ["5", "Mail"],
+      ["6", "Insights"],
       ["1", "Today"],
     ] as const) {
       await pressShortcut(key);
@@ -75,20 +83,29 @@ describe("BruteForceHR desktop", () => {
     await pressShortcut("/");
     const sheet = await $('[role="dialog"]');
     await expect(await sheet.$("h2")).toHaveText("Keyboard shortcuts");
-    expect(await sheet.$$("dt").map((label) => label.getText())).toEqual([
+    // The app-wide shortcuts come first; the open screen's own keys (Today's J/K, H, D…) follow.
+    const labels = await sheet.$$("dt").map((label) => label.getText());
+    expect(labels.slice(0, 10)).toEqual([
       "Go to Today",
       "Go to Jobs",
       "Go to Tracker",
       "Go to CVs",
       "Go to Mail",
+      "Go to Insights",
       "Open command palette",
       "Show keyboard shortcuts",
+      // Registered by the Log an application host (src/features/application-add).
+      "New application",
       // Registered by the toast host (src/shared/ui/Toast.tsx): Mod+Z undoes the latest change.
       "Undo the last change",
     ]);
+    expect(labels).toContain("Snooze");
     const modifier = isMac ? "⌘" : "Ctrl";
-    expect(await sheet.$$("dd").map((keycap) => keycap.getText())).toEqual(
-      ["1", "2", "3", "4", "5", "K", "/", "Z"].map((key) => expect.stringMatching(`${modifier}\\s*${key}`)),
+    const keycaps = await sheet.$$("dd").map((keycap) => keycap.getText());
+    expect(keycaps.slice(0, 10)).toEqual(
+      ["1", "2", "3", "4", "5", "6", "K", "/", "N", "Z"].map((key) =>
+        expect.stringMatching(`${modifier}\\s*${key}`),
+      ),
     );
 
     await browser.keys(Key.Escape);

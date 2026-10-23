@@ -49,6 +49,19 @@ export interface UserData {
   readonly devices: readonly Device[];
 }
 
+/**
+ * What tracker and Today view-models read from the profile. The app passes the defaults until the
+ * profile document exists (`profileView` in src/data/tracker/live.ts).
+ */
+export type ProfileView = Pick<Profile, "settings" | "hiddenCompanies">;
+
+/**
+ * What tracker, detail and Today builders take: the user's data with the profile reduced to
+ * `ProfileView`. A fixture `UserData` is one, and so is the app's live data
+ * (`useTrackerModel` in src/data/tracker/model.ts).
+ */
+export type ScreenData = Omit<UserData, "profile"> & { readonly profile: ProfileView };
+
 /** What every builder needs besides the data. Pure: no `Date.now()`, no ambient locale. */
 export interface ModelContext {
   /** The clock. Fixtures use `FIXTURE_NOW`, so screenshots are deterministic. */

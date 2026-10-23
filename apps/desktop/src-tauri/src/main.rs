@@ -37,7 +37,10 @@ fn main() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         // The CV export's Save dialog (src/export_file.rs), driven from Rust only; none of its JS
         // commands are granted.
-        .plugin(tauri_plugin_dialog::init());
+        .plugin(tauri_plugin_dialog::init())
+        // Interview prep reminders (src/lib/notifications.ts): the UI checks and requests the
+        // permission and sends notifications; nothing else of the plugin is granted.
+        .plugin(tauri_plugin_notification::init());
 
     // Test builds only (`pnpm build:e2e`): WebdriverIO bridge and the embedded WebDriver server.
     #[cfg(feature = "e2e")]

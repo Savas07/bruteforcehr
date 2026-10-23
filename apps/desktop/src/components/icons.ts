@@ -1,4 +1,4 @@
-import { Briefcase, FileUser, Mail, SquareKanban, Sun, type LucideIcon } from "lucide-react";
+import { Briefcase, ChartColumn, FileUser, Mail, SquareKanban, Sun, type LucideIcon } from "lucide-react";
 import type { DestinationId } from "../lib/destinations";
 
 export const destinationIcons: Record<DestinationId, LucideIcon> = {
@@ -7,4 +7,5 @@ export const destinationIcons: Record<DestinationId, LucideIcon> = {
   tracker: SquareKanban,
   cvs: FileUser,
   mail: Mail,
+  insights: ChartColumn,
 };

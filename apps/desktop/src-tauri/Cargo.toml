@@ -32,6 +32,8 @@ tauri-plugin-wdio-webdriver = { version = "1.5.0", optional = true }
 # CV export (src/export_file.rs): the native Save dialog, from Rust only; none of its JS commands
 # are granted.
 tauri-plugin-dialog = "2.8.3"
+# Interview prep reminders (src/lib/notifications.ts): opt-in, sent from the UI while the app runs.
+tauri-plugin-notification = "2.7.0"
 # CV PDF printing (src/cv_pdf.rs): the PDF's temporary directory.
 tempfile = "3.27.0"
 # save_export's percent-encoded file-name header.

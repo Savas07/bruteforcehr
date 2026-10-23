@@ -332,6 +332,16 @@ Explicitly **not stored**:
 - **Decision:** computed on the client from `applicationEvents` in v1 (works offline). Revisit above a few thousand events. The low-sample threshold is fixed at n < 5, not configurable. iOS ranges are `4W · 12W · All` and desktop ranges are `30D · 90D · 6M · 12M · All · Custom…`; the platforms differ on purpose, so each fits its width.
 - **Affects:** insights OQ4, OQ6.
 
+### D36 · Insights implementation rules (M3)
+
+- **Applied date:** the application's `appliedAt` (the spreadsheet date for CSV imports), counted only when a kept (not undone) `created` / `status_changed` event reached Applied or later, or a `created` into a closed status with `appliedAt` set. Stages reached by the `created` event itself count, but their time is unknown (excluded from medians).
+- **Mail responses (D30 rule 2) before F10:** `mail_received` events resolve their category through `evidence.mailMessageId` → `mailMessages/{id}.category`. Clients pass `mailCategories`; desktop and iOS live data don't sync mail messages yet (M5), so until then only status moves count.
+- **Market:** keyword match of `applications.location` against the target markets' countries and main cities (diacritics folded), else `remote`, else none (`@bfhr/core` `marketOf`).
+- **Funnel monotonic:** interview = reached Interviewing or later, offer = reached Offer or later.
+- **Weekly activity:** 12 weeks ending this week, independent of the range; follow-ups = `mail_sent` more than 1 h after applying; interviews = `interviews.startsAt` up to now.
+- **Drill-down URL:** `stage` (applied · responded · interview · offer · waiting · no_response · withdrawn) or `activity` (applied · follow_up · interview), `from`/`to` (YYYY-MM-DD), `source`/`channel`/`cv`/`market` (`none` = unset); resolved by `selectDrillDownIds` on both platforms.
+- **Affects:** insights, tracker (table drill-down chip), conformance `packages/core/conformance/insights.json`.
+
 ## Tracker
 
 ### D32 · No drag-to-move on iPhone in M0
@@ -341,25 +351,12 @@ Explicitly **not stored**:
 - **Why:** in the Pipeline (a `List` whose rows also carry a context menu), the long press opens the menu instead of lifting the row. Three implementations failed under XCUITest: `.draggable` on the row, `onDrag`, and `.draggable` on the row content, each with the stage strip as drop targets. Both remaining paths reach every status, work with VoiceOver and Switch Control, and go through the same state machine with Undo (critiques/ios/tracker-board r2–r4).
 - **Affects:** tracker (iOS decision, OQ5 → "no for now"), components.md `StageIndexStrip` (no drop-chip mode on iPhone).
 
-### D33 · iPhone reminders are local notifications the user sets
+### D37 · No Undo for "I followed up"
 
-- **Options:** (a) push notifications from the server for reminders and interview prep; (b) local notifications scheduled on the device from the user's own reminders; (c) also notify for follow-up suggestions.
-- **Decision:** (b), M3. A dated reminder on an application (`nextAction` + `nextActionAt`, synced) notifies at its time; interview prep ("1 hour before" / "1 day before") is chosen per round **on this device** (stored per user in `UserDefaults`, not synced). Suggestions never notify (automation never runs on clients). Permission is asked only the first time the user sets a reminder, after an in-app explainer that previews that reminder as a notification ("Turn on notifications" / "Not now"); after a refusal the reminder editor says notifications are off and links to Settings. At most 64 pending, soonest first; sign-out removes them. Tapping one opens `bruteforcehr://applications/{id}` or `interviews/{id}`.
-- **Why:** reminders are the user's own and must work offline; a server push path is M5+ (devices collection, quiet hours). Prep timing is a per-phone preference, like an alarm.
-- **Affects:** tracker (detail Reminder, Interviews), today-home (Deadlines lists the reminder), settings-account (Notifications page later lists these kinds).
-
-### D34 · iPhone Calendar is a dated agenda list
-
-- **Options:** (a) week strip + month sheet + agenda (tracker.md iOS-7); (b) the agenda list only.
-- **Decision:** (b) for M3: Tracker › Calendar (title menu and a toolbar switch) is a list grouped by day with **Upcoming · Past** (90 days). Rows: interviews (time, type · round, Add to Calendar (.ics)), reminders ("Overdue" in amber, never red), suggested follow-ups (all-day, from 7 days after applying, honouring "Not now" and snoozes) and email deadlines. Overdue reminders and due follow-ups sit on today in Upcoming. Rows open the Application detail.
-- **Why:** the agenda is what users act on (Joi, Posh, Luma); a month grid adds little at personal volume. The week strip can come later without changing the data.
-- **Affects:** tracker (iOS calendar), components.md `WeekStrip` / `MonthSheet` (deferred), `IcsExportAction` (UTC event, organiser zone in the description).
-
-### D35 · CSV import is desktop-only in v1
-
-- **Decision:** importing applications from a spreadsheet exists on desktop only (Tracker table, bulk review). iPhone offers **Log an application** for one at a time, and its empty Pipeline says "Have a spreadsheet of applications? Import it in the desktop app." Imported applications reach iPhone through Firestore like any other, with a `created` event whose reason reads "Imported from {file} · row {n}" (shown on the timeline).
-- **Why:** mapping columns and reviewing duplicates needs a large screen and a file picker the iPhone flow doesn't have; the brief puts bulk tracking on desktop (IA.md device roles).
-- **Affects:** tracker (empty state copy), flows.md §2 (Log an application), desktop tracker import.
+- **Options:** (a) Undo as a reverting event, like a status move (D11, D16); (b) no Undo: the follow-up stays on the timeline and the suggestion asks again after the next round.
+- **Decision:** (b) in M3. "I followed up" appends a user `mail_sent` event; its toast reads "Follow-up noted · {company}" with no Undo, on desktop and iPhone.
+- **Why:** `applicationEvents` are append-only and `revertsEventId` is reserved for user `status_changed` events (ADR 0002, `ApplicationEventSchema`): a reverting `mail_sent` would be refused by the schema on every shipped client, so older builds would drop the retraction and keep counting the follow-up. Allowing it is a contract change (schema rule + BFHRCore + rules tests) for a low-stakes action: a mistaken tap only moves the next follow-up suggestion by `followUpAfterDays`, and the user can still answer "Not needed" or snooze it. Revisit with M5, when follow-ups sent from the app write the same event.
+- **Affects:** today-home, tracker (application detail suggestion card), states (toast without Undo).
 
 ## Other open questions resolved
 

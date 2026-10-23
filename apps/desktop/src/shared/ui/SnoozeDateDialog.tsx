@@ -1,60 +1,64 @@
 /**
  * "Pick a date…" from the snooze menu (D19): a small modal with the platform date field. The
- * webview's native `<input type="date">` gives the locale's date order and a calendar popup.
+ * webview's native `<input type="date">` gives the locale's date order and a calendar popup. The
+ * picked day comes back as 09:00 that day in the user's zone (`snoozeDateInstant`).
  */
 import { Dialog } from "radix-ui";
-import { useId, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { defineMessages, useIntl } from "react-intl";
-import { Button } from "../../shared/ui/Button";
-import { snoozeDateInstant, type TodayModel } from "./model";
+import { snoozeDateInstant } from "../../data/tracker/snooze";
+import { Button } from "./Button";
 
 const messages = defineMessages({
-  title: { id: "today.snoozeDate.title", defaultMessage: "Snooze until…", description: "Dialog title" },
-  body: {
-    id: "today.snoozeDate.body",
-    defaultMessage: "{company} comes back to Today on this date.",
-    description: "Dialog description",
+  title: {
+    id: "shared.ui.snoozeDateDialog.title",
+    defaultMessage: "Snooze until…",
+    description: "Dialog title",
   },
-  date: { id: "today.snoozeDate.date", defaultMessage: "Date", description: "Field label" },
-  snooze: { id: "today.snoozeDate.snooze", defaultMessage: "Snooze", description: "Button" },
-  cancel: { id: "today.snoozeDate.cancel", defaultMessage: "Cancel", description: "Button" },
+  date: { id: "shared.ui.snoozeDateDialog.date", defaultMessage: "Date", description: "Field label" },
+  snooze: { id: "shared.ui.snoozeDateDialog.snooze", defaultMessage: "Snooze", description: "Button" },
+  cancel: { id: "shared.ui.snoozeDateDialog.cancel", defaultMessage: "Cancel", description: "Button" },
   pickFirst: {
-    id: "today.snoozeDate.pickFirst",
+    id: "shared.ui.snoozeDateDialog.pickFirst",
     defaultMessage: "Choose a date first.",
     description: "Why Snooze is disabled",
   },
   tooEarly: {
-    id: "today.snoozeDate.tooEarly",
+    id: "shared.ui.snoozeDateDialog.tooEarly",
     defaultMessage: "Pick tomorrow or a later day. For today, use Later today.",
     description: "Why Snooze is disabled when the chosen date is today or in the past",
   },
 });
 
 export function SnoozeDateDialog({
-  company,
-  snoozeDate,
+  description,
+  min,
+  timeZone,
   open,
   onOpenChange,
   onSnooze,
 }: {
-  /** Company of the item being snoozed. */
-  company: string;
-  /** Earliest day and the user's zone, from the model (`TodayModel.snoozeDate`). */
-  snoozeDate: TodayModel["snoozeDate"];
+  /** What comes back, and where ("Acme comes back to Today on this date."). */
+  description: string;
+  /** Earliest day the field allows: tomorrow as `YYYY-MM-DD` in the user's zone (`zonedIsoDay`). */
+  min: string;
+  /** The user's zone, in which the picked day is read. */
+  timeZone: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** 09:00 on the chosen day in the user's zone. */
+  /** 09:00 on the chosen day in `timeZone`. */
   onSnooze: (date: Date) => void;
 }) {
   const intl = useIntl();
   const fieldId = useId();
   const [value, setValue] = useState("");
-  const at = snoozeDateInstant(value, snoozeDate.timeZone);
+  const opener = useRef<HTMLElement | null>(null);
+  const at = snoozeDateInstant(value, timeZone);
   // Typed dates can bypass `min` in some engines; ISO day strings compare in calendar order.
   const disabledReason =
     at === null
       ? intl.formatMessage(messages.pickFirst)
-      : value < snoozeDate.min
+      : value < min
         ? intl.formatMessage(messages.tooEarly)
         : null;
   const submit = () => {
@@ -66,14 +70,24 @@ export function SnoozeDateDialog({
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay className="bg-surface-scrim fixed inset-0 z-(--bfhr-layer-modal)" />
-        <Dialog.Content className="bg-surface-elevated shadow-modal fixed top-1/2 left-1/2 z-(--bfhr-layer-modal) flex w-[min(400px,calc(100vw-32px))] -translate-x-1/2 -translate-y-1/2 flex-col gap-4 rounded-lg p-5">
+        <Dialog.Content
+          // No Radix trigger opens this dialog (it comes from the snooze menu): remember what had
+          // focus when it opened (the menu's trigger) and go back there when it closes.
+          onOpenAutoFocus={() => {
+            opener.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+          }}
+          onCloseAutoFocus={(event) => {
+            if (!opener.current?.isConnected) return;
+            event.preventDefault();
+            opener.current.focus();
+          }}
+          className="bg-surface-elevated shadow-modal fixed top-1/2 left-1/2 z-(--bfhr-layer-modal) flex w-[min(400px,calc(100vw-32px))] -translate-x-1/2 -translate-y-1/2 flex-col gap-4 rounded-lg p-5"
+        >
           <div>
             <Dialog.Title className="font-display text-title3">
               {intl.formatMessage(messages.title)}
             </Dialog.Title>
-            <Dialog.Description className="text-fg-secondary mt-1 text-callout">
-              {intl.formatMessage(messages.body, { company })}
-            </Dialog.Description>
+            <Dialog.Description className="text-fg-secondary mt-1 text-callout">{description}</Dialog.Description>
           </div>
           <form
             className="flex flex-col gap-4"
@@ -91,7 +105,7 @@ export function SnoozeDateDialog({
                 type="date"
                 value={value}
                 onChange={(event) => setValue(event.target.value)}
-                min={snoozeDate.min}
+                min={min}
                 className="bg-surface-base border-line-control text-callout text-fg-primary h-8 rounded-md border px-2"
               />
             </div>

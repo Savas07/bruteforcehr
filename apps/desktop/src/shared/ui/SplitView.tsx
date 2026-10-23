@@ -241,14 +241,14 @@ export function SplitView({
   );
 }
 
-export interface DetailPanelNav {
-  /** 1-based position and total in the scope, for "3 of 12 in Interviewing". */
-  position: number;
-  total: number;
-  scopeLabel: string;
+/**
+ * Prev / next in the panel's scope: 1-based `position` of `total` in `scopeLabel` ("3 of 12 in
+ * Interviewing"), or a `label` the host already worded the same way.
+ */
+export type DetailPanelNav = {
   onPrevious: () => void;
   onNext: () => void;
-}
+} & ({ position: number; total: number; scopeLabel: string } | { label: string });
 
 /**
  * Right-docked detail panel (Tracker Enter, Jobs pop-out source): resizable within `width`
@@ -363,11 +363,13 @@ export function DetailSidePanel({
                 onClick={nav.onNext}
               />
               <span className="text-fg-secondary px-1 text-footnote tabular-nums">
-                {intl.formatMessage(messages.position, {
-                  position: nav.position,
-                  total: nav.total,
-                  scope: nav.scopeLabel,
-                })}
+                {"label" in nav
+                  ? nav.label
+                  : intl.formatMessage(messages.position, {
+                      position: nav.position,
+                      total: nav.total,
+                      scope: nav.scopeLabel,
+                    })}
               </span>
             </>
           )}

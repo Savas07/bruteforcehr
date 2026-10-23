@@ -1,6 +1,6 @@
 import { CalendarClock, CalendarDays, Clock, Sunrise, type LucideIcon } from "lucide-react";
 import { DropdownMenu } from "radix-ui";
-import { useState, type ReactElement } from "react";
+import { useRef, useState, type ReactElement } from "react";
 import { defineMessages, type MessageDescriptor, useIntl } from "react-intl";
 import { MenuContent, MenuItem } from "./Menu";
 
@@ -68,12 +68,22 @@ export interface SnoozeMenuProps {
 export function SnoozeMenu({ trigger, onSnooze, align = "start", open, onOpenChange }: SnoozeMenuProps) {
   const intl = useIntl();
   const [innerOpen, setInnerOpen] = useState(false);
+  // "Pick a date…" opens the screen's dialog only once the menu has closed and given focus back
+  // to the trigger: opened earlier, the menu's focus restore lands behind the dialog (WebKit) and
+  // the dialog has no opener to return to.
+  const pickDateOnClose = useRef(false);
   const setOpen = (next: boolean) => {
     setInnerOpen(next);
     onOpenChange?.(next);
   };
+  const choose = (preset: SnoozePreset) => {
+    if (preset === "pickDate") pickDateOnClose.current = true;
+    else onSnooze(preset);
+  };
   return (
-    <DropdownMenu.Root open={open ?? innerOpen} onOpenChange={setOpen}>
+    // Non-modal (APG menu button): Radix's modal mode marks the app aria-hidden while it still
+    // holds focusable content (axe aria-hidden-focus); Tab stays blocked inside the menu.
+    <DropdownMenu.Root modal={false} open={open ?? innerOpen} onOpenChange={setOpen}>
       <DropdownMenu.Trigger asChild>{trigger}</DropdownMenu.Trigger>
       <MenuContent
         align={align}
@@ -84,7 +94,12 @@ export function SnoozeMenu({ trigger, onSnooze, align = "start", open, onOpenCha
           if (preset === undefined) return;
           event.preventDefault();
           setOpen(false);
-          onSnooze(preset);
+          choose(preset);
+        }}
+        onCloseAutoFocus={() => {
+          if (!pickDateOnClose.current) return;
+          pickDateOnClose.current = false;
+          onSnooze("pickDate");
         }}
       >
         {PRESETS.map((preset, index) => (
@@ -92,7 +107,7 @@ export function SnoozeMenu({ trigger, onSnooze, align = "start", open, onOpenCha
             key={preset}
             icon={presetIcon[preset]}
             shortcut={String(index + 1)}
-            onSelect={() => onSnooze(preset)}
+            onSelect={() => choose(preset)}
           >
             {intl.formatMessage(SNOOZE_PRESET_MESSAGES[preset])}
           </MenuItem>

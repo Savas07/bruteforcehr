@@ -217,9 +217,18 @@ importers:
       '@tanstack/react-router':
         specifier: ^1.170.45
         version: 1.170.45(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+      '@tanstack/react-table':
+        specifier: ^9.3.1
+        version: 9.3.1(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+      '@tanstack/react-virtual':
+        specifier: ^3.14.22
+        version: 3.14.22(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@tauri-apps/api':
         specifier: ^2.12.4
         version: 2.12.4
+      '@tauri-apps/plugin-notification':
+        specifier: 2.7.0
+        version: 2.7.0
       cmdk:
         specifier: ^1.1.1
         version: 1.1.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
@@ -3244,12 +3253,31 @@ packages:
       react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
       react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
 
+  '@tanstack/react-table@9.3.1':
+    resolution: {integrity: sha512-E6Ya5TnY6EaGyZYIUqig/29Lr/gJSAubQkLJFqiWkUl5nRCr0Xr9hvJot+NiRTtG+TzGxHTiqUW3bnLtQxlHug==}
+    engines: {node: '>=20'}
+    peerDependencies:
+      react: '>=18'
+
+  '@tanstack/react-virtual@3.14.22':
+    resolution: {integrity: sha512-zNiB9IF3prySTfAUrj9tPHjD/lonBYkfxrPP4v4ITUx+qwHajJR5cY/xirjvwc+KWkur10GX3TpsbKh7JkD8Lw==}
+    peerDependencies:
+      react: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
+      react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
+
   '@tanstack/router-core@1.171.38':
     resolution: {integrity: sha512-XRZVxiO6BIexICmEo3XfPmpoyyLhbjgaMJsONz4gIf5oYys0UiaG1BJGRyj9x8QZPDZcBhvAMuTYN70wSxV0gA==}
     engines: {node: '>=20.19'}
 
   '@tanstack/store@0.11.2':
     resolution: {integrity: sha512-sJ4mjol8uQsHV0gOJzzjwXfh2Fwm+Sz0+8deqiTm4jGbMdjzNSW+xZCFm0kUa870uhd8yi+DpKnZb5Kc4apa0Q==}
+
+  '@tanstack/table-core@9.3.1':
+    resolution: {integrity: sha512-zQvlxSNi2qGM3L4jh85Z6hqMfdIR5qOfD9KHOU32nuKFJGN0RlJ7UvV1lsPb1fPVhpFYI0VP3jJGxLdLDpTKjQ==}
+    engines: {node: '>=20'}
+
+  '@tanstack/virtual-core@3.19.7':
+    resolution: {integrity: sha512-gxy5SvH0mFRJ0YujtrflB/1HAu9Wn1KGvL0bjZfQkYVVMsIpQiwcf1mR06/ViN4NjllUb4HNCjqE9FGwgTvMCQ==}
 
   '@tauri-apps/api@2.12.1':
     resolution: {integrity: sha512-DeyFHa3wynpyoqTDikDEDGTJIq4LQ5USfolQGRmGIWT6JMADyxZBTDa5cAdT3tDg73rUXufPaCwN7aXBos4OnQ==}
@@ -3335,6 +3363,9 @@ packages:
 
   '@tauri-apps/plugin-log@2.10.0':
     resolution: {integrity: sha512-IHMspJx/fDA+8q8O6MTbrKffkemSDa1I5iXRhnLrLVnOd7xK4bAosyQbWcjnpPA7E+c6BMkpsE2kESHhkiBrDg==}
+
+  '@tauri-apps/plugin-notification@2.7.0':
+    resolution: {integrity: sha512-kgdHCPSY/3GIi4gSWuLfd3y555U0kwzP0PmnUjT+sGhgO7RdAM6goFjDqayRaKC8yA5oEYi7w2NnA3oQxIjldw==}
 
   '@tootallnate/quickjs-emscripten@0.23.0':
     resolution: {integrity: sha512-C5Mc6rdnsaJDjO3UpGW/CQTHtCKaYlScZTly4JIu97Jxo/odCiH0ITnDXSJPTOrEKk/ycSZ0AOgTmkDtkOsvIA==}
@@ -11162,6 +11193,20 @@ snapshots:
       react-dom: 19.3.1(react@19.3.1)
       use-sync-external-store: 1.7.0(react@19.3.1)
 
+  '@tanstack/react-table@9.3.1(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
+    dependencies:
+      '@tanstack/react-store': 0.11.2(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+      '@tanstack/table-core': 9.3.1
+      react: 19.3.1
+    transitivePeerDependencies:
+      - react-dom
+
+  '@tanstack/react-virtual@3.14.22(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
+    dependencies:
+      '@tanstack/virtual-core': 3.19.7
+      react: 19.3.1
+      react-dom: 19.3.1(react@19.3.1)
+
   '@tanstack/router-core@1.171.38':
     dependencies:
       '@tanstack/history': 1.162.5
@@ -11170,6 +11215,12 @@ snapshots:
       seroval-plugins: 1.6.11(seroval@1.6.11)
 
   '@tanstack/store@0.11.2': {}
+
+  '@tanstack/table-core@9.3.1':
+    dependencies:
+      '@tanstack/store': 0.11.2
+
+  '@tanstack/virtual-core@3.19.7': {}
 
   '@tauri-apps/api@2.12.1': {}
 
@@ -11223,6 +11274,10 @@ snapshots:
       '@tauri-apps/cli-win32-x64-msvc': 2.12.4
 
   '@tauri-apps/plugin-log@2.10.0':
+    dependencies:
+      '@tauri-apps/api': 2.12.4
+
+  '@tauri-apps/plugin-notification@2.7.0':
     dependencies:
       '@tauri-apps/api': 2.12.4
 

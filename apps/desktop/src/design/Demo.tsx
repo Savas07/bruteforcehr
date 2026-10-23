@@ -3,7 +3,7 @@
  * with the shared components, in every forced state. It is not Today's design (that comes from the
  * Today screen agent in `src/features/today/Screen.tsx`).
  */
-import { CalendarClock, Inbox, Mail, Video } from "lucide-react";
+import { Briefcase, CalendarClock, Inbox, Video } from "lucide-react";
 import { useRef, useState } from "react";
 import { defineMessages, useIntl } from "react-intl";
 import type { AttentionItemVM, TodayModel } from "../features/today/model";
@@ -268,16 +268,13 @@ function TodayDemo({ model }: ScreenProps<TodayModel>) {
   } else if (ready && ready.items.length === 0) {
     list = (
       <div className="px-6">
-        {ready.firstUse?.connectMail ? (
+        {ready.firstUse ? (
           <EmptyState
             kind="firstUse"
-            glyph={Mail}
-            title={ready.firstUse.connectMail.message}
-            body={ready.firstUse.connectMail.estimate}
-            primary={{ label: ready.firstUse.connectMail.actionLabel, onClick: () => undefined }}
-            {...(ready.firstUse.findJobs && {
-              secondary: { label: ready.firstUse.findJobs.actionLabel, onClick: () => undefined },
-            })}
+            glyph={Briefcase}
+            title={ready.firstUse.title}
+            body={ready.firstUse.body}
+            primary={{ label: ready.firstUse.actionLabel, onClick: () => undefined }}
           />
         ) : (
           <EmptyState kind="caughtUp" glyph={Inbox} body={ready.caughtUp?.message ?? ""} />

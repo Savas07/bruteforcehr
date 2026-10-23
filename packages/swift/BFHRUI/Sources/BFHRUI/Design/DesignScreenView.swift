@@ -29,7 +29,15 @@ public struct DesignScreenView: View {
             case .today(let model): TodayScreen(model: model)
             case .jobDetail(let model): JobDetailScreen(model: model)
             case .cvEditor(let model): CVEditorScreen(model: model)
-            case .trackerBoard(let model): TrackerBoardScreen(model: model)
+            case .trackerBoard(let model, let insights):
+                TrackerBoardScreen(model: model) {
+                    InsightsScreen(model: insights) { drill in
+                        let filter = insights.trackerFilter(for: drill)
+                        model.applyFilter(ids: filter.ids, label: filter.label)
+                        model.showsInsights = false
+                    }
+                }
+            case .insights(let model): InsightsScreen(model: model) { _ in }
             case .mailReview(let model): MailReviewScreen(model: model)
             }
         }
@@ -55,11 +63,19 @@ public struct DesignScreenView: View {
 
 /// Keeps the screen's model alive across view updates.
 private final class ModelHolder {
+    /// The Tracker with Insights behind its toolbar button; `-BFHRScreen insights` opens it pushed.
+    private static func tracker(_ scenario: DesignScenario) -> Model {
+        let tracker = scenario.trackerBoardModel()
+        tracker.showsInsights = scenario.screen == .insights
+        return .trackerBoard(tracker, scenario.insightsModel())
+    }
+
     enum Model {
         case today(TodayModel)
         case jobDetail(JobDetailModel)
         case cvEditor(CVEditorModel)
-        case trackerBoard(TrackerBoardModel)
+        case trackerBoard(TrackerBoardModel, InsightsModel)
+        case insights(InsightsModel)
         case mailReview(MailReviewModel)
     }
 
@@ -72,7 +88,8 @@ private final class ModelHolder {
         case .today: .today(scenario.todayModel())
         case .jobDetail: .jobDetail(scenario.jobDetailModel())
         case .cvEditor: .cvEditor(scenario.cvEditorModel())
-        case .trackerBoard: .trackerBoard(scenario.trackerBoardModel())
+        case .trackerBoard: Self.tracker(scenario)
+        case .insights: .insights(scenario.insightsModel())
         case .mailReview: .mailReview(scenario.mailReviewModel())
         }
     }

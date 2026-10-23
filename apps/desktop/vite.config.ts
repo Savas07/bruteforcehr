@@ -15,6 +15,8 @@ import { defineConfig } from "vite";
  */
 export default defineConfig(({ mode }) => ({
   plugins: [react(), tailwindcss()],
+  // Spreadsheet samples the design build imports as bytes (`?inline`, src/design/tracker-views.tsx).
+  assetsInclude: ["**/*.csv"],
   clearScreen: false,
   define: {
     __BFHR_DESIGN__: JSON.stringify(mode === "design" || mode === "design-e2e"),

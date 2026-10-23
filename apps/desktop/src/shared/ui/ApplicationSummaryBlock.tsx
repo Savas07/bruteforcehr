@@ -36,6 +36,11 @@ export interface ApplicationSummaryBlockProps {
   onOpenCoverLetter?: (coverLetterId: string) => void;
   /** Heading level of "Application": 2 in a side panel, 3 under a section heading. */
   headingLevel?: 2 | 3;
+  /**
+   * The host page already shows the status and the documents used (the application's own page):
+   * leave those rows out so they aren't said twice in different words. Default false.
+   */
+  trackedElsewhere?: boolean;
   className?: string;
 }
 
@@ -49,6 +54,7 @@ export function ApplicationSummaryBlock({
   onOpenCv,
   onOpenCoverLetter,
   headingLevel = 2,
+  trackedElsewhere = false,
   className,
 }: ApplicationSummaryBlockProps) {
   const headingId = useId();
@@ -70,10 +76,14 @@ export function ApplicationSummaryBlock({
         {intl.formatMessage(messages.heading)}
       </Heading>
       <dl className="text-callout grid grid-cols-[max-content_1fr] items-baseline gap-x-4 gap-y-2">
-        <dt className="text-fg-secondary">{intl.formatMessage(messages.status)}</dt>
-        <dd>
-          <StatusPill status={summary.status} size="sm" />
-        </dd>
+        {!trackedElsewhere && (
+          <>
+            <dt className="text-fg-secondary">{intl.formatMessage(messages.status)}</dt>
+            <dd>
+              <StatusPill status={summary.status} size="sm" />
+            </dd>
+          </>
+        )}
         <dt className="text-fg-secondary">{intl.formatMessage(messages.appliedVia)}</dt>
         <dd className={summary.channel === null ? "text-fg-tertiary" : "text-fg-primary"}>
           {summary.channel ?? intl.formatMessage(messages.notRecorded)}
@@ -86,7 +96,7 @@ export function ApplicationSummaryBlock({
             <span className="text-fg-tertiary">{intl.formatMessage(messages.notYet)}</span>
           )}
         </dd>
-        {documents.map(({ key, term, doc, open }) => (
+        {(trackedElsewhere ? [] : documents).map(({ key, term, doc, open }) => (
           <div key={key} className="contents">
             <dt className="text-fg-secondary">{term}</dt>
             <dd className="min-w-0">

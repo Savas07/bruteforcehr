@@ -1,13 +1,15 @@
+import BFHRCore
 import BFHRUI
 import SwiftUI
 
-/// Today and the Tracker on live data (M3): one Firestore store feeds both screen models, so a
-/// change made in one shows in the other at once. One instance per signed-in user, kept by
+/// Today, the Tracker and Insights on live data (M3): one Firestore store feeds every screen model,
+/// so a change made in one shows in the others at once. One instance per signed-in user, kept by
 /// `RootView` for the session.
 @MainActor
 final class LiveUserData {
     let today: TodayModel
     let tracker: TrackerBoardModel
+    let insights: InsightsModel
     private(set) var store: FirestoreUserDataStore
     let uid: String
     private let scheduler = NotificationReminderScheduler()
@@ -24,6 +26,13 @@ final class LiveUserData {
         tracker.reminderScheduler = scheduler
         tracker.restore(Self.preferences(uid))
         tracker.onPreferencesChange = { [uid] preferences in Self.save(preferences, uid: uid) }
+        insights = InsightsModel(now: .now)
+        if let range = UserDefaults.standard.string(forKey: Self.insightsRangeKey).flatMap(InsightsRangePreset.init(rawValue:)),
+           InsightsRangePreset.ios.contains(range) {
+            insights.range = range
+        }
+        insights.onRangeChange = { range in UserDefaults.standard.set(range.rawValue, forKey: Self.insightsRangeKey) }
+        today.insightsAvailable = true
         store = FirestoreUserDataStore(uid: uid)
         connect()
         // Relative times ("Tomorrow, 09:00", "Overdue") and suggestions follow the clock; the
@@ -34,6 +43,7 @@ final class LiveUserData {
                 guard let self else { return }
                 today.now = .now
                 tracker.now = .now
+                insights.now = .now
             }
         }
     }
@@ -53,10 +63,13 @@ final class LiveUserData {
     private func connect() {
         today.writer = store
         tracker.writer = store
-        store.start([today, tracker])
+        store.start([today, tracker, insights])
     }
 
     // MARK: Device preferences
+
+    /// Insights' range (`4w`, `12w`, `all`), per device (research/insights.md "RangePicker").
+    private static let insightsRangeKey = "insights.range"
 
     private static func key(_ uid: String) -> String { "tracker.devicePreferences.\(uid)" }
 
@@ -106,7 +119,19 @@ struct TrackerTabRoot: View {
 
     var body: some View {
         NavigationStack {
-            TrackerBoardScreen(model: live.tracker)
+            TrackerBoardScreen(model: live.tracker) {
+                InsightsScreen(model: live.insights) { drill in
+                    // A number in Insights opens the Pipeline filtered to those applications.
+                    let filter = live.insights.trackerFilter(for: drill)
+                    live.tracker.applyFilter(ids: filter.ids, label: filter.label)
+                    live.tracker.showsInsights = false
+                }
+                .onChange(of: live.tracker.insightsRange, initial: true) { _, range in
+                    guard range != nil else { return }
+                    live.insights.applyLinkRange(range)
+                    live.tracker.insightsRange = nil
+                }
+            }
                 .navigationBarTitleDisplayMode(.large)
                 .accessibilityIdentifier("screen.tracker")
                 .toolbar {

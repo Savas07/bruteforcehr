@@ -140,9 +140,10 @@ jobs:
             fi
             echo "Draft $TAG exists in $GH_REPO."
           else
-            # No --target: the tag is created on the releases repo's default branch when `publish`
-            # publishes the draft (the source commit doesn't exist there).
-            flags=(--draft --title "BruteForceHR $VERSION" --notes-file "$RUNNER_TEMP/notes.md")
+            # --target: the tag is created on the releases repo's default branch when `publish`
+            # publishes the draft (the source commit doesn't exist there). Without it, gh sees the
+            # checkout's local tag and refuses ("tag exists locally but has not been pushed").
+            flags=(--draft --target main --title "BruteForceHR $VERSION" --notes-file "$RUNNER_TEMP/notes.md")
             if [ "$CHANNEL" = beta ]; then flags+=(--prerelease); fi
             gh release create "$TAG" "${flags[@]}"
           fi

@@ -130,8 +130,9 @@ function cvDocument(input: CvRenderInput): Document {
     if (head.photo) {
       const bytes = base64Bytes(head.photo.slice(head.photo.indexOf(",") + 1));
       const size = imageSize(bytes);
-      const width = 113; // 30 mm at 96 dpi
-      const height = size && size.width > 0 ? Math.round((width * size.height) / size.width) : 151;
+      // 30 mm wide (24 mm in compact) at 96 dpi, the HTML photo slot.
+      const width = Math.round(((compact ? 24 : 30) / 25.4) * 96);
+      const height = size && size.width > 0 ? Math.round((width * size.height) / size.width) : Math.round((width * 4) / 3);
       children.push(
         new Paragraph({
           alignment: AlignmentType.RIGHT,

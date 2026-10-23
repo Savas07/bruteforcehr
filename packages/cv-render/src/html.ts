@@ -85,24 +85,29 @@ function entryHtml(entry: DocEntry, templateId: TemplateId): string {
 }
 
 function sectionHtml(section: DocSection, templateId: TemplateId, heading: string): string {
-  let body: string;
+  let items: string[];
   if (section.kind === "text") {
-    body = `<div class="cv-text"${at(section.text.path)}>${paragraphs(section.text)}</div>`;
+    items = [`<div class="cv-text"${at(section.text.path)}>${paragraphs(section.text)}</div>`];
   } else if (section.kind === "lines") {
-    body = `<div class="cv-lines">${section.lines
-      .map((line) => {
-        const label = line.label
-          ? `<span class="cv-line-label"${at(line.label.path)}>${inline(line.label.text)}${line.text ? ":" : ""}</span>`
-          : "";
-        const text = line.text ? `${label ? " " : ""}<span${at(line.text.path)}>${inline(line.text.text)}</span>` : "";
-        return `<p${at(line.path)}>${label}${text}</p>`;
-      })
-      .join("")}</div>`;
+    const lines = section.lines.map((line) => {
+      const label = line.label
+        ? `<span class="cv-line-label"${at(line.label.path)}>${inline(line.label.text)}${line.text ? ":" : ""}</span>`
+        : "";
+      const text = line.text ? `${label ? " " : ""}<span${at(line.text.path)}>${inline(line.text.text)}</span>` : "";
+      return `<p${at(line.path)}>${label}${text}</p>`;
+    });
+    items = [`<div class="cv-lines">${lines.join("")}</div>`];
   } else {
-    body = section.entries.map((entry) => entryHtml(entry, templateId)).join("");
+    items = section.entries.map((entry) => entryHtml(entry, templateId));
   }
   const key = escapeHtml(section.key);
-  return `<section class="cv-section" data-cv-section="${key}"${at(section.path)}><h2 class="cv-heading">${escapeHtml(heading)}</h2>${body}</section>`;
+  // The heading and the first item share an unbreakable box: WebKit ignores `break-after: avoid`,
+  // and a heading stranded at the foot of a page is the classic CV print bug.
+  const [first = "", ...rest] = items;
+  return (
+    `<section class="cv-section" data-cv-section="${key}"${at(section.path)}>` +
+    `<div class="cv-keep"><h2 class="cv-heading">${escapeHtml(heading)}</h2>${first}</div>${rest.join("")}</section>`
+  );
 }
 
 /**

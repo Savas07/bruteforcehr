@@ -26,6 +26,7 @@ import { CvConflictError, type CvStudioBackend } from "./backend";
 import { changedSections, draftToContent, sameContent } from "./content";
 import type { CvDraft } from "./draft";
 import type { CvEditorVM } from "./model";
+import { trace } from "../../lib/e2eTrace";
 
 /** Quiet time that ends an editing session. */
 export const SESSION_IDLE_MS = 20_000;
@@ -147,14 +148,27 @@ export class CvSessionStore {
       !session.own.has(editor.currentRevisionId) &&
       session.conflict?.theirsRevisionId !== editor.currentRevisionId;
     if (remote) {
+      trace("SESSION remote", {
+        editorCurrent: editor.currentRevisionId,
+        editorVersion: editor.version,
+        head: session.headRevisionId,
+        own: [...session.own],
+        dirty: session.dirty,
+        status: session.status,
+        conflictTheirs: session.conflict?.theirsRevisionId ?? null,
+        hasContent: Boolean(editor.revisionContents[editor.currentRevisionId]),
+        draftSummary: session.draft.summary,
+      });
       if (session.dirty || session.status === "saving") {
         session.conflict = {
           theirsRevisionId: editor.currentRevisionId,
           orphanRevisionId: session.conflict?.orphanRevisionId ?? null,
           ours: contentOf(session),
         };
+        trace("SESSION conflict(view)", { theirs: editor.currentRevisionId, oursSummary: session.conflict.ours.basics?.summary ?? null });
         this.refresh(session, false);
       } else if (editor.revisionContents[editor.currentRevisionId]) {
+        trace("SESSION fresh(view)", editor.currentRevisionId);
         session = this.fresh(editor, editor.currentRevisionId);
         this.sessions.set(editor.cvId, session);
       }
@@ -167,6 +181,7 @@ export class CvSessionStore {
     const session = this.sessions.get(cvId);
     if (!session) return;
     session.draft = update(session.draft);
+    trace("SESSION edit", { summary: session.draft.summary, status: session.status });
     this.touched(session);
   }
 
@@ -182,6 +197,7 @@ export class CvSessionStore {
     const session = this.sessions.get(cvId);
     if (!session) return;
     window.clearTimeout(session.idleTimer);
+    trace("SESSION commit", { dirty: session.dirty, conflict: session.conflict?.theirsRevisionId ?? null });
     if (!session.dirty || session.conflict) return;
     const content = contentOf(session);
     const previous = this.editors.get(cvId)?.revisionContents[session.headRevisionId];
@@ -380,17 +396,21 @@ export class CvSessionStore {
       source,
       diffSummary,
     });
+    trace("SESSION write", { id: ids.revisionId, version: session.version, basedOn, previousHead: session.headRevisionId, summary: content.basics?.summary ?? null });
     session.own.add(ids.revisionId);
     session.headRevisionId = ids.revisionId;
     session.version += 1;
     session.status = "saving";
     this.refresh(session);
+    trace("SESSION write emitted", { id: ids.revisionId, conflict: session.conflict?.theirsRevisionId ?? null });
     done.then(
       () => {
+        trace("SESSION write done", ids.revisionId);
         if (session.headRevisionId === ids.revisionId && !session.dirty) session.status = "saved";
         this.refresh(session);
       },
       (error: unknown) => {
+        trace("SESSION write failed", ids.revisionId, String(error), error instanceof Error && "code" in error ? String(error.code) : null);
         session.own.delete(ids.revisionId);
         this.failed(session, error, content);
       },

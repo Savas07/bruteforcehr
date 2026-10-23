@@ -19,6 +19,7 @@ import {
 import { useEffect, useState } from "react";
 import { converters } from "../../data/converters";
 import { firestore } from "../../lib/firebaseServices";
+import { trace } from "../../lib/e2eTrace";
 import {
   CvConflictError,
   mirroredDesign,
@@ -237,6 +238,7 @@ export function useLiveCvData(uid: string): LiveCvState {
             if (revision) value.push(revision);
             if (document.metadata.hasPendingWrites) pending.add(document.id);
           }
+          trace("SNAP revisions", cvId, { ids: snapshot.docs.map((document) => document.id), pending: [...pending], cache: snapshot.metadata.fromCache });
           snapshots.revisions.set(cvId, { value, pending, cache: snapshot.metadata.fromCache });
           publish();
         },
@@ -271,6 +273,11 @@ export function useLiveCvData(uid: string): LiveCvState {
           if (document.metadata.hasPendingWrites) pending.add(document.id);
           listenRevisions(document.id);
         }
+        trace(
+          "SNAP cvs",
+          value.map((cv) => ({ id: cv.id, current: cv.currentRevisionId, version: cv.version, pending: pending.has(cv.id) })),
+          { cache: snapshot.metadata.fromCache, pendingWrites: snapshot.metadata.hasPendingWrites },
+        );
         snapshots.cvs = { value, pending, cache: snapshot.metadata.fromCache };
         publish();
       },

@@ -6,10 +6,12 @@
  * ADR 0002). Test builds (`__BFHR_E2E__`) talk to the emulators started by
  * scripts/with-emulators.sh (firebase.json `emulators`).
  */
-import { connectFirestoreEmulator, type Firestore, initializeFirestore, persistentLocalCache, persistentSingleTabManager } from "firebase/firestore";
+import { connectFirestoreEmulator, type Firestore, initializeFirestore, persistentLocalCache, persistentSingleTabManager, setLogLevel } from "firebase/firestore";
+import { onLog } from "firebase/app";
 import { connectFunctionsEmulator, type Functions, getFunctions } from "firebase/functions";
 import { connectStorageEmulator, type FirebaseStorage, getStorage } from "firebase/storage";
 import { firebaseApp } from "./firebase";
+import { trace } from "./e2eTrace";
 
 /** Cloud Functions region (kickoff: europe-west1). */
 export const FUNCTIONS_REGION = "europe-west1";
@@ -26,7 +28,17 @@ export function firestore(): Firestore {
   firestoreInstance = initializeFirestore(firebaseApp(), {
     localCache: persistentLocalCache({ tabManager: persistentSingleTabManager(undefined) }),
   });
-  if (__BFHR_E2E__) connectFirestoreEmulator(firestoreInstance, EMULATOR_HOST, EMULATOR_PORTS.firestore);
+  if (__BFHR_E2E__) {
+    connectFirestoreEmulator(firestoreInstance, EMULATOR_HOST, EMULATOR_PORTS.firestore);
+    setLogLevel("debug");
+    onLog(
+      (entry) => {
+        if (entry.type !== "@firebase/firestore") return;
+        trace("FS", entry.level, entry.message.replace(/^Firestore \([^)]*\): /u, ""));
+      },
+      { level: "debug" },
+    );
+  }
   return firestoreInstance;
 }
 

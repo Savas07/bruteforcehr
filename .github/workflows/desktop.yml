@@ -71,7 +71,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-latest, windows-latest]
+        os: [macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v7
@@ -100,30 +100,6 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: apps/desktop/src-tauri
-
-      - name: Rust format, lint, unit tests
-        run: |
-          pnpm format:rust
-          pnpm lint:rust
-          pnpm test:rust
-
-      # Production bundles: macOS .app + .dmg, Windows NSIS (x64), unsigned. Without the updater's
-      # signatures: the private key is a release-only secret (release.yml builds the signed ones).
-      - name: Bundle
-        run: |
-          flags=(--config src-tauri/tauri.unsigned.conf.json)
-          # macOS: actool crashes on the .icon when tauri starts it on the runners; precompile
-          # Assets.car (scripts/compile-app-icon.sh).
-          if [ "$RUNNER_OS" = macOS ]; then flags+=(--config "$(scripts/compile-app-icon.sh "$RUNNER_TEMP/app-icon")"); fi
-          pnpm bundle "${flags[@]}"
-      - uses: actions/upload-artifact@v7
-        with:
-          name: desktop-bundle-${{ matrix.os }}
-          path: |
-            apps/desktop/src-tauri/target/release/bundle/dmg/*.dmg
-            apps/desktop/src-tauri/target/release/bundle/nsis/*.exe
-          if-no-files-found: error
-          retention-days: 14
 
       # Test build (cargo feature `e2e`): replaces the release binary, after the bundles are built.
       # macOS: bundled and installed in /Applications, so LaunchServices delivers `bruteforcehr://`
@@ -155,18 +131,16 @@ jobs:
       - run: npm install --global --no-fund --no-audit firebase-tools@15.34.1
       # Exports skip the Save dialog in test builds and land here (src-tauri/src/export_file.rs).
       - run: echo "BFHR_E2E_EXPORT_DIR=$RUNNER_TEMP/exports" >> "$GITHUB_ENV"
-      - run: scripts/with-emulators.sh pnpm test:e2e
-      # windows-latest has a 1024×768 display that Set-DisplayResolution can't change (run
-      # 39797339032), so Windows captures are zoomed out to 75 % / 50 % (e2e/capture/capture.e2e.ts).
-      - run: scripts/with-emulators.sh pnpm capture
-        if: success() || failure()
+      # DIAGNOSTIC ONLY (branch diag/cv-e2e-macos): the CV Studio spec, several times.
+      - run: |
+          scripts/with-emulators.sh bash -c 'for i in 1 2 3 4 5 6; do echo "=== ITERATION $i"; pnpm exec wdio run e2e/wdio.conf.ts --spec e2e/specs/cv-studio.e2e.ts && echo "=== ITERATION $i PASSED" || echo "=== ITERATION $i FAILED"; done'
       - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: desktop-screens-${{ matrix.os }}
           path: artifacts/screens/desktop/
           if-no-files-found: ignore
-          retention-days: 14
+          retention-days: 3
 
   # On demand (`gh workflow run desktop.yml -f design_capture=true [-f update_states=all …]`): the
   # design build (fixtures, forced states) in the real macOS and Windows apps, for the final

@@ -71,6 +71,19 @@ async function typeSummary(text: string): Promise<void> {
 }
 
 describe("CV Studio", () => {
+  // DIAGNOSTIC ONLY (branch diag/cv-e2e-macos): print the app's in-page trace after every test.
+  let printed = 0;
+  afterEach(async function () {
+    const failed = this.currentTest?.state === "failed";
+    const entries = await browser.execute(() => window.__bfhrTrace ?? []).catch(() => [] as string[]);
+    const fresh = entries.slice(printed);
+    printed = entries.length;
+    const shown = fresh.filter((line) => failed || !/ FS /u.test(line));
+    console.log(
+      `TRACE ${failed ? "FAILED" : "passed"} "${this.currentTest?.title ?? ""}" (${fresh.length} entries, ${shown.length} shown)\n${shown.join("\n")}\nEND TRACE`,
+    );
+  });
+
   before(async () => {
     await ensureSignedIn(testEmail("cv"));
     await browser.execute(() => {
@@ -110,6 +123,7 @@ describe("CV Studio", () => {
     expect(await listRevisions(cv.name)).toHaveLength(1);
     // …and one revision when it ends (Mod+S).
     await capture("editor-editing");
+    console.log(`TRACE spec ${new Date().toISOString().slice(11, 23)} Mod+S`);
     await pressShortcut("s");
     await waitForSummary("Builds reliable desktop apps.", "the session's revision never arrived");
     expect(await listRevisions(cv.name)).toHaveLength(2);
@@ -118,7 +132,9 @@ describe("CV Studio", () => {
 
   it("resolves a conflict with Keep this version", async () => {
     await typeSummary("Local change.");
-    await remoteEdit(cv.name, "Remote change.");
+    console.log(`TRACE spec ${new Date().toISOString().slice(11, 23)} remoteEdit start`);
+    const remoteId = await remoteEdit(cv.name, "Remote change.");
+    console.log(`TRACE spec ${new Date().toISOString().slice(11, 23)} remoteEdit done ${remoteId}`);
     await $("p*=This CV changed on another device")
       .waitForDisplayed({ timeout: 20_000 })
       .catch(async (error: unknown) => {
@@ -130,6 +146,7 @@ describe("CV Studio", () => {
       });
     await capture("conflict-banner");
     await $("button=Compare").click();
+    console.log(`TRACE spec ${new Date().toISOString().slice(11, 23)} compare clicked`);
     await $('[role="dialog"]').waitForDisplayed();
     await capture("conflict-compare");
     await expect($('[role="dialog"]*=Remote change.')).toBeDisplayed();

@@ -19,3 +19,4 @@ export {
   mailSyncTask,
 } from "./mail/functions";
 export { mailSend, mailSendCancel, mailSendDispatch, mailSendNow } from "./mail/send";
+export { pushDeliver, pushJobAlert, pushJobAlertDigest, pushMailMessage } from "./notifications/functions";

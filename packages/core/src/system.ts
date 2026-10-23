@@ -6,7 +6,11 @@ import { PlatformSchema } from "./enums";
 export const DeviceSchema = z.object({
   id: IdSchema,
   platform: PlatformSchema,
-  /** APNs/FCM token; null until the user allows notifications. */
+  /**
+   * FCM registration token (iOS: `Messaging.messaging().fcmToken` after the APNs token is set; not
+   * the raw APNs token). Null until the user allows notifications or after the server found it
+   * unregistered.
+   */
   pushToken: z.string().min(1).max(4_096).nullable(),
   appVersion: SemverSchema,
   osVersion: z.string().min(1).max(60),

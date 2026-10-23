@@ -67,6 +67,37 @@ describe("users/{uid}: owner only", () => {
     await assertFails(client("alice").doc("users/alice/unknown/doc1").set({ any: true }));
     await assertFails(client("alice").doc("users/alice/applications/a1/notes/n1").set({ any: true }));
   });
+
+  // Push client contract (docs/runbooks/notifications.md): the app registers its FCM token on its
+  // own device document and mutes categories on its profile; pending job alerts stay server-only.
+  it("lets a user register an FCM token and mute push categories", async () => {
+    const device = "users/alice/devices/ios-1";
+    await seed("users/alice", { settings: { notifyRejections: true, notifications: null } });
+    await assertSucceeds(
+      client("alice")
+        .doc(device)
+        .set({ platform: "ios", pushToken: null, locale: "de-DE", schemaVersion: 1 }),
+    );
+    await assertSucceeds(
+      client("alice").doc(device).update({ pushToken: "fcm-token-1", lastSeenAt: new Date() }),
+    );
+    await assertFails(client("bob").doc(device).update({ pushToken: "fcm-token-mallory" }));
+    await assertSucceeds(
+      client("alice")
+        .doc("users/alice")
+        .update({
+          "settings.notifications": {
+            interviews: true,
+            offers: true,
+            assessments: true,
+            autoApplied: false,
+            jobAlerts: false,
+          },
+          "settings.notifyRejections": false,
+        }),
+    );
+    await assertFails(client("alice").doc("serverOnly/jobAlerts/users/alice/jobAlertItems/j1").get());
+  });
 });
 
 describe("users/{uid}/renderedFiles: create-only", () => {

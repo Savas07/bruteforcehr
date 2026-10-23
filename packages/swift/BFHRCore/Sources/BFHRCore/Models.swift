@@ -490,6 +490,37 @@ public struct QuietHours: Codable, Hashable, Sendable {
     }
 }
 
+public struct NotificationPreferences: Codable, Hashable, Sendable {
+    public var interviews: Bool
+    public var offers: Bool
+    public var assessments: Bool
+    public var autoApplied: Bool
+    public var jobAlerts: Bool
+
+    public init(
+        interviews: Bool,
+        offers: Bool,
+        assessments: Bool,
+        autoApplied: Bool,
+        jobAlerts: Bool
+    ) {
+        self.interviews = interviews
+        self.offers = offers
+        self.assessments = assessments
+        self.autoApplied = autoApplied
+        self.jobAlerts = jobAlerts
+    }
+
+    public func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(interviews, forKey: .interviews)
+        try container.encode(offers, forKey: .offers)
+        try container.encode(assessments, forKey: .assessments)
+        try container.encode(autoApplied, forKey: .autoApplied)
+        try container.encode(jobAlerts, forKey: .jobAlerts)
+    }
+}
+
 public struct ProfileSettings: Codable, Hashable, Sendable {
     public var ghostedAfterDays: Int
     public var followUpAfterDays: Int
@@ -499,6 +530,7 @@ public struct ProfileSettings: Codable, Hashable, Sendable {
     public var dailySendCap: Int
     public var quietHours: QuietHours?
     public var notifyRejections: Bool
+    public var notifications: NotificationPreferences?
 
     public init(
         ghostedAfterDays: Int,
@@ -508,7 +540,8 @@ public struct ProfileSettings: Codable, Hashable, Sendable {
         aiMailTextAllowed: Bool,
         dailySendCap: Int,
         quietHours: QuietHours?,
-        notifyRejections: Bool
+        notifyRejections: Bool,
+        notifications: NotificationPreferences?
     ) {
         self.ghostedAfterDays = ghostedAfterDays
         self.followUpAfterDays = followUpAfterDays
@@ -518,6 +551,7 @@ public struct ProfileSettings: Codable, Hashable, Sendable {
         self.dailySendCap = dailySendCap
         self.quietHours = quietHours
         self.notifyRejections = notifyRejections
+        self.notifications = notifications
     }
 
     public func encode(to encoder: any Encoder) throws {
@@ -530,6 +564,7 @@ public struct ProfileSettings: Codable, Hashable, Sendable {
         try container.encode(dailySendCap, forKey: .dailySendCap)
         try container.encode(quietHours, forKey: .quietHours)
         try container.encode(notifyRejections, forKey: .notifyRejections)
+        try container.encode(notifications, forKey: .notifications)
     }
 }
 

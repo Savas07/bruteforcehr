@@ -15,7 +15,9 @@ extension DesignScenario {
         let model = CVEditorModel(selectedCvId: CVDesignPane.opensList ? nil : selected?.id, now: now)
         model.suggestionProvider = CVDesignSuggestions()
         model.renderEngine = try? CVRenderEngine.bundled()
-        if let base = selected.flatMap({ cv in data.revision(id: cv.currentRevisionId) }) {
+        // The empty dataset imports the populated fixture's base CV, so its empty state offers Import.
+        let populated = DesignScenario(dataset: .populated).data
+        if let base = populated.cv(id: "cv-en").flatMap({ populated.revision(id: $0.currentRevisionId) }) {
             model.importer = CVDesignImporter(content: base.content)
         }
         apply(to: model)

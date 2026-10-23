@@ -121,7 +121,7 @@ final class CVStudioEndToEndTests: XCTestCase {
         openCVsTab(app)
         let create = app.buttons["cv.import.create"]
         XCTAssertTrue(create.waitForExistence(timeout: 90), "uploaded and read by cvImport")
-        XCTAssertTrue(app.navigationBars["Did we read your CV correctly?"].exists)
+        XCTAssertTrue(app.staticTexts["Did we read your CV correctly?"].exists)
         shot("import-review")
         create.tap()
         waitSaved(app)

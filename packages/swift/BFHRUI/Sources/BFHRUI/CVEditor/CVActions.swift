@@ -185,7 +185,7 @@ struct CVLanguageVariantSheet: View {
                     Text(model.canRequestSuggestions ? L.translateFooter : L.translateUnavailable).cvListFooter()
                 }
             }
-            .navigationTitle(Text(L.newLanguageVariant))
+            .navigationTitle(Text(L.languageVariantTitle))
             .bfhrInlineTitle()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {

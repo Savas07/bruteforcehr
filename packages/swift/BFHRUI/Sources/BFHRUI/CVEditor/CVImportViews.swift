@@ -35,6 +35,11 @@ struct CVImportSummarySection: View {
 
     var body: some View {
         Section {
+            // The question sits here as the screen's heading; the inline nav title stays short.
+            Text(L.importReviewTitle)
+                .font(.bfhr(.title3, emphasized: true))
+                .foregroundStyle(BFHRColor.Fg.primary)
+                .accessibilityAddTraits(.isHeader)
             Text(flow.openFlags.isEmpty ? L.importSummaryClear(flow.fieldCount) : L.importSummary(flow.fieldCount, flow.openFlags.count))
                 .font(.bfhr(.body))
                 .foregroundStyle(BFHRColor.Fg.primary)
@@ -97,7 +102,7 @@ struct CVImportSheet: View {
                 }
             }
             .background(BFHRColor.groupedBackground)
-            .navigationTitle(Text(flow.step == .review ? L.importReviewTitle : L.importTitle))
+            .navigationTitle(Text(L.importTitle))
             .bfhrInlineTitle()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {

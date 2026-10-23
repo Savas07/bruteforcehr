@@ -5407,6 +5407,30 @@
         }
       }
     },
+    "cvEditor.languageVariant.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Language variant"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dil varyantı"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sprachvariante"
+          }
+        }
+      },
+      "comment" : "Title of the new-language-variant sheet."
+    },
     "cvEditor.languageVariant.translate" : {
       "extractionState" : "manual",
       "localizations" : {

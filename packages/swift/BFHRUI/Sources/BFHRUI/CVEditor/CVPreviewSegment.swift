@@ -38,6 +38,8 @@ struct CVPreviewSegment: View {
             .padding(.horizontal, BFHRSpace.s4)
             .padding(.vertical, BFHRSpace.s3)
             .background(.bar)
+            // A bar over the page: grows with text size up to AX2, so the page stays visible.
+            .dynamicTypeSize(...DynamicTypeSize.accessibility2)
         }
     }
 }
@@ -75,6 +77,7 @@ struct CVRenderedPage: View {
                 .padding(.vertical, BFHRSpace.s1)
                 .background(.regularMaterial, in: Capsule())
                 .accessibilityIdentifier("cv.preview.pages")
+                .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
         }
     }
 }

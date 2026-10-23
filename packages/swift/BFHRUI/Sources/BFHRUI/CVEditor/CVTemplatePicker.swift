@@ -13,6 +13,7 @@ struct CVTemplatePicker: View {
     @Environment(\.dismiss) private var dismiss
     @State private var templateId: String
     @State private var theme: CvTheme
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     init(model: CVEditorModel) {
         self.model = model
@@ -54,7 +55,8 @@ struct CVTemplatePicker: View {
     private func form(_ catalog: CVTemplateCatalog, _ document: CVDocument) -> some View {
         Form {
             Section {
-                LazyVGrid(columns: [GridItem(.flexible(), spacing: BFHRSpace.s3, alignment: .top), GridItem(.flexible(), spacing: BFHRSpace.s3, alignment: .top)],
+                // Two thumbnails side by side; one per row at accessibility sizes, so names wrap whole.
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: BFHRSpace.s3, alignment: .top), count: dynamicTypeSize.isAccessibilitySize ? 1 : 2),
                           spacing: BFHRSpace.s4) {
                     ForEach(catalog.templates) { template in
                         thumbnail(template, document)

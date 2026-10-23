@@ -21,6 +21,7 @@ struct CVFieldChangeList: View {
     /// "This version" / "This device".
     let afterLabel: LocalizedStringResource
     let emptyMessage: LocalizedStringResource
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         List {
@@ -73,7 +74,11 @@ struct CVFieldChangeList: View {
     }
 
     private func value(_ label: LocalizedStringResource, _ text: String?, struck: Bool) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: BFHRSpace.s2) {
+        // Label beside the value; above it at accessibility sizes, so the value keeps the width.
+        let layout = dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: BFHRSpace.s1))
+            : AnyLayout(HStackLayout(alignment: .firstTextBaseline, spacing: BFHRSpace.s2))
+        return layout {
             Text(label)
                 .font(.bfhr(.caption1, emphasized: true))
                 .foregroundStyle(BFHRColor.Fg.secondary)

@@ -214,6 +214,15 @@ pub async fn check<R: Runtime>(app: AppHandle<R>) {
             UpdateStatus::Failed { step }
         }
     };
+    // One line per check outcome on stderr, for support and the update acceptance run
+    // (.github/workflows/update-acceptance.yml).
+    match &status {
+        UpdateStatus::UpToDate => eprintln!("update check: up to date"),
+        UpdateStatus::Ready { version, .. } => {
+            eprintln!("update check: {version} downloaded, installs at quit");
+        }
+        _ => {}
+    }
     app.state::<Updates>().lock().busy = false;
     publish(&app, status);
 }
@@ -312,6 +321,7 @@ pub fn install_on_exit<R: Runtime>(app: &AppHandle<R>) {
     let Some(pending) = app.state::<Updates>().lock().pending.take() else {
         return;
     };
+    eprintln!("installing update {} at quit", pending.update.version);
     if let Err(error) = pending
         .update
         .restart_after_install(false)

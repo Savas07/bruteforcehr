@@ -1,0 +1,266 @@
+name: Update acceptance
+
+# M1 acceptance (BRIEF §7, docs/runbooks/release.md "M1 acceptance"), on clean hosted runners:
+# install the published `from` release the way a user does, launch it, let the app's own
+# background updater download the newest stable release, quit the app (a downloaded update
+# installs at quit, src-tauri/src/updater.rs), launch it again and assert that the installed app
+# is `target` and finds nothing newer. Nothing here talks to the updater directly: the app reads
+# the real manifest (plugins.updater.endpoints) and verifies the real signatures.
+#
+#   gh workflow run update-acceptance.yml -f from=0.1.0 -f target=0.1.1
+#
+# The app writes one stderr line per update check ("update check: X downloaded, installs at
+# quit" / "update check: up to date") and "installing update X at quit"; the runs capture stderr
+# to know when the download is done and upload it with the screenshots.
+on:
+  workflow_dispatch:
+    inputs:
+      from:
+        description: "Installed first: a published release (X.Y.Z)"
+        type: string
+        default: "0.1.0"
+      target:
+        description: "Expected after the update: the version the stable latest.json advertises (X.Y.Z)"
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+env:
+  FROM: ${{ inputs.from }}
+  TARGET: ${{ inputs.target }}
+  MANIFEST: https://github.com/${{ github.repository }}/releases/latest/download/latest.json
+  # Download check + download of a ~10 MB bundle; generous for slow runner networks.
+  DOWNLOAD_TIMEOUT_S: "300"
+
+jobs:
+  macos:
+    name: macOS (${{ inputs.from }} → ${{ inputs.target }})
+    runs-on: macos-latest
+    defaults:
+      run:
+        shell: bash
+    env:
+      GH_TOKEN: ${{ github.token }}
+      APP: /Applications/BruteForceHR.app
+      BUNDLE_ID: com.savas07.bruteforcehr
+    steps:
+      - name: The stable manifest advertises the target
+        run: |
+          curl -fsSL "$MANIFEST" | tee "$RUNNER_TEMP/latest.json" | jq '{version, pub_date, platforms: (.platforms | map_values(.url))}'
+          test "$(jq -r .version "$RUNNER_TEMP/latest.json")" = "$TARGET"
+
+      - name: Download BruteForceHR_${{ inputs.from }}_universal.dmg (checksum from SHA256SUMS.txt)
+        run: |
+          mkdir -p "$RUNNER_TEMP/download" "$RUNNER_TEMP/evidence"
+          cd "$RUNNER_TEMP/download"
+          dmg="BruteForceHR_${FROM}_universal.dmg"
+          gh release download "v$FROM" --repo "$GITHUB_REPOSITORY" --pattern "$dmg" --pattern SHA256SUMS.txt
+          awk -v f="$dmg" '$2 == f' SHA256SUMS.txt | shasum -a 256 -c -
+
+      - name: Install like a user (open the DMG, copy the app to /Applications)
+        run: |
+          test ! -e "$APP"
+          hdiutil attach -nobrowse -readonly -mountpoint "$RUNNER_TEMP/dmg" "$RUNNER_TEMP/download/BruteForceHR_${FROM}_universal.dmg"
+          ls -la "$RUNNER_TEMP/dmg"
+          ditto "$RUNNER_TEMP/dmg/BruteForceHR.app" "$APP"
+          hdiutil detach "$RUNNER_TEMP/dmg"
+          installed=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP/Contents/Info.plist")
+          echo "Installed: $installed"
+          test "$installed" = "$FROM"
+
+      - name: Launch; the background updater downloads ${{ inputs.target }}
+        run: |
+          log="$RUNNER_TEMP/evidence/1-launch-$FROM.stderr.log"
+          : > "$log"
+          open -a "$APP" --stderr "$log"
+          for _ in $(seq "$DOWNLOAD_TIMEOUT_S"); do
+            if grep -qE "^update check: |^update .* failed" "$log"; then break; fi
+            sleep 1
+          done
+          sleep 3 # let the update card render for the screenshot
+          screencapture -x "$RUNNER_TEMP/evidence/1-running-$FROM-update-ready.png" || echo "screencapture failed (non-fatal)"
+          cat "$log"
+          grep -q "update check: $TARGET downloaded" "$log"
+
+      - name: Quit (Quit BruteForceHR / ⌘Q); the update installs at quit
+        run: |
+          # NSRunningApplication.terminate() sends the same kAEQuitApplication Apple Event as the
+          # app menu's Quit, ⌘Q and Dock → Quit, so the app takes its normal exit path
+          # (RunEvent::Exit → updater::install_on_exit). Unlike osascript, it needs no Automation
+          # consent on the runner.
+          cat > "$RUNNER_TEMP/quit.swift" <<'EOF'
+          import AppKit
+          let id = CommandLine.arguments[1]
+          guard let app = NSRunningApplication.runningApplications(withBundleIdentifier: id).first else {
+            print("\(id) is not running"); exit(1)
+          }
+          exit(app.terminate() ? 0 : 1)
+          EOF
+          xcrun swift "$RUNNER_TEMP/quit.swift" "$BUNDLE_ID"
+          for _ in $(seq 120); do
+            pgrep -f "$APP/Contents/MacOS/" >/dev/null || break
+            sleep 1
+          done
+          if pgrep -fl "$APP/Contents/MacOS/"; then echo "::error::the app did not quit"; exit 1; fi
+          cat "$RUNNER_TEMP/evidence/1-launch-$FROM.stderr.log"
+
+      - name: The installed app is ${{ inputs.target }}
+        run: |
+          installed=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP/Contents/Info.plist")
+          echo "CFBundleShortVersionString: $installed"
+          codesign --verify --deep --strict --verbose=2 "$APP"
+          test "$installed" = "$TARGET"
+
+      - name: Relaunch; the updated app is up to date
+        run: |
+          log="$RUNNER_TEMP/evidence/2-relaunch-$TARGET.stderr.log"
+          : > "$log"
+          open -a "$APP" --stderr "$log"
+          for _ in $(seq "$DOWNLOAD_TIMEOUT_S"); do
+            if grep -qE "^update check: |^update .* failed" "$log"; then break; fi
+            sleep 1
+          done
+          sleep 3
+          screencapture -x "$RUNNER_TEMP/evidence/2-running-$TARGET.png" || echo "screencapture failed (non-fatal)"
+          cat "$log"
+          grep -q "update check: up to date" "$log"
+          pgrep -fl "$APP/Contents/MacOS/"
+          xcrun swift "$RUNNER_TEMP/quit.swift" "$BUNDLE_ID"
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: update-acceptance-macos
+          path: ${{ runner.temp }}/evidence/
+          if-no-files-found: ignore
+          retention-days: 90
+
+  windows:
+    name: Windows (${{ inputs.from }} → ${{ inputs.target }})
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: The stable manifest advertises the target
+        run: |
+          $manifest = Invoke-RestMethod $env:MANIFEST
+          $manifest.platforms.PSObject.Properties | ForEach-Object { "$($_.Name): $($_.Value.url)" }
+          "latest.json: $($manifest.version)"
+          if ($manifest.version -ne $env:TARGET) { throw "latest.json advertises $($manifest.version), not $env:TARGET" }
+
+      - name: Screenshot helper (whole desktop; non-fatal)
+        run: |
+          @'
+          param([string]$Path)
+          try {
+            Add-Type -AssemblyName System.Windows.Forms, System.Drawing
+            $bounds = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
+            $bitmap = New-Object System.Drawing.Bitmap $bounds.Width, $bounds.Height
+            $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
+            $graphics.CopyFromScreen($bounds.Location, [System.Drawing.Point]::Empty, $bounds.Size)
+            $bitmap.Save($Path, [System.Drawing.Imaging.ImageFormat]::Png)
+            $graphics.Dispose(); $bitmap.Dispose()
+          } catch { Write-Host "screenshot failed (non-fatal): $_" }
+          '@ | Set-Content "$env:RUNNER_TEMP\screenshot.ps1"
+
+      - name: Download BruteForceHR_${{ inputs.from }}_x64-setup.exe (checksum from SHA256SUMS.txt)
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/download" "$RUNNER_TEMP/evidence"
+          cd "$RUNNER_TEMP/download"
+          exe="BruteForceHR_${FROM}_x64-setup.exe"
+          gh release download "v$FROM" --repo "$GITHUB_REPOSITORY" --pattern "$exe" --pattern SHA256SUMS.txt
+          awk -v f="$exe" '$2 == f' SHA256SUMS.txt | sha256sum -c -
+
+      - name: Install like a user (per-user NSIS installer, silent)
+        run: |
+          $setup = "$env:RUNNER_TEMP\download\BruteForceHR_$($env:FROM)_x64-setup.exe"
+          $p = Start-Process -FilePath $setup -ArgumentList '/S' -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "installer exited with $($p.ExitCode)" }
+          $entry = Get-ChildItem HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall |
+            Get-ItemProperty | Where-Object DisplayName -eq 'BruteForceHR'
+          if (-not $entry) { throw 'no per-user uninstall entry for BruteForceHR' }
+          $entry | Select-Object PSChildName, DisplayName, DisplayVersion, Publisher, DisplayIcon, UninstallString | Format-List
+          $exe = $entry.DisplayIcon.Trim('"')
+          "EXE=$exe" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
+          "UNINSTALL_KEY=$($entry.PSPath)" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
+          if ($entry.DisplayVersion -ne $env:FROM) { throw "installed $($entry.DisplayVersion), expected $env:FROM" }
+          (Get-Item $exe).VersionInfo | Format-List FileName, ProductVersion, FileVersion
+
+      - name: Launch; the background updater downloads ${{ inputs.target }}
+        run: |
+          $log = "$env:RUNNER_TEMP\evidence\1-launch-$($env:FROM).stderr.log"
+          $proc = Start-Process -FilePath $env:EXE -RedirectStandardError $log -PassThru
+          "APP_PID=$($proc.Id)" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
+          $deadline = (Get-Date).AddSeconds([int]$env:DOWNLOAD_TIMEOUT_S)
+          while ((Get-Date) -lt $deadline) {
+            $text = Get-Content -Raw -ErrorAction SilentlyContinue $log
+            if ($text -match '(?m)^update check: |^update .* failed') { break }
+            Start-Sleep -Seconds 1
+          }
+          Start-Sleep -Seconds 3
+          & "$env:RUNNER_TEMP\screenshot.ps1" "$env:RUNNER_TEMP\evidence\1-running-$($env:FROM)-update-ready.png"
+          Get-Content $log
+          if (-not ((Get-Content -Raw $log) -match "update check: $([regex]::Escape($env:TARGET)) downloaded")) { throw 'the update was not downloaded' }
+
+      - name: Quit (close the window); the update installs at quit
+        run: |
+          # WM_CLOSE on the main window, as the title bar's close button or Alt+F4 sends: the last
+          # window closes, the app exits through RunEvent::Exit → updater::install_on_exit, which
+          # starts the downloaded NSIS installer (/P /UPDATE, passive, per-user) and exits.
+          $proc = Get-Process -Id $env:APP_PID
+          $proc.Refresh()
+          if ($proc.MainWindowHandle -eq 0) { throw 'no main window' }
+          if (-not $proc.CloseMainWindow()) { throw 'WM_CLOSE was not delivered' }
+          if (-not $proc.WaitForExit(120000)) { throw 'the app did not quit' }
+          "app exited with $($proc.ExitCode)"
+          # The installer runs on after the app exits; wait for it to finish.
+          $deadline = (Get-Date).AddSeconds(300)
+          do {
+            Start-Sleep -Seconds 2
+            # The updater writes the bundle as %TEMP%\…\<app>-<version>-installer.exe.
+            $installers = Get-Process | Where-Object { $_.ProcessName -like '*-installer' }
+            $version = (Get-ItemProperty $env:UNINSTALL_KEY).DisplayVersion
+          } while (((Get-Date) -lt $deadline) -and ($installers -or $version -ne $env:TARGET))
+          Get-Content "$env:RUNNER_TEMP\evidence\1-launch-$($env:FROM).stderr.log"
+          if ($installers) { $installers | Format-Table Id, ProcessName, Path; throw 'the installer is still running' }
+
+      - name: The installed app is ${{ inputs.target }}
+        run: |
+          $entry = Get-ItemProperty $env:UNINSTALL_KEY
+          $info = (Get-Item $env:EXE).VersionInfo
+          "DisplayVersion: $($entry.DisplayVersion)"
+          $info | Format-List FileName, ProductVersion, FileVersion
+          if ($entry.DisplayVersion -ne $env:TARGET) { throw "uninstall entry says $($entry.DisplayVersion)" }
+          if (-not $info.ProductVersion.StartsWith($env:TARGET)) { throw "bruteforcehr.exe says $($info.ProductVersion)" }
+
+      - name: Relaunch; the updated app is up to date
+        run: |
+          $log = "$env:RUNNER_TEMP\evidence\2-relaunch-$($env:TARGET).stderr.log"
+          $proc = Start-Process -FilePath $env:EXE -RedirectStandardError $log -PassThru
+          $deadline = (Get-Date).AddSeconds([int]$env:DOWNLOAD_TIMEOUT_S)
+          while ((Get-Date) -lt $deadline) {
+            $text = Get-Content -Raw -ErrorAction SilentlyContinue $log
+            if ($text -match '(?m)^update check: |^update .* failed') { break }
+            Start-Sleep -Seconds 1
+          }
+          Start-Sleep -Seconds 3
+          & "$env:RUNNER_TEMP\screenshot.ps1" "$env:RUNNER_TEMP\evidence\2-running-$($env:TARGET).png"
+          Get-Content $log
+          (Get-Process -Id $proc.Id).Path
+          if (-not ((Get-Content -Raw $log) -match 'update check: up to date')) { throw 'the updated app did not report up to date' }
+          $proc.Refresh()
+          [void]$proc.CloseMainWindow()
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: update-acceptance-windows
+          path: ${{ runner.temp }}/evidence/
+          if-no-files-found: ignore
+          retention-days: 90

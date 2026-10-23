@@ -491,6 +491,7 @@ public struct Profile: Codable, Hashable, Sendable, Identifiable {
     public var skills: [String]
     public var defaultCvId: String?
     public var onboardingCompletedAt: Date?
+    public var aiEnabled: Bool
     public var settings: ProfileSettings
     public var createdAt: Date
     public var updatedAt: Date
@@ -515,6 +516,7 @@ public struct Profile: Codable, Hashable, Sendable, Identifiable {
         skills: [String],
         defaultCvId: String?,
         onboardingCompletedAt: Date?,
+        aiEnabled: Bool,
         settings: ProfileSettings,
         createdAt: Date,
         updatedAt: Date
@@ -538,6 +540,7 @@ public struct Profile: Codable, Hashable, Sendable, Identifiable {
         self.skills = skills
         self.defaultCvId = defaultCvId
         self.onboardingCompletedAt = onboardingCompletedAt
+        self.aiEnabled = aiEnabled
         self.settings = settings
         self.createdAt = createdAt
         self.updatedAt = updatedAt
@@ -564,6 +567,7 @@ public struct Profile: Codable, Hashable, Sendable, Identifiable {
         try container.encode(skills, forKey: .skills)
         try container.encode(defaultCvId, forKey: .defaultCvId)
         try container.encode(onboardingCompletedAt, forKey: .onboardingCompletedAt)
+        try container.encode(aiEnabled, forKey: .aiEnabled)
         try container.encode(settings, forKey: .settings)
         try container.encode(createdAt, forKey: .createdAt)
         try container.encode(updatedAt, forKey: .updatedAt)

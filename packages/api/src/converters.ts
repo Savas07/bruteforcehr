@@ -12,6 +12,7 @@ import {
   CURRENT_SCHEMA_VERSION,
   type Cv,
   CV_VERSION_INCREMENT,
+  DEFAULT_AI_ENABLED,
   type CvRevision,
   CvRevisionSchema,
   CvSchema,
@@ -103,6 +104,8 @@ function createEntityConverter<TTimestamp, TEntity, TPathKey extends keyof TEnti
   entity: EntityName,
   schema: EntitySchema<TEntity>,
   pathKeys: readonly TPathKey[],
+  /** Values for fields added after documents were first written; used when a document lacks them. */
+  readDefaults: Partial<TEntity> = {},
 ): EntityConverter<TEntity, TPathKey> {
   const isPathKey = (key: string): boolean => (pathKeys as readonly string[]).includes(key);
 
@@ -135,7 +138,7 @@ function createEntityConverter<TTimestamp, TEntity, TPathKey extends keyof TEnti
     if (typeof schemaVersion !== "number" || !Number.isInteger(schemaVersion) || schemaVersion < 1) {
       throw new FirestoreDataError(`${entity} document has invalid schemaVersion ${String(schemaVersion)}`);
     }
-    return schema.parse({ ...(decode(fields) as FirestoreData), ...pathIds });
+    return schema.parse({ ...readDefaults, ...(decode(fields) as FirestoreData), ...pathIds });
   };
 
   return {
@@ -217,7 +220,9 @@ export interface Converters {
 /** Binds every converter to one SDK's timestamp type. */
 export function createConverters<TTimestamp>(adapter: TimestampAdapter<TTimestamp>): Converters {
   const converters = {
-    profile: createEntityConverter<TTimestamp, Profile, "id">(adapter, "profile", ProfileSchema, ["id"]),
+    profile: createEntityConverter<TTimestamp, Profile, "id">(adapter, "profile", ProfileSchema, ["id"], {
+      aiEnabled: DEFAULT_AI_ENABLED,
+    }),
     cv: createEntityConverter<TTimestamp, Cv, "id">(adapter, "cv", CvSchema, ["id"]),
     cvRevision: createEntityConverter<TTimestamp, CvRevision, "id" | "cvId">(
       adapter,

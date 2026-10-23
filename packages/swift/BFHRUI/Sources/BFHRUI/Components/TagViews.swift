@@ -254,12 +254,13 @@ public struct ChipFlow: Layout {
 }
 
 /// The avatar button on every tab root (IA.md): initials monogram, amber dot when a mail account
-/// needs attention. Opens Settings.
+/// needs attention. Signed in (`\.bfhrAccount` set by the app) it opens the account menu
+/// (`AccountMenu`: who is signed in, Sign out); otherwise it runs `action`.
 public struct AvatarButton: View {
     private let name: String
     private let needsAttention: Bool
     private let action: () -> Void
-    @ScaledMetric(relativeTo: .body) private var diameter: CGFloat = 32
+    @Environment(\.bfhrAccount) private var account
 
     public init(name: String, needsAttention: Bool = false, action: @escaping () -> Void) {
         self.name = name
@@ -272,26 +273,56 @@ public struct AvatarButton: View {
     }
 
     public var body: some View {
-        Button(action: action) {
-            Text(Self.initials(of: name))
-                .font(.bfhr(.footnote, emphasized: true))
-                .foregroundStyle(BFHRColor.Accent.text)
-                .frame(width: diameter, height: diameter)
-                .background(BFHRColor.Accent.subtle, in: Circle())
-                .overlay(alignment: .topTrailing) {
-                    if needsAttention {
-                        Circle()
-                            .fill(BFHRTone.warning.solid)
-                            .overlay(Circle().strokeBorder(BFHRColor.Surface.base, lineWidth: BFHRBorderWidth.thick))
-                            .frame(width: 12, height: 12)
-                            .offset(x: 2, y: -2)
-                    }
+        Group {
+            if let account {
+                AccountMenu(account) { AvatarMonogram(initials: Self.initials(of: name), needsAttention: needsAttention) }
+            } else {
+                Button(action: action) {
+                    AvatarMonogram(initials: Self.initials(of: name), needsAttention: needsAttention)
                 }
-                .frame(minWidth: BFHRHitTarget.minimum, minHeight: BFHRHitTarget.minimum)
-                .contentShape(Rectangle())
+                .buttonStyle(.plain)
+                .accessibilityLabel(Text(Strings.settings))
+            }
         }
-        .buttonStyle(.plain)
-        .accessibilityLabel(Text(Strings.settings))
         .accessibilityValue(needsAttention ? Text(Strings.accountNeedsAttention) : Text(verbatim: ""))
+    }
+}
+
+/// The avatar's look: initials in an accent circle (or the person glyph when there are no
+/// initials), amber dot when a mail account needs attention, in a 44 pt target.
+public struct AvatarMonogram: View {
+    private let initials: String
+    private let needsAttention: Bool
+    @ScaledMetric(relativeTo: .body) private var diameter: CGFloat = 32
+
+    public init(initials: String, needsAttention: Bool = false) {
+        self.initials = initials
+        self.needsAttention = needsAttention
+    }
+
+    public var body: some View {
+        Group {
+            if initials.isEmpty {
+                Image(systemName: "person.crop.circle")
+                    .font(.system(size: diameter * 0.8))
+            } else {
+                Text(initials)
+                    .font(.bfhr(.footnote, emphasized: true))
+            }
+        }
+        .foregroundStyle(BFHRColor.Accent.text)
+        .frame(width: diameter, height: diameter)
+        .background(initials.isEmpty ? Color.clear : BFHRColor.Accent.subtle, in: Circle())
+        .overlay(alignment: .topTrailing) {
+            if needsAttention {
+                Circle()
+                    .fill(BFHRTone.warning.solid)
+                    .overlay(Circle().strokeBorder(BFHRColor.Surface.base, lineWidth: BFHRBorderWidth.thick))
+                    .frame(width: 12, height: 12)
+                    .offset(x: 2, y: -2)
+            }
+        }
+        .frame(minWidth: BFHRHitTarget.minimum, minHeight: BFHRHitTarget.minimum)
+        .contentShape(Rectangle())
     }
 }

@@ -18,15 +18,20 @@ packages/swift/BFHRUI/
     Today/  JobDetail/  CVEditor/  TrackerBoard/  MailReview/
     UpdateGate/                    app-wide version gate (M1): AppVersion, UpdateGateModel, banner + blocking screen,
                                    UpdateGate.xcstrings, UpdateGateDesign.swift (#if DEBUG, `-BFHRUpdate`)
+    SignIn/                        email-link sign-in (M1): SignInLink (URL → action link), SignInModel + SignInStore,
+                                   SignInScreen (all steps), AccountMenu (`\.bfhrAccount`), SignIn.xcstrings,
+                                   SignInDesign.swift (#if DEBUG, `-BFHRSignIn`)
       <Screen>Model.swift          the view model (+ <Screen>Items.swift value types)
       <Screen>Screen.swift         the screen's view (M0 foundation: a plain data rendering, to be replaced)
       <Screen>Design.swift         DesignScenario.<screen>Model(): fixture selection for design mode
       <Screen>.xcstrings           the screen's string table (table name = folder name)
   Tests/BFHRUITests/               Swift Testing: Foundation, StringCatalog, <Screen>ModelTests
 apps/ios/BruteForceHR/
-  RootView.swift                   tabs, ToastCenter, tint, update gate; DEBUG hook into design mode
+  RootView.swift                   sign-in gate, tabs, ToastCenter, tint, update gate, URL routing; DEBUG hook into design mode
+  EmailLinkAuth.swift              FirebaseAuth behind `EmailLinkAuthService` (send link, sign in, sign out, auth state)
   AppConfigReader.swift            server read of the public `appConfig/ios` (latestVersion, minSupportedVersion)
   DesignMode.swift                 #if DEBUG: tab ↔ screen mapping, DesignTabRoot
+apps/ios/BruteForceHR.entitlements  Associated Domains: applinks:bruteforcehr.firebaseapp.com, applinks:bruteforcehr.web.app
 ```
 
 Concurrency: the package uses the app's model, default `MainActor` isolation with approachable concurrency (`defaultIsolation(MainActor.self)`, `NonisolatedNonsendingByDefault`, `InferIsolatedConformances`). Don't add `@MainActor`; never use `nonisolated(unsafe)`.
@@ -126,6 +131,14 @@ Accessibility audits (`performAccessibilityAudit` in each screen's UI tests): av
 
 Navigation between tabs: open `bruteforcehr://…` links with `@Environment(\.openURL)` (IA.md "Deep links"). `RootView` handles them in-app (no round trip through the system) by selecting the link's tab; other schemes go to the system. Links only switch tabs in M0; pushing the linked item and the `settings` host (Settings sheet) land with those screens.
 
+## Sign-in
+
+Email-link sign-in (ADR 0003, M1). Signed out, `RootView` shows `SignInScreen` instead of the tabs (Release, and Debug without design arguments); design mode skips it. `SignInModel` (BFHRUI, tested with a fake service in `SignInTests`) owns the steps (`enterEmail` → `checkEmail` → `finishing` → signed in, plus `confirmEmail` for a link from another device and `linkFailed(expired / unusable / accountDisabled / retryable)`), the remembered address (`SignInStore`: pending email for the link, send time for the 60 s resend cooldown, last address to pre-fill after sign-out) and URL handling. `SignInLink` turns every URL shape the link arrives in (`/__/auth/links?link=…` on `bruteforcehr.firebaseapp.com`, the action URL, `bruteforcehr.web.app/auth/finish?…`, `bruteforcehr://auth/finish?link=…`) into Firebase's action URL: FirebaseAuth 13 doesn't unwrap `link=` itself. `RootView` routes `onOpenURL` and `onContinueUserActivity(NSUserActivityTypeBrowsingWeb)` through `SignInModel.handles(_:)` before the tab links. While signed in, `\.bfhrAccount` turns `AvatarButton` (and the shell's avatar) into `AccountMenu` (Signed in as …, Sign out).
+
+Associated Domains (`apps/ios/BruteForceHR.entitlements`) cover both Hosting hosts; the AASA on the Hosting site lists `/__/auth/links*`, `/__/auth/action*` and `/auth/finish*` for `67NPXV7CSZ.com.savas07.bruteforcehr`. Automatic signing provisions the capability (the team profile `iOS Team Provisioning Profile: com.savas07.bruteforcehr` carries `associated-domains`).
+
+Live check against project `bruteforcehr` (`SignInEndToEndTests`, skipped without its variables): run `testSendsLink` with `TEST_RUNNER_BFHR_E2E_EMAIL=<test address>`; create a link for the same address with `POST https://identitytoolkit.googleapis.com/v1/projects/bruteforcehr/accounts:sendOobCode` (`requestType: EMAIL_SIGNIN`, `continueUrl: https://bruteforcehr.web.app/auth/finish`, `canHandleCodeInApp: true`, `iOSBundleId`, `returnOobLink: true`; `gcloud auth print-access-token` + `x-goog-user-project: bruteforcehr`); run `testOpensLinkThenSignsOut` with `TEST_RUNNER_BFHR_E2E_LINK=<oobLink>` too; then delete the test user (`accounts:delete`).
+
 ## Strings
 
 - `LocalizedStringResource.bfhr("<screen>.<key>", default: "English", table: "<Screen>", comment: "…")`; `Text(resource)` renders it. Keys are semantic; the English default sits in code and in the catalog's `en` value.
@@ -154,6 +167,7 @@ Debug builds only. Any of these arguments turns design mode on; every tab then s
 | `-BFHRState`  | `loading`, `error`, `offline`                                                        | none        |
 | `-BFHRScreen` | `today`, `job-detail`, `cv-editor`, `tracker-board`, `mail-review` (selects its tab) | Today       |
 | `-BFHRUpdate` | `available` (update banner), `required` (blocking update screen)                     | none        |
+| `-BFHRSignIn` | `email`, `invalid`, `offline`, `check`, `resent`, `finishing`, `confirm`, `expired`, `unusable`, `retry` (signed-out screen in that state, no Firebase) | none |
 
 `-BFHRUpdate` puts the update gate in that state without reading Firestore (design mode never reads `appConfig/ios`); combine it with `-BFHRScreen today` to see the banner over Today. The capture state names map to `populated`, `empty` (`-BFHRDesign`) and `loading`, `error`, `offline` (`-BFHRState` on the populated data). In Xcode, add the arguments under Scheme › Run › Arguments; previews use `DesignScreenView(.today, scenario: DesignScenario(state: "offline")!)` with `.environment(ToastCenter())`.
 
@@ -172,6 +186,8 @@ apps/ios/scripts/capture.sh --screen today --size default --size ax
 #   → artifacts/screens/ios/<device>/<screen>-<state>-<theme>[-ax].png
 #   options: --state NAME (repeatable), --theme light|dark, --device NAME, --skip-build, --screen all
 # Update gate over Today: --screen update-gate (states available, required) → update-gate-<state>-<theme>[-ax].png
+# Sign-in: --screen sign-in (states email, invalid, offline, check, resent, finishing, confirm, expired, unusable, retry)
+#   → sign-in-<state>-<theme>[-ax].png. The title-only tab shell (no --screen) needs a session on the simulator.
 ```
 
 - DerivedData is per worktree (`apps/ios/build/DerivedData`, gitignored), so worktrees build in parallel. The simulators are shared: the capture step takes a machine-wide lock (`/tmp/bfhr-ios-capture.lock`) and waits for another worktree's capture to finish.
@@ -190,8 +206,8 @@ cd apps/ios && xcodebuild build -project BruteForceHR.xcodeproj -scheme BruteFor
   -derivedDataPath build/DerivedData -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO -quiet
 app=build/DerivedData/Build/Products/Release-iphonesimulator/BruteForceHR.app
 find "$app" -iname '*fixture*' -o -name 'populated.json' -o -name 'empty.json'             # nothing
-strings "$app/BruteForceHR" | grep -E -- '-BFHRDesign|BFHRScreen|BFHRUpdate|FixtureStore|BFHRFixtures|Lighthouse Learning|deniz\.aksoy'  # nothing
-nm "$app/BruteForceHR" | grep -iE 'FixtureStore|DesignScenario|DesignScreenView|DesignTabRoot|DesignUpdateState'     # nothing
+strings "$app/BruteForceHR" | grep -E -- '-BFHRDesign|BFHRScreen|BFHRUpdate|BFHRSignIn|FixtureStore|BFHRFixtures|Lighthouse Learning|deniz\.aksoy'  # nothing
+nm "$app/BruteForceHR" | grep -iE 'FixtureStore|DesignScenario|DesignScreenView|DesignTabRoot|DesignUpdateState|DesignSignInState|DesignSignInService'     # nothing
 ```
 
 The fixture copy phase writes to `$(BFHR_DESIGN_FIXTURES_DIR)`, which is the app's `BFHRFixtures/` folder in Debug and a throwaway folder in DerivedSources in Release (script sandboxing stays on).

@@ -1,8 +1,10 @@
 import BFHRDesignTokens
 import BFHRUI
+import FirebaseAuth
 import SwiftUI
 
-/// Native tabs, each owning a navigation stack with a large title (IA.md, "iOS › Structure").
+/// Signed out: the sign-in takeover (IA.md). Signed in: native tabs, each owning a navigation
+/// stack with a large title (IA.md, "iOS › Structure").
 struct RootView: View {
     @State private var selection: AppTab = RootView.initialTab
     /// One toast at a time for the whole app (decisions.md D12).
@@ -11,9 +13,39 @@ struct RootView: View {
     @State private var badges: [AppTab: Int] = [:]
     /// `appConfig/ios` against this build: the update banner and the blocking update screen.
     @State private var updateGate = RootView.makeUpdateGate()
+    /// Email-link sign-in and the session (ADR 0003).
+    @State private var signIn = RootView.makeSignIn()
+    @State private var authListener: AuthStateDidChangeListenerHandle?
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
+        Group {
+            if showsApp {
+                tabs
+            } else {
+                SignInScreen(model: signIn)
+            }
+        }
+        .tint(BFHRColor.tint)
+        .environment(toasts)
+        // Universal links (the emailed sign-in link) and `bruteforcehr://` links from outside.
+        .onOpenURL(perform: open)
+        .onContinueUserActivity(NSUserActivityTypeBrowsingWeb) { activity in
+            if let url = activity.webpageURL { open(url) }
+        }
+        .bfhrUpdateGate(updateGate)
+        // At launch and on every return to the foreground (PRD M1-UPD-2).
+        .onChange(of: scenePhase, initial: true) { _, phase in
+            guard phase == .active, RootView.readsAppConfig else { return }
+            Task { await updateGate.check(AppConfigReader.iosVersions) }
+        }
+        .onAppear {
+            guard authListener == nil, RootView.usesFirebaseAuth else { return }
+            authListener = FirebaseEmailLinkService.observe(signIn)
+        }
+    }
+
+    private var tabs: some View {
         TabView(selection: $selection) {
             ForEach(AppTab.allCases) { tab in
                 Tab(tab.title, systemImage: tab.systemImage, value: tab) {
@@ -24,8 +56,9 @@ struct RootView: View {
                 .badge(badges[tab] ?? 0)
             }
         }
-        .tint(BFHRColor.tint)
-        .environment(toasts)
+        .environment(\.bfhrAccount, signIn.signedInEmail.map { email in
+            AccountContext(email: email) { try signIn.signOut() }
+        })
         // `bruteforcehr://` links opened inside the app (`@Environment(\.openURL)`) navigate here
         // directly instead of a round trip through the system; other URLs go to the system.
         .environment(\.openURL, OpenURLAction { url in
@@ -33,15 +66,41 @@ struct RootView: View {
             selection = tab
             return .handled
         })
-        .onOpenURL { url in
-            if let tab = AppTab(deepLink: url) { selection = tab }
+    }
+
+    /// Sign-in links go to the sign-in flow; other `bruteforcehr://` links select their tab.
+    private func open(_ url: URL) {
+        if SignInModel.handles(url) {
+            Task { await signIn.open(url) }
+        } else if let tab = AppTab(deepLink: url) {
+            selection = tab
         }
-        .bfhrUpdateGate(updateGate)
-        // At launch and on every return to the foreground (PRD M1-UPD-2).
-        .onChange(of: scenePhase, initial: true) { _, phase in
-            guard phase == .active, RootView.readsAppConfig else { return }
-            Task { await updateGate.check(AppConfigReader.iosVersions) }
-        }
+    }
+
+    /// Release: the tabs only with a session. Debug design mode shows the fixture screens without
+    /// one, and `-BFHRSignIn` shows a sign-in state.
+    private var showsApp: Bool {
+        #if DEBUG
+        if DesignSignInState.launch != nil { return false }
+        if DesignScenario.launch != nil || DesignUpdateState.launch != nil { return true }
+        #endif
+        return signIn.isSignedIn
+    }
+
+    private static func makeSignIn() -> SignInModel {
+        #if DEBUG
+        if let state = DesignSignInState.launch { return state.model() }
+        #endif
+        return FirebaseEmailLinkService.makeModel()
+    }
+
+    /// Design states never talk to Firebase Auth.
+    private static var usesFirebaseAuth: Bool {
+        #if DEBUG
+        return DesignSignInState.launch == nil
+        #else
+        return true
+        #endif
     }
 
     private static func makeUpdateGate() -> UpdateGateModel {
@@ -55,7 +114,7 @@ struct RootView: View {
     /// depend on the live config.
     private static var readsAppConfig: Bool {
         #if DEBUG
-        return DesignScenario.launch == nil && DesignUpdateState.launch == nil
+        return DesignScenario.launch == nil && DesignUpdateState.launch == nil && DesignSignInState.launch == nil
         #else
         return true
         #endif
@@ -73,6 +132,7 @@ struct RootView: View {
 /// builds launched with design arguments show the fixture-backed screens instead (DesignMode.swift).
 struct TabRootView: View {
     let tab: AppTab
+    @Environment(\.bfhrAccount) private var account
 
     var body: some View {
         #if DEBUG
@@ -92,6 +152,16 @@ struct TabRootView: View {
                 .navigationTitle(tab.title)
                 .navigationBarTitleDisplayMode(.large)
                 .accessibilityIdentifier("screen.\(tab.rawValue)")
+                .toolbar {
+                    // The avatar on every tab root (IA.md): the account menu.
+                    if let account {
+                        ToolbarItem(placement: .topBarTrailing) {
+                            AccountMenu(account) {
+                                AvatarMonogram(initials: account.email.first.map { String($0).uppercased() } ?? "")
+                            }
+                        }
+                    }
+                }
         }
     }
 }

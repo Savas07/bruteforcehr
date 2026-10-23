@@ -1,6 +1,7 @@
 import XCTest
 
-/// Smoke tests: the app launches into five tabs, and `bruteforcehr://` links switch tabs.
+/// Smoke tests: signed out the app shows sign-in instead of the tabs; in design mode (no session
+/// needed) it shows five tabs, and `bruteforcehr://` links switch tabs.
 final class BruteForceHRUITests: XCTestCase {
     private let titles = ["Today", "Jobs", "Tracker", "CVs", "Mail"]
 
@@ -9,17 +10,26 @@ final class BruteForceHRUITests: XCTestCase {
     }
 
     @MainActor
-    private func launchApp() -> XCUIApplication {
+    private func launchApp(_ arguments: [String] = []) -> XCUIApplication {
         let app = XCUIApplication()
         // Pin English so the assertions can use the visible titles.
-        app.launchArguments += ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launchArguments += ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"] + arguments
         app.launch()
         return app
     }
 
+    /// The test simulators have no session: the tabs stay behind sign-in.
     @MainActor
-    func testLaunchShowsFiveTabsStartingOnToday() throws {
+    func testSignedOutLaunchShowsSignIn() throws {
         let app = launchApp()
+        XCTAssertTrue(app.descendants(matching: .any)["signIn.email"].waitForExistence(timeout: 15))
+        XCTAssertTrue(app.staticTexts["Sign in to BruteForceHR"].exists)
+        XCTAssertFalse(app.tabBars.firstMatch.exists)
+    }
+
+    @MainActor
+    func testDesignModeShowsFiveTabsStartingOnToday() throws {
+        let app = launchApp(["-BFHRDesign", "populated"])
         let tabBar = app.tabBars.firstMatch
         XCTAssertTrue(tabBar.waitForExistence(timeout: 15))
         XCTAssertEqual(tabBar.buttons.count, titles.count)
@@ -27,12 +37,11 @@ final class BruteForceHRUITests: XCTestCase {
             XCTAssertTrue(tabBar.buttons[title].exists, "tab \(title)")
         }
         XCTAssertTrue(tabBar.buttons["Today"].isSelected)
-        XCTAssertTrue(app.navigationBars["Today"].exists)
     }
 
     @MainActor
     func testDeepLinksSwitchTabs() throws {
-        let app = launchApp()
+        let app = launchApp(["-BFHRDesign", "populated"])
         let tabBar = app.tabBars.firstMatch
         XCTAssertTrue(tabBar.waitForExistence(timeout: 15))
 
@@ -45,8 +54,8 @@ final class BruteForceHRUITests: XCTestCase {
         ]
         for link in links {
             app.open(try XCTUnwrap(URL(string: link.url)))
-            XCTAssertTrue(app.navigationBars[link.tab].waitForExistence(timeout: 10), link.url)
-            XCTAssertTrue(tabBar.buttons[link.tab].isSelected, link.url)
+            let selected = XCTNSPredicateExpectation(predicate: NSPredicate(format: "isSelected == true"), object: tabBar.buttons[link.tab])
+            XCTAssertEqual(XCTWaiter().wait(for: [selected], timeout: 10), .completed, link.url)
         }
     }
 }

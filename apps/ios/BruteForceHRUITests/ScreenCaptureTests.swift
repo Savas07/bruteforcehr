@@ -4,10 +4,12 @@ import XCTest
 /// appearance and text size and passes its options through `TEST_RUNNER_`-prefixed environment
 /// variables (xcodebuild strips the prefix). Skipped in normal test runs.
 ///
-/// - `testCaptureEveryTab`: the title-only shell, one screenshot per tab.
+/// - `testCaptureEveryTab`: the title-only shell, one screenshot per tab. It needs a session on
+///   the simulator (signed out, the app shows sign-in and the capture is skipped).
 /// - `testCaptureDesignScreens`: design mode (Debug builds), one screenshot per core screen and
 ///   state, launched with `-BFHRScreen`, `-BFHRDesign` and `-BFHRState`; or, for the screen
-///   `update-gate`, the update banner / blocking screen over Today (`-BFHRUpdate`).
+///   `update-gate`, the update banner / blocking screen over Today (`-BFHRUpdate`); or, for
+///   `sign-in`, the signed-out screens (`-BFHRSignIn`).
 ///
 /// Deep links go through `XCUIApplication.open`, because `simctl openurl` shows a system
 /// "Open in …?" confirmation over the app.
@@ -31,7 +33,15 @@ final class ScreenCaptureTests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments += english
         app.launch()
-        XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 15))
+        let signIn = app.descendants(matching: .any)["signIn"]
+        let shown = XCTNSPredicateExpectation(
+            predicate: NSPredicate { _, _ in app.tabBars.firstMatch.exists || signIn.exists },
+            object: nil
+        )
+        XCTAssertEqual(XCTWaiter().wait(for: [shown], timeout: 15), .completed)
+        if signIn.exists {
+            throw XCTSkip("Signed out: the title-only shell needs a session on this simulator")
+        }
 
         let tabs = [("today", "Today"), ("jobs", "Jobs"), ("tracker", "Tracker"), ("cvs", "CVs"), ("mail", "Mail")]
         for (tab, title) in tabs {
@@ -55,6 +65,10 @@ final class ScreenCaptureTests: XCTestCase {
 
         if screens == ["update-gate"] {
             try captureUpdateGate(states: list("BFHR_CAPTURE_STATES") ?? ["available", "required"], directory: directory, suffix: suffix)
+            return
+        }
+        if screens == ["sign-in"] {
+            try captureSignIn(states: states, directory: directory, suffix: suffix)
             return
         }
 
@@ -99,6 +113,21 @@ final class ScreenCaptureTests: XCTestCase {
             // Past the banner's fade-in and the cover's slide-up.
             Thread.sleep(forTimeInterval: 1.5)
             let file = directory.appendingPathComponent("update-gate-\(state)-\(suffix).png")
+            try XCUIScreen.main.screenshot().pngRepresentation.write(to: file)
+            app.terminate()
+        }
+    }
+
+    /// The signed-out screens (`-BFHRSignIn <state>`), saved as `sign-in-<state>-<theme>[-ax].png`.
+    @MainActor
+    private func captureSignIn(states: [String], directory: URL, suffix: String) throws {
+        for state in states {
+            let app = XCUIApplication()
+            app.launchArguments += english + ["-BFHRSignIn", state]
+            app.launch()
+            XCTAssertTrue(app.descendants(matching: .any)["signIn"].waitForExistence(timeout: 20), "sign-in \(state)")
+            Thread.sleep(forTimeInterval: 1.0)
+            let file = directory.appendingPathComponent("sign-in-\(state)-\(suffix).png")
             try XCUIScreen.main.screenshot().pngRepresentation.write(to: file)
             app.terminate()
         }

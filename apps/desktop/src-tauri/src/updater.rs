@@ -405,6 +405,12 @@ mod tests {
             !updater["pubkey"].as_str().unwrap_or("").is_empty(),
             "updater pubkey"
         );
+        // The signature's trusted comment must name the announced version (no downgrade by a
+        // crafted manifest that pairs a new version with an older signed bundle).
+        assert_eq!(
+            updater["requireSignedVersion"],
+            serde_json::Value::Bool(true)
+        );
         let beta = beta_endpoints(Some(updater)).unwrap();
         assert_ne!(
             beta.iter().map(url::Url::as_str).collect::<Vec<_>>(),

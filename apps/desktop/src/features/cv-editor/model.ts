@@ -23,6 +23,15 @@ import type { CompanyVM, ModelContext, SourceVM, StatusVM, TimeVM, UserData } fr
 import { companyVM, sourceVM, statusVM } from "../../shared/model/vocabulary";
 import type { CvDraft, CvDraftItem, CvDraftSection } from "./draft";
 
+/**
+ * What the CV editor reads. The profile is null until onboarding writes it (the CVs area works
+ * without it; "Start from your profile" needs it).
+ */
+export type CvEditorData = Pick<
+  UserData,
+  "cvs" | "cvRevisions" | "applications" | "renderedFiles" | "jobs" | "jobMatches"
+> & { readonly profile: UserData["profile"] | null };
+
 /* ------------------------------------------------------------------------------------------------
  * View-model types.
  * ---------------------------------------------------------------------------------------------- */
@@ -113,6 +122,7 @@ export interface CvSaveStatusVM {
 /** Template + theme summary for the toolbar's Template button and the Design tab. */
 export interface CvDesignVM {
   readonly templateId: string;
+  readonly fontPair: string;
   /** "Classic". */
   readonly templateLabel: string;
   /** User-chosen `#RRGGBB` for the swatch (CV content, not a UI colour). */
@@ -370,6 +380,8 @@ export interface CvEditorVM {
   };
   /** The draft of each of this CV's revisions, for Restore (a restore writes a new revision). */
   readonly revisionDrafts: Readonly<Record<string, CvDraft>>;
+  /** Each revision's stored content: writes build on it (content.ts `draftToContent`). */
+  readonly revisionContents: Readonly<Record<string, CvContent>>;
 }
 
 export interface CvEditorModel {
@@ -379,6 +391,22 @@ export interface CvEditorModel {
   /** `cvId` param when it names a CV, else the default CV, else the first one; null with no CVs. */
   readonly selectedCvId: string | null;
   readonly editor: CvEditorVM | null;
+  /** Every CV's write inputs by id (list actions: rename, archive, duplicate, variant). */
+  readonly records: Readonly<Record<string, CvRecordVM>>;
+  /** Source of "Start from your profile" (null until onboarding wrote the profile). */
+  readonly profile: CvEditorData["profile"];
+}
+
+/** What list actions need to write a CV: its version and current content. */
+export interface CvRecordVM {
+  readonly cvId: string;
+  readonly title: string;
+  readonly language: string;
+  readonly version: number;
+  readonly parentCvId: string | null;
+  readonly currentRevisionId: string;
+  readonly archived: boolean;
+  readonly content: CvContent | null;
 }
 
 /* ------------------------------------------------------------------------------------------------
@@ -1264,11 +1292,11 @@ function activeGroups(cvs: readonly Cv[]): { readonly base: Cv; readonly variant
   }));
 }
 
-function selectCvId(data: Pick<UserData, "cvs" | "profile">, cvId: string | undefined): string | null {
+function selectCvId(data: Pick<CvEditorData, "cvs" | "profile">, cvId: string | undefined): string | null {
   if (cvId !== undefined && data.cvs.some((cv) => cv.id === cvId)) return cvId;
   const groups = activeGroups(data.cvs);
   const flat = groups.flatMap((group) => [group.base, ...group.variants]);
-  const profileDefault = flat.find((cv) => cv.id === data.profile.defaultCvId);
+  const profileDefault = flat.find((cv) => cv.id === data.profile?.defaultCvId);
   const first =
     profileDefault ?? flat.find((cv) => cv.isDefault) ?? flat[0] ?? [...data.cvs].sort(byRecentEdit)[0];
   return first?.id ?? null;
@@ -1401,6 +1429,7 @@ function designVM(cv: Cv, ctx: ModelContext): CvDesignVM {
   const paperLabel = ctx.intl.formatMessage(PAPER_MESSAGES[cv.theme.paperSize]);
   return {
     templateId: cv.templateId,
+    fontPair: cv.theme.fontPair,
     templateLabel,
     accentColor: cv.theme.accentColor,
     fontPairLabel,
@@ -1570,9 +1599,9 @@ function draftVM(cv: Cv, content: CvContent, sections: readonly CvSectionVM[], c
     },
     summary: basics?.summary ?? "",
     sections: draftSections,
-    paperSize: cv.theme.paperSize,
-    density: cv.theme.density,
-    accentColor: cv.theme.accentColor,
+    paperSize: content.meta.theme.paperSize,
+    density: content.meta.theme.density,
+    accentColor: content.meta.theme.accentColor,
     showPhoto: Boolean(present(basics?.image)),
     showDateOfBirth: false,
   };
@@ -1587,7 +1616,7 @@ function monthOptions(ctx: ModelContext): { readonly value: string; readonly lab
 }
 
 /** Jobs for the Check tab: the CV's tailoring target or latest use first, then the best matches. */
-function checkVM(cv: Cv, data: UserData): CvEditorVM["check"] {
+function checkVM(cv: Cv, data: CvEditorData): CvEditorVM["check"] {
   const tailoredFor = data.cvRevisions
     .filter((revision) => revision.cvId === cv.id && revision.jobId !== null)
     .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())[0]?.jobId;
@@ -1606,7 +1635,7 @@ function checkVM(cv: Cv, data: UserData): CvEditorVM["check"] {
   return { jobs, defaultJobId: jobs[0]?.jobId ?? null };
 }
 
-function editorVM(cv: Cv, byId: ReadonlyMap<string, Cv>, data: UserData, ctx: ModelContext): CvEditorVM {
+function editorVM(cv: Cv, byId: ReadonlyMap<string, Cv>, data: CvEditorData, ctx: ModelContext): CvEditorVM {
   const revisionsById = new Map(data.cvRevisions.map((revision) => [revision.id, revision]));
   const content: CvContent = revisionsById.get(cv.currentRevisionId)?.content ?? {
     meta: { template: cv.templateId, theme: cv.theme, sectionOrder: [], customSections: [] },
@@ -1672,6 +1701,9 @@ function editorVM(cv: Cv, byId: ReadonlyMap<string, Cv>, data: UserData, ctx: Mo
         label: ctx.intl.formatMessage(DENSITY_MESSAGES[value]),
       })),
     },
+    revisionContents: Object.fromEntries(
+      data.cvRevisions.filter((revision) => revision.cvId === cv.id).map((revision) => [revision.id, revision.content]),
+    ),
     revisionDrafts: Object.fromEntries(
       data.cvRevisions
         .filter((revision) => revision.cvId === cv.id)
@@ -1685,7 +1717,7 @@ function editorVM(cv: Cv, byId: ReadonlyMap<string, Cv>, data: UserData, ctx: Mo
  * ---------------------------------------------------------------------------------------------- */
 
 export function buildCvEditorModel(
-  data: UserData,
+  data: CvEditorData,
   ctx: ModelContext,
   params: Readonly<Record<string, string | undefined>>,
 ): CvEditorModel {
@@ -1710,5 +1742,21 @@ export function buildCvEditorModel(
     },
     selectedCvId,
     editor: selected ? editorVM(selected, byId, data, ctx) : null,
+    records: Object.fromEntries(
+      data.cvs.map((cv) => [
+        cv.id,
+        {
+          cvId: cv.id,
+          title: cv.title,
+          language: cv.language,
+          version: cv.version,
+          parentCvId: cv.parentCvId,
+          currentRevisionId: cv.currentRevisionId,
+          archived: cv.archivedAt !== null,
+          content: data.cvRevisions.find((revision) => revision.id === cv.currentRevisionId)?.content ?? null,
+        },
+      ]),
+    ),
+    profile: data.profile,
   };
 }

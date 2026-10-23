@@ -142,13 +142,20 @@ jobs:
           else
             pnpm build:e2e
           fi
-      # Sign-in runs against the Firebase Auth emulator (scripts/with-auth-emulator.sh), from a
-      # global firebase-tools so the emulator starts within the script's wait.
+      # Specs run against the Firebase Auth, Firestore and Storage emulators
+      # (scripts/with-emulators.sh) from a global firebase-tools, so they start within the script's
+      # wait. Firestore and Storage emulators run on Java.
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
       - run: npm install --global --no-fund --no-audit firebase-tools@15.34.1
-      - run: scripts/with-auth-emulator.sh pnpm test:e2e
+      # Exports skip the Save dialog in test builds and land here (src-tauri/src/export_file.rs).
+      - run: echo "BFHR_E2E_EXPORT_DIR=$RUNNER_TEMP/exports" >> "$GITHUB_ENV"
+      - run: scripts/with-emulators.sh pnpm test:e2e
       # windows-latest has a 1024×768 display that Set-DisplayResolution can't change (run
       # 39797339032), so Windows captures are zoomed out to 75 % / 50 % (e2e/capture/capture.e2e.ts).
-      - run: scripts/with-auth-emulator.sh pnpm capture
+      - run: scripts/with-emulators.sh pnpm capture
         if: success() || failure()
       - uses: actions/upload-artifact@v7
         if: always()

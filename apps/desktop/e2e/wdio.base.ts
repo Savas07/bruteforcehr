@@ -31,6 +31,9 @@ export function baseConfig(specs: string[], timeout: number): WebdriverIO.Config
         {
           appBinaryPath,
           driverProvider: "embedded",
+          // The app's stderr in the test output: failed commands log their cause there
+          // (src-tauri/src/commands.rs).
+          captureBackendLogs: true,
         },
       ],
     ],

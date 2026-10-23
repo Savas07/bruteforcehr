@@ -84,3 +84,8 @@ renderCvHtml({ resume, meta, templateId, theme: { accent, fontPair, density }, p
 - Font updates go through `pnpm --filter @bfhr/cv-render fonts` (a test fails when `src/fonts.generated.ts` or the OFL texts are stale).
 - `docx` is pinned to `~9.13.0`: 9.14.0 was inside pnpm's `minimumReleaseAge` on 2026-10-23.
 - DOCX visual fidelity (fonts, right tabs) is verified structurally in tests and with macOS Quick Look only; a check in Microsoft Word is an owner task.
+
+## Addendum: editing sessions and revisions (desktop + iOS, M2)
+
+- **One revision per editing session**, not per keystroke or pause. A session ends after 20 s without edits, on switching CV or leaving the CVs area, when the window is hidden, on Mod+S, or before a restart; its end writes one revision. Until then the working copy is kept on the device (desktop: `localStorage`), so a crash or quit loses nothing (`apps/desktop/src/features/cv-editor/session.ts`).
+- **A save is one batch**: create `revisions/{new}` + update `cvs/{id}` (`currentRevisionId`, mirrored `templateId`/`theme`, `updatedAt`, `version + 1`). No transactions (they fail offline). The rules accept only `version + 1`, so a stale write is rejected when it reaches the server; that rejection is the conflict, and the content is kept as an orphan revision that "Keep this version" adopts. "Use the other version" drops the local copy; Compare shows a line diff. Restores and accepted AI suggestions are new revisions too.

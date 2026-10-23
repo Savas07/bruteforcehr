@@ -2,16 +2,31 @@
  * Structured editor (components.md `SectionAccordion` + `SectionJumpNav`, `ItemCard` /
  * `ItemInlineForm`, `BulletListEditor`): sections as accordion cards in the CV's order, items as
  * cards that open into inline forms, one field per bullet. Header is pinned first; every other
- * section and item moves with the ↑ / ↓ buttons or Alt+↑ / Alt+↓. Pending AI suggestions replace
- * the bullet they would change with a `TrackedChange` until the user decides.
+ * section and item moves with the ↑ / ↓ buttons or Alt+↑ / Alt+↓. Each bullet and the summary has
+ * an "Improve with AI" menu (✦, Mod+J); pending AI suggestions replace the text they would change
+ * with a `TrackedChange` until the user decides.
  */
-import { ArrowDown, ArrowUp, ChevronDown, ChevronRight, Plus, Trash2, X } from "lucide-react";
-import { useLayoutEffect, useRef, type ReactNode, type TextareaHTMLAttributes } from "react";
+import {
+  ArrowDown,
+  ArrowUp,
+  ChevronDown,
+  ChevronRight,
+  LoaderCircle,
+  Plus,
+  Sparkles,
+  Trash2,
+  X,
+} from "lucide-react";
+import { DropdownMenu } from "radix-ui";
+import { useLayoutEffect, useRef, useState, type ReactNode, type TextareaHTMLAttributes } from "react";
 import { defineMessages, useIntl } from "react-intl";
 import { cx } from "../../shared/cx";
+import { useKeyBindings } from "../../shared/keyboard/useKeyBindings";
 import { Button, IconButton } from "../../shared/ui/Button";
 import { GhostRow } from "../../shared/ui/EmptyState";
+import { MenuContent, MenuItem, MenuSub } from "../../shared/ui/Menu";
 import { ScrollStrip } from "../../shared/ui/ScrollStrip";
+import { ASSIST_LANGUAGES, assistKey, type AssistAction, type AssistLanguage } from "./assist";
 import {
   insertBullet,
   removeBullet,
@@ -23,10 +38,11 @@ import {
   type CvDraftItem,
   type CvDraftSection,
   type CvItemField,
+  type CvTextTarget,
 } from "./draft";
 import type { CvEditorVM, CvItemFieldsVM, CvSectionVM } from "./model";
 import { cvDateRange } from "./preview-document";
-import type { CvSuggestionVM } from "./suggestions";
+import { SUGGESTION_MODE_MESSAGES, type CvSuggestionVM } from "./suggestions";
 import { TrackedChange } from "./TrackedChange";
 
 const messages = defineMessages({
@@ -66,6 +82,28 @@ const messages = defineMessages({
     defaultMessage: "{count, plural, one {# suggestion} other {# suggestions}}",
     description: "Badge on a collapsed CV entry with pending AI suggestions",
   },
+  assistMenu: { id: "cv-editor.assist.menu", defaultMessage: "Improve with AI" },
+  assistLine: {
+    id: "cv-editor.assist.line",
+    defaultMessage: "Improve line {number, number} with AI",
+    description: "Accessible name of the ✦ button beside a CV bullet",
+  },
+  assistBusy: {
+    id: "cv-editor.assist.busy",
+    defaultMessage: "Getting suggestions…",
+    description: "The ✦ button while the AI request for that bullet or summary runs",
+  },
+  assistOffline: {
+    id: "cv-editor.assist.offline",
+    defaultMessage: "Needs an internet connection.",
+    description: "Why 'Improve with AI' is unavailable while offline",
+  },
+  assistEmpty: {
+    id: "cv-editor.assist.empty",
+    defaultMessage: "Write something first.",
+    description: "Why 'Improve with AI' is unavailable on an empty bullet or summary",
+  },
+  keysGroup: { id: "cv-editor.keys.group", defaultMessage: "CV editor" },
 });
 
 /** Year choices for month-year pickers, newest first (CV dates, not a clock reading). */
@@ -83,6 +121,8 @@ export interface EditorOps {
   readonly useSuggestion: (id: string, then: "done" | "edit") => void;
   readonly keepSuggestion: (id: string) => void;
   readonly fillSuggestion: (id: string, placeholder: string, value: string) => void;
+  /** Ask the AI for alternatives to one bullet or the summary (`targetLanguage` for `translate`). */
+  readonly assist: (target: CvTextTarget, action: AssistAction, targetLanguage?: AssistLanguage) => void;
 }
 
 /** A textarea that grows with its content (one line per bullet by default). */
@@ -104,6 +144,109 @@ function AutoTextarea(props: TextareaHTMLAttributes<HTMLTextAreaElement>) {
         props.className,
       )}
     />
+  );
+}
+
+/** What every "Improve with AI" control needs; built once by `EditorPane`. */
+interface AssistControls {
+  /** `assistKey`s of targets whose request is running. */
+  readonly busy: ReadonlySet<string>;
+  /** False offline: the control stays visible, disabled with the reason. */
+  readonly available: boolean;
+  /** The CV's language, left out of "Translate ▸". */
+  readonly language: string;
+  /** `assistKey` of the target whose menu is open (Mod+J opens it from the field). */
+  readonly openKey: string | null;
+  readonly setOpenKey: (key: string | null) => void;
+  readonly run: EditorOps["assist"];
+}
+
+const ASSIST_ACTIONS = ["rewrite", "shorten", "strongerVerb"] as const satisfies readonly AssistAction[];
+
+/**
+ * ✦ beside a bullet or the summary: Rewrite, Shorten, Stronger verb, Translate ▸. Shown on hover or
+ * focus within its row (`group/assist` + `data-assist-row`), always in the Tab order; spinner and
+ * `aria-busy` while that target's request runs. Closing the menu puts focus back in the field.
+ */
+function AssistControl({
+  target,
+  text,
+  label,
+  controls,
+}: {
+  target: CvTextTarget;
+  text: string;
+  /** Accessible name: "Improve line 2 with AI". */
+  label: string;
+  controls: AssistControls;
+}) {
+  const intl = useIntl();
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const key = assistKey(target);
+  const busy = controls.busy.has(key);
+  const open = controls.openKey === key && !busy;
+  const className = cx(
+    "mt-1 transition-opacity duration-(--bfhr-duration-fast)",
+    !busy && !open && "opacity-0 group-hover/assist:opacity-100 group-focus-within/assist:opacity-100",
+  );
+  const disabledReason = !controls.available
+    ? intl.formatMessage(messages.assistOffline)
+    : text.trim() === ""
+      ? intl.formatMessage(messages.assistEmpty)
+      : null;
+  if (disabledReason)
+    return (
+      <IconButton
+        size="sm"
+        icon={Sparkles}
+        label={label}
+        disabledReason={disabledReason}
+        className={className}
+      />
+    );
+  // "de-AT" → "de": the CV's own language is never a translation target.
+  const cvLanguage = controls.language.split("-")[0]?.toLowerCase();
+  return (
+    <DropdownMenu.Root open={open} onOpenChange={(next) => controls.setOpenKey(next && !busy ? key : null)}>
+      <DropdownMenu.Trigger asChild>
+        <IconButton
+          ref={triggerRef}
+          size="sm"
+          icon={busy ? LoaderCircle : Sparkles}
+          label={busy ? intl.formatMessage(messages.assistBusy) : label}
+          shortcut="Mod+J"
+          aria-busy={busy || undefined}
+          data-assist-key={key}
+          className={cx(className, busy && "[&>svg]:animate-spin")}
+        />
+      </DropdownMenu.Trigger>
+      <MenuContent
+        align="end"
+        aria-label={intl.formatMessage(messages.assistMenu)}
+        onCloseAutoFocus={(event) => {
+          const field = triggerRef.current?.closest("[data-assist-row]")?.querySelector("textarea");
+          if (!field) return;
+          event.preventDefault();
+          field.focus();
+        }}
+      >
+        {ASSIST_ACTIONS.map((action) => (
+          <MenuItem key={action} onSelect={() => controls.run(target, action)}>
+            {intl.formatMessage(SUGGESTION_MODE_MESSAGES[action].label)}
+          </MenuItem>
+        ))}
+        <MenuSub label={intl.formatMessage(SUGGESTION_MODE_MESSAGES.translate.label)}>
+          {ASSIST_LANGUAGES.filter((language) => language !== cvLanguage).map((language) => (
+            <MenuItem key={language} onSelect={() => controls.run(target, "translate", language)}>
+              {/* The language in its own language: "English", "Türkçe", "Deutsch". */}
+              <span lang={language}>
+                {new Intl.DisplayNames([language], { type: "language" }).of(language) ?? language}
+              </span>
+            </MenuItem>
+          ))}
+        </MenuSub>
+      </MenuContent>
+    </DropdownMenu.Root>
   );
 }
 
@@ -265,6 +408,7 @@ function Bullets({
   language,
   pending,
   fills,
+  assist,
   ops,
 }: {
   section: CvDraftSection;
@@ -273,6 +417,7 @@ function Bullets({
   language: string;
   pending: readonly CvSuggestionVM[];
   fills: Readonly<Record<string, Readonly<Record<string, string>>>>;
+  assist: AssistControls;
   ops: EditorOps;
 }) {
   const intl = useIntl();
@@ -283,7 +428,7 @@ function Bullets({
         {item.bullets.map((bullet, index) => {
           const suggestion = pending.find((candidate) => candidate.target.bulletIndex === index);
           return (
-            <li key={index} className="flex items-start gap-1.5">
+            <li key={index} data-assist-row className="group/assist flex items-start gap-1.5">
               <span aria-hidden className="text-fg-tertiary mt-2 text-callout">
                 •
               </span>
@@ -312,6 +457,14 @@ function Bullets({
                   />
                 )}
               </div>
+              {!suggestion && (
+                <AssistControl
+                  target={{ sectionKey: section.key, itemId: item.id, bulletIndex: index }}
+                  text={bullet}
+                  label={intl.formatMessage(messages.assistLine, { number: index + 1 })}
+                  controls={assist}
+                />
+              )}
               {!suggestion && (
                 <IconButton
                   size="sm"
@@ -350,6 +503,7 @@ function ItemBlock({
   expanded,
   pending,
   fills,
+  assist,
   ops,
 }: {
   editor: CvEditorVM;
@@ -360,6 +514,7 @@ function ItemBlock({
   expanded: boolean;
   pending: readonly CvSuggestionVM[];
   fills: Readonly<Record<string, Readonly<Record<string, string>>>>;
+  assist: AssistControls;
   ops: EditorOps;
 }) {
   const intl = useIntl();
@@ -530,6 +685,7 @@ function ItemBlock({
               language={draft.language}
               pending={pending}
               fills={fills}
+              assist={assist}
               ops={ops}
             />
           )}
@@ -561,6 +717,7 @@ function SectionCard({
   expandedItems,
   pending,
   fills,
+  assist,
   ops,
 }: {
   editor: CvEditorVM;
@@ -571,6 +728,7 @@ function SectionCard({
   expandedItems: ReadonlySet<string>;
   pending: readonly CvSuggestionVM[];
   fills: Readonly<Record<string, Readonly<Record<string, string>>>>;
+  assist: AssistControls;
   ops: EditorOps;
 }) {
   const intl = useIntl();
@@ -650,15 +808,27 @@ function SectionCard({
               />
             ) : (
               <div onFocus={() => ops.focusBlock("summary")}>
-                <AutoTextarea
-                  value={draft.summary}
-                  lang={draft.language}
-                  spellCheck
-                  aria-labelledby={headingId}
-                  aria-describedby={`${vm.anchorId}-hint`}
-                  placeholder={intl.formatMessage(messages.summaryHint)}
-                  onChange={(event) => ops.change((current) => updateSummary(current, event.target.value))}
-                />
+                <div data-assist-row className="group/assist flex items-start gap-1.5">
+                  <div className="min-w-0 flex-1">
+                    <AutoTextarea
+                      value={draft.summary}
+                      lang={draft.language}
+                      spellCheck
+                      aria-labelledby={headingId}
+                      aria-describedby={`${vm.anchorId}-hint`}
+                      placeholder={intl.formatMessage(messages.summaryHint)}
+                      onChange={(event) =>
+                        ops.change((current) => updateSummary(current, event.target.value))
+                      }
+                    />
+                  </div>
+                  <AssistControl
+                    target={{ sectionKey: section.key, itemId: null, bulletIndex: null }}
+                    text={draft.summary}
+                    label={intl.formatMessage(messages.assistMenu)}
+                    controls={assist}
+                  />
+                </div>
                 <p id={`${vm.anchorId}-hint`} className="text-fg-tertiary mt-1 text-caption1">
                   {intl.formatMessage(messages.summaryHint)}
                 </p>
@@ -685,6 +855,7 @@ function SectionCard({
                         expanded={expandedItems.has(item.id)}
                         pending={sectionPending.filter((candidate) => candidate.target.itemId === item.id)}
                         fills={fills}
+                        assist={assist}
                         ops={ops}
                       />
                     ))}
@@ -716,6 +887,8 @@ export function EditorPane({
   expandedItems,
   pending,
   fills,
+  assistBusy,
+  assistAvailable,
   ops,
 }: {
   editor: CvEditorVM;
@@ -726,9 +899,40 @@ export function EditorPane({
   expandedItems: ReadonlySet<string>;
   pending: readonly CvSuggestionVM[];
   fills: Readonly<Record<string, Readonly<Record<string, string>>>>;
+  /** `assistKey`s of bullets / the summary whose "Improve with AI" request is running. */
+  assistBusy: ReadonlySet<string>;
+  /** False offline: the ✦ controls stay visible, disabled with the reason. */
+  assistAvailable: boolean;
   ops: EditorOps;
 }) {
   const intl = useIntl();
+  const [assistOpen, setAssistOpen] = useState<string | null>(null);
+  const assist: AssistControls = {
+    busy: assistBusy,
+    available: assistAvailable,
+    language: draft.language,
+    openKey: assistOpen,
+    setOpenKey: setAssistOpen,
+    run: ops.assist,
+  };
+  // The enabled ✦ of the row holding focus (absent while offline or the field is empty).
+  const focusedAssistKey = () =>
+    document.activeElement?.closest("[data-assist-row]")?.querySelector<HTMLElement>("[data-assist-key]")
+      ?.dataset.assistKey;
+  useKeyBindings([
+    {
+      id: "cv-editor.assist.open",
+      keys: "Mod+J",
+      label: intl.formatMessage(messages.assistMenu),
+      group: intl.formatMessage(messages.keysGroup),
+      enabled: assistAvailable,
+      when: () => focusedAssistKey() !== undefined,
+      run: () => {
+        const key = focusedAssistKey();
+        if (key && !assistBusy.has(key)) setAssistOpen(key);
+      },
+    },
+  ]);
   const vmByKey = new Map(editor.sections.map((section) => [section.key, section]));
   return (
     <div className="flex min-h-0 min-w-0 flex-1 flex-col">
@@ -772,6 +976,7 @@ export function EditorPane({
                 expandedItems={expandedItems}
                 pending={pending.filter((candidate) => candidate.target.sectionKey === section.key)}
                 fills={fills}
+                assist={assist}
                 ops={ops}
               />
             );

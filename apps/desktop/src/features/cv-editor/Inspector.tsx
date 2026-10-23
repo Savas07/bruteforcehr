@@ -4,8 +4,8 @@
  * over the preview otherwise. Toggle: Mod+Shift+D.
  */
 import { AlertDialog, Tabs } from "radix-ui";
-import { Check as CheckIcon, FileText, Plus, RotateCcw, Sparkles, X } from "lucide-react";
-import { useState } from "react";
+import { Check as CheckIcon, Plus, RotateCcw, Sparkles, X } from "lucide-react";
+import { type ReactNode, useId, useState } from "react";
 import { defineMessages, useIntl } from "react-intl";
 import { cx } from "../../shared/cx";
 import { useKeyBindings } from "../../shared/keyboard/useKeyBindings";
@@ -26,22 +26,17 @@ export type InspectorTab = "design" | "check" | "suggestions" | "history";
 const messages = defineMessages({
   label: { id: "cv-editor.inspector.label", defaultMessage: "Inspector" },
   close: { id: "cv-editor.inspector.close", defaultMessage: "Hide inspector" },
+  compare: { id: "cv-editor.history.compare", defaultMessage: "Compare with now" },
   design: { id: "cv-editor.inspector.design", defaultMessage: "Design" },
   check: { id: "cv-editor.inspector.check", defaultMessage: "Check" },
   suggestions: { id: "cv-editor.inspector.suggestions", defaultMessage: "Suggestions" },
   history: { id: "cv-editor.inspector.history", defaultMessage: "History" },
-  template: { id: "cv-editor.design.templateHeading", defaultMessage: "Template" },
-  atsSafe: { id: "cv-editor.design.atsSafe", defaultMessage: "ATS-safe" },
-  templateNote: {
-    id: "cv-editor.design.templateNote",
-    defaultMessage: "One column, standard headings and real text, so application systems read every section.",
-  },
   paper: { id: "cv-editor.design.paperHeading", defaultMessage: "Paper" },
   density: { id: "cv-editor.design.densityHeading", defaultMessage: "Spacing" },
   accent: { id: "cv-editor.design.accentHeading", defaultMessage: "Accent and fonts" },
   personal: { id: "cv-editor.design.personalHeading", defaultMessage: "Photo and date of birth" },
   originalFile: { id: "cv-editor.design.originalFile", defaultMessage: "Original file" },
-  checkJob: { id: "cv-editor.check.job", defaultMessage: "Check against" },
+  checkJob: { id: "cv-editor.check.job", defaultMessage: "Job" },
   checkAll: { id: "cv-editor.check.all", defaultMessage: "All {count, number}" },
   checkMissing: { id: "cv-editor.check.missing", defaultMessage: "Missing {count, number}" },
   checkCovered: { id: "cv-editor.check.covered", defaultMessage: "Covered {count, number}" },
@@ -53,9 +48,10 @@ const messages = defineMessages({
     id: "cv-editor.check.disclaimer",
     defaultMessage: "Keyword checks are a guide, not a guarantee.",
   },
-  noJobs: {
-    id: "cv-editor.check.noJobs",
-    defaultMessage: "Save a job, then check which of its keywords your CV covers.",
+  savedJobHeading: {
+    id: "cv-editor.check.savedJobHeading",
+    defaultMessage: "Keywords from a saved job",
+    description: "Check tab: heading of the keyword coverage against one of the user's saved jobs",
   },
   allCovered: {
     id: "cv-editor.check.allCovered",
@@ -113,34 +109,21 @@ function DesignTab({
   editor,
   draft,
   onTheme,
+  controls,
   onPersonal,
 }: {
   editor: CvEditorVM;
   draft: CvDraft;
   onTheme: (patch: Partial<Pick<CvDraft, "paperSize" | "density">>) => void;
+  /** Template gallery, accent and fonts (DesignControls). */
+  controls: ReactNode;
   onPersonal: (patch: Partial<Pick<CvDraft, "showPhoto" | "showDateOfBirth">>) => void;
 }) {
   const intl = useIntl();
-  const { design, personalDetails, originalFile } = editor;
+  const { personalDetails, originalFile } = editor;
   return (
     <div className="flex flex-col gap-6">
-      <section>
-        <SectionHeading>{intl.formatMessage(messages.template)}</SectionHeading>
-        <div className="border-line-subtle flex items-start gap-3 rounded-md border p-3">
-          <FileText aria-hidden className="text-fg-tertiary mt-0.5 size-5 shrink-0" />
-          <div>
-            <p className="text-callout font-semibold">
-              {design.templateLabel}
-              <span className="bg-success-subtle text-success-text ml-2 rounded-sm px-1.5 py-0.5 text-caption1 font-normal">
-                {intl.formatMessage(messages.atsSafe)}
-              </span>
-            </p>
-            <p className="text-fg-secondary mt-1 text-footnote">
-              {intl.formatMessage(messages.templateNote)}
-            </p>
-          </div>
-        </div>
-      </section>
+      {controls}
       <section>
         <SectionHeading>{intl.formatMessage(messages.paper)}</SectionHeading>
         <SegmentedControl
@@ -160,19 +143,6 @@ function DesignTab({
           value={draft.density}
           onValueChange={(density) => onTheme({ density })}
         />
-      </section>
-      <section>
-        <SectionHeading>{intl.formatMessage(messages.accent)}</SectionHeading>
-        <p className="flex items-center gap-2 text-callout">
-          {/* The swatch shows the CV's own accent (CV content, not a UI colour). */}
-          <span
-            aria-hidden
-            className="border-line-subtle size-4 rounded-full border"
-            style={{ backgroundColor: design.accentColor }}
-          />
-          <span className="font-mono text-footnote">{design.accentColor}</span>
-          <span className="text-fg-secondary">· {design.fontPairLabel}</span>
-        </p>
       </section>
       {personalDetails && (
         <section>
@@ -220,6 +190,7 @@ function CheckTab({
   coverage,
   onAddSkill,
   onExclude,
+  atsPanel,
 }: {
   editor: CvEditorVM;
   jobId: string | null;
@@ -227,85 +198,106 @@ function CheckTab({
   coverage: CvCoverage | null;
   onAddSkill: (keyword: string) => void;
   onExclude: (keyword: string) => void;
+  /** Readback of the exported PDF (ats/AtsCheckPanel). */
+  atsPanel: ReactNode;
 }) {
   const intl = useIntl();
+  const headingId = useId();
+  const keywordId = useId();
   const [filter, setFilter] = useState<KeywordFilter>("missing");
-  if (editor.check.jobs.length === 0 || coverage === null) {
-    return <EmptyState kind="subArea" body={intl.formatMessage(messages.noJobs)} />;
-  }
+  // Without a saved job, the PDF check's pasted job description is the one keyword check.
+  if (editor.check.jobs.length === 0 || coverage === null) return <>{atsPanel}</>;
   const rows = [
     ...(filter === "covered" ? [] : coverage.missing.map((keyword) => ({ keyword, covered: false }))),
     ...(filter === "missing" ? [] : coverage.covered.map((keyword) => ({ keyword, covered: true }))),
   ];
   const ratio = coverage.total === 0 ? 0 : coverage.covered.length / coverage.total;
   return (
-    <div className="flex flex-col gap-4">
-      <label className="flex flex-col gap-1">
-        <span className="text-fg-secondary text-footnote font-semibold">
-          {intl.formatMessage(messages.checkJob)}
-        </span>
-        <select
-          value={jobId ?? ""}
-          onChange={(event) => onJob(event.target.value)}
-          className="border-line-control bg-surface-base h-8 rounded-md border px-2 text-callout"
-        >
-          {editor.check.jobs.map((job) => (
-            <option key={job.jobId} value={job.jobId}>
-              {job.label}
-            </option>
-          ))}
-        </select>
-      </label>
-      <div>
-        <p className="text-callout">{coverage.fact}</p>
-        {/* Neutral bar: a fact, never a grade colour. */}
-        <div aria-hidden className="bg-line-subtle mt-2 h-1.5 overflow-hidden rounded-full">
-          <div className="bg-fg-secondary h-full rounded-full" style={{ width: `${ratio * 100}%` }} />
+    <div className="flex flex-col gap-6">
+      {/* Live and needs no export, so it comes first; the PDF check (with its own paste box) follows. */}
+      <section aria-labelledby={headingId} className="flex flex-col gap-4">
+        <h3 id={headingId} className="text-fg-secondary -mb-2 text-footnote font-semibold">
+          {intl.formatMessage(messages.savedJobHeading)}
+        </h3>
+        <label className="flex flex-col gap-1">
+          <span className="text-fg-secondary text-footnote">{intl.formatMessage(messages.checkJob)}</span>
+          <select
+            value={jobId ?? ""}
+            onChange={(event) => onJob(event.target.value)}
+            className="border-line-control bg-surface-base h-8 rounded-md border px-2 text-callout"
+          >
+            {editor.check.jobs.map((job) => (
+              <option key={job.jobId} value={job.jobId}>
+                {job.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <div>
+          <p className="text-callout">{coverage.fact}</p>
+          {/* Neutral bar: a fact, never a grade colour. */}
+          <div aria-hidden className="bg-line-subtle mt-2 h-1.5 overflow-hidden rounded-full">
+            <div className="bg-fg-secondary h-full rounded-full" style={{ width: `${ratio * 100}%` }} />
+          </div>
         </div>
-      </div>
-      <SegmentedControl
-        size="sm"
-        label={intl.formatMessage(messages.checkFilter)}
-        value={filter}
-        onValueChange={setFilter}
-        options={[
-          {
-            value: "missing",
-            label: intl.formatMessage(messages.checkMissing, { count: coverage.missing.length }),
-          },
-          {
-            value: "covered",
-            label: intl.formatMessage(messages.checkCovered, { count: coverage.covered.length }),
-          },
-          { value: "all", label: intl.formatMessage(messages.checkAll, { count: coverage.total }) },
-        ]}
-      />
-      {rows.length === 0 ? (
-        <EmptyState kind="subArea" body={intl.formatMessage(messages.allCovered)} />
-      ) : (
-        <ul className="divide-line-subtle flex flex-col divide-y">
-          {rows.map(({ keyword, covered }) => (
-            <li key={keyword} className="flex flex-wrap items-center gap-x-2 gap-y-1 py-2">
-              <span className="min-w-0 flex-1 text-callout">
-                {covered && <CheckIcon aria-hidden className="text-success-text mr-1.5 inline size-4" />}
-                {keyword}
-                {covered && <span className="sr-only"> · {intl.formatMessage(messages.inCv)}</span>}
-              </span>
-              {!covered && (
-                <span className="flex gap-1">
-                  <Button size="sm" variant="secondary" icon={Plus} onClick={() => onAddSkill(keyword)}>
-                    {intl.formatMessage(messages.addToSkills)}
-                  </Button>
-                  <Button size="sm" variant="plain" onClick={() => onExclude(keyword)}>
-                    {intl.formatMessage(messages.notMine)}
-                  </Button>
+        <SegmentedControl
+          size="sm"
+          label={intl.formatMessage(messages.checkFilter)}
+          value={filter}
+          onValueChange={setFilter}
+          options={[
+            {
+              value: "missing",
+              label: intl.formatMessage(messages.checkMissing, { count: coverage.missing.length }),
+            },
+            {
+              value: "covered",
+              label: intl.formatMessage(messages.checkCovered, { count: coverage.covered.length }),
+            },
+            { value: "all", label: intl.formatMessage(messages.checkAll, { count: coverage.total }) },
+          ]}
+        />
+        {rows.length === 0 ? (
+          <EmptyState kind="subArea" body={intl.formatMessage(messages.allCovered)} />
+        ) : (
+          <ul className="divide-line-subtle flex flex-col divide-y">
+            {rows.map(({ keyword, covered }, index) => (
+              <li key={keyword} className="flex flex-wrap items-center gap-x-2 gap-y-1 py-2">
+                {/* `min-w-24`: long labels (DE) wrap the buttons onto their own line instead of squeezing the keyword. */}
+                <span id={`${keywordId}-${index}`} className="min-w-24 flex-1 break-words text-callout">
+                  {covered && <CheckIcon aria-hidden className="text-success-text mr-1.5 inline size-4" />}
+                  {keyword}
+                  {covered && <span className="sr-only"> · {intl.formatMessage(messages.inCv)}</span>}
                 </span>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
-      <p className="text-fg-tertiary text-caption1">{intl.formatMessage(messages.disclaimer)}</p>
+                {!covered && (
+                  <span className="flex gap-1">
+                    {/* Described by the keyword, so each button says which one it acts on. */}
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      icon={Plus}
+                      aria-describedby={`${keywordId}-${index}`}
+                      onClick={() => onAddSkill(keyword)}
+                    >
+                      {intl.formatMessage(messages.addToSkills)}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="plain"
+                      aria-describedby={`${keywordId}-${index}`}
+                      onClick={() => onExclude(keyword)}
+                    >
+                      {intl.formatMessage(messages.notMine)}
+                    </Button>
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+        <p className="text-fg-tertiary text-caption1">{intl.formatMessage(messages.disclaimer)}</p>
+      </section>
+      {atsPanel}
     </div>
   );
 }
@@ -466,13 +458,23 @@ function SuggestionsTab({
   );
 }
 
-function RestoreButton({ revision, onRestore }: { revision: CvRevisionVM; onRestore: () => void }) {
+/** "Restore this version" with its confirmation (history rows, and the "Compare with now" dialog). */
+export function RestoreButton({
+  revision,
+  onRestore,
+  prominent = false,
+}: {
+  revision: CvRevisionVM;
+  onRestore: () => void;
+  /** A regular secondary button (dialog footers) instead of the compact plain one (history rows). */
+  prominent?: boolean;
+}) {
   const intl = useIntl();
   if (!revision.restoreLabel) return null;
   return (
     <AlertDialog.Root>
       <AlertDialog.Trigger asChild>
-        <Button size="sm" variant="plain" icon={RotateCcw}>
+        <Button size={prominent ? "md" : "sm"} variant={prominent ? "secondary" : "plain"} icon={RotateCcw}>
           {revision.restoreLabel}
         </Button>
       </AlertDialog.Trigger>
@@ -504,9 +506,11 @@ function RestoreButton({ revision, onRestore }: { revision: CvRevisionVM; onRest
 function HistoryTab({
   editor,
   onRestore,
+  onCompare,
 }: {
   editor: CvEditorVM;
   onRestore: (revision: CvRevisionVM) => void;
+  onCompare: (revision: CvRevisionVM) => void;
 }) {
   const intl = useIntl();
   return (
@@ -533,7 +537,12 @@ function HistoryTab({
                   </time>
                   {revision.pendingSync && <SyncGlyph />}
                 </p>
-                <div className="mt-1 -ml-2">
+                <div className="mt-1 -ml-2 flex flex-wrap gap-1">
+                  {!revision.isLatest && (
+                    <Button size="sm" variant="plain" onClick={() => onCompare(revision)}>
+                      {intl.formatMessage(messages.compare)}
+                    </Button>
+                  )}
                   <RestoreButton revision={revision} onRestore={() => onRestore(revision)} />
                 </div>
               </li>
@@ -584,6 +593,9 @@ export function Inspector({
   onKeepAll,
   onShow,
   onRestore,
+  onCompare,
+  designControls,
+  atsPanel,
 }: {
   editor: CvEditorVM;
   draft: CvDraft;
@@ -606,6 +618,10 @@ export function Inspector({
   onKeepAll: () => void;
   onShow: (id: string) => void;
   onRestore: (revision: CvRevisionVM) => void;
+  /** Opens the line diff between this revision and the working copy. */
+  onCompare: (revision: CvRevisionVM) => void;
+  designControls: ReactNode;
+  atsPanel: ReactNode;
 }) {
   const intl = useIntl();
   const tabs: readonly { value: InspectorTab; label: string; count?: number }[] = [
@@ -654,7 +670,7 @@ export function Inspector({
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto p-4">
           <Tabs.Content value="design">
-            <DesignTab editor={editor} draft={draft} onTheme={onTheme} onPersonal={onPersonal} />
+            <DesignTab editor={editor} draft={draft} onTheme={onTheme} onPersonal={onPersonal} controls={designControls} />
           </Tabs.Content>
           <Tabs.Content value="check">
             <CheckTab
@@ -664,6 +680,7 @@ export function Inspector({
               coverage={coverage}
               onAddSkill={onAddSkill}
               onExclude={onExclude}
+              atsPanel={atsPanel}
             />
           </Tabs.Content>
           <Tabs.Content value="suggestions">
@@ -677,7 +694,7 @@ export function Inspector({
             />
           </Tabs.Content>
           <Tabs.Content value="history">
-            <HistoryTab editor={editor} onRestore={onRestore} />
+            <HistoryTab editor={editor} onRestore={onRestore} onCompare={onCompare} />
           </Tabs.Content>
         </div>
       </Tabs.Root>

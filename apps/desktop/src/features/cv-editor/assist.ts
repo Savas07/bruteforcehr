@@ -78,7 +78,8 @@ export function classifyAssistError(
     case "unauthenticated":
       return "signedOut";
     case "unavailable":
-      return "offline";
+      // `ai_unavailable`: the AI provider failed after retries; the connection is fine.
+      return reason === "ai_unavailable" ? "failed" : "offline";
     default:
       return "failed";
   }

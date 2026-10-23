@@ -84,6 +84,7 @@ describe("assist errors", () => {
     ["permission-denied", undefined, "signedOut"],
     ["unauthenticated", undefined, "signedOut"],
     ["unavailable", undefined, "offline"],
+    ["unavailable", "ai_unavailable", "failed"],
     ["internal", undefined, "failed"],
     ["deadline-exceeded", undefined, "failed"],
   ])("classifies %s / %s as %s", (code, reason, kind) => {

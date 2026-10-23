@@ -32,6 +32,7 @@ import {
   SpreadsheetReadError,
   type SpreadsheetReadErrorCode,
   type SpreadsheetTable,
+  type StatusLabels,
   type StatusMap,
   statusValues,
   TERMINAL_STATUSES,
@@ -210,6 +211,39 @@ export function CsvImportHost() {
   );
 }
 
+type ReadResult =
+  | {
+      readonly ok: true;
+      readonly loaded: Loaded;
+      readonly mapping: ColumnMapping;
+      readonly statusMap: StatusMap;
+      readonly dateOrder: DateOrder;
+    }
+  | { readonly ok: false; readonly problem: SpreadsheetReadErrorCode | "unreadable" };
+
+/** Reads a file and makes every guess the steps start from (columns, status words, date order). */
+function readAndGuess(
+  fileName: string,
+  bytes: Uint8Array,
+  options: { encoding?: CsvEncoding; delimiter?: CsvDelimiter },
+  labels: StatusLabels,
+  locale: string,
+): ReadResult {
+  try {
+    const table = readSpreadsheet(bytes, fileName, options);
+    const mapping = guessColumnMapping(table);
+    return {
+      ok: true,
+      loaded: { fileName, bytes, table },
+      mapping,
+      statusMap: guessedStatusMap(statusValues(table, mapping, labels)),
+      dateOrder: detectTableDateOrder(table, mapping, defaultDateOrder(locale)),
+    };
+  } catch (error) {
+    return { ok: false, problem: error instanceof SpreadsheetReadError ? error.code : "unreadable" };
+  }
+}
+
 function ImportFlow({
   initialFile,
   initialStep,
@@ -224,13 +258,20 @@ function ImportFlow({
   const stepRef = useRef<HTMLDivElement>(null);
   const labels = useMemo(() => statusLabels(intl), [intl]);
 
-  const [step, setStep] = useState<Step>("file");
-  const [problem, setProblem] = useState<SpreadsheetReadErrorCode | "unreadable" | null>(null);
-  const [loaded, setLoaded] = useState<Loaded | null>(null);
-  const [mapping, setMapping] = useState<ColumnMapping>([]);
-  const [statusMap, setStatusMap] = useState<StatusMap>({});
+  // A file handed over by the caller (drop on the Tracker, design sample) skips the picker.
+  const [initial] = useState(() =>
+    initialFile ? readAndGuess(initialFile.name, initialFile.bytes, {}, labels, intl.locale) : null,
+  );
+  const first = initial?.ok ? initial : null;
+  const [step, setStep] = useState<Step>(first ? (initialStep ?? "columns") : "file");
+  const [problem, setProblem] = useState<SpreadsheetReadErrorCode | "unreadable" | null>(
+    initial && !initial.ok ? initial.problem : null,
+  );
+  const [loaded, setLoaded] = useState<Loaded | null>(first?.loaded ?? null);
+  const [mapping, setMapping] = useState<ColumnMapping>(first?.mapping ?? []);
+  const [statusMap, setStatusMap] = useState<StatusMap>(first?.statusMap ?? {});
   const [defaultStatus, setDefaultStatus] = useState<ApplicationStatus>("applied");
-  const [dateOrder, setDateOrder] = useState<DateOrder>(defaultDateOrder(intl.locale));
+  const [dateOrder, setDateOrder] = useState<DateOrder>(first?.dateOrder ?? defaultDateOrder(intl.locale));
   const [keepUnmapped, setKeepUnmapped] = useState(true);
   const [excluded, setExcluded] = useState<ReadonlySet<number>>(new Set());
   const [included, setIncluded] = useState<ReadonlySet<number>>(new Set());
@@ -241,31 +282,20 @@ function ImportFlow({
     bytes: Uint8Array,
     options: { encoding?: CsvEncoding; delimiter?: CsvDelimiter } = {},
   ): boolean => {
-    try {
-      const table = readSpreadsheet(bytes, fileName, options);
-      const guessed = guessColumnMapping(table);
-      setLoaded({ fileName, bytes, table });
-      setMapping(guessed);
-      setStatusMap(guessedStatusMap(statusValues(table, guessed, labels)));
-      setDateOrder(detectTableDateOrder(table, guessed, defaultDateOrder(intl.locale)));
-      setExcluded(new Set());
-      setIncluded(new Set());
-      setProblem(null);
-      return true;
-    } catch (error) {
-      setProblem(error instanceof SpreadsheetReadError ? error.code : "unreadable");
+    const result = readAndGuess(fileName, bytes, options, labels, intl.locale);
+    if (!result.ok) {
+      setProblem(result.problem);
       return false;
     }
+    setLoaded(result.loaded);
+    setMapping(result.mapping);
+    setStatusMap(result.statusMap);
+    setDateOrder(result.dateOrder);
+    setExcluded(new Set());
+    setIncluded(new Set());
+    setProblem(null);
+    return true;
   };
-
-  // A file handed over by the caller (drop on the Tracker, design sample) skips the picker.
-  const started = useRef(false);
-  useEffect(() => {
-    if (started.current || !initialFile) return;
-    started.current = true;
-    if (load(initialFile.name, initialFile.bytes)) setStep(initialStep ?? "columns");
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- once, for the initial request
-  }, []);
 
   const goTo = (next: Step) => {
     setStep(next);
@@ -441,7 +471,9 @@ function ImportFlow({
         if (step !== "file") event.preventDefault();
       }}
       onOpenAutoFocus={(event) => {
-        const target = stepRef.current?.querySelector<HTMLElement>("[data-autofocus]");
+        const target = (event.currentTarget as HTMLElement | null)?.querySelector<HTMLElement>(
+          "[data-autofocus]",
+        );
         if (!target) return;
         event.preventDefault();
         target.focus();
@@ -717,7 +749,7 @@ function ColumnsStep({
               const selectId = `${baseId}-col-${column}`;
               return (
                 <tr key={column}>
-                  <th scope="row" className={cx(bodyCell, "font-medium")}>
+                  <th scope="row" className={cx(bodyCell, "text-start font-medium")}>
                     <label htmlFor={selectId} className="block truncate" title={headerName(column)}>
                       {headerName(column)}
                     </label>
@@ -883,7 +915,7 @@ function StatusesStep({
               const current = statusMap[key];
               return (
                 <tr key={key} className={current === undefined ? "bg-warning-subtle/50" : undefined}>
-                  <th scope="row" className={cx(bodyCell, "font-medium")}>
+                  <th scope="row" className={cx(bodyCell, "text-start font-medium")}>
                     <label htmlFor={selectId} className="block truncate">
                       {key === "" ? intl.formatMessage(messages.emptyValue) : value}
                     </label>

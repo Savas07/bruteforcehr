@@ -95,6 +95,11 @@ const messages = defineMessages({
   },
   suggestedTag: { id: "tracker-calendar.suggestedTag", defaultMessage: "Suggested" },
   open: { id: "tracker-calendar.open", defaultMessage: "Open {company}, {role}" },
+  openShort: {
+    id: "tracker-calendar.openShort",
+    defaultMessage: "Open",
+    description: "Agenda entry button that opens its application",
+  },
   addToCalendar: { id: "tracker-calendar.addToCalendar", defaultMessage: "Add to calendar (.ics)" },
   exportUpcoming: { id: "tracker-calendar.exportUpcoming", defaultMessage: "Upcoming interviews (.ics)" },
   noUpcoming: { id: "tracker-calendar.noUpcoming", defaultMessage: "No upcoming interviews to export." },
@@ -464,11 +469,6 @@ function ReadyCalendar({ model, stamp }: { model: TrackerCalendarModel; stamp: S
                       data-day={day}
                       tabIndex={day === focused ? 0 : -1}
                       aria-selected={day === selectedDay}
-                      aria-label={intl.formatMessage(messages.dayLabel, {
-                        date: longDayFormat.format(dayDate(day)),
-                        today: isToday ? "yes" : "no",
-                        count: dayEntries.length,
-                      })}
                       onFocus={() => setFocused(day)}
                       onClick={() => {
                         setFocused(day);
@@ -484,6 +484,13 @@ function ReadyCalendar({ model, stamp }: { model: TrackerCalendarModel; stamp: S
                             : "bg-surface-base",
                       )}
                     >
+                      <span className="sr-only">
+                        {intl.formatMessage(messages.dayLabel, {
+                          date: longDayFormat.format(dayDate(day)),
+                          today: isToday ? "yes" : "no",
+                          count: dayEntries.length,
+                        })}
+                      </span>
                       <span
                         aria-hidden="true"
                         className={cx(
@@ -497,7 +504,7 @@ function ReadyCalendar({ model, stamp }: { model: TrackerCalendarModel; stamp: S
                       >
                         {Number(day.slice(8))}
                       </span>
-                      <ul aria-hidden="true" className="flex min-h-0 flex-col gap-0.5">
+                      <ul className="flex min-h-0 flex-col gap-0.5">
                         {dayEntries.slice(0, limit).map((entry) => (
                           <EntryChip key={entry.id} entry={entry} onOpen={(id) => setOpenId(id)} />
                         ))}

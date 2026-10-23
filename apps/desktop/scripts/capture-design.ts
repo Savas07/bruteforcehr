@@ -223,13 +223,11 @@ const batches: Batch[] = sizes.map((size, sizeIndex) => ({
         audit: sizeIndex === 0 ? (theme, engine) => `${screen}-${state}-${theme}-${engine}` : null,
       })),
     ),
-    ...csvStates.map(
-      (state): Shot => ({
-        hash: (platform) => csvDesignHash(state, routeExtras(platform)),
-        file: (theme) => csvCaptureFileName(state, theme, size),
-        audit: sizeIndex === 0 ? (theme, engine) => `tracker-csv-${state}-${theme}-${engine}` : null,
-      }),
-    ),
+    ...csvStates.map((state): Shot => ({
+      hash: (platform) => csvDesignHash(state, routeExtras(platform)),
+      file: (theme) => csvCaptureFileName(state, theme, size),
+      audit: sizeIndex === 0 ? (theme, engine) => `tracker-csv-${state}-${theme}-${engine}` : null,
+    })),
   ],
 }));
 // Update states pick their own size (the rail state needs the narrow window); every one is audited.
@@ -249,13 +247,11 @@ batches.push(...updateBatches.values());
 if (authStates.length > 0)
   batches.push({
     size: captureSizes[0],
-    shots: authStates.map(
-      (state): Shot => ({
-        hash: (platform) => authDesignHash(state, routeExtras(platform)),
-        file: (theme) => authCaptureFileName(state, theme, captureSizes[0]),
-        audit: (theme, engine) => `sign-in-${state}-${theme}-${engine}`,
-      }),
-    ),
+    shots: authStates.map((state): Shot => ({
+      hash: (platform) => authDesignHash(state, routeExtras(platform)),
+      file: (theme) => authCaptureFileName(state, theme, captureSizes[0]),
+      audit: (theme, engine) => `sign-in-${state}-${theme}-${engine}`,
+    })),
   });
 
 try {

@@ -47,9 +47,9 @@ const messages = defineMessages({
     defaultMessage: "Select {company}, {role}",
   },
   openRow: {
-    id: "tracker-table.grid.openRow",
-    defaultMessage: "Open {company}, {role}",
-    description: "Accessible name of the company cell button that opens the application",
+    id: "tracker-table.grid.roleSuffix",
+    defaultMessage: ", {role}",
+    description: "Screen-reader suffix after the company name in the button that opens the application",
   },
   sortBy: {
     id: "tracker-table.grid.sortBy",
@@ -470,7 +470,6 @@ function BodyCell({
             type="button"
             data-open-id={row.applicationId}
             tabIndex={tabbable ? 0 : -1}
-            aria-label={intl.formatMessage(messages.openRow, { company: row.company.name, role: row.role })}
             onFocus={() => onFocusRow(row.applicationId)}
             onKeyDown={onKeyDown}
             onClick={() => onOpen(row.applicationId)}
@@ -479,6 +478,7 @@ function BodyCell({
             <Monogram company={row.company} size="sm" />
             <span className="min-w-0 truncate" title={row.company.name}>
               {row.company.name}
+              <span className="sr-only">{intl.formatMessage(messages.openRow, { role: row.role })}</span>
             </span>
             {row.pendingSync && <SyncGlyph />}
           </button>

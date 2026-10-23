@@ -85,10 +85,14 @@ struct CVExportSheet: View {
                     }
                     .pickerStyle(.segmented)
                     .accessibilityIdentifier("cv.export.format")
+                    // What the format is for, as a row (it changes with the choice).
+                    Text(L.exportFormatFooter(format))
+                        .font(.bfhr(.footnote))
+                        .foregroundStyle(BFHRColor.Fg.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 } header: {
                     Text(L.exportFormat).cvListHeader()
-                } footer: {
-                    Text(L.exportFormatFooter(format)).cvListFooter().fixedSize(horizontal: false, vertical: true)
                 }
                 if format != .json {
                     Section {
@@ -105,8 +109,9 @@ struct CVExportSheet: View {
                     }
                 }
                 Section {
-                    HStack(spacing: BFHRSpace.s1) {
-                        TextField(text: $baseName) { Text(L.fileName) }
+                    HStack(alignment: .firstTextBaseline, spacing: BFHRSpace.s1) {
+                        // Grows to more lines for long names and large text instead of cutting off.
+                        TextField(text: $baseName, axis: .vertical) { Text(L.fileName) }
                             .autocorrectionDisabled()
                             #if os(iOS)
                             .textInputAutocapitalization(.never)
@@ -141,7 +146,8 @@ struct CVExportSheet: View {
             }
             .cvShareSheet($file)
         }
-        .presentationDetents([.medium, .large])
+        // Large: all three choices and the file name fit without scrolling inside a half sheet.
+        .presentationDetents([.large])
         .presentationBackground(BFHRColor.groupedBackground)
     }
 

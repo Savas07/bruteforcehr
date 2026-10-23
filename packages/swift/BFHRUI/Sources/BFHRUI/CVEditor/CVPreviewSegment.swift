@@ -38,8 +38,6 @@ struct CVPreviewSegment: View {
             .padding(.horizontal, BFHRSpace.s4)
             .padding(.vertical, BFHRSpace.s3)
             .background(.bar)
-            // A bar over the page: grows with text size up to AX2, so the page stays visible.
-            .dynamicTypeSize(...DynamicTypeSize.accessibility2)
         }
     }
 }
@@ -52,10 +50,13 @@ struct CVRenderedPage: View {
 
     var body: some View {
         #if os(iOS)
-        CVWebPage(rendered: rendered)
-            .padding(.horizontal, BFHRSpace.s2)
-            // The page-count pill floats over the bottom of the page, clear of the name at the top.
-            .overlay(alignment: .bottom) { pill.padding(.bottom, BFHRSpace.s3) }
+        // The page-count line sits above the page, so it never covers the CV at any text size.
+        VStack(spacing: BFHRSpace.s2) {
+            pill
+            CVWebPage(rendered: rendered)
+                .padding(.horizontal, BFHRSpace.s2)
+        }
+        .padding(.top, BFHRSpace.s2)
             .task(id: rendered) {
                 // Debounced: typing in the editor re-renders often; count pages once it settles.
                 try? await Task.sleep(for: .milliseconds(400))
@@ -77,7 +78,6 @@ struct CVRenderedPage: View {
                 .padding(.vertical, BFHRSpace.s1)
                 .background(.regularMaterial, in: Capsule())
                 .accessibilityIdentifier("cv.preview.pages")
-                .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
         }
     }
 }

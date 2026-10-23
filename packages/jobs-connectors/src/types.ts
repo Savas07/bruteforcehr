@@ -72,6 +72,11 @@ export interface ConnectorContext {
   now: Date;
 }
 
+export interface CallBudget {
+  limit: number;
+  period: "day" | "lifetime";
+}
+
 /** What a search asks every source for. */
 export interface SearchQuery {
   /** Free-text keywords ("backend engineer typescript"). */
@@ -80,6 +85,7 @@ export interface SearchQuery {
   /** Most listings a single source should return. */
   limit: number;
 }
+
 interface ConnectorInfo {
   id: string;
   label: string;
@@ -99,8 +105,11 @@ export interface SearchConnector extends ConnectorInfo {
   secrets: readonly string[];
   /** Whether on-demand `jobsSearch` may call it (Jooble's lifetime quota: saved searches only). */
   adHoc: boolean;
-  /** Fixed per-day call budget across all users (Remotive: ≤ 4/day), enforced by the runner. */
-  maxCallsPerDay: number | null;
+  /**
+   * Calls allowed across all users (Remotive: 4 per day; Jooble: 500 per key for the key's
+   * lifetime), enforced by the runner with a shared counter. Null = only the HTTP spacing applies.
+   */
+  callBudget(secrets: ConnectorSecrets): CallBudget | null;
   /** Whether this source can answer the search at all (market coverage, filters). */
   covers(query: SearchQuery): boolean;
   search(query: SearchQuery, context: ConnectorContext): Promise<Listing[]>;

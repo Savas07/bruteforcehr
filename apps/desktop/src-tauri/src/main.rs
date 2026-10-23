@@ -1,17 +1,29 @@
 // Release builds on Windows are GUI apps: no console window.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod auth_link;
 mod commands;
 mod external_url;
 mod job_url;
+mod mail_inbox;
 mod menu;
 mod navigation;
 mod preferences;
 mod updater;
 mod window;
 
+use tauri_plugin_deep_link::DeepLinkExt;
+
 fn main() {
     let builder = tauri::Builder::default()
+        // First, so a second launch (Windows: a `bruteforcehr://` link starts one with the link as
+        // its argument) hands its link to this instance's deep-link handler and quits.
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            auth_link::focus_main(app);
+        }))
+        // `bruteforcehr://` (plugins.deep-link in tauri.conf.json). Used from Rust only: links reach
+        // the UI after `auth_link` has checked them; none of the plugin's JS commands are granted.
+        .plugin(tauri_plugin_deep_link::init())
         .plugin(
             // Used from Rust only (commands::open_external, open_job_url); its JS commands are not granted, and it
             // must not install its click handler that routes <a> clicks to the system browser.
@@ -31,17 +43,32 @@ fn main() {
     builder
         .manage(job_url::RateLimiter::for_job_urls())
         .manage(updater::Updates::default())
+        .manage(auth_link::PendingAuthLink::default())
         .invoke_handler(tauri::generate_handler![
             commands::open_external,
             commands::open_job_url,
             commands::update_status,
             commands::check_for_updates,
             commands::restart_to_update,
-            commands::set_update_channel
+            commands::set_update_channel,
+            commands::take_auth_link,
+            commands::set_signed_in,
+            commands::open_mail_inbox
         ])
         .menu(menu::build)
         .on_menu_event(|app, event| menu::handle_event(app, &event))
         .setup(|app| {
+            // Installers register the scheme (macOS Info.plist, the Windows NSIS installer).
+            // Development and E2E builds run unbundled on Windows, so register it for them.
+            #[cfg(all(windows, any(debug_assertions, feature = "e2e")))]
+            app.deep_link().register_all()?;
+            let handle = app.handle().clone();
+            app.deep_link()
+                .on_open_url(move |event| auth_link::handle_urls(&handle, &event.urls()));
+            // A link that launched the app (Windows: the first instance's argument).
+            if let Some(urls) = app.deep_link().get_current()? {
+                auth_link::handle_urls(app.handle(), &urls);
+            }
             window::create_main(app.handle())?;
             updater::start_background_checks(app.handle());
             Ok(())

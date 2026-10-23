@@ -6,6 +6,9 @@
   "app": {
     "withGlobalTauri": true,
     "security": {
+      "csp": {
+        "connect-src": "ipc: http://ipc.localhost https://firestore.googleapis.com http://127.0.0.1:9099"
+      },
       "capabilities": [
         "main",
         {

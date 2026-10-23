@@ -2,23 +2,11 @@
  * The minimum-version gate's source: the public `appConfig/{macos|windows}` document
  * (ADR 0002, server-written by the release pipeline), read with the Firebase JS SDK's
  * Firestore Lite (one REST read, no listeners or cache). Imported on demand
- * (src/components/updates/context.tsx), like the SDK itself.
- *
- * The Firebase config below is the "BruteForceHR Desktop" web app's client config, not a secret:
- * its API key only identifies the project and is restricted in Google Cloud to the Tauri origins
- * and to Firestore / Identity Toolkit / Secure Token / Installations.
+ * (src/components/updates/context.tsx), like Firestore Lite itself.
  */
 import { SemverSchema, UrlSchema } from "@bfhr/core";
 import { firestorePaths } from "@bfhr/api";
-
-const firebaseConfig = {
-  apiKey: "AIzaSyBlJk949tJEB9HUmmRGoE8EsqQ2tEA41ag",
-  authDomain: "bruteforcehr.firebaseapp.com",
-  projectId: "bruteforcehr",
-  storageBucket: "bruteforcehr.firebasestorage.app",
-  messagingSenderId: "33654863934",
-  appId: "1:33654863934:web:1a9ffb291c8ea5047c796f",
-} as const;
+import { firebaseApp } from "./firebase";
 
 /** What the gate needs from `appConfig/{platform}`. */
 export interface VersionRequirement {
@@ -48,11 +36,10 @@ export async function fetchVersionRequirement(
   platform: "macos" | "windows",
 ): Promise<VersionRequirement | null> {
   try {
-    const [{ initializeApp, getApps }, { doc, getDoc, getFirestore }] = await Promise.all([
-      import("firebase/app"),
-      import("firebase/firestore/lite"),
-    ]);
-    const app = getApps()[0] ?? initializeApp(firebaseConfig);
+    // On demand: Firestore Lite is only needed for this one read, so it stays out of the startup
+    // bundle (a static import would load it at launch).
+    const { doc, getDoc, getFirestore } = await import("firebase/firestore/lite");
+    const app = firebaseApp();
     const snapshot = await getDoc(doc(getFirestore(app), firestorePaths.appConfig(platform)));
     return parseVersionRequirement(snapshot.data());
   } catch (error) {

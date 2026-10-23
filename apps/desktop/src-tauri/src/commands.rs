@@ -7,8 +7,11 @@ use std::time::Instant;
 use tauri::{AppHandle, Runtime, State};
 use tauri_plugin_opener::OpenerExt;
 
+use crate::auth_link::{AuthLinkDelivery, PendingAuthLink};
 use crate::external_url::{self, ExternalUrlError};
 use crate::job_url::{self, JobUrlError, RateLimiter};
+use crate::mail_inbox::{self, MailProvider};
+use crate::menu;
 use crate::preferences::UpdateChannel;
 use crate::updater::{self, RestartError, UpdateSnapshot};
 
@@ -126,4 +129,40 @@ pub fn set_update_channel<R: Runtime>(
     updater::set_channel(&app, channel).map_err(|error| CommandError::PreferenceNotSaved {
         message: error.to_string(),
     })
+}
+
+/// The newest sign-in link (`bruteforcehr://auth/finish?link=…`), checked by `auth_link::parse`,
+/// once: the UI calls this at start and on every `auth-link` event.
+#[tauri::command]
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Tauri injects the State by value"
+)]
+pub fn take_auth_link(pending: State<'_, PendingAuthLink>) -> Option<AuthLinkDelivery> {
+    pending.take()
+}
+
+/// The UI reports whether someone is signed in, so the menu's "Sign Out" is only enabled then.
+#[tauri::command]
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Tauri injects the AppHandle by value"
+)]
+pub fn set_signed_in<R: Runtime>(app: AppHandle<R>, signed_in: bool) {
+    menu::set_signed_in(&app, signed_in);
+}
+
+/// "Open Gmail" and the like on the "Check your email" screen: the provider's webmail inbox
+/// (`mail_inbox::inbox_url`) in the default browser.
+#[tauri::command]
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Tauri injects the AppHandle by value"
+)]
+pub fn open_mail_inbox<R: Runtime>(
+    app: AppHandle<R>,
+    provider: MailProvider,
+    email: &str,
+) -> Result<(), CommandError> {
+    open(&app, &mail_inbox::inbox_url(provider, email))
 }

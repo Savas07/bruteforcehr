@@ -130,3 +130,43 @@ export function updateCaptureFileName(
 ): string {
   return `update-${state}-${theme}-${size.width}x${size.height}.png`;
 }
+
+/**
+ * Sign-in states (`?auth=<state>`, src/design/auth.tsx): the window while signed out. Without
+ * `?auth=` the persona is signed in.
+ */
+export const authDesignStates = [
+  "email",
+  "email-returning",
+  "email-invalid",
+  "email-sending",
+  "send-offline",
+  "send-rate-limited",
+  "check-email",
+  "check-email-ready",
+  "check-email-resent",
+  "check-email-resend-failed",
+  "completing",
+  "confirm-email",
+  "confirm-wrong-email",
+  "link-invalid",
+  "link-expired",
+  "link-offline",
+  "link-unavailable",
+  "link-disabled",
+] as const;
+export type AuthDesignState = (typeof authDesignStates)[number];
+
+/** The hash route of a sign-in state (over Today, which stays hidden until sign-in). */
+export function authDesignHash(state: AuthDesignState, extra: Readonly<Record<string, string>> = {}): string {
+  return designHash("today", "populated", { auth: state, ...extra });
+}
+
+/** `sign-in-<state>-<theme>-<w>x<h>.png`. */
+export function authCaptureFileName(
+  state: AuthDesignState,
+  theme: CaptureTheme,
+  size: { readonly width: number; readonly height: number },
+): string {
+  return `sign-in-${state}-${theme}-${size.width}x${size.height}.png`;
+}

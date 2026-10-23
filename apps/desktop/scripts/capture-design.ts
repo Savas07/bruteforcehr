@@ -2,10 +2,12 @@
 //
 //   pnpm --filter @bfhr/desktop capture:design <screen…|all> [--states populated,empty,…]
 //     [--engines webkit,chromium] [--themes light,dark] [--sizes 1280x800,1920x1080] [--scale 1]
-//     [--locale en|tr|de] [--axe] [--update-states ready,notes,…]
+//     [--locale en|tr|de] [--axe] [--update-states ready,notes,…] [--auth-states email,check-email,…]
 //
 // The `update` target captures the update UI states instead (`updateDesignStates`, over Today, each
 // at its own size: the rail state is 600 px wide) as update-<state>-<theme>-<w>x<h>.png, all audited.
+// The `sign-in` target captures the signed-out window (`authDesignStates`) at 1280×800 as
+// sign-in-<state>-<theme>-<w>x<h>.png, all audited.
 //
 // --axe also runs axe-core (WCAG 2.1 A + AA tags) on every screen × state × theme in each engine,
 // writes artifacts/a11y/desktop/<screen>-<state>-<theme>-<engine>.json, prints one line per page
@@ -25,6 +27,10 @@ import AxeBuilder from "@axe-core/playwright";
 import { type BrowserType, chromium, type LaunchOptions, type Page, webkit } from "playwright";
 import { createServer } from "vite";
 import {
+  authCaptureFileName,
+  authDesignHash,
+  type AuthDesignState,
+  authDesignStates,
   CAPTURE_LOCALES,
   CAPTURE_PIN,
   type CaptureLanguage,
@@ -65,7 +71,8 @@ Usage: pnpm --filter @bfhr/desktop capture:design <screen…|all> [--states a,b]
        [--themes light,dark] [--sizes 1280x800,1920x1080] [--scale 1] [--locale en|tr|de] [--axe]
 Screens: ${Object.keys(designScreenPaths).join(", ")}
 States:  ${designStates.join(", ")}
-Update:  update [--update-states ${updateDesignStates.join(",")}]`);
+Update:  update [--update-states ${updateDesignStates.join(",")}]
+Sign-in: sign-in [--auth-states ${authDesignStates.join(",")}]`);
   process.exit(2);
 }
 
@@ -95,13 +102,15 @@ for (let index = 0; index < argv.length; index += 1) {
 }
 const runAxe = enabled.has("axe");
 const screenNames = Object.keys(designScreenPaths) as DesignScreenName[];
-if (positional.length === 0) usage("Name at least one screen (or all, or update).");
+if (positional.length === 0) usage("Name at least one screen (or all, update, sign-in).");
 /** `update` captures the update UI states (over Today) instead of a screen's five states. */
 const wantsUpdate = positional.includes("update");
+/** `sign-in` captures the signed-out window's states. */
+const wantsSignIn = positional.includes("sign-in");
 const screens: DesignScreenName[] = positional.includes("all")
   ? screenNames
   : positional
-      .filter((name) => name !== "update")
+      .filter((name) => name !== "update" && name !== "sign-in")
       .map((name) =>
         screenNames.includes(name as DesignScreenName)
           ? (name as DesignScreenName)
@@ -110,6 +119,9 @@ const screens: DesignScreenName[] = positional.includes("all")
 const states = pick<DesignState>(options["states"], designStates, "state");
 const updateStates = wantsUpdate
   ? pick<UpdateDesignState>(options["update-states"], updateDesignStates, "update state")
+  : [];
+const authStates = wantsSignIn
+  ? pick<AuthDesignState>(options["auth-states"], authDesignStates, "sign-in state")
   : [];
 const themes = pick<CaptureTheme>(options["themes"], captureThemes, "theme");
 const engineNames = pick<EngineName>(options["engines"], Object.keys(engines) as EngineName[], "engine");
@@ -214,6 +226,17 @@ for (const state of updateStates) {
   });
 }
 batches.push(...updateBatches.values());
+if (authStates.length > 0)
+  batches.push({
+    size: captureSizes[0],
+    shots: authStates.map(
+      (state): Shot => ({
+        hash: (platform) => authDesignHash(state, routeExtras(platform)),
+        file: (theme) => authCaptureFileName(state, theme, captureSizes[0]),
+        audit: (theme, engine) => `sign-in-${state}-${theme}-${engine}`,
+      }),
+    ),
+  });
 
 try {
   for (const engineName of engineNames) {

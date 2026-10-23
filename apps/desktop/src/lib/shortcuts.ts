@@ -8,7 +8,9 @@ export type MenuCommand =
   | { readonly type: "open-palette" }
   | { readonly type: "open-shortcuts" }
   /** "Check for Updates…" in the app menu (macOS) or Help (Windows); no shortcut. */
-  | { readonly type: "check-for-updates" };
+  | { readonly type: "check-for-updates" }
+  /** "Sign Out" in the app menu (macOS) or File (Windows), and the palette; no shortcut. */
+  | { readonly type: "sign-out" };
 
 export type ShortcutGroup = "Navigation" | "General";
 

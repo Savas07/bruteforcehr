@@ -1,7 +1,8 @@
 /**
  * The UI's whole surface to the Tauri backend (src-tauri). Capabilities grant exactly these
- * calls: listening for menu commands and update-status events, `open_external`,
- * `open_job_url` and the update commands (src-tauri/src/updater.rs).
+ * calls: listening for menu commands, update-status and sign-in-link events, `open_external`,
+ * `open_job_url`, `open_mail_inbox`, the update commands (src-tauri/src/updater.rs) and the
+ * sign-in commands (src-tauri/src/auth_link.rs).
  */
 import { invoke, isTauri } from "@tauri-apps/api/core";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
@@ -103,6 +104,49 @@ export function openJobUrl(url: string): Promise<void> {
     return Promise.resolve();
   }
   return invoke("open_job_url", { url });
+}
+
+/**
+ * A sign-in link from `bruteforcehr://auth/finish?link=…`, checked in Rust (src-tauri/src/auth_link.rs):
+ * the canonical Firebase action URL, or `invalid` when the deep link failed the checks.
+ * Mirrors `AuthLinkDelivery` there.
+ */
+export type AuthLinkDelivery = { readonly kind: "link"; readonly link: string } | { readonly kind: "invalid" };
+
+/** Event emitted by src-tauri/src/auth_link.rs when a sign-in link arrives; call `takeAuthLink`. */
+const AUTH_LINK_EVENT = "auth-link";
+
+/**
+ * The newest sign-in link not yet taken, once (null when there is none). Call at start (a link
+ * may have launched the app) and on every `onAuthLink`.
+ */
+export function takeAuthLink(): Promise<AuthLinkDelivery | null> {
+  if (!inShell) return Promise.resolve(null);
+  return invoke("take_auth_link");
+}
+
+/** Subscribes to sign-in link arrivals; returns the unsubscribe function. */
+export function onAuthLink(listener: () => void): () => void {
+  if (!inShell) return () => undefined;
+  const unlisten = getCurrentWebviewWindow().listen(AUTH_LINK_EVENT, () => listener());
+  return () => {
+    void unlisten.then((stop) => stop());
+  };
+}
+
+/** Enables the menu's "Sign Out" while someone is signed in. */
+export function setSignedIn(signedIn: boolean): Promise<void> {
+  if (!inShell) return Promise.resolve();
+  return invoke("set_signed_in", { signedIn });
+}
+
+/** Webmail inboxes the backend can open (src-tauri/src/mail_inbox.rs owns the URLs). */
+export type MailProvider = "gmail" | "outlook" | "icloud" | "yahoo" | "proton" | "gmx" | "web-de" | "yandex";
+
+/** Opens the provider's inbox in the default browser (Gmail picks the account for `email`). */
+export function openMailInbox(provider: MailProvider, email: string): Promise<void> {
+  if (!inShell) return Promise.resolve();
+  return invoke("open_mail_inbox", { provider, email });
 }
 
 /** Which release manifest the updater reads; Stable unless the user opts into Beta in Settings. */

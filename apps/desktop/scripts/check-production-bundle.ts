@@ -1,5 +1,7 @@
 // Proves a build contains no fixture data (kickoff "Data honesty"): every company, person, email
-// and the fixture uid from packages/fixtures/src must be absent from the built files.
+// and the fixture uid from packages/fixtures/src must be absent from the built files. Production
+// builds must also not contain the Auth emulator address test builds sign in against
+// (src/features/auth/firebaseAuth.ts).
 //
 //   node scripts/check-production-bundle.ts [dist]                     production: none may appear
 //   node scripts/check-production-bundle.ts <dir> --expect-fixtures    control: a design build must
@@ -61,10 +63,17 @@ if (expectFixtures) {
     `✓ control: ${relativeDist} contains ${found.size} of ${needles.length} fixture strings, so the check detects them`,
   );
 } else {
-  if (found.size > 0) {
-    console.error(`✗ ${relativeDist} contains fixture data:`);
+  const emulator = "127.0.0.1:9099";
+  const withEmulator = [];
+  for (const file of files) if ((await readFile(file, "utf8")).includes(emulator)) withEmulator.push(file);
+  if (found.size > 0 || withEmulator.length > 0) {
+    if (found.size > 0) console.error(`✗ ${relativeDist} contains fixture data:`);
     for (const [needle, where] of found) console.error(`  "${needle}" in ${where.join(", ")}`);
+    for (const file of withEmulator)
+      console.error(`✗ the Auth emulator address (${emulator}) is in ${path.relative(appDir, file)}`);
     process.exit(1);
   }
-  console.log(`✓ ${relativeDist}: none of ${needles.length} fixture strings in ${files.length} built files`);
+  console.log(
+    `✓ ${relativeDist}: none of ${needles.length} fixture strings nor the Auth emulator address in ${files.length} built files`,
+  );
 }

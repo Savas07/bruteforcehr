@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "main",
-  "description": "The main window: native-menu and update-status events, dragging the window by the macOS toolbar rows, opening allowlisted https links and public https job-posting links, and the app's own update commands (status, check, restart to update, Stable/Beta channel). The updater plugin's commands are not granted.",
+  "description": "The main window: native-menu, update-status and sign-in-link events, dragging the window by the macOS toolbar rows, opening allowlisted https links, public https job-posting links and webmail inboxes, the app's own update commands (status, check, restart to update, Stable/Beta channel) and sign-in commands (take the checked sign-in link, report the signed-in state to the menu). The updater and deep-link plugins' commands are not granted.",
   "windows": ["main"],
   "permissions": [
     "core:event:allow-listen",
@@ -13,6 +13,9 @@
     "allow-update-status",
     "allow-check-for-updates",
     "allow-restart-to-update",
-    "allow-set-update-channel"
+    "allow-set-update-channel",
+    "allow-take-auth-link",
+    "allow-set-signed-in",
+    "allow-open-mail-inbox"
   ]
 }

@@ -1,5 +1,6 @@
 import { $, $$, browser, expect } from "@wdio/globals";
 import { Key } from "webdriverio";
+import { ensureSignedIn, testEmail } from "../support/auth";
 
 const isMac = process.platform === "darwin";
 
@@ -14,6 +15,11 @@ function heading() {
 }
 
 describe("BruteForceHR desktop", () => {
+  // The shell is behind sign-in (e2e/specs/auth.e2e.ts covers it); a restored session skips this.
+  before(async () => {
+    await ensureSignedIn(testEmail("shell"));
+  });
+
   it("opens one window on Today", async () => {
     expect(await browser.getWindowHandles()).toHaveLength(1);
     await expect(await heading()).toHaveText("Today");

@@ -117,7 +117,10 @@ describe("renderCvHtml", () => {
       expect(html).not.toMatch(/src="(?!data:)/u);
       expect(html).toContain("Content-Security-Policy");
       expect(html).toContain("@font-face");
-      expect(html).toContain("break-after:avoid");
+      // Pagination uses keep boxes only; `break-after: avoid` (ignored by WebKit) would make
+      // Chromium break pages differently.
+      expect(html).toContain('<div class="cv-entry-top">');
+      expect(html).not.toContain("break-after");
       expect(html).toContain("orphans:3;widows:3");
       expect(html).not.toContain("<img");
     }
@@ -198,10 +201,26 @@ describe("renderCvHtml", () => {
       widthPt: 595.28,
       heightPt: 841.89,
     });
-    expect(a4.html).toContain("@page{size:A4;margin:16mm 18mm 16mm 18mm}");
+    expect(a4.html).toContain("@page{size:A4;margin:45pt 48pt 45pt 51pt}");
     const letter = renderCvHtml(inputFor(enCv, "en", "classic", "letter"));
     expect(letter.page).toMatchObject({ paper: "letter", widthPt: 612, heightPt: 792 });
-    expect(letter.html).toContain("@page{size:letter;margin:14mm 19mm 14mm 19mm}");
+    expect(letter.html).toContain("@page{size:letter;margin:42pt 54pt 42pt 54pt}");
+  });
+
+  it("snaps line heights to whole WebKit print px (0.8 pt)", () => {
+    for (const templateId of TEMPLATE_IDS) {
+      for (const density of ["compact", "comfortable", "spacious"] as const) {
+        const input = inputFor(fullCv, "en", templateId);
+        const { html } = renderCvHtml({ ...input, theme: { ...input.theme, density } });
+        const heights = [...html.matchAll(/(?:line-height:|--lh:)([\d.]+)pt/gu)].map((match) =>
+          Number(match[1]),
+        );
+        expect(heights.length).toBeGreaterThan(5);
+        for (const height of heights)
+          expect(Math.abs(height / 0.8 - Math.round(height / 0.8))).toBeLessThan(1e-9);
+        expect(html).not.toMatch(/line-height:[\d.]+[;}]/u);
+      }
+    }
   });
 
   it("titles the document in the CV language", () => {

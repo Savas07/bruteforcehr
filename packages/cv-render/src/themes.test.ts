@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { renderFontsModule } from "../scripts/fonts";
 import { EMBEDDED_FONTS } from "./fonts.generated";
 import { CV_RENDER_VERSION, listAccents, listFontPairs, listTemplates } from "./index";
-import { contrastOnWhite, FONT_PAIRS, pageGeometry, printableAccent } from "./themes";
+import { contrastOnWhite, FONT_PAIRS, MARGINS_PT, pageGeometry, printableAccent, PT_PER_MM } from "./themes";
 
 describe("themes", () => {
   it("offers only accents with AA text contrast on white (≥ 4.5:1)", () => {
@@ -48,9 +48,28 @@ describe("themes", () => {
   });
 
   it("exposes page geometry per paper and density", () => {
-    expect(pageGeometry("a4", "compact").marginsMm).toEqual({ top: 12, right: 14, bottom: 12, left: 14 });
+    const mm = (pt: number) => pt / PT_PER_MM;
+    expect(pageGeometry("a4", "compact").marginsMm).toEqual({
+      top: mm(33),
+      right: mm(36),
+      bottom: mm(33),
+      left: mm(39),
+    });
     expect(pageGeometry("letter", "spacious")).toMatchObject({ widthMm: 215.9, heightMm: 279.4 });
-    expect(pageGeometry("bogus", "bogus")).toMatchObject({ paper: "a4", marginsMm: { top: 16 } });
+    expect(pageGeometry("bogus", "bogus")).toMatchObject({ paper: "a4", marginsMm: { top: mm(45) } });
+  });
+
+  it("uses margins that Chromium and WebKit print identically", () => {
+    // WebKit prints on whole-point paper and lays out floor(1.25 × printable size) CSS px.
+    const webkitPaper = { a4: { width: 595, height: 842 }, letter: { width: 612, height: 792 } } as const;
+    for (const byPaper of Object.values(MARGINS_PT)) {
+      for (const [paper, { top, right, bottom, left }] of Object.entries(byPaper)) {
+        for (const margin of [top, right, bottom, left]) expect(margin % 3).toBe(0);
+        const { width, height } = webkitPaper[paper as keyof typeof webkitPaper];
+        expect((width - left - right) % 4, `${paper} width`).toBe(0);
+        expect((height - top - bottom) % 4, `${paper} height`).toBe(0);
+      }
+    }
   });
 
   it("lists localized templates", () => {

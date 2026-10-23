@@ -1,14 +1,8 @@
 import { assistCv } from "@bfhr/ai";
 import { type CvAssistResponse, CvAssistRequestSchema, CvAssistResponseSchema } from "@bfhr/core";
 import { HttpsError, onCall } from "firebase-functions/v2/https";
-import {
-  ANTHROPIC_API_KEY,
-  aiProvider,
-  logAiEvent,
-  requireAiEnabled,
-  toCallableError,
-  verifiedUid,
-} from "./common";
+import { verifiedUid } from "../callable";
+import { ANTHROPIC_API_KEY, aiProvider, logAiEvent, requireAiEnabled, toCallableError } from "./common";
 import { firestoreUsageLedger } from "./usage-ledger";
 
 /**

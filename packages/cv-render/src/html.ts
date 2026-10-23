@@ -82,9 +82,10 @@ function entryHtml(entry: DocEntry, templateId: TemplateId): string {
   }
   if (entry.link) sub.push(`<span class="cv-link">${contactItem(entry.link)}</span>`);
   const subLine = sub.filter(Boolean).join(SEPARATOR);
+  // Head and sub line stay together. Only `break-inside: avoid` boxes keep things together in every
+  // engine: WebKit ignores `break-after: avoid`, and Chromium honouring it paginated differently.
   const parts = [
-    `<div class="cv-entry-head">${head}${dates}</div>`,
-    subLine ? `<p class="cv-entry-sub">${subLine}</p>` : "",
+    `<div class="cv-entry-top"><div class="cv-entry-head">${head}${dates}</div>${subLine ? `<p class="cv-entry-sub">${subLine}</p>` : ""}</div>`,
     entry.summary
       ? `<p class="cv-entry-summary"${at(entry.summary.path)}>${inline(entry.summary.text)}</p>`
       : "",
@@ -115,8 +116,8 @@ function sectionHtml(section: DocSection, templateId: TemplateId, heading: strin
     items = section.entries.map((entry) => entryHtml(entry, templateId));
   }
   const key = escapeHtml(section.key);
-  // The heading and the first item share an unbreakable box: WebKit ignores `break-after: avoid`,
-  // and a heading stranded at the foot of a page is the classic CV print bug.
+  // The heading and the first item share an unbreakable box (no `break-after: avoid`, which WebKit
+  // ignores): a heading stranded at the foot of a page is the classic CV print bug.
   const [first = "", ...rest] = items;
   return (
     `<section class="cv-section" data-cv-section="${key}"${at(section.path)}>` +

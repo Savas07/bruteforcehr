@@ -2,6 +2,7 @@ import { importCv } from "@bfhr/ai";
 import { type CvImportResponse, CvImportRequestSchema, CvImportResponseSchema } from "@bfhr/core";
 import { getStorage } from "firebase-admin/storage";
 import { HttpsError, onCall } from "firebase-functions/v2/https";
+import { verifiedUid } from "../callable";
 import {
   ANTHROPIC_API_KEY,
   AiCallableError,
@@ -9,7 +10,6 @@ import {
   logAiEvent,
   requireAiEnabled,
   toCallableError,
-  verifiedUid,
 } from "./common";
 import { firestoreUsageLedger } from "./usage-ledger";
 

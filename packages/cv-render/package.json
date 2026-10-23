@@ -12,6 +12,8 @@
     "build": "node scripts/build.ts",
     "fonts": "node scripts/fonts.ts",
     "critique": "tsx scripts/critique.ts",
+    "parity": "tsx scripts/parity.ts",
+    "parity:server": "tsx scripts/parity-server.ts",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"

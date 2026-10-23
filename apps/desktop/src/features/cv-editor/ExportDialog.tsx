@@ -9,7 +9,7 @@ import { buildCvDocx, exportFileName, exportJsonResume, splitName } from "@bfhr/
 import { Dialog } from "radix-ui";
 import { useId, useMemo, useState } from "react";
 import { defineMessages, useIntl } from "react-intl";
-import { printCvPdf, saveExportFile, type CvExportError, type ExportKind } from "../../lib/cvExport";
+import { printCvPdf, saveExportFile, type ExportKind } from "../../lib/cvExport";
 import { Button } from "../../shared/ui/Button";
 import { InlineAlert } from "../../shared/ui/InlineAlert";
 import { SegmentedControl } from "../../shared/ui/SegmentedControl";

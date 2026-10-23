@@ -8,11 +8,13 @@ import { FIXTURE_NOW, populatedDataset } from "@bfhr/fixtures";
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { useIntl } from "react-intl";
 import { UpdatesContext, type UpdatesUiPreset, type UpdatesValue } from "../components/updates/context";
-import { chrome, type UpdateSnapshot, type UpdateStatus } from "../lib/desktop";
+import type { UpdateSnapshot, UpdateStatus } from "../lib/desktop";
 import { unsavedLabelMessage } from "../features/cv-editor/Screen";
 import { registerUnsavedChanges } from "../shared/unsavedChanges";
 import { type UpdateDesignState, updateDesignStates } from "./matrix";
 
+/** The persona's installed version, also inside the real app (whose own build says 0.0.0). */
+const CURRENT = "0.1.0";
 const OFFERED = "0.1.1";
 const REQUIRED = "0.2.0";
 const DAY_MS = 86_400_000;
@@ -99,7 +101,7 @@ export function DesignUpdates({ state, children }: { state: string | undefined; 
     const snapshot: UpdateSnapshot = { status, channel: "stable" };
     return {
       snapshot,
-      currentVersion: chrome.version,
+      currentVersion: CURRENT,
       requirement: scenario.required
         ? { minSupportedVersion: REQUIRED, downloadUrl: "https://bruteforcehr.web.app/download" }
         : null,

@@ -30,7 +30,6 @@ describe("BruteForceHR desktop", () => {
     const result = await browser.execute(() => {
       let evalBlocked = false;
       try {
-        // eslint-disable-next-line no-eval -- the point of the test
         globalThis.eval("1");
       } catch {
         evalBlocked = true;

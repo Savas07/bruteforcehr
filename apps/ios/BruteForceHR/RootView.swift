@@ -128,8 +128,9 @@ struct RootView: View {
     }
 }
 
-/// Root screen of one tab. Screen content lands with each screen's design (docs/STATUS.md); Debug
-/// builds launched with design arguments show the fixture-backed screens instead (DesignMode.swift).
+/// Root screen of one tab. The CVs tab shows live data (M2); the other tabs' screens land with
+/// their milestones (docs/STATUS.md). Debug builds launched with design arguments show the
+/// fixture-backed screens instead (DesignMode.swift).
 struct TabRootView: View {
     let tab: AppTab
     @Environment(\.bfhrAccount) private var account
@@ -139,11 +140,20 @@ struct TabRootView: View {
         if let scenario = DesignScenario.launch {
             DesignTabRoot(tab: tab, scenario: scenario)
         } else {
-            shell
+            live
         }
         #else
-        shell
+        live
         #endif
+    }
+
+    @ViewBuilder
+    private var live: some View {
+        if tab == .cvs, let uid = Auth.auth().currentUser?.uid {
+            CVsTabRoot(uid: uid).id(uid)
+        } else {
+            shell
+        }
     }
 
     private var shell: some View {

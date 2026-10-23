@@ -4,31 +4,32 @@ import Observation
 
 /// The CV editor screen (cv-editor.md "Decision — iOS"): the CV list (base CVs with their
 /// variants, All / Archived filter) and the selected CV's Edit segment (section list, items,
-/// sync status, revision history).
+/// sync status, revision history, conflicts).
 ///
-/// Edits change a local working copy of the selected CV's content. M0 writes no revision
-/// documents: the working copy stands in for the next revision until the data layer coalesces
-/// edits into one (cv-editor.md open question 2).
+/// Every saved change is one immutable revision plus a `version` bump of the CV, written through
+/// `writer` (`CVDataLayer.swift`). Changes show at once (optimistic); the data layer's snapshot
+/// listener then confirms them through `load(_:)`. Without a writer (design mode, previews) the
+/// changes stay in memory.
 @Observable
 public final class CVEditorModel: ScreenModel {
     public var phase: LoadPhase = .loading
     public var connection: ConnectionState = .online
+    /// CVs with writes the server hasn't confirmed yet (Firestore `hasPendingWrites`).
     public var pendingSyncIDs: Set<String> = []
-    /// CV ids whose last write the server rejected; the data layer sets it ("Couldn't save · Try
-    /// again"), and clears it when a retry succeeds.
-    public var failedWriteIDs: Set<String> = []
 
-    /// The clock for mutation dates; the data layer (or a design scenario) can move it.
+    /// The clock for relative times and (without `usesSystemClock`) for mutation dates.
     public var now: Date
+    /// Live data: stamp writes with the real time instead of `now`.
+    public var usesSystemClock = false
     public let calendar: Calendar
 
     /// The CV list's filter menu.
     public var filter: CVListFilter = .all
 
-    public private(set) var data: UserData = .empty
+    public internal(set) var data: UserData = .empty
     public private(set) var selectedCvId: String?
 
-    /// The selected CV with its working content; nil when nothing is selected or it's gone.
+    /// The selected CV with its content; nil when nothing is selected or it's gone.
     public private(set) var document: CVDocument?
     /// Header, Summary, then the list sections in `meta.sectionOrder` order.
     public private(set) var sections: [CVSection] = []
@@ -36,20 +37,23 @@ public final class CVEditorModel: ScreenModel {
     public private(set) var hiddenSections: [CVSection] = []
     /// The selected CV's revisions by day, newest day first.
     public private(set) var revisionDays: [CVRevisionDay] = []
-    /// Where ✦ Improve gets its suggestions. Nil (the default, and every Release build in M0):
-    /// AI assists aren't offered. Claude through the server fills it from M2; Debug design mode
-    /// sets a canned provider.
+
+    /// Where ✦ Improve gets its suggestions. Nil: AI assists aren't offered.
     public var suggestionProvider: (any CVSuggestionProvider)?
+    /// Writes CVs and revisions; nil keeps changes in memory (design mode, previews).
+    public var writer: (any CVWriter)?
+    /// Something that didn't happen (shown once as a toast); the view clears it.
+    public var notice: CVNotice?
+    /// cv-render in JavaScriptCore: the Preview, the template picker thumbnails, PDF and DOCX.
+    /// Nil (unit tests without the bundle): the Preview explains it can't render.
+    @ObservationIgnored public var renderEngine: CVRenderEngine?
+    /// Uploads files and asks the server to read them (`cvImport`); nil hides Import.
+    @ObservationIgnored public var importer: (any CVImporter)?
+    @ObservationIgnored var catalogCache: [String: CVTemplateCatalog] = [:]
 
-    /// Local working copies by CV id (M0: edits don't write revisions).
-    private var drafts: [String: Draft] = [:]
-
-    private struct Draft {
-        /// The revision the working copy started from; dropped when the CV moves on.
-        var basedOnRevisionId: String
-        var content: CvContent
-        var editedAt: Date
-    }
+    /// Content this device holds that isn't the CV's current revision: a save the server
+    /// rejected (Try again) or a version conflict (Keep this version / Use the other version).
+    var drafts: [String: CVDraft] = [:]
 
     public init(selectedCvId: String? = nil, now: Date = .now, calendar: Calendar = .current) {
         self.selectedCvId = selectedCvId
@@ -59,10 +63,13 @@ public final class CVEditorModel: ScreenModel {
 
     public func load(_ data: UserData) {
         self.data = data
-        drafts = drafts.filter { cvId, draft in data.cv(id: cvId)?.currentRevisionId == draft.basedOnRevisionId }
+        drafts = drafts.filter { cvId, _ in data.cv(id: cvId) != nil }
         recompute()
         phase = .loaded
     }
+
+    /// The time stamped on writes.
+    var stamp: Date { usesSystemClock ? .now : now }
 
     // MARK: - List
 
@@ -81,7 +88,7 @@ public final class CVEditorModel: ScreenModel {
             }
     }
 
-    /// No non-archived CVs: the `ChoiceCards` empty state (Import a CV / Start from scratch).
+    /// No non-archived CVs: the empty state (Import a CV / Start from scratch).
     public var isEmpty: Bool { !data.cvs.contains { $0.archivedAt == nil } }
 
     /// How many CVs are archived (the Archived filter is offered only when > 0).
@@ -90,16 +97,20 @@ public final class CVEditorModel: ScreenModel {
     // MARK: - Sync status
 
     /// The selected CV's `SyncStatus`: failed write, then offline with pending writes, then
-    /// pending writes still syncing, else saved at the latest local edit / CV write / revision.
+    /// pending writes still syncing, else saved at the CV's last write.
     public var syncStatus: CVSyncStatus? {
         guard let document else { return nil }
-        if failedWriteIDs.contains(document.id) { return .failed }
+        if case .failed = drafts[document.id]?.state { return .failed }
         if pendingSyncIDs.contains(document.id) {
             return connection.isOffline ? .savedOnDevice : .saving
         }
         let revisionAt = data.revision(id: document.currentRevisionId)?.createdAt ?? document.updatedAt
-        let editedAt = drafts[document.id]?.editedAt ?? .distantPast
-        return .saved(at: max(revisionAt, document.updatedAt, editedAt))
+        return .saved(at: max(revisionAt, document.updatedAt))
+    }
+
+    /// CV ids whose last save the server rejected ("Couldn't save · Try again").
+    public var failedWriteIDs: Set<String> {
+        Set(drafts.compactMap { id, draft in if case .failed = draft.state { id } else { nil } })
     }
 
     // MARK: - Selected CV extras
@@ -118,17 +129,6 @@ public final class CVEditorModel: ScreenModel {
         guard let base = rows.first(where: { $0.id == baseId }) else { return nil }
         let variants = rows.filter { $0.parentCvId == baseId }.sorted { ($0.updatedAt, $1.id) > ($1.updatedAt, $0.id) }
         return CVListGroup(base: row(for: base), variants: variants.map(row(for:)))
-    }
-
-    /// The Preview segment's blocks, in the CV's language.
-    public var pageBlocks: [CVPageBlock] {
-        guard let document else { return [] }
-        return document.content.pageBlocks(language: document.language)
-    }
-
-    /// The Preview segment's paper (the CV's theme).
-    public var paper: CVPaper? {
-        document.map { CVPaper(size: $0.content.meta.theme.paperSize, density: $0.content.meta.theme.density) }
     }
 
     /// The edit-sheet copy of an item; nil when there's no such item.
@@ -154,7 +154,7 @@ public final class CVEditorModel: ScreenModel {
     public func moveSection(from: Int, to: Int) {
         let pinned = sections.prefix { $0.isPinned }.count
         guard from >= pinned, to >= pinned else { return }
-        editContent { content in content.moveListSection(from: from - pinned, to: to - pinned) }
+        editContent(.reordered) { content in content.moveListSection(from: from - pinned, to: to - pinned) }
     }
 
     /// Removes item `index` from a list section of the selected CV ("Removed “Acme — Senior
@@ -166,8 +166,9 @@ public final class CVEditorModel: ScreenModel {
             ?? hiddenSections.first { $0.kind.orderKey == sectionKind.orderKey }
         guard let section, section.items.indices.contains(index) else { return nil }
         let item = section.items[index]
+        let label = item.subtitle ?? item.title
         var removed: CVRemovedItem?
-        editContent { content in
+        editContent(.removed(section.kind, label)) { content in
             removed = content.removeItem(section.kind, at: index)
             return removed != nil
         }
@@ -176,7 +177,7 @@ public final class CVEditorModel: ScreenModel {
             glyph: ToastGlyph.removed,
             message: CVEditorStrings.removed(title: item.title, subtitle: item.subtitle),
             action: .undo { [weak self] in
-                self?.editContent(of: cvId) { content in
+                self?.editContent(of: cvId, .edited(section.kind, label)) { content in
                     content.insert(removed, at: index)
                     return true
                 }
@@ -189,9 +190,7 @@ public final class CVEditorModel: ScreenModel {
     @discardableResult
     public func archive(cvId: String) -> ToastItem? {
         guard let cv = data.cv(id: cvId), cv.archivedAt == nil else { return nil }
-        data.setCvArchived(cvId, at: now, now: now)
-        recordWrite(cvId)
-        recompute()
+        update(cvId, CVChanges(archivedAt: .some(stamp), updatedAt: stamp))
         return ToastItem(
             glyph: ToastGlyph.archived,
             message: CVEditorStrings.archived(cv.title),
@@ -202,9 +201,23 @@ public final class CVEditorModel: ScreenModel {
     /// Brings an archived CV back (Archived filter, or Undo after archiving).
     public func unarchive(cvId: String) {
         guard data.cv(id: cvId)?.archivedAt != nil else { return }
-        data.setCvArchived(cvId, at: nil, now: now)
-        recordWrite(cvId)
-        recompute()
+        update(cvId, CVChanges(archivedAt: .some(nil), updatedAt: stamp))
+    }
+
+    /// Renames a CV. Blank titles are ignored.
+    public func rename(cvId: String, to title: String) {
+        let title = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !title.isEmpty, let cv = data.cv(id: cvId), cv.title != title else { return }
+        update(cvId, CVChanges(title: String(title.prefix(120)), updatedAt: stamp))
+    }
+
+    /// Makes a CV the default one (the others lose the flag).
+    public func makeDefault(cvId: String) {
+        guard let cv = data.cv(id: cvId), !cv.isDefault else { return }
+        for other in data.cvs where other.isDefault && other.id != cvId {
+            update(other.id, CVChanges(isDefault: false, updatedAt: stamp))
+        }
+        update(cvId, CVChanges(isDefault: true, updatedAt: stamp))
     }
 
     /// Saves an item edit sheet (`index` nil: a new item at the end of the section). Returns
@@ -213,7 +226,8 @@ public final class CVEditorModel: ScreenModel {
     public func saveItem(_ draft: CVItemDraft, sectionKind: CVSectionKind, at index: Int?) -> Bool {
         guard draft.canSave else { return false }
         var saved = false
-        editContent { content in
+        let label = draft.subtitle.nilIfBlank ?? draft.title.nilIfBlank
+        editContent(index == nil ? .added(sectionKind, label) : .edited(sectionKind, label)) { content in
             saved = content.setItem(sectionKind, at: index, to: draft)
             return saved
         }
@@ -230,25 +244,25 @@ public final class CVEditorModel: ScreenModel {
 
     /// Reorders a section's items (Edit mode drag handles).
     public func moveItems(sectionKind: CVSectionKind, from source: IndexSet, to destination: Int) {
-        editContent { content in content.moveItems(sectionKind, from: source, to: destination) }
+        editContent(.edited(sectionKind, nil)) { content in content.moveItems(sectionKind, from: source, to: destination) }
     }
 
     /// Saves the Header sheet.
     public func saveHeader(_ draft: CVHeaderDraft) {
-        editContent { content in content.setHeader(draft) }
+        editContent(.edited(.header, nil)) { content in content.setHeader(draft) }
     }
 
     /// Saves the Summary sheet. Placeholders left by a suggestion block it.
     @discardableResult
     public func saveSummary(_ text: String) -> Bool {
         guard CVPlaceholders.find(in: text).isEmpty else { return false }
-        editContent { content in content.setSummary(text) }
+        editContent(.edited(.summary, nil)) { content in content.setSummary(text) }
         return true
     }
 
     /// "+ Add section": shows a hidden section at the end of the order.
     public func showSection(_ kind: CVSectionKind) {
-        editContent { content in content.showSection(kind) }
+        editContent(.added(kind, nil)) { content in content.showSection(kind) }
     }
 
     /// Start from scratch: a blank CV in the user's UI language, header prefilled from the
@@ -256,24 +270,20 @@ public final class CVEditorModel: ScreenModel {
     @discardableResult
     public func startFromScratch() -> String {
         let profile = data.profile
-        let language = profile?.uiLanguage.rawValue ?? "en"
-        let id = "cv-\(UUID().uuidString.lowercased())"
-        let theme = CvTheme(accentColor: "#2F5D8A", fontPair: "inter-source-serif", density: .comfortable,
-                            paperSize: language == "en" && profile?.timezone.hasPrefix("America/") == true ? .letter : .a4)
+        let language = profile?.uiLanguage.rawValue ?? Self.preferredCVLanguage
         let content = CvContent(
             basics: ResumeBasics(name: profile?.fullName, label: profile?.headline, email: profile?.email, phone: profile?.phone),
-            meta: CvMeta(template: "classic", theme: theme, sectionOrder: ["basics", "work", "education", "skills", "languages"], customSections: [])
+            meta: CvMeta(template: CVTemplateCatalog.defaultTemplateId, theme: CVTemplateCatalog.defaultTheme(language: language, timezone: profile?.timezone),
+                         sectionOrder: ["basics", "work", "education", "skills", "languages"], customSections: [])
         )
-        let revision = CvRevision(id: "rev-\(UUID().uuidString.lowercased())", cvId: id, content: content, source: .manual,
-                                  basedOnRevisionId: nil, jobId: nil, diffSummary: nil, createdAt: now)
-        let cv = Cv(id: id, title: CVEditorStrings.untitledTitle, language: language, parentCvId: nil, currentRevisionId: revision.id,
-                    templateId: "classic", theme: theme, isDefault: !data.cvs.contains { $0.archivedAt == nil },
-                    archivedAt: nil, version: 1, importedFrom: nil, createdAt: now, updatedAt: now)
-        data.cvs.append(cv)
-        data.cvRevisions.append(revision)
-        recordWrite(id)
-        select(cvId: id)
-        return id
+        return createCv(title: CVEditorStrings.untitledTitle, language: language, content: content, source: .manual,
+                        summary: CVChangeSummary.created.text)
+    }
+
+    /// The app's language when there's no profile yet ("en", "de" or "tr").
+    static var preferredCVLanguage: String {
+        let code = Locale.preferredLanguages.first.map { Locale(identifier: $0).language.languageCode?.identifier ?? "en" } ?? "en"
+        return ["en", "de", "tr"].contains(code) ? code : "en"
     }
 
     // MARK: - Derivation
@@ -292,12 +302,12 @@ public final class CVEditorModel: ScreenModel {
         return parent.language == cv.language ? .role : .language
     }
 
-    /// The CV's working content: the local copy when edited, else its current revision's.
-    private func content(of cv: Cv) -> CvContent? {
+    /// The CV's content: this device's draft when it holds one, else its current revision's.
+    func content(of cv: Cv) -> CvContent? {
         drafts[cv.id]?.content ?? data.revision(id: cv.currentRevisionId)?.content
     }
 
-    private func recompute() {
+    func recompute() {
         guard let cvId = selectedCvId, let cv = data.cv(id: cvId), let content = content(of: cv) else {
             document = nil
             sections = []
@@ -308,7 +318,7 @@ public final class CVEditorModel: ScreenModel {
         document = CVDocument(
             id: cv.id, title: cv.title, language: cv.language, isDefault: cv.isDefault,
             archivedAt: cv.archivedAt, variant: variantInfo(for: cv),
-            templateId: cv.templateId, theme: cv.theme, currentRevisionId: cv.currentRevisionId,
+            templateId: content.meta.template, theme: content.meta.theme, currentRevisionId: cv.currentRevisionId,
             content: content, importedFrom: cv.importedFrom, updatedAt: cv.updatedAt,
             hasLocalEdits: drafts[cv.id] != nil
         )
@@ -334,9 +344,13 @@ public final class CVEditorModel: ScreenModel {
     private func originRevision(of cv: Cv, in parentId: String) -> CvRevision? {
         var next: String? = cv.currentRevisionId
         var visited: Set<String> = []
-        while let id = next, visited.insert(id).inserted, let revision = data.revision(id: id) {
-            if revision.cvId == parentId { return revision }
-            next = revision.basedOnRevisionId
+        while let id = next, visited.insert(id).inserted {
+            if let revision = data.revision(id: id) {
+                if revision.cvId == parentId { return revision }
+                next = revision.basedOnRevisionId
+            } else {
+                return nil
+            }
         }
         return nil
     }
@@ -344,7 +358,13 @@ public final class CVEditorModel: ScreenModel {
     private func revisionDays(for cv: Cv) -> [CVRevisionDay] {
         let rows = data.cvRevisions
             .filter { $0.cvId == cv.id }
-            .sorted { ($0.createdAt, $0.id) > ($1.createdAt, $1.id) }
+            .sorted {
+                // Newest first; at the same instant the current revision leads.
+                if $0.createdAt != $1.createdAt { return $0.createdAt > $1.createdAt }
+                let current = ($0.id == cv.currentRevisionId, $1.id == cv.currentRevisionId)
+                if current.0 != current.1 { return current.0 }
+                return $0.id > $1.id
+            }
             .map { revision in
                 CVRevisionRow(
                     id: revision.id, source: revision.source, diffSummary: revision.diffSummary,
@@ -364,25 +384,34 @@ public final class CVEditorModel: ScreenModel {
         return days
     }
 
-    // MARK: - Working copy
+    // MARK: - Content edits
 
-    /// Applies `edit` to the selected CV's working copy.
-    private func editContent(_ edit: (inout CvContent) -> Bool) {
+    /// Applies `edit` to the selected CV's content.
+    private func editContent(_ change: CVChangeSummary, _ edit: (inout CvContent) -> Bool) {
         guard let cvId = document?.id else { return }
-        editContent(of: cvId, edit)
+        editContent(of: cvId, change, edit)
     }
 
-    /// Applies `edit` (returns whether it changed anything) to a CV's working copy, records the
-    /// write and recomputes. A working copy equal to the current revision is dropped.
-    private func editContent(of cvId: String, _ edit: (inout CvContent) -> Bool) {
-        guard let cv = data.cv(id: cvId), let revision = data.revision(id: cv.currentRevisionId) else { return }
-        var content = drafts[cvId]?.content ?? revision.content
+    /// Applies `edit` (returns whether it changed anything) to a CV's content and saves it as a
+    /// new revision. While the CV holds a draft (failed save or conflict), edits change the draft
+    /// and wait for Try again / the conflict decision.
+    func editContent(of cvId: String, _ change: CVChangeSummary, _ edit: (inout CvContent) -> Bool) {
+        guard let cv = data.cv(id: cvId), var content = content(of: cv) else { return }
         guard edit(&content) else { return }
-        drafts[cvId] = content == revision.content
-            ? nil
-            : Draft(basedOnRevisionId: revision.id, content: content, editedAt: now)
-        recordWrite(cvId)
-        recompute()
+        if var draft = drafts[cvId] {
+            draft.content = content
+            drafts[cvId] = draft
+            recompute()
+            return
+        }
+        commit(cvId, content: content, summary: change.text)
+    }
+}
+
+extension String {
+    var nilIfBlank: String? {
+        let trimmed = trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? nil : trimmed
     }
 }
 

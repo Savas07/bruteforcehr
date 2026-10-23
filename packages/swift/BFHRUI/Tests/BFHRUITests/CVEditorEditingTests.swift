@@ -31,7 +31,10 @@ struct CVEditorEditingTests {
         let work = try #require(model.document?.content.work?.first)
         #expect(work.position == "Senior Frontend Engineer" && work.highlights?.count == 3)
         #expect(work.url == "https://pazarbox.example.com" && work.summary?.hasPrefix("E-commerce") == true)
-        #expect(model.document?.hasLocalEdits == true)
+        // Saved as a new current revision (no writer: in memory), not a draft.
+        #expect(model.document?.hasLocalEdits == false)
+        #expect(model.revisionDays.first?.revisions.first?.diffSummary == "Edited Experience · Pazarbox")
+        #expect(model.revisionDays.first?.revisions.first?.isCurrent == true)
     }
 
     @Test("An untouched draft has no changes; a blank bullet doesn't count as one")
@@ -170,39 +173,6 @@ struct CVEditorEditingTests {
         #expect(model.offersSuggestions && model.canRequestSuggestions)
         model.connection = .offline(lastSyncedAt: nil)
         #expect(!model.canRequestSuggestions)
-    }
-
-    // MARK: Preview
-
-    @Test("Page blocks follow the section order in the CV's language")
-    func pageBlocks() throws {
-        let model = try model()
-        let blocks = model.pageBlocks
-        guard case .header(let name, let headline, let contact) = blocks.first else {
-            Issue.record("No header block")
-            return
-        }
-        #expect(name == "Deniz Aksoy" && headline == "Frontend & Product Engineer")
-        #expect(contact.first == "Istanbul, TR" && contact.contains("github.com/deniz-aksoy-example"))
-        let headings = blocks.compactMap { if case .heading(let title) = $0 { title } else { nil } }
-        #expect(headings == ["Profile", "Experience", "Projects", "Skills", "Education", "Languages", "Talks"])
-        #expect(blocks.contains(.entry(title: "Frontend Engineer", subtitle: "Pazarbox", dates: "Mar 2022 – Present", location: "Istanbul, Türkiye",
-                                       summary: "E-commerce marketplace with 4M monthly shoppers; member of the checkout and platform squads.",
-                                       firstBullet: "Led the rebuild of the design system (62 components, React + TypeScript, Storybook), adopted by 7 product teams.")))
-
-        model.select(cvId: "cv-de")
-        let german = model.pageBlocks.compactMap { if case .heading(let title) = $0 { title } else { nil } }
-        #expect(german.contains("Berufserfahrung") && german.contains("Kenntnisse"))
-        #expect(model.pageBlocks.contains { if case .entry(_, _, let dates?, _, _, _) = $0 { dates.hasSuffix("heute") } else { false } })
-        #expect(model.paper == CVPaper(size: .a4, density: .comfortable))
-    }
-
-    @Test("Pagination keeps headings with their next block and starts a page when full")
-    func pagination() {
-        let pages = CVPagination.pages(heights: [100, 20, 300, 20, 300, 100], keepsWithNext: [false, true, false, true, false, false], pageHeight: 500, spacing: 0)
-        #expect(pages == [[0, 1, 2], [3, 4, 5]])
-        #expect(CVPagination.pages(heights: [], keepsWithNext: [], pageHeight: 500, spacing: 0) == [[]])
-        #expect(CVPagination.pages(heights: [900, 10], keepsWithNext: [false, false], pageHeight: 500, spacing: 0) == [[0], [1]])
     }
 
     @Test("Months parse, compare and count")

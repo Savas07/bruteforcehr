@@ -12,22 +12,78 @@ extension DesignScenario {
         let selected = data.profile?.defaultCvId.flatMap { id in active.first { $0.id == id } }
             ?? active.first { $0.isDefault }
             ?? active.filter { $0.parentCvId == nil }.min { $0.id < $1.id }
-        let model = CVEditorModel(selectedCvId: selected?.id, now: now)
+        let model = CVEditorModel(selectedCvId: CVDesignPane.opensList ? nil : selected?.id, now: now)
         model.suggestionProvider = CVDesignSuggestions()
+        model.renderEngine = try? CVRenderEngine.bundled()
+        if let base = selected.flatMap({ cv in data.revision(id: cv.currentRevisionId) }) {
+            model.importer = CVDesignImporter(content: base.content)
+        }
         apply(to: model)
         return model
     }
 }
 
+extension CVEditorModel {
+    /// Design mode: the selected CV in a version conflict (this device edited the summary while
+    /// another device saved), for the banner and Compare captures.
+    func simulateConflict() {
+        guard let cv = document.flatMap({ data.cv(id: $0.id) }), let current = data.revision(id: cv.currentRevisionId) else { return }
+        var mine = current.content
+        let summary = mine.basics?.summary ?? ""
+        mine.basics?.summary = summary + " Open to relocation within the EU."
+        mine.meta.theme.density = .compact
+        let revision = CvRevision(id: "design-conflict", cvId: cv.id, content: mine, source: .manual,
+                                  basedOnRevisionId: current.id, jobId: nil, diffSummary: nil, createdAt: now)
+        drafts[cv.id] = CVDraft(content: mine, state: .conflict(mine: revision))
+        recompute()
+    }
+}
+
+/// Design mode's importer: "reads" the fixture's base CV back, with two fields the reader wasn't
+/// sure about, so the review screen can be captured without a server. Never in Release builds.
+final class CVDesignImporter: CVImporter {
+    private let content: CvContent
+
+    init(content: CvContent) {
+        self.content = content
+    }
+
+    func upload(_ data: Data, kind: CVImportFileKind) async throws(CVImportError) -> String {
+        "users/design/cv-imports/design"
+    }
+
+    func read(storagePath: String, kind: CVImportFileKind) async throws(CVImportError) -> CVImportResult {
+        try? await Task.sleep(for: .milliseconds(600))
+        guard let data = try? BFHRJSON.encoder().encode(content),
+              var object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { throw .unreadable }
+        object["meta"] = nil
+        guard let json = try? JSONSerialization.data(withJSONObject: object) else { throw .unreadable }
+        return CVImportResult(resumeJSON: json, confidence: ["/work/0/startDate": 0.55, "/education/0/institution": 0.62, "/basics/name": 0.99], warnings: [])
+    }
+}
+
 /// Design-mode panes for critique captures and UI tests: `-BFHRCVPane preview|item|assist|
-/// summary|history|reorder` opens that pane over the selected CV once per launch.
+/// summary|history|revision|reorder|template|export|conflict|compare|import|languageVariant`
+/// opens that pane once per launch.
 enum CVDesignPane: String {
     case preview
     case item
     case assist
     case summary
     case history
+    case revision
     case reorder
+    case template
+    case export
+    case conflict
+    case compare
+    case `import`
+    case languageVariant
+
+    /// Panes shown over the CV list rather than over an open CV.
+    static var opensList: Bool { requested == .import }
+    /// The history sheet opens the newest older version (`revision` pane).
+    static var opensRevision: Bool { requested == .revision }
 
     private static let requested: CVDesignPane? = {
         let arguments = ProcessInfo.processInfo.arguments

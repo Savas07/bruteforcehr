@@ -322,3 +322,95 @@ enum CVEditorViewStrings {
     static let pinnedFooter = LocalizedStringResource.bfhr("cvEditor.reorder.pinned", default: "Header and Summary always come first.", table: "CVEditor")
     static let reorderFooter = LocalizedStringResource.bfhr("cvEditor.reorder.footer", default: "Drag to change the order on your CV.", table: "CVEditor")
 }
+
+// MARK: - CV Studio (M2) choices over the generated strings in CVStudioStrings.swift
+
+extension CVEditorViewStrings {
+    static func density(_ density: CvDensity) -> LocalizedStringResource {
+        switch density {
+        case .compact: densityCompact
+        case .comfortable: densityComfortable
+        case .spacious: densitySpacious
+        }
+    }
+
+    static func exportFormatFooter(_ format: CVExportFormat) -> LocalizedStringResource {
+        switch format {
+        case .pdf: exportFooterPDF
+        case .docx: exportFooterDOCX
+        case .json: exportFooterJSON
+        }
+    }
+
+    static func diffSection(_ section: CVFieldDiff.Section) -> LocalizedStringResource {
+        switch section {
+        case .editor(let kind): sectionTitle(kind)
+        case .design: diffDesign
+        }
+    }
+
+    static func diffField(_ field: CVFieldDiff.Field) -> LocalizedStringResource {
+        switch field {
+        case .name: fieldName
+        case .headline: fieldHeadline
+        case .email: fieldEmail
+        case .phone: fieldPhone
+        case .website, .link: fieldLink
+        case .location: fieldLocation
+        case .summary: fieldSummary
+        case .profile: fieldProfile
+        case .role: fieldRole
+        case .organization: fieldOrganization
+        case .start: fieldStart
+        case .end: fieldEnd
+        case .date: fieldDate
+        case .bullet: fieldBullet
+        case .keyword: fieldKeyword
+        case .degree: fieldDegree
+        case .area: fieldArea
+        case .level: fieldLevel
+        case .fluency: fluencyLabel
+        case .detail, .other: fieldDetail
+        case .template: fieldTemplate
+        case .accent: accent
+        case .fontPair: fontPair
+        case .density: densityLabel
+        case .paper: paper
+        case .sectionOrder: fieldSectionOrder
+        }
+    }
+
+    private static var fluencyLabel: LocalizedStringResource { fieldFluency }
+
+    static func importFailedTitle(_ error: CVImportError) -> LocalizedStringResource {
+        switch error {
+        case .unreadable: importFailedRead
+        case .unsupported: importFailedType
+        case .tooLarge: importFailedSize
+        case .offline: importFailedOffline
+        case .aiDisabled: importFailedAI
+        case .dailyLimit: importFailedLimit
+        case .other: importFailedOther
+        }
+    }
+
+    static func importFailedBody(_ error: CVImportError) -> LocalizedStringResource {
+        switch error {
+        case .unreadable: importFailedReadBody
+        case .unsupported: importFailedTypeBody
+        case .tooLarge: importFailedSizeBody
+        case .offline: importFailedOfflineBody
+        case .aiDisabled: importFailedAIBody
+        case .dailyLimit: importFailedLimitBody
+        case .other: importFailedOtherBody
+        }
+    }
+
+    static func notice(_ notice: CVNotice) -> LocalizedStringResource {
+        switch notice {
+        case .createFailed: noticeCreateFailed
+        case .readFailed: noticeReadFailed
+        case .translateFailed: noticeTranslateFailed
+        }
+    }
+}

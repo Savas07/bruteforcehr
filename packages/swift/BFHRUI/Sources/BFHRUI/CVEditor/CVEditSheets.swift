@@ -217,7 +217,7 @@ struct CVItemEditorSheet: View {
     private func improve(_ bullet: CVBullet) {
         guard let provider = model.suggestionProvider, let language = model.document?.language else { return }
         assistTarget = bullet.id
-        assist = CVAssistSession(original: bullet.text, language: language, provider: provider)
+        assist = CVAssistSession(original: bullet.text, language: language, section: kind.orderKey, provider: provider)
     }
 
     /// Use suggestion / Edit: the bullet takes the text; Undo in the toast puts the old one back.
@@ -331,7 +331,7 @@ struct CVSummarySheet: View {
                     Section {
                         Button {
                             guard let provider = model.suggestionProvider, let language = model.document?.language else { return }
-                            assist = CVAssistSession(original: text, language: language, provider: provider)
+                            assist = CVAssistSession(original: text, language: language, section: "summary", provider: provider)
                         } label: {
                             Label { Text(L.improveWithAI) } icon: { Image(systemName: "sparkles") }
                         }

@@ -18,6 +18,9 @@ enum CVEditorSheet: Identifiable, Hashable {
     case summary
     case history
     case reorder
+    case template
+    case export
+    case compare
 
     var id: String {
         switch self {
@@ -27,20 +30,27 @@ enum CVEditorSheet: Identifiable, Hashable {
         case .summary: "summary"
         case .history: "history"
         case .reorder: "reorder"
+        case .template: "template"
+        case .export: "export"
+        case .compare: "compare"
         }
     }
 }
 
 /// The selected CV, pushed over the CVs list: inline title = CV name, the sync status as the
-/// subtitle, Edit · Preview pinned under the bar, and a "…" menu with the CV's versions
-/// (base + variants), Version history, Reorder sections and Archive.
+/// subtitle, Edit · Preview pinned under the bar, Template in the toolbar and a "…" menu with the
+/// CV's versions (base + variants), Version history, Reorder sections, Export, the CV actions and
+/// Archive.
 struct CVDocumentView: View {
     @Bindable var model: CVEditorModel
     @Environment(ToastCenter.self) private var toasts: ToastCenter?
     @Environment(\.bfhrReload) private var reload
     @State private var segment: CVSegment = .edit
     @State private var sheet: CVEditorSheet?
-    @State private var zoomed = false
+    @State private var prompt: CVActionPrompt?
+    @State private var sharing = false
+    @State private var shareFile: CVExportFile?
+    @State private var shareFailed = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     #if os(iOS)
     @State private var editMode: EditMode = .inactive
@@ -65,8 +75,15 @@ struct CVDocumentView: View {
         .modifier(CVSyncSubtitle(status: model.isLoaded ? model.syncStatus : nil))
         .toolbar { toolbar }
         .sheet(item: $sheet) { sheet in
-            sheetContent(sheet)
+            CVSheetContent(model: model, sheet: sheet)
                 .environment(\.bfhrNow, model.now)
+        }
+        .cvActionPrompts($prompt, model: model)
+        .cvShareSheet($shareFile)
+        .alert(Text(L.exportFailedTitle), isPresented: $shareFailed) {
+            Button { } label: { Text(L.ok) }
+        } message: {
+            Text(L.exportFailedBody)
         }
         .bfhrToastHost()
         .onChange(of: segment) { _, _ in endEditing() }
@@ -87,12 +104,7 @@ struct CVDocumentView: View {
                     .environment(\.editMode, $editMode)
                 #endif
             case .preview:
-                if let paper = model.paper {
-                    CVPreviewSegment(
-                        blocks: model.pageBlocks, paper: paper, accent: CVThemeColor.color(hex: document.content.meta.theme.accentColor),
-                        templateId: document.templateId, zoomed: zoomed, language: document.language
-                    )
-                }
+                CVPreviewSegment(model: model, document: document, onExport: { sheet = .export }, onShare: sharePDF)
             }
         }
         .modifier(CVTopBar { segmentBar })
@@ -111,14 +123,28 @@ struct CVDocumentView: View {
         .accessibilityIdentifier("cv.segment")
     }
 
+    /// Preview "Share PDF": the default name and paper, straight to the share sheet.
+    private func sharePDF() {
+        guard !sharing else { return }
+        sharing = true
+        Task {
+            defer { sharing = false }
+            do {
+                shareFile = try await CVExporter.file(model, format: .pdf, paper: model.document?.content.meta.theme.paperSize ?? .a4,
+                                                      fileName: model.exportFileName(format: .pdf))
+            } catch {
+                shareFailed = true
+            }
+        }
+    }
+
     // MARK: Toolbar
 
     @ToolbarContentBuilder
     private var toolbar: some ToolbarContent {
         if model.isLoaded, let document = model.document {
             ToolbarItemGroup(placement: .bfhrTrailing) {
-                switch segment {
-                case .edit:
+                if segment == .edit {
                     #if os(iOS)
                     Button {
                         withAnimation(BFHRMotion.animation(.base, reduceMotion: reduceMotion)) { editMode = editMode.isEditing ? .inactive : .active }
@@ -131,13 +157,11 @@ struct CVDocumentView: View {
                     }
                     .accessibilityIdentifier("cv.reorderItems")
                     #endif
-                case .preview:
-                    Button { zoomed.toggle() } label: {
-                        Label { Text(zoomed ? L.fitToWidth : L.actualSize) } icon: {
-                            Image(systemName: zoomed ? "arrow.down.right.and.arrow.up.left" : "plus.magnifyingglass")
-                        }
-                    }
                 }
+                Button { sheet = .template } label: {
+                    Label { Text(L.templateTitle) } icon: { Image(systemName: "paintpalette") }
+                }
+                .accessibilityIdentifier("cv.template")
                 moreMenu(document)
             }
         }
@@ -165,6 +189,18 @@ struct CVDocumentView: View {
             Section {
                 Button { sheet = .history } label: { Label { Text(L.versionHistory) } icon: { Image(systemName: "clock.arrow.circlepath") } }
                 Button { sheet = .reorder } label: { Label { Text(L.reorderSections) } icon: { Image(systemName: "list.bullet.indent") } }
+                Button { sheet = .export } label: { Label { Text(L.exportOptions) } icon: { Image(systemName: "square.and.arrow.up") } }
+            }
+            CVActionItems(model: model, cvId: document.id, prompt: $prompt)
+            if let original = document.importedFrom {
+                Section {
+                    Label {
+                        Text(L.originalFile)
+                        Text(verbatim: original.fileName)
+                    } icon: { Image(systemName: "paperclip") }
+                } header: {
+                    Text(L.importedFrom)
+                }
             }
             if !document.isArchived {
                 Section {
@@ -183,10 +219,43 @@ struct CVDocumentView: View {
         .accessibilityIdentifier("cv.more")
     }
 
-    // MARK: Sheets
+    private func endEditing() {
+        #if os(iOS)
+        editMode = .inactive
+        #endif
+    }
 
-    @ViewBuilder
-    private func sheetContent(_ sheet: CVEditorSheet) -> some View {
+    #if DEBUG
+    /// Design mode: `-BFHRCVPane preview|item|assist|summary|history|reorder|template|export|conflict`
+    /// opens one pane for critique captures and UI tests (once per launch).
+    private func applyDesignPane() {
+        guard let pane = CVDesignPane.takeLaunchPane() else { return }
+        switch pane {
+        case .preview: segment = .preview
+        case .item, .assist: sheet = .item(.work, index: 0)
+        case .summary: sheet = .summary
+        case .history: sheet = .history
+        case .reorder: sheet = .reorder
+        case .template: sheet = .template
+        case .export: sheet = .export
+        case .conflict: model.simulateConflict()
+        case .revision: sheet = .history
+        case .languageVariant: if let id = model.document?.id { prompt = .languageVariant(cvId: id) }
+        case .import: break
+        case .compare:
+            model.simulateConflict()
+            sheet = .compare
+        }
+    }
+    #endif
+}
+
+/// The CV screen's sheets (shared with the import review).
+struct CVSheetContent: View {
+    let model: CVEditorModel
+    let sheet: CVEditorSheet
+
+    var body: some View {
         switch sheet {
         case .item(let kind, let index):
             if let draft = model.itemDraft(sectionKind: kind, at: index) {
@@ -202,31 +271,16 @@ struct CVDocumentView: View {
             CVHistorySheet(model: model)
         case .reorder:
             CVReorderSectionsSheet(model: model)
+        case .template:
+            CVTemplatePicker(model: model)
+        case .export:
+            CVExportSheet(model: model)
+        case .compare:
+            CVCompareView(model: model)
         }
     }
-
-    private func endEditing() {
-        #if os(iOS)
-        editMode = .inactive
-        #endif
-        zoomed = false
-    }
-
-    #if DEBUG
-    /// Design mode: `-BFHRCVPane preview|item|assist|summary|history|reorder` opens one pane for
-    /// critique captures and UI tests (once per launch).
-    private func applyDesignPane() {
-        guard let pane = CVDesignPane.takeLaunchPane() else { return }
-        switch pane {
-        case .preview: segment = .preview
-        case .item, .assist: sheet = .item(.work, index: 0)
-        case .summary: sheet = .summary
-        case .history: sheet = .history
-        case .reorder: sheet = .reorder
-        }
-    }
-    #endif
 }
+
 
 /// Edit · Preview pinned under the navigation bar: a scroll-edge bar on iOS 26, an inset with
 /// the bar material before.
@@ -259,7 +313,7 @@ private struct CVSyncSubtitle: ViewModifier {
 enum CVThemeColor {
     static func color(hex: String) -> Color {
         let digits = hex.trimmingCharacters(in: CharacterSet(charactersIn: "#"))
-        guard digits.count == 6, let value = UInt32(digits, radix: 16) else { return CVPaperInk.primary }
+        guard digits.count == 6, let value = UInt32(digits, radix: 16) else { return .gray }
         return Color(
             .sRGB,
             red: Double((value >> 16) & 0xFF) / 255,

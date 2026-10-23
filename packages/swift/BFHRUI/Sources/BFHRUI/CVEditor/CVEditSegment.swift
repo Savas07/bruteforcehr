@@ -11,29 +11,53 @@ struct CVEditSegment: View {
     @Bindable var model: CVEditorModel
     let document: CVDocument
     @Binding var sheet: CVEditorSheet?
+    /// Import review: the reader's low-confidence flags and the "only fields to check" filter.
+    var importFlow: CVImportFlow?
     @Environment(ToastCenter.self) private var toasts: ToastCenter?
 
     var body: some View {
         List {
             ConnectionBannerSection(model.connection)
+            if let conflict = model.conflict {
+                Section { CVConflictBanner(model: model, conflict: conflict) { sheet = .compare } }
+                    .listRowInsets(EdgeInsets())
+                    .listRowBackground(Color.clear)
+            } else if model.failedWriteIDs.contains(document.id) {
+                Section {
+                    InlineAlert(.error, title: L.saveFailedTitle, message: L.saveFailedBody, actionTitle: L.tryAgain) { model.retrySave() }
+                }
+                .listRowInsets(EdgeInsets())
+                .listRowBackground(Color.clear)
+            }
+            if let importFlow {
+                CVImportSummarySection(flow: importFlow)
+            }
             if let variant = document.variant {
                 Section { variantBanner(variant) }
                     .listRowInsets(EdgeInsets())
                     .listRowBackground(Color.clear)
             }
-            if let header = model.sections.first(where: { $0.kind == .header }) {
+            if let header = model.sections.first(where: { $0.kind == .header }), shows(sectionKey: "basics", index: nil) {
                 Section {
                     if header.isEmpty {
                         GhostRow(L.addHeader) { sheet = .header }
                     } else {
-                        Button { sheet = .header } label: { CVHeaderRow(content: document.content) }
-                            .accessibilityIdentifier("cv.header")
+                        Button {
+                            importFlow?.resolve(sectionKey: "basics", index: nil)
+                            sheet = .header
+                        } label: {
+                            VStack(alignment: .leading, spacing: BFHRSpace.s2) {
+                                CVHeaderRow(content: document.content)
+                                CVFlagNote(flags: flags(sectionKey: "basics", index: nil))
+                            }
+                        }
+                        .accessibilityIdentifier("cv.header")
                     }
                 } header: {
                     Text(L.sectionTitle(.header)).cvListHeader()
                 }
             }
-            if let summary = model.sections.first(where: { $0.kind == .summary }) {
+            if let summary = model.sections.first(where: { $0.kind == .summary }), importFlow?.showsOnlyFlagged != true {
                 Section {
                     if case .text(let text) = summary.summary {
                         Button { sheet = .summary } label: {
@@ -51,14 +75,20 @@ struct CVEditSegment: View {
                     Text(L.sectionTitle(.summary)).cvListHeader()
                 }
             }
-            ForEach(model.sections.filter { !$0.isPinned }) { section in
+            ForEach(model.sections.filter { !$0.isPinned && shows(section: $0) }) { section in
                 Section {
                     if section.isEmpty {
                         GhostRow(L.ghost(section.kind)) { sheet = .newItem(section.kind) }
                     } else {
-                        ForEach(section.items) { item in
-                            Button { sheet = .item(section.kind, index: item.index) } label: {
-                                CVItemRow(item: item, kind: section.kind)
+                        ForEach(section.items.filter { shows(sectionKey: section.kind.orderKey, index: $0.index) }) { item in
+                            Button {
+                                importFlow?.resolve(sectionKey: section.kind.orderKey, index: item.index)
+                                sheet = .item(section.kind, index: item.index)
+                            } label: {
+                                VStack(alignment: .leading, spacing: BFHRSpace.s2) {
+                                    CVItemRow(item: item, kind: section.kind)
+                                    CVFlagNote(flags: flags(sectionKey: section.kind.orderKey, index: item.index))
+                                }
                             }
                             .accessibilityIdentifier("cv.item.\(item.id)")
                             .bfhrRowActions([removeAction(section, item)])
@@ -99,6 +129,23 @@ struct CVEditSegment: View {
             }
         }
         .bfhrInsetGroupedList()
+    }
+
+    // MARK: Import review
+
+    private func flags(sectionKey: String, index: Int?) -> [CVImportFlag] {
+        importFlow?.flags(sectionKey: sectionKey, index: index) ?? []
+    }
+
+    /// With "Show only fields to check" on, only rows that still have flags.
+    private func shows(sectionKey: String, index: Int?) -> Bool {
+        guard let importFlow, importFlow.showsOnlyFlagged else { return true }
+        return !importFlow.flags(sectionKey: sectionKey, index: index).isEmpty
+    }
+
+    private func shows(section: CVSection) -> Bool {
+        guard let importFlow, importFlow.showsOnlyFlagged else { return true }
+        return importFlow.openFlags.contains { $0.sectionKey == section.kind.orderKey }
     }
 
     private func variantBanner(_ variant: CVVariantInfo) -> some View {

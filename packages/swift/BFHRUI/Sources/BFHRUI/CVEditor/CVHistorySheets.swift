@@ -5,14 +5,15 @@ import SwiftUI
 private typealias L = CVEditorViewStrings
 
 /// Version history (Canva / Mimo): versions by day, newest first, each a change sentence with
-/// its source and time, "Current" on the version the CV shows. Opening and restoring a version
-/// arrive with CV Studio (M2); every version is kept, so nothing is lost meanwhile.
+/// its source and time, "Current" on the version the CV shows. Tap a version to see what it
+/// changes and its page, and to restore it.
 struct CVHistorySheet: View {
     let model: CVEditorModel
     @Environment(\.dismiss) private var dismiss
+    @State private var path: [String] = []
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             List {
                 if model.document?.hasLocalEdits == true {
                     Section {
@@ -24,7 +25,10 @@ struct CVHistorySheet: View {
                 ForEach(model.revisionDays) { day in
                     Section {
                         ForEach(day.revisions) { revision in
-                            CVRevisionRowView(revision: revision)
+                            NavigationLink(value: revision.id) {
+                                CVRevisionRowView(revision: revision)
+                            }
+                            .accessibilityIdentifier("cv.history.\(revision.id)")
                         }
                     } header: {
                         Text(day.day, format: .dateTime.day().month(.wide).year()).cvListHeader()
@@ -34,6 +38,9 @@ struct CVHistorySheet: View {
             .bfhrInsetGroupedList()
             .navigationTitle(Text(L.versionHistory))
             .bfhrInlineTitle()
+            .navigationDestination(for: String.self) { revisionId in
+                CVRevisionViewer(model: model, revisionId: revisionId)
+            }
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button { dismiss() } label: { Text(L.done) }
@@ -43,6 +50,13 @@ struct CVHistorySheet: View {
         .presentationDetents([.medium, .large])
         // Opaque, so text keeps its contrast over the CV behind the sheet.
         .presentationBackground(BFHRColor.groupedBackground)
+        #if DEBUG
+        .task {
+            if CVDesignPane.opensRevision, let older = model.revisionDays.flatMap(\.revisions).first(where: { !$0.isCurrent }) {
+                path = [older.id]
+            }
+        }
+        #endif
     }
 }
 

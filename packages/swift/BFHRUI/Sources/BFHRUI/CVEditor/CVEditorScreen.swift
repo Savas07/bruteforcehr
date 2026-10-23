@@ -1,15 +1,20 @@
 import BFHRCore
 import BFHRDesignTokens
 import SwiftUI
+import UniformTypeIdentifiers
 
 private typealias L = CVEditorViewStrings
 
 /// The CVs tab (cv-editor.md "Decision — iOS"): base CVs with their variants beneath, and the
-/// selected CV pushed over the list (`CVDocumentView`: Edit · Preview).
+/// selected CV pushed over the list (`CVDocumentView`: Edit · Preview). "+" imports a file or
+/// starts from scratch; each row's context menu holds the CV actions.
 public struct CVEditorScreen: View {
     @Bindable private var model: CVEditorModel
     @Environment(ToastCenter.self) private var toasts: ToastCenter?
     @Environment(\.bfhrReload) private var reload
+    @State private var prompt: CVActionPrompt?
+    @State private var picksFile = false
+    @State private var importFlow: CVImportFlow?
 
     public init(model: CVEditorModel) {
         self.model = model
@@ -22,8 +27,9 @@ public struct CVEditorScreen: View {
                     .firstUse,
                     glyph: "doc.text",
                     title: L.emptyTitle,
-                    message: L.emptyBody,
-                    primary: .init(L.startFromScratch) { model.startFromScratch() }
+                    message: model.importer == nil ? L.emptyBody : L.emptyBodyImport,
+                    primary: model.importer == nil ? .init(L.startFromScratch) { model.startFromScratch() } : .init(L.importCV) { picksFile = true },
+                    secondary: model.importer == nil ? nil : .init(L.startFromScratch) { model.startFromScratch() }
                 )
             } else {
                 list
@@ -40,8 +46,28 @@ public struct CVEditorScreen: View {
                 .environment(\.bfhrReload, reload)
                 .environment(\.bfhrNow, model.now)
         }
+        .cvActionPrompts($prompt, model: model)
+        .fileImporter(isPresented: $picksFile, allowedContentTypes: CVImportPicker.contentTypes) { result in
+            if case .success(let url) = result { startImport(url) }
+        }
+        .sheet(item: $importFlow) { flow in
+            CVImportSheet(flow: flow, editor: model) {
+                importFlow = nil
+                picksFile = true
+            }
+        }
+        .onChange(of: model.notice) { _, notice in
+            guard let notice else { return }
+            toasts?.show(ToastItem(glyph: "exclamationmark.circle", message: L.notice(notice)))
+            model.notice = nil
+        }
         .bfhrToastHost()
         .environment(\.bfhrNow, model.now)
+        #if DEBUG
+        .task {
+            if CVDesignPane.opensList, CVDesignPane.takeLaunchPane() == .import { openDesignImport() }
+        }
+        #endif
     }
 
     /// No CVs at all, archived ones included.
@@ -51,16 +77,52 @@ public struct CVEditorScreen: View {
         Binding(get: { model.selectedCvId }, set: { model.select(cvId: $0) })
     }
 
+    private func startImport(_ url: URL) {
+        guard let importer = model.importer else { return }
+        let flow = CVImportFlow(fileName: url.lastPathComponent, importer: importer, timezone: model.data.profile?.timezone,
+                                uiLanguage: model.data.profile?.uiLanguage.rawValue ?? CVEditorModel.uiLanguage)
+        importFlow = flow
+        let engine = model.renderEngine
+        let now = model.usesSystemClock ? Date.now : model.now
+        Task {
+            let accessing = url.startAccessingSecurityScopedResource()
+            defer { if accessing { url.stopAccessingSecurityScopedResource() } }
+            guard let kind = CVImportFileKind(fileExtension: url.pathExtension) else {
+                await flow.fail(.unsupported)
+                return
+            }
+            guard let data = try? Data(contentsOf: url) else {
+                await flow.fail(.unreadable)
+                return
+            }
+            await flow.run(data: data, kind: kind, renderEngine: engine, now: now)
+        }
+    }
+
+    #if DEBUG
+    private func openDesignImport() {
+        guard let importer = model.importer else { return }
+        let flow = CVImportFlow(fileName: "CV_2025.pdf", importer: importer, timezone: model.data.profile?.timezone, uiLanguage: "en")
+        importFlow = flow
+        let engine = model.renderEngine, now = model.now
+        Task { await flow.run(data: Data("design".utf8), kind: .pdf, renderEngine: engine, now: now) }
+    }
+    #endif
+
     @ToolbarContentBuilder
     private var toolbar: some ToolbarContent {
-        // First use: the empty state's "Start from scratch" is the one way in, so no "+" twin.
+        // First use: the empty state's buttons are the way in, so no "+" twin.
         if model.isLoaded && !isFirstUse {
             ToolbarItem(placement: .bfhrTrailing) {
                 Menu {
+                    if model.importer != nil {
+                        Button { picksFile = true } label: { Label { Text(L.importFile) } icon: { Image(systemName: "square.and.arrow.down") } }
+                    }
                     Button { model.startFromScratch() } label: { Label { Text(L.startFromScratch) } icon: { Image(systemName: "doc.badge.plus") } }
                 } label: {
                     Label { Text(L.newCV) } icon: { Image(systemName: "plus") }
                 }
+                .accessibilityIdentifier("cv.new")
             }
             if model.archivedCount > 0 {
                 ToolbarItem(placement: .bfhrTrailing) {
@@ -94,8 +156,10 @@ public struct CVEditorScreen: View {
                 Section {
                     ForEach([group.base] + group.variants) { row in
                         Button { model.select(cvId: row.id) } label: {
-                            CVListRowView(row: row, isNestedVariant: row.isVariant && row.parentCvId == group.base.id)
+                            CVListRowView(row: row, isNestedVariant: row.isVariant && row.parentCvId == group.base.id,
+                                          isPending: model.pendingSyncIDs.contains(row.id))
                         }
+                        .accessibilityIdentifier("cv.row.\(row.id)")
                         .bfhrRowActions(actions(for: row))
                     }
                 }
@@ -106,12 +170,25 @@ public struct CVEditorScreen: View {
 
     private func actions(for row: CVListRow) -> [RowAction] {
         if row.isArchived {
-            [RowAction(L.restore, systemImage: "arrow.uturn.backward", edge: .leading) { model.unarchive(cvId: row.id) }]
-        } else {
-            [RowAction(L.archive, systemImage: "archivebox", edge: .trailing) {
-                if let toast = model.archive(cvId: row.id) { toasts?.show(toast) }
-            }]
+            return [RowAction(L.restore, systemImage: "arrow.uturn.backward", edge: .leading) { model.unarchive(cvId: row.id) }]
         }
+        let id = row.id
+        return [
+            RowAction(L.duplicate, systemImage: "plus.square.on.square", edge: .menuOnly) { Task { await model.duplicate(cvId: id) } },
+            RowAction(L.newRoleVariant, systemImage: "person.crop.rectangle.stack", edge: .menuOnly) { prompt = .roleVariant(cvId: id) },
+            RowAction(L.newLanguageVariant, systemImage: "globe", edge: .menuOnly) { prompt = .languageVariant(cvId: id) },
+            RowAction(L.rename, systemImage: "pencil", edge: .menuOnly) { prompt = .rename(cvId: id) },
+            RowAction(L.archive, systemImage: "archivebox", edge: .trailing) {
+                if let toast = model.archive(cvId: id) { toasts?.show(toast) }
+            },
+        ]
+    }
+}
+
+/// The file types Import accepts: PDF, Word, JSON Resume and the LinkedIn data export (ZIP).
+enum CVImportPicker {
+    static var contentTypes: [UTType] {
+        [.pdf, .json, .zip, UTType("org.openxmlformats.wordprocessingml.document")].compactMap { $0 }
     }
 }
 
@@ -119,6 +196,8 @@ public struct CVEditorScreen: View {
 struct CVListRowView: View {
     let row: CVListRow
     let isNestedVariant: Bool
+    /// Changes made offline that haven't synced yet.
+    var isPending = false
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
@@ -138,6 +217,7 @@ struct CVListRowView: View {
                     .foregroundStyle(BFHRColor.Fg.secondary)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+            if isPending { SyncGlyph() }
             Image(systemName: "chevron.forward")
                 .font(.bfhr(.footnote, emphasized: true))
                 .foregroundStyle(BFHRColor.Fg.tertiary)

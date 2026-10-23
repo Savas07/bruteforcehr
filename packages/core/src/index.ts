@@ -2,6 +2,7 @@ export * from "./common";
 export * from "./enums";
 export * from "./profile";
 export * from "./cv";
+export * from "./ai";
 export * from "./job";
 export * from "./application";
 export * from "./mail";

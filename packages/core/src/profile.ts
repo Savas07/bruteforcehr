@@ -118,8 +118,17 @@ export const ProfileSchema = z.object({
   skills: z.array(z.string().min(1).max(60)).max(200),
   defaultCvId: IdSchema.nullable(),
   onboardingCompletedAt: TimestampSchema.nullable(),
+  /**
+   * §2.4/§4.5: AI features (CV import structuring, CV assists). `cvImport`/`cvAssist` refuse when
+   * this is `false`; a profile without the field counts as enabled (`DEFAULT_AI_ENABLED`). Sending
+   * email text to AI is the separate `settings.aiMailTextAllowed` toggle (M5).
+   */
+  aiEnabled: z.boolean(),
   settings: ProfileSettingsSchema,
   createdAt: TimestampSchema,
   updatedAt: TimestampSchema,
 });
 export type Profile = z.infer<typeof ProfileSchema>;
+
+/** Value of `Profile.aiEnabled` for new profiles and for documents written before the field existed. */
+export const DEFAULT_AI_ENABLED = true;

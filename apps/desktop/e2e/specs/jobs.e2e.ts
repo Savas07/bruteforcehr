@@ -8,7 +8,7 @@
  */
 import { $, browser, expect } from "@wdio/globals";
 import { firebaseConfig } from "../../src/lib/firebase.ts";
-import { ensureSignedIn, testEmail } from "../support/auth";
+import { ensureSignedOut, signIn, testEmail } from "../support/auth";
 import { docId, findDocs, type FirestoreDoc, getDoc, plain } from "../support/firestore";
 
 const RUN = process.pid;
@@ -120,7 +120,9 @@ async function match(jobId: string) {
 
 describe("Jobs", () => {
   before(async () => {
-    await ensureSignedIn(EMAIL);
+    // Its own account (a restored session may belong to another spec): the seeds go under its uid.
+    await ensureSignedOut();
+    await signIn(EMAIL);
     uid = await uidOf(EMAIL);
     for (const [entry, score] of [
       [KEEP, 88],

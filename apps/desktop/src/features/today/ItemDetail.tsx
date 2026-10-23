@@ -29,7 +29,7 @@ import { ReviewDetailPane } from "../../shared/ui/ReviewDetailPane";
 import { SnoozeMenu, type SnoozePreset } from "../../shared/ui/SnoozeMenu";
 import { SyncGlyph } from "../../shared/ui/SyncGlyph";
 import type { AttentionItemVM, DeadlineItemVM, InterviewItemVM, MatchItemVM } from "./model";
-import type { SnoozeUntil, TodayActions } from "./useTodayActions";
+import { canSnooze, type TodayActions } from "./useTodayActions";
 
 const messages = defineMessages({
   join: {
@@ -100,6 +100,11 @@ const messages = defineMessages({
     defaultMessage: "Suggested follow-up",
     description: "Heading above a follow-up or no-response suggestion in the detail pane",
   },
+  reminderKicker: {
+    id: "today.detail.reminderKicker",
+    defaultMessage: "Your reminder",
+    description: "Label above a reminder the user set on an application (its next action)",
+  },
   markDone: { id: "today.detail.markDone", defaultMessage: "Mark as done", description: "Button" },
   markSeen: { id: "today.detail.markSeen", defaultMessage: "Mark as seen", description: "Button" },
   snooze: {
@@ -119,12 +124,6 @@ const messages = defineMessages({
     id: "today.detail.noReason",
     defaultMessage: "Open the job to see how it compares with your CV.",
     description: "When a match has no rule-based reasons",
-  },
-  snoozedUntil: {
-    id: "today.detail.snoozedUntil",
-    defaultMessage:
-      "{preset, select, laterToday {Snoozed until later today} tomorrow {Snoozed until tomorrow} nextWeek {Snoozed until next week} other {Snoozed until {date, date, long}}}",
-    description: "Notice on a snoozed item in the Later view",
   },
   snoozedBody: {
     id: "today.detail.snoozedBody",
@@ -151,8 +150,6 @@ export interface ItemDetailProps {
   links: TodayLinks;
   /** Opens the external meeting link. */
   onJoin: (url: string) => void;
-  /** Draft follow-up: the job's Apply panel. */
-  onDraftFollowUp: (item: Extract<AttentionItemVM, { kind: "followUp" }>) => void;
   /** `pickDate` was chosen: the screen opens its date dialog. */
   onPickDate: (item: AttentionItemVM) => void;
   /** Controlled snooze menu, so `H` opens it on the selected item. */
@@ -160,8 +157,8 @@ export interface ItemDetailProps {
   onSnoozeOpenChange: (open: boolean) => void;
   /** Saved state of a match after Today's own toggles. */
   saved: boolean;
-  /** Set in the Later view: when it comes back. */
-  snoozedUntil: SnoozeUntil | null;
+  /** Set in the Later view: "Snoozed until Monday 26 October, 09:00". */
+  snoozedTitle: string | null;
   offline: boolean;
   /** 2 in the detail pane, 3 inline under a row (sections are h2). */
   headingLevel: 2 | 3;
@@ -355,6 +352,11 @@ function DeadlineDetail({
   const { applicationId, jobId, mailMessageId } = item;
   return (
     <>
+      {item.deadlineKind === "reminder" && (
+        <p className="text-footnote text-fg-secondary font-medium">
+          {intl.formatMessage(messages.reminderKicker)}
+        </p>
+      )}
       <DetailHeader item={item} headingLevel={headingLevel}>
         <p className="text-callout text-fg-primary mt-1">
           <time dateTime={item.due.iso} className="font-medium">
@@ -446,11 +448,10 @@ export function ItemDetail(props: ItemDetailProps) {
     item,
     actions,
     links,
-    onDraftFollowUp,
     onPickDate,
     snoozeOpen,
     onSnoozeOpenChange,
-    snoozedUntil,
+    snoozedTitle,
     offline,
     headingLevel,
     className,
@@ -521,9 +522,7 @@ export function ItemDetail(props: ItemDetailProps) {
           <NudgeCard
             nudge={item.nudge}
             className="p-4"
-            onPrimary={() =>
-              item.nudge.kind === "noResponse" ? actions.markNoResponse(item) : onDraftFollowUp(item)
-            }
+            onPrimary={() => actions.nudgePrimary(item)}
             onSecondary={() => actions.declineNudge(item)}
             onSnooze={snoozeTo}
             snoozeOpen={snoozeOpen}
@@ -538,7 +537,7 @@ export function ItemDetail(props: ItemDetailProps) {
       );
       break;
     case "deadline":
-      body = <DeadlineDetail {...props} item={item} snooze={snooze} />;
+      body = <DeadlineDetail {...props} item={item} snooze={canSnooze(item) ? snooze : null} />;
       break;
     case "match":
       body = <MatchDetail {...props} item={item} snooze={snooze} />;
@@ -547,13 +546,10 @@ export function ItemDetail(props: ItemDetailProps) {
 
   return (
     <div className={cx("flex flex-col gap-5", className)}>
-      {snoozedUntil && (
+      {snoozedTitle && (
         <InlineAlert
           tone="info"
-          title={intl.formatMessage(messages.snoozedUntil, {
-            preset: snoozedUntil.preset,
-            date: snoozedUntil.preset === "pickDate" ? snoozedUntil.date : null,
-          })}
+          title={snoozedTitle}
           action={{ label: intl.formatMessage(messages.moveBack), onClick: () => actions.unsnooze(item) }}
         >
           {intl.formatMessage(messages.snoozedBody)}

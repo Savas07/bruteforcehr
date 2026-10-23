@@ -15,10 +15,12 @@ import {
   type Interview,
 } from "@bfhr/core";
 import { AlarmClock, ArrowRight, Check, Plus, Undo2, X } from "lucide-react";
+import { useContext } from "react";
 import { defineMessages, useIntl } from "react-intl";
 import { MOVE_DENIAL_MESSAGES, STATUS_MESSAGES } from "../../shared/model/vocabulary";
 import { useToast } from "../../shared/ui/Toast";
 import { displayTimeZone, useTrackerSource } from "./live";
+import { ModelEnvironmentContext } from "./model";
 import { type PendingWrite, type TrackerData, useTrackerRepository } from "./repository";
 import { snoozeInstant, type SnoozeUntil } from "./snooze";
 import type {
@@ -122,6 +124,8 @@ export function useTrackerActions(): TrackerActions {
   const toast = useToast();
   const repository = useTrackerRepository();
   const source = useTrackerSource();
+  // The clock and zone screens are built with (the fixture clock and `?tz` in the design build).
+  const environment = useContext(ModelEnvironmentContext);
 
   // Read when an action runs (Undo runs later, from the toast or Mod+Z): the data as it is then.
   const data = (): TrackerData | null => {
@@ -234,7 +238,11 @@ export function useTrackerActions(): TrackerActions {
 
     snoozeSuggestion(applicationId, kind, until) {
       const application = findApplication(applicationId);
-      const at = snoozeInstant(until, new Date(), displayTimeZone(data()?.profile ?? null));
+      const at = snoozeInstant(
+        until,
+        environment.now(),
+        environment.timeZone ?? displayTimeZone(data()?.profile ?? null),
+      );
       watch(repository.snoozeSuggestion(applicationId, kind, at));
       toast.show({
         message: intl.formatMessage(messages.snoozed, {

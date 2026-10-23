@@ -3,13 +3,26 @@
  * IA.md "Per-section layouts"). Center column of sections; the selected item's detail pane from
  * 1200 px (inline under its row below that); the read-only 7-day agenda rail from 1440 px. The
  * header is the title, the date and the Open / Later filter: no greeting (U8), no badges, no
- * streaks. Every action is optimistic with an Undo toast; automatic changes keep their own Undo.
+ * streaks. Suggestions, reminders and automatic changes persist through `useTrackerActions`
+ * (Undo toast); the Later view and "Done today" come from the model.
  */
 import { useNavigate } from "@tanstack/react-router";
-import { AlarmClock, Check, ExternalLink, Inbox, Mail, MailX, PencilLine, Undo2, X } from "lucide-react";
+import {
+  AlarmClock,
+  AlarmClockOff,
+  Briefcase,
+  Check,
+  ExternalLink,
+  Inbox,
+  MailX,
+  PencilLine,
+  Undo2,
+  X,
+} from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { defineMessages, useIntl } from "react-intl";
 import { ROUTE_TITLE_ID } from "../../components/RouteContainer";
+import type { SnoozeUntil } from "../../data/tracker/snooze";
 import { openExternal } from "../../lib/desktop";
 import { useConnectivity } from "../../shared/connectivity";
 import { useKeyBindings } from "../../shared/keyboard/useKeyBindings";
@@ -27,14 +40,15 @@ import {
   SkeletonText,
   useSkeletonGate,
 } from "../../shared/ui/Skeleton";
+import { SnoozeDateDialog } from "../../shared/ui/SnoozeDateDialog";
 import { SplitView } from "../../shared/ui/SplitView";
 import { StaleStamp } from "../../shared/ui/StaleStamp";
+import { openAddApplication } from "../application-add";
 import { AgendaRail, AgendaRailSkeleton } from "./AgendaRail";
 import { AttentionList, type DoneEntry, type ListSection } from "./AttentionList";
 import { DETAIL_MESSAGES, ItemDetail, type TodayLinks } from "./ItemDetail";
 import type { AttentionItemVM, TodayModel } from "./model";
-import { SnoozeDateDialog } from "./SnoozeDateDialog";
-import { type SnoozeUntil, useTodayActions } from "./useTodayActions";
+import { canSnooze, useTodayActions } from "./useTodayActions";
 
 const messages = defineMessages({
   title: {
@@ -153,6 +167,22 @@ const messages = defineMessages({
     description: "Context menu item",
   },
   unsave: { id: "today.menu.unsave", defaultMessage: "Remove from saved", description: "Context menu item" },
+  moveBack: {
+    id: "today.menu.moveBack",
+    defaultMessage: "Move back now",
+    description: "Context menu item in the Later view: un-snooze",
+  },
+  snoozedUntil: {
+    id: "today.detail.snoozedUntil",
+    defaultMessage:
+      "{preset, select, laterToday {Snoozed until later today} tomorrow {Snoozed until tomorrow} nextWeek {Snoozed until next week} other {Snoozed until {date, date, long}}}",
+    description: "Notice on a snoozed item in the Later view",
+  },
+  snoozeDateBody: {
+    id: "today.snoozeDate.body",
+    defaultMessage: "{company} comes back to Today on this date.",
+    description: "Description of the Pick a date dialog",
+  },
 });
 
 type View = "open" | "later";
@@ -195,8 +225,8 @@ export default function TodayScreen({ model }: ScreenProps<TodayModel>) {
     },
   });
 
-  const handled = new Set([...actions.state.done, ...actions.state.later].map((entry) => entry.item.id));
-  const laterById = new Map(actions.state.later.map((entry) => [entry.item.id, entry.until]));
+  const handled = new Set([...actions.local.done, ...actions.local.later].map((entry) => entry.item.id));
+  const laterById = new Map(actions.local.later.map((entry) => [entry.item.id, entry.until]));
   const links: TodayLinks = {
     application: (applicationId) => void navigate({ to: "/tracker", search: { applicationId } }),
     job: (jobId) => void navigate({ to: "/jobs/$jobId", params: { jobId } }),
@@ -222,12 +252,12 @@ export default function TodayScreen({ model }: ScreenProps<TodayModel>) {
             };
           })
           .filter((section) => section.items.length > 0)
-      : actions.state.later.length > 0
+      : ready.later.length + actions.local.later.length > 0
         ? [
             {
               id: "later",
               title: intl.formatMessage(messages.snoozedSection),
-              items: actions.state.later.map((entry) => entry.item),
+              items: [...ready.later, ...actions.local.later.map((entry) => entry.item)],
               count: null,
               footer: null,
             },
@@ -246,7 +276,7 @@ export default function TodayScreen({ model }: ScreenProps<TodayModel>) {
         : (ids[0] ?? null);
   const selected = items.find((item) => item.id === selectedId) ?? null;
   const savedOf = (item: AttentionItemVM) =>
-    item.kind === "match" && (actions.state.saved[item.id] ?? item.saved);
+    item.kind === "match" && (actions.local.saved[item.id] ?? item.saved);
   const group = intl.formatMessage(messages.title);
 
   const nav = useListNavigation({
@@ -271,11 +301,18 @@ export default function TodayScreen({ model }: ScreenProps<TodayModel>) {
     });
   });
 
-  const untilLabel = (until: SnoozeUntil) =>
-    intl.formatMessage(messages.until, {
-      preset: until.preset,
-      date: until.preset === "pickDate" ? until.date : null,
-    });
+  /** When a snoozed item comes back: from the model for suggestions, else the session's preset. */
+  const snoozedText = (item: AttentionItemVM): { readonly row: string; readonly title: string } | null => {
+    if (item.kind === "followUp" && item.snoozed)
+      return { row: item.snoozed.rowLabel, title: item.snoozed.title };
+    const until: SnoozeUntil | undefined = laterById.get(item.id);
+    if (!until) return null;
+    const values = { preset: until.preset, date: until.preset === "pickDate" ? until.date : null };
+    return {
+      row: intl.formatMessage(messages.until, values),
+      title: intl.formatMessage(messages.snoozedUntil, values),
+    };
+  };
 
   const openSource = (item: AttentionItemVM) => {
     switch (item.kind) {
@@ -298,12 +335,9 @@ export default function TodayScreen({ model }: ScreenProps<TodayModel>) {
     }
   };
 
-  const draftFollowUp = (item: Extract<AttentionItemVM, { kind: "followUp" }>) =>
-    item.jobId ? links.job(item.jobId) : links.application(item.nudge.applicationId);
-
   const openSnooze = (item: AttentionItemVM) => {
     if (item.kind === "review") return actions.snooze(item, { preset: "tomorrow" });
-    if (item.kind === "interview" || item.kind === "autoUpdate") return undefined;
+    if (!canSnooze(item)) return undefined;
     if (!split) setExpandedId(item.id);
     setSnoozeOpen(true);
     return undefined;
@@ -382,7 +416,7 @@ export default function TodayScreen({ model }: ScreenProps<TodayModel>) {
       keys: "H",
       label: intl.formatMessage(messages.keySnooze),
       group,
-      enabled: kind !== undefined && kind !== "interview" && kind !== "autoUpdate",
+      enabled: selected !== null && canSnooze(selected),
       run: () => {
         if (selected) openSnooze(selected);
       },
@@ -421,11 +455,18 @@ export default function TodayScreen({ model }: ScreenProps<TodayModel>) {
   ]);
 
   const menuFor = (item: AttentionItemVM) => {
-    const tomorrow = (
-      <MenuItem icon={AlarmClock} onSelect={() => actions.snooze(item, { preset: "tomorrow" })}>
-        {intl.formatMessage(messages.snoozeTomorrow)}
-      </MenuItem>
-    );
+    const snoozeItem =
+      view === "later" ? (
+        <MenuItem icon={AlarmClockOff} onSelect={() => actions.unsnooze(item)}>
+          {intl.formatMessage(messages.moveBack)}
+        </MenuItem>
+      ) : (
+        canSnooze(item) && (
+          <MenuItem icon={AlarmClock} onSelect={() => actions.snooze(item, { preset: "tomorrow" })}>
+            {intl.formatMessage(messages.snoozeTomorrow)}
+          </MenuItem>
+        )
+      );
     const source = (label: string) => (
       <MenuItem icon={ExternalLink} shortcut="O" onSelect={() => openSource(item)}>
         {label}
@@ -475,17 +516,11 @@ export default function TodayScreen({ model }: ScreenProps<TodayModel>) {
       case "followUp":
         return (
           <>
-            <MenuItem
-              onSelect={() =>
-                item.nudge.kind === "noResponse" ? actions.markNoResponse(item) : draftFollowUp(item)
-              }
-            >
-              {item.nudge.primaryLabel}
-            </MenuItem>
+            <MenuItem onSelect={() => actions.nudgePrimary(item)}>{item.nudge.primaryLabel}</MenuItem>
             <MenuItem icon={X} shortcut="D" onSelect={() => actions.declineNudge(item)}>
               {item.nudge.secondaryLabel}
             </MenuItem>
-            {tomorrow}
+            {snoozeItem}
             {source(intl.formatMessage(DETAIL_MESSAGES.openApplication))}
           </>
         );
@@ -495,7 +530,7 @@ export default function TodayScreen({ model }: ScreenProps<TodayModel>) {
             <MenuItem icon={Check} shortcut="E" onSelect={() => actions.markDone(item)}>
               {intl.formatMessage(DETAIL_MESSAGES.markDone)}
             </MenuItem>
-            {tomorrow}
+            {snoozeItem}
             {item.applicationId
               ? source(intl.formatMessage(DETAIL_MESSAGES.openApplication))
               : item.jobId && source(intl.formatMessage(DETAIL_MESSAGES.openJob))}
@@ -511,7 +546,7 @@ export default function TodayScreen({ model }: ScreenProps<TodayModel>) {
             <MenuItem icon={X} shortcut="D" onSelect={() => actions.notForMe(item)}>
               {intl.formatMessage(DETAIL_MESSAGES.notForMe)}
             </MenuItem>
-            {tomorrow}
+            {snoozeItem}
           </>
         );
     }
@@ -523,7 +558,6 @@ export default function TodayScreen({ model }: ScreenProps<TodayModel>) {
       actions={actions}
       links={links}
       onJoin={(url) => void openExternal(url)}
-      onDraftFollowUp={draftFollowUp}
       onPickDate={(target) => {
         setSnoozeOpen(false);
         setDateFor(target);
@@ -531,7 +565,7 @@ export default function TodayScreen({ model }: ScreenProps<TodayModel>) {
       snoozeOpen={snoozeOpen && item.id === selectedId}
       onSnoozeOpenChange={setSnoozeOpen}
       saved={savedOf(item)}
-      snoozedUntil={laterById.get(item.id) ?? null}
+      snoozedTitle={snoozedText(item)?.title ?? null}
       offline={offline}
       headingLevel={headingLevel}
     />
@@ -556,7 +590,7 @@ export default function TodayScreen({ model }: ScreenProps<TodayModel>) {
         )}
       </div>
       {/* Open / Later only once there is something to snooze (first run stays one calm card). */}
-      {ready && (ready.items.length > 0 || actions.state.later.length > 0) && (
+      {ready && (ready.items.length > 0 || ready.later.length + actions.local.later.length > 0) && (
         <SegmentedControl
           size="sm"
           label={intl.formatMessage(messages.show)}
@@ -578,18 +612,15 @@ export default function TodayScreen({ model }: ScreenProps<TodayModel>) {
   let empty = null;
   if (ready && view === "later")
     empty = <EmptyState kind="subArea" body={intl.formatMessage(messages.laterEmpty)} className="px-3" />;
-  else if (ready?.firstUse?.connectMail) {
-    const { connectMail, findJobs } = ready.firstUse;
+  else if (ready?.firstUse) {
+    const { title, body, actionLabel } = ready.firstUse;
     empty = (
       <EmptyState
         kind="firstUse"
-        glyph={Mail}
-        title={connectMail.message}
-        body={connectMail.estimate}
-        primary={{ label: connectMail.actionLabel, onClick: () => void navigate({ to: "/mail" }) }}
-        {...(findJobs && {
-          secondary: { label: findJobs.actionLabel, onClick: () => void navigate({ to: "/jobs" }) },
-        })}
+        glyph={Briefcase}
+        title={title}
+        body={body}
+        primary={{ label: actionLabel, keys: "Mod+N", onClick: () => openAddApplication() }}
       />
     );
   } else if (ready)
@@ -637,7 +668,7 @@ export default function TodayScreen({ model }: ScreenProps<TodayModel>) {
     const done: DoneEntry[] =
       view === "open"
         ? [
-            ...actions.state.done.map((entry): DoneEntry => ({ from: "local", entry })),
+            ...actions.local.done.map((entry): DoneEntry => ({ from: "local", entry })),
             ...(ready.doneToday?.items ?? []).map((item): DoneEntry => ({ from: "data", item })),
           ]
         : [];
@@ -657,10 +688,7 @@ export default function TodayScreen({ model }: ScreenProps<TodayModel>) {
         }}
         menuFor={menuFor}
         {...(view === "later" && {
-          metaFor: (item: AttentionItemVM) => {
-            const until = laterById.get(item.id);
-            return until ? untilLabel(until) : null;
-          },
+          metaFor: (item: AttentionItemVM) => snoozedText(item)?.row ?? null,
         })}
         onJoin={(url) => void openExternal(url)}
         done={done}
@@ -688,8 +716,9 @@ export default function TodayScreen({ model }: ScreenProps<TodayModel>) {
 
   const dateDialog = dateFor && ready && (
     <SnoozeDateDialog
-      company={dateFor.company.name}
-      snoozeDate={ready.snoozeDate}
+      description={intl.formatMessage(messages.snoozeDateBody, { company: dateFor.company.name })}
+      min={ready.snoozeDate.min}
+      timeZone={ready.snoozeDate.timeZone}
       open
       onOpenChange={(open) => {
         if (open) return;

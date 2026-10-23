@@ -1,13 +1,23 @@
 /**
- * Today's actions, optimistic and local (M0 has no backend; foundation-desktop.md "The screen
- * contract"). Every action moves the item out of the open list at once and shows an Undo toast
- * (decisions.md D11, states.md "Undo toast"). Handled items go to "Done today", snoozed ones to
- * the Later view. The toast's Undo (and Mod+Z) puts the item back where it was.
+ * Today's actions (decisions.md D11/D12: every one moves the item out at once and offers Undo).
+ * What the tracker data stores goes through `useTrackerActions`, so it persists, syncs and shows
+ * the same on every device:
+ * - follow-up suggestions: "I followed up" (`logFollowUp`), "Not needed" / "Keep waiting"
+ *   (`dismissSuggestion`), "Mark as no response" (a move to No response), snooze
+ *   (`snoozeSuggestion`) and "Move back now" (clears the snooze);
+ * - reminders: "Mark as done" clears the application's next action and its date;
+ * - automatic changes: "Undo this change" (`undoEvent`).
+ * Emails, matches, email and posting deadlines and "Mark as seen" have no stored state in this
+ * version (mail and jobs arrive in M4/M5; production Today never lists them yet), so in the design
+ * build they keep a session-local state: handled ones go to "Done today", snoozed ones to Later.
  */
-import { AlarmClock, Bookmark, BookmarkX, Check, MailX, Undo2, X, type LucideIcon } from "lucide-react";
+import type { Application } from "@bfhr/core";
+import { AlarmClock, AlarmClockOff, Bookmark, BookmarkX, Check, MailX, X, type LucideIcon } from "lucide-react";
 import { useCallback, useState } from "react";
 import { defineMessages, useIntl } from "react-intl";
-import type { SnoozePreset } from "../../shared/ui/SnoozeMenu";
+import { useTrackerSource } from "../../data/tracker/live";
+import type { SnoozeUntil } from "../../data/tracker/snooze";
+import { useTrackerActions } from "../../data/tracker/useTrackerActions";
 import { useToast } from "../../shared/ui/Toast";
 import type {
   AttentionItemVM,
@@ -36,30 +46,15 @@ const messages = defineMessages({
     description: "Toast",
   },
   seen: { id: "today.toast.seen", defaultMessage: "Marked as seen · {company}", description: "Toast" },
-  movedBack: {
-    id: "today.toast.movedBack",
-    defaultMessage: "Moved back to {status} · {company}",
-    description: "Toast after undoing an automatic change. {status} is a status name",
-  },
   deadlineDone: {
     id: "today.toast.deadlineDone",
     defaultMessage: "Marked as done · {company}",
-    description: "Toast after marking a deadline as done",
+    description: "Toast after marking a deadline or reminder as done",
   },
-  notNeeded: {
-    id: "today.toast.notNeeded",
-    defaultMessage: "Follow-up not needed · {company}",
-    description: "Toast",
-  },
-  keptOpen: {
-    id: "today.toast.keptOpen",
-    defaultMessage: "Still waiting · {company}",
-    description: "Toast after 'Keep waiting' on a no-response suggestion",
-  },
-  noResponse: {
-    id: "today.toast.noResponse",
-    defaultMessage: "Marked as no response · {company}",
-    description: "Toast",
+  movedBackNow: {
+    id: "today.toast.movedBackNow",
+    defaultMessage: "Back on Today · {company}",
+    description: "Toast after 'Move back now' on a snoozed suggestion",
   },
   notForMe: {
     id: "today.toast.notForMe",
@@ -78,7 +73,7 @@ const messages = defineMessages({
       "{preset, select, laterToday {Snoozed until later today} tomorrow {Snoozed until tomorrow} nextWeek {Snoozed until next week} other {Snoozed until {date, date, long}}} · {company}",
     description: "Toast after snoozing an item. {date} is only used for a picked date",
   },
-  // Outcomes in the "Done today" group.
+  // Outcomes in the "Done today" group (session-local items).
   outcomeConfirmed: { id: "today.outcome.confirmed", defaultMessage: "Confirmed", description: "Done today" },
   outcomeNotJobMail: {
     id: "today.outcome.notJobMail",
@@ -86,41 +81,18 @@ const messages = defineMessages({
     description: "Done today",
   },
   outcomeSeen: { id: "today.outcome.seen", defaultMessage: "Seen", description: "Done today" },
-  outcomeUndone: {
-    id: "today.outcome.undone",
-    defaultMessage: "Undone · back to {status}",
-    description: "Done today: the user undid an automatic change. {status} is a status name",
-  },
   outcomeDone: { id: "today.outcome.done", defaultMessage: "Done", description: "Done today" },
-  outcomeNotNeeded: {
-    id: "today.outcome.notNeeded",
-    defaultMessage: "Not needed",
-    description: "Done today",
-  },
-  outcomeKeptOpen: {
-    id: "today.outcome.keptOpen",
-    defaultMessage: "Still waiting",
-    description: "Done today",
-  },
-  outcomeNoResponse: {
-    id: "today.outcome.noResponse",
-    defaultMessage: "Marked as no response",
-    description: "Done today",
-  },
   outcomeNotForMe: { id: "today.outcome.notForMe", defaultMessage: "Not for me", description: "Done today" },
 });
 
-/** When a snoozed item comes back. `pickDate` carries the date the user chose. */
-export type SnoozeUntil =
-  | { readonly preset: Exclude<SnoozePreset, "pickDate"> }
-  | { readonly preset: "pickDate"; readonly date: Date };
-
+/** A session-local handled item (design build: emails, matches, email and posting deadlines). */
 export interface LocalDone {
   readonly item: AttentionItemVM;
-  /** "Confirmed", "Undone · back to Applied". */
+  /** "Confirmed", "Seen". */
   readonly outcome: string;
 }
 
+/** A session-local snoozed item. */
 export interface LocalLater {
   readonly item: AttentionItemVM;
   readonly until: SnoozeUntil;
@@ -137,21 +109,27 @@ export interface TodayLocalState {
 const EMPTY: TodayLocalState = { done: [], later: [], saved: {} };
 
 export interface TodayActions {
-  readonly state: TodayLocalState;
+  readonly local: TodayLocalState;
   readonly confirm: (item: ReviewItemVM) => void;
   readonly notJobMail: (item: ReviewItemVM) => void;
   readonly acknowledge: (item: AutoUpdateItemVM) => void;
   readonly undoAutoChange: (item: AutoUpdateItemVM) => void;
   readonly markDone: (item: DeadlineItemVM) => void;
-  /** "Mark as no response" (the no-response nudge's primary action). */
-  readonly markNoResponse: (item: FollowUpItemVM) => void;
-  /** "Not needed" / "Keep waiting" (D). */
+  /** The suggestion's primary: "I followed up" or "Mark as no response". */
+  readonly nudgePrimary: (item: FollowUpItemVM) => void;
+  /** "Not needed" / "Keep waiting" (D19). */
   readonly declineNudge: (item: FollowUpItemVM) => void;
   readonly notForMe: (item: MatchItemVM) => void;
   readonly toggleSave: (item: MatchItemVM) => void;
   readonly snooze: (item: AttentionItemVM, until: SnoozeUntil) => void;
   /** Back from Later to the open list ("Move back now"). */
   readonly unsnooze: (item: AttentionItemVM) => void;
+}
+
+/** Snooze applies to every kind but interviews, automatic changes and reminders (they have a date). */
+export function canSnooze(item: AttentionItemVM): boolean {
+  if (item.kind === "deadline") return item.deadlineKind !== "reminder";
+  return item.kind !== "interview" && item.kind !== "autoUpdate";
 }
 
 /**
@@ -168,37 +146,70 @@ export function useTodayActions({
 }): TodayActions {
   const intl = useIntl();
   const toast = useToast();
-  const [state, setState] = useState<TodayLocalState>(EMPTY);
+  const tracker = useTrackerActions();
+  const source = useTrackerSource();
+  const [local, setLocal] = useState<TodayLocalState>(EMPTY);
+
+  /** The application as stored when the action runs (Undo restores exactly that). */
+  const application = (id: string): Application | null => {
+    const state = source.getState();
+    return state.status === "ready"
+      ? (state.data.applications.find((candidate) => candidate.id === id) ?? null)
+      : null;
+  };
 
   const restore = useCallback((id: string) => {
-    setState((current) => ({
+    setLocal((current) => ({
       ...current,
       done: current.done.filter((entry) => entry.item.id !== id),
       later: current.later.filter((entry) => entry.item.id !== id),
     }));
   }, []);
 
-  const show = (item: AttentionItemVM, message: string, glyph: LucideIcon) =>
+  /** An application patch with its own Undo toast (the shared "Saved" toast stays quiet). */
+  const patchWithUndo = (
+    item: AttentionItemVM,
+    applicationId: string,
+    patch: Partial<Pick<Application, "nextAction" | "nextActionAt" | "followUpSnoozedUntil" | "ghostedSnoozedUntil">>,
+    message: string,
+    glyph: LucideIcon,
+  ) => {
+    const before = application(applicationId);
+    if (!before) return;
+    const previous = Object.fromEntries(
+      Object.keys(patch).map((key) => [key, before[key as keyof typeof patch]]),
+    ) as typeof patch;
+    beforeRemove(item);
+    tracker.updateApplication(applicationId, patch, { quiet: true });
+    toast.show({
+      message,
+      glyph,
+      action: {
+        label: intl.formatMessage(messages.undo),
+        run: () => tracker.updateApplication(applicationId, previous, { quiet: true }),
+      },
+      openAfterUndo: () => reveal(item.id),
+    });
+  };
+
+  const finishLocally = (item: AttentionItemVM, outcome: string, message: string, glyph: LucideIcon) => {
+    beforeRemove(item);
+    setLocal((current) => ({ ...current, done: [{ item, outcome }, ...current.done] }));
     toast.show({
       message,
       glyph,
       action: { label: intl.formatMessage(messages.undo), run: () => restore(item.id) },
       openAfterUndo: () => reveal(item.id),
     });
-
-  const finish = (item: AttentionItemVM, outcome: string, message: string, glyph: LucideIcon) => {
-    beforeRemove(item);
-    setState((current) => ({ ...current, done: [{ item, outcome }, ...current.done] }));
-    show(item, message, glyph);
   };
 
   const company = (item: AttentionItemVM) => item.company.name;
 
   return {
-    state,
+    local,
     confirm: (item) => {
       const { move } = item.proposal;
-      finish(
+      finishLocally(
         item,
         intl.formatMessage(messages.outcomeConfirmed),
         move
@@ -208,65 +219,63 @@ export function useTodayActions({
       );
     },
     notJobMail: (item) =>
-      finish(
+      finishLocally(
         item,
         intl.formatMessage(messages.outcomeNotJobMail),
         intl.formatMessage(messages.notJobMail, { company: company(item) }),
         MailX,
       ),
     acknowledge: (item) =>
-      finish(
+      finishLocally(
         item,
         intl.formatMessage(messages.outcomeSeen),
         intl.formatMessage(messages.seen, { company: company(item) }),
         Check,
       ),
-    undoAutoChange: (item) =>
-      finish(
-        item,
-        intl.formatMessage(messages.outcomeUndone, { status: item.change.from.label }),
-        intl.formatMessage(messages.movedBack, { company: company(item), status: item.change.from.label }),
-        Undo2,
-      ),
-    markDone: (item) =>
-      finish(
+    undoAutoChange: (item) => {
+      if (!item.change.undo.available) return;
+      beforeRemove(item);
+      tracker.undoEvent(item.change.eventId);
+    },
+    markDone: (item) => {
+      if (item.deadlineKind === "reminder" && item.applicationId) {
+        patchWithUndo(
+          item,
+          item.applicationId,
+          { nextAction: null, nextActionAt: null },
+          intl.formatMessage(messages.deadlineDone, { company: company(item) }),
+          Check,
+        );
+        return;
+      }
+      finishLocally(
         item,
         intl.formatMessage(messages.outcomeDone),
         intl.formatMessage(messages.deadlineDone, { company: company(item) }),
         Check,
-      ),
-    markNoResponse: (item) =>
-      finish(
-        item,
-        intl.formatMessage(messages.outcomeNoResponse),
-        intl.formatMessage(messages.noResponse, { company: company(item) }),
-        Check,
-      ),
-    declineNudge: (item) =>
-      item.nudge.kind === "noResponse"
-        ? finish(
-            item,
-            intl.formatMessage(messages.outcomeKeptOpen),
-            intl.formatMessage(messages.keptOpen, { company: company(item) }),
-            Check,
-          )
-        : finish(
-            item,
-            intl.formatMessage(messages.outcomeNotNeeded),
-            intl.formatMessage(messages.notNeeded, { company: company(item) }),
-            X,
-          ),
+      );
+    },
+    nudgePrimary: (item) => {
+      const { applicationId, kind } = item.nudge;
+      beforeRemove(item);
+      if (kind === "noResponse") tracker.move(applicationId, "ghosted", { openAfterUndo: () => reveal(item.id) });
+      else tracker.logFollowUp(applicationId);
+    },
+    declineNudge: (item) => {
+      beforeRemove(item);
+      tracker.dismissSuggestion(item.nudge.applicationId, item.nudge.kind);
+    },
     notForMe: (item) =>
-      finish(
+      finishLocally(
         item,
         intl.formatMessage(messages.outcomeNotForMe),
         intl.formatMessage(messages.notForMe, { company: company(item), role: item.title }),
         X,
       ),
     toggleSave: (item) => {
-      const next = !(state.saved[item.id] ?? item.saved);
+      const next = !(local.saved[item.id] ?? item.saved);
       const setSaved = (saved: boolean) =>
-        setState((current) => ({ ...current, saved: { ...current.saved, [item.id]: saved } }));
+        setLocal((current) => ({ ...current, saved: { ...current.saved, [item.id]: saved } }));
       setSaved(next);
       toast.show({
         message: intl.formatMessage(next ? messages.saved : messages.unsaved, {
@@ -278,19 +287,38 @@ export function useTodayActions({
       });
     },
     snooze: (item, until) => {
+      if (!canSnooze(item)) return;
       beforeRemove(item);
-      setState((current) => ({ ...current, later: [{ item, until }, ...current.later] }));
-      show(
-        item,
-        intl.formatMessage(messages.snoozed, {
+      if (item.kind === "followUp") {
+        tracker.snoozeSuggestion(item.nudge.applicationId, item.nudge.kind, until);
+        return;
+      }
+      setLocal((current) => ({
+        ...current,
+        later: [{ item, until }, ...current.later.filter((entry) => entry.item.id !== item.id)],
+      }));
+      toast.show({
+        message: intl.formatMessage(messages.snoozed, {
           preset: until.preset,
           date: until.preset === "pickDate" ? until.date : null,
           company: company(item),
         }),
-        AlarmClock,
-      );
+        glyph: AlarmClock,
+        action: { label: intl.formatMessage(messages.undo), run: () => restore(item.id) },
+        openAfterUndo: () => reveal(item.id),
+      });
     },
     unsnooze: (item) => {
+      if (item.kind === "followUp" && item.snoozed) {
+        patchWithUndo(
+          item,
+          item.nudge.applicationId,
+          item.nudge.kind === "followUp" ? { followUpSnoozedUntil: null } : { ghostedSnoozedUntil: null },
+          intl.formatMessage(messages.movedBackNow, { company: company(item) }),
+          AlarmClockOff,
+        );
+        return;
+      }
       beforeRemove(item);
       restore(item.id);
     },

@@ -1,15 +1,22 @@
 ## Accessibility Audit: Today (desktop)
-**Standard:** WCAG 2.1 AA | **Date:** 2026-10-22
+**Standard:** WCAG 2.1 AA | **Date:** 2026-10-22, updated 2026-10-23 (M3, Today on live data — critique rounds 5–6)
 
 Method:
 1. Automated scan: `pnpm --filter @bfhr/desktop capture:design today --axe` (axe-core, WCAG 2.1 A/AA; WebKit ≈ WKWebView and Chromium ≈ WebView2; populated / empty / loading / error / offline × light / dark). Reports: `artifacts/a11y/desktop/today-<state>-<theme>-<engine>.json`.
 2. Keyboard-only pass in the design harness (Playwright, no pointer): 1280 px (list + detail), 1100 px (inline expansion), 1920 px (agenda rail), 640 px (≈ 1280 px at 200 % zoom).
 3. Screen-reader names from the accessibility tree (Playwright `ariaSnapshot`, Chromium). No live VoiceOver / NVDA session in this round.
+4. M3 (2026-10-23): the real-data states driven through the UI in the design build — a follow-up answered with Done today open, a no-response suggestion snoozed and shown in the Later view, a reminder selected — WebKit + Chromium, light + dark, axe on each (`artifacts/a11y/desktop/today-live-{answered,later,reminder}-<theme>-<engine>.json`); then the full matrix again (`capture:design today --axe`). The persisted actions and their Undo are covered by `src/features/today/Live.test.tsx`.
 
 ### Summary
 **Issues found:** 6 | **Critical:** 0 | **Major:** 3 (all fixed) | **Minor:** 3 (1 fixed, 2 logged)
 
 Final axe result (after fixes, `a6b2282` and `57e5597`): **0 critical · 0 serious · 0 moderate · 0 minor** in all 20 runs. WebKit runs list one "needs review" item: `color-contrast` on the shell's ⌘ keycap in "Jump to…" ("Element content contains only non-text characters"); it's shell chrome, not Today, and the glyph is decorative next to its spoken label.
+
+M3 result (rounds 5–6): **0 critical · 0 serious · 0 moderate · 0 minor** in all 20 matrix runs (`today-{populated,empty,loading,error,offline}-{light,dark}-{webkit,chromium}`) and all 12 real-data runs (`today-live-*`). WebKit "needs review": the shell's ⌘ keycap as before, plus in the empty state the ⌘ keycap inside the first-use button "Add application ⌘N" (same rule, same reason: a decorative glyph after the spoken label). No new findings; the checks below were repeated for the new states:
+- Later view: the "Snoozed" section is a region named by its h2; rows keep the roving tabindex; the row meta "Back on Fri 23 Oct" is plain text inside the row's name. The detail notice "Snoozed until Friday 23 October, 09:00" is an `InlineAlert` with `role="status"`; "Move back now" follows it in tab order and is also in the row's context menu.
+- Reminders: the "Your reminder" label sits above the detail heading (a paragraph, so the pane keeps h2 → h3); no Snooze is offered for them (button and menu item left out, the H binding disabled).
+- After "Not needed", "Keep waiting", "I followed up", "Mark as no response", "Mark as done" and "Move back now", the selection and focus move to the neighbouring row through the same path as finding 4; with the list empty, to the title.
+- Empty (production M3): one firstUse card — decorative glyph, title, body, "Add application" with its ⌘N / Ctrl N keycaps, which opens Log an application over Today.
 
 ### Findings
 

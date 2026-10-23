@@ -2,10 +2,14 @@
  * Today (desktop): what needs attention, in a fixed section order (today-home.md "Decision —
  * Desktop"): Next up · To review · Follow-ups · Deadlines · New matches. Empty sections are left
  * out, never shown with "0". There is no greeting (decisions.md U8): the header is the title and
- * the date only. Pure: everything time- and locale-dependent comes from `ctx`.
+ * the date only. Pure: everything time- and locale-dependent comes from `ctx`. Snoozed and
+ * answered suggestions, reminders and the day's handled items all come from the stored data, so
+ * Today reads the same on every device.
  */
 import { type Application, type Interview, isActiveStatus, revertedBy, type ReviewState } from "@bfhr/core";
 import { defineMessages, type MessageDescriptor } from "react-intl";
+import { collectDeadlines, type Deadline, type DeadlineKind } from "../../data/tracker/deadlines";
+import { zonedIsoDay } from "../../data/tracker/snooze";
 import type { AutoChangeVM, NudgeVM, ReviewProposalVM } from "../../shared/model/blocks";
 import {
   applicationSummaryVM,
@@ -14,8 +18,10 @@ import {
   reviewProposalVM,
 } from "../../shared/model/build-blocks";
 import { calendarDaysFromNow, clockTime, dayAndTime, relativeTime } from "../../shared/model/format";
-import type { CompanyVM, MatchVM, ModelContext, TimeVM, UserData } from "../../shared/model/types";
+import type { CompanyVM, MatchVM, ModelContext, ScreenData, TimeVM } from "../../shared/model/types";
 import { companyVM, matchVM, STATUS_MESSAGES } from "../../shared/model/vocabulary";
+
+export type { DeadlineKind } from "../../data/tracker/deadlines";
 
 const HOUR_MS = 3_600_000;
 const DAY_MS = 86_400_000;
@@ -101,17 +107,28 @@ export interface AutoUpdateItemVM extends AttentionItemBase {
   readonly change: AutoChangeVM;
 }
 
+/** When a snoozed suggestion comes back (the Later view). */
+export interface SnoozedVM {
+  /** The instant, with "Tomorrow, 09:00" as the label. */
+  readonly until: TimeVM;
+  /** Row meta: "Back at 13:30" (later today) / "Back on Mon 26 Oct". */
+  readonly rowLabel: string;
+  /** Detail notice: "Snoozed until Monday 26 October, 09:00". */
+  readonly title: string;
+}
+
 /** Follow-ups: a follow-up or no-response suggestion (`NudgeCard`). */
 export interface FollowUpItemVM extends AttentionItemBase {
   readonly kind: "followUp";
   readonly nudge: NudgeVM;
-  /** The application's job: "Draft follow-up" opens its Apply panel (IA.md deep link `jobs/{id}/apply`). */
-  readonly jobId: string | null;
+  /** Set in the Later view: the suggestion is snoozed until then. Null on the open list. */
+  readonly snoozed: SnoozedVM | null;
 }
 
-export type DeadlineKind = "assessment" | "offerReply" | "jobClosing";
-
-/** Deadlines: an assessment, an offer reply date or a saved job's closing date. */
+/**
+ * Deadlines: a reminder the user set on an application, an assessment, an offer reply date or a
+ * saved job's closing date (`collectDeadlines`).
+ */
 export interface DeadlineItemVM extends AttentionItemBase {
   readonly kind: "deadline";
   readonly deadlineKind: DeadlineKind;
@@ -155,13 +172,16 @@ export interface TodaySectionVM {
   readonly items: readonly AttentionItemVM[];
 }
 
+/** What a "Done today" entry was about. */
+export type DoneKind = "review" | "undone" | "followedUp" | "note" | "suggestion" | "noResponse";
+
 /** One handled item in the collapsed "Done today" group. */
 export interface DoneItemVM {
   readonly id: string;
-  readonly kind: "review" | "autoUpdate";
+  readonly kind: DoneKind;
   readonly company: CompanyVM;
   readonly title: string;
-  /** "Confirmed", "Changed", "Marked as not job mail", "Undone · back to Applied". */
+  /** "Confirmed", "Followed up", "Not needed", "Undone · back to Applied". */
   readonly outcome: string;
   readonly doneAt: TimeVM;
 }
@@ -203,19 +223,18 @@ export interface AgendaVM {
   readonly emptyLabel: string | null;
 }
 
-/** First run: the dismissible setup card (`EmptyState` kind `firstUse`). */
+/**
+ * First run: nothing tracked yet and no email connected (`EmptyState` kind `firstUse`). Email
+ * connection (M4) and the job feed (M5) aren't in this version, so the card offers the one way in
+ * that works now, adding an application, and says calmly that email comes later.
+ */
 export interface FirstUseVM {
-  /** No mail account connected yet. */
-  readonly connectMail: {
-    /** "Connect your email to see interview invites and replies here." */
-    readonly message: string;
-    /** "About 2 minutes." */
-    readonly estimate: string;
-    /** "Connect email": opens the connect flow. */
-    readonly actionLabel: string;
-  } | null;
-  /** No jobs and no applications yet: "Find jobs" goes to Jobs. */
-  readonly findJobs: { readonly actionLabel: string } | null;
+  /** "Add the jobs you've applied to". */
+  readonly title: string;
+  /** "Today then shows your interviews, follow-ups and reminders. Reading … arrives in a later update." */
+  readonly body: string;
+  /** "Add application" (opens Log an application, ⌘N). */
+  readonly actionLabel: string;
 }
 
 export interface TodayModel {
@@ -230,14 +249,18 @@ export interface TodayModel {
   /** `params.item` when it names an item, else the first item; null when there are none. */
   readonly selectedId: string | null;
   /**
-   * Items handled today (until local midnight), collapsed at the bottom; null when none.
-   * Only reviewed emails and undone automatic changes: Done, Snooze and Not needed on computed
-   * items (follow-ups, deadlines, interviews) aren't stored yet (today-home.md OQ1), so they
-   * can't be listed here.
+   * The Later view: suggestions snoozed until a future time, soonest back first (ids
+   * `later:<applicationId>`).
+   */
+  readonly later: readonly FollowUpItemVM[];
+  /**
+   * Items handled today (until local midnight), collapsed at the bottom; null when none: reviewed
+   * emails, undone status changes, follow-ups logged, notes added, suggestions answered ("Not
+   * needed", "Keep waiting") and applications marked as no response.
    */
   readonly doneToday: DoneTodayVM | null;
   readonly agenda: AgendaVM;
-  /** Set-up card(s) for a new account; null once mail is connected. */
+  /** The set-up card for a new account; null once something is tracked or mail is connected. */
   readonly firstUse: FirstUseVM | null;
   /** Nothing open and nothing to set up (`EmptyState` kind `caughtUp`); null otherwise. */
   readonly caughtUp: { readonly message: string } | null;
@@ -274,23 +297,25 @@ const SECTION_TITLE_MESSAGES: Readonly<Record<TodaySectionId, MessageDescriptor>
   },
 });
 
-const DEADLINE_MESSAGES: Readonly<Record<DeadlineKind, MessageDescriptor>> = defineMessages({
-  assessment: {
-    id: "today.deadline.assessment",
-    defaultMessage: "Assessment due",
-    description: "Deadline row title, followed by a date chip: a take-home assessment",
-  },
-  offerReply: {
-    id: "today.deadline.offerReply",
-    defaultMessage: "Offer reply due",
-    description: "Deadline row title, next to a date chip: the date to answer a job offer by",
-  },
-  jobClosing: {
-    id: "today.deadline.jobClosing",
-    defaultMessage: "Posting closes",
-    description: "Deadline row title, followed by a date chip: a saved job's closing date",
-  },
-});
+/** Row titles of the dated kinds; a reminder's title is its own text. */
+const DEADLINE_MESSAGES: Readonly<Record<Exclude<DeadlineKind, "reminder">, MessageDescriptor>> =
+  defineMessages({
+    assessment: {
+      id: "today.deadline.assessment",
+      defaultMessage: "Assessment due",
+      description: "Deadline row title, followed by a date chip: a take-home assessment",
+    },
+    offerReply: {
+      id: "today.deadline.offerReply",
+      defaultMessage: "Offer reply due",
+      description: "Deadline row title, next to a date chip: the date to answer a job offer by",
+    },
+    jobClosing: {
+      id: "today.deadline.jobClosing",
+      defaultMessage: "Posting closes",
+      description: "Deadline row title, followed by a date chip: a saved job's closing date",
+    },
+  });
 
 const REVIEW_OUTCOME_MESSAGES: Readonly<Partial<Record<ReviewState, MessageDescriptor>>> = defineMessages({
   confirmed: {
@@ -313,24 +338,22 @@ const REVIEW_OUTCOME_MESSAGES: Readonly<Partial<Record<ReviewState, MessageDescr
 const messages = defineMessages({
   title: { id: "today.title", defaultMessage: "Today", description: "Screen title" },
   caughtUp: { id: "today.caughtUp", defaultMessage: "You're all caught up. New updates will show up here." },
-  connectMail: {
-    id: "today.firstUse.connectMail",
-    defaultMessage: "Connect your email to see interview invites and replies here.",
+  firstUseTitle: {
+    id: "today.firstUse.title",
+    defaultMessage: "Add the jobs you've applied to",
+    description: "First-run card title on Today (nothing tracked yet)",
   },
-  connectEstimate: {
-    id: "today.firstUse.connectEstimate",
-    defaultMessage: "About 2 minutes.",
-    description: "How long connecting an email account takes",
+  firstUseBody: {
+    id: "today.firstUse.body",
+    defaultMessage:
+      "Today then shows your interviews, follow-ups and reminders. Email invites and replies come in a later update.",
+    description:
+      "First-run card body. Email connection isn't available in this version: say so calmly, without a date",
   },
-  connectAction: {
-    id: "today.firstUse.connectAction",
-    defaultMessage: "Connect email",
-    description: "Button",
-  },
-  findJobs: {
-    id: "today.firstUse.findJobs",
-    defaultMessage: "Find jobs",
-    description: "Button: goes to Jobs",
+  firstUseAction: {
+    id: "today.firstUse.action",
+    defaultMessage: "Add application",
+    description: "Button: opens Log an application",
   },
   seeAllMatches: {
     id: "today.matches.seeAll",
@@ -345,7 +368,28 @@ const messages = defineMessages({
   undone: {
     id: "today.done.undone",
     defaultMessage: "Undone · back to {status}",
-    description: "Done today: the user undid an automatic change. {status} is a status name",
+    description: "Done today: the user undid a status change. {status} is a status name",
+  },
+  followedUp: {
+    id: "today.done.followedUp",
+    defaultMessage: "Followed up",
+    description: "Done today: the user noted a follow-up they sent ('I followed up')",
+  },
+  noteAdded: { id: "today.done.noteAdded", defaultMessage: "Note added", description: "Done today" },
+  notNeeded: {
+    id: "today.done.notNeeded",
+    defaultMessage: "Follow-up not needed",
+    description: "Done today: 'Not needed' on a follow-up suggestion",
+  },
+  keptWaiting: {
+    id: "today.done.keptWaiting",
+    defaultMessage: "Still waiting",
+    description: "Done today: 'Keep waiting' on a no-response suggestion",
+  },
+  noResponse: {
+    id: "today.done.noResponse",
+    defaultMessage: "Marked as no response",
+    description: "Done today: the user moved the application to No response",
   },
   agendaTitle: {
     id: "today.agenda.title",
@@ -384,6 +428,21 @@ const messages = defineMessages({
     defaultMessage: "Moved to {status} automatically",
     description: "An automatic status change without an email. {status} is a status name",
   },
+  backAt: {
+    id: "today.later.backAt",
+    defaultMessage: "Back at {time}",
+    description: "Later view row meta: a suggestion snoozed until later today. {time} is '13:30'",
+  },
+  backOn: {
+    id: "today.later.backOn",
+    defaultMessage: "Back on {date}",
+    description: "Later view row meta: a snoozed suggestion comes back that day. {date} is 'Mon 26 Oct'",
+  },
+  snoozedUntil: {
+    id: "today.later.snoozedUntil",
+    defaultMessage: "Snoozed until {day}, {time}",
+    description: "Notice in the detail of a snoozed suggestion. {day} is 'Monday 26 October', {time} '09:00'",
+  },
 });
 
 /* ------------------------------------------------------------------------------------------------
@@ -413,7 +472,7 @@ function interviewerTime(interview: Interview, ctx: ModelContext): string | null
 
 /** Interviews of open applications that haven't ended, soonest first. */
 function upcomingInterviews(
-  data: UserData,
+  data: ScreenData,
   ctx: ModelContext,
 ): { interview: Interview; application: Application }[] {
   return data.interviews
@@ -430,7 +489,7 @@ function upcomingInterviews(
 function interviewItem(
   interview: Interview,
   application: Application,
-  data: UserData,
+  data: ScreenData,
   ctx: ModelContext,
 ): InterviewItemVM {
   const start = interview.startsAt.getTime();
@@ -469,7 +528,7 @@ function interviewItem(
   };
 }
 
-function reviewItems(data: UserData, ctx: ModelContext): ReviewItemVM[] {
+function reviewItems(data: ScreenData, ctx: ModelContext): ReviewItemVM[] {
   return data.mailMessages
     .filter((message) => message.reviewState === "pending")
     .sort((a, b) => b.receivedAt.getTime() - a.receivedAt.getTime())
@@ -497,7 +556,7 @@ function autoUpdateTitle(change: AutoChangeVM, ctx: ModelContext): string {
 }
 
 /** Automatic status changes of the last `AUTO_UPDATE_WINDOW_DAYS` days that weren't undone, newest first. */
-function autoUpdateItems(data: UserData, ctx: ModelContext): AutoUpdateItemVM[] {
+function autoUpdateItems(data: ScreenData, ctx: ModelContext): AutoUpdateItemVM[] {
   const since = ctx.now.getTime() - AUTO_UPDATE_WINDOW_DAYS * DAY_MS;
   return data.applicationEvents
     .filter(
@@ -524,17 +583,67 @@ function autoUpdateItems(data: UserData, ctx: ModelContext): AutoUpdateItemVM[] 
     });
 }
 
-function followUpItems(data: UserData, ctx: ModelContext): FollowUpItemVM[] {
-  return nudgeVMs(data, ctx).map((nudge) => ({
+function followUpItem(nudge: NudgeVM, id: string, snoozed: SnoozedVM | null): FollowUpItemVM {
+  return {
     kind: "followUp",
-    id: `followUp:${nudge.applicationId}`,
+    id,
     company: nudge.company,
     title: nudge.role,
     context: nudge.message,
     nudge,
-    jobId: data.applications.find((application) => application.id === nudge.applicationId)?.jobId ?? null,
+    snoozed,
     pendingSync: nudge.pendingSync,
-  }));
+  };
+}
+
+/** Visible suggestions (`nudgeVMs`: snoozed and answered ones are left out), oldest first. */
+function followUpItems(data: ScreenData, ctx: ModelContext): FollowUpItemVM[] {
+  return nudgeVMs(data, ctx).map((nudge) => followUpItem(nudge, `followUp:${nudge.applicationId}`, null));
+}
+
+function snoozedVM(until: Date, ctx: ModelContext): SnoozedVM {
+  const time = clockTime(until, ctx);
+  const date = new Intl.DateTimeFormat(ctx.locale, {
+    timeZone: ctx.timeZone,
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  }).format(until);
+  return {
+    until: dayAndTime(until, ctx),
+    rowLabel:
+      calendarDaysFromNow(until, ctx) === 0
+        ? ctx.intl.formatMessage(messages.backAt, { time })
+        : ctx.intl.formatMessage(messages.backOn, { date }),
+    title: ctx.intl.formatMessage(messages.snoozedUntil, { day: longDate(until, ctx), time }),
+  };
+}
+
+/**
+ * The Later view: suggestions that would be on Today now but for a snooze that hasn't ended,
+ * soonest back first. Each application shows the suggestion it would show unsnoozed (No response
+ * wins over a follow-up, as on the open list).
+ */
+function laterItems(data: ScreenData, ctx: ModelContext): FollowUpItemVM[] {
+  const future = (date: Date | null): date is Date => date !== null && date.getTime() > ctx.now.getTime();
+  const snoozed = data.applications.filter(
+    (application) => future(application.followUpSnoozedUntil) || future(application.ghostedSnoozedUntil),
+  );
+  if (snoozed.length === 0) return [];
+  const unsnoozed = snoozed.map(
+    (application): Application => ({ ...application, followUpSnoozedUntil: null, ghostedSnoozedUntil: null }),
+  );
+  return nudgeVMs({ ...data, applications: unsnoozed }, ctx)
+    .flatMap((nudge) => {
+      const application = snoozed.find((candidate) => candidate.id === nudge.applicationId);
+      const until =
+        nudge.kind === "followUp" ? application?.followUpSnoozedUntil : application?.ghostedSnoozedUntil;
+      // Not snoozed for this suggestion: it's on the open list already.
+      if (!application || until === undefined || !future(until)) return [];
+      return [{ until, nudge }];
+    })
+    .sort((a, b) => a.until.getTime() - b.until.getTime())
+    .map(({ until, nudge }) => followUpItem(nudge, `later:${nudge.applicationId}`, snoozedVM(until, ctx)));
 }
 
 /** "Today, 23:59" / "Tomorrow, 17:00" close by, "In 4 days" within a week, then "29 Oct, 18:00". */
@@ -550,85 +659,56 @@ function deadlineChip(date: Date, ctx: ModelContext): TimeVM {
   return dayAndTime(date, ctx);
 }
 
+/** The document a deadline's local write lands on (`SyncGlyph`). */
+function deadlineDocument(deadline: Deadline): string {
+  if (deadline.kind === "reminder" || deadline.kind === "jobClosing")
+    return deadline.applicationId ?? deadline.jobId ?? deadline.id;
+  return deadline.mailMessageId ?? deadline.id;
+}
+
 /**
- * Upcoming deadlines within `DEADLINE_WINDOW_DAYS`, soonest first:
- * - assessment deadlines and offer reply dates extracted from handled emails (pending ones show
- *   their dates inside the review proposal instead) of open applications;
- * - closing dates (`job.expiresAt`) of jobs that are saved and not applied to yet.
+ * Deadlines due within `DEADLINE_WINDOW_DAYS`, soonest first (`collectDeadlines`). A reminder set
+ * for the very time of one of the application's interviews or email dates repeats it ("On-site
+ * interview" at the interview's start): the interview or the dated item shows instead.
  */
-function deadlineItems(data: UserData, ctx: ModelContext): DeadlineItemVM[] {
-  const now = ctx.now.getTime();
-  const until = now + DEADLINE_WINDOW_DAYS * DAY_MS;
-  const inWindow = (date: Date) => date.getTime() >= now && date.getTime() <= until;
-  const found: { at: Date; item: DeadlineItemVM }[] = [];
-  const seen = new Set<string>();
-
-  for (const message of data.mailMessages) {
-    if (message.reviewState === "pending" || message.reviewState === "dismissed") continue;
-    const application = data.applications.find((candidate) => candidate.id === message.applicationId);
-    if (!application || !isActiveStatus(application.status)) continue;
-    message.extracted.dates.forEach((date, index) => {
-      const deadlineKind: DeadlineKind | null =
-        date.kind === "assessment_deadline"
-          ? "assessment"
-          : date.kind === "reply_deadline" && message.category === "offer"
-            ? "offerReply"
-            : null;
-      const key = `${application.id}|${deadlineKind}|${date.at.toISOString()}`;
-      if (deadlineKind === null || !inWindow(date.at) || seen.has(key)) return;
-      seen.add(key);
-      found.push({
-        at: date.at,
-        item: {
-          kind: "deadline",
-          id: `deadline:${message.id}:${index}`,
-          deadlineKind,
-          company: companyVM(application.company, application.companyDomain),
-          title: ctx.intl.formatMessage(DEADLINE_MESSAGES[deadlineKind]),
-          context: application.role,
-          due: deadlineChip(date.at, ctx),
-          applicationId: application.id,
-          jobId: application.jobId,
-          mailMessageId: message.id,
-          pendingSync: ctx.pendingWrites.has(message.id),
-        },
-      });
-    });
-  }
-
-  for (const job of data.jobs) {
-    if (!job.expiresAt || !inWindow(job.expiresAt)) continue;
-    const application = data.applications.find((candidate) => candidate.jobId === job.id);
-    const saved = application
-      ? application.status === "saved" || application.status === "preparing"
-      : data.jobMatches.some((match) => match.id === job.id && match.state === "saved");
-    if (!saved) continue;
-    found.push({
-      at: job.expiresAt,
-      item: {
-        kind: "deadline",
-        id: `deadline:job:${job.id}`,
-        deadlineKind: "jobClosing",
-        company: companyVM(job.company, job.companyDomain),
-        title: ctx.intl.formatMessage(DEADLINE_MESSAGES.jobClosing),
-        context: job.title,
-        due: deadlineChip(job.expiresAt, ctx),
-        applicationId: application?.id ?? null,
-        jobId: job.id,
-        mailMessageId: null,
-        pendingSync: ctx.pendingWrites.has(application?.id ?? job.id),
-      },
-    });
-  }
-
-  return found.sort((a, b) => a.at.getTime() - b.at.getTime()).map(({ item }) => item);
+function deadlineItems(data: ScreenData, ctx: ModelContext): DeadlineItemVM[] {
+  const until = new Date(ctx.now.getTime() + DEADLINE_WINDOW_DAYS * DAY_MS);
+  const deadlines = collectDeadlines(data, { from: ctx.now, until });
+  const covered = new Set([
+    ...data.interviews.map((interview) => `${interview.applicationId}|${interview.startsAt.getTime()}`),
+    ...deadlines
+      .filter((deadline) => deadline.kind !== "reminder")
+      .map((deadline) => `${deadline.applicationId}|${deadline.at.getTime()}`),
+  ]);
+  return deadlines
+    .filter(
+      (deadline) =>
+        deadline.kind !== "reminder" || !covered.has(`${deadline.applicationId}|${deadline.at.getTime()}`),
+    )
+    .map((deadline) => ({
+      kind: "deadline",
+      id: `deadline:${deadline.id}`,
+      deadlineKind: deadline.kind,
+      company: companyVM(deadline.company, deadline.companyDomain),
+      title:
+        deadline.kind === "reminder"
+          ? (deadline.label ?? deadline.title)
+          : ctx.intl.formatMessage(DEADLINE_MESSAGES[deadline.kind]),
+      // The company is the row's top line already: the context names the role or posting.
+      context: deadline.title,
+      due: deadlineChip(deadline.at, ctx),
+      applicationId: deadline.applicationId,
+      jobId: deadline.jobId,
+      mailMessageId: deadline.mailMessageId,
+      pendingSync: ctx.pendingWrites.has(deadlineDocument(deadline)),
+    }));
 }
 
 /**
  * Up to `MAX_MATCHES` top matches that are new, or were saved from Today today (they keep their
  * row with Save on until midnight). Jobs already in Tracker and hidden companies are left out.
  */
-function matchItems(data: UserData, ctx: ModelContext): MatchItemVM[] {
+function matchItems(data: ScreenData, ctx: ModelContext): MatchItemVM[] {
   const hidden = data.profile.hiddenCompanies.map((company) => company.name.toLocaleLowerCase("en"));
   return data.jobMatches
     .filter(
@@ -672,12 +752,31 @@ function matchItems(data: UserData, ctx: ModelContext): MatchItemVM[] {
     });
 }
 
-function doneToday(data: UserData, ctx: ModelContext): DoneTodayVM | null {
-  const today = (date: Date) => calendarDaysFromNow(date, ctx) === 0 && date <= ctx.now;
+/**
+ * What the user handled today (local midnight, today-home OQ4), newest first: reviewed emails,
+ * undone status changes, follow-ups logged, notes, suggestions answered today and applications
+ * marked as no response (not undone).
+ */
+function doneToday(data: ScreenData, ctx: ModelContext): DoneTodayVM | null {
+  const today = (date: Date | null): date is Date =>
+    date !== null && calendarDaysFromNow(date, ctx) === 0 && date <= ctx.now;
   const done: { at: Date; item: DoneItemVM }[] = [];
+  const add = (application: Application, id: string, kind: DoneKind, at: Date, outcome: string) =>
+    done.push({
+      at,
+      item: {
+        id,
+        kind,
+        company: companyVM(application.company, application.companyDomain),
+        title: application.role,
+        outcome,
+        doneAt: relativeTime(at, ctx),
+      },
+    });
+
   for (const message of data.mailMessages) {
     const outcome = REVIEW_OUTCOME_MESSAGES[message.reviewState];
-    if (!outcome || !message.reviewedAt || !today(message.reviewedAt)) continue;
+    if (!outcome || !today(message.reviewedAt)) continue;
     const proposal = reviewProposalVM(message, data, ctx);
     done.push({
       at: message.reviewedAt,
@@ -691,24 +790,72 @@ function doneToday(data: UserData, ctx: ModelContext): DoneTodayVM | null {
       },
     });
   }
+
   for (const event of data.applicationEvents) {
-    if (event.revertsEventId === null || event.toStatus === null || !today(event.occurredAt)) continue;
+    if (!today(event.occurredAt)) continue;
     const application = data.applications.find((candidate) => candidate.id === event.applicationId);
     if (!application) continue;
-    done.push({
-      at: event.occurredAt,
-      item: {
-        id: `done:autoUpdate:${event.revertsEventId}`,
-        kind: "autoUpdate",
-        company: companyVM(application.company, application.companyDomain),
-        title: application.role,
-        outcome: ctx.intl.formatMessage(messages.undone, {
+    if (event.revertsEventId !== null && event.toStatus !== null) {
+      add(
+        application,
+        `done:undone:${event.revertsEventId}`,
+        "undone",
+        event.occurredAt,
+        ctx.intl.formatMessage(messages.undone, {
           status: ctx.intl.formatMessage(STATUS_MESSAGES[event.toStatus]),
         }),
-        doneAt: relativeTime(event.occurredAt, ctx),
-      },
-    });
+      );
+    } else if (event.type === "mail_sent" && event.actor === "user") {
+      add(
+        application,
+        `done:followedUp:${event.id}`,
+        "followedUp",
+        event.occurredAt,
+        ctx.intl.formatMessage(messages.followedUp),
+      );
+    } else if (event.type === "note") {
+      add(
+        application,
+        `done:note:${event.id}`,
+        "note",
+        event.occurredAt,
+        ctx.intl.formatMessage(messages.noteAdded),
+      );
+    } else if (
+      event.type === "status_changed" &&
+      event.actor === "user" &&
+      event.toStatus === "ghosted" &&
+      revertedBy(event.id, data.applicationEvents) === null
+    ) {
+      add(
+        application,
+        `done:noResponse:${event.id}`,
+        "noResponse",
+        event.occurredAt,
+        ctx.intl.formatMessage(messages.noResponse),
+      );
+    }
   }
+
+  for (const application of data.applications) {
+    if (today(application.followUpDismissedAt))
+      add(
+        application,
+        `done:notNeeded:${application.id}`,
+        "suggestion",
+        application.followUpDismissedAt,
+        ctx.intl.formatMessage(messages.notNeeded),
+      );
+    if (today(application.ghostedDismissedAt))
+      add(
+        application,
+        `done:keptWaiting:${application.id}`,
+        "suggestion",
+        application.ghostedDismissedAt,
+        ctx.intl.formatMessage(messages.keptWaiting),
+      );
+  }
+
   if (done.length === 0) return null;
   const items = done.sort((a, b) => b.at.getTime() - a.at.getTime()).map(({ item }) => item);
   return {
@@ -719,7 +866,7 @@ function doneToday(data: UserData, ctx: ModelContext): DoneTodayVM | null {
 }
 
 function agenda(
-  data: UserData,
+  data: ScreenData,
   deadlines: readonly DeadlineItemVM[],
   nextUpId: string | null,
   ctx: ModelContext,
@@ -784,49 +931,8 @@ function agenda(
   };
 }
 
-/** Hour of the day an item snoozed to a picked date comes back, in the user's zone. */
-const SNOOZE_DATE_HOUR = 9;
-
-/** Wall-clock fields of `date` in `timeZone`, as the UTC epoch of that wall time. */
-function zonedWallTime(date: Date, timeZone: string): number {
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone,
-    hourCycle: "h23",
-    year: "numeric",
-    month: "numeric",
-    day: "numeric",
-    hour: "numeric",
-    minute: "numeric",
-    second: "numeric",
-  }).formatToParts(date);
-  const part = (type: Intl.DateTimeFormatPartTypes) =>
-    Number(parts.find((candidate) => candidate.type === type)?.value);
-  return Date.UTC(part("year"), part("month") - 1, part("day"), part("hour"), part("minute"), part("second"));
-}
-
-/** `YYYY-MM-DD` of the calendar day `days` after `now`'s day in `timeZone` (date-input format). */
-function zonedIsoDay(now: Date, days: number, timeZone: string): string {
-  return new Date(zonedWallTime(now, timeZone) + days * DAY_MS).toISOString().slice(0, 10);
-}
-
-/**
- * The instant a snooze to the picked day `value` (`YYYY-MM-DD` from the date field) ends:
- * `SNOOZE_DATE_HOUR`:00 on that day in `timeZone`, independent of the machine's zone. Null when
- * `value` isn't a date.
- */
-export function snoozeDateInstant(value: string, timeZone: string): Date | null {
-  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
-  if (!match) return null;
-  const wall = Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]), SNOOZE_DATE_HOUR);
-  // Start from the wall time read as UTC and shift by the zone's offset there; a second pass
-  // settles days where the offset changes (daylight saving).
-  let instant = wall;
-  for (let pass = 0; pass < 2; pass += 1) instant += wall - zonedWallTime(new Date(instant), timeZone);
-  return new Date(instant);
-}
-
 export function buildTodayModel(
-  data: UserData,
+  data: ScreenData,
   ctx: ModelContext,
   params: Readonly<Record<string, string | undefined>>,
 ): TodayModel {
@@ -860,17 +966,13 @@ export function buildTodayModel(
     }));
   const items = sections.flatMap((candidate) => candidate.items);
 
-  const connectMail =
-    data.mailAccounts.length === 0
+  const firstUse: FirstUseVM | null =
+    items.length === 0 && data.applications.length === 0 && data.mailAccounts.length === 0
       ? {
-          message: ctx.intl.formatMessage(messages.connectMail),
-          estimate: ctx.intl.formatMessage(messages.connectEstimate),
-          actionLabel: ctx.intl.formatMessage(messages.connectAction),
+          title: ctx.intl.formatMessage(messages.firstUseTitle),
+          body: ctx.intl.formatMessage(messages.firstUseBody),
+          actionLabel: ctx.intl.formatMessage(messages.firstUseAction),
         }
-      : null;
-  const findJobs =
-    connectMail && data.jobs.length === 0 && data.applications.length === 0
-      ? { actionLabel: ctx.intl.formatMessage(messages.findJobs) }
       : null;
 
   return {
@@ -879,11 +981,12 @@ export function buildTodayModel(
     sections,
     items,
     selectedId: items.find((item) => item.id === params.item)?.id ?? items[0]?.id ?? null,
+    later: laterItems(data, ctx),
     doneToday: doneToday(data, ctx),
     agenda: agenda(data, deadlines, nextUp[0]?.id ?? null, ctx),
-    firstUse: connectMail ? { connectMail, findJobs } : null,
+    firstUse,
     caughtUp:
-      items.length === 0 && !connectMail ? { message: ctx.intl.formatMessage(messages.caughtUp) } : null,
+      items.length === 0 && !firstUse ? { message: ctx.intl.formatMessage(messages.caughtUp) } : null,
     snoozeDate: { min: zonedIsoDay(ctx.now, 1, ctx.timeZone), timeZone: ctx.timeZone },
   };
 }

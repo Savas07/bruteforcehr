@@ -1,4 +1,5 @@
 import type { CvContent } from "@bfhr/core";
+import { CV_WORDS, cvLanguage } from "./i18n";
 
 export type ExportExtension = "pdf" | "docx" | "json";
 
@@ -10,6 +11,11 @@ export interface ExportFileNameInput {
   readonly ext: ExportExtension;
   /** CV language; German spells umlauts out (Müller → Mueller), others drop accents (Öztürk → Ozturk). */
   readonly locale?: string;
+  /**
+   * `cv` (default) names the file `…-CV-…`; `coverLetter` uses the letter's word in `locale`
+   * (`…-Cover-letter-…`, `…-Anschreiben-…`, `…-On-yazi-…`).
+   */
+  readonly document?: "cv" | "coverLetter";
 }
 
 const LETTERS: Readonly<Record<string, string>> = {
@@ -50,11 +56,10 @@ function slug(value: string | undefined, german: boolean): string {
 }
 
 /** `First-Last-CV-<Company>.pdf`, or `First-Last-CV.pdf` without a company. */
-export function exportFileName({ firstName, lastName, company, ext, locale }: ExportFileNameInput): string {
+export function exportFileName({ firstName, lastName, company, ext, locale, document = "cv" }: ExportFileNameInput): string {
   const german = (locale ?? "").toLowerCase().startsWith("de");
-  const parts = [slug(firstName, german), slug(lastName, german), "CV", slug(company, german)].filter(
-    Boolean,
-  );
+  const word = document === "cv" ? "CV" : slug(CV_WORDS[cvLanguage(locale ?? "en")].coverLetter, german);
+  const parts = [slug(firstName, german), slug(lastName, german), word, slug(company, german)].filter(Boolean);
   return `${parts.join("-")}.${ext}`;
 }
 

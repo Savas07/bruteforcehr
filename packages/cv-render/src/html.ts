@@ -2,6 +2,7 @@ import { upperCase } from "./i18n";
 import {
   buildDocument,
   type ContactItem,
+  type DocHeader,
   type DocEntry,
   type DocSection,
   splitPlaceholders,
@@ -25,7 +26,7 @@ export function escapeHtml(text: string): string {
 }
 
 /** Escaped text with `[X%]` placeholders wrapped in a visible mark. Newlines become spaces. */
-function inline(text: string): string {
+export function inline(text: string): string {
   return splitPlaceholders(text.replace(/\s*\n\s*/gu, " "))
     .map((part) =>
       part.placeholder
@@ -41,14 +42,14 @@ function span(value: TextField | undefined, className: string): string {
   return value ? `<span class="${className}"${at(value.path)}>${inline(value.text)}</span>` : "";
 }
 
-function contactItem(item: ContactItem): string {
+export function contactItem(item: ContactItem): string {
   const text = inline(item.text);
   return item.href
     ? `<a href="${escapeHtml(item.href)}"${at(item.path)}>${text}</a>`
     : `<span${at(item.path)}>${text}</span>`;
 }
 
-const SEPARATOR = '<span class="cv-sep"> · </span>';
+export const SEPARATOR = '<span class="cv-sep"> · </span>';
 
 /** Summary text: blank lines separate paragraphs, single newlines break lines. */
 function paragraphs(value: TextField): string {
@@ -125,6 +126,37 @@ function sectionHtml(section: DocSection, templateId: TemplateId, heading: strin
   );
 }
 
+/** The name, label and contact block; the CV and the cover letter print the same one. */
+export function headerHtml(head: DocHeader): string {
+  const contact = head.contact.map(contactItem).join(SEPARATOR);
+  const label = head.label ? `<p class="cv-label"${at(head.label.path)}>${inline(head.label.text)}</p>` : "";
+  const photo = head.photo
+    ? `<img class="cv-photo" src="${escapeHtml(head.photo)}" alt=""${at("/basics/image")}>`
+    : "";
+  return (
+    `<header class="cv-header${photo ? " has-photo" : ""}"${at("/basics")}><div class="cv-id">` +
+    (head.name ? `<h1 class="cv-name"${at(head.name.path)}>${inline(head.name.text)}</h1>` : "") +
+    label +
+    (contact ? `<p class="cv-contact">${contact}</p>` : "") +
+    (head.dateOfBirth
+      ? `<p class="cv-personal"${at(head.dateOfBirth.path)}>${escapeHtml(head.dateOfBirth.text)}</p>`
+      : "") +
+    `</div>${photo}</header>`
+  );
+}
+
+/** The self-contained document around `main`: CSP (no scripts, no network), title, styles. */
+export function htmlDocument(lang: string, title: string, css: string, main: string): string {
+  return (
+    `<!doctype html><html lang="${escapeHtml(lang)}"><head><meta charset="utf-8">` +
+    `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; font-src data:; img-src data:">` +
+    `<meta name="viewport" content="width=device-width, initial-scale=1">` +
+    `<meta name="generator" content="BruteForceHR cv-render ${CV_RENDER_VERSION}">` +
+    `<title>${escapeHtml(title)}</title><style>${css}</style></head>` +
+    `<body>${main}</body></html>`
+  );
+}
+
 /**
  * Renders a CV as one self-contained HTML document: fonts embedded, no scripts, no network
  * requests (a CSP forbids them). Every surface shows and prints exactly this HTML (ADR 0009).
@@ -143,25 +175,7 @@ export function renderCvHtml(input: CvRenderInput): CvRenderResult {
   });
 
   const head = document.header;
-  let headerHtml = "";
-  if (head) {
-    const contact = head.contact.map(contactItem).join(SEPARATOR);
-    const label = head.label
-      ? `<p class="cv-label"${at(head.label.path)}>${inline(head.label.text)}</p>`
-      : "";
-    const photo = head.photo
-      ? `<img class="cv-photo" src="${escapeHtml(head.photo)}" alt=""${at("/basics/image")}>`
-      : "";
-    headerHtml =
-      `<header class="cv-header${photo ? " has-photo" : ""}"${at("/basics")}><div class="cv-id">` +
-      (head.name ? `<h1 class="cv-name"${at(head.name.path)}>${inline(head.name.text)}</h1>` : "") +
-      label +
-      (contact ? `<p class="cv-contact">${contact}</p>` : "") +
-      (head.dateOfBirth
-        ? `<p class="cv-personal"${at(head.dateOfBirth.path)}>${escapeHtml(head.dateOfBirth.text)}</p>`
-        : "") +
-      `</div>${photo}</header>`;
-  }
+  const headerBlock = head ? headerHtml(head) : "";
 
   const outline = document.outline.map((section) => ({
     ...section,
@@ -171,13 +185,12 @@ export function renderCvHtml(input: CvRenderInput): CvRenderResult {
     .map((section, index) => sectionHtml(section, templateId, outline[index]?.heading ?? section.heading))
     .join("");
 
-  const html =
-    `<!doctype html><html lang="${escapeHtml(document.lang)}"><head><meta charset="utf-8">` +
-    `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; font-src data:; img-src data:">` +
-    `<meta name="viewport" content="width=device-width, initial-scale=1">` +
-    `<meta name="generator" content="BruteForceHR cv-render ${CV_RENDER_VERSION}">` +
-    `<title>${escapeHtml(document.title)}</title><style>${css}</style></head>` +
-    `<body><main class="cv cv--${templateId}" data-template="${templateId}">${headerHtml}${sections}</main></body></html>`;
+  const html = htmlDocument(
+    document.lang,
+    document.title,
+    css,
+    `<main class="cv cv--${templateId}" data-template="${templateId}">${headerBlock}${sections}</main>`,
+  );
 
   return {
     html,

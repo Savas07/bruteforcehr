@@ -14,6 +14,7 @@ import {
   type JobMatch,
   type JobSourceLink,
   jobSourceKey,
+  type JobSourceStatus,
   type KnownJobSource,
   type MatchBand,
   type MatchEvidence,
@@ -22,6 +23,7 @@ import {
   type MatchFactorStatus,
   type MatchImpact,
   type MatchRequirementFacet,
+  passesSearchFilters,
   type RemoteType,
   type SalaryRange,
   type Seniority,
@@ -35,12 +37,20 @@ import type {
   CompanyVM,
   MatchVM,
   ModelContext,
+  ScreenData,
   SourceVM,
   StatusVM,
   TimeVM,
-  UserData,
 } from "../../shared/model/types";
 import { companyVM, matchVM, sourceVM, statusVM } from "../../shared/model/vocabulary";
+import {
+  buildFilterBar,
+  type FilterBarVM,
+  type FilterPillVM,
+  savedSearchItems,
+  type SavedSearchItemVM,
+} from "./filterBarModel";
+import { type JobsFilterState, matchesQuery, readFilterParams } from "./filters";
 
 /**
  * A listing not refreshed by its source for this many days counts as gone: the row shows the
@@ -59,6 +69,11 @@ const COPY_MESSAGES = defineMessages({
   rankingInfo: {
     id: "job-detail.copy.rankingInfo",
     defaultMessage: "Sorted by match, then newest. Scores are a rough guide, not a prediction.",
+  },
+  sortNewest: { id: "job-detail.copy.sortNewest", defaultMessage: "Newest" },
+  rankingNewest: {
+    id: "job-detail.copy.rankingNewest",
+    defaultMessage: "Sorted by posting date, newest first. Scores are a rough guide, not a prediction.",
   },
   save: { id: "job-detail.copy.save", defaultMessage: "Save" },
   saved: { id: "job-detail.copy.saved", defaultMessage: "Saved" },
@@ -225,11 +240,45 @@ const messages = defineMessages({
     defaultMessage: "Try another word, or clear the search to see all your jobs.",
   },
   noResultsAction: { id: "job-detail.empty.noResultsAction", defaultMessage: "Clear search" },
+  noFilterResultsTitle: {
+    id: "job-detail.empty.noFilterResultsTitle",
+    defaultMessage: "No jobs match all of these filters",
+  },
+  noFilterResultsBody: {
+    id: "job-detail.empty.noFilterResultsBody",
+    defaultMessage: "Try removing one, or search the job sites for more.",
+  },
+  noFilterResultsAction: {
+    id: "job-detail.empty.noFilterResultsAction",
+    defaultMessage: "Remove all filters",
+  },
+  searchSitesAction: {
+    id: "job-detail.empty.searchSitesAction",
+    defaultMessage: "Search job sites for “{query}”",
+  },
   caughtUpTitle: { id: "job-detail.empty.caughtUpTitle", defaultMessage: "No jobs to show" },
   caughtUpBody: {
     id: "job-detail.empty.caughtUpBody",
     defaultMessage: "Jobs you marked Not for me are in Hidden jobs. New matches will show up here.",
   },
+  sourcesReady: {
+    id: "job-detail.sources.ready",
+    defaultMessage:
+      "{count, plural, one {Searches # job site: {names}.} other {Searches # job sites: {names}.}}",
+  },
+  sourcesWaiting: {
+    id: "job-detail.sources.waiting",
+    defaultMessage: "{names} start once their access keys are added.",
+  },
+  sourcesNone: {
+    id: "job-detail.sources.none",
+    defaultMessage: "No job site can be searched right now. Paste a link to a posting to add it here.",
+  },
+  sourcesTrouble: {
+    id: "job-detail.sources.trouble",
+    defaultMessage: "{names} didn't answer last time; results from them may be missing.",
+  },
+  applyByEmailInstead: { id: "job-detail.apply.byEmailInstead", defaultMessage: "Apply by email instead" },
 });
 
 const REMOTE_MESSAGES: Readonly<Record<RemoteType, MessageDescriptor>> = defineMessages({
@@ -345,6 +394,11 @@ const SOURCE_NAMES: Readonly<Record<KnownJobSource, string | null>> = {
   smartrecruiters: "SmartRecruiters",
   workable: "Workable",
   recruitee: "Recruitee",
+  personio: "Personio",
+  bundesagentur: "Bundesagentur für Arbeit",
+  himalayas: "Himalayas",
+  remoteok: "Remote OK",
+  kariyer: "Kariyer.net",
   web: null,
   alert_email: null,
   url_import: null,
@@ -439,6 +493,8 @@ export interface FactorVM {
   readonly ai: boolean;
   /** Gap the user can correct with "I have this" / "Add to CV…" (status `missing`). */
   readonly correctable: boolean;
+  /** The skill "I have this" adds to the profile ("GraphQL"); null for other factors. */
+  readonly skill: string | null;
 }
 
 /** The match section (`MatchSummaryCard` + `MatchBreakdown`). */
@@ -527,6 +583,14 @@ export interface ApplyVM {
   readonly target: string;
   /** Disabled reason while offline ("Needs a connection"). */
   readonly offlineReason: string;
+  /** "Apply by email instead" when the route is a site but the posting also names an address; else null. */
+  readonly emailAlternative: string | null;
+}
+
+/** The CV an external apply pins (the match's basis, else the default or newest active CV). */
+export interface ApplyCvVM {
+  readonly cvId: string;
+  readonly cvRevisionId: string;
 }
 
 /** The action row once an application exists past Saved: "Applied 12 Oct · View in Tracker". */
@@ -589,17 +653,23 @@ export interface JobDetailVM {
   readonly application: ApplicationSummaryVM | null;
   /** "Did you submit?" while the application is Preparing on an external route; else null. */
   readonly submitPrompt: SubmitPromptVM | null;
+  /** What "Yes, I applied" pins; null without any CV. */
+  readonly applyCv: ApplyCvVM | null;
   readonly pendingSync: boolean;
 }
 
 /** Empty list pane (states.md empty kinds). */
 export interface JobsEmptyVM {
-  /** `firstUse`: no jobs yet; `noResults`: the search hides every job; `caughtUp`: every job is hidden. */
+  /** `firstUse`: no jobs yet; `noResults`: the search or filters hide every job; `caughtUp`: every job is hidden. */
   readonly kind: "firstUse" | "noResults" | "caughtUp";
   readonly title: string;
   readonly body: string;
-  /** Primary CTA: focuses the search field (first use) or clears it (no results); null for caught-up. */
+  /** Primary CTA: focuses the search field (first use) or clears the search / filters (no results); null for caught-up. */
   readonly action: string | null;
+  /** No results: the active filters as removable chips (job-feed-search.md 7). */
+  readonly chips: readonly FilterPillVM[];
+  /** "Search job sites for “react”" while there is search text; else null. */
+  readonly searchAction: string | null;
 }
 
 /** One choice in the optional "What didn't fit?" popover (`DismissReasonPopover`). */
@@ -624,6 +694,11 @@ export interface JobDetailModel {
   };
   /** The scope the list shows (sidebar children under Jobs: `SCOPE_MESSAGES`). */
   readonly scope: JobsScope;
+  /** Search, filters and sort from the route (`filters.ts`). */
+  readonly search: JobsFilterState;
+  readonly filterBar: FilterBarVM;
+  /** Saved searches nested under Jobs in the sidebar. */
+  readonly savedSearches: readonly SavedSearchItemVM[];
   /** Multi-select reasons for Not for me, in the core enum's order (numbered 1–9 on desktop). */
   readonly dismissReasons: readonly DismissReasonVM[];
   /** `jobId` when it names a job, else the first row, else null. */
@@ -706,7 +781,7 @@ function whereLine(job: Job, ctx: ModelContext): string | null {
   return `${place} · ${mode}`;
 }
 
-function isHiddenCompany(job: Job, data: Pick<UserData, "profile">): boolean {
+function isHiddenCompany(job: Job, data: Pick<ScreenData, "profile">): boolean {
   const name = job.company.toLocaleLowerCase("en");
   return data.profile.hiddenCompanies.some((hidden) =>
     hidden.domain !== null && job.companyDomain !== null
@@ -743,7 +818,8 @@ function rowVM(
     match: match ? matchVM(match.score, intl) : null,
     scoreCaption: match ? intl.formatMessage(messages.scoreCaption, { score: match.score }) : null,
     posted: job.postedAt ? relativeTime(job.postedAt, ctx) : null,
-    saved: match?.state === "saved" || application?.status === "saved",
+    // D02: a tracked job is Saved while its application is; otherwise the match's bookmark says.
+    saved: application ? application.status === "saved" : match?.state === "saved",
     status: hasApplied(application) ? statusVM(application.status, intl) : null,
     sourceCount:
       job.sources.length > 1 ? intl.formatMessage(messages.sourceCount, { count: job.sources.length }) : null,
@@ -805,12 +881,13 @@ function factorVM(factor: MatchFactor, intl: IntlShape): FactorVM {
     },
     ai: factor.source === "ai",
     correctable: factor.status === "missing",
+    skill: factor.kind === "skill" ? factor.label : null,
   };
 }
 
 function matchSectionVM(
   match: JobMatch | undefined,
-  data: Pick<UserData, "cvs">,
+  data: Pick<ScreenData, "cvs">,
   ctx: ModelContext,
 ): MatchSectionVM {
   const { intl } = ctx;
@@ -933,6 +1010,7 @@ function applyVM(job: Job, source: JobSourceLink | undefined, intl: IntlShape): 
       external: false,
       target: job.applyEmail,
       offlineReason,
+      emailAlternative: null,
     };
   const target = job.applyUrl ?? source?.url ?? "";
   if (source?.isDirectFromEmployer)
@@ -942,6 +1020,7 @@ function applyVM(job: Job, source: JobSourceLink | undefined, intl: IntlShape): 
       external: true,
       target,
       offlineReason,
+      emailAlternative: job.applyEmail === null ? null : intl.formatMessage(messages.applyByEmailInstead),
     };
   const board = source ? sourceName(source) : sourceHost(target);
   return {
@@ -950,6 +1029,7 @@ function applyVM(job: Job, source: JobSourceLink | undefined, intl: IntlShape): 
     external: true,
     target,
     offlineReason,
+    emailAlternative: job.applyEmail === null ? null : intl.formatMessage(messages.applyByEmailInstead),
   };
 }
 
@@ -1002,7 +1082,7 @@ function sourcesVM(job: Job, used: JobSourceLink | undefined, ctx: ModelContext)
   };
 }
 
-function detailVM(job: Job, data: UserData, ctx: ModelContext, rows: readonly JobListRowVM[]): JobDetailVM {
+function detailVM(job: Job, data: ScreenData, ctx: ModelContext, rows: readonly JobListRowVM[]): JobDetailVM {
   const { intl } = ctx;
   const match = data.jobMatches.find((candidate) => candidate.id === job.id);
   const application = data.applications.find((candidate) => candidate.jobId === job.id);
@@ -1052,7 +1132,7 @@ function detailVM(job: Job, data: UserData, ctx: ModelContext, rows: readonly Jo
           linkLabel: intl.formatMessage(COPY_MESSAGES.viewInTracker),
         }
       : null,
-    saved: match?.state === "saved" || application?.status === "saved",
+    saved: application ? application.status === "saved" : match?.state === "saved",
     hidden: match?.state === "dismissed" || isHiddenCompany(job, data),
     application: hasApplied(application) ? applicationSummaryVM(application, data, ctx) : null,
     submitPrompt:
@@ -1062,63 +1142,140 @@ function detailVM(job: Job, data: UserData, ctx: ModelContext, rows: readonly Jo
             question: intl.formatMessage(messages.submitQuestion, { company: job.company }),
           }
         : null,
+    applyCv: applyCvVM(match, data, data.profile.defaultCvId),
     pendingSync:
       ctx.pendingWrites.has(job.id) || (application !== undefined && ctx.pendingWrites.has(application.id)),
   };
 }
 
+/** "Newest": posting date (else first seen) first, then band. */
+function compareNewest(a: JobListRowVM, b: JobListRowVM): number {
+  const posted = (row: JobListRowVM) => (row.posted ? Date.parse(row.posted.iso) : 0);
+  return posted(b) - posted(a) || compareRows(a, b);
+}
+
+/** The CV "Yes, I applied" pins: the match's basis, else the default CV, else the newest active one. */
+function applyCvVM(
+  match: JobMatch | undefined,
+  data: Pick<ScreenData, "cvs">,
+  defaultCvId: string | null,
+): ApplyCvVM | null {
+  if (match?.basedOnCvId && match.basedOnCvRevisionId)
+    return { cvId: match.basedOnCvId, cvRevisionId: match.basedOnCvRevisionId };
+  const active = data.cvs.filter((cv) => cv.archivedAt === null);
+  const cv =
+    active.find((candidate) => candidate.id === defaultCvId) ??
+    active.toSorted((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime())[0];
+  return cv ? { cvId: cv.id, cvRevisionId: cv.currentRevisionId } : null;
+}
+
+/**
+ * One line about the job sources for the empty feed and search results: what can be searched now,
+ * what waits for a key, what had trouble (`jobSources/{id}`; never a count of failures).
+ */
+export function sourceHealthLine(sources: readonly JobSourceStatus[], intl: IntlShape): string {
+  const names = (list: readonly JobSourceStatus[]) =>
+    intl.formatList(
+      list.map((source) => source.label),
+      { type: "conjunction" },
+    );
+  const ready = sources.filter((source) => source.state === "ok" || source.state === "degraded");
+  const waiting = sources.filter((source) => source.state === "skipped" && source.reason === "no_key");
+  const trouble = sources.filter((source) => source.state === "failing");
+  if (ready.length === 0 && trouble.length === 0) return intl.formatMessage(messages.sourcesNone);
+  return [
+    ready.length > 0
+      ? intl.formatMessage(messages.sourcesReady, { count: ready.length, names: names(ready) })
+      : null,
+    trouble.length > 0 ? intl.formatMessage(messages.sourcesTrouble, { names: names(trouble) }) : null,
+    waiting.length > 0 ? intl.formatMessage(messages.sourcesWaiting, { names: names(waiting) }) : null,
+  ]
+    .filter((part) => part !== null)
+    .join(" ");
+}
+
+/**
+ * Params: `jobId`, `scope` (all | saved | hidden), `search` (the saved search picked in the
+ * sidebar) and the search + filters of `filters.ts`.
+ */
 export function buildJobDetailModel(
-  data: UserData,
+  data: ScreenData,
   ctx: ModelContext,
   params: Readonly<Record<string, string | undefined>>,
 ): JobDetailModel {
   const { intl } = ctx;
-  const query = (params.q ?? "").trim();
-  const needle = query.toLocaleLowerCase(ctx.locale);
+  const search = readFilterParams(params);
+  const { query } = search;
   const scope: JobsScope = JOBS_SCOPES.find((candidate) => candidate === params.scope) ?? "all";
-  const feed = data.jobs
-    .flatMap((job) => {
-      const match = data.jobMatches.find((candidate) => candidate.id === job.id);
-      const hidden = match?.state === "dismissed" || isHiddenCompany(job, data);
-      if ((scope === "hidden") !== hidden) return [];
-      const application = data.applications.find((candidate) => candidate.jobId === job.id);
-      const row = rowVM(job, match, application, ctx);
-      return scope === "saved" && !row.saved ? [] : [row];
+  const matches = new Map(data.jobMatches.map((match) => [match.id, match]));
+  const applications = new Map(
+    data.applications.flatMap((application) => (application.jobId ? [[application.jobId, application]] : [])),
+  );
+  const feedJobs = data.jobs.filter((job) => {
+    const match = matches.get(job.id);
+    const hidden = match?.state === "dismissed" || isHiddenCompany(job, data);
+    return (scope === "hidden") === hidden;
+  });
+  const feed = feedJobs
+    .map((job) => rowVM(job, matches.get(job.id), applications.get(job.id), ctx))
+    .filter((row) => scope !== "saved" || row.saved);
+  const jobsById = new Map(data.jobs.map((job) => [job.id, job]));
+  const minRank = search.minBand ? BAND_RANK[search.minBand] : null;
+  const rows = feed
+    .filter((row) => {
+      const job = jobsById.get(row.jobId);
+      if (!job || !matchesQuery(job, query, ctx.locale) || !passesSearchFilters(job, search.filters, ctx.now))
+        return false;
+      return minRank === null || (row.match !== null && BAND_RANK[row.match.band] <= minRank);
     })
-    .sort(compareRows);
-  // Title, company or place contains the search text (case-insensitive in the UI locale).
-  const rows = feed.filter((row) =>
-    [row.title, row.company.name, row.where ?? ""].some((field) =>
-      field.toLocaleLowerCase(ctx.locale).includes(needle),
-    ),
+    .sort(search.sort === "newest" ? compareNewest : compareRows);
+
+  const requested = params.jobId === undefined ? undefined : jobsById.get(params.jobId);
+  const selectedJobId = requested?.id ?? rows[0]?.jobId ?? null;
+  const selected = selectedJobId === null ? undefined : jobsById.get(selectedJobId);
+  const filterBar = buildFilterBar(
+    search,
+    feedJobs,
+    (slug) => (isKnownSource(slug) ? SOURCE_NAMES[slug] : null) ?? slug,
+    ctx,
   );
 
-  const requested = params.jobId === undefined ? undefined : data.jobs.find((job) => job.id === params.jobId);
-  const selectedJobId = requested?.id ?? rows[0]?.jobId ?? null;
-  const selected = data.jobs.find((job) => job.id === selectedJobId);
-
   let empty: JobsEmptyVM | null = null;
+  const searchAction = query === "" ? null : intl.formatMessage(messages.searchSitesAction, { query });
   if (data.jobs.length === 0)
     empty = {
       kind: "firstUse",
       title: intl.formatMessage(messages.firstUseTitle),
       body: intl.formatMessage(messages.firstUseBody),
       action: intl.formatMessage(messages.firstUseAction),
+      chips: [],
+      searchAction,
     };
-  else if (feed.length > 0 && rows.length === 0)
+  else if (feed.length > 0 && rows.length === 0) {
+    const filtered = filterBar.activeCount > 0;
     empty = {
       kind: "noResults",
-      title: intl.formatMessage(messages.noResultsTitle, { query }),
-      body: intl.formatMessage(messages.noResultsBody),
-      action: intl.formatMessage(messages.noResultsAction),
+      title: filtered
+        ? intl.formatMessage(messages.noFilterResultsTitle)
+        : intl.formatMessage(messages.noResultsTitle, { query }),
+      body: filtered
+        ? intl.formatMessage(messages.noFilterResultsBody)
+        : intl.formatMessage(messages.noResultsBody),
+      action: filtered
+        ? intl.formatMessage(messages.noFilterResultsAction)
+        : intl.formatMessage(messages.noResultsAction),
+      chips: filterBar.pills.filter((pill) => pill.active),
+      searchAction,
     };
-  else if (rows.length === 0) {
+  } else if (rows.length === 0) {
     const caughtUp = CAUGHT_UP_MESSAGES[scope];
     empty = {
       kind: "caughtUp",
       title: intl.formatMessage(caughtUp.title),
       body: intl.formatMessage(caughtUp.body),
       action: null,
+      chips: [],
+      searchAction: null,
     };
   }
 
@@ -1131,12 +1288,15 @@ export function buildJobDetailModel(
     list: {
       rows,
       countLabel: intl.formatMessage(messages.jobCount, { count: rows.length }),
-      sortLabel: copy.sortLabel,
-      rankingInfo: copy.rankingInfo,
+      sortLabel: search.sort === "newest" ? copy.sortNewest : copy.sortLabel,
+      rankingInfo: search.sort === "newest" ? copy.rankingNewest : copy.rankingInfo,
       query,
       empty,
     },
     scope,
+    search,
+    filterBar,
+    savedSearches: savedSearchItems(data.savedSearches, search, params.search ?? null),
     dismissReasons: DismissReasonSchema.options.map((key) => ({
       key,
       label: intl.formatMessage(DISMISS_REASON_MESSAGES[key]),

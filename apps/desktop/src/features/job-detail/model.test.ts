@@ -101,7 +101,9 @@ describe("buildJobDetailModel — search and reasons", () => {
     expect(model.list.rows.length).toBeLessThan(all.list.rows.length);
     for (const row of model.list.rows)
       expect(`${row.title} ${row.company.name} ${row.where ?? ""}`.toLowerCase()).toContain("frontend");
-    const order = all.list.rows.map((row) => row.jobId).filter((id) => model.list.rows.some((row) => row.jobId === id));
+    const order = all.list.rows
+      .map((row) => row.jobId)
+      .filter((id) => model.list.rows.some((row) => row.jobId === id));
     expect(model.list.rows.map((row) => row.jobId)).toEqual(order);
     expect(model.selectedJobId).toBe(model.list.rows[0]?.jobId);
   });
@@ -114,7 +116,65 @@ describe("buildJobDetailModel — search and reasons", () => {
       title: "No jobs match “zzz-nothing”",
       body: "Try another word, or clear the search to see all your jobs.",
       action: "Clear search",
+      chips: [],
+      searchAction: "Search job sites for “zzz-nothing”",
     });
+  });
+
+  it("filters by work mode, seniority and minimum band, and names the active pills", () => {
+    const model = buildJobDetailModel(populatedDataset, ctx, {
+      remote: "remote",
+      match: "good",
+      level: "senior",
+    });
+    const jobs = new Map(populatedDataset.jobs.map((job) => [job.id, job]));
+    expect(model.list.rows.length).toBeGreaterThan(0);
+    for (const row of model.list.rows) {
+      const job = jobs.get(row.jobId);
+      expect(job?.remoteType === null || job?.remoteType === "remote").toBe(true);
+      expect(job?.seniority === null || job?.seniority === "senior").toBe(true);
+      expect(["strong", "good"]).toContain(row.match?.band);
+    }
+    expect(model.filterBar.activeCount).toBe(3);
+    expect(model.filterBar.pills.find((pill) => pill.facet === "workMode")?.label).toBe("Work mode: Remote");
+  });
+
+  it("offers removable chips when the filters hide every job", () => {
+    const model = buildJobDetailModel(populatedDataset, ctx, {
+      posted: "1",
+      match: "strong",
+      level: "intern",
+    });
+    expect(model.list.rows).toEqual([]);
+    expect(model.list.empty).toMatchObject({
+      kind: "noResults",
+      title: "No jobs match all of these filters",
+      action: "Remove all filters",
+    });
+    expect(model.list.empty?.chips.map((chip) => chip.facet)).toEqual(["seniority", "posted", "match"]);
+  });
+
+  it("matches multi-word and OR searches against title, company, places and skills", () => {
+    const both = buildJobDetailModel(populatedDataset, ctx, { q: "react typescript" });
+    const either = buildJobDetailModel(populatedDataset, ctx, { q: "vue OR zzz-nothing" });
+    expect(both.list.rows.length).toBeGreaterThan(0);
+    expect(either.list.rows.map((row) => row.jobId)).toContain("job-fernweh-frontend");
+  });
+
+  it("sorts by newest posting on request", () => {
+    const model = buildJobDetailModel(populatedDataset, ctx, { sort: "newest" });
+    const posted = model.list.rows.map((row) => (row.posted ? Date.parse(row.posted.iso) : 0));
+    expect(posted).toEqual([...posted].sort((a, b) => b - a));
+    expect(model.list.sortLabel).toBe("Newest");
+  });
+
+  it("nests the saved searches and marks the one the feed shows", () => {
+    const [first] = populatedDataset.savedSearches;
+    const unpicked = buildJobDetailModel(populatedDataset, ctx, {});
+    expect(unpicked.savedSearches.map((item) => item.name)).toContain(first?.name);
+    const item = unpicked.savedSearches.find((candidate) => candidate.id === first?.id);
+    const picked = buildJobDetailModel(populatedDataset, ctx, { ...item?.params });
+    expect(picked.savedSearches.find((candidate) => candidate.id === first?.id)?.current).toBe(true);
   });
 
   it("lists the dismiss reasons in the core order, and the CVs for the basis menu", () => {
@@ -301,6 +361,7 @@ describe("buildJobDetailModel — detail", () => {
       external: false,
       target: "careers@haldenfreight.co.uk",
       offlineReason: "Needs a connection",
+      emailAlternative: null,
     });
     expect(halden.sources.groups.flatMap((group) => group.rows).some((row) => row.usedForApply)).toBe(false);
   });
@@ -321,7 +382,9 @@ describe("buildJobDetailModel — detail", () => {
     expect(fernweh.gaps.some((gap) => gap.correctable)).toBe(true);
 
     const tidewater = ready(detailOf("job-tidewater-product").match);
-    expect(tidewater.outsidePreferences).toMatch(/^Outside your preferences: Remote for US residents only.* and No visa sponsorship$/u);
+    expect(tidewater.outsidePreferences).toMatch(
+      /^Outside your preferences: Remote for US residents only.* and No visa sponsorship$/u,
+    );
     const remote = tidewater.requirements.find((item) => item.facet === "remote");
     expect(remote).toMatchObject({
       status: "outside_prefs",
@@ -393,6 +456,8 @@ describe("buildJobDetailModel — empty dataset", () => {
       title: "No jobs yet",
       body: "Search for a role and save the search. We'll collect matching jobs here and rank them against your CV.",
       action: "Search jobs",
+      chips: [],
+      searchAction: null,
     });
     expect(model.selectedJobId).toBeNull();
     expect(model.detail).toBeNull();

@@ -12,6 +12,7 @@ fn main() {
             "take_auth_link",
             "set_signed_in",
             "open_mail_inbox",
+            "open_mailto",
             "print_cv_pdf",
             "save_export",
         ]))

@@ -14,6 +14,7 @@ use crate::export_file::{self, ExportError};
 use crate::external_url::{self, ExternalUrlError};
 use crate::job_url::{self, JobUrlError, RateLimiter};
 use crate::mail_inbox::{self, MailProvider};
+use crate::mailto::{self, MailtoError, MailtoLimiter};
 use crate::menu;
 use crate::preferences::UpdateChannel;
 use crate::updater::{self, RestartError, UpdateSnapshot};
@@ -29,6 +30,10 @@ pub enum CommandError {
         message: String,
     },
     OpenFailed {
+        message: String,
+    },
+    /// Recipients, subject or body `open_mailto` can't put into a `mailto:` link.
+    InvalidMailto {
         message: String,
     },
     NoUpdateReady {
@@ -102,6 +107,14 @@ impl From<JobUrlError> for CommandError {
         match error {
             JobUrlError::RateLimited => Self::RateLimited { message },
             _ => Self::UrlNotAllowed { message },
+        }
+    }
+}
+
+impl From<MailtoError> for CommandError {
+    fn from(error: MailtoError) -> Self {
+        Self::InvalidMailto {
+            message: error.to_string(),
         }
     }
 }
@@ -215,6 +228,26 @@ pub fn open_mail_inbox<R: Runtime>(
     email: &str,
 ) -> Result<(), CommandError> {
     open(&app, &mail_inbox::inbox_url(provider, email))
+}
+
+/// "Open in your mail app" (email apply without a sending account): a new message to `to` with
+/// `subject` and `body` in the default mail app. `mailto::build` checks the addresses and limits;
+/// at most 3 per 10 s.
+#[tauri::command]
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Tauri injects the AppHandle, State and arguments by value"
+)]
+pub fn open_mailto<R: Runtime>(
+    app: AppHandle<R>,
+    limiter: State<'_, MailtoLimiter>,
+    to: Vec<String>,
+    subject: &str,
+    body: &str,
+) -> Result<(), CommandError> {
+    let url = mailto::build(&to, subject, body)?;
+    limiter.0.try_acquire(Instant::now())?;
+    open(&app, &url)
 }
 
 /// The CV's self-contained HTML (`@bfhr/cv-render`) printed to a PDF on A4 or Letter pages,

@@ -13,7 +13,10 @@ import {
   weekday,
 } from "./model";
 
-const data = { ...populatedDataset, profile: { settings: DEFAULT_PROFILE_SETTINGS, hiddenCompanies: [] } };
+const data = {
+  ...populatedDataset,
+  profile: { settings: DEFAULT_PROFILE_SETTINGS, hiddenCompanies: [], defaultCvId: null },
+};
 const ctx = fixtureContext(populatedDataset);
 const model = buildTrackerCalendarModel(data, ctx);
 
@@ -56,7 +59,10 @@ describe("buildTrackerCalendarModel", () => {
 
   it("is empty without data", () => {
     const empty = buildTrackerCalendarModel(
-      { ...emptyDataset, profile: { settings: DEFAULT_PROFILE_SETTINGS, hiddenCompanies: [] } },
+      {
+        ...emptyDataset,
+        profile: { settings: DEFAULT_PROFILE_SETTINGS, hiddenCompanies: [], defaultCvId: null },
+      },
       fixtureContext(emptyDataset),
     );
     expect(empty.entries).toEqual([]);

@@ -4,8 +4,11 @@ import { deCv, enCv, fullCv, inputFor, PHOTO_DATA_URL, TEMPLATE_IDS, trCv } from
 import { renderCvHtml, SECTION_HEADINGS } from "./index";
 
 /** The document without the stylesheet (fonts make it ~300 kB): what snapshots compare. */
+/** Snapshot-stable HTML: styles collapsed, and the package version (bumped every release) masked. */
 function body(html: string): string {
-  return html.replace(/<style>[\s\S]*<\/style>/u, "<style>…</style>");
+  return html
+    .replace(/<style>[\s\S]*<\/style>/u, "<style>…</style>")
+    .replace(/(<meta name="generator" content="BruteForceHR cv-render )[^"]+(">)/u, "$1x.y.z$2");
 }
 
 function headings(html: string): string[] {

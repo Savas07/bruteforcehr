@@ -8,7 +8,7 @@
  * and pending AI suggestions come from `design-suggestions.ts` (design build only).
  */
 import { useNavigate } from "@tanstack/react-router";
-import { Eye, FileUp, History, PanelRight, PenLine, Sparkles } from "lucide-react";
+import { Download, Eye, FileUp, History, PanelRight, PenLine, Sparkles } from "lucide-react";
 import { useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { defineMessage, defineMessages, useIntl } from "react-intl";
 import { destinationMessages } from "../../lib/destinations";
@@ -38,6 +38,7 @@ import {
   removeItem,
   removeSkillKeyword,
   setTextAt,
+  textAt,
   type CvDraft,
 } from "./draft";
 import { EditorPane, type EditorOps } from "./EditorPane";
@@ -49,7 +50,14 @@ import { useCvSession } from "./session";
 import { useCvCreation, type CvCreation } from "./useCvCreation";
 import type { TimeVM } from "../../shared/model/types";
 import { PreviewPane } from "./PreviewPane";
-import type { CvPreviewBlock } from "./preview-document";
+import { locateInDraft, pathOfBlock } from "./pointer";
+import { assistErrorMessage, assistKey, requestCvAssist } from "./assist";
+import { AtsCheckPanel } from "./ats";
+import { DesignControls } from "./DesignControls";
+import { ExportDialog } from "./ExportDialog";
+import { printCvPdf } from "../../lib/cvExport";
+import { cvLanguage } from "@bfhr/cv-render";
+import { renderCv } from "./render";
 import { buildSuggestionVMs, fillPlaceholders, hasUnfilledPlaceholders, type CvSuggestionInput } from "./suggestions";
 import { useWindowQuery } from "./useWindowWidth";
 
@@ -127,6 +135,11 @@ const messages = defineMessages({
     defaultMessage: "From the version of {date} to your CV as it is now.",
   },
   save: { id: "cv-editor.keys.save", defaultMessage: "Save now" },
+  noSuggestion: {
+    id: "cv-editor.assist.noSuggestion",
+    defaultMessage: "No better wording this time. Your text stays as it is.",
+  },
+  export: { id: "cv-editor.toolbar.export", defaultMessage: "Export" },
 });
 type Fills = Readonly<Record<string, Readonly<Record<string, string>>>>;
 
@@ -244,6 +257,7 @@ function Workspace({
   const session = useCvSession(backend, editor, describe);
   const { store } = session;
   const draft = session.draft;
+  const rendered = useMemo(() => renderCv(session.content, editor.language.tag), [session.content, editor.language.tag]);
   const change = (update: (current: CvDraft) => CvDraft) => store.edit(cvId, update);
   const commit = () => store.commit(cvId);
 
@@ -269,6 +283,7 @@ function Workspace({
   const [inspectorOpen, setInspectorOpen] = useState(docked);
   const [tab, setTab] = useState<InspectorTab>(pending.length > 0 ? "suggestions" : "design");
   const [previewShown, setPreviewShown] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
   const [announcement, setAnnouncement] = useState("");
   const saveState: SaveState | null =
     session.status === "editing"
@@ -412,6 +427,46 @@ function Workspace({
     },
     fillSuggestion: (id, placeholder, value) =>
       setFills((previous) => ({ ...previous, [id]: { ...previous[id], [placeholder]: value } })),
+    assist: (target, action, targetLanguage) => {
+      const text = textAt(draft, target);
+      if (text === null || text.trim() === "") return;
+      const key = assistKey(target);
+      const item = target.itemId === null ? undefined : draft.sections.find((section) => section.key === target.sectionKey)?.items.find((candidate) => candidate.id === target.itemId);
+      setAssistBusy((previous) => new Set(previous).add(key));
+      requestCvAssist({
+        text,
+        action,
+        ...(targetLanguage && { targetLanguage }),
+        context: {
+          section: target.sectionKey,
+          ...(item?.title && { role: item.title }),
+          ...(item?.org && { company: item.org }),
+        },
+      })
+        .then((result) => {
+          const added = result.suggestions.map(
+            (suggestion): CvSuggestionInput => ({ id: crypto.randomUUID(), cvId, target, mode: action, proposed: suggestion.text }),
+          );
+          setRequested((previous) => [...previous, ...added]);
+          if (added.length === 0) {
+            toast.show({ variant: "info", message: intl.formatMessage(messages.noSuggestion) });
+            return;
+          }
+          if (target.itemId) setExpanded((previous) => new Set(previous).add(target.itemId ?? ""));
+          focusRequest.current = `[data-suggestion-id="${added[0]?.id ?? ""}"]`;
+        })
+        .catch((error: unknown) => {
+          console.error("cvAssist failed", error);
+          toast.show({ variant: "info", message: assistErrorMessage(error, intl) });
+        })
+        .finally(() =>
+          setAssistBusy((previous) => {
+            const next = new Set(previous);
+            next.delete(key);
+            return next;
+          }),
+        );
+    },
   };
 
   const keepAll = () => {
@@ -440,18 +495,20 @@ function Workspace({
     focusRequest.current = `[data-suggestion-id="${id}"]`;
   };
 
-  const locate = (block: CvPreviewBlock) => {
-    const sectionKey = block.kind === "header" ? "header" : block.sectionKey;
+  const locate = (path: string) => {
+    const location = locateInDraft(path, draft);
+    if (!location) return;
+    const { sectionKey, itemId } = location;
     setCollapsed((previous) => {
       const next = new Set(previous);
       next.delete(sectionKey);
       return next;
     });
     setPreviewShown(false);
-    setHighlightId(block.id);
-    if (block.kind === "entry" || block.kind === "line") {
-      setExpanded((previous) => new Set(previous).add(block.id));
-      focusRequest.current = `[data-item-id="${block.id}"] input, [data-item-id="${block.id}"] textarea`;
+    setHighlightId(itemId ?? sectionKey);
+    if (itemId) {
+      setExpanded((previous) => new Set(previous).add(itemId));
+      focusRequest.current = `[data-item-id="${itemId}"] input, [data-item-id="${itemId}"] textarea`;
     } else {
       focusRequest.current = `[data-section-key="${sectionKey}"] input, [data-section-key="${sectionKey}"] textarea`;
     }
@@ -548,6 +605,14 @@ function Workspace({
       run: () => stepSuggestion(-1),
     },
     {
+      id: "cv-editor.export",
+      keys: "Mod+E",
+      label: intl.formatMessage(messages.export),
+      group: keysGroup,
+      inTextFields: true,
+      run: () => setExportOpen(true),
+    },
+    {
       id: "cv-editor.save",
       keys: "Mod+S",
       label: intl.formatMessage(messages.save),
@@ -642,6 +707,9 @@ function Workspace({
               {intl.formatMessage(messages.pendingButton, { count: pending.length })}
             </Button>
           )}
+          <Button size="sm" variant="secondary" icon={Download} shortcut="Mod+E" onClick={() => setExportOpen(true)}>
+            {intl.formatMessage(messages.export)}
+          </Button>
           <IconButton icon={History} label={intl.formatMessage(messages.history)} shortcut="Mod+Shift+H" onClick={() => openHistory(cvId)} />
           <IconButton
             icon={PanelRight}
@@ -678,7 +746,7 @@ function Workspace({
 
   const comparedRevision = compare?.kind === "revision" ? compare.revision : null;
   const comparedContent = comparedRevision ? editor.revisionContents[comparedRevision.revisionId] : undefined;
-  const workingContent = comparedRevision ? store.content(cvId) : null;
+  const workingContent = session.content;
 
   return (
     <div className="flex min-h-0 flex-1">
@@ -732,6 +800,8 @@ function Workspace({
               pending={pending}
               fills={fills}
               ops={ops}
+              assistBusy={assistBusy}
+              assistAvailable={!offline}
             />
           </div>
         )}
@@ -739,9 +809,9 @@ function Workspace({
           <div className={cx("border-line-subtle flex min-h-0 min-w-0 flex-[1_1_0] flex-col", editorVisible && "border-l")}>
             {previewOnly && header}
             <PreviewPane
-              draft={draft}
+              rendered={rendered}
               paperLabel={editor.designOptions.paper.find((option) => option.value === draft.paperSize)?.label ?? ""}
-              highlightId={highlightId}
+              highlightPath={highlightId === null ? null : pathOfBlock(highlightId, draft)}
               onLocate={locate}
             />
           </div>
@@ -795,9 +865,39 @@ function Workspace({
               toast.show({ message: intl.formatMessage(messages.restored, { date: revision.time.absolute }) });
             }}
             onCompare={(revision) => setCompare({ kind: "revision", revision })}
+            designControls={
+              <DesignControls
+                content={session.content}
+                language={editor.language.tag}
+                onTemplate={(template) => store.setDesign(cvId, { template })}
+                onFontPair={(fontPair) => store.setDesign(cvId, { fontPair })}
+                onAccent={(accentColor) => edited((current) => ({ ...current, accentColor }))}
+              />
+            }
+            atsPanel={
+              <AtsCheckPanel
+                makePdf={() => printCvPdf(rendered.html, rendered.page.paper)}
+                content={session.content}
+                language={cvLanguage(editor.language.tag)}
+                outline={rendered.outline}
+                onAddKeyword={(keyword) => {
+                  const result = addSkillKeyword(draft, keyword);
+                  if (result) edited(() => result.draft);
+                }}
+              />
+            }
           />
         )}
       </div>
+      {exportOpen && (
+        <ExportDialog
+          open
+          onOpenChange={setExportOpen}
+          title={editor.title}
+          content={session.content}
+          language={editor.language.tag}
+        />
+      )}
       {creation.dialogs}
       {compare?.kind === "conflict" && session.conflict && (
         <CompareDialog

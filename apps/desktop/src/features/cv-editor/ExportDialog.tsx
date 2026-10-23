@@ -75,7 +75,14 @@ export function ExportDialog({
 
   const rendered = useMemo(() => renderCv(content, language, paper), [content, language, paper]);
   const { firstName, lastName } = splitName(content.basics?.name);
-  const fileName = exportFileName({ firstName, lastName, company: company.trim() || undefined, ext: kind, locale: language });
+  const trimmedCompany = company.trim();
+  const fileName = exportFileName({
+    firstName,
+    lastName,
+    ...(trimmedCompany !== "" && { company: trimmedCompany }),
+    ext: kind,
+    locale: language,
+  });
   const placeholders = rendered.placeholders;
 
   const run = async () => {
@@ -171,8 +178,16 @@ export function ExportDialog({
               <Dialog.Close asChild>
                 <Button variant="secondary">{intl.formatMessage(messages.cancel)}</Button>
               </Dialog.Close>
-              <Button variant="primary" type="submit" disabled={busy || placeholders.length > 0} aria-busy={busy}>
-                {intl.formatMessage(busy ? messages.exporting : messages.export)}
+              <Button
+                variant="primary"
+                type="submit"
+                loading={busy}
+                loadingLabel={intl.formatMessage(messages.exporting)}
+                disabledReason={
+                  placeholders.length > 0 ? intl.formatMessage(messages.placeholdersTitle, { count: placeholders.length }) : null
+                }
+              >
+                {intl.formatMessage(messages.export)}
               </Button>
             </div>
           </form>

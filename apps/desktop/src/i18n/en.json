@@ -449,7 +449,7 @@
   "cv-editor.preview.facts": "{paper} · {pages, plural, one {# page} other {# pages}}",
   "cv-editor.preview.fit": "{zoom, number, percent}",
   "cv-editor.preview.fitHint": "Fit to pane",
-  "cv-editor.preview.page": "Page {page, number} of {pages, number}",
+  "cv-editor.preview.pageEnd": "Page {page, number} ends here",
   "cv-editor.preview.rendering": "Rendering preview…",
   "cv-editor.preview.title": "Preview",
   "cv-editor.preview.zoomIn": "Zoom in",

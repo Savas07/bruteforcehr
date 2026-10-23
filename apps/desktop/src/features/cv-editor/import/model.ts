@@ -14,6 +14,8 @@ import {
   type CvMeta,
   type CvStandardSection,
 } from "@bfhr/core";
+import { CV_LANGUAGES, cvLanguage, type CvLanguage } from "@bfhr/cv-render";
+import { defaultMeta, defaultPaperSize } from "../content";
 import {
   CvImportResponseSchema,
   type CvImportRequestKind,
@@ -674,20 +676,6 @@ export function applyReviewEdits(
  * The new CV
  * ---------------------------------------------------------------------------------------------- */
 
-/** Teal from the accent family; the new CV's default accent. */
-export const IMPORT_DEFAULT_ACCENT = "#0F766E";
-export const IMPORT_DEFAULT_TEMPLATE = "classic";
-export const IMPORT_DEFAULT_FONT_PAIR = "inter-source-serif";
-
-/** Letter for US locales (`en-US`), A4 everywhere else. */
-export function paperSizeForLocale(locale: string): CvMeta["theme"]["paperSize"] {
-  try {
-    return new Intl.Locale(locale).region === "US" ? "letter" : "a4";
-  } catch {
-    return "a4";
-  }
-}
-
 function hasValue(value: unknown): boolean {
   if (typeof value === "string") return value.trim() !== "";
   if (Array.isArray(value)) return value.some(hasValue);
@@ -703,24 +691,10 @@ export function importSectionOrder(resume: JsonResume): CvStandardSection[] {
   ];
 }
 
-/** `meta` of an imported CV: classic template, teal accent, paper from the app locale. */
+/** `meta` of an imported CV: the new-CV defaults (paper from the app locale), sections it has. */
 export function defaultImportMeta(resume: JsonResume, locale: string): CvMeta {
-  return {
-    template: IMPORT_DEFAULT_TEMPLATE,
-    theme: {
-      accentColor: IMPORT_DEFAULT_ACCENT,
-      fontPair: IMPORT_DEFAULT_FONT_PAIR,
-      density: "comfortable",
-      paperSize: paperSizeForLocale(locale),
-    },
-    sectionOrder: importSectionOrder(resume),
-    customSections: [],
-  };
+  return { ...defaultMeta(defaultPaperSize(locale)), sectionOrder: importSectionOrder(resume) };
 }
-
-/** Languages a CV can be written in (the app's languages). */
-export const CV_LANGUAGES = ["en", "tr", "de"] as const;
-export type CvLanguage = (typeof CV_LANGUAGES)[number];
 
 const wordTable = (words: string): Readonly<Record<string, true>> =>
   Object.fromEntries(words.split(" ").map((word) => [word, true]));
@@ -759,8 +733,7 @@ export function guessCvLanguage(resume: JsonResume, fallback: string): CvLanguag
   }).sort((a, b) => b.score - a.score);
   const [best, second] = scores;
   if (best && best.score > 0 && best.score !== second?.score) return best.language;
-  const base = fallback.toLowerCase().split("-")[0] ?? "";
-  return CV_LANGUAGES.find((language) => language === base) ?? "en";
+  return cvLanguage(fallback);
 }
 
 const MAX_TITLE = 120;

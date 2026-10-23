@@ -20,7 +20,8 @@ import workerUrl from "pdfjs-dist/legacy/build/pdf.worker.min.mjs?url";
 function startWorker(): { pdfWorker: PDFWorker; stop: () => void } | null {
   if (typeof Worker !== "function") return null;
   const worker = new Worker(workerUrl, { type: "module", name: "pdf-text" });
-  const pdfWorker = new PDFWorker({ port: worker });
+  // `create`, not the constructor: pdf.js types the constructor's `port` as `null` only.
+  const pdfWorker = PDFWorker.create({ port: worker });
   return {
     pdfWorker,
     stop: () => {

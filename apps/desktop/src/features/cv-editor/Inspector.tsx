@@ -4,8 +4,8 @@
  * over the preview otherwise. Toggle: Mod+Shift+D.
  */
 import { AlertDialog, Tabs } from "radix-ui";
-import { Check as CheckIcon, FileText, Plus, RotateCcw, Sparkles, X } from "lucide-react";
-import { useState } from "react";
+import { Check as CheckIcon, Plus, RotateCcw, Sparkles, X } from "lucide-react";
+import { type ReactNode, useState } from "react";
 import { defineMessages, useIntl } from "react-intl";
 import { cx } from "../../shared/cx";
 import { useKeyBindings } from "../../shared/keyboard/useKeyBindings";
@@ -31,12 +31,6 @@ const messages = defineMessages({
   check: { id: "cv-editor.inspector.check", defaultMessage: "Check" },
   suggestions: { id: "cv-editor.inspector.suggestions", defaultMessage: "Suggestions" },
   history: { id: "cv-editor.inspector.history", defaultMessage: "History" },
-  template: { id: "cv-editor.design.templateHeading", defaultMessage: "Template" },
-  atsSafe: { id: "cv-editor.design.atsSafe", defaultMessage: "ATS-safe" },
-  templateNote: {
-    id: "cv-editor.design.templateNote",
-    defaultMessage: "One column, standard headings and real text, so application systems read every section.",
-  },
   paper: { id: "cv-editor.design.paperHeading", defaultMessage: "Paper" },
   density: { id: "cv-editor.design.densityHeading", defaultMessage: "Spacing" },
   accent: { id: "cv-editor.design.accentHeading", defaultMessage: "Accent and fonts" },
@@ -114,34 +108,21 @@ function DesignTab({
   editor,
   draft,
   onTheme,
+  controls,
   onPersonal,
 }: {
   editor: CvEditorVM;
   draft: CvDraft;
   onTheme: (patch: Partial<Pick<CvDraft, "paperSize" | "density">>) => void;
+  /** Template gallery, accent and fonts (DesignControls). */
+  controls: ReactNode;
   onPersonal: (patch: Partial<Pick<CvDraft, "showPhoto" | "showDateOfBirth">>) => void;
 }) {
   const intl = useIntl();
-  const { design, personalDetails, originalFile } = editor;
+  const { personalDetails, originalFile } = editor;
   return (
     <div className="flex flex-col gap-6">
-      <section>
-        <SectionHeading>{intl.formatMessage(messages.template)}</SectionHeading>
-        <div className="border-line-subtle flex items-start gap-3 rounded-md border p-3">
-          <FileText aria-hidden className="text-fg-tertiary mt-0.5 size-5 shrink-0" />
-          <div>
-            <p className="text-callout font-semibold">
-              {design.templateLabel}
-              <span className="bg-success-subtle text-success-text ml-2 rounded-sm px-1.5 py-0.5 text-caption1 font-normal">
-                {intl.formatMessage(messages.atsSafe)}
-              </span>
-            </p>
-            <p className="text-fg-secondary mt-1 text-footnote">
-              {intl.formatMessage(messages.templateNote)}
-            </p>
-          </div>
-        </div>
-      </section>
+      {controls}
       <section>
         <SectionHeading>{intl.formatMessage(messages.paper)}</SectionHeading>
         <SegmentedControl
@@ -161,19 +142,6 @@ function DesignTab({
           value={draft.density}
           onValueChange={(density) => onTheme({ density })}
         />
-      </section>
-      <section>
-        <SectionHeading>{intl.formatMessage(messages.accent)}</SectionHeading>
-        <p className="flex items-center gap-2 text-callout">
-          {/* The swatch shows the CV's own accent (CV content, not a UI colour). */}
-          <span
-            aria-hidden
-            className="border-line-subtle size-4 rounded-full border"
-            style={{ backgroundColor: design.accentColor }}
-          />
-          <span className="font-mono text-footnote">{design.accentColor}</span>
-          <span className="text-fg-secondary">· {design.fontPairLabel}</span>
-        </p>
       </section>
       {personalDetails && (
         <section>
@@ -221,6 +189,7 @@ function CheckTab({
   coverage,
   onAddSkill,
   onExclude,
+  atsPanel,
 }: {
   editor: CvEditorVM;
   jobId: string | null;
@@ -228,11 +197,18 @@ function CheckTab({
   coverage: CvCoverage | null;
   onAddSkill: (keyword: string) => void;
   onExclude: (keyword: string) => void;
+  /** Readback of the exported PDF (ats/AtsCheckPanel). */
+  atsPanel: ReactNode;
 }) {
   const intl = useIntl();
   const [filter, setFilter] = useState<KeywordFilter>("missing");
   if (editor.check.jobs.length === 0 || coverage === null) {
-    return <EmptyState kind="subArea" body={intl.formatMessage(messages.noJobs)} />;
+    return (
+      <div className="flex flex-col gap-6">
+        {atsPanel}
+        <EmptyState kind="subArea" body={intl.formatMessage(messages.noJobs)} />
+      </div>
+    );
   }
   const rows = [
     ...(filter === "covered" ? [] : coverage.missing.map((keyword) => ({ keyword, covered: false }))),
@@ -241,6 +217,7 @@ function CheckTab({
   const ratio = coverage.total === 0 ? 0 : coverage.covered.length / coverage.total;
   return (
     <div className="flex flex-col gap-4">
+      {atsPanel}
       <label className="flex flex-col gap-1">
         <span className="text-fg-secondary text-footnote font-semibold">
           {intl.formatMessage(messages.checkJob)}
@@ -593,6 +570,8 @@ export function Inspector({
   onShow,
   onRestore,
   onCompare,
+  designControls,
+  atsPanel,
 }: {
   editor: CvEditorVM;
   draft: CvDraft;
@@ -617,6 +596,8 @@ export function Inspector({
   onRestore: (revision: CvRevisionVM) => void;
   /** Opens the line diff between this revision and the working copy. */
   onCompare: (revision: CvRevisionVM) => void;
+  designControls: ReactNode;
+  atsPanel: ReactNode;
 }) {
   const intl = useIntl();
   const tabs: readonly { value: InspectorTab; label: string; count?: number }[] = [
@@ -665,7 +646,7 @@ export function Inspector({
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto p-4">
           <Tabs.Content value="design">
-            <DesignTab editor={editor} draft={draft} onTheme={onTheme} onPersonal={onPersonal} />
+            <DesignTab editor={editor} draft={draft} onTheme={onTheme} onPersonal={onPersonal} controls={designControls} />
           </Tabs.Content>
           <Tabs.Content value="check">
             <CheckTab
@@ -675,6 +656,7 @@ export function Inspector({
               coverage={coverage}
               onAddSkill={onAddSkill}
               onExclude={onExclude}
+              atsPanel={atsPanel}
             />
           </Tabs.Content>
           <Tabs.Content value="suggestions">

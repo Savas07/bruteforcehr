@@ -4,7 +4,7 @@
 use serde::Serialize;
 use std::time::Instant;
 
-use tauri::ipc::{InvokeBody, Request, Response};
+use tauri::ipc::{Request, Response};
 use tauri::{AppHandle, Runtime, State, WebviewWindow};
 use tauri_plugin_opener::OpenerExt;
 
@@ -235,12 +235,9 @@ pub async fn save_export<R: Runtime>(
     window: WebviewWindow<R>,
     request: Request<'_>,
 ) -> Result<Option<String>, CommandError> {
-    let InvokeBody::Raw(bytes) = request.body() else {
-        return Err(ExportError::NotRawBody.into());
-    };
-    export_file::validate_bytes(bytes)?;
+    let bytes = export_file::body_bytes(request.body())?;
     let kind = export_file::kind_from_headers(request.headers())?;
     let file_name = export_file::file_name_from_headers(request.headers(), kind)?;
-    let path = export_file::save(&window, bytes, &file_name, kind).await?;
+    let path = export_file::save(&window, &bytes, &file_name, kind).await?;
     Ok(path.map(|path| path.to_string_lossy().into_owned()))
 }

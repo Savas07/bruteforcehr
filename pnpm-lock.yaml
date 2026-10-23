@@ -202,6 +202,9 @@ importers:
       '@bfhr/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@bfhr/cv-render':
+        specifier: workspace:*
+        version: link:../../packages/cv-render
       '@bfhr/ui-tokens':
         specifier: workspace:*
         version: link:../../packages/ui-tokens

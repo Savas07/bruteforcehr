@@ -17,10 +17,9 @@ import { Button } from "../../../shared/ui/Button";
 import { Chip } from "../../../shared/ui/Chip";
 import { ConfidenceTag, type ConfidenceState } from "../../../shared/ui/ConfidenceTag";
 import { InlineAlert } from "../../../shared/ui/InlineAlert";
+import { CV_LANGUAGES, type CvLanguage } from "@bfhr/cv-render";
 import {
-  CV_LANGUAGES,
   reviewFieldProblem,
-  type CvLanguage,
   type ReviewField,
   type ReviewFieldKey,
   type ReviewFieldProblem,

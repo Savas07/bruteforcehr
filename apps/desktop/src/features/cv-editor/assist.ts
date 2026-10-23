@@ -51,14 +51,18 @@ export function assistKey(target: CvTextTarget): string {
   return `${target.sectionKey}:${target.itemId ?? ""}:${target.bulletIndex ?? ""}`;
 }
 
-export type AssistErrorKind = "aiDisabled" | "dailyCap" | "emailUnverified" | "signedOut" | "offline" | "failed";
+export type AssistErrorKind =
+  "aiDisabled" | "dailyCap" | "emailUnverified" | "signedOut" | "offline" | "failed";
 
 function errorField(error: unknown, field: string): unknown {
   return error !== null && typeof error === "object" ? (error as Record<string, unknown>)[field] : undefined;
 }
 
 /** Maps a `cvAssist` failure (callable `HttpsError` code + `details.reason`) to what the user sees. */
-export function classifyAssistError(error: unknown, { online }: { readonly online: boolean }): AssistErrorKind {
+export function classifyAssistError(
+  error: unknown,
+  { online }: { readonly online: boolean },
+): AssistErrorKind {
   if (!online) return "offline";
   const rawCode = errorField(error, "code");
   const code = typeof rawCode === "string" ? rawCode.replace(/^functions\//u, "") : "";
@@ -87,7 +91,8 @@ const errorMessages = defineMessages({
   },
   dailyCap: {
     id: "cv-editor.assist.error.dailyCap",
-    defaultMessage: "You've reached today's AI limit. It resets tomorrow, and you can keep editing meanwhile.",
+    defaultMessage:
+      "You've reached today's AI limit. It resets tomorrow, and you can keep editing meanwhile.",
   },
   emailUnverified: {
     id: "cv-editor.assist.error.emailUnverified",

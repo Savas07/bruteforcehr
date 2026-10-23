@@ -177,8 +177,6 @@ export function MenuItem({
 export interface MenuSubProps {
   /** Visible label of the row that opens the submenu ("Translate"). */
   label: string;
-  /** Leading lucide icon, decorative. */
-  icon?: LucideIcon | undefined;
   /** Menu parts of the submenu. */
   children: ReactNode;
 }
@@ -187,7 +185,7 @@ export interface MenuSubProps {
  * A row that opens a nested menu ("Translate ▸"): → / Enter opens it, ← closes it, hover opens it
  * after Radix's pointer grace. The submenu is styled like `MenuContent`.
  */
-export function MenuSub({ label, icon: Icon, children }: MenuSubProps) {
+export function MenuSub({ label, children }: MenuSubProps) {
   const kind = useContext(MenuKindContext);
   const Sub = kind === "context" ? ContextMenu.Sub : DropdownMenu.Sub;
   const SubTrigger = kind === "context" ? ContextMenu.SubTrigger : DropdownMenu.SubTrigger;
@@ -196,7 +194,6 @@ export function MenuSub({ label, icon: Icon, children }: MenuSubProps) {
   return (
     <Sub>
       <SubTrigger className={cx(itemClass, "data-[state=open]:bg-surface-hover")}>
-        {Icon && <Icon aria-hidden="true" className={cx(iconClass, "text-fg-secondary")} strokeWidth={1.75} />}
         <span className="flex-1">{label}</span>
         <ChevronRight aria-hidden="true" className={cx(iconClass, "text-fg-tertiary")} strokeWidth={1.75} />
       </SubTrigger>

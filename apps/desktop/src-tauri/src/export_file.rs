@@ -3,11 +3,14 @@
 //! The bytes arrive as the raw IPC request body; the suggested file name and the kind arrive as
 //! headers (src/lib/cvExport.ts). In E2E builds, `BFHR_E2E_EXPORT_DIR` replaces the dialog.
 
+use std::borrow::Cow;
 use std::fmt;
 use std::path::PathBuf;
 
 use percent_encoding::percent_decode_str;
+use serde::Deserialize;
 use tauri::http::HeaderMap;
+use tauri::ipc::InvokeBody;
 use tauri::{Runtime, WebviewWindow};
 use tauri_plugin_dialog::DialogExt;
 use tokio::sync::oneshot;
@@ -66,8 +69,8 @@ impl ExportKind {
 
 #[derive(Debug)]
 pub enum ExportError {
-    /// The bytes did not arrive as the raw request body.
-    NotRawBody,
+    /// The request body is not the file's bytes.
+    NotBytes,
     /// The file is empty.
     Empty,
     /// The file is larger than [`MAX_EXPORT_BYTES`].
@@ -85,7 +88,7 @@ pub enum ExportError {
 impl fmt::Display for ExportError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::NotRawBody => f.write_str("the file must be sent as the raw request body"),
+            Self::NotBytes => f.write_str("the request body must be the file's bytes"),
             Self::Empty => f.write_str("the file is empty"),
             Self::TooLarge { bytes } => write!(
                 f,
@@ -164,20 +167,27 @@ pub fn validate_file_name(name: &str, kind: ExportKind) -> Result<(), ExportErro
     Ok(())
 }
 
-/// Checks the file's size.
-pub fn validate_bytes(bytes: &[u8]) -> Result<(), ExportError> {
+/// The file's bytes from the request body, checked for size. They arrive raw, or (when the IPC
+/// custom protocol is unavailable and Tauri falls back to `postMessage`) as a JSON array.
+pub fn body_bytes(body: &InvokeBody) -> Result<Cow<'_, [u8]>, ExportError> {
+    let bytes = match body {
+        InvokeBody::Raw(bytes) => Cow::Borrowed(bytes.as_slice()),
+        InvokeBody::Json(value) => {
+            Cow::Owned(Vec::<u8>::deserialize(value).map_err(|_| ExportError::NotBytes)?)
+        }
+    };
     if bytes.is_empty() {
         return Err(ExportError::Empty);
     }
     if bytes.len() > MAX_EXPORT_BYTES {
         return Err(ExportError::TooLarge { bytes: bytes.len() });
     }
-    Ok(())
+    Ok(bytes)
 }
 
 /// Asks where to save the file (the Save dialog, attached to `window`, suggesting `file_name`
 /// and filtered to the kind), writes it there and returns the path; `None` when cancelled.
-/// Arguments are validated by the caller ([`validate_bytes`], [`file_name_from_headers`]).
+/// Arguments are validated by the caller ([`body_bytes`], [`file_name_from_headers`]).
 pub async fn save<R: Runtime>(
     window: &WebviewWindow<R>,
     bytes: &[u8],
@@ -219,10 +229,12 @@ pub async fn save<R: Runtime>(
 #[cfg(test)]
 mod tests {
     use super::{
-        ExportError, ExportKind, FILE_NAME_HEADER, KIND_HEADER, MAX_EXPORT_BYTES,
-        file_name_from_headers, kind_from_headers, validate_bytes, validate_file_name,
+        ExportError, ExportKind, FILE_NAME_HEADER, KIND_HEADER, MAX_EXPORT_BYTES, body_bytes,
+        file_name_from_headers, kind_from_headers, validate_file_name,
     };
+    use serde_json::json;
     use tauri::http::{HeaderMap, HeaderValue};
+    use tauri::ipc::InvokeBody;
 
     fn headers(pairs: &[(&'static str, &'static str)]) -> HeaderMap {
         pairs
@@ -322,12 +334,29 @@ mod tests {
     }
 
     #[test]
-    fn bytes_must_be_non_empty_and_bounded() {
-        assert!(matches!(validate_bytes(&[]), Err(ExportError::Empty)));
-        assert!(validate_bytes(b"%PDF-1.7").is_ok());
+    fn bodies_are_non_empty_bounded_bytes() {
+        let raw = InvokeBody::Raw(b"%PDF-1.7".to_vec());
+        assert_eq!(body_bytes(&raw).unwrap().as_ref(), b"%PDF-1.7");
+        let json = InvokeBody::Json(json!([37, 80, 68, 70]));
+        assert_eq!(body_bytes(&json).unwrap().as_ref(), b"%PDF");
         assert!(matches!(
-            validate_bytes(&vec![0; MAX_EXPORT_BYTES + 1]),
+            body_bytes(&InvokeBody::Raw(Vec::new())),
+            Err(ExportError::Empty)
+        ));
+        assert!(matches!(
+            body_bytes(&InvokeBody::Raw(vec![0; MAX_EXPORT_BYTES + 1])),
             Err(ExportError::TooLarge { .. })
         ));
+        for value in [
+            json!({ "bytes": [1] }),
+            json!([256]),
+            json!("%PDF"),
+            json!(null),
+        ] {
+            assert!(matches!(
+                body_bytes(&InvokeBody::Json(value)),
+                Err(ExportError::NotBytes)
+            ));
+        }
     }
 }

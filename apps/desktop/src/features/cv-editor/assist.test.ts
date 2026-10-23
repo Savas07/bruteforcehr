@@ -53,8 +53,14 @@ describe("requestCvAssist", () => {
 
   it.each([
     ["no suggestions list", { model: "m", promptVersion: "p" }],
-    ["an empty suggestion", { suggestions: [{ text: "", placeholders: [] }], model: "m", promptVersion: "p" }],
-    ["placeholders that aren't strings", { suggestions: [{ text: "a", placeholders: [1] }], model: "m", promptVersion: "p" }],
+    [
+      "an empty suggestion",
+      { suggestions: [{ text: "", placeholders: [] }], model: "m", promptVersion: "p" },
+    ],
+    [
+      "placeholders that aren't strings",
+      { suggestions: [{ text: "a", placeholders: [1] }], model: "m", promptVersion: "p" },
+    ],
     ["no model", { suggestions: [], promptVersion: "p" }],
     ["no prompt version", { suggestions: [], model: "m" }],
     ["nothing", null],
@@ -94,7 +100,9 @@ describe("assist errors", () => {
   });
 
   it("says what happened, calmly", () => {
-    expect(assistErrorMessage(callableError("failed-precondition", "ai_disabled"), intl)).toMatch(/off in Settings/u);
+    expect(assistErrorMessage(callableError("failed-precondition", "ai_disabled"), intl)).toMatch(
+      /off in Settings/u,
+    );
     expect(assistErrorMessage(callableError("resource-exhausted", "daily_cap"), intl)).toMatch(
       /today's AI limit.*resets tomorrow.*keep editing/u,
     );

@@ -1,5 +1,6 @@
 import { CvContentSchema } from "@bfhr/core";
 import { storagePaths } from "@bfhr/api";
+import { defaultMeta } from "../content";
 import { describe, expect, it } from "vitest";
 import {
   IMPORT_MAX_BYTES,
@@ -18,7 +19,6 @@ import {
   newImportFileId,
   normalizePointer,
   normalizeResumeDate,
-  paperSizeForLocale,
   parseCvImportResponse,
   pointerOf,
   reviewFieldProblem,
@@ -269,31 +269,19 @@ describe("applying review edits", () => {
 });
 
 describe("the new CV", () => {
-  it("derives paper size from the locale", () => {
-    expect(paperSizeForLocale("en-US")).toBe("letter");
-    expect(paperSizeForLocale("en-GB")).toBe("a4");
-    expect(paperSizeForLocale("tr-TR")).toBe("a4");
-    expect(paperSizeForLocale("not a locale")).toBe("a4");
-  });
-
   it("orders basics first, then sections with content", () => {
     expect(importSectionOrder(resume)).toEqual(["basics", "work", "education", "skills"]);
     expect(importSectionOrder({ projects: [{ name: " " }] })).toEqual(["basics"]);
   });
 
-  it("builds meta defaults that satisfy the schema", () => {
+  it("builds meta from the new-CV defaults, with paper from the locale and the sections it has", () => {
     const meta = defaultImportMeta(resume, "en-US");
     expect(meta).toEqual({
-      template: "classic",
-      theme: {
-        accentColor: "#0F766E",
-        fontPair: "inter-source-serif",
-        density: "comfortable",
-        paperSize: "letter",
-      },
+      ...defaultMeta("letter"),
       sectionOrder: ["basics", "work", "education", "skills"],
-      customSections: [],
     });
+    expect(defaultImportMeta(resume, "en-GB").theme.paperSize).toBe("a4");
+    expect(defaultImportMeta(resume, "tr-TR").theme.paperSize).toBe("a4");
     expect(CvContentSchema.safeParse({ ...resume, meta }).success).toBe(true);
   });
 

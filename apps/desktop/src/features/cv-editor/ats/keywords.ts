@@ -4,7 +4,7 @@
  * Turkish and German (a posting's language needn't match the CV's, so all three lists apply).
  * Deterministic and offline, so coverage updates while the user types.
  */
-import type { AtsLanguage } from "./headings";
+import type { CvLanguage } from "@bfhr/cv-render";
 import { foldText } from "./normalize";
 
 export interface JobKeyword {
@@ -104,7 +104,7 @@ const MAX_KEYWORDS = 30;
 /**
  * `language` is the CV's: German capitalises every noun, so there capitals don't mark names.
  */
-export function extractJobKeywords(jobDescription: string, language: AtsLanguage): JobKeyword[] {
+export function extractJobKeywords(jobDescription: string, language: CvLanguage): JobKeyword[] {
   const candidates = new Map<string, Candidate>();
   let position = 0;
   const add = (keyword: string, { tech, proper }: { tech: boolean; proper: boolean }): void => {

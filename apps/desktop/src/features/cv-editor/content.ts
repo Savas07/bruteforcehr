@@ -19,15 +19,10 @@ import {
   type Profile,
 } from "@bfhr/core";
 import type { CvDraft, CvDraftItem, CvDraftSection } from "./draft";
+import { DEFAULT_ACCENT, DEFAULT_DENSITY, DEFAULT_FONT_PAIR, DEFAULT_TEMPLATE } from "@bfhr/cv-render";
 
 type ListKey = Exclude<CvStandardSection, "basics">;
 type Mutable<T> = { -readonly [K in keyof T]: T[K] };
-
-/** Default design of a new CV (template ids and font pairs come from @bfhr/cv-render). */
-export const DEFAULT_TEMPLATE_ID = "classic";
-export const DEFAULT_FONT_PAIR = "inter-source-serif";
-/** Teal accent family (kickoff design decisions). */
-export const DEFAULT_ACCENT = "#0F766E";
 
 /** US and Canada print on Letter, everyone else on A4. */
 export function defaultPaperSize(locale: string): CvTheme["paperSize"] {
@@ -37,8 +32,8 @@ export function defaultPaperSize(locale: string): CvTheme["paperSize"] {
 
 export function defaultMeta(paperSize: CvTheme["paperSize"]): CvMeta {
   return {
-    template: DEFAULT_TEMPLATE_ID,
-    theme: { accentColor: DEFAULT_ACCENT, fontPair: DEFAULT_FONT_PAIR, density: "comfortable", paperSize },
+    template: DEFAULT_TEMPLATE,
+    theme: { accentColor: DEFAULT_ACCENT, fontPair: DEFAULT_FONT_PAIR, density: DEFAULT_DENSITY, paperSize },
     sectionOrder: ["basics", "work", "education", "skills", "languages"],
     customSections: [],
   };

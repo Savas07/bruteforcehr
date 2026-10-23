@@ -1,17 +1,21 @@
 /**
- * ATS round-trip report (research/cv-editor.md "Readable by ATS"): for every visible section of the
- * CV, did its standard heading and its key facts survive the trip through our own exported PDF,
- * and which of a pasted job description's keywords does that text cover. Pure and deterministic.
+ * ATS round-trip report (research/cv-editor.md "Readable by ATS"): for every printed section of the
+ * CV, did its heading and its key facts survive the trip through our own exported PDF, and which of
+ * a pasted job description's keywords does that text cover. Pure and deterministic.
+ *
+ * Headings and the "Present" word come from @bfhr/cv-render, the renderer behind every export. With
+ * its `outline` (what the render printed: headings and entry titles, in order) the check follows the
+ * document exactly; without it, it derives the same sections from `meta.sectionOrder`.
  */
 import type { CvContent, CvStandardSection } from "@bfhr/core";
-import { PRESENT_WORDS, STANDARD_HEADINGS, type AtsLanguage } from "./headings";
+import { type CvLanguage, type OutlineSection, PRESENT_WORD, SECTION_HEADINGS } from "@bfhr/cv-render";
 import { extractJobKeywords, isTechToken, type JobKeyword } from "./keywords";
 import { foldText, TextIndex } from "./normalize";
 
 export type AtsSectionStatus = "ok" | "partial" | "missing";
 
 export interface AtsSection {
-  /** `meta.sectionOrder` key: a standard section or `custom:<id>`. */
+  /** `basics` (the header), `summary`, a standard section or `custom:<id>`, as cv-render keys them. */
   readonly key: string;
   /** The heading the PDF should show (CV language); `null` for the name-and-contact header. */
   readonly title: string | null;
@@ -54,7 +58,9 @@ export interface AtsReportInput {
   readonly text: string;
   readonly content: CvContent;
   /** The CV's language (headings, date words). */
-  readonly language: AtsLanguage;
+  readonly language: CvLanguage;
+  /** `renderCvHtml(...).outline` of the render the PDF came from: check exactly what was printed. */
+  readonly outline?: readonly OutlineSection[];
   readonly jobDescription?: string;
 }
 
@@ -68,10 +74,10 @@ const text = (value: string | undefined): Fact[] =>
   value?.trim() ? [{ label: value.trim(), found: (index) => index.has(value) }] : [];
 
 /**
- * A date reads back when its year does: renderers print "03/2021", "Mar 2021", "März 2021" or just
- * "2021", and parsers key on the year. Shown formatted in the CV's language when missing.
+ * A date reads back when its year does: parsers key on the year, whatever the month format.
+ * Shown formatted in the CV's language when missing.
  */
-function date(value: string | undefined, language: AtsLanguage): Fact[] {
+function date(value: string | undefined, language: CvLanguage): Fact[] {
   if (!value) return [];
   const [year = "", month] = value.split("-");
   const label = month
@@ -83,44 +89,41 @@ function date(value: string | undefined, language: AtsLanguage): Fact[] {
 }
 
 /** The end of a date range: the end date, or the "Present" word for an ongoing one. */
-function endDate(start: string | undefined, end: string | undefined, language: AtsLanguage): Fact[] {
+function endDate(start: string | undefined, end: string | undefined, language: CvLanguage): Fact[] {
   if (end) return date(end, language);
   if (!start) return [];
-  const words = [...PRESENT_WORDS[language], ...PRESENT_WORDS.en];
-  return [{ label: PRESENT_WORDS[language][0], found: (index) => words.some((word) => index.has(word)) }];
+  const present = PRESENT_WORD[language];
+  return [{ label: present, found: (index) => index.has(present) }];
 }
 
 /** First words of the summary: enough to show the paragraph came through, robust to wrapping. */
 const SUMMARY_WORDS = 8;
 
-function basicsFacts(content: CvContent, language: AtsLanguage): { facts: Fact[]; headings: string[] } {
-  const basics = content.basics ?? {};
-  const summary = basics.summary?.trim();
-  return {
-    facts: [
-      ...text(basics.name),
-      ...text(basics.label),
-      ...(basics.email?.trim()
-        ? [{ label: basics.email.trim(), found: (index: TextIndex) => index.hasEmail(basics.email ?? "") }]
-        : []),
-      ...(basics.phone?.trim()
-        ? [{ label: basics.phone.trim(), found: (index: TextIndex) => index.hasPhone(basics.phone ?? "") }]
-        : []),
-      ...text(basics.location?.city),
-      ...(summary ? text(summary.split(/\s+/).slice(0, SUMMARY_WORDS).join(" ")) : []),
-    ],
-    // The summary paragraph sits under its own heading; the name block has none.
-    headings: summary ? [...STANDARD_HEADINGS.summary[language]] : [],
-  };
+/** The name-and-contact header: printed first, without a heading. */
+function headerFacts(content: CvContent): Fact[] {
+  const { name, label, email, phone, location } = content.basics ?? {};
+  return [
+    ...text(name),
+    ...text(label),
+    ...(email?.trim() ? [{ label: email.trim(), found: (index: TextIndex) => index.hasEmail(email) }] : []),
+    ...(phone?.trim() ? [{ label: phone.trim(), found: (index: TextIndex) => index.hasPhone(phone) }] : []),
+    ...text(location?.city),
+  ];
 }
 
-/** Key facts per standard section, item by item. */
-function sectionFacts(
-  content: CvContent,
-  section: Exclude<CvStandardSection, "basics">,
-  language: AtsLanguage,
-): Fact[] {
-  switch (section) {
+type HeadedSection = Exclude<CvStandardSection, "basics"> | "summary";
+
+/** Key facts of a section (`summary`, a standard section or `custom:<id>`), item by item. */
+function contentFacts(content: CvContent, key: string, language: CvLanguage): Fact[] {
+  if (key.startsWith("custom:")) {
+    const custom = content.meta.customSections.find((section) => `custom:${section.id}` === key);
+    return (custom?.items ?? []).flatMap((item) => [...text(item.title), ...text(item.subtitle)]);
+  }
+  switch (key as HeadedSection) {
+    case "summary": {
+      const summary = content.basics?.summary?.trim();
+      return summary ? text(summary.split(/\s+/).slice(0, SUMMARY_WORDS).join(" ")) : [];
+    }
     case "work":
       return (content.work ?? []).flatMap((item) => [
         ...text(item.position),
@@ -154,41 +157,60 @@ function sectionFacts(
       return (content.interests ?? []).flatMap((item) => text(item.name));
     case "references":
       return (content.references ?? []).flatMap((item) => text(item.name));
+    default:
+      return [];
   }
 }
 
 interface SectionPlan {
   readonly key: string;
+  /** The printed heading; `null` for the header. */
   readonly title: string | null;
-  /** Any one of these as a line counts; empty when the section has no heading. */
-  readonly headings: readonly string[];
   readonly facts: readonly Fact[];
 }
 
-/** Visible sections in render order; sections with nothing in them aren't rendered, so skipped. */
-function plan(content: CvContent, language: AtsLanguage): SectionPlan[] {
-  const plans: SectionPlan[] = [];
-  for (const key of new Set(content.meta.sectionOrder)) {
-    if (key === "basics") {
-      const { facts, headings } = basicsFacts(content, language);
-      if (facts.length > 0) plans.push({ key, title: null, headings, facts });
-    } else if (key.startsWith("custom:")) {
-      const custom = content.meta.customSections.find((section) => `custom:${section.id}` === key);
-      const facts = (custom?.items ?? []).flatMap((item) => [...text(item.title), ...text(item.subtitle)]);
-      if (custom && facts.length > 0)
-        plans.push({ key, title: custom.title, headings: [custom.title], facts });
-    } else {
-      const section = key as Exclude<CvStandardSection, "basics">;
-      const facts = sectionFacts(content, section, language);
-      const headings = STANDARD_HEADINGS[section][language];
-      if (facts.length > 0) plans.push({ key, title: headings[0], headings, facts });
-    }
+/** The heading cv-render prints for a section key, `null` for keys it doesn't render. */
+function standardHeading(content: CvContent, key: string, language: CvLanguage): string | null {
+  if (key.startsWith("custom:"))
+    return content.meta.customSections.find((section) => `custom:${section.id}` === key)?.title.trim() ?? null;
+  return SECTION_HEADINGS[language][key as HeadedSection] ?? null;
+}
+
+/**
+ * Printed sections in order, header first. With an outline: its sections, headings and entry
+ * titles, plus the content's own facts (employer, dates, skill keywords). Without: the order
+ * cv-render uses (`basics` = header, then the summary), skipping sections with nothing in them.
+ */
+function plan(content: CvContent, language: CvLanguage, outline?: readonly OutlineSection[]): SectionPlan[] {
+  const order = [...new Set(content.meta.sectionOrder)];
+  const header = order.includes("basics") ? headerFacts(content) : [];
+  const plans: SectionPlan[] = header.length > 0 ? [{ key: "basics", title: null, facts: header }] : [];
+
+  const sections: { key: string; title: string | null; printed: readonly string[] }[] = outline
+    ? outline.map((section) => ({ key: section.key, title: section.heading, printed: section.entries }))
+    : order
+        .flatMap((key) => (key === "basics" ? ["summary"] : [key]))
+        .map((key) => ({ key, title: standardHeading(content, key, language), printed: [] }));
+
+  for (const { key, title, printed } of sections) {
+    if (title === null) continue;
+    const seen = new Set<string>();
+    const facts = [...printed.flatMap((entry) => text(entry)), ...contentFacts(content, key, language)].filter(
+      (fact) => {
+        const folded = foldText(fact.label);
+        if (seen.has(folded)) return false;
+        seen.add(folded);
+        return true;
+      },
+    );
+    // A section the renderer printed is checked even when it has no facts (its heading still counts).
+    if (facts.length > 0 || outline) plans.push({ key, title, facts });
   }
   return plans;
 }
 
 /** Inflection a keyword may carry in the CV ("API" → "APIs", "yazılım" → "yazılımları"). */
-const SUFFIX_LETTERS: Readonly<Record<AtsLanguage, number>> = { en: 2, de: 2, tr: 5 };
+const SUFFIX_LETTERS: Readonly<Record<CvLanguage, number>> = { en: 2, de: 2, tr: 5 };
 
 /** Keywords shorter than this match exactly: suffix tolerance would turn "Java" into "Javas…". */
 const INFLECTABLE_MIN_LENGTH = 5;
@@ -196,7 +218,7 @@ const INFLECTABLE_MIN_LENGTH = 5;
 function keywordCoverage(
   index: TextIndex,
   jobDescription: string,
-  language: AtsLanguage,
+  language: CvLanguage,
 ): AtsKeywordCoverage {
   const keywords = extractJobKeywords(jobDescription, language);
   const matched: JobKeyword[] = [];
@@ -211,13 +233,18 @@ function keywordCoverage(
   return { total: keywords.length, matched, missing };
 }
 
-export function atsReport({ text: pdfText, content, language, jobDescription }: AtsReportInput): AtsReport {
+export function atsReport({
+  text: pdfText,
+  content,
+  language,
+  outline,
+  jobDescription,
+}: AtsReportInput): AtsReport {
   const index = new TextIndex(pdfText);
   let found = 0;
   let total = 0;
-  const sections = plan(content, language).map((section): AtsSection => {
-    const headingFound =
-      section.headings.length === 0 ? null : section.headings.some((heading) => index.hasLine(heading));
+  const sections = plan(content, language, outline).map((section): AtsSection => {
+    const headingFound = section.title === null ? null : index.hasLine(section.title);
     const missing = section.facts.filter((fact) => !fact.found(index)).map((fact) => fact.label);
     const factsFound = section.facts.length - missing.length;
     const checks = section.facts.length + (headingFound === null ? 0 : 1);

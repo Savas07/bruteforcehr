@@ -6,6 +6,7 @@
  * as icon + text. Sized for the ~360 px inspector.
  */
 import type { CvContent } from "@bfhr/core";
+import type { CvLanguage, OutlineSection } from "@bfhr/cv-render";
 import { Check, ChevronDown, CircleCheck, CircleX, Plus, TriangleAlert, type LucideIcon } from "lucide-react";
 import { Collapsible } from "radix-ui";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
@@ -15,7 +16,6 @@ import { Button, IconButton } from "../../../shared/ui/Button";
 import { InlineAlert } from "../../../shared/ui/InlineAlert";
 import { ProgressNote } from "../../../shared/ui/ProgressNote";
 import { extractPdfText } from "./extract";
-import type { AtsLanguage } from "./headings";
 import type { JobKeyword } from "./keywords";
 import { atsReport, type AtsContact, type AtsSection, type AtsSectionStatus } from "./report";
 
@@ -113,6 +113,8 @@ type Run =
       readonly state: "done";
       readonly text: string;
       readonly pages: number;
+      /** The outline of the render behind the PDF, when the caller passed one. */
+      readonly outline: readonly OutlineSection[] | undefined;
       /** The content the PDF was made from: the round-trip compares against this. */
       readonly content: CvContent;
     };
@@ -249,12 +251,17 @@ export interface AtsCheckPanelProps {
   /** The CV being edited; a check compares against the content its PDF was made from. */
   readonly content: CvContent;
   /** The CV's language (standard headings, date words). */
-  readonly language: AtsLanguage;
+  readonly language: CvLanguage;
+  /**
+   * `renderCvHtml(...).outline` for `content`, as `makePdf` renders it: the check then follows the
+   * printed headings and entry titles exactly. Without it, sections come from `meta.sectionOrder`.
+   */
+  readonly outline?: readonly OutlineSection[];
   /** Adds a missing job keyword to the CV's skills. Without it, missing keywords are listed only. */
   readonly onAddKeyword?: (keyword: string) => void;
 }
 
-export function AtsCheckPanel({ makePdf, content, language, onAddKeyword }: AtsCheckPanelProps) {
+export function AtsCheckPanel({ makePdf, content, language, outline, onAddKeyword }: AtsCheckPanelProps) {
   const intl = useIntl();
   const headingId = useId();
   const jobId = useId();
@@ -269,7 +276,7 @@ export function AtsCheckPanel({ makePdf, content, language, onAddKeyword }: AtsC
 
   const check = async (): Promise<void> => {
     const current = ++generation.current;
-    const snapshot = content;
+    const snapshot = { content, outline };
     let stage: Stage = "export";
     setRun({ state: "running", stage, startedAt: new Date() });
     try {
@@ -280,7 +287,7 @@ export function AtsCheckPanel({ makePdf, content, language, onAddKeyword }: AtsC
       const { pages, text } = await extractPdfText(bytes);
       if (generation.current !== current) return;
       setAdded(new Set());
-      setRun({ state: "done", text, pages: pages.length, content: snapshot });
+      setRun({ state: "done", text, pages: pages.length, ...snapshot });
     } catch {
       if (generation.current === current) setRun({ state: "failed", stage });
     }
@@ -288,7 +295,15 @@ export function AtsCheckPanel({ makePdf, content, language, onAddKeyword }: AtsC
 
   const done = run.state === "done" ? run : null;
   const report = useMemo(
-    () => done && atsReport({ text: done.text, content: done.content, language, jobDescription }),
+    () =>
+      done &&
+      atsReport({
+        text: done.text,
+        content: done.content,
+        language,
+        jobDescription,
+        ...(done.outline && { outline: done.outline }),
+      }),
     [done, language, jobDescription],
   );
   const okSections = report?.sections.filter((section) => section.status === "ok").length ?? 0;

@@ -6,7 +6,17 @@
  * an "Improve with AI" menu (✦, Mod+J); pending AI suggestions replace the text they would change
  * with a `TrackedChange` until the user decides.
  */
-import { ArrowDown, ArrowUp, ChevronDown, ChevronRight, LoaderCircle, Plus, Sparkles, Trash2, X } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  ChevronDown,
+  ChevronRight,
+  LoaderCircle,
+  Plus,
+  Sparkles,
+  Trash2,
+  X,
+} from "lucide-react";
 import { DropdownMenu } from "radix-ui";
 import { useLayoutEffect, useRef, useState, type ReactNode, type TextareaHTMLAttributes } from "react";
 import { defineMessages, useIntl } from "react-intl";
@@ -185,8 +195,17 @@ function AssistControl({
       ? intl.formatMessage(messages.assistEmpty)
       : null;
   if (disabledReason)
-    return <IconButton size="sm" icon={Sparkles} label={label} disabledReason={disabledReason} className={className} />;
-  const cvLanguage = new Intl.Locale(controls.language).language;
+    return (
+      <IconButton
+        size="sm"
+        icon={Sparkles}
+        label={label}
+        disabledReason={disabledReason}
+        className={className}
+      />
+    );
+  // "de-AT" → "de": the CV's own language is never a translation target.
+  const cvLanguage = controls.language.split("-")[0]?.toLowerCase();
   return (
     <DropdownMenu.Root open={open} onOpenChange={(next) => controls.setOpenKey(next && !busy ? key : null)}>
       <DropdownMenu.Trigger asChild>
@@ -798,7 +817,9 @@ function SectionCard({
                       aria-labelledby={headingId}
                       aria-describedby={`${vm.anchorId}-hint`}
                       placeholder={intl.formatMessage(messages.summaryHint)}
-                      onChange={(event) => ops.change((current) => updateSummary(current, event.target.value))}
+                      onChange={(event) =>
+                        ops.change((current) => updateSummary(current, event.target.value))
+                      }
                     />
                   </div>
                   <AssistControl
@@ -896,8 +917,8 @@ export function EditorPane({
   };
   // The enabled ✦ of the row holding focus (absent while offline or the field is empty).
   const focusedAssistKey = () =>
-    document.activeElement?.closest("[data-assist-row]")?.querySelector<HTMLElement>("[data-assist-key]")?.dataset
-      .assistKey;
+    document.activeElement?.closest("[data-assist-row]")?.querySelector<HTMLElement>("[data-assist-key]")
+      ?.dataset.assistKey;
   useKeyBindings([
     {
       id: "cv-editor.assist.open",

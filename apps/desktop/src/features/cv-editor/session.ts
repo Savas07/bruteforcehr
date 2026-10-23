@@ -63,6 +63,8 @@ export interface CvSessionSnapshot {
   readonly design: CvDesignChoice;
   readonly status: SessionStatus;
   readonly conflict: CvConflict | null;
+  /** What a commit would write now (preview, export and checks render it). */
+  readonly content: CvContent;
 }
 
 interface Session {
@@ -285,6 +287,7 @@ export class CvSessionStore {
       design: session.design,
       status: session.status,
       conflict: session.conflict,
+      content: contentOf(session),
     };
     if (notify) this.emit();
   }

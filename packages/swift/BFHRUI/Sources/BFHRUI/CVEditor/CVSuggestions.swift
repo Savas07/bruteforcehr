@@ -34,12 +34,16 @@ public struct CVAssistRequest: Hashable, Sendable {
     public var language: String
     /// Translate only: the target language.
     public var targetLanguage: String?
+    /// Where the text sits (`meta.sectionOrder` key: "summary", "work", "projects"…), context
+    /// for the model.
+    public var section: String
 
-    public init(text: String, mode: CVAssistMode, language: String, targetLanguage: String? = nil) {
+    public init(text: String, mode: CVAssistMode, language: String, targetLanguage: String? = nil, section: String = "other") {
         self.text = text
         self.mode = mode
         self.language = language
         self.targetLanguage = targetLanguage
+        self.section = section
     }
 }
 
@@ -86,12 +90,14 @@ public final class CVAssistSession: Identifiable {
     public var placeholderValues: [String] = []
 
     private let provider: any CVSuggestionProvider
+    private let section: String
     private var loadTask: Task<Void, Never>?
 
-    public init(original: String, language: String, mode: CVAssistMode = .rewrite, provider: any CVSuggestionProvider) {
+    public init(original: String, language: String, mode: CVAssistMode = .rewrite, section: String = "other", provider: any CVSuggestionProvider) {
         self.original = original
         self.language = language
         self.mode = mode
+        self.section = section
         self.provider = provider
     }
 
@@ -141,7 +147,7 @@ public final class CVAssistSession: Identifiable {
         loadTask?.cancel()
         phase = .loading
         select(nil)
-        let request = CVAssistRequest(text: original, mode: mode, language: language, targetLanguage: targetLanguage)
+        let request = CVAssistRequest(text: original, mode: mode, language: language, targetLanguage: targetLanguage, section: section)
         let provider = provider
         let task = Task {
             do {

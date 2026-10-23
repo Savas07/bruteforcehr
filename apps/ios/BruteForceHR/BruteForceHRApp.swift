@@ -1,4 +1,5 @@
 import FirebaseCore
+import FirebaseFirestore
 import SwiftUI
 
 @main
@@ -8,6 +9,11 @@ struct BruteForceHRApp: App {
         // the first view, so `RootView` sees the restored session (`Auth.auth().currentUser`) and
         // starts on the tabs instead of flashing the sign-in screen.
         FirebaseApp.configure()
+        // Firestore's on-disk cache is the offline outbox (ADR 0002): reads work offline and
+        // writes made offline survive a relaunch until they sync.
+        let settings = Firestore.firestore().settings
+        settings.cacheSettings = PersistentCacheSettings()
+        Firestore.firestore().settings = settings
     }
 
     var body: some Scene {

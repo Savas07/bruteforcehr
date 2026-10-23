@@ -170,7 +170,7 @@ struct CVEditorModelTests {
         model.moveSection(from: 2, to: 4) // Experience below Skills
         #expect(model.sections.map(\.id) == ["header", "summary", "projects", "skills", "work", "education", "languages", "custom:talks"])
         #expect(model.document?.content.meta.sectionOrder == ["basics", "projects", "skills", "work", "education", "languages", "custom:talks"])
-        #expect(model.document?.hasLocalEdits == true)
+        #expect(model.document?.currentRevisionId != "rev-en-3" && model.revisionDays.first?.revisions.first?.diffSummary == "Changed the section order")
         #expect(model.data.revision(id: "rev-en-3")?.content.meta.sectionOrder.first == "basics")
 
         model.moveSection(from: 0, to: 3) // Header is pinned
@@ -178,9 +178,9 @@ struct CVEditorModelTests {
         model.moveSection(from: 2, to: 99)
         #expect(model.sections.map(\.id) == ["header", "summary", "projects", "skills", "work", "education", "languages", "custom:talks"])
 
-        model.moveSection(from: 4, to: 2) // back: the working copy equals the revision again
-        #expect(model.document?.hasLocalEdits == false)
-        #expect(model.syncStatus == .saved(at: try date("2026-10-10T07:30:00Z")))
+        model.moveSection(from: 4, to: 2) // back: one more revision with the original order
+        #expect(model.document?.content == model.data.revision(id: "rev-en-3")?.content)
+        #expect(model.syncStatus == .saved(at: model.now))
     }
 
     @Test("Removing an item shows a toast whose Undo puts it back")
@@ -193,7 +193,7 @@ struct CVEditorModelTests {
         let work = try #require(model.sections.first { $0.kind == .work })
         #expect(work.itemCount == 2 && work.items.first?.subtitle == "Kuzey Labs")
         #expect(work.summary == .item(title: "Frontend Developer", subtitle: "Kuzey Labs", moreCount: 1))
-        #expect(model.document?.hasLocalEdits == true)
+        #expect(model.revisionDays.first?.revisions.first?.diffSummary == "Removed from Experience · Pazarbox")
         #expect(model.syncStatus == .saved(at: model.now))
         #expect(model.pendingSyncIDs.isEmpty) // online
 
@@ -201,7 +201,7 @@ struct CVEditorModelTests {
         #expect(undo.role == .undo)
         undo.perform()
         #expect(model.document?.content == original)
-        #expect(model.document?.hasLocalEdits == false)
+        #expect(model.revisionDays.first?.revisions.first?.diffSummary == "Edited Experience · Pazarbox")
         #expect(model.sections.first { $0.kind == .work }?.items.first?.subtitle == "Pazarbox")
     }
 
@@ -300,7 +300,7 @@ struct CVEditorModelTests {
 
     // MARK: Sync
 
-    @Test("Offline edits are saved on this device, then saving, then failed when rejected")
+    @Test("Offline edits are saved on this device, then saving, then saved once synced")
     func offlineSyncStatus() throws {
         let model = try model()
         model.connection = .offline(lastSyncedAt: nil)
@@ -314,15 +314,12 @@ struct CVEditorModelTests {
 
         model.connection = .backOnline(syncedChanges: 0)
         #expect(model.syncStatus == .saving)
-        model.failedWriteIDs = ["cv-en"]
-        #expect(model.syncStatus == .failed)
-        model.failedWriteIDs = []
         model.pendingSyncIDs = []
         #expect(model.syncStatus == .saved(at: model.now))
     }
 
-    @Test("A reload keeps the working copy while the CV's revision is unchanged")
-    func reloadKeepsDraft() throws {
+    @Test("A reload shows the CV's current revision from the server")
+    func reloadFollowsServer() throws {
         let model = try model()
         _ = model.removeItem(sectionKind: .work, at: 0)
         model.load(model.data)

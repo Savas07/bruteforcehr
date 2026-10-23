@@ -48,7 +48,7 @@ final class CVEditorAccessibilityAuditTests: XCTestCase {
     @MainActor
     func testPreview() throws {
         let app = launch(dataset: "populated", contentSize: nil, pane: "preview")
-        XCTAssertTrue(app.descendants(matching: .any)["cv.page.1"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.webViews["cv.preview.web"].waitForExistence(timeout: 10))
         try snapshot("preview")
         try audit(app, ignoringPage: true)
     }
@@ -56,7 +56,7 @@ final class CVEditorAccessibilityAuditTests: XCTestCase {
     @MainActor
     func testPreviewAccessibilitySize() throws {
         let app = launch(dataset: "populated", contentSize: largestSize, pane: "preview")
-        XCTAssertTrue(app.descendants(matching: .any)["cv.page.1"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.webViews["cv.preview.web"].waitForExistence(timeout: 10))
         try snapshot("preview-ax")
         try audit(app, ignoringPage: true)
     }
@@ -171,6 +171,81 @@ final class CVEditorAccessibilityAuditTests: XCTestCase {
         try audit(app, scalesAtAX: true)
     }
 
+    // MARK: CV Studio (M2) panes
+
+    /// Opens a design pane, waits for `marker`, saves `name[-ax]` and audits it, at the default
+    /// size (scaling covered by the AX run) and at the largest accessibility size.
+    @MainActor
+    private func auditPane(_ pane: String, name: String, ignoringPage: Bool = false, marker: (XCUIApplication) -> XCUIElement) throws {
+        for size in [nil, largestSize] {
+            let app = launch(dataset: "populated", contentSize: size, pane: pane)
+            XCTAssertTrue(marker(app).waitForExistence(timeout: 15), "\(pane) opened")
+            Thread.sleep(forTimeInterval: 1)
+            try snapshot(size == nil ? name : "\(name)-ax")
+            try audit(app, ignoringPage: ignoringPage, scalesAtAX: size == nil, "\(#function)-\(pane)-\(size == nil ? "default" : "ax")")
+            app.terminate()
+        }
+    }
+
+    @MainActor
+    func testTemplatePicker() throws {
+        try auditPane("template", name: "template", ignoringPage: true) { $0.buttons["cv.template.done"] }
+    }
+
+    @MainActor
+    func testExportSheet() throws {
+        try auditPane("export", name: "export") { $0.buttons["cv.export.share"] }
+    }
+
+    @MainActor
+    func testRevisionViewer() throws {
+        try auditPane("revision", name: "revision") { $0.buttons["cv.history.restore"] }
+    }
+
+    @MainActor
+    func testConflictBanner() throws {
+        try auditPane("conflict", name: "conflict") { $0.buttons["cv.conflict.keep"] }
+    }
+
+    @MainActor
+    func testCompare() throws {
+        try auditPane("compare", name: "compare") { $0.navigationBars["Compare versions"] }
+    }
+
+    @MainActor
+    func testImportReview() throws {
+        try auditPane("import", name: "import-review") { $0.buttons["cv.import.create"] }
+    }
+
+    @MainActor
+    func testLanguageVariant() throws {
+        try auditPane("languageVariant", name: "language-variant") { $0.buttons["cv.languageVariant.create"] }
+    }
+
+    /// Restore from the version viewer asks first, then shows the restored version as current.
+    @MainActor
+    func testRestoreFlow() throws {
+        let app = launch(dataset: "populated", contentSize: nil, pane: "revision")
+        let restore = app.buttons["cv.history.restore"]
+        XCTAssertTrue(restore.waitForExistence(timeout: 15))
+        restore.tap()
+        let confirm = app.buttons["Restore"]
+        XCTAssertTrue(confirm.waitForExistence(timeout: 5))
+        try snapshot("restore-confirm")
+        confirm.tap()
+        XCTAssertTrue(app.staticTexts.containing(NSPredicate(format: "label BEGINSWITH %@", "Restored the version from")).firstMatch.waitForExistence(timeout: 5))
+    }
+
+    /// Keep this version resolves the conflict banner.
+    @MainActor
+    func testConflictKeep() throws {
+        let app = launch(dataset: "populated", contentSize: nil, pane: "conflict")
+        let keep = app.buttons["cv.conflict.keep"]
+        XCTAssertTrue(keep.waitForExistence(timeout: 15))
+        keep.tap()
+        XCTAssertTrue(keep.waitForNonExistence(timeout: 5))
+    }
+
     /// Audits the current screen and logs every issue (appended to `audit-issues.txt` next to the
     /// shots when `BFHR_CV_SHOTS` is set). Exempt, each for a stated reason (accessibility.md):
     /// - system chrome outside this screen: tab bar, status bar, navigation-bar buttons;
@@ -207,7 +282,9 @@ final class CVEditorAccessibilityAuditTests: XCTestCase {
                     exempt = "under a translucent bar"
                 } else if scalesAtAX, issue.auditType == .dynamicType {
                     exempt = "scales: audited at AX5 separately"
-                } else if ignoringPage, Self.isPageText(element, in: app), [.dynamicType, .textClipped, .contrast].contains(issue.auditType) {
+                } else if ignoringPage, Self.isPageText(element, in: app) {
+                    // The CV page is the printed document: fixed print sizes in paper colours, and
+                    // its contact lines are the user's own e-mail and URLs (links don't navigate).
                     exempt = "printed page"
                 }
             } else {
@@ -233,12 +310,16 @@ final class CVEditorAccessibilityAuditTests: XCTestCase {
         }
     }
 
-    /// Static text inside a rendered page (`cv.page.N`).
+    /// Text inside the rendered cv-render page (the `cv.preview.web` web view).
     @MainActor
     private static func isPageText(_ element: XCUIElement, in app: XCUIApplication) -> Bool {
-        guard element.elementType == .staticText else { return false }
-        let pages = app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH %@", "cv.page."))
-        return pages.allElementsBoundByIndex.contains { $0.frame.contains(element.frame) }
+        guard element.elementType == .staticText || element.elementType == .link else { return false }
+        if app.webViews.allElementsBoundByIndex.contains(where: { $0.frame.intersects(element.frame) }) { return true }
+        // WebKit may expose the page's text without a web-view ancestor: on Preview, the page is
+        // everything between the Edit · Preview bar and the Share bar.
+        let segment = app.descendants(matching: .any)["cv.segment"], share = app.buttons["cv.preview.share"]
+        guard segment.exists, share.exists else { return false }
+        return element.frame.minY >= segment.frame.maxY && element.frame.maxY <= share.frame.minY
     }
 
     /// Swipes up until `element` is on screen (lists load rows lazily).

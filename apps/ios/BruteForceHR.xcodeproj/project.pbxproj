@@ -12,6 +12,8 @@
 		BF0000000000000000000047 /* BFHRCore in Frameworks */ = {isa = PBXBuildFile; productRef = BF0000000000000000000044 /* BFHRCore */; };
 		BF0000000000000000000048 /* BFHRUI in Frameworks */ = {isa = PBXBuildFile; productRef = BF000000000000000000004A /* BFHRUI */; };
 		BF0000000000000000000049 /* BFHRDesignTokens in Frameworks */ = {isa = PBXBuildFile; productRef = BF000000000000000000004B /* BFHRDesignTokens */; };
+		BF0000000000000000000052 /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = BF0000000000000000000050 /* FirebaseStorage */; };
+		BF0000000000000000000053 /* FirebaseFunctions in Frameworks */ = {isa = PBXBuildFile; productRef = BF0000000000000000000051 /* FirebaseFunctions */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -65,6 +67,8 @@
 				BF0000000000000000000047 /* BFHRCore in Frameworks */,
 				BF0000000000000000000048 /* BFHRUI in Frameworks */,
 				BF0000000000000000000049 /* BFHRDesignTokens in Frameworks */,
+				BF0000000000000000000052 /* FirebaseStorage in Frameworks */,
+				BF0000000000000000000053 /* FirebaseFunctions in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -107,6 +111,7 @@
 				BF0000000000000000000012 /* Frameworks */,
 				BF0000000000000000000013 /* Resources */,
 				BF0000000000000000000014 /* Copy design fixtures (Debug only) */,
+				BF0000000000000000000015 /* Copy cv-render bundle */,
 			);
 			buildRules = (
 			);
@@ -122,6 +127,8 @@
 				BF0000000000000000000044 /* BFHRCore */,
 				BF000000000000000000004A /* BFHRUI */,
 				BF000000000000000000004B /* BFHRDesignTokens */,
+				BF0000000000000000000050 /* FirebaseStorage */,
+				BF0000000000000000000051 /* FirebaseFunctions */,
 			);
 			productName = BruteForceHR;
 			productReference = BF0000000000000000000004 /* BruteForceHR.app */;
@@ -237,6 +244,31 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "# Design mode reads packages/fixtures/conformance/*.json from BFHRFixtures/ in the app bundle\n# (BFHRUIFixtures/FixtureStore.swift). BFHR_DESIGN_FIXTURES_DIR points into the app only in Debug;\n# in Release it is a folder in DerivedSources and nothing is copied, so the bundle has no fixtures.\nset -eu\nif [ \"${CONFIGURATION}\" = \"Debug\" ]; then\n  mkdir -p \"${BFHR_DESIGN_FIXTURES_DIR}\"\n  cp \"${SRCROOT}/../../packages/fixtures/conformance/populated.json\" \"${SRCROOT}/../../packages/fixtures/conformance/empty.json\" \"${BFHR_DESIGN_FIXTURES_DIR}/\"\nfi\n";
+			showEnvVarsInLog = 0;
+		};
+		BF0000000000000000000015 /* Copy cv-render bundle */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"$(SRCROOT)/../../packages/cv-render/dist/cv-render.iife.inputs.xcfilelist",
+			);
+			inputPaths = (
+				"$(SRCROOT)/../../packages/cv-render/dist/cv-render.iife.js",
+				"$(SRCROOT)/../../packages/cv-render/dist/cv-render.iife.inputs.sha256",
+				"$(SRCROOT)/../../packages/cv-render/dist/cv-render.iife.inputs.xcfilelist",
+				"$(SRCROOT)/scripts/copy-cv-render.sh",
+			);
+			name = "Copy cv-render bundle";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/cv-render.iife.js",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# The one CV renderer (docs/adr/0009-cv-studio.md): packages/cv-render's IIFE bundle runs in\n# JavaScriptCore for the Preview, PDF and DOCX. Fails when the bundle is missing or older than its\n# sources: the build writes the sha256 of every esbuild input next to the bundle, and this phase\n# recomputes it from the inputs listed in the .xcfilelist.\nexec \"${SRCROOT}/scripts/copy-cv-render.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */
@@ -582,6 +614,16 @@
 		BF000000000000000000004B /* BFHRDesignTokens */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = BFHRDesignTokens;
+		};
+		BF0000000000000000000050 /* FirebaseStorage */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = BF0000000000000000000040 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseStorage;
+		};
+		BF0000000000000000000051 /* FirebaseFunctions */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = BF0000000000000000000040 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseFunctions;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

@@ -3,7 +3,6 @@ import { describe, expect, it } from "vitest";
 import { deCv, enCv, fullCv, inputFor, PHOTO_DATA_URL, TEMPLATE_IDS, trCv } from "../test/samples";
 import { renderCvHtml, SECTION_HEADINGS } from "./index";
 
-/** The document without the stylesheet (fonts make it ~300 kB): what snapshots compare. */
 /** Snapshot-stable HTML: styles collapsed, and the package version (bumped every release) masked. */
 function body(html: string): string {
   return html

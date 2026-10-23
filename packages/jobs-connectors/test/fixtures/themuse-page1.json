@@ -1,0 +1,108 @@
+{
+  "page": 1,
+  "page_count": 20727,
+  "items_per_page": 20,
+  "took": 11,
+  "timed_out": false,
+  "total": 414534,
+  "results": [
+    {
+      "contents": "<p><b>Position Summary...</b><br><br><b>What you'll do...</b><br><br>Ensures area of responsibility is maintained in accordance with Company policies and procedures by properly handling returns zoning the area arranging and organizing merchandise and identifying shrink and damages<br>Provides member service by maintaining exit areas reviewing member receipts acknowledging the member and identifying member needs assisting members with purchasing decisions assisting members with locating merchandise<br>Provides member service by maintaining selfcheckout area resolving member issues and concerns promoting Sams Club products and services providing guidance and support to members regarding selfservice technology processing member purchases assisting with payments returns refunds and exchanges according to company policies and procedures for different membership and payment types assisting members with transactions utilizing selfcheckout area<br>Assists with securing and safeguarding Sams Club assets and property by observing and communicating potential criminal activity according to company policies and procedures maintaining paperwork logs and other required documentation executing emergency response procedures and ensuring compliance with company security and safety practices<br>Assists with the training of Member Frontline Service associates on company processes and procedures teaching new technology and tool functionality delivering new program rollout training and providing c",
+      "name": "Member Specialist",
+      "type": "external",
+      "publication_date": "2025-08-29T01:06:42Z",
+      "short_name": "member-specialist-50df84",
+      "model_type": "jobs",
+      "id": 20053891,
+      "locations": [
+        {
+          "name": "Caledonia, MI"
+        }
+      ],
+      "categories": [
+        {
+          "name": "Software Engineering"
+        }
+      ],
+      "levels": [
+        {
+          "name": "Mid Level",
+          "short_name": "mid"
+        }
+      ],
+      "tags": [],
+      "refs": {
+        "landing_page": "https://www.themuse.com/jobs/walmart/member-specialist-50df84"
+      },
+      "company": {
+        "id": 12010,
+        "short_name": "walmart",
+        "name": "Walmart"
+      }
+    },
+    {
+      "contents": "<p><strong>Working at Atlassian</strong><br><br>Atlassians can choose where they work  whether in an office, from home, or a combination of the two. That way, Atlassians have more control over supporting their family, personal goals, and other priorities. We can hire people in any country where we have a legal entity.<br><br><strong>About the Commerce Platform Team</strong><br>Commerce Platform is a foundational organization at Atlassian powering how products are<br>packaged, priced, billed, and managed across the ecosystem. It underpins quoting, billing,<br>subscription management, and payment orchestration across all Atlassian products and<br>customer segments. As a Principal Technical Program Manager, you will lead high-visibility<br>programs in close partnership with Product, Engineering, Finance, and Go-To-Market to build<br>durable, scalable capabilities for the future.<br><br><strong>What you'll do</strong><br><br><ul><li>Drive Platform Strategy &amp; Roadmaps: Partner with Product and Engineering<br>leadership to define multi-year strategic roadmaps for core commerce capabilities<br>(billing, quoting, subscription management, and payment processing).</li><li>Translate Business Strategy into Execution: Connect enterprise business models,<br>global tax rules, multi-currency strategies, and compliance requirements to clear<br>platform milestones and cross-team delivery plans.</li><li>Lead Flagship Commerce Programs: Orchestrate complex, multi-team programs from<br>incept",
+      "name": "Principal Technical Product Manager - Commerce (Billing & Monetization)",
+      "type": "external",
+      "publication_date": "2026-10-03T21:25:38Z",
+      "short_name": "principal-technical-product-manager-commerce-billing-monetization",
+      "model_type": "jobs",
+      "id": 22229841,
+      "locations": [
+        {
+          "name": "Bangalore, India"
+        },
+        {
+          "name": "Flexible / Remote"
+        }
+      ],
+      "categories": [],
+      "levels": [
+        {
+          "name": "Senior Level",
+          "short_name": "senior"
+        }
+      ],
+      "tags": [],
+      "refs": {
+        "landing_page": "https://www.themuse.com/jobs/atlassian/principal-technical-product-manager-commerce-billing-monetization"
+      },
+      "company": {
+        "id": 741,
+        "short_name": "atlassian",
+        "name": "Atlassian"
+      }
+    },
+    {
+      "contents": "<p>At CVS Health, we're building a world of health around every consumer and surrounding ourselves with dedicated colleagues who are passionate about transforming health care.As the nation's leading health solutions company, we reach millions of Americans through our local presence, digital channels and more than 300,000 purpose-driven colleagues - caring for people where, when and how they choose in a way that is uniquely more connected, more convenient and more compassionate. And we do it all with heart, each and every day.<b>Position Summary</b><br><br>Retail Store Associates play a meaningful role within the CVS Health family. At CVS Health, we're shaping the future of health care for people, businesses, and communities. With your talents and expertise, you can help us play a more active and supportive role in each person's unique healthcare needs. Join our team of thousands as we positively impact millions...one customer at a time.<br><br>The Retail Store Associate position provides an opportunity, in a leading retail setting, to excel in a growing, high impact, customer focused role, working both independently and as a member of a team, to positively impact the lives of others.<br><br>Essential Functions:<li>Providing differentiated customer service by anticipating customer needs, demonstrating compassion and care in all interactions, and actively identifying and resolving potential service issues</li><li>Focusing on the customer by giving a warm and friendly greeting, ",
+      "name": "Store Associate",
+      "type": "external",
+      "publication_date": "2025-11-23T19:30:38Z",
+      "short_name": "store-associate-32d7fe",
+      "model_type": "jobs",
+      "id": 20654434,
+      "locations": [
+        {
+          "name": "Litchfield, CT"
+        }
+      ],
+      "categories": [],
+      "levels": [
+        {
+          "name": "Senior Level",
+          "short_name": "senior"
+        }
+      ],
+      "tags": [],
+      "refs": {
+        "landing_page": "https://www.themuse.com/jobs/cvshealth/store-associate-32d7fe"
+      },
+      "company": {
+        "id": 12096,
+        "short_name": "cvshealth",
+        "name": "CVS Health"
+      }
+    }
+  ],
+  "aggregations": {}
+}

@@ -349,7 +349,7 @@ const SOURCE_NAMES: Readonly<Record<KnownJobSource, string | null>> = {
   bundesagentur: "Bundesagentur für Arbeit",
   himalayas: "Himalayas",
   remoteok: "Remote OK",
-  kariyer: "kariyer.net",
+  kariyer: "Kariyer.net",
   web: null,
   alert_email: null,
   url_import: null,

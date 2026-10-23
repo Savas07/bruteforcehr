@@ -16,7 +16,8 @@
     "print:local": "tsx scripts/print-local.ts",
     "smoke:ai": "node scripts/smoke-ai.ts",
     "smoke:job-import": "tsx scripts/live-check-job-import.ts",
-    "smoke:render": "tsx scripts/smoke-render.ts"
+    "smoke:render": "tsx scripts/smoke-render.ts",
+    "smoke:jobs": "tsx scripts/smoke-jobs.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.1.0",
@@ -24,10 +25,12 @@
     "@bfhr/api": "workspace:*",
     "@bfhr/core": "workspace:*",
     "@bfhr/cv-render": "workspace:*",
+    "@bfhr/jobs-connectors": "workspace:*",
     "@sparticuz/chromium": "153.0.0",
     "fflate": "^0.8.3",
     "firebase-admin": "^14.5.0",
     "firebase-functions": "^7.4.0",
+    "google-auth-library": "^11.3.1",
     "mammoth": "^1.13.0",
     "pdfjs-dist": "^6.4.299",
     "puppeteer-core": "25.16.0",

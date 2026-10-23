@@ -31,6 +31,7 @@ export const designScreenPaths = {
   "cv-editor": "/cvs",
   "tracker-board": "/tracker",
   "mail-review": "/mail",
+  insights: "/insights",
 } as const;
 export type DesignScreenName = keyof typeof designScreenPaths;
 

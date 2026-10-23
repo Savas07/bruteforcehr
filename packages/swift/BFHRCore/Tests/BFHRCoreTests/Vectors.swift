@@ -13,6 +13,7 @@ enum ConformanceFile {
         .deletingLastPathComponent()
 
     static let stateMachine = packages.appendingPathComponent("core/conformance/state-machine.json")
+    static let insights = packages.appendingPathComponent("core/conformance/insights.json")
     static let populated = packages.appendingPathComponent("fixtures/conformance/populated.json")
     static let empty = packages.appendingPathComponent("fixtures/conformance/empty.json")
 

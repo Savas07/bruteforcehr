@@ -19,6 +19,7 @@ import { DesignRoot } from "./DesignRoot";
 import { DesignScreen } from "./DesignScreen";
 import {
   cvEditorScreen,
+  insightsScreen,
   jobDetailScreen,
   mailReviewScreen,
   todayScreen,
@@ -69,6 +70,9 @@ function CvEditor() {
 function TrackerBoard() {
   return <DesignScreen spec={trackerBoardScreen} />;
 }
+function Insights() {
+  return <DesignScreen spec={insightsScreen} />;
+}
 function MailReview() {
   return <DesignScreen spec={mailReviewScreen} />;
 }
@@ -84,6 +88,7 @@ export const designViews: RouteViews = {
     cv: CvEditor,
     mail: MailReview,
     mailReview: MailReview,
+    insights: Insights,
     design: DesignIndex,
     designDemo: Demo,
   },

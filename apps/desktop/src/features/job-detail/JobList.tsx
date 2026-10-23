@@ -61,49 +61,51 @@ function Row({
       {...nav.itemProps(row.jobId)}
       aria-labelledby={`${titleId} ${companyId}`}
       onClick={onSelect}
+      // Grid: the age / saved column sits beside the title and company only, so the salary line
+      // and the pills use the full width (one line at the 340 px list of a 1280 px window).
       className={cx(
-        "group relative flex cursor-default gap-3 rounded-md px-3 py-3 outline-offset-[-2px] focus-visible:outline-2",
+        "group relative grid cursor-default grid-cols-[auto_minmax(0,1fr)_auto] gap-x-3 rounded-md px-3 py-3 outline-offset-[-2px] focus-visible:outline-2",
         selected ? "bg-surface-selected" : "hover:bg-surface-hover",
       )}
     >
-      <Monogram company={row.company} />
-      <div className="min-w-0 flex-1">
-        <p id={titleId} className="text-headline line-clamp-2">
-          {row.title}
-        </p>
-        <p className="text-fg-secondary text-callout truncate">
-          <span id={companyId}>{row.company.name}</span>
-          {row.where && ` · ${row.where}`}
-        </p>
-        <p
-          className={cx(
-            "text-footnote",
-            row.salary.provenance === "notStated" ? "text-fg-tertiary" : "text-fg-secondary",
-          )}
-          title={row.salary.shortText === row.salary.text ? undefined : row.salary.text}
-        >
-          <span aria-hidden="true">{row.salary.shortText}</span>
-          <span className="sr-only">{row.salary.text}</span>
-        </p>
-        <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-          {row.match ? (
-            <MatchBandPill match={row.match} />
-          ) : (
-            <span className="text-fg-tertiary text-caption1">{intl.formatMessage(messages.scoring)}</span>
-          )}
-          {row.status && <StatusPill status={row.status} size="sm" />}
-          {row.sourceCount && (
-            <span
-              className="text-fg-tertiary text-caption1 inline-flex items-center gap-1"
-              title={row.sourceNames.join(", ")}
-            >
-              <Layers aria-hidden="true" className="size-3" strokeWidth={1.75} />
-              {row.sourceCount}
-            </span>
-          )}
-        </div>
+      <div className="col-start-1 row-span-4 row-start-1">
+        <Monogram company={row.company} />
       </div>
-      <div className="flex shrink-0 flex-col items-end gap-1.5 group-focus-within:invisible group-hover:invisible">
+      <p id={titleId} className="text-headline col-start-2 row-start-1 line-clamp-2">
+        {row.title}
+      </p>
+      <p className="text-fg-secondary text-callout col-start-2 row-start-2 truncate">
+        <span id={companyId}>{row.company.name}</span>
+        {row.where && ` · ${row.where}`}
+      </p>
+      <p
+        className={cx(
+          "text-footnote col-span-2 col-start-2 row-start-3",
+          row.salary.provenance === "notStated" ? "text-fg-tertiary" : "text-fg-secondary",
+        )}
+        title={row.salary.shortText === row.salary.text ? undefined : row.salary.text}
+      >
+        <span aria-hidden="true">{row.salary.shortText}</span>
+        <span className="sr-only">{row.salary.text}</span>
+      </p>
+      <div className="col-span-2 col-start-2 row-start-4 mt-1.5 flex flex-wrap items-center gap-1.5">
+        {row.match ? (
+          <MatchBandPill match={row.match} />
+        ) : (
+          <span className="text-fg-tertiary text-caption1">{intl.formatMessage(messages.scoring)}</span>
+        )}
+        {row.status && <StatusPill status={row.status} size="sm" />}
+        {row.sourceCount && (
+          <span
+            className="text-fg-tertiary text-caption1 inline-flex items-center gap-1"
+            title={row.sourceNames.join(", ")}
+          >
+            <Layers aria-hidden="true" className="size-3" strokeWidth={1.75} />
+            {row.sourceCount}
+          </span>
+        )}
+      </div>
+      <div className="col-start-3 row-span-2 row-start-1 flex flex-col items-end gap-1.5 group-focus-within:invisible group-hover:invisible">
         {row.posted && <RelativeTimeChip time={row.posted} />}
         <span className="flex items-center gap-1">
           {row.pendingSync && <SyncGlyph />}

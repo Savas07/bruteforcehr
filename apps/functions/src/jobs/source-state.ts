@@ -159,7 +159,8 @@ export class SourceState {
             previous,
             report,
             consecutiveFailures,
-            quota: budget === null ? null : { used, limit: budget.limit },
+            // A source without keys has no quota yet (Jooble: 450 per configured key).
+            quota: budget === null || budget.limit <= 0 ? null : { used, limit: budget.limit },
             now: this.now,
           });
           transaction.set(stateRef, { consecutiveFailures }, { merge: true });

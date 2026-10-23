@@ -23,13 +23,20 @@ export const designSearchByState: Readonly<Record<DesignState, DesignSearch>> = 
   offline: { fixture: "populated", state: "offline" },
 };
 
-/** Capturable screens and the route each opens on. `demo` is the shared-component demo. */
+/**
+ * Capturable screens and the route each opens on (with its own search params, if any). `demo` is
+ * the shared-component demo.
+ */
 export const designScreenPaths = {
   demo: "/design/demo",
   today: "/today",
   "job-detail": "/jobs",
   "cv-editor": "/cvs",
   "tracker-board": "/tracker",
+  /** An application with an automatic move (Undo), an interview, a contact and a pinned CV. */
+  "application-detail": "/tracker/applications/app-brightwave",
+  /** Log an application, open over the board. */
+  "application-add": "/tracker?add=1",
   "mail-review": "/mail",
 } as const;
 export type DesignScreenName = keyof typeof designScreenPaths;
@@ -63,8 +70,14 @@ export function designHash(
   state: DesignState,
   extra: Readonly<Record<string, string>> = {},
 ): string {
-  const params = new URLSearchParams({ ...designSearchByState[state], ...extra });
-  return `#${designScreenPaths[screen]}?${params.toString()}`;
+  // A screen path may carry its own params (`/tracker?add=1`); the state's and `extra` come after.
+  const [path, own = ""] = designScreenPaths[screen].split("?");
+  const params = new URLSearchParams({
+    ...Object.fromEntries(new URLSearchParams(own)),
+    ...designSearchByState[state],
+    ...extra,
+  });
+  return `#${path}?${params.toString()}`;
 }
 
 /** `<screen>-<state>-<theme>-<w>x<h>.png`: one name scheme for every capture tool. */

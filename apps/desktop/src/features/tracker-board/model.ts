@@ -1,24 +1,22 @@
 /**
  * Tracker board view-model (`/tracker`, optional `applicationId` for the right detail panel).
  * research/tracker.md "Decision — Desktop": the 7 active stages as columns, a Closed rail with
- * per-outcome counts, cards with age / staleness / automatic-move glyph, and the record detail
- * (header, summary, timeline, Move to…). states.md "Tracker board" defines the empty board.
+ * per-outcome counts, cards with age / staleness / automatic-move glyph, and which card the
+ * detail panel shows ("2 of 3 in Interviewing"; the panel itself is the application detail's
+ * `ApplicationPanel`). states.md "Tracker board" defines the empty board.
  */
 import {
   ACTIVE_STATUSES,
   type Application,
   type ApplicationStatus,
   canTransition,
-  isActiveStatus,
   suggestGhosted,
   TERMINAL_STATUSES,
 } from "@bfhr/core";
-import type { ApplicationSummaryVM, NudgeVM, TimelineEventVM } from "../../shared/model/blocks";
-import { applicationSummaryVM, nudgeVMs, timelineVMs } from "../../shared/model/build-blocks";
 import { defineMessages, type IntlShape } from "react-intl";
 import { calendarDaysFromNow, dayAndTime, relativeTime } from "../../shared/model/format";
-import type { CompanyVM, ModelContext, StatusVM, TimeVM, UserData } from "../../shared/model/types";
-import { companyVM, MOVE_DENIAL_MESSAGES, sourceVM, statusVM } from "../../shared/model/vocabulary";
+import type { CompanyVM, ModelContext, ScreenData, StatusVM, TimeVM } from "../../shared/model/types";
+import { companyVM, MOVE_DENIAL_MESSAGES, statusVM } from "../../shared/model/vocabulary";
 
 /** Saved is the backlog: its column starts collapsed above this many cards (tracker.md). */
 const SAVED_COLLAPSE_ABOVE = 5;
@@ -82,25 +80,10 @@ const messages = defineMessages({
     defaultMessage: "Add a job you've applied to, or save one from Jobs to track it here.",
   },
   firstUsePrimary: { id: "tracker-board.firstUse.primary", defaultMessage: "Add application" },
-  firstUseSecondary: { id: "tracker-board.firstUse.secondary", defaultMessage: "Import CSV" },
   columnAdd: {
     id: "tracker-board.column.add",
     defaultMessage: "Add",
     description: "Column footer button that adds an application to that status",
-  },
-  timelineMovedTo: {
-    id: "tracker-board.timeline.movedTo",
-    defaultMessage: "Moved to {status}",
-    description: "Timeline title of a move the user just made; {status} is a status name",
-  },
-  timelineUndidMove: {
-    id: "tracker-board.timeline.undidMove",
-    defaultMessage: "Undid a move · back to {status}",
-    description: "Timeline title after undoing an automatic move; {status} is the status it returned to",
-  },
-  undoSuperseded: {
-    id: "tracker-board.timeline.undoSuperseded",
-    defaultMessage: "Can't undo — the status changed since.",
   },
 });
 
@@ -195,30 +178,15 @@ export interface ClosedRailVM {
   readonly emptyLine: string | null;
 }
 
-/** The right detail panel (`RecordHeader` + Up next + timeline + summary). */
+/** The card the right detail panel shows, and its place in its column (J / K in the panel). */
 export interface TrackerSelectionVM {
   readonly applicationId: string;
-  readonly company: CompanyVM;
-  readonly role: string;
-  readonly location: string | null;
-  readonly status: StatusVM;
-  /** Top bar "2 of 3 in Interviewing" with ‹ › (J/K) through the same column. */
+  /** "2 of 3 in Interviewing" with the neighbours in the same column. */
   readonly position: {
     readonly label: string;
     readonly previousId: string | null;
     readonly nextId: string | null;
   };
-  /** The header's one next-action button; null when there's nothing to do. */
-  readonly nextAction: NextActionVM | null;
-  /** Up next suggestion for this application (follow-up / no response); null when none is due. */
-  readonly nudge: NudgeVM | null;
-  readonly summary: ApplicationSummaryVM;
-  /** Newest first; automatic rows carry their reason and Undo state (D11). */
-  readonly timeline: readonly TimelineEventVM[];
-  readonly moves: readonly MoveTargetVM[];
-  readonly pendingSync: boolean;
-  /** "What usually happens next" per status, so a local move can re-word `summary.nextStep`. */
-  readonly nextStepByStatus: Readonly<Record<ApplicationStatus, string | null>>;
 }
 
 /** No applications at all (states.md `tracker.empty`): explainer in the first column. */
@@ -229,8 +197,6 @@ export interface TrackerFirstUseVM {
   readonly body: string;
   /** Primary: "Add application", Mod+N. */
   readonly primary: { readonly label: string; readonly shortcut: string };
-  /** Secondary: "Import CSV" (brief §4.6). */
-  readonly secondary: { readonly label: string };
   /** Each column's "+ Add" footer label: "Add". */
   readonly columnAddLabel: string;
 }
@@ -239,20 +205,15 @@ export interface TrackerBoardModel {
   /** The 7 active stages, Saved → Offer; always all present. */
   readonly columns: readonly TrackerColumnVM[];
   readonly closedRail: ClosedRailVM;
-  /** Follow-up and no-response suggestions, oldest first (D15). */
-  readonly nudges: readonly NudgeVM[];
   /** The application named by `params.applicationId`; null when missing or unknown. */
   readonly selected: TrackerSelectionVM | null;
   /** Non-null when there are no applications at all. */
   readonly firstUse: TrackerFirstUseVM | null;
-  /** The model's "now", for events a local (optimistic) move adds to the timeline. */
+  /** The model's "now": the age of a card in the drop preview ("New today"). */
   readonly justNow: TimeVM;
 }
 
-type BoardData = Pick<
-  UserData,
-  "applications" | "applicationEvents" | "interviews" | "profile" | "cvs" | "coverLetters"
->;
+type BoardData = Pick<ScreenData, "applications" | "applicationEvents" | "interviews" | "profile">;
 
 const ALL_STATUSES: readonly ApplicationStatus[] = [...ACTIVE_STATUSES, ...TERMINAL_STATUSES];
 
@@ -439,56 +400,25 @@ function positionVM(
 }
 
 export function buildTrackerBoardModel(
-  data: UserData,
+  data: BoardData,
   ctx: ModelContext,
   params: Readonly<Record<string, string | undefined>>,
 ): TrackerBoardModel {
   const firstUse = data.applications.length === 0;
   const columns = ACTIVE_STATUSES.map((status) => columnVM(status, data, ctx, firstUse));
   const outcomes = TERMINAL_STATUSES.map((status) => columnVM(status, data, ctx, firstUse));
-  const nudges = nudgeVMs(data, ctx);
-
-  const application = data.applications.find((candidate) => candidate.id === params["applicationId"]);
-  // The selected card sits in its status's column: reuse its order, moves and sync state.
-  const card = [...columns, ...outcomes]
-    .flatMap((column) => column.cards)
-    .find((candidate) => candidate.applicationId === application?.id);
-  const position = card ? positionVM(card.applicationId, [...columns, ...outcomes], ctx.intl) : null;
-  const selected: TrackerSelectionVM | null =
-    application && card && position
-      ? {
-          applicationId: card.applicationId,
-          company: card.company,
-          role: card.role,
-          location: card.location,
-          status: card.status,
-          position,
-          nextAction: card.nextAction,
-          nudge: nudges.find((nudge) => nudge.applicationId === card.applicationId) ?? null,
-          summary: applicationSummaryVM(application, data, ctx),
-          timeline: timelineVMs(application, data, ctx),
-          moves: card.moves,
-          pendingSync: card.pendingSync,
-          nextStepByStatus: Object.fromEntries(
-            ALL_STATUSES.map((status) => [
-              status,
-              applicationSummaryVM({ ...application, status }, data, ctx).nextStep,
-            ]),
-          ) as Record<ApplicationStatus, string | null>,
-        }
-      : null;
+  const selectedId = params["applicationId"];
+  const position = selectedId ? positionVM(selectedId, [...columns, ...outcomes], ctx.intl) : null;
 
   return {
     columns,
     closedRail: closedRailVM(outcomes, ctx.intl),
-    nudges,
-    selected,
+    selected: selectedId && position ? { applicationId: selectedId, position } : null,
     firstUse: firstUse
       ? {
           title: ctx.intl.formatMessage(messages.firstUseTitle),
           body: ctx.intl.formatMessage(messages.firstUseBody),
           primary: { label: ctx.intl.formatMessage(messages.firstUsePrimary), shortcut: "Mod+N" },
-          secondary: { label: ctx.intl.formatMessage(messages.firstUseSecondary) },
           columnAddLabel: ctx.intl.formatMessage(messages.columnAdd),
         }
       : null,
@@ -496,21 +426,7 @@ export function buildTrackerBoardModel(
   };
 }
 
-// ─── Local (optimistic) moves ─────────────────────────────────────────────────────────────────
-
-/**
- * One status move the user made on this device and that isn't in the data yet (M0 has no
- * backend; later milestones get it back from the Firestore cache). Undo removes it again.
- */
-export interface BoardMove {
-  /** Local event id (the timeline row it adds). */
-  readonly id: string;
-  readonly applicationId: string;
-  readonly from: ApplicationStatus;
-  readonly to: ApplicationStatus;
-  /** Set when the move undoes an automatic change from the timeline (D11). */
-  readonly revertsEventId: string | null;
-}
+// ─── Moves ────────────────────────────────────────────────────────────────────────────────────
 
 /** Whether the user may move an application `from` → `to` (`@bfhr/core`, actor `user`). */
 export type BoardMoveCheck =
@@ -542,123 +458,38 @@ export function boardStatuses(intl: IntlShape): { active: StatusVM[]; closed: St
   };
 }
 
-function applyOne(
+/**
+ * The drop target as it would look after dropping the card on it (drag preview): the card in its
+ * board-order slot with "New today" age, and the column's counts. Null when the state machine
+ * refuses the move or the card isn't on the board.
+ */
+export function previewDrop(
   model: TrackerBoardModel,
-  move: BoardMove,
+  applicationId: string,
+  to: ApplicationStatus,
   intl: IntlShape,
-  pendingSync: boolean,
-): TrackerBoardModel {
+): TrackerColumnVM | null {
   const all = [...model.columns, ...model.closedRail.outcomes];
-  const card = all
-    .flatMap((column) => column.cards)
-    .find((entry) => entry.applicationId === move.applicationId);
-  // Stale (the card moved since) or refused by the state machine: the move doesn't apply.
-  if (!card || card.status.key !== move.from || !checkBoardMove(move.from, move.to, intl).allowed)
-    return model;
-
-  const to = statusVM(move.to, intl);
+  const card = all.flatMap((column) => column.cards).find((entry) => entry.applicationId === applicationId);
+  const target = all.find((column) => column.status.key === to);
+  if (!card || !target || card.status.key === to || !checkBoardMove(card.status.key, to, intl).allowed)
+    return null;
+  const status = statusVM(to, intl);
   const moved: TrackerCardVM = {
     ...card,
-    status: to,
-    age: ageVM(0, to, model.justNow, intl),
+    status,
+    age: ageVM(0, status, model.justNow, intl),
     daysInStage: 0,
     staleness: null,
     autoMove: null,
-    stepForward: activeStep(move.to, 1, intl),
-    stepBack: activeStep(move.to, -1, intl),
-    moves: moveTargets(move.to, intl),
-    pendingSync: card.pendingSync || pendingSync,
+    stepForward: activeStep(to, 1, intl),
+    stepBack: activeStep(to, -1, intl),
+    moves: moveTargets(to, intl),
   };
-  const firstUse = model.firstUse !== null;
-  const update = (column: TrackerColumnVM): TrackerColumnVM => {
-    if (column.status.key === move.from)
-      return columnFromCards(
-        column.status,
-        column.cards.filter((entry) => entry.applicationId !== move.applicationId),
-        intl,
-        firstUse,
-      );
-    if (column.status.key === move.to)
-      return columnFromCards(column.status, [...column.cards, moved].toSorted(boardOrder), intl, firstUse);
-    return column;
-  };
-  const columns = model.columns.map(update);
-  const outcomes = model.closedRail.outcomes.map(update);
-
-  let selected = model.selected;
-  if (selected?.applicationId === move.applicationId) {
-    const superseded = intl.formatMessage(messages.undoSuperseded);
-    const event: TimelineEventVM = {
-      id: move.id,
-      kind: "status",
-      title: intl.formatMessage(move.revertsEventId ? messages.timelineUndidMove : messages.timelineMovedTo, {
-        status: to.label,
-      }),
-      detail: null,
-      at: model.justNow,
-      source: sourceVM("you", intl),
-      move: { from: statusVM(move.from, intl), to },
-      reason: null,
-      mailMessageId: null,
-      undo: null,
-      reverted: false,
-      pendingSync,
-    };
-    selected = {
-      ...selected,
-      status: to,
-      moves: moved.moves,
-      nudge: null,
-      pendingSync: selected.pendingSync || pendingSync,
-      summary: {
-        ...selected.summary,
-        status: to,
-        nextStep: selected.nextStepByStatus[move.to],
-        // Reaching Applied or beyond records the application date when none was set (core `transition`).
-        appliedAt:
-          selected.summary.appliedAt ??
-          (isActiveStatus(move.to) && ACTIVE_STATUSES.indexOf(move.to) >= ACTIVE_STATUSES.indexOf("applied")
-            ? model.justNow
-            : null),
-      },
-      timeline: [
-        event,
-        ...selected.timeline.map((entry): TimelineEventVM => {
-          if (entry.id === move.revertsEventId) return { ...entry, reverted: true };
-          return entry.undo?.available ? { ...entry, undo: { available: false, reason: superseded } } : entry;
-        }),
-      ],
-    };
-  }
-
-  return {
-    ...model,
-    columns,
-    closedRail: closedRailVM(outcomes, intl),
-    nudges: model.nudges.filter((nudge) => nudge.applicationId !== move.applicationId),
-    selected,
-  };
-}
-
-/**
- * The board with the user's local moves applied in order, each validated by `@bfhr/core` (stale or
- * refused moves are skipped): cards change column in board order with "New today" age, counts,
- * oldest ages and the Closed rail recount, and the selected record gains its timeline row (an undone
- * automatic move is tagged "Undone"; older Undo offers become "Can't undo"). `pendingSync` marks
- * moved cards and their rows as waiting to sync (offline).
- */
-export function applyBoardMoves(
-  model: TrackerBoardModel,
-  moves: readonly BoardMove[],
-  intl: IntlShape,
-  options: { readonly pendingSync: boolean },
-): TrackerBoardModel {
-  const next = moves.reduce((current, move) => applyOne(current, move, intl, options.pendingSync), model);
-  if (next === model || next.selected === null) return next;
-  const position = positionVM(
-    next.selected.applicationId,
-    [...next.columns, ...next.closedRail.outcomes],
+  return columnFromCards(
+    status,
+    [...target.cards, moved].toSorted(boardOrder),
     intl,
+    model.firstUse !== null,
   );
-  return position ? { ...next, selected: { ...next.selected, position } } : next;
 }

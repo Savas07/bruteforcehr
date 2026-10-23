@@ -263,7 +263,8 @@ function CheckTab({
           <ul className="divide-line-subtle flex flex-col divide-y">
             {rows.map(({ keyword, covered }, index) => (
               <li key={keyword} className="flex flex-wrap items-center gap-x-2 gap-y-1 py-2">
-                <span id={`${keywordId}-${index}`} className="min-w-0 flex-1 text-callout">
+                {/* `min-w-24`: long labels (DE) wrap the buttons onto their own line instead of squeezing the keyword. */}
+                <span id={`${keywordId}-${index}`} className="min-w-24 flex-1 break-words text-callout">
                   {covered && <CheckIcon aria-hidden className="text-success-text mr-1.5 inline size-4" />}
                   {keyword}
                   {covered && <span className="sr-only"> · {intl.formatMessage(messages.inCv)}</span>}

@@ -112,6 +112,13 @@ export const storagePaths = {
   cvPhoto: (uid: string, fileId: string) => `${user(uid)}/cv-photos/${segment(fileId)}`,
   /** A file attached from the device to an email apply (`mailSend` upload attachments). */
   mailAttachment: (uid: string, fileId: string) => `${user(uid)}/mail-attachments/${segment(fileId)}`,
+  /**
+   * "Export everything" ZIP built by `accountExport` (server-written, owner-readable; deleted by
+   * the bucket lifecycle rule in firebase/storage.lifecycle.json and never included in a later export).
+   */
+  accountExport: (uid: string, exportId: string) => `${user(uid)}/exports/${segment(exportId)}.zip`,
+  /** Prefix of every export of a user. */
+  accountExports: (uid: string) => `${user(uid)}/exports/`,
 } as const;
 
 /**
@@ -168,6 +175,10 @@ export const serverOnlyPaths = {
     `serverOnly/mail/users/${segment(uid)}/mailSendDays/${segment(day)}`,
   /** Review corrections kept as labeled examples (category from/to, sender domain; no body). */
   mailCorrections: (uid: string) => `serverOnly/mail/users/${segment(uid)}/mailCorrections`,
+  /** `accountExport` rate limit, one document per UTC day (TTL `expireAt`). */
+  accountExportRoot: (uid: string) => `serverOnly/accountExport/users/${segment(uid)}`,
+  accountExportDay: (uid: string, day: string) =>
+    `serverOnly/accountExport/users/${segment(uid)}/accountExportDays/${segment(day)}`,
   /** Pending OAuth connect (nonce → uid, PKCE verifier; TTL `expireAt`, minutes). */
   mailConnect: (nonce: string) => `serverOnly/mailConnect/mailConnectNonces/${segment(nonce)}`,
 } as const;
@@ -185,6 +196,7 @@ export function userDataRoots(uid: string): readonly string[] {
     serverOnlyPaths.jobAlertsRoot(uid),
     serverOnlyPaths.jobQuotaRoot(uid),
     serverOnlyPaths.mailRoot(uid),
+    serverOnlyPaths.accountExportRoot(uid),
   ];
 }
 

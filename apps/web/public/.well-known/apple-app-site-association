@@ -1,0 +1,14 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": ["67NPXV7CSZ.com.savas07.bruteforcehr"],
+        "components": [
+          { "/": "/__/auth/links*", "comment": "Firebase email sign-in link (docs/adr/0008-auth-email-link.md)" },
+          { "/": "/__/auth/action*", "comment": "Firebase action handler, when opened without the links wrapper" },
+          { "/": "/auth/finish*", "comment": "Sign-in link continue URL" }
+        ]
+      }
+    ]
+  }
+}

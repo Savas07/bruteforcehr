@@ -7,8 +7,12 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // Signed in with a verified email: email-link sign-in always verifies the address
+    // (docs/adr/0008-auth-email-link.md). The Email provider also accepts password sign-ups through
+    // the public API; those accounts are unverified and get no data access (account pre-seeding).
     function isOwner(uid) {
-      return request.auth != null && request.auth.uid == uid;
+      return request.auth != null && request.auth.uid == uid
+        && request.auth.token.email_verified == true;
     }
 
     // Fields of an update that the client changed (added, removed or modified).
@@ -107,8 +111,8 @@ service cloud.firestore {
       allow read: if true;
     }
 
-    // OTP challenges, encrypted mail tokens and other server state: no client access. No rule
-    // matches serverOnly/**, so the default deny applies; listed here for explicitness.
+    // Encrypted mail tokens and other server state: no client access. No rule matches
+    // serverOnly/**, so the default deny applies; listed here for explicitness.
     match /serverOnly/{document=**} {
       allow read, write: if false;
     }

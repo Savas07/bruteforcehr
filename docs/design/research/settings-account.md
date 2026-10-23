@@ -234,7 +234,7 @@ Requirements covered:
    - job source keys;
    - signed-in devices.
    Then "This can't be undone." A secondary **Export my data first** button (Hinge warning) and a destructive **Continue**. There's no reason survey and no "sad to see you go".
-2. **Verification.** "We sent a code to savas@…" using the sign-in OTP component. The final button **Delete everything** stays disabled until all 6 digits are valid (Render rule).
+2. **Verification.** "To confirm, we'll email a sign-in link to savas@…" → **Send link**, then the sign-in `LinkSentPanel`. Opening the link signs in again (email link, [ADR 0008](../../adr/0008-auth-email-link.md)); **Delete everything** stays disabled until that fresh sign-in is done (Render rule), and the server checks `auth_time` < 5 min.
 3. **Progress.** "Deleting your data…" with a determinate spinner. The app then resets to the welcome screen (Vestiaire) with a quiet banner: "Your account and all its data were deleted."
 
 **Behavior:** every setting saves immediately (no Save buttons; Marriott and 1Password rejected). Writes are optimistic, with a small inline "Couldn't save · Retry" on failure. Offline: settings that need the server (keys, disconnect, export, delete) are disabled with the footer "Needs a connection".
@@ -262,8 +262,8 @@ Requirements covered:
   - The deletion **dialog** (Lovable + Fireflies + Render) contains:
     - the same itemized list as iOS, in a tinted box;
     - "Export my data first" as a link;
-    - a 6-digit email-code field ("Send code" first);
-    - **Keep my account** (default focus; Esc and Enter both cancel) and **Delete everything** (disabled until the code is valid).
+    - a **Send link** step that confirms with a fresh email-link sign-in;
+    - **Keep my account** (default focus; Esc and Enter both cancel) and **Delete everything** (disabled until the fresh sign-in is done).
 - **Mail accounts** (Adobe Express + Salesforce + Podia):
   - An info banner at the top: "We only keep emails about your job search. Everything else is skipped and never stored."
   - One card per address with:
@@ -319,7 +319,7 @@ Requirements covered:
 | `PauseNotificationsMenu` + paused status line with Resume | both | |
 | `UpdateStatusCard` + `ChannelPicker` | desktop | Wraps electron-updater state. Reused by the desktop update-available banner. |
 | `ExportPanel` (included / not included, create, progress, ready card, recent exports) | both | iOS: share sheet / Files. Desktop: native save dialog. |
-| `DeleteAccountFlow` (itemized list → code verification → progress → reset) | both | Reuses the onboarding `OtpCodeInput`. Desktop runs as a dialog, iOS as a pushed screen. |
+| `DeleteAccountFlow` (itemized list → email-link re-sign-in → progress → reset) | both | Reuses the sign-in `LinkSentPanel`. Desktop runs as a dialog, iOS as a pushed screen. |
 | `InlineSaveState` ("Saved" / "Couldn't save · Retry") | both | |
 
 **Data mapping (proposal; paths beyond the kickoff layout need an ADR, see open questions):**
@@ -384,7 +384,7 @@ Layout rules from length expansion: destructive and confirm buttons never have a
 1. **AI key ownership in multi-user mode.** Kickoff says the Anthropic key is the user's own and stored in Secret Manager. Is it one project-level secret (the owner's key, read-only in the UI, which would show only "Key on server · managed by the app owner") or a per-user key entered in Settings (written through a callable function into `serverOnly/{uid}`)? The UI above supports both. *Recommendation:* per-user write-only, with the owner's key as the fallback while the app stays personal.
 2. **New client-readable status paths.** Job source key state (`configured`, `last4`, `lastUsedAt`, `lastError`) and export records (status, size, expiry) have no home in the kickoff Firestore layout. Options: fields on `users/{uid}` vs. new `users/{uid}/jobSources/{id}` and `users/{uid}/exports/{id}` collections. This needs an ADR (owner: DocsAdrPrd).
 3. **Where the company watchlist lives.** It feeds the ATS job sources but is edited like content. Should it be a Jobs-area screen linked from Settings (proposed), or a Settings page?
-4. **Deletion when email codes can't be sent.** Brevo isn't set up yet (kickoff). If email codes are unavailable, should deletion accept a recent sign-in (< 5 min) instead of a fresh code? *Recommendation:* recent sign-in as the fallback, using Firebase's `auth_time` claim checked server-side.
+4. **Deletion confirmation.** *Resolved 2026-10-23:* sign-in is by email link (ADR 0008), so deletion is confirmed by a fresh email-link sign-in, checked server-side through Firebase's `auth_time` claim (< 5 min).
 5. **Beta → Stable switch.** Should switching back to Stable downgrade immediately or wait for the next stable release that's newer than the installed beta? electron-updater has an `allowDowngrade` option tied to channel changes. That needs confirming against current electron-updater docs before implementation. *Recommendation:* wait (no downgrade), which matches the copy above.
 6. **Quiet hours exceptions.** Should interview invites be able to bypass quiet hours ("Let interview invites through")? This isn't in §4.9. *Recommendation:* no; the catch-up summary covers it.
 7. **Scraped web sources (kickoff, M4).** They'll need per-site enable switches and a rate-limit note under Job sources. Defer the design to M4.

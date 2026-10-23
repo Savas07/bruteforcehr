@@ -14,7 +14,7 @@ ADR 0001 chose the brief's default clients: Electron for desktop and Expo/React 
 
 The other constraints still apply:
 
-- Backend, data model and auth stay as decided (Firebase; ADRs 0001–0003). TypeScript stays the source of truth for domain logic (`@bfhr/core`), validation and the functions.
+- Backend, data model and auth stay as decided (Firebase; ADRs 0001–0002; sign-in by email link per [0008](0008-auth-email-link.md), which supersedes 0003). TypeScript stays the source of truth for domain logic (`@bfhr/core`), validation and the functions.
 - There's no local JDK or Docker on the development Mac (kickoff), so tools that need Java can only run in CI.
 - Windows builds stay unsigned until the app is shared (kickoff; ADR 0004). Update integrity can't depend on Authenticode.
 - macOS: Developer ID signing plus notarization (Apple Developer Program membership exists).

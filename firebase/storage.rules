@@ -7,8 +7,10 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
 
+    // Verified email only, as in firestore.rules (docs/adr/0008-auth-email-link.md).
     function isOwner(uid) {
-      return request.auth != null && request.auth.uid == uid;
+      return request.auth != null && request.auth.uid == uid
+        && request.auth.token.email_verified == true;
     }
 
     // `resource == null`: the object must not exist yet, so a client can never overwrite bytes that a

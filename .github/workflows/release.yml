@@ -173,8 +173,8 @@ jobs:
           BFHR_VERSION: ${{ needs.prepare.outputs.version }}
         run: |
           # Expand-only changes (ADR 0002). No --force: functions missing from the source are never
-          # deleted by CI. Hosting is deployed by `website` after the release is published.
-          echo "skipped: functions codebase auth (Brevo, secret BREVO_API_KEY not configured; docs/runbooks/release.md)"
+          # deleted by CI. Hosting is deployed by `website` after the release is published. The
+          # `identity` codebase (blocking function) is deployed by hand (docs/runbooks/release.md).
           flags=(--only "firestore:rules,firestore:indexes,storage,functions:default" --project "$FIREBASE_PROJECT" --non-interactive)
           if [ "$DRY_RUN" = true ]; then flags+=(--dry-run); fi
           firebase/tests/node_modules/.bin/firebase deploy "${flags[@]}"

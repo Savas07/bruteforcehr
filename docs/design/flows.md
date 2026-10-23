@@ -2,22 +2,24 @@
 
 Status: M0 synthesis, 2026-10-22. Sources: the research docs named per flow, [decisions.md](decisions.md) and [IA.md](IA.md). Each flow names its trust points (source + reason + Undo) and where it differs per platform. Whole-flow critiques (BRIEF §5.5.7) use these diagrams as their script.
 
-## 1. Onboarding: email code → CV import → preferences → connect mail → backfill review
+## 1. Onboarding: email link → CV import → preferences → connect mail → backfill review
 
-Sources: onboarding-signin.md, connect-email.md, ADR 0003. Time budget: sign in ≤ 45 s, CV ≤ 30 s, preferences ≤ 60 s, mail ≤ 45 s (≈ 3 min worst case).
+Sources: onboarding-signin.md, connect-email.md, ADR 0008. Time budget: sign in ≤ 45 s, CV ≤ 30 s, preferences ≤ 60 s, mail ≤ 45 s (≈ 3 min worst case).
 
 ```mermaid
 flowchart TD
-  A([Open app, signed out]) --> E[Email screen<br/>Send code enabled after a basic syntax check]
-  E -->|authRequestCode| E1{Result}
-  E1 -->|rate_limited| E2["Inline: You can ask for a new code in {m} min."] --> E
-  E1 -->|delivery_failed| E3["Inline: We couldn't send the code. Check your connection and try again."] --> E
-  E1 -->|ok, expiresAt| C[Code screen<br/>email chip + Change · 6 cells · paste and autofill]
-  C -->|6th digit, auto-submit| V{authVerifyCode}
-  V -->|invalid_code| C1["Cells clear, keep focus, error haptic<br/>That code doesn't match…"] --> C
-  V -->|too_many_attempts| C2[Cells disabled until a new code is sent] --> C
-  V -->|no_active_code| C3["This code has expired. · Send a new code"] --> C
-  V -->|token| S[signInWithCustomToken]
+  A([Open app, signed out]) --> E[Email screen<br/>Send link enabled after a basic syntax check]
+  E -->|save emailForSignIn · sendSignInLinkToEmail| E1{Result}
+  E1 -->|too-many-requests| E2["Inline: Several links were sent just now. Wait a few minutes…"] --> E
+  E1 -->|network / server error| E3["Inline: We couldn't send the link. Check your connection and try again."] --> E
+  E1 -->|ok| C["Check your email<br/>We sent a sign-in link to {email} · Open Mail (iOS) · Resend link · Use a different email"]
+  C -->|"iOS: universal link · desktop: browser → /auth/finish → bruteforcehr://auth/finish?link="| L{isSignInWithEmailLink}
+  L -->|emailForSignIn missing| C0["Confirm your email<br/>(link opened on another device)"] --> V
+  L -->|email known| V{signInWithEmailLink}
+  V -->|expired| C1["This link has expired · Send a new link"] --> C
+  V -->|used or replaced| C2["This link doesn't work anymore · Send a new link"] --> C
+  V -->|email mismatch| C0
+  V -->|user| S[Signed in, email verified]
   S --> N{Profile complete?}
   N -->|yes| TODAY([Today])
   N -->|no| CV["Step 1 of 3 · CV<br/>Upload PDF/DOCX/JSON · LinkedIn ZIP · Start from scratch"]

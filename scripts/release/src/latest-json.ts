@@ -5,7 +5,8 @@
  * version, so every platform entry must be complete.
  */
 
-export const REPO = "Savas07/bruteforcehr";
+/** Public releases repo (ADR 0004 addendum 2026-10-24); the source repo is private. */
+export const REPO = "Savas07/bruteforcehr-releases";
 
 /** Release asset names; the website's download page matches the installer suffixes. */
 export function assetNames(version: string) {

@@ -1,20 +1,23 @@
 name: Desktop
 
-# Public repo: GitHub-hosted runners are free, so this runs whenever desktop code or its
-# dependencies change (ADR 0004 amendment), plus on demand.
+# Private repo on GitHub Free: macOS minutes count ×10 and Windows ×2 against 2,000 min/month
+# (docs/runbooks/release.md "Actions minutes"), so this runs only when the desktop app or a package
+# it bundles changes, on demand, and as release.yml's `verify-desktop`.
 on:
   push:
     branches: [main]
-    paths:
+    paths: &desktop-paths
       - apps/desktop/**
-      - packages/**
-      - pnpm-lock.yaml
+      - packages/core/**
+      - packages/api/**
+      - packages/cv-render/**
+      - packages/ui-tokens/**
+      - packages/fixtures/**
       - .github/workflows/desktop.yml
   pull_request:
-    paths:
-      - apps/desktop/**
-      - packages/**
-      - pnpm-lock.yaml
+    paths: *desktop-paths
+  # release.yml `verify-desktop`: the E2E job only (design_capture is unset).
+  workflow_call:
   workflow_dispatch:
     inputs:
       design_capture:

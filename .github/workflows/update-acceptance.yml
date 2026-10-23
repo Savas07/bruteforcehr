@@ -7,7 +7,12 @@ name: Update acceptance
 # is `target` and finds nothing newer. Nothing here talks to the updater directly: the app reads
 # the real manifest (plugins.updater.endpoints) and verifies the real signatures.
 #
-#   gh workflow run update-acceptance.yml -f from=0.1.0 -f target=0.1.1
+#   gh workflow run update-acceptance.yml -f from=0.2.2 -f target=0.3.0
+#
+# Installers and manifests come from the public releases repo (ADR 0004 addendum 2026-10-24).
+# `from` must be a release there. 0.2.2 (mirrored) still polls the source repo's manifest, which
+# the v0.3.0 BRIDGE step in release.yml fills while that repo is public; 0.3.0 and later poll the
+# releases repo. Manual only: both jobs run on macOS/Windows minutes.
 #
 # The app writes one stderr line per update check ("update check: X downloaded, installs at
 # quit" / "update check: up to date") and "installing update X at quit"; the runs capture stderr
@@ -18,7 +23,7 @@ on:
       from:
         description: "Installed first: a published release (X.Y.Z)"
         type: string
-        default: "0.1.0"
+        default: "0.2.2"
       target:
         description: "Expected after the update: the version the stable latest.json advertises (X.Y.Z)"
         type: string
@@ -30,7 +35,8 @@ permissions:
 env:
   FROM: ${{ inputs.from }}
   TARGET: ${{ inputs.target }}
-  MANIFEST: https://github.com/${{ github.repository }}/releases/latest/download/latest.json
+  RELEASES_REPO: Savas07/bruteforcehr-releases
+  MANIFEST: https://github.com/Savas07/bruteforcehr-releases/releases/latest/download/latest.json
   # Download check + download of a ~10 MB bundle; generous for slow runner networks.
   DOWNLOAD_TIMEOUT_S: "300"
 
@@ -56,7 +62,7 @@ jobs:
           mkdir -p "$RUNNER_TEMP/download" "$RUNNER_TEMP/evidence"
           cd "$RUNNER_TEMP/download"
           dmg="BruteForceHR_${FROM}_universal.dmg"
-          gh release download "v$FROM" --repo "$GITHUB_REPOSITORY" --pattern "$dmg" --pattern SHA256SUMS.txt
+          gh release download "v$FROM" --repo "$RELEASES_REPO" --pattern "$dmg" --pattern SHA256SUMS.txt
           awk -v f="$dmg" '$2 == f' SHA256SUMS.txt | shasum -a 256 -c -
 
       - name: Install like a user (open the DMG, copy the app to /Applications)
@@ -174,7 +180,7 @@ jobs:
           mkdir -p "$RUNNER_TEMP/download" "$RUNNER_TEMP/evidence"
           cd "$RUNNER_TEMP/download"
           exe="BruteForceHR_${FROM}_x64-setup.exe"
-          gh release download "v$FROM" --repo "$GITHUB_REPOSITORY" --pattern "$exe" --pattern SHA256SUMS.txt
+          gh release download "v$FROM" --repo "$RELEASES_REPO" --pattern "$exe" --pattern SHA256SUMS.txt
           awk -v f="$exe" '$2 == f' SHA256SUMS.txt | sha256sum -c -
 
       - name: Install like a user (per-user NSIS installer, silent)

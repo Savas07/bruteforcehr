@@ -110,3 +110,20 @@ describe("buildInsightsModel", () => {
     expect(localeWeekStart("tr-TR")).toBe(1);
   });
 });
+
+describe("drillDownLabel", () => {
+  it("names the set, the dates and the filters", async () => {
+    const { drillDownLabel } = await import("./drilldown");
+    expect(
+      drillDownLabel(ctx.intl, {
+        stage: "interview",
+        from: "2026-07-25",
+        to: "2026-10-22",
+        filters: { source: "greenhouse" },
+      }),
+    ).toBe("Reached interview · 25 Jul 2026 – 22 Oct 2026 · Greenhouse");
+    expect(drillDownLabel(ctx.intl, { activity: "follow_up", from: "2026-10-12" })).toBe(
+      "Follow-ups sent · since 12 Oct 2026",
+    );
+  });
+});

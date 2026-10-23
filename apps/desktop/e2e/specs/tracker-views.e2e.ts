@@ -9,7 +9,7 @@ import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync } from "node:f
 import path from "node:path";
 import { guessColumnMapping, guessedStatusMap, planImport, readSpreadsheet, statusValues } from "@bfhr/core";
 import { $, $$, browser, expect } from "@wdio/globals";
-import { Key } from "webdriverio";
+import { type ChainablePromiseElement, Key } from "webdriverio";
 import { osName, repoRoot, saveScreenshot, setTheme } from "../capture/helpers";
 import { ensureSignedIn, testEmail } from "../support/auth";
 import { firebaseConfig } from "../../src/lib/firebase.ts";
@@ -68,6 +68,23 @@ async function queryGroup(
 
 const importedApplications = () => queryGroup("applications", "company", COMPANIES);
 const text = (value: RestValue | undefined) => value?.stringValue ?? null;
+
+/**
+ * Opens a Radix dropdown: its trigger opens on `pointerdown`, which the embedded WebDriver's
+ * click doesn't produce in WKWebView or WebView2.
+ */
+async function openMenu(trigger: ChainablePromiseElement): Promise<void> {
+  await trigger.waitForDisplayed();
+  await browser.execute(
+    (element: HTMLElement) => {
+      element.dispatchEvent(
+        new PointerEvent("pointerdown", { bubbles: true, cancelable: true, button: 0, pointerType: "mouse" }),
+      );
+    },
+    await trigger.getElement(),
+  );
+  await $('[role="menu"]').waitForDisplayed();
+}
 
 async function capture(name: string): Promise<void> {
   mkdirSync(SHOTS, { recursive: true });
@@ -187,8 +204,9 @@ describe("Tracker table + CSV import", () => {
       timeoutMsg: "the table never showed the 7 imported rows",
     });
     const names = await browser.execute(() =>
-      [...document.querySelectorAll("tr[data-row-id] [data-open-id]")].map(
-        (cell) => cell.textContent?.trim() ?? "",
+      // The visible company name; the button's text also holds the monogram and an sr-only role.
+      [...document.querySelectorAll("tr[data-row-id] [data-open-id] span[title]")].map(
+        (cell) => cell.getAttribute("title") ?? "",
       ),
     );
     expect([...names].sort()).toEqual(COMPANIES);
@@ -199,7 +217,7 @@ describe("Tracker table + CSV import", () => {
     await $('input[aria-label^="Select all"]').click();
     await $('[role="toolbar"]*=7 selected').waitForDisplayed();
     await capture("table-bulk");
-    await $("button*=Set status").click();
+    await openMenu($("button*=Set status"));
     await $('[role="menuitem"]*=Screening').click();
     await browser.waitUntil(
       async () => (await importedApplications()).every((doc) => text(doc.fields["status"]) === "screening"),

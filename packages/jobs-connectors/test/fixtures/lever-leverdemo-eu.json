@@ -1,0 +1,62 @@
+[
+  {
+    "additionalPlain": "you will never find a job better than this one!!!\n",
+    "additional": "<div>you will never find a job better than this one!!!</div>",
+    "categories": {
+      "commitment": "Part time",
+      "department": "Engineering",
+      "location": "Arlington, TX",
+      "team": "Data Science",
+      "allLocations": ["Arlington, TX"]
+    },
+    "createdAt": 1553186035299,
+    "descriptionPlain": "Come work in Arlington!\n\nthis job is AMAAZING!\n",
+    "description": "<div>Come work in Arlington!</div><div><br></div><div>this job is AMAAZING!</div>",
+    "id": "33538a2f-d27d-4a96-8f05-fa4b0e4d940e",
+    "lists": [
+      {
+        "text": "Qualifications",
+        "content": "<li>be smart</li><li>be very smart</li>"
+      }
+    ],
+    "text": "AbelsonTaylor Writer",
+    "country": "US",
+    "workplaceType": "unspecified",
+    "opening": "<div>Come work in Arlington!</div>",
+    "openingPlain": "Come work in Arlington!",
+    "descriptionBody": "<div>this job is AMAAZING!</div>",
+    "descriptionBodyPlain": "this job is AMAAZING!\n",
+    "hostedUrl": "https://jobs.eu.lever.co/leverdemo/33538a2f-d27d-4a96-8f05-fa4b0e4d940e",
+    "applyUrl": "https://jobs.eu.lever.co/leverdemo/33538a2f-d27d-4a96-8f05-fa4b0e4d940e/apply"
+  },
+  {
+    "additionalPlain": "Lever builds modern recruiting software for teams to source, interview, and hire top talent. Our team strives to set a new bar for enterprise software with modern, well-designed, real-time apps. We participated in Y Combinator in summer 2012, and since then have raised $73 million. As the applicant tracking system of choice for Netflix, Eventbrite, ClearSlide, change.org, and thousands more leading companies, Lever means you hire the best by hiring together.\n\nLever is an equal opportunity employ…",
+    "additional": "<div>Lever builds modern recruiting software for teams to source, interview, and hire top talent. Our team strives to set a new bar for enterprise software with modern, well-designed, real-time apps. We participated in Y Combinator in summer 2012, and since then have raised $73 million. As the applicant tracking system of choice for Netflix, Eventbrite, ClearSlide, change.org, and thousands more leading companies, Lever means you hire the best by hiring together.</div><div><br></div><div>Lever i…",
+    "categories": {
+      "commitment": "Full Time",
+      "department": "Sales",
+      "location": "Atlanta, Georgia",
+      "team": "Account Executive",
+      "allLocations": ["Atlanta, Georgia"]
+    },
+    "createdAt": 1502907102690,
+    "descriptionPlain": "A fantastic opportunity to make an impact with a forward thinking company\n\n",
+    "description": "<div><span style=\"font-size: 18px;\">A fantastic opportunity to make an impact with a forward thinking company</span></div><div><br></div>",
+    "id": "dbedd284-e008-4961-b75c-e70d284eab5a",
+    "lists": [
+      {
+        "text": "About the Gig:",
+        "content": "<li>You will be responsible for owning a territory of higher education institutions (universities and colleges) across North America</li><li>You will be a Top Hat &nbsp;brand ambassador and business development executive within your territory</li><li>You will grow the campus user base through lead generation, referrals, and establishing/maintaining relationships through the schools</li><li>You will educate professors on how Top Hat is revolutionizing the world of education and show the value of …"
+      }
+    ],
+    "text": "Account Director (Inside/Outside Hybrid Sales)",
+    "country": "US",
+    "workplaceType": "unspecified",
+    "opening": "",
+    "openingPlain": "",
+    "descriptionBody": "<div><span style=\"font-size: 18px;\">A fantastic opportunity to make an impact with a forward thinking company</span></div><div><br></div>",
+    "descriptionBodyPlain": "A fantastic opportunity to make an impact with a forward thinking company\n\n",
+    "hostedUrl": "https://jobs.eu.lever.co/leverdemo/dbedd284-e008-4961-b75c-e70d284eab5a",
+    "applyUrl": "https://jobs.eu.lever.co/leverdemo/dbedd284-e008-4961-b75c-e70d284eab5a/apply"
+  }
+]

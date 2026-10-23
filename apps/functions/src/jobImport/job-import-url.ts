@@ -1,10 +1,7 @@
-import { z } from "zod";
 import { createHash } from "node:crypto";
 import { extractJobPosting } from "@bfhr/ai";
-import { createConverters, firestorePaths, serverOnlyPaths } from "@bfhr/api";
+import { firestorePaths, serverOnlyPaths } from "@bfhr/api";
 import {
-  type Job,
-  type JobDraft,
   type JobImportErrorReason,
   type JobImportUrlResponse,
   JobImportUrlRequestSchema,
@@ -20,6 +17,7 @@ import { onCall } from "firebase-functions/v2/https";
 import { ReasonedHttpsError, verifiedUid } from "../callable";
 import { ANTHROPIC_API_KEY, aiProvider, toCallableError } from "../ai/common";
 import { firestoreUsageLedger } from "../ai/usage-ledger";
+import { findDuplicateJob } from "../jobs/store";
 import {
   type ImportedPosting,
   importPosting,
@@ -29,12 +27,7 @@ import {
   PAGE_TIMEOUT_MS,
 } from "./import-posting";
 import { HostBudgetError, politeFetch, robotsFor, userAgent } from "./politeness";
-
-const converters = createConverters<Timestamp>({
-  fromDate: (date) => Timestamp.fromDate(date),
-  toDate: (value) => value.toDate(),
-  isTimestamp: (value): value is Timestamp => value instanceof Timestamp,
-});
+import { z } from "zod";
 
 /** Results are reused for a day unless the user asks to refresh (ADR 0005: one fetch per page per 24 h). */
 const CACHE_TTL_MS = 24 * 60 * 60 * 1_000;
@@ -66,23 +59,6 @@ async function loadConfig(): Promise<JobImportConfig> {
       : [],
     restrictedSitesEnabled: snapshot.get("restrictedSitesEnabled") !== false,
   };
-}
-
-/**
- * The user's job this listing duplicates: same `url_import` source key first, then the same
- * dedupe fingerprint (the lookup JobsBackend's connectors use, docs/adr/0011).
- */
-async function findExistingJob(uid: string, draft: JobDraft): Promise<Job | null> {
-  const jobs = getFirestore().collection(firestorePaths.jobs(uid));
-  for (const query of [
-    jobs.where("sourceKeys", "array-contains", draft.sourceKeys[0]).limit(1),
-    jobs.where("fingerprint", "==", draft.fingerprint).limit(1),
-  ]) {
-    const snapshot = await query.get();
-    const doc = snapshot.docs[0];
-    if (doc !== undefined) return converters.job.fromSnapshot(doc);
-  }
-  return null;
 }
 
 /** Cached import result (wire form), `serverOnly/jobImport/users/{uid}/jobImportPages/{sha256(url)}`. */
@@ -170,7 +146,8 @@ export const jobImportUrl = onCall(
       }
 
       const draft = jobFromWire(base.job);
-      const existing = await findExistingJob(uid, draft);
+      // Same lookup as the connectors (source key, then fingerprint / description similarity).
+      const existing = await findDuplicateJob(getFirestore(), uid, draft);
       const response: JobImportUrlResponse =
         existing === null
           ? { ...base, existingJobId: null }

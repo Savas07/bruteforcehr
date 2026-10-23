@@ -474,6 +474,10 @@ describe("source state", () => {
     expect(status({ source: "remotive", status: "skipped", reason: "no_key", count: 0 }).state).toBe(
       "skipped",
     );
+    // A used-up call budget is expected, not a failure.
+    expect(
+      status({ source: "remotive", status: "error", reason: "quota_exhausted", count: 0 }, 5).state,
+    ).toBe("skipped");
     const ok = status({ source: "remotive", status: "ok", reason: null, count: 12 });
     expect(ok).toMatchObject({
       state: "ok",

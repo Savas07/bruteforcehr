@@ -59,7 +59,7 @@ export function nextSourceStatus(input: {
   const state: JobSourceStatus["state"] =
     report.status === "ok"
       ? "ok"
-      : report.status === "skipped"
+      : report.status === "skipped" || report.reason === "quota_exhausted"
         ? "skipped"
         : input.consecutiveFailures >= FAILING_AFTER
           ? "failing"

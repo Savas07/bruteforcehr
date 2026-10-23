@@ -168,7 +168,7 @@ German uses informal "du", which matches the calm, personal tone. That decision 
 
 ## Open questions
 
-1. **App icon and wordmark** don't exist yet. Packaging uses the default Electron icon. They need their own design and critique pass (BRIEF §5.4).
+1. **App icon and wordmark** don't exist yet. Packaging uses the default Electron icon. They need their own design and critique pass (BRIEF §5.4). _Resolved (M1): B monogram icon and wordmark, see `docs/design/critiques/brand/` and `docs/design/system.md` › App icon and wordmark._
 2. **Native chrome in screenshots:** the Playwright captures contain only the web contents. Traffic lights, caption buttons, vibrancy and Mica aren't in them (the capture uses the opaque fallback colour). Traffic-light alignment should be checked by eye on a real window; Windows captures need a Windows runner or VM (M1 CI).
 3. **Accent colour:** M0 stays neutral (selection is a grey fill, and the focus ring is the only blue). Should `@bfhr/ui-tokens` follow the OS accent (`systemPreferences.getAccentColor()`) or a brand colour?
 4. **⌘K vs search:** when Jobs gets full-text search (M4), does ⌘K stay global (palette with entity search) while ⌘F searches within a section? Proposal: yes.

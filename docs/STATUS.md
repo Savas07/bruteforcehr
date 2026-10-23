@@ -133,9 +133,11 @@ Sections (hero, features, how it works, download CTA, FAQ, changelog, footer, le
 
 ## App icon and wordmark
 
-| Screen               | Platform | References | Critique rounds | A11y | Status      |
-| -------------------- | -------- | ---------- | --------------- | ---- | ----------- |
-| App icon (all sizes) | iOS      | —          | 0               | —    | not started |
-| App icon (all sizes) | macOS    | —          | 0               | —    | not started |
-| App icon (all sizes) | Windows  | —          | 0               | —    | not started |
-| Wordmark             | Web      | —          | 0               | —    | not started |
+| Screen               | Platform | References                                              | Critique rounds | A11y | Status   |
+| -------------------- | -------- | ------------------------------------------------------- | --------------- | ---- | -------- |
+| App icon (all sizes) | iOS      | [launch screens](design/critiques/brand/app-icon/r1.md) | 2               | pass | approved |
+| App icon (all sizes) | macOS    | [launch screens](design/critiques/brand/app-icon/r1.md) | 2               | pass | approved |
+| App icon (all sizes) | Windows  | [launch screens](design/critiques/brand/app-icon/r1.md) | 2               | pass | approved |
+| Wordmark             | Web      | [website](design/research/website.md)                   | 2               | pass | approved |
+
+Critique logs, size sheets and the accessibility review: `docs/design/critiques/brand/` (app-icon, wordmark). Sources and the asset pipeline: `design/brand/` (`build.py`).

@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- BruteForceHR mark, master (1024 canvas, white on transparent). Outlined monoline B: centreline spine x318, top y248, bottom y776, bowl join y500; upper bowl to x530 (r126), lower bowl to x542 (r138, 12 wider); stroke 112 with round outer corners. Optically centred (glyph box 262-736 x 192-832). Small sizes use mark-16/24/32.svg. -->
+  <path d="M318 192H530A182 182 0 0 1 669.07 491.41A194 194 0 0 1 542 832H318A56 56 0 0 1 262 776V248A56 56 0 0 1 318 192ZM374 304V444H530A70 70 0 0 0 530 304ZM374 556V720H542A82 82 0 0 0 542 556Z" fill="#FFFFFF"/>
+</svg>

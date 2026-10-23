@@ -37,6 +37,8 @@ import { ApplicationCard, CardBody, DropPlaceholder } from "./ApplicationCard";
 import { BoardColumn, type DropRole } from "./BoardColumn";
 import { ClosedRail } from "./ClosedRail";
 import { openAddApplication } from "../application-add";
+import { openCsvImport } from "../tracker-csv";
+import { TrackerViewSwitch } from "../tracker-table/ViewSwitch";
 import { ApplicationPanel } from "../application-detail/ApplicationPanel";
 import {
   boardStatuses,
@@ -47,6 +49,11 @@ import {
 } from "./model";
 
 const messages = defineMessages({
+  importCsv: {
+    id: "tracker-board.firstUse.importCsv",
+    defaultMessage: "Import CSV",
+    description: "Board empty state: import applications from a spreadsheet",
+  },
   boardLabel: { id: "tracker-board.screen.boardLabel", defaultMessage: "Application board" },
   summary: {
     id: "tracker-board.screen.summary",
@@ -115,6 +122,9 @@ function Toolbar({ title, model }: { title: string; model: Model }) {
   return (
     <div className="flex shrink-0 flex-wrap items-baseline gap-x-4 gap-y-1 px-6 pt-5 pb-4">
       <ScreenTitle title={title} />
+      <span className="self-center">
+        <TrackerViewSwitch current="board" />
+      </span>
       {data && data.firstUse === null && (
         <p className="text-fg-secondary text-callout tabular-nums">
           {intl.formatMessage(messages.summary, { active, closed: data.closedRail.count })}
@@ -616,6 +626,7 @@ function ReadyBoard({ model }: { model: TrackerBoardModel }) {
                   keys: firstUse.primary.shortcut,
                   onClick: () => openAddApplication(),
                 }}
+                secondary={{ label: intl.formatMessage(messages.importCsv), onClick: () => openCsvImport() }}
                 className="bg-surface-base border-line-subtle shadow-raised w-full max-w-120 rounded-lg border"
               />
             </div>

@@ -26,7 +26,13 @@ export function DesignTrackerTable() {
 }
 
 export function DesignTrackerCalendar() {
-  return <DesignTrackerScreen id="tracker-calendar" build={buildTrackerCalendarModel} view={TrackerCalendarScreen} />;
+  return (
+    <DesignTrackerScreen
+      id="tracker-calendar"
+      build={buildTrackerCalendarModel}
+      view={TrackerCalendarScreen}
+    />
+  );
 }
 
 /** The bytes of a `data:` URL (Vite `?inline` asset). */
@@ -46,9 +52,12 @@ function DesignCsvImport() {
     const open: Readonly<Record<CsvDesignState, () => void>> = {
       pick: () => openCsvImport(),
       workbook: () => openCsvImport({ file: { name: "Applications 2026.xlsx", bytes: WORKBOOK_BYTES } }),
-      columns: () => openCsvImport({ file: { name: "takip.csv", bytes: dataUrlBytes(trExcelCsv) }, step: "columns" }),
-      statuses: () => openCsvImport({ file: { name: "takip.csv", bytes: dataUrlBytes(trExcelCsv) }, step: "statuses" }),
-      preview: () => openCsvImport({ file: { name: "takip.csv", bytes: dataUrlBytes(trExcelCsv) }, step: "preview" }),
+      columns: () =>
+        openCsvImport({ file: { name: "takip.csv", bytes: dataUrlBytes(trExcelCsv) }, step: "columns" }),
+      statuses: () =>
+        openCsvImport({ file: { name: "takip.csv", bytes: dataUrlBytes(trExcelCsv) }, step: "statuses" }),
+      preview: () =>
+        openCsvImport({ file: { name: "takip.csv", bytes: dataUrlBytes(trExcelCsv) }, step: "preview" }),
     };
     open[step]();
     return closeCsvImport;

@@ -15,7 +15,9 @@ function useViewParams(): Readonly<Record<string, string | undefined>> {
   const search: Readonly<Record<string, unknown>> = useSearch({ strict: false });
   const routeParams: Readonly<Record<string, string | undefined>> = useParams({ strict: false });
   const key = JSON.stringify({
-    ...Object.fromEntries(Object.entries(search).filter((entry): entry is [string, string] => typeof entry[1] === "string")),
+    ...Object.fromEntries(
+      Object.entries(search).filter((entry): entry is [string, string] => typeof entry[1] === "string"),
+    ),
     ...routeParams,
   });
   return useMemo(() => JSON.parse(key) as Readonly<Record<string, string | undefined>>, [key]);

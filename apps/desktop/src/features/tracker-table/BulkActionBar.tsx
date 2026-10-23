@@ -4,7 +4,13 @@
  * their reason) · Export CSV · Clear (Esc). A move writes one event per application and the toast
  * offers one Undo for all of them (useStatusMoves).
  */
-import { ACTIVE_STATUSES, type ApplicationStatus, statusPhase, type StatusPhase, TERMINAL_STATUSES } from "@bfhr/core";
+import {
+  ACTIVE_STATUSES,
+  type ApplicationStatus,
+  statusPhase,
+  type StatusPhase,
+  TERMINAL_STATUSES,
+} from "@bfhr/core";
 import { ArrowRight, Download, X } from "lucide-react";
 import { DropdownMenu } from "radix-ui";
 import { Fragment } from "react";
@@ -86,7 +92,9 @@ export function BulkActionBar({
                     disabledReason={movable === 0 ? intl.formatMessage(messages.noneCanMove) : null}
                     onSelect={() => onMove(status)}
                   >
-                    {movable === count ? label : intl.formatMessage(messages.moveCount, { label, count: movable })}
+                    {movable === count
+                      ? label
+                      : intl.formatMessage(messages.moveCount, { label, count: movable })}
                   </MenuItem>
                 );
               })}

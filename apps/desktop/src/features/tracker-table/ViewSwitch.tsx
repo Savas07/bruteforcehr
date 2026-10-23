@@ -18,7 +18,11 @@ export type TrackerView = (typeof TRACKER_VIEWS)[number];
 const STORAGE_KEY = "bfhr.tracker.view";
 
 const messages = defineMessages({
-  label: { id: "tracker.views.label", defaultMessage: "View", description: "Accessible name of the view switch" },
+  label: {
+    id: "tracker.views.label",
+    defaultMessage: "View",
+    description: "Accessible name of the view switch",
+  },
   board: { id: "tracker.views.board", defaultMessage: "Board" },
   table: { id: "tracker.views.table", defaultMessage: "Table" },
   calendar: { id: "tracker.views.calendar", defaultMessage: "Calendar" },
@@ -45,7 +49,10 @@ export function useTrackerView(): [TrackerView, (view: TrackerView) => void] {
   const setView = (next: TrackerView) => {
     globalThis.localStorage?.setItem(STORAGE_KEY, next);
     // Filters of the view left behind (Insights drill-downs included) don't follow along.
-    void navigate({ to: "/tracker", search: (previous: Readonly<Record<string, unknown>>) => ({ ...keepAcrossViews(previous), view: next }) });
+    void navigate({
+      to: "/tracker",
+      search: (previous: Readonly<Record<string, unknown>>) => ({ ...keepAcrossViews(previous), view: next }),
+    });
   };
   return [view, setView];
 }
@@ -53,7 +60,8 @@ export function useTrackerView(): [TrackerView, (view: TrackerView) => void] {
 /** Search params every view understands; the design build's state params ride along. */
 function keepAcrossViews(search: Readonly<Record<string, unknown>>): Record<string, unknown> {
   const kept: Record<string, unknown> = {};
-  for (const key of ["fixture", "state", "platform", "locale", "tz"]) if (key in search) kept[key] = search[key];
+  for (const key of ["fixture", "state", "platform", "locale", "tz"])
+    if (key in search) kept[key] = search[key];
   return kept;
 }
 
@@ -67,7 +75,11 @@ export function TrackerViewSwitch({ current }: { current: TrackerView }) {
       label={intl.formatMessage(messages.label)}
       value={current}
       onValueChange={setView}
-      options={TRACKER_VIEWS.map((view) => ({ value: view, label: intl.formatMessage(messages[view]), icon: ICONS[view] }))}
+      options={TRACKER_VIEWS.map((view) => ({
+        value: view,
+        label: intl.formatMessage(messages[view]),
+        icon: ICONS[view],
+      }))}
     />
   );
 }

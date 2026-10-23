@@ -70,7 +70,9 @@ export function ColumnChooser({
         >
           <div className="flex items-start gap-3 px-5 pt-5 pb-3">
             <div className="min-w-0 flex-1">
-              <Dialog.Title className="text-title3 font-semibold">{intl.formatMessage(messages.title)}</Dialog.Title>
+              <Dialog.Title className="text-title3 font-semibold">
+                {intl.formatMessage(messages.title)}
+              </Dialog.Title>
               <Dialog.Description id={descriptionId} className="text-fg-secondary mt-1 text-callout">
                 {intl.formatMessage(messages.body)}
               </Dialog.Description>
@@ -89,7 +91,10 @@ export function ColumnChooser({
               const fixed = column === FIXED_COLUMN;
               const index = columns.indexOf(column);
               return (
-                <li key={column} className="hover:bg-surface-hover flex min-h-10 items-center gap-2 rounded-md px-2">
+                <li
+                  key={column}
+                  className="hover:bg-surface-hover flex min-h-10 items-center gap-2 rounded-md px-2"
+                >
                   <label className="flex min-w-0 flex-1 cursor-default items-center gap-3 py-2 text-callout">
                     <input
                       type="checkbox"
@@ -99,7 +104,11 @@ export function ColumnChooser({
                       className="accent-accent-solid size-4"
                     />
                     <span className="min-w-0 truncate">{label}</span>
-                    {fixed && <span className="text-fg-secondary text-footnote">{intl.formatMessage(messages.fixed)}</span>}
+                    {fixed && (
+                      <span className="text-fg-secondary text-footnote">
+                        {intl.formatMessage(messages.fixed)}
+                      </span>
+                    )}
                   </label>
                   {shown && !fixed && (
                     <span className="flex shrink-0 gap-0.5">
@@ -107,7 +116,9 @@ export function ColumnChooser({
                         size="sm"
                         icon={ArrowUp}
                         label={intl.formatMessage(messages.moveUp, { column: label })}
-                        disabledReason={index <= 1 ? intl.formatMessage(messages.moveUp, { column: label }) : null}
+                        disabledReason={
+                          index <= 1 ? intl.formatMessage(messages.moveUp, { column: label }) : null
+                        }
                         onClick={() => move(column, -1)}
                       />
                       <IconButton
@@ -115,7 +126,9 @@ export function ColumnChooser({
                         icon={ArrowDown}
                         label={intl.formatMessage(messages.moveDown, { column: label })}
                         disabledReason={
-                          index >= columns.length - 1 ? intl.formatMessage(messages.moveDown, { column: label }) : null
+                          index >= columns.length - 1
+                            ? intl.formatMessage(messages.moveDown, { column: label })
+                            : null
                         }
                         onClick={() => move(column, 1)}
                       />

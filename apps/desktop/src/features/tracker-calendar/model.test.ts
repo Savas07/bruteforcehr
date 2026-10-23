@@ -35,7 +35,9 @@ describe("buildTrackerCalendarModel", () => {
     expect(followUps.length).toBeGreaterThan(0);
     for (const entry of followUps) {
       expect(entry).toMatchObject({ suggested: true, time: null, title: "Follow up" });
-      const application = populatedDataset.applications.find((candidate) => candidate.id === entry.applicationId);
+      const application = populatedDataset.applications.find(
+        (candidate) => candidate.id === entry.applicationId,
+      );
       expect(application?.status).toBe("applied");
     }
   });
@@ -45,7 +47,10 @@ describe("buildTrackerCalendarModel", () => {
     expect([...sorts].sort((a, b) => a - b)).toEqual(sorts);
     expect(model.today).toBe("2026-10-22");
     expect(model.weekStartsOn).toBe(1);
-    const us = buildTrackerCalendarModel(data, fixtureContext(populatedDataset, [], createAppIntl({ language: "en", locale: "en-US" })));
+    const us = buildTrackerCalendarModel(
+      data,
+      fixtureContext(populatedDataset, [], createAppIntl({ language: "en", locale: "en-US" })),
+    );
     expect(us.weekStartsOn).toBe(0);
   });
 

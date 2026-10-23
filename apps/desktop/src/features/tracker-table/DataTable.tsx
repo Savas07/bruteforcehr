@@ -24,7 +24,13 @@ import { cx } from "../../shared/cx";
 import { Monogram } from "../../shared/ui/Company";
 import { InteractiveStatusPill } from "../../shared/ui/StatusPill";
 import { SyncGlyph } from "../../shared/ui/SyncGlyph";
-import { COLUMN_MESSAGES, TABLE_COLUMNS, type TableColumnId, type TableDateVM, type TableRowVM } from "./model";
+import {
+  COLUMN_MESSAGES,
+  TABLE_COLUMNS,
+  type TableColumnId,
+  type TableDateVM,
+  type TableRowVM,
+} from "./model";
 
 const messages = defineMessages({
   table: {
@@ -76,7 +82,11 @@ const WIDTH: Readonly<Record<TableColumnId, number>> = {
 };
 const SELECT_WIDTH = 44;
 
-const features = tableFeatures({ rowSortingFeature, columnVisibilityFeature, sortedRowModel: createSortedRowModel() });
+const features = tableFeatures({
+  rowSortingFeature,
+  columnVisibilityFeature,
+  sortedRowModel: createSortedRowModel(),
+});
 const helper = createColumnHelper<typeof features, TableRowVM>();
 
 const collator = new Intl.Collator(undefined, { sensitivity: "base", numeric: true });
@@ -106,9 +116,16 @@ const columns = helper.columns(
       case "appliedAt":
         return helper.accessor((row) => row.appliedAt?.sort, { id, ...date((row) => row.appliedAt) });
       case "lastActivity":
-        return helper.accessor((row) => row.lastActivity.sort, { id, ...date((row) => row.lastActivity), sortDescFirst: true });
+        return helper.accessor((row) => row.lastActivity.sort, {
+          id,
+          ...date((row) => row.lastActivity),
+          sortDescFirst: true,
+        });
       case "nextAction":
-        return helper.accessor((row) => row.nextAction?.due?.sort, { id, ...date((row) => row.nextAction?.due) });
+        return helper.accessor((row) => row.nextAction?.due?.sort, {
+          id,
+          ...date((row) => row.nextAction?.due),
+        });
       case "source":
         return helper.accessor((row) => row.source, { id, ...text((row) => row.source) });
       case "cv":
@@ -120,7 +137,11 @@ const columns = helper.columns(
       case "priority":
         return helper.accessor((row) => PRIORITY_ORDER[row.priority.key], { id, sortDescFirst: false });
       case "added":
-        return helper.accessor((row) => row.added.sort, { id, ...date((row) => row.added), sortDescFirst: true });
+        return helper.accessor((row) => row.added.sort, {
+          id,
+          ...date((row) => row.added),
+          sortDescFirst: true,
+        });
     }
   }),
 );
@@ -227,7 +248,11 @@ export function DataTable({
     if (!pendingFocus.current) return;
     pendingFocus.current = false;
     requestAnimationFrame(() =>
-      scrollRef.current?.querySelector<HTMLElement>(`[data-open-id="${CSS.escape(rows[focusedIndex]?.applicationId ?? "")}"]`)?.focus(),
+      scrollRef.current
+        ?.querySelector<HTMLElement>(
+          `[data-open-id="${CSS.escape(rows[focusedIndex]?.applicationId ?? "")}"]`,
+        )
+        ?.focus(),
     );
   }, [focusedIndex, rows, virtualizer]);
 
@@ -240,7 +265,10 @@ export function DataTable({
 
   const onRowKeyDown = (event: KeyboardEvent<HTMLElement>) => {
     if (event.altKey || event.metaKey || event.ctrlKey) return;
-    const page = Math.max(1, Math.floor((scrollRef.current?.clientHeight ?? ROW_HEIGHT * 10) / ROW_HEIGHT) - 1);
+    const page = Math.max(
+      1,
+      Math.floor((scrollRef.current?.clientHeight ?? ROW_HEIGHT * 10) / ROW_HEIGHT) - 1,
+    );
     const steps: Readonly<Record<string, number>> = {
       ArrowDown: 1,
       j: 1,
@@ -329,7 +357,11 @@ export function DataTable({
             if (!row) return null;
             const isSelected = selected.has(row.applicationId);
             const isOpen = row.applicationId === openId;
-            const rowBg = isOpen ? "bg-surface-selected" : isSelected ? "bg-accent-subtle" : "bg-surface-base";
+            const rowBg = isOpen
+              ? "bg-surface-selected"
+              : isSelected
+                ? "bg-accent-subtle"
+                : "bg-surface-base";
             return (
               <tr
                 key={row.applicationId}
@@ -344,7 +376,10 @@ export function DataTable({
                 <td className={cx(bodyCell, stickyStart, rowBg, "ps-4")} style={{ left: 0 }}>
                   <Checkbox
                     checked={isSelected}
-                    label={intl.formatMessage(messages.selectRow, { company: row.company.name, role: row.role })}
+                    label={intl.formatMessage(messages.selectRow, {
+                      company: row.company.name,
+                      role: row.role,
+                    })}
                     onChange={(range) => onToggleSelected(row.applicationId, range)}
                   />
                 </td>

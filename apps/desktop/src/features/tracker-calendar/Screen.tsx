@@ -7,7 +7,16 @@
  * to the week's ends, Page Up / Page Down by month (week in Week view), T today; Enter shows the
  * day in the agenda panel, where entries open their application and interviews export `.ics`.
  */
-import { Bell, CalendarPlus, ChevronLeft, ChevronRight, Flag, Send, SlidersHorizontal, Users } from "lucide-react";
+import {
+  Bell,
+  CalendarPlus,
+  ChevronLeft,
+  ChevronRight,
+  Flag,
+  Send,
+  SlidersHorizontal,
+  Users,
+} from "lucide-react";
 import { DropdownMenu } from "radix-ui";
 import { type KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
 import { defineMessages, useIntl } from "react-intl";
@@ -51,10 +60,17 @@ const messages = defineMessages({
     id: "tracker-calendar.error.body",
     defaultMessage: "Our server didn't respond. Your saved data is safe. Try again in a moment.",
   },
-  previous: { id: "tracker-calendar.previous", defaultMessage: "Previous {unit, select, month {month} other {week}}" },
+  previous: {
+    id: "tracker-calendar.previous",
+    defaultMessage: "Previous {unit, select, month {month} other {week}}",
+  },
   next: { id: "tracker-calendar.next", defaultMessage: "Next {unit, select, month {month} other {week}}" },
   today: { id: "tracker-calendar.today", defaultMessage: "Today" },
-  mode: { id: "tracker-calendar.mode", defaultMessage: "Period", description: "Accessible name of Month/Week" },
+  mode: {
+    id: "tracker-calendar.mode",
+    defaultMessage: "Period",
+    description: "Accessible name of Month/Week",
+  },
   month: { id: "tracker-calendar.month", defaultMessage: "Month" },
   week: { id: "tracker-calendar.week", defaultMessage: "Week" },
   display: { id: "tracker-calendar.display", defaultMessage: "Show" },
@@ -65,7 +81,8 @@ const messages = defineMessages({
   more: { id: "tracker-calendar.more", defaultMessage: "+{count} more" },
   dayLabel: {
     id: "tracker-calendar.dayLabel",
-    defaultMessage: "{date}{today, select, yes {, today} other {}}: {count, plural, =0 {nothing planned} one {# item} other {# items}}",
+    defaultMessage:
+      "{date}{today, select, yes {, today} other {}}: {count, plural, =0 {nothing planned} one {# item} other {# items}}",
   },
   next7: { id: "tracker-calendar.next7", defaultMessage: "Next 7 days" },
   backToNext7: { id: "tracker-calendar.backToNext7", defaultMessage: "Show next 7 days" },
@@ -117,7 +134,12 @@ const PrefsSchema = z.object({
 });
 type CalendarPrefs = z.infer<typeof PrefsSchema>;
 const PREFS_KEY = "bfhr.tracker.calendar.v1";
-const DEFAULT_PREFS: CalendarPrefs = { mode: "month", weekends: true, kinds: [...CALENDAR_ENTRY_KINDS], suggested: true };
+const DEFAULT_PREFS: CalendarPrefs = {
+  mode: "month",
+  weekends: true,
+  kinds: [...CALENDAR_ENTRY_KINDS],
+  suggested: true,
+};
 
 function useCalendarPrefs(): [CalendarPrefs, (update: (prefs: CalendarPrefs) => CalendarPrefs) => void] {
   const [prefs, setPrefs] = useState<CalendarPrefs>(() => {
@@ -148,10 +170,10 @@ export default function TrackerCalendarScreen({ model }: ScreenProps<TrackerCale
       </div>
       {model.status === "error" ? (
         <PaneError
-              title={intl.formatMessage(messages.errorTitle)}
-              body={intl.formatMessage(messages.errorBody)}
-              onRetry={model.retry}
-            />
+          title={intl.formatMessage(messages.errorTitle)}
+          body={intl.formatMessage(messages.errorBody)}
+          onRetry={model.retry}
+        />
       ) : (
         showSkeleton && (
           <div aria-hidden="true" className="grid flex-1 grid-cols-7 gap-px px-6 pb-6">
@@ -193,7 +215,9 @@ function ReadyCalendar({ model, stamp }: { model: TrackerCalendarModel; stamp: S
   }, [entries]);
 
   const weeks =
-    prefs.mode === "month" ? monthWeeks(focused, model.weekStartsOn) : [weekDays(focused, model.weekStartsOn)];
+    prefs.mode === "month"
+      ? monthWeeks(focused, model.weekStartsOn)
+      : [weekDays(focused, model.weekStartsOn)];
   const showDay = (day: string) => prefs.weekends || !isWeekend(day);
   const columns = weeks[0]?.filter(showDay) ?? [];
 
@@ -261,11 +285,15 @@ function ReadyCalendar({ model, stamp }: { model: TrackerCalendarModel; stamp: S
     const [first] = items;
     if (!first) return;
     const name =
-      fileName ?? (items.length === 1 ? icsFileName(first) : `${intl.formatMessage(messages.icsAllName, { date: model.today })}.ics`);
+      fileName ??
+      (items.length === 1
+        ? icsFileName(first)
+        : `${intl.formatMessage(messages.icsAllName, { date: model.today })}.ics`);
     setExporting(true);
     try {
       const path = await saveIcsFile(name, interviewsToIcs(items, intl, new Date()));
-      if (path !== null) toast.show({ variant: "info", message: intl.formatMessage(messages.icsSaved, { fileName: name }) });
+      if (path !== null)
+        toast.show({ variant: "info", message: intl.formatMessage(messages.icsSaved, { fileName: name }) });
     } catch {
       toast.show({ variant: "info", message: intl.formatMessage(messages.icsFailed) });
     } finally {
@@ -276,8 +304,17 @@ function ReadyCalendar({ model, stamp }: { model: TrackerCalendarModel; stamp: S
     (entry) => entry.kind === "interview" && entry.day >= model.today && entry.interviewId !== null,
   );
 
-  const periodFormat = new Intl.DateTimeFormat(intl.locale, { month: "long", year: "numeric", timeZone: "UTC" });
-  const rangeFormat = new Intl.DateTimeFormat(intl.locale, { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
+  const periodFormat = new Intl.DateTimeFormat(intl.locale, {
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+  const rangeFormat = new Intl.DateTimeFormat(intl.locale, {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
+  });
   const period =
     prefs.mode === "month"
       ? periodFormat.format(dayDate(focused))
@@ -285,7 +322,9 @@ function ReadyCalendar({ model, stamp }: { model: TrackerCalendarModel; stamp: S
   const weekdayFormat = new Intl.DateTimeFormat(intl.locale, { weekday: "short", timeZone: "UTC" });
   const longDayFormat = new Intl.DateTimeFormat(intl.locale, { dateStyle: "full", timeZone: "UTC" });
 
-  const agendaDays = selectedDay ? [selectedDay] : Array.from({ length: 7 }, (_, index) => addDays(model.today, index));
+  const agendaDays = selectedDay
+    ? [selectedDay]
+    : Array.from({ length: 7 }, (_, index) => addDays(model.today, index));
   const agendaEntries = agendaDays.flatMap((day) => byDay.get(day) ?? []);
   const openIndex = agendaEntries.findIndex((entry) => entry.applicationId === openId);
 
@@ -313,7 +352,9 @@ function ReadyCalendar({ model, stamp }: { model: TrackerCalendarModel; stamp: S
                       onCheckedChange={(checked) =>
                         setPrefs((current) => ({
                           ...current,
-                          kinds: checked ? [...current.kinds, kind] : current.kinds.filter((value) => value !== kind),
+                          kinds: checked
+                            ? [...current.kinds, kind]
+                            : current.kinds.filter((value) => value !== kind),
                         }))
                       }
                     >
@@ -345,7 +386,9 @@ function ReadyCalendar({ model, stamp }: { model: TrackerCalendarModel; stamp: S
                 )
               }
               exporting={exporting}
-              disabledReason={upcomingInterviews.length === 0 ? intl.formatMessage(messages.noUpcoming) : null}
+              disabledReason={
+                upcomingInterviews.length === 0 ? intl.formatMessage(messages.noUpcoming) : null
+              }
             />
           </div>
         </div>
@@ -404,7 +447,11 @@ function ReadyCalendar({ model, stamp }: { model: TrackerCalendarModel; stamp: S
           </div>
           <div className={cx("grid min-h-0 flex-1", prefs.mode === "month" ? "auto-rows-fr" : "grid-rows-1")}>
             {weeks.map((week) => (
-              <div key={week[0]} role="row" className="border-line-subtle flex min-h-0 border-b last:border-b-0">
+              <div
+                key={week[0]}
+                role="row"
+                className="border-line-subtle flex min-h-0 border-b last:border-b-0"
+              >
                 {week.filter(showDay).map((day) => {
                   const dayEntries = byDay.get(day) ?? [];
                   const inMonth = prefs.mode === "week" || day.slice(0, 7) === focused.slice(0, 7);
@@ -430,14 +477,22 @@ function ReadyCalendar({ model, stamp }: { model: TrackerCalendarModel; stamp: S
                       }}
                       className={cx(
                         "border-line-subtle flex min-w-0 flex-1 cursor-default flex-col gap-1 overflow-hidden border-e p-1.5 last:border-e-0 focus-visible:-outline-offset-2",
-                        day === selectedDay ? "bg-surface-selected" : !inMonth ? "bg-surface-sunken/60" : "bg-surface-base",
+                        day === selectedDay
+                          ? "bg-surface-selected"
+                          : !inMonth
+                            ? "bg-surface-sunken/60"
+                            : "bg-surface-base",
                       )}
                     >
                       <span
                         aria-hidden="true"
                         className={cx(
                           "inline-flex size-6 shrink-0 items-center justify-center rounded-full text-footnote tabular-nums",
-                          isToday ? "bg-accent-solid text-fg-on-accent font-semibold" : inMonth ? "text-fg-primary" : "text-fg-tertiary",
+                          isToday
+                            ? "bg-accent-solid text-fg-on-accent font-semibold"
+                            : inMonth
+                              ? "text-fg-primary"
+                              : "text-fg-tertiary",
                         )}
                       >
                         {Number(day.slice(8))}
@@ -470,7 +525,9 @@ function ReadyCalendar({ model, stamp }: { model: TrackerCalendarModel; stamp: S
                   label: intl.formatMessage(messages.panelNav, {
                     index: openIndex + 1,
                     count: agendaEntries.length,
-                    day: selectedDay ? longDayFormat.format(dayDate(selectedDay)) : intl.formatMessage(messages.next7),
+                    day: selectedDay
+                      ? longDayFormat.format(dayDate(selectedDay))
+                      : intl.formatMessage(messages.next7),
                   }),
                   previousId: agendaEntries[openIndex - 1]?.applicationId ?? null,
                   nextId: agendaEntries[openIndex + 1]?.applicationId ?? null,
@@ -482,7 +539,9 @@ function ReadyCalendar({ model, stamp }: { model: TrackerCalendarModel; stamp: S
         />
       ) : (
         <aside
-          aria-label={selectedDay ? longDayFormat.format(dayDate(selectedDay)) : intl.formatMessage(messages.next7)}
+          aria-label={
+            selectedDay ? longDayFormat.format(dayDate(selectedDay)) : intl.formatMessage(messages.next7)
+          }
           className="border-line-subtle bg-surface-base flex w-80 shrink-0 flex-col border-s"
         >
           <div className="flex items-baseline justify-between gap-2 px-4 pt-5 pb-2">
@@ -554,7 +613,12 @@ function Agenda({
   if (entries.length === 0) return <p className="text-fg-secondary text-callout">{emptyText}</p>;
   const timed = entries.filter((entry) => entry.time !== null);
   const allDay = entries.filter((entry) => entry.time === null);
-  const dayFormat = new Intl.DateTimeFormat(intl.locale, { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" });
+  const dayFormat = new Intl.DateTimeFormat(intl.locale, {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    timeZone: "UTC",
+  });
   const section = (label: string, list: readonly CalendarEntryVM[]) =>
     list.length > 0 && (
       <section className="flex flex-col gap-2">
@@ -565,7 +629,12 @@ function Agenda({
             return (
               <li key={entry.id} className="border-line-subtle flex flex-col gap-1 rounded-md border p-2.5">
                 <p className="flex items-center gap-1.5 text-footnote">
-                  <span className={cx("inline-flex items-center gap-1 rounded-sm px-1.5 py-0.5", KIND_TONE[entry.kind])}>
+                  <span
+                    className={cx(
+                      "inline-flex items-center gap-1 rounded-sm px-1.5 py-0.5",
+                      KIND_TONE[entry.kind],
+                    )}
+                  >
                     <Icon aria-hidden="true" className="size-3.5" strokeWidth={1.75} />
                     {intl.formatMessage(KIND_MESSAGES[entry.kind])}
                   </span>
@@ -590,13 +659,21 @@ function Agenda({
                       size="sm"
                       variant="secondary"
                       onClick={() => entry.applicationId && onOpen(entry.applicationId)}
-                      aria-label={intl.formatMessage(messages.open, { company: entry.company.name, role: entry.context })}
+                      aria-label={intl.formatMessage(messages.open, {
+                        company: entry.company.name,
+                        role: entry.context,
+                      })}
                     >
                       {entry.company.name}
                     </Button>
                   )}
                   {entry.interviewId && (
-                    <Button size="sm" variant="plain" icon={CalendarPlus} onClick={() => entry.interviewId && onExport(entry.interviewId)}>
+                    <Button
+                      size="sm"
+                      variant="plain"
+                      icon={CalendarPlus}
+                      onClick={() => entry.interviewId && onExport(entry.interviewId)}
+                    >
                       {intl.formatMessage(messages.addToCalendar)}
                     </Button>
                   )}

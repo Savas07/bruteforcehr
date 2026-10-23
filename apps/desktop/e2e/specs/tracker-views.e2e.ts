@@ -7,13 +7,7 @@
  */
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import path from "node:path";
-import {
-  guessColumnMapping,
-  guessedStatusMap,
-  planImport,
-  readSpreadsheet,
-  statusValues,
-} from "@bfhr/core";
+import { guessColumnMapping, guessedStatusMap, planImport, readSpreadsheet, statusValues } from "@bfhr/core";
 import { $, $$, browser, expect } from "@wdio/globals";
 import { Key } from "webdriverio";
 import { osName, repoRoot, saveScreenshot, setTheme } from "../capture/helpers";
@@ -34,14 +28,23 @@ const COMPANIES = [
 const isMac = process.platform === "darwin";
 
 const BASE = `http://127.0.0.1:8080/v1/projects/${firebaseConfig.projectId}/databases/(default)/documents`;
-type RestValue = { stringValue?: string; nullValue?: null; timestampValue?: string; mapValue?: { fields?: Record<string, RestValue> } };
+type RestValue = {
+  stringValue?: string;
+  nullValue?: null;
+  timestampValue?: string;
+  mapValue?: { fields?: Record<string, RestValue> };
+};
 interface RestDoc {
   readonly name: string;
   readonly fields: Record<string, RestValue>;
 }
 
 /** Every document of a collection group whose `field` is one of `values` (emulator owner access). */
-async function queryGroup(collectionId: string, field: string, values: readonly string[]): Promise<RestDoc[]> {
+async function queryGroup(
+  collectionId: string,
+  field: string,
+  values: readonly string[],
+): Promise<RestDoc[]> {
   const response = await fetch(`${BASE}:runQuery`, {
     method: "POST",
     headers: { Authorization: "Bearer owner", "Content-Type": "application/json" },
@@ -98,7 +101,9 @@ describe("Tracker table + CSV import", () => {
     const bytes = readFileSync(FIXTURE).toString("base64");
     await browser.execute(
       (data: string, name: string) => {
-        const file = new File([Uint8Array.from(atob(data), (char) => char.charCodeAt(0))], name, { type: "text/csv" });
+        const file = new File([Uint8Array.from(atob(data), (char) => char.charCodeAt(0))], name, {
+          type: "text/csv",
+        });
         const input = document.querySelector<HTMLInputElement>('[data-testid="csv-file-input"]');
         if (!input) throw new Error("no file input");
         const transfer = new DataTransfer();
@@ -148,7 +153,9 @@ describe("Tracker table + CSV import", () => {
     for (const event of events) {
       expect(text(event.fields["type"])).toBe("created");
       expect(text(event.fields["actor"])).toBe("user");
-      expect(text(event.fields["evidence"]?.mapValue?.fields?.["reason"])).toMatch(/^Imported from takip\.csv · row \d+$/);
+      expect(text(event.fields["evidence"]?.mapValue?.fields?.["reason"])).toMatch(
+        /^Imported from takip\.csv · row \d+$/,
+      );
     }
   });
 
@@ -159,7 +166,9 @@ describe("Tracker table + CSV import", () => {
       timeoutMsg: "the table never showed the 7 imported rows",
     });
     const names = await browser.execute(() =>
-      [...document.querySelectorAll("tr[data-row-id] [data-open-id]")].map((cell) => cell.textContent?.trim() ?? ""),
+      [...document.querySelectorAll("tr[data-row-id] [data-open-id]")].map(
+        (cell) => cell.textContent?.trim() ?? "",
+      ),
     );
     expect([...names].sort()).toEqual(COMPANIES);
     await capture("table");
@@ -190,14 +199,23 @@ describe("Tracker table + CSV import", () => {
     const dir = process.env["BFHR_E2E_EXPORT_DIR"];
     if (!dir) throw new Error("BFHR_E2E_EXPORT_DIR is not set (desktop.yml sets it)");
     mkdirSync(dir, { recursive: true });
-    const exported = () => readdirSync(dir).filter((name) => name.startsWith("BruteForceHR applications") && name.endsWith(".csv"));
+    const exported = () =>
+      readdirSync(dir).filter(
+        (name) => name.startsWith("BruteForceHR applications") && name.endsWith(".csv"),
+      );
     for (const name of exported()) rmSync(path.join(dir, name));
 
     await browser.keys([isMac ? Key.Command : Key.Ctrl, "e"]);
     await $('[role="menuitem"]*=CSV').click();
-    await browser.waitUntil(() => exported().length === 1, { timeout: 60_000, timeoutMsg: "no CSV export landed" });
+    await browser.waitUntil(() => exported().length === 1, {
+      timeout: 60_000,
+      timeoutMsg: "no CSV export landed",
+    });
     const [file] = exported();
-    const table = readSpreadsheet(new Uint8Array(readFileSync(path.join(dir, file as string))), file as string);
+    const table = readSpreadsheet(
+      new Uint8Array(readFileSync(path.join(dir, file as string))),
+      file as string,
+    );
     expect(table.encoding).toBe("utf-8");
     expect(table.rows).toHaveLength(7);
 

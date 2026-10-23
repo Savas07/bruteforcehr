@@ -43,7 +43,10 @@ export const ENCODING_MESSAGES: Readonly<Record<CsvEncoding, MessageDescriptor>>
   "utf-16le": { id: "tracker-csv.encoding.utf16le", defaultMessage: "Unicode (UTF-16)" },
   "utf-16be": { id: "tracker-csv.encoding.utf16be", defaultMessage: "Unicode (UTF-16, big-endian)" },
   "windows-1254": { id: "tracker-csv.encoding.windows1254", defaultMessage: "Turkish (Windows-1254)" },
-  "windows-1252": { id: "tracker-csv.encoding.windows1252", defaultMessage: "Western European (Windows-1252)" },
+  "windows-1252": {
+    id: "tracker-csv.encoding.windows1252",
+    defaultMessage: "Western European (Windows-1252)",
+  },
 });
 
 export const DELIMITER_MESSAGES: Readonly<Record<CsvDelimiter, MessageDescriptor>> = defineMessages({
@@ -59,20 +62,51 @@ export const DATE_ORDER_MESSAGES: Readonly<Record<DateOrder, MessageDescriptor>>
 });
 
 const READ_ERROR_TEXT = defineMessages({
-  workbookTitle: { id: "tracker-csv.error.workbook.title", defaultMessage: "This is a spreadsheet workbook, not a CSV file" },
-  workbookBody: { id: "tracker-csv.error.workbook.body", defaultMessage: "Save it as CSV first. In Excel: File › Save As › CSV UTF-8. In Numbers: File › Export To › CSV. In Google Sheets: File › Download › CSV." },
+  workbookTitle: {
+    id: "tracker-csv.error.workbook.title",
+    defaultMessage: "This is a spreadsheet workbook, not a CSV file",
+  },
+  workbookBody: {
+    id: "tracker-csv.error.workbook.body",
+    defaultMessage:
+      "Save it as CSV first. In Excel: File › Save As › CSV UTF-8. In Numbers: File › Export To › CSV. In Google Sheets: File › Download › CSV.",
+  },
   binaryTitle: { id: "tracker-csv.error.binary.title", defaultMessage: "This isn't a text file" },
-  binaryBody: { id: "tracker-csv.error.binary.body", defaultMessage: "Choose the CSV file you exported from your spreadsheet." },
+  binaryBody: {
+    id: "tracker-csv.error.binary.body",
+    defaultMessage: "Choose the CSV file you exported from your spreadsheet.",
+  },
   emptyTitle: { id: "tracker-csv.error.empty.title", defaultMessage: "This file has no rows to import" },
-  emptyBody: { id: "tracker-csv.error.empty.body", defaultMessage: "Check that you exported the sheet that holds your applications." },
-  noHeaderTitle: { id: "tracker-csv.error.noHeader.title", defaultMessage: "We couldn't find the column names" },
-  noHeaderBody: { id: "tracker-csv.error.noHeader.body", defaultMessage: "One of the first rows should name the columns, like Company and Role." },
+  emptyBody: {
+    id: "tracker-csv.error.empty.body",
+    defaultMessage: "Check that you exported the sheet that holds your applications.",
+  },
+  noHeaderTitle: {
+    id: "tracker-csv.error.noHeader.title",
+    defaultMessage: "We couldn't find the column names",
+  },
+  noHeaderBody: {
+    id: "tracker-csv.error.noHeader.body",
+    defaultMessage: "One of the first rows should name the columns, like Company and Role.",
+  },
   tooLargeTitle: { id: "tracker-csv.error.tooLarge.title", defaultMessage: "This file is larger than 5 MB" },
-  tooLargeBody: { id: "tracker-csv.error.tooLarge.body", defaultMessage: "Remove columns you don't need, or split the sheet into smaller files." },
-  tooManyRowsTitle: { id: "tracker-csv.error.tooManyRows.title", defaultMessage: "This file has more than 2,000 rows" },
-  tooManyRowsBody: { id: "tracker-csv.error.tooManyRows.body", defaultMessage: "Split it into smaller files and import them one by one." },
+  tooLargeBody: {
+    id: "tracker-csv.error.tooLarge.body",
+    defaultMessage: "Remove columns you don't need, or split the sheet into smaller files.",
+  },
+  tooManyRowsTitle: {
+    id: "tracker-csv.error.tooManyRows.title",
+    defaultMessage: "This file has more than 2,000 rows",
+  },
+  tooManyRowsBody: {
+    id: "tracker-csv.error.tooManyRows.body",
+    defaultMessage: "Split it into smaller files and import them one by one.",
+  },
   unreadableTitle: { id: "tracker-csv.error.unreadable.title", defaultMessage: "We couldn't open this file" },
-  unreadableBody: { id: "tracker-csv.error.unreadable.body", defaultMessage: "Try again, or export the sheet as CSV once more." },
+  unreadableBody: {
+    id: "tracker-csv.error.unreadable.body",
+    defaultMessage: "Try again, or export the sheet as CSV once more.",
+  },
 });
 
 /** What went wrong reading the file: title + what to do. */
@@ -103,7 +137,10 @@ const ISSUE_MESSAGES = defineMessages({
     id: "tracker-csv.issue.futureDate",
     defaultMessage: "{field}: {value} is in the future, so it's left out",
   },
-  bad_link: { id: "tracker-csv.issue.badLink", defaultMessage: "Job link isn't a web address, so it's left out" },
+  bad_link: {
+    id: "tracker-csv.issue.badLink",
+    defaultMessage: "Job link isn't a web address, so it's left out",
+  },
   truncated: { id: "tracker-csv.issue.truncated", defaultMessage: "{field} is long, so it's shortened" },
   applied_date_ignored: {
     id: "tracker-csv.issue.appliedDateIgnored",

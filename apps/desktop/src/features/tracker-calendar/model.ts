@@ -12,7 +12,12 @@ import type { CompanyVM, ModelContext, ProfileView, UserData } from "../../share
 import { companyVM } from "../../shared/model/vocabulary";
 
 export type CalendarEntryKind = "interview" | "deadline" | "followUp" | "reminder";
-export const CALENDAR_ENTRY_KINDS: readonly CalendarEntryKind[] = ["interview", "deadline", "followUp", "reminder"];
+export const CALENDAR_ENTRY_KINDS: readonly CalendarEntryKind[] = [
+  "interview",
+  "deadline",
+  "followUp",
+  "reminder",
+];
 
 export const KIND_MESSAGES: Readonly<Record<CalendarEntryKind, MessageDescriptor>> = defineMessages({
   interview: { id: "tracker-calendar.kind.interview", defaultMessage: "Interviews" },
@@ -91,7 +96,9 @@ const FAR_FUTURE = new Date(8.64e15);
 
 function weekStart(locale: string): number {
   try {
-    const info = (new Intl.Locale(locale) as Intl.Locale & { getWeekInfo?: () => { firstDay: number } }).getWeekInfo?.();
+    const info = (
+      new Intl.Locale(locale) as Intl.Locale & { getWeekInfo?: () => { firstDay: number } }
+    ).getWeekInfo?.();
     if (info) return info.firstDay % 7;
   } catch {
     // fall through
@@ -157,13 +164,18 @@ export function buildTrackerCalendarModel(data: CalendarData, ctx: ModelContext)
     });
   }
 
-  const range = { from: new Date(ctx.now.getTime() - RANGE_DAYS * DAY_MS), until: new Date(ctx.now.getTime() + RANGE_DAYS * DAY_MS) };
+  const range = {
+    from: new Date(ctx.now.getTime() - RANGE_DAYS * DAY_MS),
+    until: new Date(ctx.now.getTime() + RANGE_DAYS * DAY_MS),
+  };
   for (const deadline of collectDeadlines(data, range)) {
     const reminder = deadline.kind === "reminder";
     entries.push({
       id: deadline.id,
       kind: reminder ? "reminder" : "deadline",
-      title: reminder ? (deadline.label ?? deadline.title) : intl.formatMessage(DEADLINE_TITLES[deadline.kind as Exclude<DeadlineKind, "reminder">]),
+      title: reminder
+        ? (deadline.label ?? deadline.title)
+        : intl.formatMessage(DEADLINE_TITLES[deadline.kind as Exclude<DeadlineKind, "reminder">]),
       company: companyVM(deadline.company, deadline.companyDomain),
       context: deadline.title,
       applicationId: deadline.applicationId,
@@ -201,13 +213,16 @@ export function buildTrackerCalendarModel(data: CalendarData, ctx: ModelContext)
     entries,
     today: isoDay(ctx.now, ctx.timeZone),
     weekStartsOn: weekStart(ctx.locale),
-    hasInterviewsAhead: entries.some((entry) => entry.kind === "interview" && entry.sort >= ctx.now.getTime()),
+    hasInterviewsAhead: entries.some(
+      (entry) => entry.kind === "interview" && entry.sort >= ctx.now.getTime(),
+    ),
   };
 }
 
 /* ── Day arithmetic on `YYYY-MM-DD` (calendar days, no zones involved) ─────────────────────────── */
 
-const toUtc = (day: string) => Date.UTC(Number(day.slice(0, 4)), Number(day.slice(5, 7)) - 1, Number(day.slice(8, 10)));
+const toUtc = (day: string) =>
+  Date.UTC(Number(day.slice(0, 4)), Number(day.slice(5, 7)) - 1, Number(day.slice(8, 10)));
 const fromUtc = (ms: number) => new Date(ms).toISOString().slice(0, 10);
 
 export function addDays(day: string, days: number): string {

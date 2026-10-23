@@ -38,7 +38,9 @@ describe("buildTrackerTableModel", () => {
   });
 
   it("formats each cell from the application", () => {
-    const application = populatedDataset.applications.find((candidate) => candidate.appliedAt !== null && candidate.cvId);
+    const application = populatedDataset.applications.find(
+      (candidate) => candidate.appliedAt !== null && candidate.cvId,
+    );
     if (!application) throw new Error("fixture without an applied application");
     const row = model.rows.find((candidate) => candidate.applicationId === application.id);
     expect(row?.company.name).toBe(application.company);
@@ -58,13 +60,19 @@ describe("filterRows", () => {
     expect(active.every((row) => row.status.phase !== "closed")).toBe(true);
     const closed = filterRows(model.rows, { ...DEFAULT_FILTERS, scope: "closed" }, null);
     expect(closed.length + active.length).toBe(model.rows.length);
-    const interviewing = filterRows(model.rows, { scope: "all", statuses: ["interviewing"], query: "" }, null);
+    const interviewing = filterRows(
+      model.rows,
+      { scope: "all", statuses: ["interviewing"], query: "" },
+      null,
+    );
     expect(interviewing.every((row) => row.status.key === "interviewing")).toBe(true);
     const first = model.rows[0];
     if (!first) throw new Error("no rows");
     const word = first.company.name.split(" ")[0]?.toUpperCase() ?? "";
     expect(filterRows(model.rows, { scope: "all", statuses: [], query: word }, null)).toContain(first);
-    expect(filterRows(model.rows, { scope: "all", statuses: [], query: "" }, new Set([first.applicationId]))).toEqual([first]);
+    expect(
+      filterRows(model.rows, { scope: "all", statuses: [], query: "" }, new Set([first.applicationId])),
+    ).toEqual([first]);
   });
 });
 
@@ -87,11 +95,16 @@ describe("planBulkMove", () => {
 describe("CSV import → table → bulk move → export round trip", () => {
   const intl = createAppIntl({ language: "en", locale: "en-GB" });
   const bytes = new Uint8Array(
-    readFileSync(path.join(import.meta.dirname, "../../../../../packages/fixtures/csv/tr-excel-windows-1254.csv")),
+    readFileSync(
+      path.join(import.meta.dirname, "../../../../../packages/fixtures/csv/tr-excel-windows-1254.csv"),
+    ),
   );
 
   it("imports the Turkish Excel file, moves the rows and exports what the table shows", () => {
-    const store = createMemoryTrackerStore({ ...emptyDataset, profile: populatedDataset.profile }, () => FIXTURE_NOW);
+    const store = createMemoryTrackerStore(
+      { ...emptyDataset, profile: populatedDataset.profile },
+      () => FIXTURE_NOW,
+    );
     const table = readSpreadsheet(bytes, "takip.csv");
     const mapping = guessColumnMapping(table);
     const plan = planImport(table, {
@@ -116,7 +129,12 @@ describe("CSV import → table → bulk move → export round trip", () => {
     const events = read().applicationEvents;
     expect(events).toHaveLength(7);
     const kervanEvent = events.find((event) => event.evidence?.reason === "Imported from takip.csv · row 3");
-    expect(kervanEvent).toMatchObject({ type: "created", actor: "user", toStatus: "interviewing", fromStatus: null });
+    expect(kervanEvent).toMatchObject({
+      type: "created",
+      actor: "user",
+      toStatus: "interviewing",
+      fromStatus: null,
+    });
     expect(kervanEvent?.occurredAt).toEqual(new Date("2026-09-12T12:00:00Z"));
 
     const ctxEmpty = fixtureContext(emptyDataset);
@@ -135,7 +153,11 @@ describe("CSV import → table → bulk move → export round trip", () => {
     const applications = read().applications;
     const bulk = planBulkMove(applications, "screening");
     store.repository.moveStatus(
-      bulk.movable.flatMap((id) => applications.filter((application) => application.id === id).map((application) => ({ application, to: "screening" as const }))),
+      bulk.movable.flatMap((id) =>
+        applications
+          .filter((application) => application.id === id)
+          .map((application) => ({ application, to: "screening" as const })),
+      ),
     );
     rows = buildTrackerTableModel(read(), ctxEmpty).rows;
     const statuses = Object.fromEntries(rows.map((row) => [row.company.name, row.status.key]));
@@ -147,7 +169,9 @@ describe("CSV import → table → bulk move → export round trip", () => {
       "Marmara Bank": "screening",
     });
     // Outcomes are side exits; moving them back is a reopen, which bulk allows too (user actor).
-    expect(read().applicationEvents.filter((event) => event.type === "status_changed")).toHaveLength(bulk.movable.length);
+    expect(read().applicationEvents.filter((event) => event.type === "status_changed")).toHaveLength(
+      bulk.movable.length,
+    );
 
     // Export with every column, then read the file back as an import would.
     const columns: readonly TableColumnId[] = [...DEFAULT_COLUMNS, "channel", "priority", "added"];
@@ -168,7 +192,12 @@ describe("CSV import → table → bulk move → export round trip", () => {
       existing: [],
     });
     expect(replanned.blocked).toBe(0);
-    const reimported = replanned.rows.map(({ draft }) => [draft?.company, draft?.role, draft?.status, draft?.appliedAt?.toISOString().slice(0, 10)]);
+    const reimported = replanned.rows.map(({ draft }) => [
+      draft?.company,
+      draft?.role,
+      draft?.status,
+      draft?.appliedAt?.toISOString().slice(0, 10),
+    ]);
     expect(reimported).toEqual(
       rows.map((row) => [row.company.name, row.role, row.status.key, row.appliedAt?.exportValue]),
     );

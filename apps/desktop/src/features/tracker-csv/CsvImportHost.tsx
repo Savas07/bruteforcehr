@@ -81,11 +81,13 @@ const messages = defineMessages({
   choose: { id: "tracker-csv.choose", defaultMessage: "Choose file…" },
   formats: {
     id: "tracker-csv.formats",
-    defaultMessage: "CSV or TSV · up to 5 MB and 2,000 rows · any column names, in English, Turkish or German",
+    defaultMessage:
+      "CSV or TSV · up to 5 MB and 2,000 rows · any column names, in English, Turkish or German",
   },
   privacy: {
     id: "tracker-csv.privacy",
-    defaultMessage: "The file is read on this device. Only the applications you import are saved to your account.",
+    defaultMessage:
+      "The file is read on this device. Only the applications you import are saved to your account.",
   },
   fileLine: {
     id: "tracker-csv.fileLine",
@@ -93,7 +95,8 @@ const messages = defineMessages({
   },
   columnsIntro: {
     id: "tracker-csv.columns.intro",
-    defaultMessage: "Match your columns to ours. We guessed from the column names; change anything that's off.",
+    defaultMessage:
+      "Match your columns to ours. We guessed from the column names; change anything that's off.",
   },
   readAs: { id: "tracker-csv.readAs", defaultMessage: "Characters" },
   separatedBy: { id: "tracker-csv.separatedBy", defaultMessage: "Separated by" },
@@ -195,7 +198,13 @@ export function CsvImportHost() {
     <Dialog.Root open={request !== null} onOpenChange={(open) => !open && closeCsvImport()}>
       <Dialog.Portal>
         <Dialog.Overlay className="bg-surface-scrim fixed inset-0 z-(--bfhr-layer-modal)" />
-        {request && <ImportFlow key={generation} initialFile={request.file ?? null} initialStep={request.step ?? null} />}
+        {request && (
+          <ImportFlow
+            key={generation}
+            initialFile={request.file ?? null}
+            initialStep={request.step ?? null}
+          />
+        )}
       </Dialog.Portal>
     </Dialog.Root>
   );
@@ -398,8 +407,7 @@ function ImportFlow({
         onToggle={(row, value) => {
           const target = plan.rows.find((candidate) => candidate.rowNumber === row);
           if (!target) return;
-          if (target.includeByDefault)
-            setExcluded((current) => toggled(current, row, !value));
+          if (target.includeByDefault) setExcluded((current) => toggled(current, row, !value));
           else setIncluded((current) => toggled(current, row, value));
         }}
         onToggleAll={(value) => {
@@ -441,44 +449,55 @@ function ImportFlow({
       {...(step !== "file" && { "aria-describedby": undefined })}
       className={cx(
         contentClass,
-        wide ? "h-[min(760px,calc(100vh-48px))] w-[min(960px,calc(100vw-32px))]" : "w-[min(560px,calc(100vw-32px))]",
+        wide
+          ? "h-[min(760px,calc(100vh-48px))] w-[min(960px,calc(100vw-32px))]"
+          : "w-[min(560px,calc(100vw-32px))]",
       )}
       data-testid="csv-import"
     >
       <div className="flex items-start gap-4 px-6 pt-5 pb-3">
         <div className="flex min-w-0 flex-1 flex-col gap-2">
-          <Dialog.Title className="font-display text-title3">{intl.formatMessage(messages.title)}</Dialog.Title>
-          <ol aria-label={intl.formatMessage(messages.steps)} className="flex flex-wrap items-center gap-2 text-footnote">
-            {[messages.stepFile, messages.stepColumns, messages.stepStatuses, messages.stepReview].map((label, index) => (
-              <li
-                key={label.id}
-                aria-current={index === stepIndex ? "step" : undefined}
-                className={cx(
-                  "flex items-center gap-1.5",
-                  index === stepIndex
-                    ? "text-fg-primary font-semibold"
-                    : index < stepIndex
-                      ? "text-fg-secondary"
-                      : "text-fg-tertiary",
-                )}
-              >
-                <span
-                  aria-hidden="true"
+          <Dialog.Title className="font-display text-title3">
+            {intl.formatMessage(messages.title)}
+          </Dialog.Title>
+          <ol
+            aria-label={intl.formatMessage(messages.steps)}
+            className="flex flex-wrap items-center gap-2 text-footnote"
+          >
+            {[messages.stepFile, messages.stepColumns, messages.stepStatuses, messages.stepReview].map(
+              (label, index) => (
+                <li
+                  key={label.id}
+                  aria-current={index === stepIndex ? "step" : undefined}
                   className={cx(
-                    "inline-flex size-5 items-center justify-center rounded-full border text-caption1 tabular-nums",
-                    index === stepIndex ? "border-accent-solid bg-accent-solid text-fg-on-accent" : "border-line-control",
+                    "flex items-center gap-1.5",
+                    index === stepIndex
+                      ? "text-fg-primary font-semibold"
+                      : index < stepIndex
+                        ? "text-fg-secondary"
+                        : "text-fg-tertiary",
                   )}
                 >
-                  {index + 1}
-                </span>
-                {intl.formatMessage(label)}
-                {index < 3 && (
-                  <span aria-hidden="true" className="text-fg-tertiary ml-0.5">
-                    ›
+                  <span
+                    aria-hidden="true"
+                    className={cx(
+                      "inline-flex size-5 items-center justify-center rounded-full border text-caption1 tabular-nums",
+                      index === stepIndex
+                        ? "border-accent-solid bg-accent-solid text-fg-on-accent"
+                        : "border-line-control",
+                    )}
+                  >
+                    {index + 1}
                   </span>
-                )}
-              </li>
-            ))}
+                  {intl.formatMessage(label)}
+                  {index < 3 && (
+                    <span aria-hidden="true" className="text-fg-tertiary ml-0.5">
+                      ›
+                    </span>
+                  )}
+                </li>
+              ),
+            )}
           </ol>
         </div>
         <Dialog.Close asChild>
@@ -487,7 +506,10 @@ function ImportFlow({
       </div>
       {loaded && step !== "file" && (
         <p className="text-fg-secondary px-6 pb-2 text-footnote">
-          {intl.formatMessage(messages.fileLine, { fileName: loaded.fileName, rows: loaded.table.rows.length })}
+          {intl.formatMessage(messages.fileLine, {
+            fileName: loaded.fileName,
+            rows: loaded.table.rows.length,
+          })}
         </p>
       )}
       <div ref={stepRef} tabIndex={-1} className="flex min-h-0 flex-1 flex-col outline-none">
@@ -520,7 +542,9 @@ function FileStep({
   const copy = problem ? READ_ERROR_MESSAGES[problem] : null;
   return (
     <div className="flex flex-col gap-4 px-6 pt-1 pb-5">
-      <Dialog.Description className="text-fg-secondary text-callout">{intl.formatMessage(messages.intro)}</Dialog.Description>
+      <Dialog.Description className="text-fg-secondary text-callout">
+        {intl.formatMessage(messages.intro)}
+      </Dialog.Description>
       <div
         data-testid="csv-drop"
         onDragEnter={(event) => {
@@ -548,8 +572,15 @@ function FileStep({
         )}
       >
         <Upload aria-hidden="true" className="text-fg-secondary size-7" strokeWidth={1.5} />
-        <p className="text-headline">{intl.formatMessage(dragging ? messages.dropActive : messages.dropTitle)}</p>
-        <Button variant="primary" data-autofocus aria-describedby={formatsId} onClick={() => inputRef.current?.click()}>
+        <p className="text-headline">
+          {intl.formatMessage(dragging ? messages.dropActive : messages.dropTitle)}
+        </p>
+        <Button
+          variant="primary"
+          data-autofocus
+          aria-describedby={formatsId}
+          onClick={() => inputRef.current?.click()}
+        >
           {intl.formatMessage(messages.choose)}
         </Button>
         <p id={formatsId} className="text-fg-secondary text-footnote">
@@ -604,11 +635,16 @@ function ColumnsStep({
   const intl = useIntl();
   const baseId = useId();
   const { table } = loaded;
-  const headerName = (index: number) => table.headers[index] || intl.formatMessage(messages.unnamed, { index: index + 1 });
-  const hasDates = mapping.some((name) => name === "appliedAt" || name === "statusChangedAt" || name === "nextActionAt");
+  const headerName = (index: number) =>
+    table.headers[index] || intl.formatMessage(messages.unnamed, { index: index + 1 });
+  const hasDates = mapping.some(
+    (name) => name === "appliedAt" || name === "statusChangedAt" || name === "nextActionAt",
+  );
   const choose = (column: number, value: ImportField | null) =>
     // A field imports from one column: choosing it here frees the column that had it.
-    onMappingChange(mapping.map((current, index) => (index === column ? value : current === value ? null : current)));
+    onMappingChange(
+      mapping.map((current, index) => (index === column ? value : current === value ? null : current)),
+    );
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3 px-6 pb-4">
@@ -618,14 +654,20 @@ function ColumnsStep({
           id={`${baseId}-encoding`}
           label={intl.formatMessage(messages.readAs)}
           value={table.encoding}
-          options={CSV_ENCODINGS.map((value) => ({ value, label: intl.formatMessage(ENCODING_MESSAGES[value]) }))}
+          options={CSV_ENCODINGS.map((value) => ({
+            value,
+            label: intl.formatMessage(ENCODING_MESSAGES[value]),
+          }))}
           onChange={(encoding) => onReread({ encoding, delimiter: table.delimiter })}
         />
         <LabeledSelect
           id={`${baseId}-delimiter`}
           label={intl.formatMessage(messages.separatedBy)}
           value={table.delimiter}
-          options={CSV_DELIMITERS.map((value) => ({ value, label: intl.formatMessage(DELIMITER_MESSAGES[value]) }))}
+          options={CSV_DELIMITERS.map((value) => ({
+            value,
+            label: intl.formatMessage(DELIMITER_MESSAGES[value]),
+          }))}
           onChange={(delimiter) => onReread({ encoding: table.encoding, delimiter })}
         />
         {hasDates && (
@@ -700,7 +742,10 @@ function ColumnsStep({
                         return (
                           <option key={name} value={name}>
                             {owner >= 0 && owner !== column
-                              ? intl.formatMessage(messages.usedBy, { field: label, column: headerName(owner) })
+                              ? intl.formatMessage(messages.usedBy, {
+                                  field: label,
+                                  column: headerName(owner),
+                                })
                               : required
                                 ? `${label} ${intl.formatMessage(messages.required)}`
                                 : label}
@@ -787,7 +832,10 @@ function StatusesStep({
   const intl = useIntl();
   const baseId = useId();
   const values = useMemo(() => statusValues(loaded.table, mapping), [loaded.table, mapping]);
-  const statusOptions = STATUS_CHOICES.map((value) => ({ value, label: intl.formatMessage(STATUS_MESSAGES[value]) }));
+  const statusOptions = STATUS_CHOICES.map((value) => ({
+    value,
+    label: intl.formatMessage(STATUS_MESSAGES[value]),
+  }));
 
   if (!mapping.includes("status")) {
     return (
@@ -853,7 +901,9 @@ function StatusesStep({
                       }}
                       className={cx(field, "w-full")}
                     >
-                      {current === undefined && <option value="">{intl.formatMessage(messages.chooseStatus)}</option>}
+                      {current === undefined && (
+                        <option value="">{intl.formatMessage(messages.chooseStatus)}</option>
+                      )}
                       {statusOptions.map((option) => (
                         <option key={option.value} value={option.value}>
                           {option.label}
@@ -862,9 +912,7 @@ function StatusesStep({
                     </select>
                   </td>
                   <td className={bodyCell} aria-hidden="true">
-                    {current && (
-                      <StatusPill size="sm" status={statusVM(current, intl)} />
-                    )}
+                    {current && <StatusPill size="sm" status={statusVM(current, intl)} />}
                   </td>
                 </tr>
               );
@@ -915,7 +963,10 @@ function ReviewStep({
         </p>
         {(plan.blocked > 0 || plan.duplicates > 0) && (
           <p className="text-fg-secondary text-callout">
-            {intl.formatMessage(messages.reviewDetails, { blocked: plan.blocked, duplicates: plan.duplicates })}
+            {intl.formatMessage(messages.reviewDetails, {
+              blocked: plan.blocked,
+              duplicates: plan.duplicates,
+            })}
           </p>
         )}
       </div>
@@ -1016,7 +1067,11 @@ function ReviewStep({
                   </td>
                   <td
                     id={`csv-row-notes-${row.rowNumber}`}
-                    className={cx(bodyCell, "truncate text-footnote", blocked ? "text-warning-text font-medium" : "text-fg-secondary")}
+                    className={cx(
+                      bodyCell,
+                      "truncate text-footnote",
+                      blocked ? "text-warning-text font-medium" : "text-fg-secondary",
+                    )}
                     title={notes.join("\n")}
                   >
                     {notes.join(" · ")}

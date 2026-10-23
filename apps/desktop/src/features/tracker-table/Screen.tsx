@@ -35,7 +35,14 @@ import { openCsvImport } from "../tracker-csv";
 import { BulkActionBar } from "./BulkActionBar";
 import { ColumnChooser } from "./ColumnChooser";
 import { DataTable, useSortedRows } from "./DataTable";
-import { filterRows, planBulkMove, type TableFilters, type TableScope, tableCsv, type TrackerTableModel } from "./model";
+import {
+  filterRows,
+  planBulkMove,
+  type TableFilters,
+  type TableScope,
+  tableCsv,
+  type TrackerTableModel,
+} from "./model";
 import { useTablePrefs } from "./prefs";
 import { useInsightsDrillDown } from "./drillDown";
 import { TrackerViewSwitch } from "./ViewSwitch";
@@ -66,7 +73,11 @@ const messages = defineMessages({
     id: "tracker-table.exportFormat",
     defaultMessage: "CSV · {count, plural, one {# row} other {# rows}} in this view",
   },
-  scope: { id: "tracker-table.scope", defaultMessage: "Show", description: "Accessible name of Active/Closed/All" },
+  scope: {
+    id: "tracker-table.scope",
+    defaultMessage: "Show",
+    description: "Accessible name of Active/Closed/All",
+  },
   scopeActive: { id: "tracker-table.scope.active", defaultMessage: "Active" },
   scopeClosed: { id: "tracker-table.scope.closed", defaultMessage: "Closed" },
   scopeAll: { id: "tracker-table.scope.all", defaultMessage: "All" },
@@ -83,7 +94,8 @@ const messages = defineMessages({
   emptyTitle: { id: "tracker-table.empty.title", defaultMessage: "Nothing tracked yet" },
   emptyBody: {
     id: "tracker-table.empty.body",
-    defaultMessage: "Save a job or add an application you've already sent. Tracking in a spreadsheet? Bring it in.",
+    defaultMessage:
+      "Save a job or add an application you've already sent. Tracking in a spreadsheet? Bring it in.",
   },
   noResults: {
     id: "tracker-table.noResults",
@@ -222,7 +234,8 @@ function ReadyTable({
 
   const toggleSelected = (applicationId: string, range: boolean) => {
     const next = new Set(selected);
-    const from = anchor.current === null ? -1 : sorted.findIndex((row) => row.applicationId === anchor.current);
+    const from =
+      anchor.current === null ? -1 : sorted.findIndex((row) => row.applicationId === anchor.current);
     const to = sorted.findIndex((row) => row.applicationId === applicationId);
     if (range && from >= 0 && to >= 0) {
       const select = !selected.has(applicationId) || selected.has(anchor.current ?? "");
@@ -242,7 +255,13 @@ function ReadyTable({
     );
 
   const byId = useMemo(
-    () => new Map((live.status === "ready" ? live.data.applications : []).map((application) => [application.id, application])),
+    () =>
+      new Map(
+        (live.status === "ready" ? live.data.applications : []).map((application) => [
+          application.id,
+          application,
+        ]),
+      ),
     [live],
   );
   const movableCount = (to: ApplicationStatus) =>
@@ -258,7 +277,8 @@ function ReadyTable({
     try {
       const csv = tableCsv(rows, prefs.columns, intl);
       const path = await saveExportFile(new TextEncoder().encode(csv), fileName, "csv");
-      if (path !== null) toast.show({ variant: "info", message: intl.formatMessage(messages.exported, { fileName }) });
+      if (path !== null)
+        toast.show({ variant: "info", message: intl.formatMessage(messages.exported, { fileName }) });
     } catch {
       toast.show({ variant: "info", message: intl.formatMessage(messages.exportFailed) });
     } finally {
@@ -374,7 +394,9 @@ function ReadyTable({
               {intl.formatMessage(messages.importCsv)}
             </Button>
             <ExportButton
-              formats={[{ id: "csv", label: intl.formatMessage(messages.exportCsv, { count: sorted.length }) }]}
+              formats={[
+                { id: "csv", label: intl.formatMessage(messages.exportCsv, { count: sorted.length }) },
+              ]}
               onExport={() => void exportRows(sorted)}
               exporting={exporting}
               disabledReason={sorted.length === 0 ? intl.formatMessage(messages.noResults) : null}
@@ -399,13 +421,17 @@ function ReadyTable({
             {prefs.statuses.length > 0 && (
               <FilterChip
                 label={intl.formatMessage(messages.statusChip, {
-                  statuses: intl.formatList(prefs.statuses.map((status) => intl.formatMessage(STATUS_MESSAGES[status]))),
+                  statuses: intl.formatList(
+                    prefs.statuses.map((status) => intl.formatMessage(STATUS_MESSAGES[status])),
+                  ),
                 })}
                 removeLabel={intl.formatMessage(messages.removeStatusFilter)}
                 onRemove={() => setStatuses([])}
               />
             )}
-            {drill && <FilterChip label={drill.label} removeLabel={drill.dismissLabel} onRemove={drill.dismiss} />}
+            {drill && (
+              <FilterChip label={drill.label} removeLabel={drill.dismissLabel} onRemove={drill.dismiss} />
+            )}
             {filtersActive && (
               <Button variant="plain" size="sm" onClick={clearFilters}>
                 {intl.formatMessage(messages.clearFilters)}
@@ -487,7 +513,10 @@ function ReadyTable({
           nav={
             openIndex >= 0
               ? {
-                  label: intl.formatMessage(messages.panelNav, { index: openIndex + 1, count: sorted.length }),
+                  label: intl.formatMessage(messages.panelNav, {
+                    index: openIndex + 1,
+                    count: sorted.length,
+                  }),
                   previousId: sorted[openIndex - 1]?.applicationId ?? null,
                   nextId: sorted[openIndex + 1]?.applicationId ?? null,
                 }
@@ -537,7 +566,9 @@ function StatusFilter({
                 key={status}
                 checked={statuses.includes(status)}
                 onCheckedChange={(checked) =>
-                  onChange(checked ? [...statuses, status] : statuses.filter((candidate) => candidate !== status))
+                  onChange(
+                    checked ? [...statuses, status] : statuses.filter((candidate) => candidate !== status),
+                  )
                 }
               >
                 {intl.formatMessage(STATUS_MESSAGES[status])}
@@ -546,7 +577,10 @@ function StatusFilter({
           </Fragment>
         ))}
         <MenuSeparator />
-        <MenuItem disabledReason={statuses.length === 0 ? intl.formatMessage(messages.resetStatuses) : null} onSelect={() => onChange([])}>
+        <MenuItem
+          disabledReason={statuses.length === 0 ? intl.formatMessage(messages.resetStatuses) : null}
+          onSelect={() => onChange([])}
+        >
           {intl.formatMessage(messages.resetStatuses)}
         </MenuItem>
       </MenuContent>
@@ -555,7 +589,15 @@ function StatusFilter({
 }
 
 /** A filter as a removable sentence chip ("Status is Screening, Interviewing ×"). */
-function FilterChip({ label, removeLabel, onRemove }: { label: string; removeLabel: string; onRemove: () => void }) {
+function FilterChip({
+  label,
+  removeLabel,
+  onRemove,
+}: {
+  label: string;
+  removeLabel: string;
+  onRemove: () => void;
+}) {
   return (
     <span className="bg-accent-subtle text-accent-text inline-flex h-7 max-w-96 items-center gap-1 rounded-full ps-3 pe-0.5 text-footnote font-medium">
       <span className="truncate">{label}</span>

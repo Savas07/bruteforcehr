@@ -41,7 +41,10 @@ export function useInsightsDrillDown(live: LiveTrackerState): TableDrillDown | n
 
   return useMemo(() => {
     const params = Object.fromEntries(
-      DRILL_KEYS.map((name) => [name, typeof search[name] === "string" ? (search[name] as string) : undefined]),
+      DRILL_KEYS.map((name) => [
+        name,
+        typeof search[name] === "string" ? (search[name] as string) : undefined,
+      ]),
     );
     const drill = parseInsightsDrillDown(params);
     if (!drill || live.status !== "ready") return null;

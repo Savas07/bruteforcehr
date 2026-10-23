@@ -35,7 +35,10 @@ const subscribe = (listener: () => void) => {
 };
 
 /** The open request (null = closed) and a counter that changes with every `openCsvImport`. */
-export function useCsvImportRequest(): { readonly request: CsvImportRequest | null; readonly generation: number } {
+export function useCsvImportRequest(): {
+  readonly request: CsvImportRequest | null;
+  readonly generation: number;
+} {
   const request = useSyncExternalStore(subscribe, () => current);
   const key = useSyncExternalStore(subscribe, () => generation);
   return { request, generation: key };

@@ -134,7 +134,9 @@ function sourceLabel(application: Application, intl: IntlShape): string | null {
 }
 
 export function buildTrackerTableModel(
-  data: Pick<UserData, "applications" | "applicationEvents"> & { readonly cvs: readonly Pick<Cv, "id" | "title">[] },
+  data: Pick<UserData, "applications" | "applicationEvents"> & {
+    readonly cvs: readonly Pick<Cv, "id" | "title">[];
+  },
   ctx: ModelContext,
 ): TrackerTableModel {
   const { intl } = ctx;
@@ -146,7 +148,9 @@ export function buildTrackerTableModel(
   const cvTitles = new Map(data.cvs.map((cv) => [cv.id, cv.title]));
 
   const rows = data.applications.map((application): TableRowVM => {
-    const last = new Date(Math.max(lastEvent.get(application.id) ?? 0, application.statusChangedAt.getTime()));
+    const last = new Date(
+      Math.max(lastEvent.get(application.id) ?? 0, application.statusChangedAt.getTime()),
+    );
     return {
       applicationId: application.id,
       company: companyVM(application.company, application.companyDomain),
@@ -164,7 +168,10 @@ export function buildTrackerTableModel(
       cv: application.cvId ? (cvTitles.get(application.cvId) ?? null) : null,
       location: application.location,
       channel: application.channel ? intl.formatMessage(CHANNEL_MESSAGES[application.channel]) : null,
-      priority: { key: application.priority, label: intl.formatMessage(PRIORITY_MESSAGES[application.priority]) },
+      priority: {
+        key: application.priority,
+        label: intl.formatMessage(PRIORITY_MESSAGES[application.priority]),
+      },
       added: dateVM(application.createdAt, ctx, false),
       pendingSync: ctx.pendingWrites.has(application.id),
       searchText: normalizeWord(
@@ -265,7 +272,11 @@ export function exportCell(row: TableRowVM, column: TableColumnId): string {
  * CSV of `rows` as shown (the given columns, in order) with the localized headers; the next
  * action's due date gets its own column so the file re-imports. UTF-8 with BOM, comma-separated.
  */
-export function tableCsv(rows: readonly TableRowVM[], columns: readonly TableColumnId[], intl: IntlShape): string {
+export function tableCsv(
+  rows: readonly TableRowVM[],
+  columns: readonly TableColumnId[],
+  intl: IntlShape,
+): string {
   const header: string[] = [];
   for (const column of columns) {
     header.push(intl.formatMessage(COLUMN_MESSAGES[column]));
@@ -273,7 +284,9 @@ export function tableCsv(rows: readonly TableRowVM[], columns: readonly TableCol
   }
   const body = rows.map((row) =>
     columns.flatMap((column) =>
-      column === "nextAction" ? [exportCell(row, column), row.nextAction?.due?.exportValue ?? ""] : [exportCell(row, column)],
+      column === "nextAction"
+        ? [exportCell(row, column), row.nextAction?.due?.exportValue ?? ""]
+        : [exportCell(row, column)],
     ),
   );
   return writeCsv([header, ...body]);

@@ -98,7 +98,7 @@ git push origin HEAD:refs/heads/release-dry-run/0.1.0
 gh run download <run-id> -n release-assets-dry-run
 ```
 
-Delete the `release-dry-run/*` branch afterwards.
+Delete the `release-dry-run/*` branch afterwards. First green dry run of the whole pipeline (v0.1.0, without Apple secrets): run [39877762524](https://github.com/Savas07/bruteforcehr/actions/runs/39877762524).
 
 ## Halting and rolling back
 

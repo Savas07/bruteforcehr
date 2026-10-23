@@ -36,10 +36,16 @@ if (!pubkey) throw new Error(`${tauriConfig} has no plugins.updater.pubkey`);
 console.log(`Updater public key ${keyIdHex(parsePublicKey(pubkey).keyId)}`);
 
 const names = assetNames(version);
-/** Reads `<name>.sig` and verifies it against `<name>`; the updater would reject anything else. */
+/**
+ * Reads `<name>.sig` and verifies it against `<name>`, including the signed version in the trusted
+ * comment (`plugins.updater.requireSignedVersion`); the updater would reject anything else.
+ */
 const verifiedSignature = (name: string): string => {
   const signature = readFileSync(join(dir, `${name}.sig`), "utf8");
   const trusted = verifySignature(pubkey, readFileSync(join(dir, name)), signature);
+  if (!trusted.split("\t").includes(`version:${version}`)) {
+    throw new Error(`${name}.sig was not signed for version ${version} (trusted comment: ${trusted})`);
+  }
   console.log(`Verified ${name}.sig (${trusted})`);
   return signature;
 };

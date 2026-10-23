@@ -6,6 +6,8 @@
 //
 //   gcloud auth application-default login   # once; the owner account
 //   pnpm --filter @bfhr/functions smoke:jobs
+// First: initializes the Admin app before src/callable.ts would (see live-app.ts).
+import { PROJECT, REGION, WEB_API_KEY } from "./live-app";
 import { setTimeout as sleep } from "node:timers/promises";
 import { firestorePaths, serverOnlyPaths } from "@bfhr/api";
 import {
@@ -15,19 +17,12 @@ import {
   type SavedSearch,
   WATCHLIST_PENDING_FIELDS,
 } from "@bfhr/core";
-import { initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
 import { getStorage } from "firebase-admin/storage";
 import { deleteUserData } from "../src/account/user-data";
 import { adminConverters } from "../src/converters";
 
-const PROJECT = "bruteforcehr";
-const REGION = "europe-west1";
-/** Web API key (public client config, apps/desktop/src/lib/firebase.ts). */
-const WEB_API_KEY = "AIzaSyBlJk949tJEB9HUmmRGoE8EsqQ2tEA41ag";
-
-initializeApp({ projectId: PROJECT, storageBucket: `${PROJECT}.firebasestorage.app` });
 const db = getFirestore();
 
 interface CallableReply {

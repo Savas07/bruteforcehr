@@ -83,7 +83,8 @@ async function watchedBoards(db: Firestore, uid: string): Promise<WatchedBoard[]
   });
 }
 
-async function profileVector(embedder: Embedder, context: MatchingContext): Promise<number[] | null> {
+/** Unit profile/CV embedding for matching; null (logged) when the embedder fails. */
+export async function profileVector(embedder: Embedder, context: MatchingContext): Promise<number[] | null> {
   try {
     const [vector] = await embedder.embed(
       [profileEmbeddingText(context.profile, context.cv)],

@@ -192,11 +192,12 @@ jobs:
           if ($entry.DisplayVersion -ne $env:FROM) { throw "installed $($entry.DisplayVersion), expected $env:FROM" }
           (Get-Item $exe).VersionInfo | Format-List FileName, ProductVersion, FileVersion
 
-      - name: Launch; the background updater downloads ${{ inputs.target }}
+      # One step: the runner ends the processes a Windows step started when the step ends (run
+      # 39898073734), so the app and the installer it starts at quit must finish within it.
+      - name: Launch, let the updater download ${{ inputs.target }}, quit (close the window)
         run: |
           $log = "$env:RUNNER_TEMP\evidence\1-launch-$($env:FROM).stderr.log"
           $proc = Start-Process -FilePath $env:EXE -RedirectStandardError $log -PassThru
-          "APP_PID=$($proc.Id)" | Out-File -Append -Encoding utf8 $env:GITHUB_ENV
           $deadline = (Get-Date).AddSeconds([int]$env:DOWNLOAD_TIMEOUT_S)
           while ((Get-Date) -lt $deadline) {
             $text = Get-Content -Raw -ErrorAction SilentlyContinue $log
@@ -208,12 +209,9 @@ jobs:
           Get-Content $log
           if (-not ((Get-Content -Raw $log) -match "update check: $([regex]::Escape($env:TARGET)) downloaded")) { throw 'the update was not downloaded' }
 
-      - name: Quit (close the window); the update installs at quit
-        run: |
           # WM_CLOSE on the main window, as the title bar's close button or Alt+F4 sends: the last
           # window closes, the app exits through RunEvent::Exit → updater::install_on_exit, which
           # starts the downloaded NSIS installer (/P /UPDATE, passive, per-user) and exits.
-          $proc = Get-Process -Id $env:APP_PID
           $proc.Refresh()
           if ($proc.MainWindowHandle -eq 0) { throw 'no main window' }
           if (-not $proc.CloseMainWindow()) { throw 'WM_CLOSE was not delivered' }

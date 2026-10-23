@@ -146,7 +146,8 @@ export const jobImportUrl = onCall(
       }
 
       const draft = jobFromWire(base.job);
-      const existing = await findExistingJob(uid, draft);
+      // Same lookup as the connectors (source key, then fingerprint / description similarity).
+      const existing = await findDuplicateJob(getFirestore(), uid, draft);
       const response: JobImportUrlResponse =
         existing === null
           ? { ...base, existingJobId: null }

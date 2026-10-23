@@ -66,11 +66,16 @@ function registerFonts(css: string): Promise<unknown> {
   return Promise.all(loads);
 }
 
-/** The document's CSS for a shadow root: `body` rules move to the wrapper, fonts are registered apart. */
+/**
+ * The document's CSS for a shadow root: `:root` rules (the template's ink, accent and size
+ * variables) move to the host, since `:root` matches nothing inside a shadow tree; `body` rules
+ * move to the wrapper; fonts are registered apart.
+ */
 function shadowCss(css: string): string {
   return (
     css
       .replace(FONT_FACE, "")
+      .replace(/(^|[}\s,]):root\s*\{/gu, "$1:host{")
       .replace(/(^|[}\s,])body\s*\{/gu, "$1.cv-root{")
       // The field being edited, and what the pointer is over.
       .concat(

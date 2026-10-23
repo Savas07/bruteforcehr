@@ -19,7 +19,9 @@ if command -v firebase >/dev/null; then cli=(firebase); else cli=(npx --yes fire
 (cd "$repo_root" && exec "${cli[@]}" emulators:start --only auth,firestore,storage --project bruteforcehr) >"$log" 2>&1 &
 emulator=$!
 stop() {
-  # npx starts the CLI as a child; end the whole group.
+  # npx starts the CLI as a child; end the whole tree (on Windows the JVMs outlive a plain kill and
+  # keep the ports, so the next step couldn't start the emulators).
+  if command -v taskkill >/dev/null; then taskkill //F //T //PID "$emulator" >/dev/null 2>&1 || true; fi
   pkill -P "$emulator" 2>/dev/null || true
   kill "$emulator" 2>/dev/null || true
 }

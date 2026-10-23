@@ -543,11 +543,10 @@ export function ImportReview({
                       heading?.scrollIntoView({ block: "start" });
                       heading?.focus({ preventScroll: true });
                     }}
-                    className="text-fg-primary hover:bg-surface-hover flex w-full items-center gap-2 rounded-md px-2 py-1 text-left text-callout"
+                    // The count sits under the name, so long section names (DE, TR) aren't cut off.
+                    className="text-fg-primary hover:bg-surface-hover flex w-full flex-col items-start rounded-md px-2 py-1 text-left text-callout"
                   >
-                    <span className="min-w-0 flex-1 truncate">
-                      {intl.formatMessage(SECTION_TITLES[section.key])}
-                    </span>
+                    <span className="max-w-full break-words">{intl.formatMessage(SECTION_TITLES[section.key])}</span>
                     {left > 0 && (
                       <span className="text-warning-text inline-flex items-center gap-1 text-caption1">
                         <span aria-hidden="true" className="bg-warning-solid size-2 rounded-full" />
@@ -845,7 +844,17 @@ function ReviewFieldRow({
         </p>
       )}
       {state === "flagged" && (
-        <Button size="sm" variant="plain" icon={Check} className="self-start" onClick={onConfirm}>
+        <Button
+          size="sm"
+          variant="plain"
+          icon={Check}
+          className="self-start"
+          onClick={() => {
+            onConfirm();
+            // This button goes away once confirmed; keep focus on the field instead of losing it.
+            document.getElementById(id)?.focus();
+          }}
+        >
           {intl.formatMessage(messages.looksRight)}
         </Button>
       )}

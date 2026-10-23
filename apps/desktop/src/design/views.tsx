@@ -4,10 +4,10 @@
  */
 import { emptyDataset, FIXTURE_NOW, populatedDataset } from "@bfhr/fixtures";
 import { useSearch } from "@tanstack/react-router";
-import { useMemo, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useSyncExternalStore } from "react";
 import { CvBackendContext } from "../features/cv-editor/backend";
 import { designSuggestions } from "../features/cv-editor/design-suggestions";
-import { createMemoryCvStore } from "../features/cv-editor/memoryBackend";
+import { createMemoryCvStore, type MemoryCvStore } from "../features/cv-editor/memoryBackend";
 import { buildCvEditorModel } from "../features/cv-editor/model";
 import { CvSuggestionSeedContext } from "../features/cv-editor/suggestionSeed";
 import type { ModelContext } from "../shared/model/types";
@@ -31,6 +31,14 @@ function Today() {
 function JobDetail() {
   return <DesignScreen spec={jobDetailScreen} />;
 }
+
+declare global {
+  interface Window {
+    /** The design CV store, so capture scripts can play "another device saved" (conflict UI). */
+    __bfhrCvStore?: MemoryCvStore;
+  }
+}
+
 /**
  * The CV editor on an in-memory backend over the fixtures (src/features/cv-editor/memoryBackend.ts),
  * so edits, saves, restores and conflicts behave as in the app.
@@ -40,6 +48,12 @@ function CvEditor() {
   const dataset = search.fixture === "empty" ? emptyDataset : populatedDataset;
   const store = useMemo(() => createMemoryCvStore(dataset.uid, dataset, () => FIXTURE_NOW), [dataset]);
   const version = useSyncExternalStore(store.subscribe, () => store.data());
+  useEffect(() => {
+    window.__bfhrCvStore = store;
+    return () => {
+      if (window.__bfhrCvStore === store) delete window.__bfhrCvStore;
+    };
+  }, [store]);
   const spec = useMemo(
     () => ({ ...cvEditorScreen, build: (_: unknown, ctx: ModelContext, params: Readonly<Record<string, string | undefined>>) => buildCvEditorModel(version, ctx, params) }),
     [version],

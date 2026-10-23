@@ -401,7 +401,7 @@ export class CvSessionStore {
     if (error instanceof CvConflictError) {
       const editor = this.editors.get(session.cvId);
       session.conflict = {
-        theirsRevisionId: editor?.currentRevisionId ?? session.baseRevisionId,
+        theirsRevisionId: session.conflict?.theirsRevisionId ?? editor?.currentRevisionId ?? session.baseRevisionId,
         orphanRevisionId: error.orphanRevisionId,
         ours,
       };

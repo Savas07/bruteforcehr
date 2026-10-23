@@ -42,7 +42,7 @@ import {
   type CvDraft,
 } from "./draft";
 import { EditorPane, type EditorOps } from "./EditorPane";
-import { Inspector, type InspectorTab } from "./Inspector";
+import { Inspector, RestoreButton, type InspectorTab } from "./Inspector";
 import type { CvEditorModel, CvEditorVM, CvFirstUseVM, CvRevisionVM } from "./model";
 import { useCvBackend, type CvMetadataPatch } from "./backend";
 import { CompareDialog, ConflictBanner, conflictMessages } from "./Compare";
@@ -127,7 +127,7 @@ const messages = defineMessages({
   compareConflictTitle: { id: "cv-editor.compare.conflictTitle", defaultMessage: "Compare the two versions" },
   compareConflictBody: {
     id: "cv-editor.compare.conflictBody",
-    defaultMessage: "From the other device's version to yours. Whichever you choose, the other stays in Version history.",
+    defaultMessage: "The lines that differ, by section. Whichever version you keep, the other stays in Version history.",
   },
   compareRevisionTitle: { id: "cv-editor.compare.revisionTitle", defaultMessage: "Compare with now" },
   compareRevisionBody: {
@@ -643,6 +643,11 @@ function Workspace({
     setTab("history");
     setInspectorOpen(true);
   };
+  const restore = (revision: CvRevisionVM) => {
+    const message = intl.formatMessage(messages.restored, { date: revision.time.absolute });
+    store.restore(cvId, revision.revisionId, message);
+    toast.show({ message });
+  };
   const titleOf = (id: string) => model.records[id]?.title ?? id;
   // Rename and archive write on the latest version this device knows (`version + 1`, like saves).
   const writeMetadata = (id: string, patch: CvMetadataPatch) => {
@@ -665,9 +670,10 @@ function Workspace({
 
   const header = (
     <header className="border-line-subtle bg-surface-base shrink-0 border-b px-4 pt-3 pb-2">
-      <div className="flex items-start gap-2">
-        <div className="min-w-0 flex-1">
-          <ScreenTitle title={title} className="text-title1 truncate" />
+      {/* The toolbar wraps under the title when the column is narrow, so the CV's name stays readable. */}
+      <div className="flex flex-wrap items-start gap-x-2 gap-y-1">
+        <div className="min-w-60 flex-1">
+          <ScreenTitle title={title} className="text-title1 line-clamp-2 break-words" />
           <div className="text-fg-secondary mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-footnote">
             <span className="bg-surface-selected text-fg-primary rounded-sm px-1.5 text-caption1">{editor.language.label}</span>
             <SyncStatus
@@ -680,7 +686,7 @@ function Workspace({
             {editor.archivedAt && <span>{intl.formatMessage(messages.archivedNote, { time: editor.archivedAt.label })}</span>}
           </div>
         </div>
-        <div className="flex shrink-0 items-center gap-0.5 pt-1">
+        <div className="ml-auto flex shrink-0 items-center gap-0.5 pt-1">
           {breakpoints.previewToggle && (
             <Button
               size="sm"
@@ -860,10 +866,7 @@ function Workspace({
             onKeep={ops.keepSuggestion}
             onKeepAll={keepAll}
             onShow={showSuggestion}
-            onRestore={(revision) => {
-              store.restore(cvId, revision.revisionId, intl.formatMessage(messages.restored, { date: revision.time.absolute }));
-              toast.show({ message: intl.formatMessage(messages.restored, { date: revision.time.absolute }) });
-            }}
+            onRestore={restore}
             onCompare={(revision) => setCompare({ kind: "revision", revision })}
             designControls={
               <DesignControls
@@ -896,6 +899,10 @@ function Workspace({
           title={editor.title}
           content={session.content}
           language={editor.language.tag}
+          onShowPlaceholder={(path) => {
+            setExportOpen(false);
+            locate(path);
+          }}
         />
       )}
       {creation.dialogs}
@@ -905,9 +912,11 @@ function Workspace({
           onOpenChange={(open) => !open && setCompare(null)}
           title={intl.formatMessage(messages.compareConflictTitle)}
           description={intl.formatMessage(messages.compareConflictBody)}
-          before={editor.revisionContents[session.conflict.theirsRevisionId] ?? session.conflict.ours}
+          // Theirs is whatever the CV points at now (ours isn't adopted while the conflict is open).
+          before={editor.revisionContents[editor.currentRevisionId] ?? null}
           after={session.conflict.ours}
           sectionTitles={sectionTitles}
+          sources
           actions={
             <>
               <Button
@@ -941,6 +950,16 @@ function Workspace({
           before={comparedContent}
           after={workingContent}
           sectionTitles={sectionTitles}
+          actions={
+            <RestoreButton
+              prominent
+              revision={comparedRevision}
+              onRestore={() => {
+                restore(comparedRevision);
+                setCompare(null);
+              }}
+            />
+          }
         />
       )}
       <p role="status" className="sr-only">

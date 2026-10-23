@@ -31,8 +31,9 @@ function Thumbnail({ html, widthMm }: { html: string; widthMm: number }) {
   useCvShadow(hostRef, html, setHeight);
   const width = widthMm * PX_PER_MM;
   const scale = THUMB_WIDTH / width;
+  // `inert`: the rendered CV has links (mail, profiles) that must not be focusable inside a picture.
   return (
-    <div aria-hidden data-theme="light" className="bg-surface-base pointer-events-none relative h-[110px] w-[140px] overflow-hidden rounded-xs">
+    <div aria-hidden inert data-theme="light" className="bg-surface-base pointer-events-none relative h-[110px] w-[140px] overflow-hidden rounded-xs">
       <div className="absolute top-0 left-0 origin-top-left" style={{ width, transform: `scale(${scale})` }}>
         <div ref={hostRef} />
       </div>
@@ -81,7 +82,7 @@ export function DesignControls({
               <label
                 key={option.id}
                 className={cx(
-                  "bg-surface-sunken flex cursor-pointer flex-col gap-1.5 rounded-md border p-1.5 focus-within:outline-2 focus-within:outline-offset-1",
+                  "bg-surface-sunken has-focus-visible:outline-line-focus flex cursor-pointer flex-col gap-1.5 rounded-md border p-1.5 has-focus-visible:outline-2 has-focus-visible:outline-offset-2",
                   checked ? "border-accent-solid" : "border-line-subtle hover:border-line-control",
                 )}
               >
@@ -124,8 +125,9 @@ export function DesignControls({
                 <span
                   aria-hidden
                   className={cx(
-                    "flex size-7 items-center justify-center rounded-full border peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2",
-                    checked ? "border-fg-primary border-2" : "border-line-subtle",
+                    "peer-focus-visible:outline-line-focus flex size-7 items-center justify-center rounded-full border peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2",
+                    // `line-control` (≥ 3:1) outlines every swatch, so dark accents stay visible on dark surfaces.
+                    checked ? "border-fg-primary border-2" : "border-line-control",
                   )}
                   style={{ backgroundColor: option.hex }}
                 >

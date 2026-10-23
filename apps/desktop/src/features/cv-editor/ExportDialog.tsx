@@ -48,6 +48,11 @@ const messages = defineMessages({
     id: "cv-editor.export.failed",
     defaultMessage: "We couldn't make the file. Your CV is fine; try again, or pick another format.",
   },
+  showPlaceholder: {
+    id: "cv-editor.export.showPlaceholder",
+    defaultMessage: "Show in CV",
+    description: "Closes Export and moves to the first field that still has a placeholder like [X%]",
+  },
 });
 
 export function ExportDialog({
@@ -56,6 +61,7 @@ export function ExportDialog({
   title,
   content,
   language,
+  onShowPlaceholder,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -63,6 +69,8 @@ export function ExportDialog({
   /** The working copy's content (what the preview shows). */
   content: CvContent;
   language: string;
+  /** Closes the dialog and focuses the field holding the placeholder (`PlaceholderHit.path`). */
+  onShowPlaceholder: (path: string) => void;
 }) {
   const intl = useIntl();
   const toast = useToast();
@@ -101,7 +109,7 @@ export function ExportDialog({
         toast.show({ variant: "info", message: intl.formatMessage(messages.saved, { fileName }) });
       }
     } catch (error) {
-      console.error("Export failed", (error as CvExportError).kind ?? error);
+      console.error("Export failed", error);
       setFailed(true);
     } finally {
       setBusy(false);
@@ -124,28 +132,39 @@ export function ExportDialog({
               if (!busy && placeholders.length === 0) void run();
             }}
           >
-            <SegmentedControl
-              size="sm"
-              label={intl.formatMessage(messages.format)}
-              value={kind}
-              onValueChange={setKind}
-              options={[
-                { value: "pdf", label: intl.formatMessage(messages.pdf) },
-                { value: "docx", label: intl.formatMessage(messages.docx) },
-                { value: "json", label: intl.formatMessage(messages.json) },
-              ]}
-            />
-            {kind !== "json" && (
+            {/* Visible labels: a bare row of segments doesn't say what it chooses. */}
+            <div className="flex flex-col items-start gap-1">
+              <span aria-hidden className="text-footnote text-fg-secondary">
+                {intl.formatMessage(messages.format)}
+              </span>
               <SegmentedControl
                 size="sm"
-                label={intl.formatMessage(messages.paper)}
-                value={paper}
-                onValueChange={setPaper}
+                label={intl.formatMessage(messages.format)}
+                value={kind}
+                onValueChange={setKind}
                 options={[
-                  { value: "a4", label: intl.formatMessage(messages.a4) },
-                  { value: "letter", label: intl.formatMessage(messages.letter) },
+                  { value: "pdf", label: intl.formatMessage(messages.pdf) },
+                  { value: "docx", label: intl.formatMessage(messages.docx) },
+                  { value: "json", label: intl.formatMessage(messages.json) },
                 ]}
               />
+            </div>
+            {kind !== "json" && (
+              <div className="flex flex-col items-start gap-1">
+                <span aria-hidden className="text-footnote text-fg-secondary">
+                  {intl.formatMessage(messages.paper)}
+                </span>
+                <SegmentedControl
+                  size="sm"
+                  label={intl.formatMessage(messages.paper)}
+                  value={paper}
+                  onValueChange={setPaper}
+                  options={[
+                    { value: "a4", label: intl.formatMessage(messages.a4) },
+                    { value: "letter", label: intl.formatMessage(messages.letter) },
+                  ]}
+                />
+              </div>
             )}
             <div className="flex flex-col gap-1">
               <label htmlFor={companyId} className="text-footnote text-fg-secondary">
@@ -167,7 +186,17 @@ export function ExportDialog({
               {intl.formatMessage(messages.fileName, { fileName: <span className="text-fg-primary font-mono">{fileName}</span> })}
             </p>
             {placeholders.length > 0 && (
-              <InlineAlert tone="warning" title={intl.formatMessage(messages.placeholdersTitle, { count: placeholders.length })}>
+              <InlineAlert
+                tone="warning"
+                title={intl.formatMessage(messages.placeholdersTitle, { count: placeholders.length })}
+                action={{
+                  label: intl.formatMessage(messages.showPlaceholder),
+                  onClick: () => {
+                    const [first] = placeholders;
+                    if (first) onShowPlaceholder(first.path);
+                  },
+                }}
+              >
                 {intl.formatMessage(messages.placeholdersBody, {
                   list: intl.formatList([...new Set(placeholders.map((hit) => hit.text))], { type: "conjunction" }),
                 })}

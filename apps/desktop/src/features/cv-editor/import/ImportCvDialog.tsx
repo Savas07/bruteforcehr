@@ -671,6 +671,11 @@ function ImportFlow({
     <Dialog.Content
       // A stray click outside must not throw away an upload or a half-checked review.
       onInteractOutside={(event) => event.preventDefault()}
+      // Nor a reflex Esc: during the review only the Close button leaves, so half-checked work
+      // isn't lost by accident.
+      onEscapeKeyDown={(event) => {
+        if (stage.step === "review") event.preventDefault();
+      }}
       // Start on "Choose file…" rather than the Close button.
       onOpenAutoFocus={(event) => {
         const target = stepRef.current?.querySelector<HTMLElement>("[data-autofocus]");

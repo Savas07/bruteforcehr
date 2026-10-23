@@ -119,10 +119,12 @@ type Run =
       readonly content: CvContent;
     };
 
+// Icon shape + text carry the status; no red: something not read back is a thing to fix, not an
+// error (system.md "Calm"). Amber for both partial and missing, told apart by icon and label.
 const statusIcon: Record<AtsSectionStatus, { icon: LucideIcon; className: string }> = {
   ok: { icon: CircleCheck, className: "text-success-text" },
   partial: { icon: TriangleAlert, className: "text-warning-text" },
-  missing: { icon: CircleX, className: "text-danger-text" },
+  missing: { icon: CircleX, className: "text-warning-text" },
 };
 
 const statusLabel = {

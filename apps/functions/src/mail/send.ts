@@ -19,6 +19,7 @@ import {
   type MailSendNowResponse,
   type MailSendPins,
   MailSendRequestSchema,
+  type MailSendRequestParsed,
   type MailSendResponse,
   MailSendResponseSchema,
   statusRank,
@@ -104,6 +105,28 @@ function reasonCode(reason: MailSendErrorReason) {
   }
 }
 
+interface DispatchData {
+  uid: string;
+  sendId: string;
+}
+
+/** The `mailSendDispatch` task queue; the emulator tests pass an in-memory one. */
+export interface DispatchQueue {
+  enqueue(data: DispatchData, options: { scheduleTime: Date; id: string }): Promise<void>;
+  delete(id: string): Promise<void>;
+}
+
+const dispatchQueueName = `locations/europe-west1/functions/${DISPATCH_FUNCTION}`;
+
+export const cloudDispatchQueue: DispatchQueue = {
+  async enqueue(data, options) {
+    await getFunctions().taskQueue<DispatchData>(dispatchQueueName).enqueue(data, options);
+  },
+  async delete(id) {
+    await getFunctions().taskQueue(dispatchQueueName).delete(id);
+  },
+};
+
 export const mailSend = onCall(
   { secrets: MAIL_SECRETS, timeoutSeconds: 60 },
   async (request): Promise<MailSendResponse> => {
@@ -114,209 +137,209 @@ export const mailSend = onCall(
         "invalid-argument",
         "Expected { accountId, applicationId, jobId, to, subject, bodyText, attachments, pins }.",
       );
-    const input = parsed.data;
-    const db = getFirestore();
-
-    const accountSnapshot = await db.doc(firestorePaths.mailAccount(uid, input.accountId)).get();
-    if (!accountSnapshot.exists) throw sendError("account_not_found", "This email account was not found.");
-    const account = converters.mailAccount.fromSnapshot(accountSnapshot);
-    if (account.status === "needs_reauth")
-      throw sendError("needs_reauth", "Reconnect this account to send from it.");
-    if (!account.canSend || (account.status !== "connected" && account.status !== "syncing")) {
-      throw sendError("cannot_send", "This account can't send email yet.");
-    }
-
-    // Attachments: rendered CV / cover letter documents, or files uploaded for this email.
-    const attachments: Outbox["attachments"] = [];
-    const renderedIds = new Set<string>();
-    for (const attachment of input.attachments) {
-      if (attachment.kind === "rendered") {
-        const snapshot = await db.doc(firestorePaths.renderedFile(uid, attachment.renderedFileId)).get();
-        if (!snapshot.exists) throw sendError("attachment_not_found", "An attached file was not found.");
-        const file = converters.renderedFile.fromSnapshot(snapshot);
-        renderedIds.add(file.id);
-        attachments.push({
-          storagePath: file.storagePath,
-          fileName: file.fileName,
-          contentType: CONTENT_TYPE_BY_KIND[file.kind] ?? "application/octet-stream",
-          sizeBytes: file.sizeBytes,
-        });
-      } else {
-        if (!attachment.storagePath.startsWith(`users/${uid}/mail-attachments/`))
-          throw sendError("attachment_not_found", "An attached file was not found.");
-        const [exists] = await getStorage().bucket().file(attachment.storagePath).exists();
-        if (!exists) throw sendError("attachment_not_found", "An attached file was not found.");
-        const [metadata] = await getStorage().bucket().file(attachment.storagePath).getMetadata();
-        attachments.push({
-          storagePath: attachment.storagePath,
-          fileName: attachment.fileName,
-          contentType: attachment.contentType,
-          sizeBytes: Number(metadata.size ?? 0),
-        });
-      }
-    }
-    if (attachments.reduce((sum, file) => sum + file.sizeBytes, 0) > MAIL_SEND_MAX_ATTACHMENT_BYTES) {
-      throw sendError("attachments_too_large", "Attachments are over 18 MB in total.");
-    }
-    for (const pinned of [input.pins.cvFileId, input.pins.coverLetterFileId]) {
-      if (pinned !== null && !renderedIds.has(pinned))
-        throw new HttpsError("invalid-argument", "Pinned files must be attached.");
-    }
-
-    let replyTo: Outbox["replyTo"] = null;
-    if (input.replyToMailMessageId !== null) {
-      const original = await db.doc(firestorePaths.mailMessage(uid, input.replyToMailMessageId)).get();
-      if (original.exists && original.get("accountId") === input.accountId) {
-        const inReplyTo = original.get("inReplyTo") as string | null;
-        replyTo = {
-          providerMessageId: original.get("providerMessageId") as string,
-          providerThreadId: (original.get("providerThreadId") as string | null) ?? null,
-          rfc822MessageId: (original.get("rfc822MessageId") as string | null) ?? null,
-          references: inReplyTo === null ? [] : [inReplyTo],
-        };
-      }
-    }
-
-    const profile = await db.doc(firestorePaths.user(uid)).get();
-    const cap = Number(profile.get("settings.dailySendCap") ?? DEFAULT_PROFILE_SETTINGS.dailySendCap);
-    const now = new Date();
-    const sendAt = new Date(now.getTime() + MAIL_SEND_UNDO_SECONDS * 1000);
-    const sendId = randomBytes(12).toString("hex");
-    const day = utcDay(now);
-    const applications = db.collection(firestorePaths.applications(uid));
-
-    const applicationId = await db.runTransaction(async (tx) => {
-      const dayRef = db.doc(serverOnlyPaths.mailSendDay(uid, day));
-      const daySnapshot = await tx.get(dayRef);
-      const sent = Number(daySnapshot.get("count") ?? 0);
-      if (sent >= cap) throw sendError("daily_send_cap", `You've reached today's limit of ${cap} emails.`);
-
-      let application: Application;
-      let appRef;
-      let created: ApplicationEvent | null = null;
-      if (input.applicationId !== null) {
-        appRef = applications.doc(input.applicationId);
-        const snapshot = await tx.get(appRef);
-        if (!snapshot.exists) throw sendError("application_not_found", "This application was not found.");
-        application = converters.application.fromSnapshot(snapshot);
-        if (application.emailSend?.state === "scheduled" || application.emailSend?.state === "sending") {
-          throw sendError("send_in_progress", "An email for this application is already being sent.");
-        }
-      } else {
-        if (input.jobId === null)
-          throw new HttpsError("invalid-argument", "applicationId or jobId is required.");
-        const jobSnapshot = await tx.get(db.doc(firestorePaths.job(uid, input.jobId)));
-        if (!jobSnapshot.exists) throw sendError("job_not_found", "This job was not found.");
-        const job = converters.job.fromSnapshot(jobSnapshot);
-        appRef = applications.doc();
-        application = {
-          id: appRef.id,
-          jobId: job.id,
-          company: job.company,
-          companyDomain: job.companyDomain,
-          role: job.title,
-          location: job.locations[0]?.label ?? null,
-          status: "preparing",
-          statusChangedAt: now,
-          channel: "email",
-          source: job.sources[0]?.source ?? null,
-          appliedAt: null,
-          cvId: null,
-          cvRevisionId: null,
-          cvFileId: null,
-          coverLetterId: null,
-          coverLetterFileId: null,
-          fromAccountId: null,
-          threadRefs: [],
-          nextAction: null,
-          nextActionAt: null,
-          priority: "normal",
-          notes: "",
-          followUpSnoozedUntil: null,
-          followUpDismissedAt: null,
-          ghostedSnoozedUntil: null,
-          ghostedDismissedAt: null,
-          emailSend: null,
-          createdAt: now,
-          updatedAt: now,
-        };
-        const eventRef = db.collection(firestorePaths.applicationEvents(uid)).doc();
-        created = {
-          id: eventRef.id,
-          applicationId: appRef.id,
-          type: "created",
-          fromStatus: null,
-          toStatus: "preparing",
-          actor: "user",
-          confidence: null,
-          evidence: null,
-          text: null,
-          revertsEventId: null,
-          occurredAt: now,
-          createdAt: now,
-        };
-      }
-
-      const emailSend: EmailSend = {
-        state: "scheduled",
-        sendId,
-        accountId: account.id,
-        to: input.to,
-        subject: input.subject,
-        sendAt,
-        sentAt: null,
-        providerMessageId: null,
-        threadId: null,
-        rfc822MessageId: null,
-        error: null,
-      };
-      const outbox: Outbox = {
-        state: "scheduled",
-        applicationId: appRef.id,
-        accountId: account.id,
-        to: input.to,
-        cc: input.cc,
-        subject: input.subject,
-        bodyText: input.bodyText,
-        attachments,
-        pins: input.pins,
-        replyTo,
-        day,
-      };
-      tx.set(
-        dayRef,
-        { count: sent + 1, day, expireAt: Timestamp.fromMillis(now.getTime() + 3 * 86_400_000) },
-        { merge: true },
-      );
-      tx.set(db.doc(serverOnlyPaths.mailOutbox(uid, sendId)), {
-        ...outbox,
-        expireAt: Timestamp.fromMillis(now.getTime() + OUTBOX_TTL_DAYS * 86_400_000),
-      });
-      if (created === null) {
-        tx.update(appRef, converters.application.toFirestoreUpdate({ emailSend, updatedAt: now }));
-      } else {
-        tx.set(appRef, converters.application.toFirestore({ ...application, emailSend }));
-        const eventRef = db.doc(firestorePaths.applicationEvent(uid, created.id));
-        tx.set(eventRef, converters.applicationEvent.toFirestore(created));
-      }
-      return appRef.id;
-    });
-
-    await getFunctions()
-      .taskQueue<DispatchData>(`locations/europe-west1/functions/${DISPATCH_FUNCTION}`)
-      .enqueue({ uid, sendId }, { scheduleTime: sendAt, id: `send-${sendId}` });
-    logger.info("mail_send_scheduled", {
-      provider: account.provider,
-      attachments: attachments.length,
-      newApplication: input.applicationId === null,
-    });
-    return MailSendResponseSchema.parse({ applicationId, sendAt: sendAt.toISOString(), state: "scheduled" });
+    return scheduleSend(uid, parsed.data);
   },
 );
 
-interface DispatchData {
-  uid: string;
-  sendId: string;
+/** Validates and stores the message, marks the application scheduled and enqueues the dispatch. */
+export async function scheduleSend(
+  uid: string,
+  input: MailSendRequestParsed,
+  queue: DispatchQueue = cloudDispatchQueue,
+): Promise<MailSendResponse> {
+  const db = getFirestore();
+  const accountSnapshot = await db.doc(firestorePaths.mailAccount(uid, input.accountId)).get();
+  if (!accountSnapshot.exists) throw sendError("account_not_found", "This email account was not found.");
+  const account = converters.mailAccount.fromSnapshot(accountSnapshot);
+  if (account.status === "needs_reauth")
+    throw sendError("needs_reauth", "Reconnect this account to send from it.");
+  if (!account.canSend || (account.status !== "connected" && account.status !== "syncing")) {
+    throw sendError("cannot_send", "This account can't send email yet.");
+  }
+
+  // Attachments: rendered CV / cover letter documents, or files uploaded for this email.
+  const attachments: Outbox["attachments"] = [];
+  const renderedIds = new Set<string>();
+  for (const attachment of input.attachments) {
+    if (attachment.kind === "rendered") {
+      const snapshot = await db.doc(firestorePaths.renderedFile(uid, attachment.renderedFileId)).get();
+      if (!snapshot.exists) throw sendError("attachment_not_found", "An attached file was not found.");
+      const file = converters.renderedFile.fromSnapshot(snapshot);
+      renderedIds.add(file.id);
+      attachments.push({
+        storagePath: file.storagePath,
+        fileName: file.fileName,
+        contentType: CONTENT_TYPE_BY_KIND[file.kind] ?? "application/octet-stream",
+        sizeBytes: file.sizeBytes,
+      });
+    } else {
+      if (!attachment.storagePath.startsWith(`users/${uid}/mail-attachments/`))
+        throw sendError("attachment_not_found", "An attached file was not found.");
+      const [exists] = await getStorage().bucket().file(attachment.storagePath).exists();
+      if (!exists) throw sendError("attachment_not_found", "An attached file was not found.");
+      const [metadata] = await getStorage().bucket().file(attachment.storagePath).getMetadata();
+      attachments.push({
+        storagePath: attachment.storagePath,
+        fileName: attachment.fileName,
+        contentType: attachment.contentType,
+        sizeBytes: Number(metadata.size ?? 0),
+      });
+    }
+  }
+  if (attachments.reduce((sum, file) => sum + file.sizeBytes, 0) > MAIL_SEND_MAX_ATTACHMENT_BYTES) {
+    throw sendError("attachments_too_large", "Attachments are over 18 MB in total.");
+  }
+  for (const pinned of [input.pins.cvFileId, input.pins.coverLetterFileId]) {
+    if (pinned !== null && !renderedIds.has(pinned))
+      throw new HttpsError("invalid-argument", "Pinned files must be attached.");
+  }
+
+  let replyTo: Outbox["replyTo"] = null;
+  if (input.replyToMailMessageId !== null) {
+    const original = await db.doc(firestorePaths.mailMessage(uid, input.replyToMailMessageId)).get();
+    if (original.exists && original.get("accountId") === input.accountId) {
+      const inReplyTo = original.get("inReplyTo") as string | null;
+      replyTo = {
+        providerMessageId: original.get("providerMessageId") as string,
+        providerThreadId: (original.get("providerThreadId") as string | null) ?? null,
+        rfc822MessageId: (original.get("rfc822MessageId") as string | null) ?? null,
+        references: inReplyTo === null ? [] : [inReplyTo],
+      };
+    }
+  }
+
+  const profile = await db.doc(firestorePaths.user(uid)).get();
+  const cap = Number(profile.get("settings.dailySendCap") ?? DEFAULT_PROFILE_SETTINGS.dailySendCap);
+  const now = new Date();
+  const sendAt = new Date(now.getTime() + MAIL_SEND_UNDO_SECONDS * 1000);
+  const sendId = randomBytes(12).toString("hex");
+  const day = utcDay(now);
+  const applications = db.collection(firestorePaths.applications(uid));
+
+  const applicationId = await db.runTransaction(async (tx) => {
+    const dayRef = db.doc(serverOnlyPaths.mailSendDay(uid, day));
+    const daySnapshot = await tx.get(dayRef);
+    const sent = Number(daySnapshot.get("count") ?? 0);
+    if (sent >= cap) throw sendError("daily_send_cap", `You've reached today's limit of ${cap} emails.`);
+
+    let application: Application;
+    let appRef;
+    let created: ApplicationEvent | null = null;
+    if (input.applicationId !== null) {
+      appRef = applications.doc(input.applicationId);
+      const snapshot = await tx.get(appRef);
+      if (!snapshot.exists) throw sendError("application_not_found", "This application was not found.");
+      application = converters.application.fromSnapshot(snapshot);
+      if (application.emailSend?.state === "scheduled" || application.emailSend?.state === "sending") {
+        throw sendError("send_in_progress", "An email for this application is already being sent.");
+      }
+    } else {
+      if (input.jobId === null)
+        throw new HttpsError("invalid-argument", "applicationId or jobId is required.");
+      const jobSnapshot = await tx.get(db.doc(firestorePaths.job(uid, input.jobId)));
+      if (!jobSnapshot.exists) throw sendError("job_not_found", "This job was not found.");
+      const job = converters.job.fromSnapshot(jobSnapshot);
+      appRef = applications.doc();
+      application = {
+        id: appRef.id,
+        jobId: job.id,
+        company: job.company,
+        companyDomain: job.companyDomain,
+        role: job.title,
+        location: job.locations[0]?.label ?? null,
+        status: "preparing",
+        statusChangedAt: now,
+        channel: "email",
+        source: job.sources[0]?.source ?? null,
+        appliedAt: null,
+        cvId: null,
+        cvRevisionId: null,
+        cvFileId: null,
+        coverLetterId: null,
+        coverLetterFileId: null,
+        fromAccountId: null,
+        threadRefs: [],
+        nextAction: null,
+        nextActionAt: null,
+        priority: "normal",
+        notes: "",
+        followUpSnoozedUntil: null,
+        followUpDismissedAt: null,
+        ghostedSnoozedUntil: null,
+        ghostedDismissedAt: null,
+        emailSend: null,
+        createdAt: now,
+        updatedAt: now,
+      };
+      const eventRef = db.collection(firestorePaths.applicationEvents(uid)).doc();
+      created = {
+        id: eventRef.id,
+        applicationId: appRef.id,
+        type: "created",
+        fromStatus: null,
+        toStatus: "preparing",
+        actor: "user",
+        confidence: null,
+        evidence: null,
+        text: null,
+        revertsEventId: null,
+        occurredAt: now,
+        createdAt: now,
+      };
+    }
+
+    const emailSend: EmailSend = {
+      state: "scheduled",
+      sendId,
+      accountId: account.id,
+      to: input.to,
+      subject: input.subject,
+      sendAt,
+      sentAt: null,
+      providerMessageId: null,
+      threadId: null,
+      rfc822MessageId: null,
+      error: null,
+    };
+    const outbox: Outbox = {
+      state: "scheduled",
+      applicationId: appRef.id,
+      accountId: account.id,
+      to: input.to,
+      cc: input.cc,
+      subject: input.subject,
+      bodyText: input.bodyText,
+      attachments,
+      pins: input.pins,
+      replyTo,
+      day,
+    };
+    tx.set(
+      dayRef,
+      { count: sent + 1, day, expireAt: Timestamp.fromMillis(now.getTime() + 3 * 86_400_000) },
+      { merge: true },
+    );
+    tx.set(db.doc(serverOnlyPaths.mailOutbox(uid, sendId)), {
+      ...outbox,
+      expireAt: Timestamp.fromMillis(now.getTime() + OUTBOX_TTL_DAYS * 86_400_000),
+    });
+    if (created === null) {
+      tx.update(appRef, converters.application.toFirestoreUpdate({ emailSend, updatedAt: now }));
+    } else {
+      tx.set(appRef, converters.application.toFirestore({ ...application, emailSend }));
+      const eventRef = db.doc(firestorePaths.applicationEvent(uid, created.id));
+      tx.set(eventRef, converters.applicationEvent.toFirestore(created));
+    }
+    return appRef.id;
+  });
+
+  await queue.enqueue({ uid, sendId }, { scheduleTime: sendAt, id: `send-${sendId}` });
+  logger.info("mail_send_scheduled", {
+    provider: account.provider,
+    attachments: attachments.length,
+    newApplication: input.applicationId === null,
+  });
+  return MailSendResponseSchema.parse({ applicationId, sendAt: sendAt.toISOString(), state: "scheduled" });
 }
 
 async function loadOutboxByApplication(
@@ -334,10 +357,19 @@ export const mailSendCancel = onCall(async (request): Promise<MailSendCancelResp
   const uid = verifiedUid(request);
   const parsed = MailSendControlRequestSchema.safeParse(request.data);
   if (!parsed.success) throw new HttpsError("invalid-argument", "Expected { applicationId }.");
-  const { sendId } = await loadOutboxByApplication(uid, parsed.data.applicationId);
+  return cancelSend(uid, parsed.data.applicationId);
+});
+
+/** Cancels a scheduled message inside the undo window. */
+export async function cancelSend(
+  uid: string,
+  applicationId: string,
+  queue: DispatchQueue = cloudDispatchQueue,
+): Promise<MailSendCancelResponse> {
+  const { sendId } = await loadOutboxByApplication(uid, applicationId);
   const db = getFirestore();
   const outboxRef = db.doc(serverOnlyPaths.mailOutbox(uid, sendId));
-  const appRef = db.doc(firestorePaths.application(uid, parsed.data.applicationId));
+  const appRef = db.doc(firestorePaths.application(uid, applicationId));
   await db.runTransaction(async (tx) => {
     const [outbox, app] = await Promise.all([tx.get(outboxRef), tx.get(appRef)]);
     if (!outbox.exists || outbox.get("state") !== "scheduled")
@@ -358,12 +390,9 @@ export const mailSendCancel = onCall(async (request): Promise<MailSendCancelResp
       );
     }
   });
-  await getFunctions()
-    .taskQueue(`locations/europe-west1/functions/${DISPATCH_FUNCTION}`)
-    .delete(`send-${sendId}`)
-    .catch(() => undefined);
+  await queue.delete(`send-${sendId}`).catch(() => undefined);
   return { state: "cancelled" };
-});
+}
 
 export const mailSendNow = onCall(
   { secrets: MAIL_SECRETS, timeoutSeconds: 120 },
@@ -371,12 +400,17 @@ export const mailSendNow = onCall(
     const uid = verifiedUid(request);
     const parsed = MailSendControlRequestSchema.safeParse(request.data);
     if (!parsed.success) throw new HttpsError("invalid-argument", "Expected { applicationId }.");
-    const { sendId } = await loadOutboxByApplication(uid, parsed.data.applicationId);
-    const state = await dispatch(uid, sendId);
-    if (state === null) throw sendError("already_sent", "This email is already on its way.");
-    return { state };
+    return sendNow(uid, parsed.data.applicationId);
   },
 );
+
+/** Skips the rest of the undo window. */
+export async function sendNow(uid: string, applicationId: string): Promise<MailSendNowResponse> {
+  const { sendId } = await loadOutboxByApplication(uid, applicationId);
+  const state = await dispatch(uid, sendId);
+  if (state === null) throw sendError("already_sent", "This email is already on its way.");
+  return { state };
+}
 
 export const mailSendDispatch = onTaskDispatched<DispatchData>(
   {
@@ -395,7 +429,7 @@ export const mailSendDispatch = onTaskDispatched<DispatchData>(
  * Claims the scheduled message (scheduled → sending, so a cancel, a retry or "send now" can't send it
  * twice), sends it and records the result. Returns null when it was not scheduled any more.
  */
-async function dispatch(uid: string, sendId: string): Promise<"sent" | "failed" | null> {
+export async function dispatch(uid: string, sendId: string): Promise<"sent" | "failed" | null> {
   const db = getFirestore();
   const outboxRef = db.doc(serverOnlyPaths.mailOutbox(uid, sendId));
   const claimed = await db.runTransaction(async (tx) => {

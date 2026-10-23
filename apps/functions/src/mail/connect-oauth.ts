@@ -24,7 +24,7 @@ import { converters } from "../converters";
 import { loadMailSecret, oauthSecretFrom, saveMailSecret, secretRefOf } from "./accounts";
 import { MAIL_SECRETS, oauthProvider, PUBLIC_BASE_URL, redirectUri } from "./config";
 import { MailCallableError } from "./errors";
-import { startBackfill } from "./sync";
+import { startBackfill, type SyncEnqueue, enqueueSync } from "./sync";
 
 /** The nonce (and the provider round trip) must finish within this time. */
 const NONCE_TTL_MS = 15 * 60_000;
@@ -50,33 +50,41 @@ export const mailConnectStart = onCall(
     const parsed = MailConnectStartRequestSchema.safeParse(request.data);
     if (!parsed.success)
       throw new HttpsError("invalid-argument", "Expected { provider, intent?, lookbackDays?, address? }.");
-    const { provider, intent, lookbackDays, address } = parsed.data;
-    if (oauthProvider(provider) === null) {
-      throw new MailCallableError(
-        "failed-precondition",
-        "provider_not_configured",
-        "Connecting this provider isn't available yet.",
-      );
-    }
-    const nonce = base64url(randomBytes(24));
-    const expireAt = Timestamp.fromMillis(Date.now() + NONCE_TTL_MS);
-    await getFirestore().doc(serverOnlyPaths.mailConnect(nonce)).create({
-      uid,
-      provider,
-      intent,
-      lookbackDays,
-      loginHint: address,
-      state: null,
-      codeVerifier: null,
-      expireAt,
-    });
-    return MailConnectStartResponseSchema.parse({
-      url: `${PUBLIC_BASE_URL.value().replace(/\/$/u, "")}/connect/${provider}?nonce=${nonce}`,
-      nonce,
-      expiresAt: expireAt.toDate().toISOString(),
-    });
+    return startConnect(uid, parsed.data);
   },
 );
+
+/** Issues the nonce that `/connect/{provider}?nonce=…` redeems. */
+export async function startConnect(
+  uid: string,
+  input: z.output<typeof MailConnectStartRequestSchema>,
+): Promise<MailConnectStartResponse> {
+  const { provider, intent, lookbackDays, address } = input;
+  if (oauthProvider(provider) === null) {
+    throw new MailCallableError(
+      "failed-precondition",
+      "provider_not_configured",
+      "Connecting this provider isn't available yet.",
+    );
+  }
+  const nonce = base64url(randomBytes(24));
+  const expireAt = Timestamp.fromMillis(Date.now() + NONCE_TTL_MS);
+  await getFirestore().doc(serverOnlyPaths.mailConnect(nonce)).create({
+    uid,
+    provider,
+    intent,
+    lookbackDays,
+    loginHint: address,
+    state: null,
+    codeVerifier: null,
+    expireAt,
+  });
+  return MailConnectStartResponseSchema.parse({
+    url: `${PUBLIC_BASE_URL.value().replace(/\/$/u, "")}/connect/${provider}?nonce=${nonce}`,
+    nonce,
+    expiresAt: expireAt.toDate().toISOString(),
+  });
+}
 
 function appReturn(params: {
   nonce: string;
@@ -102,31 +110,36 @@ function redirect(res: Response, location: string): void {
 /** `/connect/google`, `/connect/google/callback`, … (also without the `/connect` prefix when called directly). */
 export const connect = onRequest(
   { secrets: MAIL_SECRETS, timeoutSeconds: 60 },
-  async (req: Request, res: Response) => {
-    if (req.method !== "GET") {
-      res.set("Allow", "GET").status(405).send("Method not allowed");
-      return;
-    }
-    const match = /^(?:\/connect)?\/(google|microsoft)(\/callback)?\/?$/u.exec(req.path);
-    if (match === null || match[1] === undefined) {
-      res.status(404).send("Not found");
-      return;
-    }
-    const provider = match[1] as "google" | "microsoft";
-    try {
-      if (match[2] === undefined) await begin(provider, req, res);
-      else await callback(provider, req, res);
-    } catch (error) {
-      logger.error("mail_oauth_failed", {
-        provider,
-        name: error instanceof Error ? error.name : typeof error,
-      });
-      res
-        .status(500)
-        .send("We couldn't finish connecting. Nothing was saved. Close this page and try again.");
-    }
-  },
+  (req: Request, res: Response) => handleConnect(req, res),
 );
+
+/** Body of `connect`; `enqueue` starts the lookback scan of a new account. */
+export async function handleConnect(
+  req: Request,
+  res: Response,
+  enqueue: SyncEnqueue = enqueueSync,
+): Promise<void> {
+  if (req.method !== "GET") {
+    res.set("Allow", "GET").status(405).send("Method not allowed");
+    return;
+  }
+  const match = /^(?:\/connect)?\/(google|microsoft)(\/callback)?\/?$/u.exec(req.path);
+  if (match === null || match[1] === undefined) {
+    res.status(404).send("Not found");
+    return;
+  }
+  const provider = match[1] as "google" | "microsoft";
+  try {
+    if (match[2] === undefined) await begin(provider, req, res);
+    else await callback(provider, req, res, enqueue);
+  } catch (error) {
+    logger.error("mail_oauth_failed", {
+      provider,
+      name: error instanceof Error ? error.name : typeof error,
+    });
+    res.status(500).send("We couldn't finish connecting. Nothing was saved. Close this page and try again.");
+  }
+}
 
 async function begin(provider: "google" | "microsoft", req: Request, res: Response): Promise<void> {
   const nonce = typeof req.query["nonce"] === "string" ? req.query["nonce"] : "";
@@ -175,7 +188,12 @@ async function begin(provider: "google" | "microsoft", req: Request, res: Respon
   );
 }
 
-async function callback(provider: "google" | "microsoft", req: Request, res: Response): Promise<void> {
+async function callback(
+  provider: "google" | "microsoft",
+  req: Request,
+  res: Response,
+  enqueue: SyncEnqueue,
+): Promise<void> {
   const state = typeof req.query["state"] === "string" ? req.query["state"] : "";
   const db = getFirestore();
   // The state is single use: the pending document is deleted in the same transaction that reads it.
@@ -266,7 +284,7 @@ async function callback(provider: "google" | "microsoft", req: Request, res: Res
       updatedAt: now,
     };
     await accounts.doc(accountId).set(converters.mailAccount.toFirestore(account));
-    await startBackfill(pending.uid, accountId, pending.lookbackDays);
+    await startBackfill(pending.uid, accountId, pending.lookbackDays, enqueue);
   } else {
     await accounts.doc(accountId).update(
       converters.mailAccount.toFirestoreUpdate({
@@ -279,7 +297,8 @@ async function callback(provider: "google" | "microsoft", req: Request, res: Res
         updatedAt: now,
       }),
     );
-    if (existing.get("backfill") == null) await startBackfill(pending.uid, accountId, pending.lookbackDays);
+    if (existing.get("backfill") == null)
+      await startBackfill(pending.uid, accountId, pending.lookbackDays, enqueue);
   }
   logger.info("mail_connected", {
     provider: kind,

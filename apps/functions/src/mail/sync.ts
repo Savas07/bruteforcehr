@@ -67,6 +67,9 @@ export async function enqueueSync(
   }
 }
 
+/** Enqueues a sync task (`enqueueSync` in production; the emulator tests record the calls). */
+export type SyncEnqueue = typeof enqueueSync;
+
 function errorCode(error: unknown): string {
   return error !== null && typeof error === "object" && "code" in error && typeof error.code === "string"
     ? error.code
@@ -98,7 +101,12 @@ function backfillPatch(
 }
 
 /** Starts a lookback scan: resets the progress shown to clients and enqueues the task. */
-export async function startBackfill(uid: string, accountId: string, lookbackDays: number): Promise<void> {
+export async function startBackfill(
+  uid: string,
+  accountId: string,
+  lookbackDays: number,
+  enqueue: SyncEnqueue = enqueueSync,
+): Promise<void> {
   const since = new Date(Date.now() - lookbackDays * 86_400_000);
   const backfill: MailBackfill = {
     state: "queued",
@@ -123,7 +131,7 @@ export async function startBackfill(uid: string, accountId: string, lookbackDays
     lookbackDays,
     applicationKeys: [],
   });
-  await enqueueSync({ uid, accountId, mode: "backfill" }, { dedupe: false });
+  await enqueue({ uid, accountId, mode: "backfill" }, { dedupe: false });
 }
 
 /**

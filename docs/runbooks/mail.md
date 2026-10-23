@@ -55,6 +55,7 @@ Free providers require phone or CAPTCHA verification to create a mailbox, so no 
 - **`needs_reauth`:** the user reconnects (IMAP: new app password through `mailConnectImap` with `accountId`; OAuth: `mailConnectStart`).
 - **Re-run a lookback scan:** `mailBackfillStart({ accountId, lookbackDays })`.
 - **Eval:** `ANTHROPIC_API_KEY=$(gcloud secrets versions access latest --secret ANTHROPIC_API_KEY --project bruteforcehr) pnpm --filter @bfhr/ai eval:mail` (≈ $0.05); commit `eval/mail/recordings/*.json` and `report.md`.
+- **Emulator tests:** `pnpm --filter @bfhr/functions test:emulator` runs `src/mail/emulator/*.emulator.test.ts` (lookback scan and incremental sync against imapkit, email apply through smtp-server with a Storage attachment, the review and retention triggers, the OAuth callback with a fake provider) on the Firestore and Storage emulators. They need Java, so they run in CI (job `rules`); the default `test` excludes them.
 - **Account deletion** must call `revokeAllMailAccounts(uid)` (apps/functions/src/mail/functions.ts) before deleting `userDataRoots(uid)`. JobsBackend's `deleteUserData` (apps/functions/src/account/user-data.ts) is not on main yet; whichever of m4/jobs-backend and m4/mail-backend lands on main second wires the call in before its roots loop (agreed with JobsBackend, 2026-10-24). All mail `serverOnly` data lives under `serverOnlyPaths.mailRoot(uid)`, which is one of the `userDataRoots` (packages/api/src/paths.test.ts checks this).
 
 ## Live check

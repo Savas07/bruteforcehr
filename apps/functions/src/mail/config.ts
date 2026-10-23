@@ -26,8 +26,17 @@ export function mailKeyring(): Keyring {
 
 const OAuthClientSchema = z.object({ clientId: z.string().min(1), clientSecret: z.string().min(1) });
 
+/** Test seam: a fake provider replaces the real one (never set in production code paths). */
+const testProviders = new Map<"google" | "microsoft", OAuthProvider>();
+export function setOAuthProviderForTests(id: "google" | "microsoft", provider: OAuthProvider | null): void {
+  if (provider === null) testProviders.delete(id);
+  else testProviders.set(id, provider);
+}
+
 /** The OAuth provider, or null while its client secret is still `unset` (feature off). */
 export function oauthProvider(id: "google" | "microsoft"): OAuthProvider | null {
+  const override = testProviders.get(id);
+  if (override !== undefined) return override;
   const raw = secretOrNull(id === "google" ? GOOGLE_OAUTH_CLIENT : MICROSOFT_OAUTH_CLIENT);
   if (raw === null) return null;
   const config = OAuthClientSchema.parse(JSON.parse(raw));

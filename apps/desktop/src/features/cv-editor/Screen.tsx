@@ -10,7 +10,7 @@
 import { useNavigate } from "@tanstack/react-router";
 import { Eye, FileUp, History, PanelRight, PenLine, Sparkles } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { defineMessages, useIntl } from "react-intl";
+import { defineMessage, defineMessages, useIntl } from "react-intl";
 import { destinationMessages } from "../../lib/destinations";
 import { useConnectivity } from "../../shared/connectivity";
 import { cx } from "../../shared/cx";
@@ -49,12 +49,14 @@ import type { CvPreviewBlock } from "./preview-document";
 import { buildSuggestionVMs, fillPlaceholders, hasUnfilledPlaceholders } from "./suggestions";
 import { useWindowQuery } from "./useWindowWidth";
 
+/** Names this CV in "Save your changes before restarting?" (also used by src/design/updates.tsx). */
+export const unsavedLabelMessage = defineMessage({
+  id: "cv-editor.view.unsavedLabel",
+  defaultMessage: "CV “{title}”",
+  description: "Names this CV in “Save your changes before restarting?”",
+});
+
 const messages = defineMessages({
-  unsavedLabel: {
-    id: "cv-editor.view.unsavedLabel",
-    defaultMessage: "CV “{title}”",
-    description: "Names this CV in “Save your changes before restarting?”",
-  },
   loading: { id: "cv-editor.loading", defaultMessage: "Loading your CVs" },
   errorTitle: { id: "cv-editor.error.title", defaultMessage: "We couldn't load your CVs" },
   errorBody: {
@@ -275,7 +277,7 @@ function Workspace({
   useUnsavedChanges(
     saveState === "saving"
       ? {
-          label: intl.formatMessage(messages.unsavedLabel, { title: editor.title }),
+          label: intl.formatMessage(unsavedLabelMessage, { title: editor.title }),
           save: () => {
             window.clearTimeout(saveTimer.current);
             setSaveState(offline ? "local" : "saved");

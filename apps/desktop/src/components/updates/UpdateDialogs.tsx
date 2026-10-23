@@ -73,7 +73,11 @@ const messages = defineMessages({
     id: "updates.save.failed",
     defaultMessage: "Couldn’t save your changes, so BruteForceHR didn’t restart. Try again.",
   },
-  cancel: { id: "updates.save.cancel", defaultMessage: "Cancel" },
+  cancel: {
+    id: "updates.save.cancel",
+    defaultMessage: "Keep editing",
+    description: "Closes “Save your changes before restarting?” without restarting",
+  },
   saveAndRestart: { id: "updates.save.saveAndRestart", defaultMessage: "Save and restart" },
 });
 
@@ -212,7 +216,10 @@ export function CheckForUpdatesDialog({ controller }: { controller: UpdateContro
     >
       <Dialog.Portal>
         <Dialog.Overlay className={overlayClass} />
-        <Dialog.Content className={`${contentClass} w-[min(420px,calc(100vw-32px))]`}>
+        <Dialog.Content
+          onCloseAutoFocus={controller.restoreFocus}
+          className={`${contentClass} w-[min(420px,calc(100vw-32px))]`}
+        >
           <div className="flex items-start gap-3 px-6 pt-5">
             {Icon && (
               <Icon aria-hidden="true" className={`${view.tone} mt-1 size-5 shrink-0`} strokeWidth={1.75} />
@@ -276,7 +283,10 @@ export function ReleaseNotesDialog({ controller }: { controller: UpdateControlle
       <Dialog.Portal>
         <Dialog.Overlay className={overlayClass} />
         {ready && (
-          <Dialog.Content className={`${contentClass} w-[min(560px,calc(100vw-32px))]`}>
+          <Dialog.Content
+            onCloseAutoFocus={controller.restoreFocus}
+            className={`${contentClass} w-[min(560px,calc(100vw-32px))]`}
+          >
             <div className="flex items-start gap-4 px-6 pt-5 pb-3">
               <div className="flex-1">
                 <Dialog.Title className="font-display text-title2">
@@ -345,7 +355,10 @@ export function SaveFirstDialog({ controller }: { controller: UpdateController }
     >
       <AlertDialog.Portal>
         <AlertDialog.Overlay className={overlayClass} />
-        <AlertDialog.Content className={`${contentClass} w-[min(440px,calc(100vw-32px))] gap-3 px-6 py-5`}>
+        <AlertDialog.Content
+          onCloseAutoFocus={controller.restoreFocus}
+          className={`${contentClass} w-[min(440px,calc(100vw-32px))] gap-3 px-6 py-5`}
+        >
           <AlertDialog.Title className="font-display text-title3">
             {intl.formatMessage(messages.saveTitle)}
           </AlertDialog.Title>

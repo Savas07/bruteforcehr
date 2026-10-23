@@ -4,7 +4,7 @@
  * to one line; the narrow rail shows an icon with a dot. It also reports an install that failed.
  */
 import { ChevronUp, CircleArrowUp, CircleAlert } from "lucide-react";
-import { useId } from "react";
+import { useEffect, useId, useRef } from "react";
 import { defineMessages, useIntl } from "react-intl";
 import { Button } from "../../shared/ui/Button";
 import { Hint } from "../../shared/ui/Hint";
@@ -28,7 +28,7 @@ const messages = defineMessages({
     defaultMessage: "Update ready: version {version}",
     description: "The collapsed update card (one line) and the rail icon; opens the details",
   },
-  failedTitle: { id: "updates.card.failedTitle", defaultMessage: "Update didn’t install" },
+  failedTitle: { id: "updates.card.failedTitle", defaultMessage: "Couldn’t install the update" },
   failedBody: {
     id: "updates.card.failedBody",
     defaultMessage: "Your current version still works. Try again to download the update once more.",
@@ -43,6 +43,19 @@ export function UpdateCard({ controller }: { controller: UpdateController }) {
   const titleId = useId();
   const { updates, cardCollapsed, setCardCollapsed, requestRestart, openDialog, restarting } = controller;
   const { status } = updates.snapshot;
+  // "Later" and the collapsed line replace each other: keep keyboard focus on the replacement.
+  const toggled = useRef(false);
+  const collapsedRow = useRef<HTMLButtonElement>(null);
+  const laterButton = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (!toggled.current) return;
+    toggled.current = false;
+    (cardCollapsed ? collapsedRow : laterButton).current?.focus();
+  }, [cardCollapsed]);
+  const toggle = (collapsed: boolean) => {
+    toggled.current = true;
+    setCardCollapsed(collapsed);
+  };
 
   if (status.state === "failed" && status.step === "install") {
     return (
@@ -89,17 +102,16 @@ export function UpdateCard({ controller }: { controller: UpdateController }) {
       <>
         {railButton}
         <button
+          ref={collapsedRow}
           type="button"
           aria-expanded={false}
+          aria-label={expandLabel}
           className={`${rowClass} mb-1 narrow:hidden`}
-          onClick={() => setCardCollapsed(false)}
+          onClick={() => toggle(false)}
         >
           <CircleArrowUp aria-hidden="true" className="text-accent-text size-4 shrink-0" strokeWidth={1.75} />
-          {/* The version would truncate the title in Turkish and German; screen readers still get it. */}
-          <span className="flex-1 truncate text-left">
-            {intl.formatMessage(messages.title)}
-            <span className="sr-only">, {status.version}</span>
-          </span>
+          {/* The version would truncate the title in Turkish and German; the name still has it. */}
+          <span className="flex-1 truncate text-left">{intl.formatMessage(messages.title)}</span>
           <ChevronUp aria-hidden="true" className="text-fg-secondary size-4 shrink-0" strokeWidth={1.75} />
         </button>
       </>
@@ -119,11 +131,12 @@ export function UpdateCard({ controller }: { controller: UpdateController }) {
             {intl.formatMessage(messages.title)}
           </h2>
           <Button
+            ref={laterButton}
             variant="plain"
             size="sm"
             className="-my-1 -mr-1.5"
             aria-expanded={true}
-            onClick={() => setCardCollapsed(true)}
+            onClick={() => toggle(true)}
           >
             {intl.formatMessage(messages.later)}
           </Button>

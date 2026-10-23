@@ -3,7 +3,7 @@
  * screen: which dialog is open, whether "Later" collapsed the card, and the restart flow that
  * saves unsaved edits first.
  */
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { saveUnsavedChanges, unsavedChanges, useUnsavedChangesList } from "../../shared/unsavedChanges";
 import { useUpdates, type UpdatesValue } from "./context";
 
@@ -14,6 +14,11 @@ export interface UpdateController {
   readonly dialog: UpdateDialog | null;
   readonly openDialog: (dialog: UpdateDialog) => void;
   readonly closeDialog: () => void;
+  /**
+   * For the dialogs' `onCloseAutoFocus`: they have no Radix trigger (they open from the menu, the
+   * palette, the card), so focus goes back to whatever had it when the first one opened.
+   */
+  readonly restoreFocus: (event: Event) => void;
   readonly cardCollapsed: boolean;
   readonly setCardCollapsed: (collapsed: boolean) => void;
   /** "Check for Updates…": opens the dialog and starts a check. */
@@ -52,6 +57,22 @@ export function useUpdateController(): UpdateController {
     setSaveFailed(false);
   }
 
+  const opener = useRef<HTMLElement | null>(null);
+  const openDialog = useCallback(
+    (next: UpdateDialog) => {
+      if (dialog === null && document.activeElement instanceof HTMLElement)
+        opener.current = document.activeElement;
+      setDialog(next);
+    },
+    [dialog],
+  );
+  const restoreFocus = useCallback((event: Event) => {
+    event.preventDefault();
+    const target = opener.current;
+    opener.current = null;
+    if (target?.isConnected) target.focus();
+  }, []);
+
   const restartNow = useCallback(() => {
     setRestarting(true);
     // Success never returns (the app relaunches); a failure shows as `failed: install`.
@@ -64,9 +85,9 @@ export function useUpdateController(): UpdateController {
   const requestRestart = useCallback(() => {
     if (unsavedChanges().length > 0) {
       setSaveFailed(false);
-      setDialog("save-first");
+      openDialog("save-first");
     } else restartNow();
-  }, [restartNow]);
+  }, [restartNow, openDialog]);
 
   const saveAndRestart = useCallback(() => {
     setRestarting(true);
@@ -79,14 +100,15 @@ export function useUpdateController(): UpdateController {
   }, [restartNow]);
 
   const checkNow = useCallback(() => {
-    setDialog("check");
+    openDialog("check");
     check();
-  }, [check]);
+  }, [check, openDialog]);
 
   return {
     updates,
     dialog,
-    openDialog: setDialog,
+    openDialog,
+    restoreFocus,
     closeDialog: useCallback(() => setDialog(null), []),
     cardCollapsed,
     setCardCollapsed,

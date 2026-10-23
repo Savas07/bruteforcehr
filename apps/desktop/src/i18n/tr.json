@@ -1172,7 +1172,7 @@
   "updates.restart": "Yeniden başlatıp güncelleyin",
   "updates.restarting": "Yeniden başlatılıyor…",
   "updates.save.body": "{count, plural, one {{labels} öğesinde henüz kaydedilmemiş değişiklikler var.} other {{labels} öğelerinde henüz kaydedilmemiş değişiklikler var.}} BruteForceHR önce bunları kaydeder, ardından güncellemek için yeniden başlar.",
-  "updates.save.cancel": "Vazgeçin",
+  "updates.save.cancel": "Düzenlemeye devam edin",
   "updates.save.failed": "Değişiklikleriniz kaydedilemedi, bu yüzden BruteForceHR yeniden başlamadı. Tekrar deneyin.",
   "updates.save.saveAndRestart": "Kaydedip yeniden başlatın",
   "updates.save.title": "Yeniden başlatmadan önce değişiklikleriniz kaydedilsin mi?",

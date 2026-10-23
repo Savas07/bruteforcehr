@@ -4,10 +4,12 @@
  * offered 0.1.1; the gate requires 0.2.0. Without `?update=` the UI shows nothing, as in a
  * session with no update.
  */
-import { FIXTURE_NOW } from "@bfhr/fixtures";
+import { FIXTURE_NOW, populatedDataset } from "@bfhr/fixtures";
 import { type ReactNode, useEffect, useMemo, useState } from "react";
+import { useIntl } from "react-intl";
 import { UpdatesContext, type UpdatesUiPreset, type UpdatesValue } from "../components/updates/context";
 import { chrome, type UpdateSnapshot, type UpdateStatus } from "../lib/desktop";
+import { unsavedLabelMessage } from "../features/cv-editor/Screen";
 import { registerUnsavedChanges } from "../shared/unsavedChanges";
 import { type UpdateDesignState, updateDesignStates } from "./matrix";
 
@@ -69,7 +71,10 @@ function isUpdateState(value: string | undefined): value is UpdateDesignState {
 }
 
 export function DesignUpdates({ state, children }: { state: string | undefined; children: ReactNode }) {
+  const intl = useIntl();
   const scenario = isUpdateState(state) ? forced[state] : none;
+  // The persona's base CV, open with an edit that is still saving.
+  const cvLabel = intl.formatMessage(unsavedLabelMessage, { title: populatedDataset.cvs[0]?.title ?? "" });
   // "Try again" and "Check for updates" walk through checking → up to date, so the harness is clickable.
   const [status, setStatus] = useState(scenario.status);
   const [appliedScenario, setAppliedScenario] = useState(scenario);
@@ -78,17 +83,16 @@ export function DesignUpdates({ state, children }: { state: string | undefined; 
     setStatus(scenario.status);
   }
 
-  // The CV the persona was editing when "Restart to update" asked to save it.
   useEffect(
     () =>
       scenario.unsaved
         ? registerUnsavedChanges({
-            label: "CV “Senior Product Designer”",
+            label: cvLabel,
             // Executor form: the safari16 build target has no Promise.withResolvers.
             save: () => new Promise((resolve) => setTimeout(resolve, 600)),
           })
         : undefined,
-    [scenario],
+    [scenario, cvLabel],
   );
 
   const value = useMemo((): UpdatesValue => {

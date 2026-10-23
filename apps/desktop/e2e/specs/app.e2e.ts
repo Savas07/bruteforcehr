@@ -222,6 +222,21 @@ describe("BruteForceHR desktop", () => {
     expect(String(result.badChannel.error)).toMatch(/nightly|unknown variant/i);
   });
 
+  it("lets the minimum-version gate read appConfig through the CSP", async () => {
+    // The same REST read Firestore Lite makes (src/lib/appConfig.ts). 404 is fine: the document
+    // only exists once a release has published it. A CSP block would throw instead.
+    const status = await browser.execute(async () => {
+      const url =
+        "https://firestore.googleapis.com/v1/projects/bruteforcehr/databases/(default)/documents/appConfig/macos";
+      try {
+        return (await fetch(url)).status;
+      } catch (error) {
+        return String(error);
+      }
+    });
+    expect([200, 404]).toContain(status);
+  });
+
   it("blocks navigation to other origins and new windows", async () => {
     const before = await browser.execute(() => window.location.origin);
     const opened = await browser.execute(() => window.open("https://example.com/") === null);

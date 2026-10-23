@@ -79,9 +79,12 @@ function ActionRow({
 export function Sidebar({
   onOpenPalette,
   onOpenShortcuts,
+  updateCard,
 }: {
   onOpenPalette: () => void;
   onOpenShortcuts: () => void;
+  /** The update card (src/components/updates/UpdateCard.tsx), above "Keyboard shortcuts". */
+  updateCard?: ReactNode;
 }) {
   const intl = useIntl();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
@@ -136,6 +139,7 @@ export function Sidebar({
       </ul>
 
       <div data-sidebar-footer="" className="shrink-0 px-3 pt-2 pb-3">
+        {updateCard}
         <ActionRow
           icon={Keyboard}
           label={intl.formatMessage(messages.keyboardShortcuts)}

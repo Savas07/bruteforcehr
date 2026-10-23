@@ -10,7 +10,7 @@
 import { useNavigate } from "@tanstack/react-router";
 import { Eye, FileUp, History, PanelRight, PenLine, Sparkles } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { defineMessages, useIntl } from "react-intl";
+import { defineMessage, defineMessages, useIntl } from "react-intl";
 import { destinationMessages } from "../../lib/destinations";
 import { useConnectivity } from "../../shared/connectivity";
 import { cx } from "../../shared/cx";
@@ -24,6 +24,7 @@ import { CvFormSkeleton, CvPreviewSkeleton, SkeletonBlock, SkeletonRegion } from
 import { StaleStamp } from "../../shared/ui/StaleStamp";
 import { SyncStatus, type SaveState } from "../../shared/ui/SyncStatus";
 import { useToast } from "../../shared/ui/Toast";
+import { useUnsavedChanges } from "../../shared/unsavedChanges";
 import { keywordCoverage } from "./coverage";
 import { CvListPane } from "./CvListPane";
 import { designSuggestions } from "./design-suggestions";
@@ -47,6 +48,13 @@ import { PreviewPane } from "./PreviewPane";
 import type { CvPreviewBlock } from "./preview-document";
 import { buildSuggestionVMs, fillPlaceholders, hasUnfilledPlaceholders } from "./suggestions";
 import { useWindowQuery } from "./useWindowWidth";
+
+/** Names this CV in "Save your changes before restarting?" (also used by src/design/updates.tsx). */
+export const unsavedLabelMessage = defineMessage({
+  id: "cv-editor.view.unsavedLabel",
+  defaultMessage: "CV “{title}”",
+  description: "Names this CV in “Save your changes before restarting?”",
+});
 
 const messages = defineMessages({
   loading: { id: "cv-editor.loading", defaultMessage: "Loading your CVs" },
@@ -264,6 +272,20 @@ function Workspace({
   useEffect(() => () => {
     window.clearTimeout(saveTimer.current);
   }, []);
+  // While "Saving…" shows, "Restart to update" asks first (src/shared/unsavedChanges.ts); saving
+  // finishes the optimistic write now.
+  useUnsavedChanges(
+    saveState === "saving"
+      ? {
+          label: intl.formatMessage(unsavedLabelMessage, { title: editor.title }),
+          save: () => {
+            window.clearTimeout(saveTimer.current);
+            setSaveState(offline ? "local" : "saved");
+            return Promise.resolve();
+          },
+        }
+      : null,
+  );
 
   const undo = (run: () => void) => ({ label: intl.formatMessage(messages.undo), run });
   const sectionName = (key: string) => sectionTitles[key] ?? key;

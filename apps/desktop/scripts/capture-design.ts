@@ -2,7 +2,10 @@
 //
 //   pnpm --filter @bfhr/desktop capture:design <screen…|all> [--states populated,empty,…]
 //     [--engines webkit,chromium] [--themes light,dark] [--sizes 1280x800,1920x1080] [--scale 1]
-//     [--locale en|tr|de] [--axe]
+//     [--locale en|tr|de] [--axe] [--update-states ready,notes,…]
+//
+// The `update` target captures the update UI states instead (`updateDesignStates`, over Today, each
+// at its own size: the rail state is 600 px wide) as update-<state>-<theme>-<w>x<h>.png, all audited.
 //
 // --axe also runs axe-core (WCAG 2.1 A + AA tags) on every screen × state × theme in each engine,
 // writes artifacts/a11y/desktop/<screen>-<state>-<theme>-<engine>.json, prints one line per page
@@ -35,6 +38,11 @@ import {
   designScreenPaths,
   type DesignState,
   designStates,
+  updateCaptureFileName,
+  updateCaptureSize,
+  updateDesignHash,
+  type UpdateDesignState,
+  updateDesignStates,
 } from "../src/design/matrix.ts";
 
 const appDir = path.resolve(import.meta.dirname, "..");
@@ -56,7 +64,8 @@ function usage(message: string): never {
 Usage: pnpm --filter @bfhr/desktop capture:design <screen…|all> [--states a,b] [--engines webkit,chromium]
        [--themes light,dark] [--sizes 1280x800,1920x1080] [--scale 1] [--locale en|tr|de] [--axe]
 Screens: ${Object.keys(designScreenPaths).join(", ")}
-States:  ${designStates.join(", ")}`);
+States:  ${designStates.join(", ")}
+Update:  update [--update-states ${updateDesignStates.join(",")}]`);
   process.exit(2);
 }
 
@@ -86,15 +95,22 @@ for (let index = 0; index < argv.length; index += 1) {
 }
 const runAxe = enabled.has("axe");
 const screenNames = Object.keys(designScreenPaths) as DesignScreenName[];
-if (positional.length === 0) usage("Name at least one screen (or all).");
+if (positional.length === 0) usage("Name at least one screen (or all, or update).");
+/** `update` captures the update UI states (over Today) instead of a screen's five states. */
+const wantsUpdate = positional.includes("update");
 const screens: DesignScreenName[] = positional.includes("all")
   ? screenNames
-  : positional.map((name) =>
-      screenNames.includes(name as DesignScreenName)
-        ? (name as DesignScreenName)
-        : usage(`Unknown screen: ${name}`),
-    );
+  : positional
+      .filter((name) => name !== "update")
+      .map((name) =>
+        screenNames.includes(name as DesignScreenName)
+          ? (name as DesignScreenName)
+          : usage(`Unknown screen: ${name}`),
+      );
 const states = pick<DesignState>(options["states"], designStates, "state");
+const updateStates = wantsUpdate
+  ? pick<UpdateDesignState>(options["update-states"], updateDesignStates, "update state")
+  : [];
 const themes = pick<CaptureTheme>(options["themes"], captureThemes, "theme");
 const engineNames = pick<EngineName>(options["engines"], Object.keys(engines) as EngineName[], "engine");
 const sizes =
@@ -160,6 +176,45 @@ async function audit(page: Page, name: string): Promise<AuditSummary> {
     needsReview: results.incomplete.reduce((sum, result) => sum + result.nodes.length, 0),
   };
 }
+/** One capture: the route to open, the PNG name and the axe report name (null: no audit). */
+interface Shot {
+  readonly hash: (platform: string) => string;
+  readonly file: (theme: CaptureTheme) => string;
+  readonly audit: ((theme: CaptureTheme, engine: EngineName) => string) | null;
+}
+
+/** Captures sharing one viewport (one browser context). */
+interface Batch {
+  readonly size: { readonly width: number; readonly height: number };
+  readonly shots: readonly Shot[];
+}
+
+const batches: Batch[] = sizes.map((size, sizeIndex) => ({
+  size,
+  shots: screens.flatMap((screen) =>
+    states.map((state): Shot => ({
+      hash: (platform) => designHash(screen, state, routeExtras(platform)),
+      file: (theme) => captureFileName(screen, state, theme, size),
+      // One audit per screen × state × theme × engine (the first size; layout-independent rules).
+      audit: sizeIndex === 0 ? (theme, engine) => `${screen}-${state}-${theme}-${engine}` : null,
+    })),
+  ),
+}));
+// Update states pick their own size (the rail state needs the narrow window); every one is audited.
+const updateBatches = new Map<string, { size: Batch["size"]; shots: Shot[] }>();
+for (const state of updateStates) {
+  const size = updateCaptureSize(state);
+  const key = `${size.width}x${size.height}`;
+  const batch = updateBatches.get(key) ?? { size, shots: [] };
+  updateBatches.set(key, batch);
+  batch.shots.push({
+    hash: (platform) => updateDesignHash(state, routeExtras(platform)),
+    file: (theme) => updateCaptureFileName(state, theme, size),
+    audit: (theme, engine) => `update-${state}-${theme}-${engine}`,
+  });
+}
+batches.push(...updateBatches.values());
+
 try {
   for (const engineName of engineNames) {
     const engine = engines[engineName];
@@ -169,7 +224,9 @@ try {
     const browser = await engine.type.launch(engine.launch);
     try {
       for (const theme of themes) {
-        for (const [sizeIndex, size] of sizes.entries()) {
+        for (const { size, shots } of batches) {
+          const [first] = shots;
+          if (!first) continue;
           const context = await browser.newContext({
             viewport: size,
             colorScheme: theme,
@@ -183,30 +240,21 @@ try {
             if (message.type() === "error") failures.push(`${engineName} console: ${message.text()}`);
           });
           // The platform is read once at load, so load the app per context with its platform.
-          await page.goto(
-            `${baseUrl}${designHash(screens[0] ?? "demo", "populated", routeExtras(engine.platform))}`,
-          );
-          for (const screen of screens) {
-            for (const state of states) {
-              await page.evaluate(
-                ({ attribute, hash }) => {
-                  document.documentElement.removeAttribute(attribute);
-                  window.location.hash = hash;
-                },
-                {
-                  attribute: DESIGN_READY_ATTRIBUTE,
-                  hash: designHash(screen, state, routeExtras(engine.platform)),
-                },
-              );
-              await page.waitForSelector(`html[${DESIGN_READY_ATTRIBUTE}="true"]`, { state: "attached" });
-              await page.mouse.move(size.width - 1, size.height - 1);
-              const file = path.join(outputDir, captureFileName(screen, state, theme, size));
-              await page.screenshot({ path: file, animations: "disabled", caret: "hide" });
-              written.push(path.relative(repoRoot, file));
-              // One audit per screen × state × theme × engine (the first size; layout-independent rules).
-              if (runAxe && sizeIndex === 0)
-                audits.push(await audit(page, `${screen}-${state}-${theme}-${engineName}`));
-            }
+          await page.goto(`${baseUrl}${first.hash(engine.platform)}`);
+          for (const shot of shots) {
+            await page.evaluate(
+              ({ attribute, hash }) => {
+                document.documentElement.removeAttribute(attribute);
+                window.location.hash = hash;
+              },
+              { attribute: DESIGN_READY_ATTRIBUTE, hash: shot.hash(engine.platform) },
+            );
+            await page.waitForSelector(`html[${DESIGN_READY_ATTRIBUTE}="true"]`, { state: "attached" });
+            await page.mouse.move(size.width - 1, size.height - 1);
+            const file = path.join(outputDir, shot.file(theme));
+            await page.screenshot({ path: file, animations: "disabled", caret: "hide" });
+            written.push(path.relative(repoRoot, file));
+            if (runAxe && shot.audit) audits.push(await audit(page, shot.audit(theme, engineName)));
           }
           await context.close();
         }

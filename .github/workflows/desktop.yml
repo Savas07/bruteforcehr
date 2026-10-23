@@ -18,9 +18,25 @@ on:
   workflow_dispatch:
     inputs:
       design_capture:
-        description: "Only capture the design build in the real Windows app (final critique rounds)"
+        description: "Only capture the design build in the real macOS and Windows apps (final critique rounds)"
         type: boolean
         default: false
+      screens:
+        description: "design_capture: BFHR_SCREENS (comma-separated, or none)"
+        type: string
+        default: today,job-detail,cv-editor,tracker-board,mail-review
+      states:
+        description: "design_capture: BFHR_STATES (comma-separated)"
+        type: string
+        default: populated,empty
+      update_states:
+        description: "design_capture: BFHR_UPDATE_STATES (all, comma-separated, or empty)"
+        type: string
+        default: ""
+      locale:
+        description: "design_capture: BFHR_LOCALE (en, tr, de)"
+        type: string
+        default: en
 
 permissions:
   contents: read
@@ -84,8 +100,9 @@ jobs:
           pnpm lint:rust
           pnpm test:rust
 
-      # Production bundles: macOS .app + .dmg, Windows NSIS (x64). Unsigned until M1.
-      - run: pnpm bundle
+      # Production bundles: macOS .app + .dmg, Windows NSIS (x64), unsigned. Without the updater's
+      # signatures: the private key is a release-only secret (release.yml builds the signed ones).
+      - run: pnpm bundle --config src-tauri/tauri.unsigned.conf.json
       - uses: actions/upload-artifact@v7
         with:
           name: desktop-bundle-${{ matrix.os }}
@@ -110,12 +127,17 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
-  # On demand (`gh workflow run desktop.yml -f design_capture=true`): the design build (fixtures,
-  # forced states) in the real Windows app, for the final critique rounds. macOS runs it locally.
+  # On demand (`gh workflow run desktop.yml -f design_capture=true [-f update_states=all …]`): the
+  # design build (fixtures, forced states) in the real macOS and Windows apps, for the final
+  # critique rounds.
   design-capture:
-    name: Design captures (windows-latest)
+    name: Design captures (${{ matrix.os }})
     if: ${{ inputs.design_capture }}
-    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -140,15 +162,17 @@ jobs:
         with:
           workspaces: apps/desktop/src-tauri
       - run: pnpm build:e2e:design
-      # 1024×768 display: 1280×800 is captured at 75 % zoom and 1920×1080 at 50 % (e2e/capture/helpers.ts).
+      # Windows' 1024×768 display: 1280×800 is captured at 75 % zoom and 1920×1080 at 50 % (e2e/capture/helpers.ts).
       - run: pnpm capture:app:design
         env:
-          BFHR_SCREENS: today,job-detail,cv-editor,tracker-board,mail-review
-          BFHR_STATES: populated,empty
+          BFHR_SCREENS: ${{ inputs.screens }}
+          BFHR_STATES: ${{ inputs.states }}
+          BFHR_UPDATE_STATES: ${{ inputs.update_states }}
+          BFHR_LOCALE: ${{ inputs.locale }}
       - uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: desktop-design-screens-windows
-          path: artifacts/screens/desktop/windows/design/
+          name: desktop-design-screens-${{ matrix.os }}
+          path: artifacts/screens/desktop/*/design/
           if-no-files-found: error
           retention-days: 14

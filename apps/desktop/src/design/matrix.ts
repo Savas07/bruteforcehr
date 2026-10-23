@@ -79,3 +79,54 @@ export function captureFileName(
 
 /** Set on `<html>` once the forced state has rendered (skeletons included), for capture tools. */
 export const DESIGN_READY_ATTRIBUTE = "data-design-ready";
+
+/**
+ * Update UI states (`?update=<state>`, src/design/updates.tsx), rendered over Today: the sidebar
+ * card (ready, collapsed by "Later", the narrow rail, a failed install), the restart flow, every
+ * step of "Check for Updates…" and the blocking "Update required" screen.
+ */
+export const updateDesignStates = [
+  "ready",
+  "ready-later",
+  "ready-rail",
+  "notes",
+  "save-first",
+  "restarting",
+  "install-failed",
+  "checking",
+  "up-to-date",
+  "downloading",
+  "check-ready",
+  "check-failed",
+  "download-failed",
+  "required-downloading",
+  "required-ready",
+  "required-failed",
+  "required-unavailable",
+] as const;
+export type UpdateDesignState = (typeof updateDesignStates)[number];
+
+/** The hash route of an update state (Today, populated, plus `update=`). */
+export function updateDesignHash(
+  state: UpdateDesignState,
+  extra: Readonly<Record<string, string>> = {},
+): string {
+  return designHash("today", "populated", { update: state, ...extra });
+}
+
+/** `ready-rail` needs the narrow rail (`narrow` is < 640 px wide); the rest use the laptop size. */
+export function updateCaptureSize(state: UpdateDesignState): {
+  readonly width: number;
+  readonly height: number;
+} {
+  return state === "ready-rail" ? { width: 600, height: 800 } : captureSizes[0];
+}
+
+/** `update-<state>-<theme>-<w>x<h>.png`. */
+export function updateCaptureFileName(
+  state: UpdateDesignState,
+  theme: CaptureTheme,
+  size: { readonly width: number; readonly height: number },
+): string {
+  return `update-${state}-${theme}-${size.width}x${size.height}.png`;
+}

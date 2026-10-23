@@ -10,14 +10,15 @@ import { fixtureContext } from "../shared/model/fixture-context";
 import { relativeTime } from "../shared/model/format";
 import { OFFLINE_PENDING_WRITES } from "./screens";
 import { readDesignParams } from "./search";
+import { DesignUpdates } from "./updates";
 
 const MINUTE_MS = 60_000;
 
 /**
  * Root of the design build: the real AppShell with the connection state the route forces
- * (`?state=offline` → strip, sidebar sync line, sync glyphs), an optional `?theme=` override and
- * an optional locale pin (`?locale=en-GB`, replacing the OS locale for the whole UI, also in the
- * real app) so captures from every machine show the same text. `?tz=` is applied where the
+ * (`?state=offline` → strip, sidebar sync line, sync glyphs), the update UI state (`?update=`,
+ * src/design/updates.tsx), an optional `?theme=` override and an optional locale pin
+ * (`?locale=en-GB`, replacing the OS locale for the whole UI, also in the real app) so captures from every machine show the same text. `?tz=` is applied where the
  * view-models are built (DesignScreen). Online: synced a moment ago. Offline: the cache is from 25
  * minutes ago, changes are queued.
  */
@@ -57,7 +58,9 @@ export function DesignRoot() {
 
   const shell = (
     <ConnectivityContext.Provider value={connectivity}>
-      <AppShell />
+      <DesignUpdates state={params.rest["update"]}>
+        <AppShell />
+      </DesignUpdates>
     </ConnectivityContext.Provider>
   );
   return pinned ? <RawIntlProvider value={pinned}>{shell}</RawIntlProvider> : shell;

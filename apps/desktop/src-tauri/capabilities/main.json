@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "main",
-  "description": "The main window: native-menu events, dragging the window by the macOS toolbar rows, opening allowlisted https links and public https job-posting links.",
+  "description": "The main window: native-menu and update-status events, dragging the window by the macOS toolbar rows, opening allowlisted https links and public https job-posting links, and the app's own update commands (status, check, restart to update, Stable/Beta channel). The updater plugin's commands are not granted.",
   "windows": ["main"],
   "permissions": [
     "core:event:allow-listen",
@@ -9,6 +9,10 @@
     "core:window:allow-start-dragging",
     "core:window:allow-internal-toggle-maximize",
     "allow-open-external",
-    "allow-open-job-url"
+    "allow-open-job-url",
+    "allow-update-status",
+    "allow-check-for-updates",
+    "allow-restart-to-update",
+    "allow-set-update-channel"
   ]
 }

@@ -194,6 +194,49 @@ describe("BruteForceHR desktop", () => {
     expect(result).toMatch(/not allowed/i);
   });
 
+  it("keeps the updater behind the app's own update commands", async () => {
+    const result = await browser.tauri.execute(async ({ core }) => {
+      const outcome = async (run: Promise<unknown>) => {
+        try {
+          return { ok: await run };
+        } catch (error) {
+          const kind = typeof error === "object" && error !== null && "kind" in error ? error.kind : null;
+          return { error: kind ?? String(error) };
+        }
+      };
+      return {
+        // The plugin's own commands are not granted (src-tauri/capabilities/main.json).
+        pluginCheck: await outcome(core.invoke("plugin:updater|check")),
+        pluginInstall: await outcome(core.invoke("plugin:updater|install", { rid: 0 })),
+        // E2E builds never check on their own, so nothing has run yet.
+        status: await outcome(core.invoke("update_status")),
+        restart: await outcome(core.invoke("restart_to_update")),
+        // Typed in Rust: only "stable" and "beta" deserialize (no preference file is written).
+        badChannel: await outcome(core.invoke("set_update_channel", { channel: "nightly" })),
+      };
+    });
+    expect(String(result.pluginCheck.error)).toMatch(/not allowed/i);
+    expect(String(result.pluginInstall.error)).toMatch(/not allowed/i);
+    expect(result.status).toEqual({ ok: { status: { state: "idle" }, channel: "stable" } });
+    expect(result.restart).toEqual({ error: "no-update-ready" });
+    expect(String(result.badChannel.error)).toMatch(/nightly|unknown variant/i);
+  });
+
+  it("lets the minimum-version gate read appConfig through the CSP", async () => {
+    // The same REST read Firestore Lite makes (src/lib/appConfig.ts). 404 is fine: the document
+    // only exists once a release has published it. A CSP block would throw instead.
+    const status = await browser.execute(async () => {
+      const url =
+        "https://firestore.googleapis.com/v1/projects/bruteforcehr/databases/(default)/documents/appConfig/macos";
+      try {
+        return (await fetch(url)).status;
+      } catch (error) {
+        return String(error);
+      }
+    });
+    expect([200, 404]).toContain(status);
+  });
+
   it("blocks navigation to other origins and new windows", async () => {
     const before = await browser.execute(() => window.location.origin);
     const opened = await browser.execute(() => window.open("https://example.com/") === null);

@@ -31,6 +31,7 @@ import {
   MAIL_ACCOUNT_READ_DEFAULTS,
   MailAccountSchema,
   type MailMessage,
+  MAIL_MESSAGE_READ_DEFAULTS,
   MailMessageSchema,
   type MailReviewUpdate,
   MailReviewUpdateSchema,
@@ -299,6 +300,7 @@ export function createConverters<TTimestamp>(adapter: TimestampAdapter<TTimestam
       "mailMessage",
       MailMessageSchema,
       ["id"],
+      MAIL_MESSAGE_READ_DEFAULTS,
     ),
     device: createEntityConverter<TTimestamp, Device, "id">(adapter, "device", DeviceSchema, ["id"]),
     appConfig: createEntityConverter<TTimestamp, AppConfig, "id">(adapter, "appConfig", AppConfigSchema, [

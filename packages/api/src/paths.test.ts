@@ -104,6 +104,21 @@ describe("userDataRoots", () => {
     }
   });
 
+  it("keeps every mail serverOnly path under mailRoot, which account deletion covers", () => {
+    const mailRoot = serverOnlyPaths.mailRoot("u1");
+    expect(userDataRoots("u1")).toContain(mailRoot);
+    for (const path of [
+      serverOnlyPaths.mailToken("u1", "a1"),
+      serverOnlyPaths.mailSeen("u1", "h1"),
+      serverOnlyPaths.mailSeenCollection("u1"),
+      serverOnlyPaths.mailOutbox("u1", "s1"),
+      serverOnlyPaths.mailSendDay("u1", "2026-10-24"),
+      serverOnlyPaths.mailCorrections("u1"),
+    ]) {
+      expect(path.startsWith(`${mailRoot}/`), path).toBe(true);
+    }
+  });
+
   it("rejects ids that would escape the tree", () => {
     expect(() => userDataRoots("a/b")).toThrow(TypeError);
   });

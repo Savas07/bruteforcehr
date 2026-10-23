@@ -57,9 +57,13 @@ service cloud.firestore {
           || request.resource.data.get(field, null) == resource.data.get(field, null);
       }
 
+      // `emailSend` (decisions.md F6) is written only by the mail functions: clients create it as
+      // null (or leave it out) and never change it.
       match /applications/{applicationId} {
-        allow read, create, delete: if isOwner(uid);
+        allow read, delete: if isOwner(uid);
+        allow create: if isOwner(uid) && request.resource.data.get('emailSend', null) == null;
         allow update: if isOwner(uid)
+          && request.resource.data.get('emailSend', null) == resource.data.get('emailSend', null)
           && (resource.data.get('appliedAt', null) == null
             || (request.resource.data.get('appliedAt', null) != null
               && pinKept('cvRevisionId')

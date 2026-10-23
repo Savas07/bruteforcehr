@@ -147,6 +147,14 @@ class Renderer {
   }
 
   private field(parent: string, name: string, schema: z.ZodType): Field {
+    // Expand fields (ADR 0002): `.nullable().default(null)` decodes a missing key as nil in Swift.
+    // A non-null default can't be expressed by the synthesized Decodable, so it is rejected.
+    if (schema instanceof z.ZodDefault) {
+      const inner = schema.unwrap() as z.ZodType;
+      if (!(inner instanceof z.ZodNullable))
+        throw new Error(`${parent}.${name}: Swift supports only .nullable().default(null) expand fields`);
+      return this.field(parent, name, inner);
+    }
     if (schema instanceof z.ZodNullable)
       return { name, kind: "nullable", type: this.type(parent, name, schema.unwrap() as z.ZodType) };
     if (schema instanceof z.ZodOptional)

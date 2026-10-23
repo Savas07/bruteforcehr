@@ -34,6 +34,10 @@
       {
         "source": "/api/health",
         "function": { "functionId": "health", "region": "europe-west1" }
+      },
+      {
+        "source": "/connect/**",
+        "function": { "functionId": "connect", "region": "europe-west1" }
       }
     ],
     "headers": [

@@ -33,8 +33,15 @@ export interface LinkInput {
  * Only `thread` and `ats_company_role` are strong enough for automatic changes (flows.md §3).
  * Active applications are preferred when a closed one at the same company also matches.
  */
-export function linkApplication({ signals, applications, company, role, modelChoice }: LinkInput): LinkResult {
-  if (signals.threadApplicationId !== null) return { applicationId: signals.threadApplicationId, linkStrength: "thread" };
+export function linkApplication({
+  signals,
+  applications,
+  company,
+  role,
+  modelChoice,
+}: LinkInput): LinkResult {
+  if (signals.threadApplicationId !== null)
+    return { applicationId: signals.threadApplicationId, linkStrength: "thread" };
 
   const trustedSender = signals.ats || signals.assessmentPlatform || signals.domainApplicationIds.length > 0;
   const atCompany = applications.filter(
@@ -51,7 +58,10 @@ export function linkApplication({ signals, applications, company, role, modelCho
   if (role !== null) {
     const sameRole = preferActive(atCompany.filter((application) => rolesMatch(application.role, role)));
     if (sameRole.length === 1 && sameRole[0] !== undefined) {
-      return { applicationId: sameRole[0].id, linkStrength: trustedSender ? "ats_company_role" : "company_domain" };
+      return {
+        applicationId: sameRole[0].id,
+        linkStrength: trustedSender ? "ats_company_role" : "company_domain",
+      };
     }
   }
   const candidates = preferActive(atCompany);
@@ -61,17 +71,30 @@ export function linkApplication({ signals, applications, company, role, modelCho
     const roleConflicts = role !== null && !rolesMatch(only.role, role);
     if (!roleConflicts) return { applicationId: only.id, linkStrength: "company_domain" };
   }
-  if (modelChoice !== null && applications.some((application) => application.id === modelChoice)) {
-    return { applicationId: modelChoice, linkStrength: "llm" };
+  const chosen =
+    modelChoice === null ? undefined : applications.find((application) => application.id === modelChoice);
+  if (chosen !== undefined) {
+    // Two applications at one company and the message names no role: the model would be guessing.
+    const sibling = applications.some(
+      (application) => application.id !== chosen.id && companiesMatch(application.company, chosen.company),
+    );
+    if (role !== null || !sibling) return { applicationId: chosen.id, linkStrength: "llm" };
   }
-  if (candidates.length === 1 && candidates[0] !== undefined && (role === null || rolesMatch(candidates[0].role, role))) {
+  if (
+    candidates.length === 1 &&
+    candidates[0] !== undefined &&
+    (role === null || rolesMatch(candidates[0].role, role))
+  ) {
     return { applicationId: candidates[0].id, linkStrength: "llm" };
   }
   return { applicationId: null, linkStrength: "none" };
 }
 
 /** Link strengths that allow an automatic status change (with confidence ≥ the user's threshold). */
-export const STRONG_LINK_STRENGTHS = ["thread", "ats_company_role"] as const satisfies readonly LinkStrength[];
+export const STRONG_LINK_STRENGTHS = [
+  "thread",
+  "ats_company_role",
+] as const satisfies readonly LinkStrength[];
 
 export function isStrongLink(strength: LinkStrength): boolean {
   return (STRONG_LINK_STRENGTHS as readonly LinkStrength[]).includes(strength);

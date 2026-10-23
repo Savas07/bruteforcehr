@@ -179,7 +179,8 @@
         "start": "22:30",
         "end": "08:00"
       },
-      "notifyRejections": true
+      "notifyRejections": true,
+      "notifications": null
     },
     "createdAt": "2026-10-22T07:18:00.000Z",
     "updatedAt": "2026-10-22T07:24:00.000Z"

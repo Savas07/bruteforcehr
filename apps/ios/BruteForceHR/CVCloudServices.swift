@@ -46,7 +46,8 @@ struct CloudCVAssist: CVSuggestionProvider {
         case .strongerVerb: [.strongerVerb]
         case .translate: [.translated]
         }
-        if !CVPlaceholders.find(in: text).isEmpty { reasons.append(.measurableResult) }
+        // Placeholders the server leaves for figures it can't know (`CV_PLACEHOLDER_PATTERN`).
+        if text.range(of: #"\[(X%|X|date)\]"#, options: .regularExpression) != nil { reasons.append(.measurableResult) }
         return reasons
     }
 }

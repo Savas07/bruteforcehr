@@ -10,6 +10,7 @@ extension CVEditorViewStrings {
     static func historyAdded(_ what: String) -> LocalizedStringResource {
         .bfhr("cvEditor.change.added", default: "Added to \(what)", table: "CVEditor", comment: "History entry. %@ = section (· item).")
     }
+    static let exportSheetTitle = LocalizedStringResource.bfhr("cvEditor.export.sheetTitle", default: "Export", table: "CVEditor", comment: "Title of the export options sheet.")
     static func historyRemoved(_ what: String) -> LocalizedStringResource {
         .bfhr("cvEditor.change.removed", default: "Removed from \(what)", table: "CVEditor", comment: "History entry. %@ = section (· item).")
     }

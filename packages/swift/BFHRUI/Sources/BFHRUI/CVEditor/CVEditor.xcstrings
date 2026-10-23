@@ -2964,6 +2964,30 @@
         }
       }
     },
+    "cvEditor.export.sheetTitle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Export"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dışa aktar"
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Exportieren"
+          }
+        }
+      },
+      "comment" : "Title of the export options sheet."
+    },
     "cvEditor.export.title" : {
       "extractionState" : "manual",
       "localizations" : {

@@ -52,7 +52,8 @@ struct CVRenderedPage: View {
         #if os(iOS)
         CVWebPage(rendered: rendered)
             .padding(.horizontal, BFHRSpace.s2)
-            .overlay(alignment: .top) { pill.padding(.top, BFHRSpace.s2) }
+            // The page-count pill floats over the bottom of the page, clear of the name at the top.
+            .overlay(alignment: .bottom) { pill.padding(.bottom, BFHRSpace.s3) }
             .task(id: rendered) {
                 // Debounced: typing in the editor re-renders often; count pages once it settles.
                 try? await Task.sleep(for: .milliseconds(400))

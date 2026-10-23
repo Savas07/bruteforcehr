@@ -34,12 +34,13 @@ struct CVWebPage: UIViewRepresentable {
         context.coordinator.load(html, in: webView)
     }
 
-    /// Adds `<meta name="viewport" content="width=<paper width>">` so WebKit fits the sheet.
+    /// Sets `<meta name="viewport" content="width=<paper width>">` (replacing cv-render's
+    /// device-width one) so WebKit scales the sheet to fit the screen.
     static func withViewport(_ rendered: CVRenderedHTML) -> String {
         let width = Int(rendered.page.widthCSSPixels.rounded(.up))
         let meta = "<meta name=\"viewport\" content=\"width=\(width), minimum-scale=0.1, maximum-scale=4\">"
-        guard let head = rendered.html.range(of: "<head>", options: .caseInsensitive) else { return meta + rendered.html }
-        var html = rendered.html
+        var html = rendered.html.replacingOccurrences(of: #"<meta name="viewport"[^>]*>"#, with: "", options: [.regularExpression, .caseInsensitive])
+        guard let head = html.range(of: "<head>", options: .caseInsensitive) else { return meta + html }
         html.insert(contentsOf: meta, at: head.upperBound)
         return html
     }

@@ -14,10 +14,21 @@ final class FirestoreCVStore: CVWriter {
     private let db: Firestore
     private weak var model: CVEditorModel?
 
-    private var profileListener: (any ListenerRegistration)?
-    private var cvsListener: (any ListenerRegistration)?
-    private var revisionListeners: [String: any ListenerRegistration] = [:]
-    private let pathMonitor = NWPathMonitor()
+    /// Removed when the store goes away (sign-out, reload).
+    private let registrations = Registrations()
+    private var profileListener: (any ListenerRegistration)? {
+        get { registrations.profile }
+        set { registrations.profile = newValue }
+    }
+    private var cvsListener: (any ListenerRegistration)? {
+        get { registrations.cvs }
+        set { registrations.cvs = newValue }
+    }
+    private var revisionListeners: [String: any ListenerRegistration] {
+        get { registrations.revisions }
+        set { registrations.revisions = newValue }
+    }
+    private var pathMonitor: NWPathMonitor { registrations.pathMonitor }
 
     private var profile: Profile?
     private var cvs: [Cv] = []
@@ -32,11 +43,20 @@ final class FirestoreCVStore: CVWriter {
         self.db = db
     }
 
-    deinit {
-        profileListener?.remove()
-        cvsListener?.remove()
-        revisionListeners.values.forEach { $0.remove() }
-        pathMonitor.cancel()
+    /// Listener handles and the path monitor; `remove()` and `cancel()` are thread-safe, so the
+    /// nonisolated deinit may call them.
+    private nonisolated final class Registrations: @unchecked Sendable {
+        var profile: (any ListenerRegistration)?
+        var cvs: (any ListenerRegistration)?
+        var revisions: [String: any ListenerRegistration] = [:]
+        let pathMonitor = NWPathMonitor()
+
+        deinit {
+            profile?.remove()
+            cvs?.remove()
+            revisions.values.forEach { $0.remove() }
+            pathMonitor.cancel()
+        }
     }
 
     private var user: DocumentReference { db.collection("users").document(uid) }

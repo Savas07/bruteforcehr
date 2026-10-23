@@ -31,8 +31,13 @@ extension CVEditorModel {
     /// cv-render's HTML for `content` in `language`.
     public func render(_ content: CvContent, language: String) -> Result<CVRenderedHTML, CVRenderError> {
         guard let renderEngine else { return .failure(.bundleMissing) }
+        let input = CVRenderInput(content: content, locale: language)
+        if let cached = renderCache[input] { return .success(cached) }
         do {
-            return .success(try renderEngine.render(CVRenderInput(content: content, locale: language)))
+            let rendered = try renderEngine.render(input)
+            if renderCache.count >= 12 { renderCache.removeAll() }
+            renderCache[input] = rendered
+            return .success(rendered)
         } catch let error as CVRenderError {
             return .failure(error)
         } catch {

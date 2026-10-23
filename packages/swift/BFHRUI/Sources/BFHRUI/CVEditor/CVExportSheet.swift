@@ -121,7 +121,7 @@ struct CVExportSheet: View {
                     }
                 }
             }
-            .navigationTitle(Text(L.exportOptions))
+            .navigationTitle(Text(L.exportSheetTitle))
             .bfhrInlineTitle()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {

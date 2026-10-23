@@ -50,6 +50,8 @@ public final class CVEditorModel: ScreenModel {
     /// Uploads files and asks the server to read them (`cvImport`); nil hides Import.
     @ObservationIgnored public var importer: (any CVImporter)?
     @ObservationIgnored var catalogCache: [String: CVTemplateCatalog] = [:]
+    /// Recent renders (views re-evaluate often; the HTML only changes with the content).
+    @ObservationIgnored var renderCache: [CVRenderInput: CVRenderedHTML] = [:]
 
     /// Content this device holds that isn't the CV's current revision: a save the server
     /// rejected (Try again) or a version conflict (Keep this version / Use the other version).

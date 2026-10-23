@@ -48,7 +48,7 @@ final class CVEditorAccessibilityAuditTests: XCTestCase {
     @MainActor
     func testPreview() throws {
         let app = launch(dataset: "populated", contentSize: nil, pane: "preview")
-        XCTAssertTrue(app.descendants(matching: .any)["cv.page.1"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.webViews["cv.preview.web"].waitForExistence(timeout: 10))
         try snapshot("preview")
         try audit(app, ignoringPage: true)
     }
@@ -56,7 +56,7 @@ final class CVEditorAccessibilityAuditTests: XCTestCase {
     @MainActor
     func testPreviewAccessibilitySize() throws {
         let app = launch(dataset: "populated", contentSize: largestSize, pane: "preview")
-        XCTAssertTrue(app.descendants(matching: .any)["cv.page.1"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.webViews["cv.preview.web"].waitForExistence(timeout: 10))
         try snapshot("preview-ax")
         try audit(app, ignoringPage: true)
     }
@@ -233,12 +233,12 @@ final class CVEditorAccessibilityAuditTests: XCTestCase {
         }
     }
 
-    /// Static text inside a rendered page (`cv.page.N`).
+    /// Text inside the rendered cv-render page (the `cv.preview.web` web view).
     @MainActor
     private static func isPageText(_ element: XCUIElement, in app: XCUIApplication) -> Bool {
-        guard element.elementType == .staticText else { return false }
-        let pages = app.descendants(matching: .any).matching(NSPredicate(format: "identifier BEGINSWITH %@", "cv.page."))
-        return pages.allElementsBoundByIndex.contains { $0.frame.contains(element.frame) }
+        guard element.elementType == .staticText || element.elementType == .link else { return false }
+        let pages = app.webViews.matching(identifier: "cv.preview.web")
+        return pages.allElementsBoundByIndex.contains { $0.frame.intersects(element.frame) }
     }
 
     /// Swipes up until `element` is on screen (lists load rows lazily).

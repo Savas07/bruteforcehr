@@ -198,7 +198,7 @@ describe("buildSavedSearchesModel", () => {
     const react = model.rows.find((row) => row.id === "search-react-europe-remote");
     expect(react?.cadenceText).toBe("Daily digest");
     expect(react?.thresholdText).toBe("Strong matches");
-    expect(react?.nextRunText).toMatch(/^Next check /u);
+    expect(react?.nextRunText).toBe("Next check: Tomorrow, 08:30");
     expect(react?.nextRun?.absolute).toBeTruthy();
   });
 

@@ -224,8 +224,8 @@ cd apps/ios && xcodebuild build -project BruteForceHR.xcodeproj -scheme BruteFor
   -derivedDataPath build/DerivedData -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO -quiet
 app=build/DerivedData/Build/Products/Release-iphonesimulator/BruteForceHR.app
 find "$app" -iname '*fixture*' -o -name 'populated.json' -o -name 'empty.json'             # nothing
-strings "$app/BruteForceHR" | grep -E -- '-BFHRDesign|BFHRScreen|BFHRUpdate|BFHRSignIn|BFHRCVPane|BFHRImportFile|FixtureStore|BFHRFixtures|Lighthouse Learning|deniz\.aksoy'  # nothing
-nm "$app/BruteForceHR" | grep -iE 'FixtureStore|DesignScenario|DesignScreenView|DesignTabRoot|DesignUpdateState|DesignSignInState|DesignSignInService|CVDesignImporter|CVDesignSuggestions|CVDesignPane'     # nothing
+strings "$app/BruteForceHR" | grep -E -- '-BFHRDesign|BFHRScreen|BFHRUpdate|BFHRSignIn|BFHRCVPane|BFHRTrackerPane|BFHRImportFile|FixtureStore|BFHRFixtures|Lighthouse Learning|deniz\.aksoy'  # nothing
+nm "$app/BruteForceHR" | grep -iE 'FixtureStore|DesignScenario|DesignScreenView|DesignTabRoot|DesignUpdateState|DesignSignInState|DesignSignInService|CVDesignImporter|CVDesignSuggestions|CVDesignPane|TrackerDesignPane'     # nothing
 ls "$app/cv-render.iife.js"                                                                    # the renderer is bundled
 ```
 

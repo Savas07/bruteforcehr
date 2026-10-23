@@ -205,6 +205,7 @@ public struct InsightsScreen: View {
             }
         } header: {
             Text(InsightsStrings.funnelQuestion)
+                .foregroundStyle(BFHRColor.Fg.secondary)
         }
     }
 
@@ -242,6 +243,7 @@ public struct InsightsScreen: View {
             }
         } header: {
             Text(InsightsStrings.breakdownQuestion)
+                .foregroundStyle(BFHRColor.Fg.secondary)
         }
     }
 
@@ -285,6 +287,7 @@ public struct InsightsScreen: View {
             }
         } header: {
             Text(InsightsStrings.firstResponseQuestion)
+                .foregroundStyle(BFHRColor.Fg.secondary)
         }
     }
 
@@ -311,6 +314,7 @@ public struct InsightsScreen: View {
             }
         } header: {
             Text(InsightsStrings.activityQuestion)
+                .foregroundStyle(BFHRColor.Fg.secondary)
         }
     }
 }
@@ -578,6 +582,8 @@ private struct InsightsAboutSheet: View {
             }
         }
         .presentationDetents([.medium, .large])
+        // Opaque, so the iOS 26 glass sheet doesn't lower the text contrast over the screen below.
+        .presentationBackground(BFHRColor.groupedBackground)
     }
 }
 

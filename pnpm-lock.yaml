@@ -353,6 +353,9 @@ importers:
       '@bfhr/cv-render':
         specifier: workspace:*
         version: link:../../packages/cv-render
+      '@bfhr/jobs-connectors':
+        specifier: workspace:*
+        version: link:../../packages/jobs-connectors
       '@sparticuz/chromium':
         specifier: 153.0.0
         version: 153.0.0
@@ -365,6 +368,9 @@ importers:
       firebase-functions:
         specifier: ^7.4.0
         version: 7.4.0(firebase-admin@14.5.0(@firebase/app-compat@0.5.18)(@firebase/app@0.16.2)(supports-color@7.2.0))(supports-color@7.2.0)
+      google-auth-library:
+        specifier: ^11.3.1
+        version: 11.3.1(supports-color@7.2.0)
       mammoth:
         specifier: ^1.13.0
         version: 1.13.0

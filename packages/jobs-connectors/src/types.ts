@@ -5,6 +5,7 @@ import type {
   JobSourceAttribution,
   JobSourceKind,
   JobSourceReason,
+  RemoteType,
   SalaryRange,
   SavedSearchFilters,
 } from "@bfhr/core";
@@ -40,6 +41,8 @@ export interface Listing {
   locations: readonly string[];
   /** Explicit remote flag from the source, when it has one. */
   remote?: boolean | null;
+  /** Explicit workplace type (onsite/hybrid/remote) when the source states it; wins over `remote`. */
+  remoteType?: RemoteType | null;
   remoteEligibility?: string | null;
   employmentType?: EmploymentType | null;
   salary?: SalaryRange | null;

@@ -22,8 +22,8 @@ const GreenhouseJobsSchema = z.object({
 
 /**
  * Greenhouse Job Board API (keyless; "Job Board data is publicly available").
- * `GET https://boards-api.greenhouse.io/v1/boards/{token}/jobs?content=true` (EU boards on
- * `boards-api.eu.greenhouse.io`).
+ * `GET https://boards-api.greenhouse.io/v1/boards/{token}/jobs?content=true`. EU-hosted boards
+ * (`job-boards.eu.greenhouse.io`) are served by the same API host (checked 2026-10-24).
  */
 export const greenhouse: BoardConnector = {
   id: "greenhouse",
@@ -33,8 +33,7 @@ export const greenhouse: BoardConnector = {
   markets: ["remote", "TR", "DE", "NL", "GB", "US"],
   attribution: { label: "Greenhouse", url: "https://www.greenhouse.com", minSize: null },
   async list(board, context): Promise<Listing[]> {
-    const host = board.region === "eu" ? "boards-api.eu.greenhouse.io" : "boards-api.greenhouse.io";
-    const url = `https://${host}/v1/boards/${encodeURIComponent(board.boardToken)}/jobs?content=true`;
+    const url = `https://boards-api.greenhouse.io/v1/boards/${encodeURIComponent(board.boardToken)}/jobs?content=true`;
     const response = await context.http.request(url, { acceptStatus: [404], headers: { Accept: "application/json" } });
     if (response.status === 404) throw new SourceError("invalid_response", "board not found");
     const parsed = GreenhouseJobsSchema.safeParse(JSON.parse(response.body));

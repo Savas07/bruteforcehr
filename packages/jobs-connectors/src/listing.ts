@@ -112,7 +112,10 @@ export function toJobDraft(listing: Listing, now: Date): Omit<Job, "id"> | null 
     .filter((location) => !/^(remote|anywhere|worldwide)$/i.test(location.label))
     .slice(0, 20);
   const wording = `${title} ${locationTexts.join(" ")} ${listing.remoteEligibility ?? ""}`;
-  const remoteType = detectRemoteType(wording, listing.remote ?? null) ?? detectRemoteType(description.slice(0, 600));
+  const remoteType =
+    listing.remoteType ??
+    detectRemoteType(wording, listing.remote ?? null) ??
+    detectRemoteType(description.slice(0, 600));
   const postedAt = listing.postedAt ?? null;
   const link: JobSourceLink = {
     source: listing.source,
@@ -137,13 +140,15 @@ export function toJobDraft(listing: Listing, now: Date): Omit<Job, "id"> | null 
     applyUrl: listing.applyUrl ?? (listing.isDirectFromEmployer ? listing.url : null),
     applyEmail: listing.applyEmail ?? null,
     company,
-    companyDomain: companyDomain !== null && /^[a-z0-9.-]+\.[a-z]{2,}$/.test(companyDomain) ? companyDomain : null,
+    companyDomain:
+      companyDomain !== null && /^[a-z0-9.-]+\.[a-z]{2,}$/.test(companyDomain) ? companyDomain : null,
     title,
     locations,
     remoteType,
-    remoteEligibility: listing.remoteEligibility === undefined || listing.remoteEligibility === null
-      ? null
-      : clip(listing.remoteEligibility, 200),
+    remoteEligibility:
+      listing.remoteEligibility === undefined || listing.remoteEligibility === null
+        ? null
+        : clip(listing.remoteEligibility, 200),
     employmentType: listing.employmentType ?? null,
     seniority: detectSeniority(title),
     salary: listing.salary ?? null,
@@ -175,7 +180,10 @@ export function queryTerms(query: string): string[] {
  * Keyword filter for whole-feed sources (Remotive, RemoteOK, Himalayas, Arbeitnow): every query
  * term in the title, company or tags, or the whole phrase in the description.
  */
-export function matchesQuery(listing: Pick<Listing, "title" | "company" | "tags" | "description">, query: SearchQuery): boolean {
+export function matchesQuery(
+  listing: Pick<Listing, "title" | "company" | "tags" | "description">,
+  query: SearchQuery,
+): boolean {
   const terms = queryTerms(query.query);
   if (terms.length === 0) return true;
   const head = foldText(`${listing.title} ${listing.company} ${(listing.tags ?? []).join(" ")}`);

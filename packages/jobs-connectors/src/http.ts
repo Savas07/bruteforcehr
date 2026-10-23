@@ -131,7 +131,8 @@ export class HttpClient {
     if (robotsMode !== "none") {
       const allowed = await this.robotsAllows(target);
       this.options.onRobots?.({ host: target.host, allowed, checkedAt: new Date(this.now()) });
-      if (!allowed && robotsMode === "binding") throw new SourceError("blocked", "robots.txt disallows this path");
+      if (!allowed && robotsMode === "binding")
+        throw new SourceError("blocked", "robots.txt disallows this path");
     }
     const minInterval = options.minIntervalMs ?? (robotsMode === "none" ? 1_000 : 5_000);
     const maxRetries = this.options.maxRetries ?? 3;
@@ -158,7 +159,8 @@ export class HttpClient {
         continue;
       }
       if (response.status === 429) throw new SourceError("rate_limited", "HTTP 429");
-      if (response.status === 401 || response.status === 403) throw new SourceError("blocked", `HTTP ${response.status}`);
+      if (response.status === 401 || response.status === 403)
+        throw new SourceError("blocked", `HTTP ${response.status}`);
       if (response.status >= 500) throw new SourceError("unavailable", `HTTP ${response.status}`);
       throw new SourceError("invalid_response", `HTTP ${response.status}`);
     }
@@ -196,7 +198,9 @@ export class HttpClient {
     let rules = this.robots.get(target.origin);
     if (rules === undefined) {
       rules = this.once(`${target.origin}/robots.txt`, {})
-        .then((response) => (response.status >= 200 && response.status < 300 ? parseRobots(response.body) : null))
+        .then((response) =>
+          response.status >= 200 && response.status < 300 ? parseRobots(response.body) : null,
+        )
         .catch(() => null);
       this.robots.set(target.origin, rules);
     }

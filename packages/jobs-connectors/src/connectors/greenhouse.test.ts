@@ -33,9 +33,9 @@ describe("greenhouse", () => {
     expect(context.fake.calls[0]?.headers["user-agent"]).toMatch(/^BruteForceHR\//);
   });
 
-  it("uses the EU API host for EU boards", async () => {
+  it("reads EU-hosted boards from the same API host", async () => {
     const context = testContext([
-      { url: "https://boards-api.eu.greenhouse.io/v1/boards/acme/jobs?content=true", body: '{"jobs":[]}' },
+      { url: "https://boards-api.greenhouse.io/v1/boards/acme/jobs?content=true", body: '{"jobs":[]}' },
     ]);
     expect(await greenhouse.list({ boardToken: "acme", region: "eu" }, context)).toEqual([]);
   });

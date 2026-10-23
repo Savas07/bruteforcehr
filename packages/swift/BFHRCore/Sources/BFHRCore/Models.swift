@@ -194,6 +194,19 @@ public enum SourceRunStatus: String, Codable, Hashable, Sendable, CaseIterable {
     case error
 }
 
+public enum JobImportMethod: String, Codable, Hashable, Sendable, CaseIterable {
+    case jsonLd = "json_ld"
+    case microdata
+    case site
+    case ai
+}
+
+public enum JobImportRobots: String, Codable, Hashable, Sendable, CaseIterable {
+    case allowed
+    case disallowed
+    case unavailable
+}
+
 public enum ApplicationStatus: String, Codable, Hashable, Sendable, CaseIterable {
     case saved
     case preparing
@@ -312,6 +325,22 @@ public enum Platform: String, Codable, Hashable, Sendable, CaseIterable {
     case ios
     case macos
     case windows
+}
+
+public enum JobImportErrorReason: String, Codable, Hashable, Sendable, CaseIterable {
+    case emailUnverified = "email_unverified"
+    case invalidUrl = "invalid_url"
+    case blockedUrl = "blocked_url"
+    case notFound = "not_found"
+    case blockedBySite = "blocked_by_site"
+    case fetchFailed = "fetch_failed"
+    case tooLarge = "too_large"
+    case notHtml = "not_html"
+    case noJobFound = "no_job_found"
+    case aiDisabled = "ai_disabled"
+    case dailyCap = "daily_cap"
+    case aiUnavailable = "ai_unavailable"
+    case rateLimited = "rate_limited"
 }
 
 public struct WebLink: Codable, Hashable, Sendable {
@@ -2325,6 +2354,240 @@ public struct JobMatchesRefreshResponse: Codable, Hashable, Sendable {
     public func encode(to encoder: any Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(matched, forKey: .matched)
+    }
+}
+
+/// Request of the `jobImportUrl` callable.
+public struct JobImportUrlRequest: Codable, Hashable, Sendable {
+    public var url: String
+    public var refresh: Bool?
+
+    public init(
+        url: String,
+        refresh: Bool? = nil
+    ) {
+        self.url = url
+        self.refresh = refresh
+    }
+
+    public func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(url, forKey: .url)
+        try container.encodeIfPresent(refresh, forKey: .refresh)
+    }
+}
+
+public struct JobSourceLinkWire: Codable, Hashable, Sendable {
+    public var source: String
+    public var sourceId: String?
+    public var url: String
+    public var applyUrl: String?
+    public var applyEmail: String?
+    public var isDirectFromEmployer: Bool
+    public var title: String
+    public var locationText: String?
+    public var salary: SalaryRange?
+    public var postedAt: String?
+    public var firstSeenAt: String
+    public var lastSeenAt: String
+
+    public init(
+        source: String,
+        sourceId: String?,
+        url: String,
+        applyUrl: String?,
+        applyEmail: String?,
+        isDirectFromEmployer: Bool,
+        title: String,
+        locationText: String?,
+        salary: SalaryRange?,
+        postedAt: String?,
+        firstSeenAt: String,
+        lastSeenAt: String
+    ) {
+        self.source = source
+        self.sourceId = sourceId
+        self.url = url
+        self.applyUrl = applyUrl
+        self.applyEmail = applyEmail
+        self.isDirectFromEmployer = isDirectFromEmployer
+        self.title = title
+        self.locationText = locationText
+        self.salary = salary
+        self.postedAt = postedAt
+        self.firstSeenAt = firstSeenAt
+        self.lastSeenAt = lastSeenAt
+    }
+
+    public func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(source, forKey: .source)
+        try container.encode(sourceId, forKey: .sourceId)
+        try container.encode(url, forKey: .url)
+        try container.encode(applyUrl, forKey: .applyUrl)
+        try container.encode(applyEmail, forKey: .applyEmail)
+        try container.encode(isDirectFromEmployer, forKey: .isDirectFromEmployer)
+        try container.encode(title, forKey: .title)
+        try container.encode(locationText, forKey: .locationText)
+        try container.encode(salary, forKey: .salary)
+        try container.encode(postedAt, forKey: .postedAt)
+        try container.encode(firstSeenAt, forKey: .firstSeenAt)
+        try container.encode(lastSeenAt, forKey: .lastSeenAt)
+    }
+}
+
+public struct JobWire: Codable, Hashable, Sendable {
+    public var sources: [JobSourceLinkWire]
+    public var sourceKeys: [String]
+    public var applyUrl: String?
+    public var applyEmail: String?
+    public var company: String
+    public var companyDomain: String?
+    public var title: String
+    public var locations: [JobLocation]
+    public var remoteType: RemoteType?
+    public var remoteEligibility: String?
+    public var employmentType: EmploymentType?
+    public var seniority: Seniority?
+    public var salary: SalaryRange?
+    public var visaSponsorship: Bool?
+    public var relocationSupport: Bool?
+    public var language: String
+    public var description: String
+    public var skills: [String]
+    public var postedAt: String?
+    public var expiresAt: String?
+    public var fingerprint: String
+    public var createdAt: String
+    public var updatedAt: String
+
+    public init(
+        sources: [JobSourceLinkWire],
+        sourceKeys: [String],
+        applyUrl: String?,
+        applyEmail: String?,
+        company: String,
+        companyDomain: String?,
+        title: String,
+        locations: [JobLocation],
+        remoteType: RemoteType?,
+        remoteEligibility: String?,
+        employmentType: EmploymentType?,
+        seniority: Seniority?,
+        salary: SalaryRange?,
+        visaSponsorship: Bool?,
+        relocationSupport: Bool?,
+        language: String,
+        description: String,
+        skills: [String],
+        postedAt: String?,
+        expiresAt: String?,
+        fingerprint: String,
+        createdAt: String,
+        updatedAt: String
+    ) {
+        self.sources = sources
+        self.sourceKeys = sourceKeys
+        self.applyUrl = applyUrl
+        self.applyEmail = applyEmail
+        self.company = company
+        self.companyDomain = companyDomain
+        self.title = title
+        self.locations = locations
+        self.remoteType = remoteType
+        self.remoteEligibility = remoteEligibility
+        self.employmentType = employmentType
+        self.seniority = seniority
+        self.salary = salary
+        self.visaSponsorship = visaSponsorship
+        self.relocationSupport = relocationSupport
+        self.language = language
+        self.description = description
+        self.skills = skills
+        self.postedAt = postedAt
+        self.expiresAt = expiresAt
+        self.fingerprint = fingerprint
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+    }
+
+    public func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(sources, forKey: .sources)
+        try container.encode(sourceKeys, forKey: .sourceKeys)
+        try container.encode(applyUrl, forKey: .applyUrl)
+        try container.encode(applyEmail, forKey: .applyEmail)
+        try container.encode(company, forKey: .company)
+        try container.encode(companyDomain, forKey: .companyDomain)
+        try container.encode(title, forKey: .title)
+        try container.encode(locations, forKey: .locations)
+        try container.encode(remoteType, forKey: .remoteType)
+        try container.encode(remoteEligibility, forKey: .remoteEligibility)
+        try container.encode(employmentType, forKey: .employmentType)
+        try container.encode(seniority, forKey: .seniority)
+        try container.encode(salary, forKey: .salary)
+        try container.encode(visaSponsorship, forKey: .visaSponsorship)
+        try container.encode(relocationSupport, forKey: .relocationSupport)
+        try container.encode(language, forKey: .language)
+        try container.encode(description, forKey: .description)
+        try container.encode(skills, forKey: .skills)
+        try container.encode(postedAt, forKey: .postedAt)
+        try container.encode(expiresAt, forKey: .expiresAt)
+        try container.encode(fingerprint, forKey: .fingerprint)
+        try container.encode(createdAt, forKey: .createdAt)
+        try container.encode(updatedAt, forKey: .updatedAt)
+    }
+}
+
+/// Response of the `jobImportUrl` callable: the job to write after the user confirms it.
+public struct JobImportUrlResponse: Codable, Hashable, Sendable {
+    public var job: JobWire
+    public var existingJobId: String?
+    public var method: JobImportMethod
+    public var site: String?
+    public var confidence: [String: Double]
+    public var warnings: [String]
+    public var model: String
+    public var promptVersion: String?
+    public var finalUrl: String
+    public var robots: JobImportRobots
+
+    public init(
+        job: JobWire,
+        existingJobId: String?,
+        method: JobImportMethod,
+        site: String?,
+        confidence: [String: Double],
+        warnings: [String],
+        model: String,
+        promptVersion: String?,
+        finalUrl: String,
+        robots: JobImportRobots
+    ) {
+        self.job = job
+        self.existingJobId = existingJobId
+        self.method = method
+        self.site = site
+        self.confidence = confidence
+        self.warnings = warnings
+        self.model = model
+        self.promptVersion = promptVersion
+        self.finalUrl = finalUrl
+        self.robots = robots
+    }
+
+    public func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(job, forKey: .job)
+        try container.encode(existingJobId, forKey: .existingJobId)
+        try container.encode(method, forKey: .method)
+        try container.encode(site, forKey: .site)
+        try container.encode(confidence, forKey: .confidence)
+        try container.encode(warnings, forKey: .warnings)
+        try container.encode(model, forKey: .model)
+        try container.encode(promptVersion, forKey: .promptVersion)
+        try container.encode(finalUrl, forKey: .finalUrl)
+        try container.encode(robots, forKey: .robots)
     }
 }
 

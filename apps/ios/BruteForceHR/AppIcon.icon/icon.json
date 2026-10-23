@@ -1,0 +1,59 @@
+{
+  "fill-specializations": [
+    {
+      "value": {
+        "linear-gradient": [
+          "extended-srgb:0.16863,0.50980,0.48235,1.00000",
+          "extended-srgb:0.10588,0.34902,0.32941,1.00000"
+        ]
+      }
+    },
+    {
+      "appearance": "dark",
+      "value": {
+        "linear-gradient": [
+          "extended-srgb:0.11765,0.13333,0.16078,1.00000",
+          "extended-srgb:0.05490,0.06275,0.07843,1.00000"
+        ]
+      }
+    }
+  ],
+  "groups": [
+    {
+      "name": "Mark",
+      "layers": [
+        {
+          "name": "B",
+          "image-name": "mark.svg",
+          "glass": true,
+          "fill-specializations": [
+            {
+              "value": "automatic"
+            },
+            {
+              "appearance": "dark",
+              "value": {
+                "solid": "extended-srgb:0.26275,0.74510,0.70588,1.00000"
+              }
+            }
+          ]
+        }
+      ],
+      "shadow": {
+        "kind": "neutral",
+        "opacity": 0.5
+      },
+      "specular": true,
+      "translucency": {
+        "enabled": true,
+        "value": 0.2
+      }
+    }
+  ],
+  "supported-platforms": {
+    "squares": [
+      "iOS",
+      "macOS"
+    ]
+  }
+}

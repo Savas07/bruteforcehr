@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- Concept A "Ascent": three steps, brightness rising like the tracker's Applied → Offer phases. -->
+  <g fill="#FFFFFF">
+    <rect x="224" y="632" width="352" height="128" rx="64" fill-opacity="0.5"/>
+    <rect x="336" y="448" width="352" height="128" rx="64" fill-opacity="0.75"/>
+    <rect x="448" y="264" width="352" height="128" rx="64"/>
+  </g>
+</svg>

@@ -5,8 +5,8 @@
  * Menu sheet. The sheet is a native popover: it opens without JavaScript, Esc and outside clicks close
  * it, focus returns to the Menu button, and the button exposes its expanded state.
  */
-import { HEADER_NAV, SITE_NAME } from "../site.ts";
-import BrandMark from "./BrandMark.astro";
+import { HEADER_NAV } from "../site.ts";
+import Wordmark from "./Wordmark.astro";
 
 const current = Astro.url.pathname.replace(/\/?$/, "/");
 const isCurrent = (href: string): boolean => current === href;
@@ -18,11 +18,10 @@ const isCurrent = (href: string): boolean => current === href;
   >
     <a
       href="/"
-      class="flex min-h-11 items-center gap-2 rounded-full px-2 font-display text-title2 text-fg-primary"
+      class="flex min-h-11 items-center rounded-full px-2 text-fg-primary"
       aria-current={current === "/" ? "page" : undefined}
     >
-      <BrandMark class="size-7 shrink-0" />
-      <span>{SITE_NAME}</span>
+      <Wordmark gradientId="bfhr-wordmark-header" class="h-6 w-auto" />
     </a>
 
     <nav aria-label="Main" class="hidden md:block">

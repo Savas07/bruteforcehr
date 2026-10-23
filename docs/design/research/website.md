@@ -255,5 +255,5 @@ Global: Tailwind default breakpoints (base = 375, `md` = 768, `xl` = 1280 → 14
 4. **Support channel.** Which support email address (no custom domain yet) and are GitHub issues on the public releases repo acceptable for bug reports?
 5. **Status line.** Show a service status line on Support (Framer pattern)? It needs a public health endpoint on `/api/**`.
 6. **Localized routes.** `/tr/…` and `/de/…` prefixes with English at `/` (current Astro i18n config) — confirm, and whether legal texts get TR/DE translations or stay English with a note.
-7. **Brand assets.** Logo, favicon and app icon don't exist yet; the site currently ships none (a missing `/favicon.ico` costs a Lighthouse Best Practices console error until provided).
+7. **Brand assets.** Logo, favicon and app icon don't exist yet; the site currently ships none (a missing `/favicon.ico` costs a Lighthouse Best Practices console error until provided). _Resolved (M1): `favicon.svg`, `favicon.ico`, `apple-touch-icon.png` and the `Wordmark` lockup, see `docs/design/critiques/brand/`._
 8. **Device imagery.** The bento needs real app screenshots; capture from the apps once the five core screens pass critique, light and dark variants.

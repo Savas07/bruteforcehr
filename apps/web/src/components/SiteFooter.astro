@@ -1,7 +1,7 @@
 ---
 /** Site footer (website.md › Footer: Framer columns, Dovetail mono labels, Samara contact block). */
 import { FOOTER_NAV, SITE_DESCRIPTION, SITE_NAME } from "../site.ts";
-import BrandMark from "./BrandMark.astro";
+import Wordmark from "./Wordmark.astro";
 
 const year = new Date().getFullYear();
 ---
@@ -11,9 +11,8 @@ const year = new Date().getFullYear();
     class="mx-auto grid max-w-6xl gap-10 px-5 py-12 md:grid-cols-2 md:px-6 xl:py-16"
   >
     <div class="max-w-sm">
-      <a href="/" class="inline-flex min-h-11 items-center gap-2 rounded-md font-display text-title2 text-fg-primary">
-        <BrandMark class="size-7 shrink-0" />
-        <span>{SITE_NAME}</span>
+      <a href="/" class="inline-flex min-h-11 items-center rounded-md text-fg-primary">
+        <Wordmark gradientId="bfhr-wordmark-footer" class="h-6 w-auto" />
       </a>
       <p class="mt-3 text-prose text-fg-secondary">{SITE_DESCRIPTION}</p>
       <p class="mt-4 text-prose text-fg-secondary">

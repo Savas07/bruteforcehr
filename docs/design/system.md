@@ -451,6 +451,15 @@ Buttons stack when a label is longer than 18 characters (DE). Empty sections on 
 - [ ] Reduced motion is respected.
 - [ ] Light and dark are both captured in critiques (BRIEF §5.5).
 
+## App icon and wordmark
+
+Sources live in `design/brand/`; `build.py assets` writes every platform file, `build.py wordmark` regenerates the lockup. Never edit the generated files in the apps by hand. Critiques: `docs/design/critiques/brand/`.
+
+- **Mark:** a monoline "B" (outlined, `mark.svg`, 1024 grid) in white on a teal plate, gradient `#2B827B → #1B5954` (`accent.solid` dark → `accent.hover` light). Sizes 16, 24 and 32 px use the pixel-grid masters `mark-16/24/32.svg`; don't scale the 1024 master below 48 px.
+- **Shapes:** iOS and macOS 26+ get `AppIcon.icon` (Icon Composer; the system masks it and renders dark, tinted and clear). macOS 13–15 use `icon.icns` on Apple's 824-unit body with shadow. Windows, Linux and the web use the plate with a 3/16 corner radius.
+- **Dark appearance:** plate `#1E2229 → #0E1014` (`surface.elevated` / `surface.canvas` dark), B in `#43BEB4` (`accent.text` dark).
+- **Wordmark:** plate + "BruteForce" in `fg.primary` + "HR" in `accent.text`, Inter Display SemiBold outlines (OFL 1.1), plate height = 100 units, gap 28, cap height centred on the plate. On the website use `Wordmark.astro` (inline, follows the theme; pass a unique `gradientId`); its accessible name is "BruteForceHR". Minimum size 20 px tall. No tagline inside the lockup, no screen-wide wordmark.
+
 ## Versioning and change process
 
 - Tokens change only through a PR that updates `packages/ui-tokens` (including the regenerated Swift package) and this doc together. The contrast test must pass, and the change should name the screens it affects.

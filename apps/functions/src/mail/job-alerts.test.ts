@@ -1,6 +1,6 @@
 import { alertPostingToJob, type AlertPosting, type Job } from "@bfhr/core";
 import { describe, expect, it } from "vitest";
-import { planAlertUpserts } from "./job-alerts";
+import { planUpserts } from "../jobs/store";
 
 const day1 = new Date("2026-10-20T06:00:00Z");
 const day2 = new Date("2026-10-21T06:00:00Z");
@@ -15,10 +15,11 @@ const posting = (over: Partial<AlertPosting> = {}): AlertPosting => ({
   ...over,
 });
 
-describe("alert job upserts", () => {
-  it("creates new jobs, merging duplicates within one alert", () => {
+// Alert drafts go through the jobs pipeline's dedupe (JobStore.upsert → planUpserts).
+describe("alert postings in the jobs dedupe", () => {
+  it("merges one posting seen on two boards and keeps distinct postings apart", () => {
     let next = 0;
-    const plan = planAlertUpserts(
+    const plan = planUpserts(
       [
         alertPostingToJob(posting(), day1),
         alertPostingToJob(
@@ -35,7 +36,7 @@ describe("alert job upserts", () => {
       day1,
     );
     expect(plan.updated).toEqual([]);
-    expect(plan.created.map((job) => [job.id, job.sourceKeys])).toEqual([
+    expect(plan.jobs.map((job) => [job.id, job.sourceKeys])).toEqual([
       [
         "job-1",
         [
@@ -47,7 +48,7 @@ describe("alert job upserts", () => {
     ]);
   });
 
-  it("merges into stored jobs by source key or as the same job from another source", () => {
+  it("merges a repeated alert posting, and one the search already found, into the stored job", () => {
     const stored: Job[] = [
       { id: "known", ...alertPostingToJob(posting(), day1) },
       {
@@ -58,7 +59,7 @@ describe("alert job upserts", () => {
         ),
       },
     ];
-    const plan = planAlertUpserts(
+    const plan = planUpserts(
       [
         alertPostingToJob(posting(), day2),
         alertPostingToJob(
@@ -71,8 +72,8 @@ describe("alert job upserts", () => {
       day2,
     );
     expect(plan.created).toEqual([]);
-    expect(plan.updated.map((job) => job.id)).toEqual(["known", "from-ats"]);
-    expect(plan.updated[0]?.sources[0]?.lastSeenAt).toEqual(day2);
-    expect(plan.updated[1]?.sourceKeys).toHaveLength(2);
+    expect(plan.updated).toEqual(["known", "from-ats"]);
+    expect(plan.jobs[0]?.sources[0]?.lastSeenAt).toEqual(day2);
+    expect(plan.jobs[1]?.sourceKeys).toHaveLength(2);
   });
 });

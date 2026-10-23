@@ -21,7 +21,7 @@ import { logger } from "firebase-functions/v2";
 import { aiProvider } from "../ai/common";
 import { firestoreUsageLedger } from "../ai/usage-ledger";
 import { adminConverters as converters } from "../converters";
-import { upsertAlertPostings } from "./job-alerts";
+import { type AlertImporter, alertImporter } from "./job-alerts";
 import { type ParsedMail, parseMail } from "./parse";
 import type { MailProviderAdapter, MessageRef } from "./providers/types";
 
@@ -40,6 +40,8 @@ export interface PipelineContext {
   timeZone: string;
   /** null: rules only (AI off, no key, or today's AI budget used up). */
   ai: AnalyzeMailAi | null;
+  /** Job-alert postings → Jobs and matches (loads matching inputs once per run). */
+  importAlerts: AlertImporter;
 }
 
 export interface ProcessCounts {
@@ -93,6 +95,7 @@ export async function loadPipelineContext(uid: string, account: MailAccount): Pr
     retentionDays: settings.mailBodyRetentionDays,
     timeZone: typeof profile.get("timezone") === "string" ? (profile.get("timezone") as string) : "UTC",
     ai: aiAllowed ? { provider: aiProvider(), ledger: firestoreUsageLedger(uid) } : null,
+    importAlerts: alertImporter(uid),
   };
 }
 
@@ -359,7 +362,7 @@ async function importAlertPostings(context: PipelineContext, parsed: ParsedMail,
     receivedAt: parsed.receivedAt,
   });
   try {
-    const result = await upsertAlertPostings(context.uid, postings, now);
+    const result = await context.importAlerts(postings, now);
     logger.info("mail_alert_postings", { found: postings.length, ...result });
   } catch (error) {
     logger.warn("mail_alert_postings_failed", { name: error instanceof Error ? error.name : typeof error });

@@ -7,6 +7,7 @@ import { $, browser, expect } from "@wdio/globals";
 import { Key } from "webdriverio";
 import {
   deepLinkFor,
+  ensureSignedIn,
   ensureSignedOut,
   finishPageLink,
   heading,
@@ -14,10 +15,9 @@ import {
   openThroughOs,
   requestLink,
   signIn,
+  signOutFromPalette,
   testEmail,
 } from "../support/auth";
-
-const isMac = process.platform === "darwin";
 
 describe("Sign-in", () => {
   before(async () => {
@@ -48,6 +48,7 @@ describe("Sign-in", () => {
 
   it("reports a well-formed link Firebase doesn't accept", async () => {
     const email = testEmail("unknown-code");
+    await ensureSignedOut();
     await requestLink(email);
     openThroughOs(deepLinkFor(finishPageLink("not-a-real-code")));
     await expect(heading()).toHaveText("This sign-in link doesn’t work", { wait: 20_000 });
@@ -56,7 +57,7 @@ describe("Sign-in", () => {
 
   it("asks for the address when the link was requested elsewhere", async () => {
     const email = testEmail("other-device");
-    await $("button=Use a different email").click();
+    await ensureSignedOut();
     await requestLink(email);
     const code = await latestSignInCode(email);
     // This device forgets the request, as if it had been made on another one.
@@ -75,12 +76,12 @@ describe("Sign-in", () => {
   });
 
   it("signs out from the command palette and back in with a link", async () => {
-    await browser.keys([isMac ? Key.Command : Key.Ctrl, "k"]);
-    await browser.keys("Sign out");
-    await browser.keys(Key.Enter);
-    await expect(heading()).toHaveText("Sign in to BruteForceHR");
+    // Its own session, so the test doesn't depend on the one before.
+    await ensureSignedOut();
+    await signIn(testEmail("palette"));
+    await signOutFromPalette();
     // The address of the session that ended is filled in.
-    await expect($('input[type="email"]')).toHaveValue(testEmail("other-device"));
+    await expect($('input[type="email"]')).toHaveValue(testEmail("palette"));
 
     const email = testEmail("returning");
     await $('input[type="email"]').setValue("");
@@ -89,6 +90,7 @@ describe("Sign-in", () => {
   });
 
   it("ignores sign-in links while signed in", async () => {
+    await ensureSignedIn(testEmail("returning"));
     openThroughOs(deepLinkFor(finishPageLink("whatever")));
     await browser.pause(2000);
     await expect(heading()).toHaveText("Today");

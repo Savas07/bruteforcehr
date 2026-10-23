@@ -53,23 +53,73 @@ export async function latestSignInCode(email: string): Promise<string> {
 
 export const heading = () => $("h1");
 
-/** Signs out through the command palette when a session is restored. */
-export async function ensureSignedOut(): Promise<void> {
-  await browser.waitUntil(async () => (await heading().isExisting()) && (await heading().getText()) !== "");
-  if ((await heading().getText()) === "Sign in to BruteForceHR") return;
+/** Whether the signed-in shell is showing (its sidebar exists only after sign-in). */
+const inShell = () => $('nav[aria-label="Sections"]').isExisting();
+
+/** Waits for the restored state: the shell, or a sign-in step with its heading. */
+async function settled(): Promise<void> {
+  await browser.waitUntil(
+    async () => (await inShell()) || ((await heading().isExisting()) && (await heading().getText()) !== ""),
+    { timeoutMsg: "neither the app nor the sign-in screen appeared" },
+  );
+}
+
+/** Signs out from the command palette (the palette exists only in the signed-in shell). */
+export async function signOutFromPalette(): Promise<void> {
   await browser.keys([process.platform === "darwin" ? Key.Command : Key.Ctrl, "k"]);
+  await $('[role="dialog"] [role="combobox"]').waitForDisplayed();
   await browser.keys("Sign out");
   await browser.keys(Key.Enter);
   await expect(heading()).toHaveText("Sign in to BruteForceHR");
 }
 
-/** Requests a link on the email step; returns once "Check your email" shows. */
+/** Leaves the app on the email step, whatever state the launch restored. */
+export async function ensureSignedOut(): Promise<void> {
+  await settled();
+  if (await inShell()) await signOutFromPalette();
+  else if ((await heading().getText()) !== "Sign in to BruteForceHR") {
+    // The step's way back: "Use a different email", the confirm step's "Request a new link
+    // instead", or (a link error with no known address) "Send a new link".
+    for (const label of ["Use a different email", "Request a new link instead", "Send a new link"]) {
+      const button = $(`button*=${label}`);
+      if (await button.isExisting()) {
+        await button.click();
+        break;
+      }
+    }
+    await expect(heading()).toHaveText("Sign in to BruteForceHR");
+  }
+}
+
+/**
+ * Requests a link on the email step; returns once "Check your email" shows. When it doesn't, the
+ * failure says why: the screen's message and whether the page can reach the emulator at all.
+ */
 export async function requestLink(email: string): Promise<void> {
   const field = $('input[type="email"]');
   await field.waitForDisplayed();
   await field.setValue(email);
   await browser.keys(Key.Enter);
-  await expect(heading()).toHaveText("Check your email");
+  const sent = await browser
+    .waitUntil(async () => (await heading().getText()) === "Check your email", { timeout: 15_000 })
+    .catch(() => false);
+  if (sent) return;
+  const page = await browser.execute(async (emulator) => {
+    const reach = await fetch(`${emulator}/`).then(
+      (response) => `HTTP ${response.status}`,
+      (error: unknown) => `failed: ${String(error)}`,
+    );
+    return {
+      heading: document.querySelector("h1")?.textContent,
+      alerts: [...document.querySelectorAll('[role="alert"], [role="status"]')].map(
+        (node) => node.textContent,
+      ),
+      origin: location.origin,
+      secureContext: isSecureContext,
+      emulator: reach,
+    };
+  }, EMULATOR);
+  throw new Error(`Sending the sign-in link failed: ${JSON.stringify(page)}`);
 }
 
 /** Signs in as `email` through the emulator and the OS deep link; ends on Today. */
@@ -81,10 +131,8 @@ export async function signIn(email: string): Promise<void> {
 
 /** Leaves the app signed in, whatever state the launch restored. */
 export async function ensureSignedIn(email: string): Promise<void> {
-  await browser.waitUntil(async () => (await heading().isExisting()) && (await heading().getText()) !== "");
-  if ((await heading().getText()) === "Sign in to BruteForceHR") await signIn(email);
-  else if ((await heading().getText()) === "Check your email") {
-    await $("button=Use a different email").click();
-    await signIn(email);
-  }
+  await settled();
+  if (await inShell()) return;
+  await ensureSignedOut();
+  await signIn(email);
 }

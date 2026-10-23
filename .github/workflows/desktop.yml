@@ -142,7 +142,9 @@ jobs:
           else
             pnpm build:e2e
           fi
-      # Sign-in runs against the Firebase Auth emulator (scripts/with-auth-emulator.sh).
+      # Sign-in runs against the Firebase Auth emulator (scripts/with-auth-emulator.sh), from a
+      # global firebase-tools so the emulator starts within the script's wait.
+      - run: npm install --global --no-fund --no-audit firebase-tools@15.34.1
       - run: scripts/with-auth-emulator.sh pnpm test:e2e
       # windows-latest has a 1024×768 display that Set-DisplayResolution can't change (run
       # 39797339032), so Windows captures are zoomed out to 75 % / 50 % (e2e/capture/capture.e2e.ts).

@@ -5,13 +5,16 @@
 # runner ends a step's processes when the step ends.
 #
 #   scripts/with-auth-emulator.sh pnpm test:e2e
+#
+# Uses `firebase` from PATH (CI installs firebase-tools globally first: fetching it through npx
+# inside the start-up wait took too long on Windows), else npx.
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "$0")/../../.." && pwd)"
 log="${RUNNER_TEMP:-${TMPDIR:-/tmp}}/auth-emulator.log"
+if command -v firebase >/dev/null; then cli=(firebase); else cli=(npx --yes firebase-tools@15.34.1); fi
 
-(cd "$repo_root" && exec npx --yes firebase-tools@15.34.1 emulators:start --only auth --project bruteforcehr) \
-  >"$log" 2>&1 &
+(cd "$repo_root" && exec "${cli[@]}" emulators:start --only auth --project bruteforcehr) >"$log" 2>&1 &
 emulator=$!
 stop() {
   # npx starts the CLI as a child; end the whole group.
@@ -20,7 +23,7 @@ stop() {
 }
 trap stop EXIT
 
-for _ in $(seq 90); do
+for _ in $(seq 120); do
   if curl -sf "http://127.0.0.1:9099/" >/dev/null; then break; fi
   if ! kill -0 "$emulator" 2>/dev/null; then
     cat "$log"

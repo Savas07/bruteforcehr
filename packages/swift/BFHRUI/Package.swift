@@ -47,6 +47,7 @@ let package = Package(
                 .process("TrackerBoard/TrackerBoard.xcstrings"),
                 .process("MailReview/MailReview.xcstrings"),
                 .process("UpdateGate/UpdateGate.xcstrings"),
+                .process("SignIn/SignIn.xcstrings"),
             ],
             swiftSettings: swiftSettings
         ),

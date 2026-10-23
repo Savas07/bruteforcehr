@@ -3,22 +3,16 @@ import SwiftUI
 
 @main
 struct BruteForceHRApp: App {
-    @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+    init() {
+        // Reads the bundled GoogleService-Info.plist (project `bruteforcehr`). Configured before
+        // the first view, so `RootView` sees the restored session (`Auth.auth().currentUser`) and
+        // starts on the tabs instead of flashing the sign-in screen.
+        FirebaseApp.configure()
+    }
 
     var body: some Scene {
         WindowGroup {
             RootView()
         }
-    }
-}
-
-final class AppDelegate: NSObject, UIApplicationDelegate {
-    func application(
-        _ application: UIApplication,
-        didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
-    ) -> Bool {
-        // Reads the bundled GoogleService-Info.plist (project `bruteforcehr`).
-        FirebaseApp.configure()
-        return true
     }
 }

@@ -28,7 +28,8 @@ There are no badges on Today, Jobs, Tracker or CVs (D01). Mail health shows as a
 ### Structure
 
 - **Tab bar:** SwiftUI `TabView` built with the iOS 18 `Tab` API ([Tab](https://developer.apple.com/documentation/swiftui/tab), [TabView](https://developer.apple.com/documentation/swiftui/tabview)): Today · Jobs · Tracker · CVs · Mail. Each tab owns a `NavigationStack` with a large title. Reselecting a tab pops to its root, and a second tap scrolls to the top.
-- **Avatar** (top-right nav-bar button on every tab root; initials monogram, amber dot when a mail account needs attention) opens **Settings** as a sheet (large detent, "Done"). Nothing else lives behind the avatar.
+- **Avatar** (top-right nav-bar button on every tab root; initials monogram, amber dot when a mail account needs attention) opens the **account menu**: "Signed in as {email}" and **Sign out** (M1, email-link sign-in). **Settings** joins the menu as its first item when the Settings sheet lands (sheet, large detent, "Done"). Nothing else lives behind the avatar.
+- **Signed out** (iOS Release builds, and Debug builds without design arguments): the sign-in takeover replaces the tabs (email → "Check your email" → the emailed link opens the app → tabs). Debug design mode (`-BFHRScreen`, `-BFHRDesign`, `-BFHRState`, `-BFHRUpdate`) skips it so fixture screens stay reachable; `-BFHRSignIn <state>` shows a sign-in state. foundation-ios.md, "Sign-in".
 - **Sheets:** focused tasks open as sheets over the current tab, so the user never loses their place:
   - Apply (page sheet, large detent, its own stack).
   - ReviewSheet (form sheet, medium / large detents).
@@ -46,7 +47,8 @@ flowchart TB
     C[CVs]:::tab
     M["Mail · badge"]:::tab
   end
-  Avatar(("Avatar")) -->|sheet| S[Settings]
+  Avatar(("Avatar")) -->|menu| AM[Account menu: Sign out]
+  AM -.->|when it lands| S[Settings]
   S --> S1[Profile] & S2[Job preferences] & S3[Mail accounts] & S4[Job sources] & S5[AI & sending] & S6[Notifications] & S7[Application answers] & S8[Data & privacy] & S9[About]
   S8 --> S81[Export everything] & S82[Delete account]
   S3 -->|Add| CE[[Connect email sheet]]
@@ -343,5 +345,6 @@ Handling:
 | `bruteforcehr://settings/{page}` with page = `account`, `job-preferences`, `mail-accounts`, `job-sources`, `ai`, `notifications`, `application-answers`, `desktop-app`, `updates`, `data-privacy` | Settings sheet at that page (`desktop-app` and `updates` → desktop only, iOS opens the root)                               | `/settings/{page}`                                             | "Open settings" toast, re-auth push (`mail-accounts`)                            |
 | `bruteforcehr://settings/mail-accounts/{mailAccountId}`                                                                                                                                           | Account detail                                                                                                             | `/settings/mail-accounts/{id}`                                 | "Reconnect {address}" push                                                       |
 | `bruteforcehr://connected?nonce=&provider=google\|microsoft&intent=read\|send&status=ok\|error&reason=`                                                                                           | Returns from `ASWebAuthenticationSession`, resumes the connect flow (Scanning, or the Review email step for `intent=send`) | Brings the window forward, resolves the browser-handoff screen | `/connect/**` Cloud Function redirect only; accepted only with the pending nonce |
+| `bruteforcehr://auth/finish?link=<URL-encoded emailed link>`, and the universal links `https://bruteforcehr.firebaseapp.com/__/auth/links?link=…` / `https://bruteforcehr.web.app/auth/finish?…` (iOS) | Signed out: finishes email-link sign-in (asks for the address when this device didn't ask for the link); signed in: ignored | Same, from the website's `/auth/finish` page                   | The sign-in email (ADR 0003); never switches accounts silently                    |
 
 Push notifications carry exactly one of these links. Notification actions are "Open" only: nothing is confirmed from the lock screen (mail-review).

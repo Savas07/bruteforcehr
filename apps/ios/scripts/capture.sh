@@ -7,6 +7,7 @@
 #
 #   design screens (--screen):  <screen>-<state>-<theme>[-ax].png
 #   update gate (--screen update-gate):  update-gate-<available|required>-<theme>[-ax].png
+#   sign-in (--screen sign-in):  sign-in-<state>-<theme>[-ax].png
 #   title-only shell (default): <tab>-<theme>[-ax].png
 #
 # Usage: apps/ios/scripts/capture.sh [--screen NAME|all]... [--state NAME]... [--size default|ax]...
@@ -14,8 +15,11 @@
 #   --screen    core screen in design mode: today, job-detail, cv-editor, tracker-board, mail-review,
 #               or all (repeatable). Without it the tabs of the title-only shell are captured.
 #               update-gate (on its own): the update banner and blocking screen over Today.
+#               sign-in (on its own): the signed-out screens (`-BFHRSignIn`).
 #   --state     populated, empty, loading, error, offline (repeatable; default: all five);
-#               for update-gate: available, required (default: both)
+#               for update-gate: available, required (default: both);
+#               for sign-in: email, invalid, offline, check, resent, finishing, confirm, expired,
+#               unusable, retry (default: all)
 #   --size      default (Large) or ax (largest accessibility size, files end in -ax)
 #               (repeatable; default: default)
 #   --ax        same as --size ax
@@ -64,11 +68,18 @@ done
 ((${#sizes[@]} > 0)) || sizes=(default)
 contains() { local needle="$1"; shift; for item in "$@"; do [[ "$item" == "$needle" ]] && return 0; done; return 1; }
 update_states=(available required)
+sign_in_states=(email invalid offline check resent finishing confirm expired unusable retry)
 update_gate=false
+sign_in=false
 if contains update-gate ${screens[@]+"${screens[@]}"}; then
   ((${#screens[@]} == 1)) || { echo "capture.sh: capture update-gate on its own" >&2; exit 64; }
   update_gate=true
   ((${#states[@]} > 0)) || states=("${update_states[@]}")
+fi
+if contains sign-in ${screens[@]+"${screens[@]}"}; then
+  ((${#screens[@]} == 1)) || { echo "capture.sh: capture sign-in on its own" >&2; exit 64; }
+  sign_in=true
+  ((${#states[@]} > 0)) || states=("${sign_in_states[@]}")
 fi
 ((${#states[@]} > 0)) || states=("${all_states[@]}")
 
@@ -79,9 +90,9 @@ for size in "${sizes[@]}"; do
   contains "$size" default ax || { echo "capture.sh: size must be default or ax" >&2; exit 64; }
 done
 for screen in ${screens[@]+"${screens[@]}"}; do
-  contains "$screen" "${all_screens[@]}" update-gate || { echo "capture.sh: unknown screen $screen (${all_screens[*]} update-gate)" >&2; exit 64; }
+  contains "$screen" "${all_screens[@]}" update-gate sign-in || { echo "capture.sh: unknown screen $screen (${all_screens[*]} update-gate sign-in)" >&2; exit 64; }
 done
-if $update_gate; then valid_states=("${update_states[@]}"); else valid_states=("${all_states[@]}"); fi
+if $update_gate; then valid_states=("${update_states[@]}"); elif $sign_in; then valid_states=("${sign_in_states[@]}"); else valid_states=("${all_states[@]}"); fi
 for state in "${states[@]}"; do
   contains "$state" "${valid_states[@]}" || { echo "capture.sh: unknown state $state (${valid_states[*]})" >&2; exit 64; }
 done

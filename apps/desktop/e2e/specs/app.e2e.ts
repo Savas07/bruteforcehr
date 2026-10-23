@@ -27,21 +27,23 @@ describe("BruteForceHR desktop", () => {
   });
 
   it("keeps the CSP blocking eval and inline scripts (prototypes aren't frozen; ADR 0007)", async () => {
+    // WebView2 runs WebDriver scripts outside the page's CSP, so `eval` from here proves nothing
+    // there: check the policy the page enforces, and that an inline script the page adds never runs.
     const result = await browser.execute(() => {
-      let evalBlocked = false;
-      try {
-        globalThis.eval("1");
-      } catch {
-        evalBlocked = true;
-      }
       const marker = "__bfhrInlineRan";
       const script = document.createElement("script");
       script.textContent = `window.${marker} = true;`;
       document.head.append(script);
       script.remove();
-      return { evalBlocked, inlineRan: Reflect.get(window, marker) === true };
+      const policy = document.querySelector('meta[http-equiv="Content-Security-Policy"]')?.getAttribute("content") ?? "";
+      const scriptSrc = /script-src([^;]*)/u.exec(policy)?.[1]?.trim() ?? null;
+      return { scriptSrc, inlineRan: Reflect.get(window, marker) === true };
     });
-    expect(result).toEqual({ evalBlocked: true, inlineRan: false });
+    expect(result.inlineRan).toBe(false);
+    expect(result.scriptSrc).not.toBeNull();
+    expect(result.scriptSrc).toContain("'self'");
+    expect(result.scriptSrc).not.toContain("unsafe-eval");
+    expect(result.scriptSrc).not.toContain("unsafe-inline");
   });
 
   it("lists the five M0 destinations in the sidebar", async () => {

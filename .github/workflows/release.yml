@@ -611,7 +611,9 @@ jobs:
           restore-keys: pnpm-${{ runner.os }}-
       - run: pnpm install --frozen-lockfile
       # The download page and changelog read the GitHub Releases API at build time.
-      - run: pnpm --filter @bfhr/web build
+      - run: |
+          pnpm --filter @bfhr/ui-tokens build
+          pnpm --filter @bfhr/web build
         env:
           GITHUB_TOKEN: ${{ github.token }}
       - uses: google-github-actions/auth@v3

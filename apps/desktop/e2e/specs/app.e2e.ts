@@ -26,6 +26,25 @@ describe("BruteForceHR desktop", () => {
     await expect(browser).toHaveTitle("Today · BruteForceHR");
   });
 
+  it("keeps the CSP blocking eval and inline scripts (prototypes aren't frozen; ADR 0007)", async () => {
+    const result = await browser.execute(() => {
+      let evalBlocked = false;
+      try {
+        // eslint-disable-next-line no-eval -- the point of the test
+        globalThis.eval("1");
+      } catch {
+        evalBlocked = true;
+      }
+      const marker = "__bfhrInlineRan";
+      const script = document.createElement("script");
+      script.textContent = `window.${marker} = true;`;
+      document.head.append(script);
+      script.remove();
+      return { evalBlocked, inlineRan: Reflect.get(window, marker) === true };
+    });
+    expect(result).toEqual({ evalBlocked: true, inlineRan: false });
+  });
+
   it("lists the five M0 destinations in the sidebar", async () => {
     const links = $$('nav[aria-label="Sections"] a');
     expect(await links.map((link) => link.getText())).toEqual(["Today", "Jobs", "Tracker", "CVs", "Mail"]);

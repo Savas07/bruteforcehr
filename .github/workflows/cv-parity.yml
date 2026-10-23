@@ -3,30 +3,17 @@ name: CV parity
 # Print-engine parity of @bfhr/cv-render (docs/adr/0009-cv-rendering.md, "Parity plan"): the same
 # CVs printed by Chromium, WebKit (macOS desktop/iOS path) and the Cloud Functions renderer must have
 # the same page count and look the same within the documented pixel tolerance.
+# Private repo on GitHub Free (macOS minutes ×10, docs/runbooks/release.md "Actions minutes"): runs
+# only when @bfhr/cv-render or this workflow changes, and on demand (e.g. after a renderer change in
+# apps/functions/src/render).
 on:
   push:
     branches: [main]
-    paths:
+    paths: &cv-parity-paths
       - packages/cv-render/**
-      - packages/core/**
-      - packages/fixtures/**
-      - apps/functions/src/render/**
-      - apps/functions/scripts/print-local.ts
-      - apps/functions/scripts/local-chromium.ts
-      - apps/functions/package.json
-      - pnpm-lock.yaml
       - .github/workflows/cv-parity.yml
   pull_request:
-    paths:
-      - packages/cv-render/**
-      - packages/core/**
-      - packages/fixtures/**
-      - apps/functions/src/render/**
-      - apps/functions/scripts/print-local.ts
-      - apps/functions/scripts/local-chromium.ts
-      - apps/functions/package.json
-      - pnpm-lock.yaml
-      - .github/workflows/cv-parity.yml
+    paths: *cv-parity-paths
   workflow_dispatch:
 
 permissions:

@@ -1,6 +1,10 @@
 name: Release
 
 # One tag ships every platform (docs/adr/0004-release-updates-signing.md, docs/runbooks/release.md).
+# The source repo is private: the GitHub Release (installers, latest.json, SHA256SUMS.txt) and the
+# `updater-beta` manifest are published in the public RELEASES_REPO with the RELEASES_REPO_TOKEN
+# secret (fine-grained PAT, Contents read/write on that repo only). The tag stays in this repo; the
+# releases repo gets the same tag name on its default branch when the release is published.
 # - Tag `vX.Y.Z` / `vX.Y.Z-beta.N`: version.yml dispatches this after the "Version packages" PR is
 #   merged; a tag pushed by the owner (betas) starts it directly.
 # - Dry run: builds and signs everything and assembles latest.json + SHA256SUMS.txt as a workflow
@@ -37,6 +41,7 @@ env:
   CARGO_TERM_COLOR: always
   RUST_TOOLCHAIN: "1.99.1"
   FIREBASE_PROJECT: bruteforcehr
+  RELEASES_REPO: Savas07/bruteforcehr-releases
 
 defaults:
   run:
@@ -47,7 +52,7 @@ jobs:
     name: Prepare (version, notes, draft release)
     runs-on: ubuntu-latest
     permissions:
-      contents: write # create the draft release on tag runs
+      contents: read
     outputs:
       version: ${{ steps.info.outputs.version }}
       tag: ${{ steps.info.outputs.tag }}
@@ -74,6 +79,16 @@ jobs:
             echo "dry_run=false" >> "$GITHUB_OUTPUT"
           else
             echo "::error::Real releases run on a v* tag. From a branch, dispatch with dry_run=true."
+            exit 1
+          fi
+
+      - name: Releases repo token
+        if: steps.mode.outputs.dry_run == 'false'
+        env:
+          RELEASES_REPO_TOKEN: ${{ secrets.RELEASES_REPO_TOKEN }}
+        run: |
+          if [ -z "$RELEASES_REPO_TOKEN" ]; then
+            echo "::error::Secret RELEASES_REPO_TOKEN is missing. Releases are published in $RELEASES_REPO with a fine-grained PAT (Contents: read and write on that repo only); see docs/runbooks/release.md \"Releases repo token\"."
             exit 1
           fi
 
@@ -109,26 +124,36 @@ jobs:
           path: ${{ runner.temp }}/notes.md
           if-no-files-found: error
 
-      - name: Draft release
+      - name: Draft release (releases repo)
         if: steps.mode.outputs.dry_run == 'false'
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.RELEASES_REPO_TOKEN }}
+          GH_REPO: ${{ env.RELEASES_REPO }}
           TAG: ${{ steps.info.outputs.tag }}
           VERSION: ${{ steps.info.outputs.version }}
           CHANNEL: ${{ steps.info.outputs.channel }}
         run: |
-          # version.yml creates the draft for Changesets releases; this covers tags pushed by hand.
           if is_draft=$(gh release view "$TAG" --json isDraft --jq .isDraft 2>/dev/null); then
             if [ "$is_draft" != true ]; then
-              echo "::error::$TAG is already published. Never re-publish; ship the next patch version."
+              echo "::error::$TAG is already published in $GH_REPO. Never re-publish; ship the next patch version."
               exit 1
             fi
-            echo "Draft $TAG exists."
+            echo "Draft $TAG exists in $GH_REPO."
           else
-            flags=(--draft --verify-tag --title "BruteForceHR $VERSION" --notes-file "$RUNNER_TEMP/notes.md")
+            # No --target: the tag is created on the releases repo's default branch when `publish`
+            # publishes the draft (the source commit doesn't exist there).
+            flags=(--draft --title "BruteForceHR $VERSION" --notes-file "$RUNNER_TEMP/notes.md")
             if [ "$CHANNEL" = beta ]; then flags+=(--prerelease); fi
             gh release create "$TAG" "${flags[@]}"
           fi
+
+  # Desktop E2E on the real macOS and Windows apps (desktop.yml) before anything ships.
+  verify-desktop:
+    name: Verify (Desktop E2E)
+    needs: prepare
+    uses: ./.github/workflows/desktop.yml
+    permissions:
+      contents: read
 
   verify:
     name: Verify (CI)
@@ -510,10 +535,10 @@ jobs:
     name: Publish
     # Default `success()`: runs only when every job above passed. A failed build leaves the draft
     # unpublished and no latest.json is served.
-    needs: [prepare, verify, backend, desktop-mac, desktop-win, ios]
+    needs: [prepare, verify, verify-desktop, backend, desktop-mac, desktop-win, ios]
     runs-on: ubuntu-latest
     permissions:
-      contents: write # upload assets, publish the release
+      contents: write # BRIDGE v0.3.0 only (source-repo release); RELEASES_REPO uses its own token
       id-token: write # appConfig via Workload Identity Federation
     env:
       VERSION: ${{ needs.prepare.outputs.version }}
@@ -529,7 +554,7 @@ jobs:
       - run: pnpm install --frozen-lockfile --filter "@bfhr/release-scripts..."
       - uses: actions/download-artifact@v8
         with:
-          pattern: desktop-*
+          pattern: desktop-{mac,win}
           path: ${{ runner.temp }}/assets
           merge-multiple: true
       - uses: actions/download-artifact@v8
@@ -560,12 +585,14 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-      - name: Upload assets and publish
+      - name: Upload assets and publish (releases repo)
         if: env.DRY_RUN == 'false'
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ secrets.RELEASES_REPO_TOKEN }}
+          GH_REPO: ${{ env.RELEASES_REPO }}
         run: |
           gh release upload "$TAG" "$RUNNER_TEMP"/assets/* --clobber
+          # Publishing creates tag $TAG on the releases repo's default branch.
           if [ "$CHANNEL" = stable ]; then
             gh release edit "$TAG" --draft=false --latest
           else
@@ -573,10 +600,38 @@ jobs:
           fi
           # Beta channel manifest: every release, stable and beta (ADR 0004 §4).
           if ! gh release view updater-beta >/dev/null 2>&1; then
-            gh release create updater-beta --prerelease --latest=false --target "$GITHUB_SHA" \
+            gh release create updater-beta --prerelease --latest=false \
               --title "Beta update channel" --notes "Update manifest for the beta channel. Not a version."
           fi
           gh release upload updater-beta "$RUNNER_TEMP/assets/latest.json" --clobber
+
+      # ── BRIDGE v0.3.0 ── delete this step (and `contents: write` above) once the source repo is
+      # private (docs/runbooks/release.md "Moving releases to bruteforcehr-releases").
+      # Installs ≤ 0.2.2 poll this repo's latest.json; publishing the new manifest here too lets them
+      # update to a build whose endpoints point at RELEASES_REPO. Only latest.json is needed: its
+      # bundle URLs and signatures already point at RELEASES_REPO's assets.
+      - name: "BRIDGE: latest.json for installs ≤ 0.2.2 (source repo, while public)"
+        if: env.DRY_RUN == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          if [ "$(gh api "repos/$GH_REPO" --jq .private)" != false ]; then
+            echo "skipped: $GH_REPO is private; old installs can't reach its manifests"
+            exit 0
+          fi
+          manifest="$RUNNER_TEMP/assets/latest.json"
+          if [ "$CHANNEL" = stable ]; then
+            if gh release view "$TAG" >/dev/null 2>&1; then
+              gh release upload "$TAG" "$manifest" --clobber
+              gh release edit "$TAG" --draft=false --latest
+            else
+              gh release create "$TAG" "$manifest" --verify-tag --latest --title "BruteForceHR $VERSION" \
+                --notes-file "$RUNNER_TEMP/notes.md"
+            fi
+          fi
+          gh release upload updater-beta "$manifest" --clobber
+      # ── end BRIDGE v0.3.0 ──
 
       - uses: google-github-actions/auth@v3
         with:

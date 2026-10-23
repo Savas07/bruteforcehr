@@ -18,10 +18,11 @@ export const THEME_COLOR = {
 } as const;
 
 /**
- * Public GitHub repo: source, release binaries + notes (the Download and Changelog pages read its
- * Releases at build time) and, per user decision U4, support issues.
+ * Public GitHub repo for release binaries + notes (the Download and Changelog pages read its
+ * Releases at build time, unauthenticated or with any token) and, per user decision U4, support
+ * issues. The source repo is private (ADR 0004 addendum 2026-10-24).
  */
-export const GITHUB_REPO = "Savas07/bruteforcehr";
+export const GITHUB_REPO = "Savas07/bruteforcehr-releases";
 export const REPO_URL = `https://github.com/${GITHUB_REPO}`;
 export const RELEASES_URL = `${REPO_URL}/releases`;
 

@@ -14,8 +14,8 @@ import { DownloadProgress, updateMessages, Working } from "./parts";
 import { parseReleaseNotes } from "./releaseNotes";
 import type { UpdateController } from "./useUpdateController";
 
-/** Every published version has a release page in the source repo (ADR 0004 §1). */
-const RELEASES_URL = "https://github.com/Savas07/bruteforcehr/releases";
+/** Every published version has a release page in the public releases repo (ADR 0004 §1, addendum). */
+const RELEASES_URL = "https://github.com/Savas07/bruteforcehr-releases/releases";
 
 const messages = defineMessages({
   checkTitle: { id: "updates.check.title", defaultMessage: "Software update" },

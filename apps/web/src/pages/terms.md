@@ -133,4 +133,4 @@ When we change these terms, we update the effective date at the top. If a change
 
 ## Contact
 
-For questions about these terms, [open an issue on GitHub](https://github.com/Savas07/bruteforcehr/issues/new). Issues are public, so don't include personal details.
+For questions about these terms, [open an issue on GitHub](https://github.com/Savas07/bruteforcehr-releases/issues/new). Issues are public, so don't include personal details.

@@ -2,8 +2,9 @@ name: Version
 
 # Changesets (docs/adr/0004-release-updates-signing.md §1): while changesets are pending, keep the
 # "Version packages" PR up to date. When that PR is merged (no changesets left and the version
-# has no tag yet), tag vX.Y.Z, create the draft GitHub Release with the notes and start
-# release.yml. A tag pushed with GITHUB_TOKEN doesn't trigger workflows, hence the dispatch.
+# has no tag yet), tag vX.Y.Z in this repo and start release.yml, which drafts and publishes the
+# GitHub Release in the public releases repo. A tag pushed with GITHUB_TOKEN doesn't trigger
+# workflows, hence the dispatch.
 on:
   push:
     branches: [main]
@@ -23,7 +24,7 @@ jobs:
     name: Version PR or release tag
     runs-on: ubuntu-latest
     permissions:
-      contents: write # version commit, tag, draft release
+      contents: write # version commit, tag
       pull-requests: write # "Version packages" PR
       actions: write # dispatch release.yml
     steps:
@@ -41,7 +42,7 @@ jobs:
           commit-message: "chore: version packages"
           pr-title: "chore: version packages"
 
-      - name: Tag, draft release, start release.yml
+      - name: Tag, start release.yml
         if: steps.changesets.outputs.has-changesets == 'false'
         env:
           GH_TOKEN: ${{ github.token }}
@@ -56,12 +57,9 @@ jobs:
             echo "$tag exists; nothing to release."
             exit 0
           fi
+          # Fails before tagging if the version isn't a valid release version.
           pnpm --filter @bfhr/release-scripts -s release-info --tag "$tag" --package ../../apps/desktop/package.json
-          pnpm --filter @bfhr/release-scripts -s notes --root ../.. --version "$version" --out "$RUNNER_TEMP/notes.md"
           git tag "$tag" "$GITHUB_SHA"
           git push origin "refs/tags/$tag"
-          flags=(--draft --verify-tag --title "BruteForceHR $version" --notes-file "$RUNNER_TEMP/notes.md")
-          case "$version" in *-*) flags+=(--prerelease) ;; esac
-          gh release create "$tag" "${flags[@]}"
           gh workflow run release.yml --ref "$tag" -f dry_run=false
-          echo "::notice::Tagged $tag, drafted its release and started release.yml."
+          echo "::notice::Tagged $tag and started release.yml (it drafts and publishes the release in Savas07/bruteforcehr-releases)."

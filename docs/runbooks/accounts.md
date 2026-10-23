@@ -156,3 +156,7 @@ Currently unsigned by decision ([ADR 0004](../adr/0004-release-updates-signing.m
 2. Give the agent the CI signing credentials → GitHub secrets (names chosen in the release workflow update).
 3. The agent sets `bundle.windows.signCommand` (cloud HSM / Key Vault tools) or `certificateThumbprint` in `tauri.conf.json` ([Tauri Windows code signing](https://v2.tauri.app/distribute/sign/windows/)). The updater signature stays as it is.
 4. Re-check Artifact Signing eligibility if you register a company in an eligible country.
+
+## 9. GitHub token for the public releases repo
+
+Done 2026-10-24. The source repo `Savas07/bruteforcehr` is private; installers, update manifests and support issues are public in `Savas07/bruteforcehr-releases`. `release.yml` publishes there with the Actions secret `RELEASES_REPO_TOKEN`: a fine-grained personal access token limited to `Savas07/bruteforcehr-releases` with **Contents: Read and write**, expiring after 1 year. Steps and rotation: [release.md › Releases repo token](release.md#releases-repo-token). Where it goes: GitHub → `Savas07/bruteforcehr` → Settings → Secrets and variables → Actions (`gh secret set RELEASES_REPO_TOKEN --repo Savas07/bruteforcehr`).

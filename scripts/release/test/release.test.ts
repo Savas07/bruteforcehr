@@ -78,15 +78,15 @@ describe("latest.json", () => {
       pub_date: "2026-10-23T10:00:00.000Z",
       platforms: {
         "darwin-aarch64": {
-          url: "https://github.com/Savas07/bruteforcehr/releases/download/v0.1.0/BruteForceHR_0.1.0_universal.app.tar.gz",
+          url: "https://github.com/Savas07/bruteforcehr-releases/releases/download/v0.1.0/BruteForceHR_0.1.0_universal.app.tar.gz",
           signature: "mac-sig",
         },
         "darwin-x86_64": {
-          url: "https://github.com/Savas07/bruteforcehr/releases/download/v0.1.0/BruteForceHR_0.1.0_universal.app.tar.gz",
+          url: "https://github.com/Savas07/bruteforcehr-releases/releases/download/v0.1.0/BruteForceHR_0.1.0_universal.app.tar.gz",
           signature: "mac-sig",
         },
         "windows-x86_64": {
-          url: "https://github.com/Savas07/bruteforcehr/releases/download/v0.1.0/BruteForceHR_0.1.0_x64-setup.exe",
+          url: "https://github.com/Savas07/bruteforcehr-releases/releases/download/v0.1.0/BruteForceHR_0.1.0_x64-setup.exe",
           signature: "win-sig",
         },
       },
@@ -157,8 +157,8 @@ describe("appConfig", () => {
       latestVersion: "0.2.0",
       minSupportedVersion: "0.1.0",
       downloadUrl:
-        "https://github.com/Savas07/bruteforcehr/releases/download/v0.2.0/BruteForceHR_0.2.0_universal.dmg",
-      releaseNotesUrl: "https://github.com/Savas07/bruteforcehr/releases/tag/v0.2.0",
+        "https://github.com/Savas07/bruteforcehr-releases/releases/download/v0.2.0/BruteForceHR_0.2.0_universal.dmg",
+      releaseNotesUrl: "https://github.com/Savas07/bruteforcehr-releases/releases/tag/v0.2.0",
       featureFlags: { mail: true },
       updatedAt: now,
     });

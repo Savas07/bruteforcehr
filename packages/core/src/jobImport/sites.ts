@@ -1,3 +1,4 @@
+import type { WebUrl } from "./web-url";
 import { detectRemoteType, detectSeniority, htmlToText, parseLocation } from "../jobs/normalize";
 import { type HtmlElement, blockText, find, findAll, hasClass, textOf } from "./html";
 import { cleanLine, employmentType, parseDate, salaryRange } from "./normalize";
@@ -21,11 +22,11 @@ export interface SiteAdapter {
   /** ATS or employer careers site, as opposed to a job board. */
   readonly isDirectFromEmployer: boolean;
   /** Canonical posting URL (tracking parameters and UI state removed), or null if not a posting. */
-  canonicalUrl?(url: URL): string | null;
+  canonicalUrl?(url: WebUrl): string | null;
   /** Public JSON API with the same posting, when the HTML does not carry it. */
-  apiRequest?(url: URL): ApiRequest | null;
-  parseApi?(json: unknown, url: URL): ExtractedPosting | null;
-  parseHtml?(document: HtmlElement, url: URL): ExtractedPosting | null;
+  apiRequest?(url: WebUrl): ApiRequest | null;
+  parseApi?(json: unknown, url: WebUrl): ExtractedPosting | null;
+  parseHtml?(document: HtmlElement, url: WebUrl): ExtractedPosting | null;
 }
 
 type Obj = Record<string, unknown>;
@@ -76,7 +77,7 @@ function posting(fields: {
   };
 }
 
-const firstPathId = (url: URL, pattern: RegExp): string | null => pattern.exec(url.pathname)?.[1] ?? null;
+const firstPathId = (url: WebUrl, pattern: RegExp): string | null => pattern.exec(url.pathname)?.[1] ?? null;
 
 // ---------------------------------------------------------------------------------------------
 // Job boards (single user-shared postings only, ADR 0005)
@@ -520,7 +521,7 @@ export const NOT_EMPLOYER_HOSTS: readonly string[] = [
   "wikipedia.org",
 ];
 
-export function siteFor(url: URL): SiteAdapter | null {
+export function siteFor(url: WebUrl): SiteAdapter | null {
   const host = url.hostname.toLowerCase();
   return (
     SITE_ADAPTERS.find((adapter) =>

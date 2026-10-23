@@ -1,3 +1,4 @@
+import { WebUrl } from "./web-url";
 import { siteFor } from "./sites";
 
 /** Query parameters that only track the click or UI state, never select the posting. */
@@ -10,15 +11,15 @@ const TRACKING_PARAMS =
  * parameters, then the site's canonical posting URL when the adapter knows one. Null when the
  * input holds no usable web address.
  */
-export function importUrlFrom(input: string): URL | null {
+export function importUrlFrom(input: string): WebUrl | null {
   const trimmed = input.trim();
   const candidate =
     /https?:\/\/[^\s<>"'`]+/i.exec(trimmed)?.[0] ??
     (/^(?:www\.)?[a-z0-9-]+(?:\.[a-z0-9-]+)+(?:\/[^\s]*)?$/i.test(trimmed) ? `https://${trimmed}` : null);
   if (candidate === null) return null;
-  let url: URL;
+  let url: WebUrl;
   try {
-    url = new URL(candidate.replace(/[),.;!?\]]+$/, ""));
+    url = new WebUrl(candidate.replace(/[),.;!?\]]+$/, ""));
   } catch {
     return null;
   }
@@ -28,5 +29,5 @@ export function importUrlFrom(input: string): URL | null {
   url.hash = "";
   for (const key of [...url.searchParams.keys()]) if (TRACKING_PARAMS.test(key)) url.searchParams.delete(key);
   const canonical = siteFor(url)?.canonicalUrl?.(url) ?? null;
-  return canonical === null ? url : new URL(canonical);
+  return canonical === null ? url : new WebUrl(canonical);
 }

@@ -1,3 +1,4 @@
+import { WebUrl } from "./web-url";
 import type { JobImportMethod } from "./contract";
 import { type HtmlElement, blockText, canonicalUrl, find, parseHtml, textOf } from "./html";
 import { EMPTY_POSTING, type ExtractedPosting, fillPosting, filledFields, isComplete } from "./posting";
@@ -67,7 +68,7 @@ function record(
  * the site adapter's HTML reader. Each later step only fills fields still empty.
  */
 export function extractFromHtml(page: { url: string; html: string }): PageExtraction {
-  const url = new URL(page.url);
+  const url = new WebUrl(page.url);
   const document = parseHtml(page.html);
   const site = siteFor(url);
   const fieldMethods: Record<string, JobImportMethod> = {};
@@ -116,7 +117,7 @@ export function extractFromHtml(page: { url: string; html: string }): PageExtrac
 
 /** Adds what the adapter's public API returned (`extraction.api`) to a page extraction. */
 export function withApiResult(extraction: PageExtraction, json: unknown, url: string): PageExtraction {
-  const found = extraction.site?.parseApi?.(json, new URL(url)) ?? null;
+  const found = extraction.site?.parseApi?.(json, new WebUrl(url)) ?? null;
   if (found === null) return extraction;
   const fieldMethods = { ...extraction.fieldMethods };
   const posting = fillPosting(extraction.posting, found);

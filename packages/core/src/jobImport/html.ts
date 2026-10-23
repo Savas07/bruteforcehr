@@ -1,3 +1,4 @@
+import { WebUrl } from "./web-url";
 /**
  * A small, forgiving HTML parser for job pages: enough of HTML's tokenizer and tree rules to read
  * JSON-LD, microdata, meta tags and the visible text of real-world markup. It is not a full
@@ -545,8 +546,8 @@ export function canonicalUrl(document: HtmlElement, base: string): string | unde
   const href = link?.attrs.href;
   if (href === undefined || href.trim() === "") return undefined;
   try {
-    const url = new URL(href.trim(), base);
-    return url.protocol === "https:" || url.protocol === "http:" ? url.toString() : undefined;
+    const url = new WebUrl(href.trim(), base);
+    return url.protocol === "https:" || url.protocol === "http:" ? url.href : undefined;
   } catch {
     return undefined;
   }

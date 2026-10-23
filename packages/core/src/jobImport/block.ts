@@ -1,3 +1,4 @@
+import { WebUrl } from "./web-url";
 /**
  * Recognizes pages that are not the posting but a wall in front of it: login walls, bot
  * challenges, CAPTCHAs and WAF denials. The import stops there and offers "paste the description"
@@ -33,7 +34,7 @@ export function detectBlock(page: {
 }): PageBlock | null {
   let path = "";
   try {
-    const url = new URL(page.url);
+    const url = new WebUrl(page.url);
     path = `${url.pathname}${url.search}`;
   } catch {
     // An unparsable final URL can't be a login redirect.

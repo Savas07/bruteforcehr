@@ -25,6 +25,8 @@ import {
   type JobMatch,
   JobMatchSchema,
   JobSchema,
+  type JobSourceStatus,
+  JobSourceStatusSchema,
   type MailAccount,
   MailAccountSchema,
   type MailMessage,
@@ -37,6 +39,8 @@ import {
   RenderedFileSchema,
   type SavedSearch,
   SavedSearchSchema,
+  type WatchedCompany,
+  WatchedCompanySchema,
 } from "@bfhr/core";
 import type { z } from "zod";
 import { DOCUMENT_PATTERNS, type EntityName, matchDocumentPath } from "./paths";
@@ -198,6 +202,8 @@ export interface Converters {
   readonly job: EntityConverter<Job, "id">;
   readonly jobMatch: EntityConverter<JobMatch, "id">;
   readonly savedSearch: EntityConverter<SavedSearch, "id">;
+  readonly watchedCompany: EntityConverter<WatchedCompany, "id">;
+  readonly jobSource: EntityConverter<JobSourceStatus, "id">;
   readonly application: EntityConverter<Application, "id">;
   readonly applicationEvent: EntityConverter<ApplicationEvent, "id">;
   readonly interview: EntityConverter<Interview, "id">;
@@ -249,6 +255,18 @@ export function createConverters<TTimestamp>(adapter: TimestampAdapter<TTimestam
       adapter,
       "savedSearch",
       SavedSearchSchema,
+      ["id"],
+    ),
+    watchedCompany: createEntityConverter<TTimestamp, WatchedCompany, "id">(
+      adapter,
+      "watchedCompany",
+      WatchedCompanySchema,
+      ["id"],
+    ),
+    jobSource: createEntityConverter<TTimestamp, JobSourceStatus, "id">(
+      adapter,
+      "jobSource",
+      JobSourceStatusSchema,
       ["id"],
     ),
     application: createEntityConverter<TTimestamp, Application, "id">(

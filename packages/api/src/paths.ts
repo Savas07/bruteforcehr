@@ -2,7 +2,8 @@ import { IdSchema, type Platform } from "@bfhr/core";
 
 /**
  * Firestore layout (docs/adr/0002-data-model.md). All user data lives under `users/{uid}`;
- * `appConfig/{platform}` is public; `serverOnly/**` is never touched by clients.
+ * `appConfig/{platform}` is public; `jobSources/{sourceId}` is readable by signed-in users;
+ * `serverOnly/**` is never touched by clients.
  */
 export const DOCUMENT_PATTERNS = {
   profile: "users/{id}",
@@ -13,6 +14,7 @@ export const DOCUMENT_PATTERNS = {
   job: "users/{uid}/jobs/{id}",
   jobMatch: "users/{uid}/jobMatches/{id}",
   savedSearch: "users/{uid}/savedSearches/{id}",
+  watchedCompany: "users/{uid}/watchlist/{id}",
   application: "users/{uid}/applications/{id}",
   applicationEvent: "users/{uid}/applicationEvents/{id}",
   interview: "users/{uid}/interviews/{id}",
@@ -21,6 +23,7 @@ export const DOCUMENT_PATTERNS = {
   mailMessage: "users/{uid}/mailMessages/{id}",
   device: "users/{uid}/devices/{id}",
   appConfig: "appConfig/{id}",
+  jobSource: "jobSources/{id}",
 } as const;
 export type EntityName = keyof typeof DOCUMENT_PATTERNS;
 
@@ -34,6 +37,7 @@ export const COLLECTION_IDS = {
   jobs: "jobs",
   jobMatches: "jobMatches",
   savedSearches: "savedSearches",
+  watchlist: "watchlist",
   applications: "applications",
   applicationEvents: "applicationEvents",
   interviews: "interviews",
@@ -42,6 +46,7 @@ export const COLLECTION_IDS = {
   mailMessages: "mailMessages",
   devices: "devices",
   appConfig: "appConfig",
+  jobSources: "jobSources",
 } as const;
 
 /** Validates one path segment (document id) and returns it. */
@@ -73,6 +78,9 @@ export const firestorePaths = {
   jobMatch: (uid: string, jobId: string) => `${user(uid)}/jobMatches/${segment(jobId)}`,
   savedSearches: (uid: string) => `${user(uid)}/savedSearches`,
   savedSearch: (uid: string, savedSearchId: string) => `${user(uid)}/savedSearches/${segment(savedSearchId)}`,
+  /** "Companies you follow" (ATS boards and careers pages). */
+  watchlist: (uid: string) => `${user(uid)}/watchlist`,
+  watchedCompany: (uid: string, companyId: string) => `${user(uid)}/watchlist/${segment(companyId)}`,
   applications: (uid: string) => `${user(uid)}/applications`,
   application: (uid: string, applicationId: string) => `${user(uid)}/applications/${segment(applicationId)}`,
   applicationEvents: (uid: string) => `${user(uid)}/applicationEvents`,
@@ -89,6 +97,9 @@ export const firestorePaths = {
   device: (uid: string, deviceId: string) => `${user(uid)}/devices/${segment(deviceId)}`,
   appConfigs: () => COLLECTION_IDS.appConfig,
   appConfig: (platform: Platform) => `${COLLECTION_IDS.appConfig}/${segment(platform)}`,
+  /** Project-wide source health (Settings › Job sources); server-written. */
+  jobSources: () => COLLECTION_IDS.jobSources,
+  jobSource: (sourceId: string) => `${COLLECTION_IDS.jobSources}/${segment(sourceId)}`,
 } as const;
 
 /** Cloud Storage object paths (mirrored by `firebase/storage.rules`). */
@@ -120,4 +131,46 @@ export function matchDocumentPath(entity: EntityName, path: string): Record<stri
     }
   }
   return params;
+}
+
+/**
+ * Server-only per-user documents (never readable by clients; docs/adr/0002-data-model.md).
+ * Every tree here is also listed in `userDataRoots`, so account deletion and export cover it.
+ */
+export const serverOnlyPaths = {
+  /** Daily AI spend ledger (docs/adr/0010-ai.md). */
+  aiUsageRoot: (uid: string) => `serverOnly/aiUsage/users/${segment(uid)}`,
+  aiUsageDay: (uid: string, day: string) =>
+    `serverOnly/aiUsage/users/${segment(uid)}/aiUsageDays/${segment(day)}`,
+  /** Pending job alerts for M5 notifications (docs/adr/0011-embeddings-matching.md). */
+  jobAlertsRoot: (uid: string) => `serverOnly/jobAlerts/users/${segment(uid)}`,
+  jobAlert: (uid: string, jobId: string) =>
+    `serverOnly/jobAlerts/users/${segment(uid)}/jobAlertItems/${segment(jobId)}`,
+  /** Per-user daily search budget and rate limit (docs/runbooks/jobs.md). */
+  jobQuotaRoot: (uid: string) => `serverOnly/jobQuota/users/${segment(uid)}`,
+  jobQuotaDay: (uid: string, day: string) =>
+    `serverOnly/jobQuota/users/${segment(uid)}/jobQuotaDays/${segment(day)}`,
+  /** Mail tokens, processed-message hashes, outbox and send counters (M5). */
+  mailRoot: (uid: string) => `serverOnly/mail/users/${segment(uid)}`,
+} as const;
+
+/**
+ * Every Firestore document tree that holds one user's data: the user document with all its
+ * subcollections, and each per-user `serverOnly` tree. The single source of truth for account
+ * deletion (recursive delete of every root) and "Export everything" (ADR 0002). A feature that
+ * stores per-user data elsewhere must add its root here.
+ */
+export function userDataRoots(uid: string): readonly string[] {
+  return [
+    `users/${segment(uid)}`,
+    serverOnlyPaths.aiUsageRoot(uid),
+    serverOnlyPaths.jobAlertsRoot(uid),
+    serverOnlyPaths.jobQuotaRoot(uid),
+    serverOnlyPaths.mailRoot(uid),
+  ];
+}
+
+/** Cloud Storage prefix of every object the user owns (CV imports, rendered files, photos). */
+export function userStoragePrefix(uid: string): string {
+  return `users/${segment(uid)}/`;
 }

@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { type DOCUMENT_PATTERNS, firestorePaths, matchDocumentPath, storagePaths } from "./paths";
+import {
+  type DOCUMENT_PATTERNS,
+  firestorePaths,
+  matchDocumentPath,
+  serverOnlyPaths,
+  storagePaths,
+  userDataRoots,
+  userStoragePrefix,
+} from "./paths";
 
 describe("firestorePaths", () => {
   it("builds the kickoff layout", () => {
@@ -51,6 +59,8 @@ describe("matchDocumentPath", () => {
       job: firestorePaths.job("u", "x"),
       jobMatch: firestorePaths.jobMatch("u", "x"),
       savedSearch: firestorePaths.savedSearch("u", "x"),
+      watchedCompany: firestorePaths.watchedCompany("u", "x"),
+      jobSource: firestorePaths.jobSource("greenhouse"),
       application: firestorePaths.application("u", "x"),
       applicationEvent: firestorePaths.applicationEvent("u", "x"),
       interview: firestorePaths.interview("u", "x"),
@@ -63,5 +73,33 @@ describe("matchDocumentPath", () => {
     for (const [entity, path] of Object.entries(built)) {
       expect(matchDocumentPath(entity as keyof typeof DOCUMENT_PATTERNS, path), entity).not.toBeNull();
     }
+  });
+});
+
+describe("userDataRoots", () => {
+  it("lists the user document and every per-user serverOnly tree", () => {
+    expect(userDataRoots("u1")).toEqual([
+      "users/u1",
+      "serverOnly/aiUsage/users/u1",
+      "serverOnly/jobAlerts/users/u1",
+      "serverOnly/jobQuota/users/u1",
+      "serverOnly/mail/users/u1",
+    ]);
+    expect(userStoragePrefix("u1")).toBe("users/u1/");
+  });
+
+  it("puts every serverOnly per-user path under one of the roots", () => {
+    const roots = userDataRoots("u1");
+    for (const path of [
+      serverOnlyPaths.aiUsageDay("u1", "2026-10-24"),
+      serverOnlyPaths.jobAlert("u1", "j1"),
+      serverOnlyPaths.jobQuotaDay("u1", "2026-10-24"),
+    ]) {
+      expect(roots.some((root) => path.startsWith(`${root}/`)), path).toBe(true);
+    }
+  });
+
+  it("rejects ids that would escape the tree", () => {
+    expect(() => userDataRoots("a/b")).toThrow(TypeError);
   });
 });

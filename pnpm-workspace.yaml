@@ -15,3 +15,8 @@ allowBuilds:
   geckodriver: false
   protobufjs: false
   re2: false
+
+# The Firebase web SDK pins @grpc/grpc-js ~1.9 for its Node build (never in the desktop webview
+# bundle); 1.9.x has GHSA-m9gg-hp2v-232j, fixed only in >=1.13.6. Same major, API-compatible.
+overrides:
+  "@firebase/firestore>@grpc/grpc-js": "^1.14.6"

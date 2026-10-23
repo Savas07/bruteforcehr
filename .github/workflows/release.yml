@@ -283,7 +283,9 @@ jobs:
             export APPLE_API_ISSUER="$BFHR_APPLE_API_ISSUER"
           fi
           printf '{"version":"%s"}' "$VERSION" > "$RUNNER_TEMP/version.conf.json"
-          pnpm tauri build --target universal-apple-darwin --bundles app,dmg --config "$RUNNER_TEMP/version.conf.json"
+          # actool crashes on the .icon when tauri starts it on the runners: precompile Assets.car.
+          icon_conf=$(scripts/compile-app-icon.sh "$RUNNER_TEMP/app-icon")
+          pnpm tauri build --target universal-apple-darwin --bundles app,dmg --config "$RUNNER_TEMP/version.conf.json" --config "$icon_conf"
       - name: Remove the App Store Connect key
         if: always()
         run: rm -f "$RUNNER_TEMP/AuthKey.p8"
@@ -297,6 +299,9 @@ jobs:
           mkdir -p "$assets"
           codesign --verify --deep --strict --verbose=2 "$bundle/macos/BruteForceHR.app"
           if [ "$NOTARIZE" = true ]; then xcrun stapler validate "$bundle/macos/BruteForceHR.app"; fi
+          # The Icon Composer icon made it in (scripts/compile-app-icon.sh).
+          test -s "$bundle/macos/BruteForceHR.app/Contents/Resources/Assets.car"
+          echo "CFBundleIconName: $(/usr/libexec/PlistBuddy -c 'Print :CFBundleIconName' "$bundle/macos/BruteForceHR.app/Contents/Info.plist")"
           # The signature covers the content, not the name, so renaming the updater bundle is safe.
           cp "$bundle/macos/BruteForceHR.app.tar.gz" "$assets/BruteForceHR_${VERSION}_universal.app.tar.gz"
           cp "$bundle/macos/BruteForceHR.app.tar.gz.sig" "$assets/BruteForceHR_${VERSION}_universal.app.tar.gz.sig"

@@ -102,7 +102,13 @@ jobs:
 
       # Production bundles: macOS .app + .dmg, Windows NSIS (x64), unsigned. Without the updater's
       # signatures: the private key is a release-only secret (release.yml builds the signed ones).
-      - run: pnpm bundle --config src-tauri/tauri.unsigned.conf.json
+      - name: Bundle
+        run: |
+          flags=(--config src-tauri/tauri.unsigned.conf.json)
+          # macOS: actool crashes on the .icon when tauri starts it on the runners; precompile
+          # Assets.car (scripts/compile-app-icon.sh).
+          if [ "$RUNNER_OS" = macOS ]; then flags+=(--config "$(scripts/compile-app-icon.sh "$RUNNER_TEMP/app-icon")"); fi
+          pnpm bundle "${flags[@]}"
       - uses: actions/upload-artifact@v7
         with:
           name: desktop-bundle-${{ matrix.os }}

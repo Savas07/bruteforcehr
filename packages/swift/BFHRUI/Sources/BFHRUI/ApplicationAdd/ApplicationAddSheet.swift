@@ -33,33 +33,24 @@ public struct ApplicationAddSheet: View {
                         .accessibilityIdentifier("add.location")
                 } footer: {
                     Text(ApplicationAddStrings.requiredFooter)
-                        .foregroundStyle(BFHRColor.Fg.secondary)
+                        .font(.bfhr(.footnote))
+                        .foregroundStyle(BFHRColor.Fg.primary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
                 Section {
-                    Picker(selection: $draft.status) {
-                        ForEach(ApplicationDraft.statuses, id: \.self) { status in
-                            Text(status.label).tag(status)
-                        }
-                    } label: {
-                        Text(ApplicationAddStrings.stage)
-                    }
+                    TrackerPickerRow(ApplicationAddStrings.stage, selection: $draft.status, options: ApplicationDraft.statuses) { Text($0.label) }
                     .accessibilityIdentifier("add.status")
                     DatePicker(selection: $draft.date, in: ...now, displayedComponents: .date) {
                         Text(draft.hasApplied ? ApplicationAddStrings.appliedOn : ApplicationAddStrings.addedOn)
                     }
                     .accessibilityIdentifier("add.date")
-                    Picker(selection: $draft.channel) {
-                        Text(ApplicationAddStrings.channelNone).tag(Channel?.none)
-                        ForEach(Channel.allCases, id: \.self) { channel in
-                            Text(channel.label).tag(Channel?.some(channel))
-                        }
-                    } label: {
-                        Text(Strings.fieldChannel)
-                    }
+                    TrackerPickerRow(Strings.fieldChannel, selection: $draft.channel, options: [nil] + Channel.allCases.map(Optional.some)) { Text($0?.label ?? ApplicationAddStrings.channelNone) }
                     .accessibilityIdentifier("add.channel")
                 } footer: {
                     Text(ApplicationAddStrings.stageFooter)
-                        .foregroundStyle(BFHRColor.Fg.secondary)
+                        .font(.bfhr(.footnote))
+                        .foregroundStyle(BFHRColor.Fg.primary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
                 Section {
                     TrackerFormField(ApplicationAddStrings.notes, text: $draft.notes, prompt: ApplicationAddStrings.notesPlaceholder, multiline: true)

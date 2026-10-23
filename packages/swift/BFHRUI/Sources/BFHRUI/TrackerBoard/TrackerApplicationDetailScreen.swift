@@ -98,10 +98,7 @@ struct TrackerApplicationDetailScreen: View {
                 documentSection(detail)
                 DetailFacts(detail: detail)
                 Section {
-                    Button(role: .destructive) { confirmsDelete = true } label: {
-                        Text(TrackerBoardStrings.deleteApplication)
-                            .frame(maxWidth: .infinity, minHeight: BFHRHitTarget.minimum, alignment: .leading)
-                    }
+                    TrackerDestructiveRow(TrackerBoardStrings.deleteApplication) { confirmsDelete = true }
                     .accessibilityIdentifier("detail.delete")
                 }
             }
@@ -438,7 +435,7 @@ struct TrackerApplicationDetailScreen: View {
     }
     #endif
 
-    /// The permission explainer the first time a reminder is set (decisions.md D36).
+    /// The permission explainer the first time a reminder is set (decisions.md D33).
     private func offerNotifications(title: String, at date: Date?, company: String?) {
         guard model.takeNotificationExplainer() else { return }
         Task {

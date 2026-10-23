@@ -51,7 +51,9 @@ struct TrackerFormField: View {
 
     @ViewBuilder
     private var field: some View {
-        let base = TextField(text: multiline ? $text : singleLine, prompt: prompt.map { Text($0) }, axis: .vertical) { Text(label) }
+        // The label is visible above the field, so an empty field shows no placeholder unless one
+        // is given (an example value), instead of repeating the label.
+        let base = TextField(text: multiline ? $text : singleLine, prompt: prompt.map { Text($0) } ?? Text(verbatim: ""), axis: .vertical) { Text(label) }
             .accessibilityLabel(Text(label))
         #if os(iOS)
         switch kind {
@@ -87,5 +89,121 @@ struct TrackerFieldError: View {
             .labelStyle(.bfhrCompact)
             .font(.bfhr(.footnote))
             .foregroundStyle(BFHRTone.danger.text)
+    }
+}
+
+/// A picker row for the Tracker's forms: the system menu picker (label left, value right) up to
+/// the largest standard size. At accessibility sizes the system controls clip long values, so the
+/// row is a navigation row (label above the current value, both wrapping) that pushes a list of
+/// the options with a checkmark on the current one. The forms sit in a `NavigationStack`.
+struct TrackerPickerRow<Value: Hashable>: View {
+    private let label: LocalizedStringResource
+    @Binding private var selection: Value
+    private let options: [Value]
+    private let title: (Value) -> Text
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    init(_ label: LocalizedStringResource, selection: Binding<Value>, options: [Value], title: @escaping (Value) -> Text) {
+        self.label = label
+        _selection = selection
+        self.options = options
+        self.title = title
+    }
+
+    var body: some View {
+        if dynamicTypeSize.isAccessibilitySize {
+            NavigationLink {
+                TrackerOptionList(label: label, selection: $selection, options: options, title: title)
+            } label: {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(label)
+                        .font(.bfhr(.footnote))
+                        .foregroundStyle(BFHRColor.Fg.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    title(selection)
+                        .font(.bfhr(.body))
+                        .foregroundStyle(BFHRColor.Fg.primary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .frame(maxWidth: .infinity, minHeight: BFHRHitTarget.minimum, alignment: .leading)
+            }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(Text(label))
+            .accessibilityValue(title(selection))
+            .accessibilityAddTraits(.isButton)
+        } else {
+            Picker(selection: $selection) {
+                ForEach(options, id: \.self) { option in title(option).tag(option) }
+            } label: {
+                Text(label)
+            }
+        }
+    }
+}
+
+/// The options of a `TrackerPickerRow` at accessibility sizes: one wrapping row each, ✓ on the
+/// current one (also its VoiceOver Selected trait); choosing goes back.
+private struct TrackerOptionList<Value: Hashable>: View {
+    let label: LocalizedStringResource
+    @Binding var selection: Value
+    let options: [Value]
+    let title: (Value) -> Text
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        List {
+            ForEach(options, id: \.self) { option in
+                Button {
+                    selection = option
+                    dismiss()
+                } label: {
+                    HStack(alignment: .firstTextBaseline, spacing: BFHRSpace.s2) {
+                        title(option)
+                            .font(.bfhr(.body))
+                            .foregroundStyle(BFHRColor.Fg.primary)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        if option == selection {
+                            Image(systemName: "checkmark")
+                                .font(.bfhr(.body, emphasized: true))
+                                .foregroundStyle(BFHRColor.Accent.text)
+                                .accessibilityHidden(true)
+                        }
+                    }
+                    .frame(minHeight: BFHRHitTarget.minimum)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityAddTraits(option == selection ? .isSelected : [])
+            }
+        }
+        .bfhrInsetGroupedList()
+        .navigationTitle(Text(label))
+        .bfhrInlineTitle()
+    }
+}
+
+/// "Remove …" / "Delete application" at the end of a form: the danger tone on the row (not the
+/// system red, which only nearly passes contrast on the grouped background), wrapping at
+/// accessibility sizes.
+struct TrackerDestructiveRow: View {
+    private let title: LocalizedStringResource
+    private let action: () -> Void
+
+    init(_ title: LocalizedStringResource, action: @escaping () -> Void) {
+        self.title = title
+        self.action = action
+    }
+
+    var body: some View {
+        Button(role: .destructive, action: action) {
+            Text(title)
+                .font(.bfhr(.body))
+                .foregroundStyle(BFHRTone.danger.text)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, minHeight: BFHRHitTarget.minimum, alignment: .leading)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 }

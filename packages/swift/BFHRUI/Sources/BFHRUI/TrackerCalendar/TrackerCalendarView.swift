@@ -2,7 +2,7 @@ import BFHRCore
 import BFHRDesignTokens
 import SwiftUI
 
-/// Tracker › Calendar on iPhone (decisions.md D09, D37): a dated agenda, not a grid (Joi's day
+/// Tracker › Calendar on iPhone (decisions.md D09, D34): a dated agenda, not a grid (Joi's day
 /// agenda, Posh's date headers, Luma's Upcoming / Past). Interviews with their time, the user's
 /// reminders, suggested follow-ups and email deadlines, each with an icon and a label (never color
 /// alone). Rows push the Application detail; interviews offer Add to Calendar (.ics).

@@ -3,7 +3,7 @@ import Foundation
 import Observation
 import UserNotifications
 
-/// Local notifications for the Tracker's reminders and interview prep (decisions.md D36):
+/// Local notifications for the Tracker's reminders and interview prep (decisions.md D33):
 /// `UNUserNotificationCenter` calendar triggers, one request per reminder (`LocalReminder.id`),
 /// replaced as a whole whenever the data changes. Only this app's requests are touched (prefix
 /// `bfhr.`). Tapping a notification opens its `bruteforcehr://` link.

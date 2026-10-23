@@ -1,7 +1,7 @@
 import BFHRCore
 import Foundation
 
-// Tracker › Calendar on iPhone (decisions.md D09, D37): a dated agenda list, not a grid.
+// Tracker › Calendar on iPhone (decisions.md D09, D34): a dated agenda list, not a grid.
 // Interviews (timed), the user's reminders, suggested follow-ups (7 days after applying without
 // a reply) and deadlines from job emails, grouped by day, Upcoming or Past.
 

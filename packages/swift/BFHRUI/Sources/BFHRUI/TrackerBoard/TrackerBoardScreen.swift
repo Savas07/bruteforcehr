@@ -67,6 +67,17 @@ public struct TrackerBoardScreen: View {
             }
         }
         .toolbar {
+            // The title menu isn't visible under a large title, so the other view is one tap away
+            // here too: Calendar from the Pipeline, Pipeline from the Calendar.
+            ToolbarItem(placement: .bfhrLeading) {
+                let other: TrackerView = model.view == .pipeline ? .calendar : .pipeline
+                Button {
+                    model.view = other
+                } label: {
+                    Label { Text(TrackerBoardStrings.showView(other)) } icon: { Image(systemName: other.systemImage) }
+                }
+                .accessibilityIdentifier("tracker.switchView")
+            }
             if insights != nil {
                 ToolbarItem(placement: .bfhrTrailing) {
                     Button {
@@ -316,9 +327,11 @@ private struct FilterChipRow: View {
                 Image(systemName: "xmark.circle.fill")
                     .font(.bfhr(.body))
                     .foregroundStyle(BFHRColor.Fg.secondary)
-                    .frame(minWidth: BFHRHitTarget.minimum, minHeight: BFHRHitTarget.minimum)
+                    .frame(width: BFHRHitTarget.minimum, height: BFHRHitTarget.minimum)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+            .frame(width: BFHRHitTarget.minimum, height: BFHRHitTarget.minimum)
             .accessibilityLabel(Text(TrackerBoardStrings.clearFilter))
             .accessibilityIdentifier("tracker.clearFilter")
         }

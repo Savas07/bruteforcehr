@@ -3035,6 +3035,54 @@
           }
         }
       }
+    },
+    "tracker.view.showCalendar" : {
+      "comment" : "Toolbar button on the Pipeline.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kalender anzeigen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show Calendar"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Takvimi göster"
+          }
+        }
+      }
+    },
+    "tracker.view.showPipeline" : {
+      "comment" : "Toolbar button on the Calendar.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pipeline anzeigen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show Pipeline"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Süreci göster"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

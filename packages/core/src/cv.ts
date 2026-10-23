@@ -191,6 +191,23 @@ export const CvSectionKeySchema = z.union([
   z.string().regex(/^custom:[a-z0-9-]{1,40}$/),
 ]);
 
+/**
+ * Personal details some markets expect (DE/TR): each is an opt-in per CV variant, off by default
+ * (docs/design/decisions.md U6). Absent means both off. The photo itself is JSON Resume
+ * `basics.image` (a `users/{uid}/cv-photos/{fileId}` path); cv-render prints it only when
+ * `showPhoto` is on.
+ */
+export const CvPersonalDetailsSchema = z.object({
+  showPhoto: z.boolean(),
+  showDateOfBirth: z.boolean(),
+  /** `YYYY-MM-DD`; printed only when `showDateOfBirth` is on. */
+  dateOfBirth: z
+    .string()
+    .regex(/^[12]\d{3}-[01]\d-[0-3]\d$/, "Expected YYYY-MM-DD")
+    .optional(),
+});
+export type CvPersonalDetails = z.infer<typeof CvPersonalDetailsSchema>;
+
 export const CvMetaSchema = z.object({
   /** Template id from @bfhr/cv-render (M2). */
   template: z.string().min(1).max(60),
@@ -198,6 +215,7 @@ export const CvMetaSchema = z.object({
   /** Render order; sections not listed are hidden. */
   sectionOrder: z.array(CvSectionKeySchema).max(40),
   customSections: z.array(CvCustomSectionSchema).max(20),
+  personal: CvPersonalDetailsSchema.optional(),
   /** JSON Resume standard meta fields, kept for lossless JSON export/import. */
   canonical: shortText.optional(),
   version: shortText.optional(),

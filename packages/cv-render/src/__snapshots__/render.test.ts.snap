@@ -1,0 +1,496 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`renderCvHtml > classic: stable structure (snapshot) > classic-de 1`] = `"<!doctype html><html lang="de"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; font-src data:; img-src data:"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="generator" content="BruteForceHR cv-render 0.1.0"><title>Deniz Aksoy – Lebenslauf</title><style>…</style></head><body><main class="cv cv--classic" data-template="classic"><header class="cv-header" data-cv-path="/basics"><div class="cv-id"><h1 class="cv-name" data-cv-path="/basics/name">Deniz Aksoy</h1><p class="cv-label" data-cv-path="/basics/label">Frontend- &amp; Product-Engineer</p><p class="cv-contact"><span data-cv-path="/basics/location">Istanbul, Türkei</span><span class="cv-sep"> · </span><a href="mailto:deniz.aksoy@example.com" data-cv-path="/basics/email">deniz.aksoy@example.com</a><span class="cv-sep"> · </span><a href="tel:+905325550147" data-cv-path="/basics/phone">+90 532 555 01 47</a><span class="cv-sep"> · </span><a href="https://deniz.example.com" data-cv-path="/basics/url">deniz.example.com</a><span class="cv-sep"> · </span><a href="https://github.com/deniz-aksoy-example" data-cv-path="/basics/profiles/0/url">github.com/deniz-aksoy-example</a><span class="cv-sep"> · </span><a href="https://www.linkedin.com/in/deniz-aksoy-example" data-cv-path="/basics/profiles/1/url">linkedin.com/in/deniz-aksoy-example</a></p></div></header><section class="cv-section" data-cv-section="summary" data-cv-path="/basics/summary"><div class="cv-keep"><h2 class="cv-heading">PROFIL</h2><div class="cv-text" data-cv-path="/basics/summary"><p>Frontend-Engineer mit fünf Jahren Erfahrung in React und TypeScript und Schwerpunkt auf Designsystemen und Barrierefreiheit – passend zu Tannenbaums Plattform für den Mittelstand. Ich bringe Erfahrung mit B2B-Oberflächen, Lokalisierung und messbaren Performance-Zielen mit.</p></div></div></section><section class="cv-section" data-cv-section="work" data-cv-path="/work"><div class="cv-keep"><h2 class="cv-heading">BERUFSERFAHRUNG</h2><article class="cv-entry is-short" data-cv-path="/work/0"><div class="cv-entry-head"><h3 class="cv-entry-title" data-cv-path="/work/0/position">Frontend Engineer</h3><span class="cv-dates">März 2022 – heute</span></div><p class="cv-entry-sub"><span class="cv-entry-org" data-cv-path="/work/0/name">Pazarbox</span><span class="cv-sep"> · </span><span class="cv-entry-location" data-cv-path="/work/0/location">Istanbul, Türkei</span></p><p class="cv-entry-summary" data-cv-path="/work/0/summary">E-Commerce-Marktplatz mit 4 Mio. monatlichen Käufer:innen; Mitglied der Checkout- und Plattform-Squads.</p><ul class="cv-bullets"><li data-cv-path="/work/0/highlights/0">Neuaufbau des Designsystems geleitet (62 Komponenten, React + TypeScript, Storybook), von 7 Produktteams genutzt.</li><li data-cv-path="/work/0/highlights/1">Largest Contentful Paint im Checkout durch Code-Splitting und Bildbudgets von 3,9 s auf 1,8 s gesenkt.</li><li data-cv-path="/work/0/highlights/2">Visuelle Playwright-Tests eingeführt, die im ersten Quartal über 40 Regressionen vor dem Release fanden.</li><li data-cv-path="/work/0/highlights/3">Rechts-nach-links-Layout und arabische Lokalisierung für die Expansion in die Golfstaaten umgesetzt.</li></ul></article></div><article class="cv-entry is-short" data-cv-path="/work/1"><div class="cv-entry-head"><h3 class="cv-entry-title" data-cv-path="/work/1/position">Frontend Developer</h3><span class="cv-dates">Feb. 2020 – Feb. 2022</span></div><p class="cv-entry-sub"><span class="cv-entry-org" data-cv-path="/work/1/name">Kuzey Labs</span><span class="cv-sep"> · </span><span class="cv-entry-location" data-cv-path="/work/1/location">Istanbul, Türkei</span></p><p class="cv-entry-summary" data-cv-path="/work/1/summary">Produktstudio für Web- und Mobile-Apps von Fintech- und Logistikkunden.</p><ul class="cv-bullets"><li data-cv-path="/work/1/highlights/0">React-Native-Fahrer-App für einen Logistikkunden entwickelt, täglich von 3.500 Fahrer:innen genutzt.</li><li data-cv-path="/work/1/highlights/1">GraphQL-basiertes Portfolio-Dashboard für eine türkische Neobank in vier Monaten ausgeliefert.</li></ul></article></section><section class="cv-section" data-cv-section="skills" data-cv-path="/skills"><div class="cv-keep"><h2 class="cv-heading">KENNTNISSE</h2><div class="cv-lines"><p data-cv-path="/skills/0"><span class="cv-line-label" data-cv-path="/skills/0/name">Frontend:</span> <span data-cv-path="/skills/0/keywords">React, TypeScript, Next.js, Redux, Tailwind CSS, Vite</span></p><p data-cv-path="/skills/1"><span class="cv-line-label" data-cv-path="/skills/1/name">Qualität:</span> <span data-cv-path="/skills/1/keywords">Barrierefreiheit (WCAG 2.2), Web-Performance, Jest, Playwright, Storybook</span></p><p data-cv-path="/skills/2"><span class="cv-line-label" data-cv-path="/skills/2/name">Produkt:</span> <span data-cv-path="/skills/2/keywords">Designsysteme, Figma, A/B-Tests, Lokalisierung</span></p></div></div></section><section class="cv-section" data-cv-section="education" data-cv-path="/education"><div class="cv-keep"><h2 class="cv-heading">AUSBILDUNG</h2><article class="cv-entry is-short" data-cv-path="/education/0"><div class="cv-entry-head"><h3 class="cv-entry-title" data-cv-path="/education/0">B.Sc., Technische Informatik</h3><span class="cv-dates">Sept. 2015 – Juni 2019</span></div><p class="cv-entry-sub"><span class="cv-entry-org" data-cv-path="/education/0/institution">Istanbul Technical University</span></p></article></div></section><section class="cv-section" data-cv-section="languages" data-cv-path="/languages"><div class="cv-keep"><h2 class="cv-heading">SPRACHEN</h2><div class="cv-lines"><p data-cv-path="/languages/0"><span class="cv-line-label" data-cv-path="/languages/0/language">Türkisch:</span> <span data-cv-path="/languages/0/fluency">Muttersprache</span></p><p data-cv-path="/languages/1"><span class="cv-line-label" data-cv-path="/languages/1/language">Englisch:</span> <span data-cv-path="/languages/1/fluency">Verhandlungssicher (C1)</span></p><p data-cv-path="/languages/2"><span class="cv-line-label" data-cv-path="/languages/2/language">Deutsch:</span> <span data-cv-path="/languages/2/fluency">Grundkenntnisse (A2)</span></p></div></div></section><section class="cv-section" data-cv-section="custom:vortraege" data-cv-path="/meta/customSections/0"><div class="cv-keep"><h2 class="cv-heading">VORTRÄGE</h2><article class="cv-entry is-short" data-cv-path="/meta/customSections/0/items/0"><div class="cv-entry-head"><h3 class="cv-entry-title" data-cv-path="/meta/customSections/0/items/0/title">Designsysteme, die sieben Teams überstehen</h3><span class="cv-dates">Apr. 2025</span></div><p class="cv-entry-sub"><span class="cv-entry-org" data-cv-path="/meta/customSections/0/items/0/subtitle">Frontend Istanbul Meetup</span></p></article></div></section></main></body></html>"`;
+
+exports[`renderCvHtml > classic: stable structure (snapshot) > classic-de-outline 1`] = `
+[
+  {
+    "entries": [],
+    "heading": "PROFIL",
+    "key": "summary",
+  },
+  {
+    "entries": [
+      "Frontend Engineer",
+      "Frontend Developer",
+    ],
+    "heading": "BERUFSERFAHRUNG",
+    "key": "work",
+  },
+  {
+    "entries": [
+      "Frontend",
+      "Qualität",
+      "Produkt",
+    ],
+    "heading": "KENNTNISSE",
+    "key": "skills",
+  },
+  {
+    "entries": [
+      "B.Sc., Technische Informatik",
+    ],
+    "heading": "AUSBILDUNG",
+    "key": "education",
+  },
+  {
+    "entries": [
+      "Türkisch",
+      "Englisch",
+      "Deutsch",
+    ],
+    "heading": "SPRACHEN",
+    "key": "languages",
+  },
+  {
+    "entries": [
+      "Designsysteme, die sieben Teams überstehen",
+    ],
+    "heading": "VORTRÄGE",
+    "key": "custom:vortraege",
+  },
+]
+`;
+
+exports[`renderCvHtml > classic: stable structure (snapshot) > classic-en 1`] = `"<!doctype html><html lang="en"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; font-src data:; img-src data:"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="generator" content="BruteForceHR cv-render 0.1.0"><title>Deniz Aksoy – CV</title><style>…</style></head><body><main class="cv cv--classic" data-template="classic"><header class="cv-header" data-cv-path="/basics"><div class="cv-id"><h1 class="cv-name" data-cv-path="/basics/name">Deniz Aksoy</h1><p class="cv-label" data-cv-path="/basics/label">Frontend &amp; Product Engineer</p><p class="cv-contact"><span data-cv-path="/basics/location">Istanbul, Türkiye</span><span class="cv-sep"> · </span><a href="mailto:deniz.aksoy@example.com" data-cv-path="/basics/email">deniz.aksoy@example.com</a><span class="cv-sep"> · </span><a href="tel:+905325550147" data-cv-path="/basics/phone">+90 532 555 01 47</a><span class="cv-sep"> · </span><a href="https://deniz.example.com" data-cv-path="/basics/url">deniz.example.com</a><span class="cv-sep"> · </span><a href="https://github.com/deniz-aksoy-example" data-cv-path="/basics/profiles/0/url">github.com/deniz-aksoy-example</a><span class="cv-sep"> · </span><a href="https://www.linkedin.com/in/deniz-aksoy-example" data-cv-path="/basics/profiles/1/url">linkedin.com/in/deniz-aksoy-example</a></p></div></header><section class="cv-section" data-cv-section="summary" data-cv-path="/basics/summary"><div class="cv-keep"><h2 class="cv-heading">SUMMARY</h2><div class="cv-text" data-cv-path="/basics/summary"><p>Frontend engineer with five years of experience building fast, accessible product UIs in React and TypeScript. I led the design-system rebuild at Pazarbox, care about performance budgets and localization, and like working closely with designers and product managers on measurable outcomes.</p></div></div></section><section class="cv-section" data-cv-section="work" data-cv-path="/work"><div class="cv-keep"><h2 class="cv-heading">EXPERIENCE</h2><article class="cv-entry is-short" data-cv-path="/work/0"><div class="cv-entry-head"><h3 class="cv-entry-title" data-cv-path="/work/0/position">Frontend Engineer</h3><span class="cv-dates">Mar 2022 – Present</span></div><p class="cv-entry-sub"><span class="cv-entry-org" data-cv-path="/work/0/name">Pazarbox</span><span class="cv-sep"> · </span><span class="cv-entry-location" data-cv-path="/work/0/location">Istanbul, Türkiye</span></p><p class="cv-entry-summary" data-cv-path="/work/0/summary">E-commerce marketplace with 4M monthly shoppers; member of the checkout and platform squads.</p><ul class="cv-bullets"><li data-cv-path="/work/0/highlights/0">Led the rebuild of the design system (62 components, React + TypeScript, Storybook), adopted by 7 product teams.</li><li data-cv-path="/work/0/highlights/1">Cut checkout Largest Contentful Paint from 3.9 s to 1.8 s through code splitting and image budgets.</li><li data-cv-path="/work/0/highlights/2">Introduced Playwright visual tests that caught 40+ regressions before release in the first quarter.</li><li data-cv-path="/work/0/highlights/3">Shipped right-to-left and Arabic localization for the Gulf expansion together with the i18n guild.</li></ul></article></div><article class="cv-entry is-short" data-cv-path="/work/1"><div class="cv-entry-head"><h3 class="cv-entry-title" data-cv-path="/work/1/position">Frontend Developer</h3><span class="cv-dates">Feb 2020 – Feb 2022</span></div><p class="cv-entry-sub"><span class="cv-entry-org" data-cv-path="/work/1/name">Kuzey Labs</span><span class="cv-sep"> · </span><span class="cv-entry-location" data-cv-path="/work/1/location">Istanbul, Türkiye</span></p><p class="cv-entry-summary" data-cv-path="/work/1/summary">Product studio building web and mobile apps for fintech and logistics clients.</p><ul class="cv-bullets"><li data-cv-path="/work/1/highlights/0">Built a React Native driver app for a logistics client, used by 3,500 drivers daily.</li><li data-cv-path="/work/1/highlights/1">Delivered a GraphQL-backed portfolio dashboard for a Turkish neobank in four months.</li></ul></article><article class="cv-entry is-short" data-cv-path="/work/2"><div class="cv-entry-head"><h3 class="cv-entry-title" data-cv-path="/work/2/position">Junior Web Developer</h3><span class="cv-dates">Jul 2019 – Jan 2020</span></div><p class="cv-entry-sub"><span class="cv-entry-org" data-cv-path="/work/2/name">Mavi Yazılım</span><span class="cv-sep"> · </span><span class="cv-entry-location" data-cv-path="/work/2/location">Istanbul, Türkiye</span></p><ul class="cv-bullets"><li data-cv-path="/work/2/highlights/0">Maintained customer-facing booking forms and raised their Lighthouse accessibility score to 98.</li></ul></article></section><section class="cv-section" data-cv-section="projects" data-cv-path="/projects"><div class="cv-keep"><h2 class="cv-heading">PROJECTS</h2><article class="cv-entry is-short" data-cv-path="/projects/0"><div class="cv-entry-head"><h3 class="cv-entry-title" data-cv-path="/projects/0/name">tiny-i18n-lint</h3><span class="cv-dates">Jan 2024 – Present</span></div><p class="cv-entry-sub"><span class="cv-entry-org" data-cv-path="/projects/0">Author · Maintainer</span><span class="cv-sep"> · </span><span class="cv-link"><a href="https://github.com/deniz-aksoy-example/tiny-i18n-lint" data-cv-path="/projects/0/url">github.com/deniz-aksoy-example/tiny-i18n-lint</a></span></p><p class="cv-entry-summary" data-cv-path="/projects/0/description">ESLint plugin that flags hard-coded UI strings and missing translation keys.</p><ul class="cv-bullets"><li data-cv-path="/projects/0/highlights/0">1.2k weekly npm downloads</li><li data-cv-path="/projects/0/highlights/1">Used by two Istanbul startups in CI</li></ul></article></div></section><section class="cv-section" data-cv-section="skills" data-cv-path="/skills"><div class="cv-keep"><h2 class="cv-heading">SKILLS</h2><div class="cv-lines"><p data-cv-path="/skills/0"><span class="cv-line-label" data-cv-path="/skills/0/name">Frontend:</span> <span data-cv-path="/skills/0/keywords">React, TypeScript, Next.js, Redux, Tailwind CSS, Vite</span></p><p data-cv-path="/skills/1"><span class="cv-line-label" data-cv-path="/skills/1/name">Quality:</span> <span data-cv-path="/skills/1/keywords">Accessibility (WCAG 2.2), Web performance, Jest, Playwright, Storybook</span></p><p data-cv-path="/skills/2"><span class="cv-line-label" data-cv-path="/skills/2/name">Product:</span> <span data-cv-path="/skills/2/keywords">Design systems, Figma, A/B testing, Localization</span></p><p data-cv-path="/skills/3"><span class="cv-line-label" data-cv-path="/skills/3/name">Also:</span> <span data-cv-path="/skills/3/keywords">React Native, Node.js, GraphQL</span></p></div></div></section><section class="cv-section" data-cv-section="education" data-cv-path="/education"><div class="cv-keep"><h2 class="cv-heading">EDUCATION</h2><article class="cv-entry is-short" data-cv-path="/education/0"><div class="cv-entry-head"><h3 class="cv-entry-title" data-cv-path="/education/0">BSc, Computer Engineering</h3><span class="cv-dates">Sep 2015 – Jun 2019</span></div><p class="cv-entry-sub"><span class="cv-entry-org" data-cv-path="/education/0/institution">Istanbul Technical University</span></p></article></div></section><section class="cv-section" data-cv-section="languages" data-cv-path="/languages"><div class="cv-keep"><h2 class="cv-heading">LANGUAGES</h2><div class="cv-lines"><p data-cv-path="/languages/0"><span class="cv-line-label" data-cv-path="/languages/0/language">Turkish:</span> <span data-cv-path="/languages/0/fluency">Native</span></p><p data-cv-path="/languages/1"><span class="cv-line-label" data-cv-path="/languages/1/language">English:</span> <span data-cv-path="/languages/1/fluency">Fluent (C1)</span></p><p data-cv-path="/languages/2"><span class="cv-line-label" data-cv-path="/languages/2/language">German:</span> <span data-cv-path="/languages/2/fluency">Elementary (A2)</span></p></div></div></section><section class="cv-section" data-cv-section="custom:talks" data-cv-path="/meta/customSections/0"><div class="cv-keep"><h2 class="cv-heading">TALKS</h2><article class="cv-entry is-short" data-cv-path="/meta/customSections/0/items/0"><div class="cv-entry-head"><h3 class="cv-entry-title" data-cv-path="/meta/customSections/0/items/0/title">Design systems that survive seven teams</h3><span class="cv-dates">Apr 2025</span></div><p class="cv-entry-sub"><span class="cv-entry-org" data-cv-path="/meta/customSections/0/items/0/subtitle">Frontend Istanbul meetup</span><span class="cv-sep"> · </span><span class="cv-link"><a href="https://deniz.example.com/talks/design-systems" data-cv-path="/meta/customSections/0/items/0/url">deniz.example.com/talks/design-systems</a></span></p></article></div></section></main></body></html>"`;
+
+exports[`renderCvHtml > classic: stable structure (snapshot) > classic-en-outline 1`] = `
+[
+  {
+    "entries": [],
+    "heading": "SUMMARY",
+    "key": "summary",
+  },
+  {
+    "entries": [
+      "Frontend Engineer",
+      "Frontend Developer",
+      "Junior Web Developer",
+    ],
+    "heading": "EXPERIENCE",
+    "key": "work",
+  },
+  {
+    "entries": [
+      "tiny-i18n-lint",
+    ],
+    "heading": "PROJECTS",
+    "key": "projects",
+  },
+  {
+    "entries": [
+      "Frontend",
+      "Quality",
+      "Product",
+      "Also",
+    ],
+    "heading": "SKILLS",
+    "key": "skills",
+  },
+  {
+    "entries": [
+      "BSc, Computer Engineering",
+    ],
+    "heading": "EDUCATION",
+    "key": "education",
+  },
+  {
+    "entries": [
+      "Turkish",
+      "English",
+      "German",
+    ],
+    "heading": "LANGUAGES",
+    "key": "languages",
+  },
+  {
+    "entries": [
+      "Design systems that survive seven teams",
+    ],
+    "heading": "TALKS",
+    "key": "custom:talks",
+  },
+]
+`;
+
+exports[`renderCvHtml > classic: stable structure (snapshot) > classic-tr 1`] = `"<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; font-src data:; img-src data:"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="generator" content="BruteForceHR cv-render 0.1.0"><title>Deniz Aksoy – Özgeçmiş</title><style>…</style></head><body><main class="cv cv--classic" data-template="classic"><header class="cv-header" data-cv-path="/basics"><div class="cv-id"><h1 class="cv-name" data-cv-path="/basics/name">Deniz Aksoy</h1><p class="cv-label" data-cv-path="/basics/label">Frontend ve Ürün Mühendisi</p><p class="cv-contact"><span data-cv-path="/basics/location">İstanbul, Türkiye</span><span class="cv-sep"> · </span><a href="mailto:deniz.aksoy@example.com" data-cv-path="/basics/email">deniz.aksoy@example.com</a><span class="cv-sep"> · </span><a href="tel:+905325550147" data-cv-path="/basics/phone">+90 532 555 01 47</a><span class="cv-sep"> · </span><a href="https://deniz.example.com" data-cv-path="/basics/url">deniz.example.com</a><span class="cv-sep"> · </span><a href="https://github.com/deniz-aksoy-example" data-cv-path="/basics/profiles/0/url">github.com/deniz-aksoy-example</a></p></div></header><section class="cv-section" data-cv-section="summary" data-cv-path="/basics/summary"><div class="cv-keep"><h2 class="cv-heading">ÖZET</h2><div class="cv-text" data-cv-path="/basics/summary"><p>React ve TypeScript ile hızlı, erişilebilir ürün arayüzleri geliştirmede beş yıllık deneyime sahip frontend mühendisiyim. Pazarbox&#39;ta tasarım sisteminin yeniden inşasına liderlik ettim; performans bütçeleri, yerelleştirme ve tasarım ile ürün ekipleriyle yakın çalışma benim için önemli.</p></div></div></section><section class="cv-section" data-cv-section="work" data-cv-path="/work"><div class="cv-keep"><h2 class="cv-heading">DENEYİM</h2><article class="cv-entry is-short" data-cv-path="/work/0"><div class="cv-entry-head"><h3 class="cv-entry-title" data-cv-path="/work/0/position">Frontend Mühendisi</h3><span class="cv-dates">Mar 2022 – Günümüz</span></div><p class="cv-entry-sub"><span class="cv-entry-org" data-cv-path="/work/0/name">Pazarbox</span><span class="cv-sep"> · </span><span class="cv-entry-location" data-cv-path="/work/0/location">İstanbul, Türkiye</span></p><p class="cv-entry-summary" data-cv-path="/work/0/summary">Aylık 4 milyon alışverişçiye sahip e-ticaret pazaryeri; ödeme ve platform ekiplerinin üyesi.</p><ul class="cv-bullets"><li data-cv-path="/work/0/highlights/0">Tasarım sisteminin yeniden inşasına liderlik ettim (62 bileşen, React + TypeScript, Storybook); 7 ürün ekibi kullanıyor.</li><li data-cv-path="/work/0/highlights/1">Kod bölme ve görsel bütçeleriyle ödeme sayfasında Largest Contentful Paint süresini 3,9 sn&#39;den 1,8 sn&#39;ye düşürdüm.</li><li data-cv-path="/work/0/highlights/2">İlk çeyrekte yayından önce 40&#39;tan fazla gerilemeyi yakalayan görsel Playwright testlerini başlattım.</li></ul></article></div><article class="cv-entry is-short" data-cv-path="/work/1"><div class="cv-entry-head"><h3 class="cv-entry-title" data-cv-path="/work/1/position">Frontend Geliştirici</h3><span class="cv-dates">Şub 2020 – Şub 2022</span></div><p class="cv-entry-sub"><span class="cv-entry-org" data-cv-path="/work/1/name">Kuzey Labs</span><span class="cv-sep"> · </span><span class="cv-entry-location" data-cv-path="/work/1/location">İstanbul, Türkiye</span></p><ul class="cv-bullets"><li data-cv-path="/work/1/highlights/0">Bir lojistik müşterisi için günde 3.500 sürücünün kullandığı React Native sürücü uygulamasını geliştirdim.</li><li data-cv-path="/work/1/highlights/1">Bir dijital banka için GraphQL tabanlı portföy panelini dört ayda teslim ettim.</li></ul></article></section><section class="cv-section" data-cv-section="skills" data-cv-path="/skills"><div class="cv-keep"><h2 class="cv-heading">YETENEKLER</h2><div class="cv-lines"><p data-cv-path="/skills/0"><span class="cv-line-label" data-cv-path="/skills/0/name">Frontend:</span> <span data-cv-path="/skills/0/keywords">React, TypeScript, Next.js, Redux, Tailwind CSS, Vite</span></p><p data-cv-path="/skills/1"><span class="cv-line-label" data-cv-path="/skills/1/name">Kalite:</span> <span data-cv-path="/skills/1/keywords">Erişilebilirlik (WCAG 2.2), Web performansı, Jest, Playwright</span></p><p data-cv-path="/skills/2"><span class="cv-line-label" data-cv-path="/skills/2/name">Ürün:</span> <span data-cv-path="/skills/2/keywords">Tasarım sistemleri, Figma, A/B testleri, Yerelleştirme</span></p></div></div></section><section class="cv-section" data-cv-section="education" data-cv-path="/education"><div class="cv-keep"><h2 class="cv-heading">EĞİTİM</h2><article class="cv-entry is-short" data-cv-path="/education/0"><div class="cv-entry-head"><h3 class="cv-entry-title" data-cv-path="/education/0">Lisans, Bilgisayar Mühendisliği</h3><span class="cv-dates">Eyl 2015 – Haz 2019</span></div><p class="cv-entry-sub"><span class="cv-entry-org" data-cv-path="/education/0/institution">İstanbul Teknik Üniversitesi</span></p></article></div></section><section class="cv-section" data-cv-section="languages" data-cv-path="/languages"><div class="cv-keep"><h2 class="cv-heading">DİLLER</h2><div class="cv-lines"><p data-cv-path="/languages/0"><span class="cv-line-label" data-cv-path="/languages/0/language">Türkçe:</span> <span data-cv-path="/languages/0/fluency">Ana dil</span></p><p data-cv-path="/languages/1"><span class="cv-line-label" data-cv-path="/languages/1/language">İngilizce:</span> <span data-cv-path="/languages/1/fluency">İleri (C1)</span></p><p data-cv-path="/languages/2"><span class="cv-line-label" data-cv-path="/languages/2/language">Almanca:</span> <span data-cv-path="/languages/2/fluency">Başlangıç (A2)</span></p></div></div></section><section class="cv-section" data-cv-section="interests" data-cv-path="/interests"><div class="cv-keep"><h2 class="cv-heading">İLGİ ALANLARI</h2><div class="cv-lines"><p data-cv-path="/interests/0"><span class="cv-line-label" data-cv-path="/interests/0/name">İlgi:</span> <span data-cv-path="/interests/0/keywords">Işık fotoğrafçılığı, Dağcılık</span></p></div></div></section></main></body></html>"`;
+
+exports[`renderCvHtml > classic: stable structure (snapshot) > classic-tr-outline 1`] = `
+[
+  {
+    "entries": [],
+    "heading": "ÖZET",
+    "key": "summary",
+  },
+  {
+    "entries": [
+      "Frontend Mühendisi",
+      "Frontend Geliştirici",
+    ],
+    "heading": "DENEYİM",
+    "key": "work",
+  },
+  {
+    "entries": [
+      "Frontend",
+      "Kalite",
+      "Ürün",
+    ],
+    "heading": "YETENEKLER",
+    "key": "skills",
+  },
+  {
+    "entries": [
+      "Lisans, Bilgisayar Mühendisliği",
+    ],
+    "heading": "EĞİTİM",
+    "key": "education",
+  },
+  {
+    "entries": [
+      "Türkçe",
+      "İngilizce",
+      "Almanca",
+    ],
+    "heading": "DİLLER",
+    "key": "languages",
+  },
+  {
+    "entries": [
+      "İlgi",
+    ],
+    "heading": "İLGİ ALANLARI",
+    "key": "interests",
+  },
+]
+`;
+
+exports[`renderCvHtml > compact: stable structure (snapshot) > compact-de 1`] = `"<!doctype html><html lang="de"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; font-src data:; img-src data:"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="generator" content="BruteForceHR cv-render 0.1.0"><title>Deniz Aksoy – Lebenslauf</title><style>…</style></head><body><main class="cv cv--compact" data-template="compact"><header class="cv-header" data-cv-path="/basics"><div class="cv-id"><h1 class="cv-name" data-cv-path="/basics/name">Deniz Aksoy</h1><p class="cv-label" data-cv-path="/basics/label">Frontend- &amp; Product-Engineer</p><p class="cv-contact"><span data-cv-path="/basics/location">Istanbul, Türkei</span><span class="cv-sep"> · </span><a href="mailto:deniz.aksoy@example.com" data-cv-path="/basics/email">deniz.aksoy@example.com</a><span class="cv-sep"> · </span><a href="tel:+905325550147" data-cv-path="/basics/phone">+90 532 555 01 47</a><span class="cv-sep"> · </span><a href="https://deniz.example.com" data-cv-path="/basics/url">deniz.example.com</a><span class="cv-sep"> · </span><a href="https://github.com/deniz-aksoy-example" data-cv-path="/basics/profiles/0/url">github.com/deniz-aksoy-example</a><span class="cv-sep"> · </span><a href="https://www.linkedin.com/in/deniz-aksoy-example" data-cv-path="/basics/profiles/1/url">linkedin.com/in/deniz-aksoy-example</a></p></div></header><section class="cv-section" data-cv-section="summary" data-cv-path="/basics/summary"><div class="cv-keep"><h2 class="cv-heading">PROFIL</h2><div class="cv-text" data-cv-path="/basics/summary"><p>Frontend-Engineer mit fünf Jahren Erfahrung in React und TypeScript und Schwerpunkt auf Designsystemen und Barrierefreiheit – passend zu Tannenbaums Plattform für den Mittelstand. Ich bringe Erfahrung mit B2B-Oberflächen, Lokalisierung und messbaren Performance-Zielen mit.</p></div></div></section><section class="cv-section" data-cv-section="work" data-cv-path="/work"><div class="cv-keep"><h2 class="cv-heading">BERUFSERFAHRUNG</h2><article class="cv-entry is-short" data-cv-path="/work/0"><div class="cv-entry-head"><h3 class="cv-entry-title"><span class="cv-entry-role" data-cv-path="/work/0/position">Frontend Engineer</span><span class="cv-entry-org">, </span><span class="cv-entry-org" data-cv-path="/work/0/name">Pazarbox</span></h3><span class="cv-dates">März 2022 – heute</span></div><p class="cv-entry-sub"><span class="cv-entry-location" data-cv-path="/work/0/location">Istanbul, Türkei</span></p><p class="cv-entry-summary" data-cv-path="/work/0/summary">E-Commerce-Marktplatz mit 4 Mio. monatlichen Käufer:innen; Mitglied der Checkout- und Plattform-Squads.</p><ul class="cv-bullets"><li data-cv-path="/work/0/highlights/0">Neuaufbau des Designsystems geleitet (62 Komponenten, React + TypeScript, Storybook), von 7 Produktteams genutzt.</li><li data-cv-path="/work/0/highlights/1">Largest Contentful Paint im Checkout durch Code-Splitting und Bildbudgets von 3,9 s auf 1,8 s gesenkt.</li><li data-cv-path="/work/0/highlights/2">Visuelle Playwright-Tests eingeführt, die im ersten Quartal über 40 Regressionen vor dem Release fanden.</li><li data-cv-path="/work/0/highlights/3">Rechts-nach-links-Layout und arabische Lokalisierung für die Expansion in die Golfstaaten umgesetzt.</li></ul></article></div><article class="cv-entry is-short" data-cv-path="/work/1"><div class="cv-entry-head"><h3 class="cv-entry-title"><span class="cv-entry-role" data-cv-path="/work/1/position">Frontend Developer</span><span class="cv-entry-org">, </span><span class="cv-entry-org" data-cv-path="/work/1/name">Kuzey Labs</span></h3><span class="cv-dates">Feb. 2020 – Feb. 2022</span></div><p class="cv-entry-sub"><span class="cv-entry-location" data-cv-path="/work/1/location">Istanbul, Türkei</span></p><p class="cv-entry-summary" data-cv-path="/work/1/summary">Produktstudio für Web- und Mobile-Apps von Fintech- und Logistikkunden.</p><ul class="cv-bullets"><li data-cv-path="/work/1/highlights/0">React-Native-Fahrer-App für einen Logistikkunden entwickelt, täglich von 3.500 Fahrer:innen genutzt.</li><li data-cv-path="/work/1/highlights/1">GraphQL-basiertes Portfolio-Dashboard für eine türkische Neobank in vier Monaten ausgeliefert.</li></ul></article></section><section class="cv-section" data-cv-section="skills" data-cv-path="/skills"><div class="cv-keep"><h2 class="cv-heading">KENNTNISSE</h2><div class="cv-lines"><p data-cv-path="/skills/0"><span class="cv-line-label" data-cv-path="/skills/0/name">Frontend:</span> <span data-cv-path="/skills/0/keywords">React, TypeScript, Next.js, Redux, Tailwind CSS, Vite</span></p><p data-cv-path="/skills/1"><span class="cv-line-label" data-cv-path="/skills/1/name">Qualität:</span> <span data-cv-path="/skills/1/keywords">Barrierefreiheit (WCAG 2.2), Web-Performance, Jest, Playwright, Storybook</span></p><p data-cv-path="/skills/2"><span class="cv-line-label" data-cv-path="/skills/2/name">Produkt:</span> <span data-cv-path="/skills/2/keywords">Designsysteme, Figma, A/B-Tests, Lokalisierung</span></p></div></div></section><section class="cv-section" data-cv-section="education" data-cv-path="/education"><div class="cv-keep"><h2 class="cv-heading">AUSBILDUNG</h2><article class="cv-entry is-short" data-cv-path="/education/0"><div class="cv-entry-head"><h3 class="cv-entry-title"><span class="cv-entry-role" data-cv-path="/education/0">B.Sc., Technische Informatik</span><span class="cv-entry-org">, </span><span class="cv-entry-org" data-cv-path="/education/0/institution">Istanbul Technical University</span></h3><span class="cv-dates">Sept. 2015 – Juni 2019</span></div></article></div></section><section class="cv-section" data-cv-section="languages" data-cv-path="/languages"><div class="cv-keep"><h2 class="cv-heading">SPRACHEN</h2><div class="cv-lines"><p data-cv-path="/languages/0"><span class="cv-line-label" data-cv-path="/languages/0/language">Türkisch:</span> <span data-cv-path="/languages/0/fluency">Muttersprache</span></p><p data-cv-path="/languages/1"><span class="cv-line-label" data-cv-path="/languages/1/language">Englisch:</span> <span data-cv-path="/languages/1/fluency">Verhandlungssicher (C1)</span></p><p data-cv-path="/languages/2"><span class="cv-line-label" data-cv-path="/languages/2/language">Deutsch:</span> <span data-cv-path="/languages/2/fluency">Grundkenntnisse (A2)</span></p></div></div></section><section class="cv-section" data-cv-section="custom:vortraege" data-cv-path="/meta/customSections/0"><div class="cv-keep"><h2 class="cv-heading">VORTRÄGE</h2><article class="cv-entry is-short" data-cv-path="/meta/customSections/0/items/0"><div class="cv-entry-head"><h3 class="cv-entry-title"><span class="cv-entry-role" data-cv-path="/meta/customSections/0/items/0/title">Designsysteme, die sieben Teams überstehen</span><span class="cv-entry-org">, </span><span class="cv-entry-org" data-cv-path="/meta/customSections/0/items/0/subtitle">Frontend Istanbul Meetup</span></h3><span class="cv-dates">Apr. 2025</span></div></article></div></section></main></body></html>"`;
+
+exports[`renderCvHtml > compact: stable structure (snapshot) > compact-de-outline 1`] = `
+[
+  {
+    "entries": [],
+    "heading": "PROFIL",
+    "key": "summary",
+  },
+  {
+    "entries": [
+      "Frontend Engineer",
+      "Frontend Developer",
+    ],
+    "heading": "BERUFSERFAHRUNG",
+    "key": "work",
+  },
+  {
+    "entries": [
+      "Frontend",
+      "Qualität",
+      "Produkt",
+    ],
+    "heading": "KENNTNISSE",
+    "key": "skills",
+  },
+  {
+    "entries": [
+      "B.Sc., Technische Informatik",
+    ],
+    "heading": "AUSBILDUNG",
+    "key": "education",
+  },
+  {
+    "entries": [
+      "Türkisch",
+      "Englisch",
+      "Deutsch",
+    ],
+    "heading": "SPRACHEN",
+    "key": "languages",
+  },
+  {
+    "entries": [
+      "Designsysteme, die sieben Teams überstehen",
+    ],
+    "heading": "VORTRÄGE",
+    "key": "custom:vortraege",
+  },
+]
+`;
+
+exports[`renderCvHtml > compact: stable structure (snapshot) > compact-en 1`] = `"<!doctype html><html lang="en"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; font-src data:; img-src data:"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="generator" content="BruteForceHR cv-render 0.1.0"><title>Deniz Aksoy – CV</title><style>…</style></head><body><main class="cv cv--compact" data-template="compact"><header class="cv-header" data-cv-path="/basics"><div class="cv-id"><h1 class="cv-name" data-cv-path="/basics/name">Deniz Aksoy</h1><p class="cv-label" data-cv-path="/basics/label">Frontend &amp; Product Engineer</p><p class="cv-contact"><span data-cv-path="/basics/location">Istanbul, Türkiye</span><span class="cv-sep"> · </span><a href="mailto:deniz.aksoy@example.com" data-cv-path="/basics/email">deniz.aksoy@example.com</a><span class="cv-sep"> · </span><a href="tel:+905325550147" data-cv-path="/basics/phone">+90 532 555 01 47</a><span class="cv-sep"> · </span><a href="https://deniz.example.com" data-cv-path="/basics/url">deniz.example.com</a><span class="cv-sep"> · </span><a href="https://github.com/deniz-aksoy-example" data-cv-path="/basics/profiles/0/url">github.com/deniz-aksoy-example</a><span class="cv-sep"> · </span><a href="https://www.linkedin.com/in/deniz-aksoy-example" data-cv-path="/basics/profiles/1/url">linkedin.com/in/deniz-aksoy-example</a></p></div></header><section class="cv-section" data-cv-section="summary" data-cv-path="/basics/summary"><div class="cv-keep"><h2 class="cv-heading">SUMMARY</h2><div class="cv-text" data-cv-path="/basics/summary"><p>Frontend engineer with five years of experience building fast, accessible product UIs in React and TypeScript. I led the design-system rebuild at Pazarbox, care about performance budgets and localization, and like working closely with designers and product managers on measurable outcomes.</p></div></div></section><section class="cv-section" data-cv-section="work" data-cv-path="/work"><div class="cv-keep"><h2 class="cv-heading">EXPERIENCE</h2><article class="cv-entry is-short" data-cv-path="/work/0"><div class="cv-entry-head"><h3 class="cv-entry-title"><span class="cv-entry-role" data-cv-path="/work/0/position">Frontend Engineer</span><span class="cv-entry-org">, </span><span class="cv-entry-org" data-cv-path="/work/0/name">Pazarbox</span></h3><span class="cv-dates">Mar 2022 – Present</span></div><p class="cv-entry-sub"><span class="cv-entry-location" data-cv-path="/work/0/location">Istanbul, Türkiye</span></p><p class="cv-entry-summary" data-cv-path="/work/0/summary">E-commerce marketplace with 4M monthly shoppers; member of the checkout and platform squads.</p><ul class="cv-bullets"><li data-cv-path="/work/0/highlights/0">Led the rebuild of the design system (62 components, React + TypeScript, Storybook), adopted by 7 product teams.</li><li data-cv-path="/work/0/highlights/1">Cut checkout Largest Contentful Paint from 3.9 s to 1.8 s through code splitting and image budgets.</li><li data-cv-path="/work/0/highlights/2">Introduced Playwright visual tests that caught 40+ regressions before release in the first quarter.</li><li data-cv-path="/work/0/highlights/3">Shipped right-to-left and Arabic localization for the Gulf expansion together with the i18n guild.</li></ul></article></div><article class="cv-entry is-short" data-cv-path="/work/1"><div class="cv-entry-head"><h3 class="cv-entry-title"><span class="cv-entry-role" data-cv-path="/work/1/position">Frontend Developer</span><span class="cv-entry-org">, </span><span class="cv-entry-org" data-cv-path="/work/1/name">Kuzey Labs</span></h3><span class="cv-dates">Feb 2020 – Feb 2022</span></div><p class="cv-entry-sub"><span class="cv-entry-location" data-cv-path="/work/1/location">Istanbul, Türkiye</span></p><p class="cv-entry-summary" data-cv-path="/work/1/summary">Product studio building web and mobile apps for fintech and logistics clients.</p><ul class="cv-bullets"><li data-cv-path="/work/1/highlights/0">Built a React Native driver app for a logistics client, used by 3,500 drivers daily.</li><li data-cv-path="/work/1/highlights/1">Delivered a GraphQL-backed portfolio dashboard for a Turkish neobank in four months.</li></ul></article><article class="cv-entry is-short" data-cv-path="/work/2"><div class="cv-entry-head"><h3 class="cv-entry-title"><span class="cv-entry-role" data-cv-path="/work/2/position">Junior Web Developer</span><span class="cv-entry-org">, </span><span class="cv-entry-org" data-cv-path="/work/2/name">Mavi Yazılım</span></h3><span class="cv-dates">Jul 2019 – Jan 2020</span></div><p class="cv-entry-sub"><span class="cv-entry-location" data-cv-path="/work/2/location">Istanbul, Türkiye</span></p><ul class="cv-bullets"><li data-cv-path="/work/2/highlights/0">Maintained customer-facing booking forms and raised their Lighthouse accessibility score to 98.</li></ul></article></section><section class="cv-section" data-cv-section="projects" data-cv-path="/projects"><div class="cv-keep"><h2 class="cv-heading">PROJECTS</h2><article class="cv-entry is-short" data-cv-path="/projects/0"><div class="cv-entry-head"><h3 class="cv-entry-title"><span class="cv-entry-role" data-cv-path="/projects/0/name">tiny-i18n-lint</span><span class="cv-entry-org">, </span><span class="cv-entry-org" data-cv-path="/projects/0">Author · Maintainer</span></h3><span class="cv-dates">Jan 2024 – Present</span></div><p class="cv-entry-sub"><span class="cv-link"><a href="https://github.com/deniz-aksoy-example/tiny-i18n-lint" data-cv-path="/projects/0/url">github.com/deniz-aksoy-example/tiny-i18n-lint</a></span></p><p class="cv-entry-summary" data-cv-path="/projects/0/description">ESLint plugin that flags hard-coded UI strings and missing translation keys.</p><ul class="cv-bullets"><li data-cv-path="/projects/0/highlights/0">1.2k weekly npm downloads</li><li data-cv-path="/projects/0/highlights/1">Used by two Istanbul startups in CI</li></ul></article></div></section><section class="cv-section" data-cv-section="skills" data-cv-path="/skills"><div class="cv-keep"><h2 class="cv-heading">SKILLS</h2><div class="cv-lines"><p data-cv-path="/skills/0"><span class="cv-line-label" data-cv-path="/skills/0/name">Frontend:</span> <span data-cv-path="/skills/0/keywords">React, TypeScript, Next.js, Redux, Tailwind CSS, Vite</span></p><p data-cv-path="/skills/1"><span class="cv-line-label" data-cv-path="/skills/1/name">Quality:</span> <span data-cv-path="/skills/1/keywords">Accessibility (WCAG 2.2), Web performance, Jest, Playwright, Storybook</span></p><p data-cv-path="/skills/2"><span class="cv-line-label" data-cv-path="/skills/2/name">Product:</span> <span data-cv-path="/skills/2/keywords">Design systems, Figma, A/B testing, Localization</span></p><p data-cv-path="/skills/3"><span class="cv-line-label" data-cv-path="/skills/3/name">Also:</span> <span data-cv-path="/skills/3/keywords">React Native, Node.js, GraphQL</span></p></div></div></section><section class="cv-section" data-cv-section="education" data-cv-path="/education"><div class="cv-keep"><h2 class="cv-heading">EDUCATION</h2><article class="cv-entry is-short" data-cv-path="/education/0"><div class="cv-entry-head"><h3 class="cv-entry-title"><span class="cv-entry-role" data-cv-path="/education/0">BSc, Computer Engineering</span><span class="cv-entry-org">, </span><span class="cv-entry-org" data-cv-path="/education/0/institution">Istanbul Technical University</span></h3><span class="cv-dates">Sep 2015 – Jun 2019</span></div></article></div></section><section class="cv-section" data-cv-section="languages" data-cv-path="/languages"><div class="cv-keep"><h2 class="cv-heading">LANGUAGES</h2><div class="cv-lines"><p data-cv-path="/languages/0"><span class="cv-line-label" data-cv-path="/languages/0/language">Turkish:</span> <span data-cv-path="/languages/0/fluency">Native</span></p><p data-cv-path="/languages/1"><span class="cv-line-label" data-cv-path="/languages/1/language">English:</span> <span data-cv-path="/languages/1/fluency">Fluent (C1)</span></p><p data-cv-path="/languages/2"><span class="cv-line-label" data-cv-path="/languages/2/language">German:</span> <span data-cv-path="/languages/2/fluency">Elementary (A2)</span></p></div></div></section><section class="cv-section" data-cv-section="custom:talks" data-cv-path="/meta/customSections/0"><div class="cv-keep"><h2 class="cv-heading">TALKS</h2><article class="cv-entry is-short" data-cv-path="/meta/customSections/0/items/0"><div class="cv-entry-head"><h3 class="cv-entry-title"><span class="cv-entry-role" data-cv-path="/meta/customSections/0/items/0/title">Design systems that survive seven teams</span><span class="cv-entry-org">, </span><span class="cv-entry-org" data-cv-path="/meta/customSections/0/items/0/subtitle">Frontend Istanbul meetup</span></h3><span class="cv-dates">Apr 2025</span></div><p class="cv-entry-sub"><span class="cv-link"><a href="https://deniz.example.com/talks/design-systems" data-cv-path="/meta/customSections/0/items/0/url">deniz.example.com/talks/design-systems</a></span></p></article></div></section></main></body></html>"`;
+
+exports[`renderCvHtml > compact: stable structure (snapshot) > compact-en-outline 1`] = `
+[
+  {
+    "entries": [],
+    "heading": "SUMMARY",
+    "key": "summary",
+  },
+  {
+    "entries": [
+      "Frontend Engineer",
+      "Frontend Developer",
+      "Junior Web Developer",
+    ],
+    "heading": "EXPERIENCE",
+    "key": "work",
+  },
+  {
+    "entries": [
+      "tiny-i18n-lint",
+    ],
+    "heading": "PROJECTS",
+    "key": "projects",
+  },
+  {
+    "entries": [
+      "Frontend",
+      "Quality",
+      "Product",
+      "Also",
+    ],
+    "heading": "SKILLS",
+    "key": "skills",
+  },
+  {
+    "entries": [
+      "BSc, Computer Engineering",
+    ],
+    "heading": "EDUCATION",
+    "key": "education",
+  },
+  {
+    "entries": [
+      "Turkish",
+      "English",
+      "German",
+    ],
+    "heading": "LANGUAGES",
+    "key": "languages",
+  },
+  {
+    "entries": [
+      "Design systems that survive seven teams",
+    ],
+    "heading": "TALKS",
+    "key": "custom:talks",
+  },
+]
+`;
+
+exports[`renderCvHtml > compact: stable structure (snapshot) > compact-tr 1`] = `"<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; font-src data:; img-src data:"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="generator" content="BruteForceHR cv-render 0.1.0"><title>Deniz Aksoy – Özgeçmiş</title><style>…</style></head><body><main class="cv cv--compact" data-template="compact"><header class="cv-header" data-cv-path="/basics"><div class="cv-id"><h1 class="cv-name" data-cv-path="/basics/name">Deniz Aksoy</h1><p class="cv-label" data-cv-path="/basics/label">Frontend ve Ürün Mühendisi</p><p class="cv-contact"><span data-cv-path="/basics/location">İstanbul, Türkiye</span><span class="cv-sep"> · </span><a href="mailto:deniz.aksoy@example.com" data-cv-path="/basics/email">deniz.aksoy@example.com</a><span class="cv-sep"> · </span><a href="tel:+905325550147" data-cv-path="/basics/phone">+90 532 555 01 47</a><span class="cv-sep"> · </span><a href="https://deniz.example.com" data-cv-path="/basics/url">deniz.example.com</a><span class="cv-sep"> · </span><a href="https://github.com/deniz-aksoy-example" data-cv-path="/basics/profiles/0/url">github.com/deniz-aksoy-example</a></p></div></header><section class="cv-section" data-cv-section="summary" data-cv-path="/basics/summary"><div class="cv-keep"><h2 class="cv-heading">ÖZET</h2><div class="cv-text" data-cv-path="/basics/summary"><p>React ve TypeScript ile hızlı, erişilebilir ürün arayüzleri geliştirmede beş yıllık deneyime sahip frontend mühendisiyim. Pazarbox&#39;ta tasarım sisteminin yeniden inşasına liderlik ettim; performans bütçeleri, yerelleştirme ve tasarım ile ürün ekipleriyle yakın çalışma benim için önemli.</p></div></div></section><section class="cv-section" data-cv-section="work" data-cv-path="/work"><div class="cv-keep"><h2 class="cv-heading">DENEYİM</h2><article class="cv-entry is-short" data-cv-path="/work/0"><div class="cv-entry-head"><h3 class="cv-entry-title"><span class="cv-entry-role" data-cv-path="/work/0/position">Frontend Mühendisi</span><span class="cv-entry-org">, </span><span class="cv-entry-org" data-cv-path="/work/0/name">Pazarbox</span></h3><span class="cv-dates">Mar 2022 – Günümüz</span></div><p class="cv-entry-sub"><span class="cv-entry-location" data-cv-path="/work/0/location">İstanbul, Türkiye</span></p><p class="cv-entry-summary" data-cv-path="/work/0/summary">Aylık 4 milyon alışverişçiye sahip e-ticaret pazaryeri; ödeme ve platform ekiplerinin üyesi.</p><ul class="cv-bullets"><li data-cv-path="/work/0/highlights/0">Tasarım sisteminin yeniden inşasına liderlik ettim (62 bileşen, React + TypeScript, Storybook); 7 ürün ekibi kullanıyor.</li><li data-cv-path="/work/0/highlights/1">Kod bölme ve görsel bütçeleriyle ödeme sayfasında Largest Contentful Paint süresini 3,9 sn&#39;den 1,8 sn&#39;ye düşürdüm.</li><li data-cv-path="/work/0/highlights/2">İlk çeyrekte yayından önce 40&#39;tan fazla gerilemeyi yakalayan görsel Playwright testlerini başlattım.</li></ul></article></div><article class="cv-entry is-short" data-cv-path="/work/1"><div class="cv-entry-head"><h3 class="cv-entry-title"><span class="cv-entry-role" data-cv-path="/work/1/position">Frontend Geliştirici</span><span class="cv-entry-org">, </span><span class="cv-entry-org" data-cv-path="/work/1/name">Kuzey Labs</span></h3><span class="cv-dates">Şub 2020 – Şub 2022</span></div><p class="cv-entry-sub"><span class="cv-entry-location" data-cv-path="/work/1/location">İstanbul, Türkiye</span></p><ul class="cv-bullets"><li data-cv-path="/work/1/highlights/0">Bir lojistik müşterisi için günde 3.500 sürücünün kullandığı React Native sürücü uygulamasını geliştirdim.</li><li data-cv-path="/work/1/highlights/1">Bir dijital banka için GraphQL tabanlı portföy panelini dört ayda teslim ettim.</li></ul></article></section><section class="cv-section" data-cv-section="skills" data-cv-path="/skills"><div class="cv-keep"><h2 class="cv-heading">YETENEKLER</h2><div class="cv-lines"><p data-cv-path="/skills/0"><span class="cv-line-label" data-cv-path="/skills/0/name">Frontend:</span> <span data-cv-path="/skills/0/keywords">React, TypeScript, Next.js, Redux, Tailwind CSS, Vite</span></p><p data-cv-path="/skills/1"><span class="cv-line-label" data-cv-path="/skills/1/name">Kalite:</span> <span data-cv-path="/skills/1/keywords">Erişilebilirlik (WCAG 2.2), Web performansı, Jest, Playwright</span></p><p data-cv-path="/skills/2"><span class="cv-line-label" data-cv-path="/skills/2/name">Ürün:</span> <span data-cv-path="/skills/2/keywords">Tasarım sistemleri, Figma, A/B testleri, Yerelleştirme</span></p></div></div></section><section class="cv-section" data-cv-section="education" data-cv-path="/education"><div class="cv-keep"><h2 class="cv-heading">EĞİTİM</h2><article class="cv-entry is-short" data-cv-path="/education/0"><div class="cv-entry-head"><h3 class="cv-entry-title"><span class="cv-entry-role" data-cv-path="/education/0">Lisans, Bilgisayar Mühendisliği</span><span class="cv-entry-org">, </span><span class="cv-entry-org" data-cv-path="/education/0/institution">İstanbul Teknik Üniversitesi</span></h3><span class="cv-dates">Eyl 2015 – Haz 2019</span></div></article></div></section><section class="cv-section" data-cv-section="languages" data-cv-path="/languages"><div class="cv-keep"><h2 class="cv-heading">DİLLER</h2><div class="cv-lines"><p data-cv-path="/languages/0"><span class="cv-line-label" data-cv-path="/languages/0/language">Türkçe:</span> <span data-cv-path="/languages/0/fluency">Ana dil</span></p><p data-cv-path="/languages/1"><span class="cv-line-label" data-cv-path="/languages/1/language">İngilizce:</span> <span data-cv-path="/languages/1/fluency">İleri (C1)</span></p><p data-cv-path="/languages/2"><span class="cv-line-label" data-cv-path="/languages/2/language">Almanca:</span> <span data-cv-path="/languages/2/fluency">Başlangıç (A2)</span></p></div></div></section><section class="cv-section" data-cv-section="interests" data-cv-path="/interests"><div class="cv-keep"><h2 class="cv-heading">İLGİ ALANLARI</h2><div class="cv-lines"><p data-cv-path="/interests/0"><span class="cv-line-label" data-cv-path="/interests/0/name">İlgi:</span> <span data-cv-path="/interests/0/keywords">Işık fotoğrafçılığı, Dağcılık</span></p></div></div></section></main></body></html>"`;
+
+exports[`renderCvHtml > compact: stable structure (snapshot) > compact-tr-outline 1`] = `
+[
+  {
+    "entries": [],
+    "heading": "ÖZET",
+    "key": "summary",
+  },
+  {
+    "entries": [
+      "Frontend Mühendisi",
+      "Frontend Geliştirici",
+    ],
+    "heading": "DENEYİM",
+    "key": "work",
+  },
+  {
+    "entries": [
+      "Frontend",
+      "Kalite",
+      "Ürün",
+    ],
+    "heading": "YETENEKLER",
+    "key": "skills",
+  },
+  {
+    "entries": [
+      "Lisans, Bilgisayar Mühendisliği",
+    ],
+    "heading": "EĞİTİM",
+    "key": "education",
+  },
+  {
+    "entries": [
+      "Türkçe",
+      "İngilizce",
+      "Almanca",
+    ],
+    "heading": "DİLLER",
+    "key": "languages",
+  },
+  {
+    "entries": [
+      "İlgi",
+    ],
+    "heading": "İLGİ ALANLARI",
+    "key": "interests",
+  },
+]
+`;
+
+exports[`renderCvHtml > modern: stable structure (snapshot) > modern-de 1`] = `"<!doctype html><html lang="de"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; font-src data:; img-src data:"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="generator" content="BruteForceHR cv-render 0.1.0"><title>Deniz Aksoy – Lebenslauf</title><style>…</style></head><body><main class="cv cv--modern" data-template="modern"><header class="cv-header" data-cv-path="/basics"><div class="cv-id"><h1 class="cv-name" data-cv-path="/basics/name">Deniz Aksoy</h1><p class="cv-label" data-cv-path="/basics/label">Frontend- &amp; Product-Engineer</p><p class="cv-contact"><span data-cv-path="/basics/location">Istanbul, Türkei</span><span class="cv-sep"> · </span><a href="mailto:deniz.aksoy@example.com" data-cv-path="/basics/email">deniz.aksoy@example.com</a><span class="cv-sep"> · </span><a href="tel:+905325550147" data-cv-path="/basics/phone">+90 532 555 01 47</a><span class="cv-sep"> · </span><a href="https://deniz.example.com" data-cv-path="/basics/url">deniz.example.com</a><span class="cv-sep"> · </span><a href="https://github.com/deniz-aksoy-example" data-cv-path="/basics/profiles/0/url">github.com/deniz-aksoy-example</a><span class="cv-sep"> · </span><a href="https://www.linkedin.com/in/deniz-aksoy-example" data-cv-path="/basics/profiles/1/url">linkedin.com/in/deniz-aksoy-example</a></p></div></header><section class="cv-section" data-cv-section="summary" data-cv-path="/basics/summary"><div class="cv-keep"><h2 class="cv-heading">Profil</h2><div class="cv-text" data-cv-path="/basics/summary"><p>Frontend-Engineer mit fünf Jahren Erfahrung in React und TypeScript und Schwerpunkt auf Designsystemen und Barrierefreiheit – passend zu Tannenbaums Plattform für den Mittelstand. Ich bringe Erfahrung mit B2B-Oberflächen, Lokalisierung und messbaren Performance-Zielen mit.</p></div></div></section><section class="cv-section" data-cv-section="work" data-cv-path="/work"><div class="cv-keep"><h2 class="cv-heading">Berufserfahrung</h2><article class="cv-entry is-short" data-cv-path="/work/0"><div class="cv-entry-head"><h3 class="cv-entry-title"><span class="cv-entry-role" data-cv-path="/work/0/position">Frontend Engineer</span><span class="cv-entry-org"> · </span><span class="cv-entry-org" data-cv-path="/work/0/name">Pazarbox</span></h3><span class="cv-dates">März 2022 – heute</span></div><p class="cv-entry-sub"><span class="cv-entry-location" data-cv-path="/work/0/location">Istanbul, Türkei</span></p><p class="cv-entry-summary" data-cv-path="/work/0/summary">E-Commerce-Marktplatz mit 4 Mio. monatlichen Käufer:innen; Mitglied der Checkout- und Plattform-Squads.</p><ul class="cv-bullets"><li data-cv-path="/work/0/highlights/0">Neuaufbau des Designsystems geleitet (62 Komponenten, React + TypeScript, Storybook), von 7 Produktteams genutzt.</li><li data-cv-path="/work/0/highlights/1">Largest Contentful Paint im Checkout durch Code-Splitting und Bildbudgets von 3,9 s auf 1,8 s gesenkt.</li><li data-cv-path="/work/0/highlights/2">Visuelle Playwright-Tests eingeführt, die im ersten Quartal über 40 Regressionen vor dem Release fanden.</li><li data-cv-path="/work/0/highlights/3">Rechts-nach-links-Layout und arabische Lokalisierung für die Expansion in die Golfstaaten umgesetzt.</li></ul></article></div><article class="cv-entry is-short" data-cv-path="/work/1"><div class="cv-entry-head"><h3 class="cv-entry-title"><span class="cv-entry-role" data-cv-path="/work/1/position">Frontend Developer</span><span class="cv-entry-org"> · </span><span class="cv-entry-org" data-cv-path="/work/1/name">Kuzey Labs</span></h3><span class="cv-dates">Feb. 2020 – Feb. 2022</span></div><p class="cv-entry-sub"><span class="cv-entry-location" data-cv-path="/work/1/location">Istanbul, Türkei</span></p><p class="cv-entry-summary" data-cv-path="/work/1/summary">Produktstudio für Web- und Mobile-Apps von Fintech- und Logistikkunden.</p><ul class="cv-bullets"><li data-cv-path="/work/1/highlights/0">React-Native-Fahrer-App für einen Logistikkunden entwickelt, täglich von 3.500 Fahrer:innen genutzt.</li><li data-cv-path="/work/1/highlights/1">GraphQL-basiertes Portfolio-Dashboard für eine türkische Neobank in vier Monaten ausgeliefert.</li></ul></article></section><section class="cv-section" data-cv-section="skills" data-cv-path="/skills"><div class="cv-keep"><h2 class="cv-heading">Kenntnisse</h2><div class="cv-lines"><p data-cv-path="/skills/0"><span class="cv-line-label" data-cv-path="/skills/0/name">Frontend:</span> <span data-cv-path="/skills/0/keywords">React, TypeScript, Next.js, Redux, Tailwind CSS, Vite</span></p><p data-cv-path="/skills/1"><span class="cv-line-label" data-cv-path="/skills/1/name">Qualität:</span> <span data-cv-path="/skills/1/keywords">Barrierefreiheit (WCAG 2.2), Web-Performance, Jest, Playwright, Storybook</span></p><p data-cv-path="/skills/2"><span class="cv-line-label" data-cv-path="/skills/2/name">Produkt:</span> <span data-cv-path="/skills/2/keywords">Designsysteme, Figma, A/B-Tests, Lokalisierung</span></p></div></div></section><section class="cv-section" data-cv-section="education" data-cv-path="/education"><div class="cv-keep"><h2 class="cv-heading">Ausbildung</h2><article class="cv-entry is-short" data-cv-path="/education/0"><div class="cv-entry-head"><h3 class="cv-entry-title"><span class="cv-entry-role" data-cv-path="/education/0">B.Sc., Technische Informatik</span><span class="cv-entry-org"> · </span><span class="cv-entry-org" data-cv-path="/education/0/institution">Istanbul Technical University</span></h3><span class="cv-dates">Sept. 2015 – Juni 2019</span></div></article></div></section><section class="cv-section" data-cv-section="languages" data-cv-path="/languages"><div class="cv-keep"><h2 class="cv-heading">Sprachen</h2><div class="cv-lines"><p data-cv-path="/languages/0"><span class="cv-line-label" data-cv-path="/languages/0/language">Türkisch:</span> <span data-cv-path="/languages/0/fluency">Muttersprache</span></p><p data-cv-path="/languages/1"><span class="cv-line-label" data-cv-path="/languages/1/language">Englisch:</span> <span data-cv-path="/languages/1/fluency">Verhandlungssicher (C1)</span></p><p data-cv-path="/languages/2"><span class="cv-line-label" data-cv-path="/languages/2/language">Deutsch:</span> <span data-cv-path="/languages/2/fluency">Grundkenntnisse (A2)</span></p></div></div></section><section class="cv-section" data-cv-section="custom:vortraege" data-cv-path="/meta/customSections/0"><div class="cv-keep"><h2 class="cv-heading">Vorträge</h2><article class="cv-entry is-short" data-cv-path="/meta/customSections/0/items/0"><div class="cv-entry-head"><h3 class="cv-entry-title"><span class="cv-entry-role" data-cv-path="/meta/customSections/0/items/0/title">Designsysteme, die sieben Teams überstehen</span><span class="cv-entry-org"> · </span><span class="cv-entry-org" data-cv-path="/meta/customSections/0/items/0/subtitle">Frontend Istanbul Meetup</span></h3><span class="cv-dates">Apr. 2025</span></div></article></div></section></main></body></html>"`;
+
+exports[`renderCvHtml > modern: stable structure (snapshot) > modern-de-outline 1`] = `
+[
+  {
+    "entries": [],
+    "heading": "Profil",
+    "key": "summary",
+  },
+  {
+    "entries": [
+      "Frontend Engineer",
+      "Frontend Developer",
+    ],
+    "heading": "Berufserfahrung",
+    "key": "work",
+  },
+  {
+    "entries": [
+      "Frontend",
+      "Qualität",
+      "Produkt",
+    ],
+    "heading": "Kenntnisse",
+    "key": "skills",
+  },
+  {
+    "entries": [
+      "B.Sc., Technische Informatik",
+    ],
+    "heading": "Ausbildung",
+    "key": "education",
+  },
+  {
+    "entries": [
+      "Türkisch",
+      "Englisch",
+      "Deutsch",
+    ],
+    "heading": "Sprachen",
+    "key": "languages",
+  },
+  {
+    "entries": [
+      "Designsysteme, die sieben Teams überstehen",
+    ],
+    "heading": "Vorträge",
+    "key": "custom:vortraege",
+  },
+]
+`;
+
+exports[`renderCvHtml > modern: stable structure (snapshot) > modern-en 1`] = `"<!doctype html><html lang="en"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; font-src data:; img-src data:"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="generator" content="BruteForceHR cv-render 0.1.0"><title>Deniz Aksoy – CV</title><style>…</style></head><body><main class="cv cv--modern" data-template="modern"><header class="cv-header" data-cv-path="/basics"><div class="cv-id"><h1 class="cv-name" data-cv-path="/basics/name">Deniz Aksoy</h1><p class="cv-label" data-cv-path="/basics/label">Frontend &amp; Product Engineer</p><p class="cv-contact"><span data-cv-path="/basics/location">Istanbul, Türkiye</span><span class="cv-sep"> · </span><a href="mailto:deniz.aksoy@example.com" data-cv-path="/basics/email">deniz.aksoy@example.com</a><span class="cv-sep"> · </span><a href="tel:+905325550147" data-cv-path="/basics/phone">+90 532 555 01 47</a><span class="cv-sep"> · </span><a href="https://deniz.example.com" data-cv-path="/basics/url">deniz.example.com</a><span class="cv-sep"> · </span><a href="https://github.com/deniz-aksoy-example" data-cv-path="/basics/profiles/0/url">github.com/deniz-aksoy-example</a><span class="cv-sep"> · </span><a href="https://www.linkedin.com/in/deniz-aksoy-example" data-cv-path="/basics/profiles/1/url">linkedin.com/in/deniz-aksoy-example</a></p></div></header><section class="cv-section" data-cv-section="summary" data-cv-path="/basics/summary"><div class="cv-keep"><h2 class="cv-heading">Summary</h2><div class="cv-text" data-cv-path="/basics/summary"><p>Frontend engineer with five years of experience building fast, accessible product UIs in React and TypeScript. I led the design-system rebuild at Pazarbox, care about performance budgets and localization, and like working closely with designers and product managers on measurable outcomes.</p></div></div></section><section class="cv-section" data-cv-section="work" data-cv-path="/work"><div class="cv-keep"><h2 class="cv-heading">Experience</h2><article class="cv-entry is-short" data-cv-path="/work/0"><div class="cv-entry-head"><h3 class="cv-entry-title"><span class="cv-entry-role" data-cv-path="/work/0/position">Frontend Engineer</span><span class="cv-entry-org"> · </span><span class="cv-entry-org" data-cv-path="/work/0/name">Pazarbox</span></h3><span class="cv-dates">Mar 2022 – Present</span></div><p class="cv-entry-sub"><span class="cv-entry-location" data-cv-path="/work/0/location">Istanbul, Türkiye</span></p><p class="cv-entry-summary" data-cv-path="/work/0/summary">E-commerce marketplace with 4M monthly shoppers; member of the checkout and platform squads.</p><ul class="cv-bullets"><li data-cv-path="/work/0/highlights/0">Led the rebuild of the design system (62 components, React + TypeScript, Storybook), adopted by 7 product teams.</li><li data-cv-path="/work/0/highlights/1">Cut checkout Largest Contentful Paint from 3.9 s to 1.8 s through code splitting and image budgets.</li><li data-cv-path="/work/0/highlights/2">Introduced Playwright visual tests that caught 40+ regressions before release in the first quarter.</li><li data-cv-path="/work/0/highlights/3">Shipped right-to-left and Arabic localization for the Gulf expansion together with the i18n guild.</li></ul></article></div><article class="cv-entry is-short" data-cv-path="/work/1"><div class="cv-entry-head"><h3 class="cv-entry-title"><span class="cv-entry-role" data-cv-path="/work/1/position">Frontend Developer</span><span class="cv-entry-org"> · </span><span class="cv-entry-org" data-cv-path="/work/1/name">Kuzey Labs</span></h3><span class="cv-dates">Feb 2020 – Feb 2022</span></div><p class="cv-entry-sub"><span class="cv-entry-location" data-cv-path="/work/1/location">Istanbul, Türkiye</span></p><p class="cv-entry-summary" data-cv-path="/work/1/summary">Product studio building web and mobile apps for fintech and logistics clients.</p><ul class="cv-bullets"><li data-cv-path="/work/1/highlights/0">Built a React Native driver app for a logistics client, used by 3,500 drivers daily.</li><li data-cv-path="/work/1/highlights/1">Delivered a GraphQL-backed portfolio dashboard for a Turkish neobank in four months.</li></ul></article><article class="cv-entry is-short" data-cv-path="/work/2"><div class="cv-entry-head"><h3 class="cv-entry-title"><span class="cv-entry-role" data-cv-path="/work/2/position">Junior Web Developer</span><span class="cv-entry-org"> · </span><span class="cv-entry-org" data-cv-path="/work/2/name">Mavi Yazılım</span></h3><span class="cv-dates">Jul 2019 – Jan 2020</span></div><p class="cv-entry-sub"><span class="cv-entry-location" data-cv-path="/work/2/location">Istanbul, Türkiye</span></p><ul class="cv-bullets"><li data-cv-path="/work/2/highlights/0">Maintained customer-facing booking forms and raised their Lighthouse accessibility score to 98.</li></ul></article></section><section class="cv-section" data-cv-section="projects" data-cv-path="/projects"><div class="cv-keep"><h2 class="cv-heading">Projects</h2><article class="cv-entry is-short" data-cv-path="/projects/0"><div class="cv-entry-head"><h3 class="cv-entry-title"><span class="cv-entry-role" data-cv-path="/projects/0/name">tiny-i18n-lint</span><span class="cv-entry-org"> · </span><span class="cv-entry-org" data-cv-path="/projects/0">Author · Maintainer</span></h3><span class="cv-dates">Jan 2024 – Present</span></div><p class="cv-entry-sub"><span class="cv-link"><a href="https://github.com/deniz-aksoy-example/tiny-i18n-lint" data-cv-path="/projects/0/url">github.com/deniz-aksoy-example/tiny-i18n-lint</a></span></p><p class="cv-entry-summary" data-cv-path="/projects/0/description">ESLint plugin that flags hard-coded UI strings and missing translation keys.</p><ul class="cv-bullets"><li data-cv-path="/projects/0/highlights/0">1.2k weekly npm downloads</li><li data-cv-path="/projects/0/highlights/1">Used by two Istanbul startups in CI</li></ul></article></div></section><section class="cv-section" data-cv-section="skills" data-cv-path="/skills"><div class="cv-keep"><h2 class="cv-heading">Skills</h2><div class="cv-lines"><p data-cv-path="/skills/0"><span class="cv-line-label" data-cv-path="/skills/0/name">Frontend:</span> <span data-cv-path="/skills/0/keywords">React, TypeScript, Next.js, Redux, Tailwind CSS, Vite</span></p><p data-cv-path="/skills/1"><span class="cv-line-label" data-cv-path="/skills/1/name">Quality:</span> <span data-cv-path="/skills/1/keywords">Accessibility (WCAG 2.2), Web performance, Jest, Playwright, Storybook</span></p><p data-cv-path="/skills/2"><span class="cv-line-label" data-cv-path="/skills/2/name">Product:</span> <span data-cv-path="/skills/2/keywords">Design systems, Figma, A/B testing, Localization</span></p><p data-cv-path="/skills/3"><span class="cv-line-label" data-cv-path="/skills/3/name">Also:</span> <span data-cv-path="/skills/3/keywords">React Native, Node.js, GraphQL</span></p></div></div></section><section class="cv-section" data-cv-section="education" data-cv-path="/education"><div class="cv-keep"><h2 class="cv-heading">Education</h2><article class="cv-entry is-short" data-cv-path="/education/0"><div class="cv-entry-head"><h3 class="cv-entry-title"><span class="cv-entry-role" data-cv-path="/education/0">BSc, Computer Engineering</span><span class="cv-entry-org"> · </span><span class="cv-entry-org" data-cv-path="/education/0/institution">Istanbul Technical University</span></h3><span class="cv-dates">Sep 2015 – Jun 2019</span></div></article></div></section><section class="cv-section" data-cv-section="languages" data-cv-path="/languages"><div class="cv-keep"><h2 class="cv-heading">Languages</h2><div class="cv-lines"><p data-cv-path="/languages/0"><span class="cv-line-label" data-cv-path="/languages/0/language">Turkish:</span> <span data-cv-path="/languages/0/fluency">Native</span></p><p data-cv-path="/languages/1"><span class="cv-line-label" data-cv-path="/languages/1/language">English:</span> <span data-cv-path="/languages/1/fluency">Fluent (C1)</span></p><p data-cv-path="/languages/2"><span class="cv-line-label" data-cv-path="/languages/2/language">German:</span> <span data-cv-path="/languages/2/fluency">Elementary (A2)</span></p></div></div></section><section class="cv-section" data-cv-section="custom:talks" data-cv-path="/meta/customSections/0"><div class="cv-keep"><h2 class="cv-heading">Talks</h2><article class="cv-entry is-short" data-cv-path="/meta/customSections/0/items/0"><div class="cv-entry-head"><h3 class="cv-entry-title"><span class="cv-entry-role" data-cv-path="/meta/customSections/0/items/0/title">Design systems that survive seven teams</span><span class="cv-entry-org"> · </span><span class="cv-entry-org" data-cv-path="/meta/customSections/0/items/0/subtitle">Frontend Istanbul meetup</span></h3><span class="cv-dates">Apr 2025</span></div><p class="cv-entry-sub"><span class="cv-link"><a href="https://deniz.example.com/talks/design-systems" data-cv-path="/meta/customSections/0/items/0/url">deniz.example.com/talks/design-systems</a></span></p></article></div></section></main></body></html>"`;
+
+exports[`renderCvHtml > modern: stable structure (snapshot) > modern-en-outline 1`] = `
+[
+  {
+    "entries": [],
+    "heading": "Summary",
+    "key": "summary",
+  },
+  {
+    "entries": [
+      "Frontend Engineer",
+      "Frontend Developer",
+      "Junior Web Developer",
+    ],
+    "heading": "Experience",
+    "key": "work",
+  },
+  {
+    "entries": [
+      "tiny-i18n-lint",
+    ],
+    "heading": "Projects",
+    "key": "projects",
+  },
+  {
+    "entries": [
+      "Frontend",
+      "Quality",
+      "Product",
+      "Also",
+    ],
+    "heading": "Skills",
+    "key": "skills",
+  },
+  {
+    "entries": [
+      "BSc, Computer Engineering",
+    ],
+    "heading": "Education",
+    "key": "education",
+  },
+  {
+    "entries": [
+      "Turkish",
+      "English",
+      "German",
+    ],
+    "heading": "Languages",
+    "key": "languages",
+  },
+  {
+    "entries": [
+      "Design systems that survive seven teams",
+    ],
+    "heading": "Talks",
+    "key": "custom:talks",
+  },
+]
+`;
+
+exports[`renderCvHtml > modern: stable structure (snapshot) > modern-tr 1`] = `"<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; font-src data:; img-src data:"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="generator" content="BruteForceHR cv-render 0.1.0"><title>Deniz Aksoy – Özgeçmiş</title><style>…</style></head><body><main class="cv cv--modern" data-template="modern"><header class="cv-header" data-cv-path="/basics"><div class="cv-id"><h1 class="cv-name" data-cv-path="/basics/name">Deniz Aksoy</h1><p class="cv-label" data-cv-path="/basics/label">Frontend ve Ürün Mühendisi</p><p class="cv-contact"><span data-cv-path="/basics/location">İstanbul, Türkiye</span><span class="cv-sep"> · </span><a href="mailto:deniz.aksoy@example.com" data-cv-path="/basics/email">deniz.aksoy@example.com</a><span class="cv-sep"> · </span><a href="tel:+905325550147" data-cv-path="/basics/phone">+90 532 555 01 47</a><span class="cv-sep"> · </span><a href="https://deniz.example.com" data-cv-path="/basics/url">deniz.example.com</a><span class="cv-sep"> · </span><a href="https://github.com/deniz-aksoy-example" data-cv-path="/basics/profiles/0/url">github.com/deniz-aksoy-example</a></p></div></header><section class="cv-section" data-cv-section="summary" data-cv-path="/basics/summary"><div class="cv-keep"><h2 class="cv-heading">Özet</h2><div class="cv-text" data-cv-path="/basics/summary"><p>React ve TypeScript ile hızlı, erişilebilir ürün arayüzleri geliştirmede beş yıllık deneyime sahip frontend mühendisiyim. Pazarbox&#39;ta tasarım sisteminin yeniden inşasına liderlik ettim; performans bütçeleri, yerelleştirme ve tasarım ile ürün ekipleriyle yakın çalışma benim için önemli.</p></div></div></section><section class="cv-section" data-cv-section="work" data-cv-path="/work"><div class="cv-keep"><h2 class="cv-heading">Deneyim</h2><article class="cv-entry is-short" data-cv-path="/work/0"><div class="cv-entry-head"><h3 class="cv-entry-title"><span class="cv-entry-role" data-cv-path="/work/0/position">Frontend Mühendisi</span><span class="cv-entry-org"> · </span><span class="cv-entry-org" data-cv-path="/work/0/name">Pazarbox</span></h3><span class="cv-dates">Mar 2022 – Günümüz</span></div><p class="cv-entry-sub"><span class="cv-entry-location" data-cv-path="/work/0/location">İstanbul, Türkiye</span></p><p class="cv-entry-summary" data-cv-path="/work/0/summary">Aylık 4 milyon alışverişçiye sahip e-ticaret pazaryeri; ödeme ve platform ekiplerinin üyesi.</p><ul class="cv-bullets"><li data-cv-path="/work/0/highlights/0">Tasarım sisteminin yeniden inşasına liderlik ettim (62 bileşen, React + TypeScript, Storybook); 7 ürün ekibi kullanıyor.</li><li data-cv-path="/work/0/highlights/1">Kod bölme ve görsel bütçeleriyle ödeme sayfasında Largest Contentful Paint süresini 3,9 sn&#39;den 1,8 sn&#39;ye düşürdüm.</li><li data-cv-path="/work/0/highlights/2">İlk çeyrekte yayından önce 40&#39;tan fazla gerilemeyi yakalayan görsel Playwright testlerini başlattım.</li></ul></article></div><article class="cv-entry is-short" data-cv-path="/work/1"><div class="cv-entry-head"><h3 class="cv-entry-title"><span class="cv-entry-role" data-cv-path="/work/1/position">Frontend Geliştirici</span><span class="cv-entry-org"> · </span><span class="cv-entry-org" data-cv-path="/work/1/name">Kuzey Labs</span></h3><span class="cv-dates">Şub 2020 – Şub 2022</span></div><p class="cv-entry-sub"><span class="cv-entry-location" data-cv-path="/work/1/location">İstanbul, Türkiye</span></p><ul class="cv-bullets"><li data-cv-path="/work/1/highlights/0">Bir lojistik müşterisi için günde 3.500 sürücünün kullandığı React Native sürücü uygulamasını geliştirdim.</li><li data-cv-path="/work/1/highlights/1">Bir dijital banka için GraphQL tabanlı portföy panelini dört ayda teslim ettim.</li></ul></article></section><section class="cv-section" data-cv-section="skills" data-cv-path="/skills"><div class="cv-keep"><h2 class="cv-heading">Yetenekler</h2><div class="cv-lines"><p data-cv-path="/skills/0"><span class="cv-line-label" data-cv-path="/skills/0/name">Frontend:</span> <span data-cv-path="/skills/0/keywords">React, TypeScript, Next.js, Redux, Tailwind CSS, Vite</span></p><p data-cv-path="/skills/1"><span class="cv-line-label" data-cv-path="/skills/1/name">Kalite:</span> <span data-cv-path="/skills/1/keywords">Erişilebilirlik (WCAG 2.2), Web performansı, Jest, Playwright</span></p><p data-cv-path="/skills/2"><span class="cv-line-label" data-cv-path="/skills/2/name">Ürün:</span> <span data-cv-path="/skills/2/keywords">Tasarım sistemleri, Figma, A/B testleri, Yerelleştirme</span></p></div></div></section><section class="cv-section" data-cv-section="education" data-cv-path="/education"><div class="cv-keep"><h2 class="cv-heading">Eğitim</h2><article class="cv-entry is-short" data-cv-path="/education/0"><div class="cv-entry-head"><h3 class="cv-entry-title"><span class="cv-entry-role" data-cv-path="/education/0">Lisans, Bilgisayar Mühendisliği</span><span class="cv-entry-org"> · </span><span class="cv-entry-org" data-cv-path="/education/0/institution">İstanbul Teknik Üniversitesi</span></h3><span class="cv-dates">Eyl 2015 – Haz 2019</span></div></article></div></section><section class="cv-section" data-cv-section="languages" data-cv-path="/languages"><div class="cv-keep"><h2 class="cv-heading">Diller</h2><div class="cv-lines"><p data-cv-path="/languages/0"><span class="cv-line-label" data-cv-path="/languages/0/language">Türkçe:</span> <span data-cv-path="/languages/0/fluency">Ana dil</span></p><p data-cv-path="/languages/1"><span class="cv-line-label" data-cv-path="/languages/1/language">İngilizce:</span> <span data-cv-path="/languages/1/fluency">İleri (C1)</span></p><p data-cv-path="/languages/2"><span class="cv-line-label" data-cv-path="/languages/2/language">Almanca:</span> <span data-cv-path="/languages/2/fluency">Başlangıç (A2)</span></p></div></div></section><section class="cv-section" data-cv-section="interests" data-cv-path="/interests"><div class="cv-keep"><h2 class="cv-heading">İlgi Alanları</h2><div class="cv-lines"><p data-cv-path="/interests/0"><span class="cv-line-label" data-cv-path="/interests/0/name">İlgi:</span> <span data-cv-path="/interests/0/keywords">Işık fotoğrafçılığı, Dağcılık</span></p></div></div></section></main></body></html>"`;
+
+exports[`renderCvHtml > modern: stable structure (snapshot) > modern-tr-outline 1`] = `
+[
+  {
+    "entries": [],
+    "heading": "Özet",
+    "key": "summary",
+  },
+  {
+    "entries": [
+      "Frontend Mühendisi",
+      "Frontend Geliştirici",
+    ],
+    "heading": "Deneyim",
+    "key": "work",
+  },
+  {
+    "entries": [
+      "Frontend",
+      "Kalite",
+      "Ürün",
+    ],
+    "heading": "Yetenekler",
+    "key": "skills",
+  },
+  {
+    "entries": [
+      "Lisans, Bilgisayar Mühendisliği",
+    ],
+    "heading": "Eğitim",
+    "key": "education",
+  },
+  {
+    "entries": [
+      "Türkçe",
+      "İngilizce",
+      "Almanca",
+    ],
+    "heading": "Diller",
+    "key": "languages",
+  },
+  {
+    "entries": [
+      "İlgi",
+    ],
+    "heading": "İlgi Alanları",
+    "key": "interests",
+  },
+]
+`;

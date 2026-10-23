@@ -97,6 +97,8 @@ export const storagePaths = {
   cvImport: (uid: string, fileId: string) => `${user(uid)}/cv-imports/${segment(fileId)}`,
   /** Bytes of a `renderedFiles` document (PDF/DOCX); same id as the document. */
   renderedFile: (uid: string, fileId: string) => `${user(uid)}/rendered/${segment(fileId)}`,
+  /** CV photo of a variant that opted in (U6); referenced from `basics.image`. */
+  cvPhoto: (uid: string, fileId: string) => `${user(uid)}/cv-photos/${segment(fileId)}`,
 } as const;
 
 /**

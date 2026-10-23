@@ -126,3 +126,46 @@ describe("users/{uid}/rendered: PDF or DOCX up to 10 MiB", () => {
     );
   });
 });
+
+describe("users/{uid}/cv-photos: opt-in CV photo, JPEG/PNG/HEIC up to 5 MiB", () => {
+  const photo = (name: string) => `users/alice/cv-photos/${name}`;
+
+  it.each(["image/jpeg", "image/png", "image/heic"])("accepts %s", async (contentType) => {
+    await assertSucceeds(
+      client("alice")
+        .ref(photo(contentType.replace("/", "_")))
+        .put(bytes(1024), { contentType })
+        .then(),
+    );
+  });
+
+  it.each(["image/gif", "image/svg+xml", "image/webp", PDF, "text/html"])(
+    "rejects %s",
+    async (contentType) => {
+      await assertFails(
+        client("alice")
+          .ref(photo(contentType.replace(/\W/g, "_")))
+          .put(bytes(1024), { contentType })
+          .then(),
+      );
+    },
+  );
+
+  it("enforces the size limit and is create-only", async () => {
+    const put = (name: string, size: number) =>
+      client("alice").ref(photo(name)).put(bytes(size), { contentType: "image/jpeg" }).then();
+    await assertSucceeds(put("max", 5 * MiB));
+    await assertFails(put("too-big", 5 * MiB + 1));
+    await assertFails(put("empty", 0));
+    await assertFails(put("max", 1024));
+    await assertFails(client("alice").ref(photo("max")).delete());
+  });
+
+  it("keeps other users and unverified owners out", async () => {
+    const jpeg = { contentType: "image/jpeg" };
+    await assertSucceeds(client("alice").ref(photo("mine")).put(bytes(1024), jpeg).then());
+    await assertFails(client("bob").ref(photo("mine")).getMetadata());
+    await assertFails(client("bob").ref(photo("theirs")).put(bytes(1024), jpeg).then());
+    await assertFails(unverified("alice").ref(photo("unverified")).put(bytes(1024), jpeg).then());
+  });
+});

@@ -48,5 +48,12 @@ service firebase.storage {
     match /users/{uid}/rendered/{fileId} {
       allow create: if isOwner(uid) && isUpload(10 * 1024 * 1024, pdfOrDocx());
     }
+
+    // CV photo for variants that opted in (decisions.md U6, off by default). HEIC is accepted
+    // from iOS; clients convert it to JPEG before rendering (cv-render embeds JPEG/PNG only).
+    match /users/{uid}/cv-photos/{fileId} {
+      allow create: if isOwner(uid)
+        && isUpload(5 * 1024 * 1024, ['image/jpeg', 'image/png', 'image/heic']);
+    }
   }
 }

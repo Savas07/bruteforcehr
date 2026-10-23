@@ -1196,11 +1196,35 @@ public struct CvCustomSection: Codable, Hashable, Sendable, Identifiable {
     }
 }
 
+public struct CvPersonalDetails: Codable, Hashable, Sendable {
+    public var showPhoto: Bool
+    public var showDateOfBirth: Bool
+    public var dateOfBirth: String?
+
+    public init(
+        showPhoto: Bool,
+        showDateOfBirth: Bool,
+        dateOfBirth: String? = nil
+    ) {
+        self.showPhoto = showPhoto
+        self.showDateOfBirth = showDateOfBirth
+        self.dateOfBirth = dateOfBirth
+    }
+
+    public func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(showPhoto, forKey: .showPhoto)
+        try container.encode(showDateOfBirth, forKey: .showDateOfBirth)
+        try container.encodeIfPresent(dateOfBirth, forKey: .dateOfBirth)
+    }
+}
+
 public struct CvMeta: Codable, Hashable, Sendable {
     public var template: String
     public var theme: CvTheme
     public var sectionOrder: [String]
     public var customSections: [CvCustomSection]
+    public var personal: CvPersonalDetails?
     public var canonical: String?
     public var version: String?
     public var lastModified: String?
@@ -1210,6 +1234,7 @@ public struct CvMeta: Codable, Hashable, Sendable {
         theme: CvTheme,
         sectionOrder: [String],
         customSections: [CvCustomSection],
+        personal: CvPersonalDetails? = nil,
         canonical: String? = nil,
         version: String? = nil,
         lastModified: String? = nil
@@ -1218,6 +1243,7 @@ public struct CvMeta: Codable, Hashable, Sendable {
         self.theme = theme
         self.sectionOrder = sectionOrder
         self.customSections = customSections
+        self.personal = personal
         self.canonical = canonical
         self.version = version
         self.lastModified = lastModified
@@ -1229,6 +1255,7 @@ public struct CvMeta: Codable, Hashable, Sendable {
         try container.encode(theme, forKey: .theme)
         try container.encode(sectionOrder, forKey: .sectionOrder)
         try container.encode(customSections, forKey: .customSections)
+        try container.encodeIfPresent(personal, forKey: .personal)
         try container.encodeIfPresent(canonical, forKey: .canonical)
         try container.encodeIfPresent(version, forKey: .version)
         try container.encodeIfPresent(lastModified, forKey: .lastModified)

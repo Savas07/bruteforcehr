@@ -341,9 +341,10 @@ function ReadyTable({
       keys: "Mod+Enter",
       label: intl.formatMessage(messages.keyOpenPage),
       group,
-      enabled: focused !== null || openId !== null,
+      // With the panel open, ApplicationPanel owns Mod+Enter.
+      enabled: focused !== null && openId === null,
       run: () => {
-        const applicationId = openId ?? focused?.applicationId;
+        const applicationId = focused?.applicationId;
         if (applicationId)
           void navigate({ to: "/tracker/applications/$applicationId", params: { applicationId } });
       },

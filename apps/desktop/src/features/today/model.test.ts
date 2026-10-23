@@ -1,10 +1,49 @@
+import type { Application, ApplicationEvent } from "@bfhr/core";
 import { emptyDataset, FIXTURE_NOW, type FixtureDataset, populatedDataset } from "@bfhr/fixtures";
 import { describe, expect, it } from "vitest";
+import { snoozeDateInstant } from "../../data/tracker/snooze";
 import { createAppIntl } from "../../i18n/intl";
 import { fixtureContext } from "../../shared/model/fixture-context";
-import { type AttentionItemVM, buildTodayModel, snoozeDateInstant, type TodayModel } from "./model";
+import { type AttentionItemVM, buildTodayModel, type TodayModel } from "./model";
 
 const HOUR_MS = 3_600_000;
+const DAY_MS = 86_400_000;
+const at = (hours: number) => new Date(FIXTURE_NOW.getTime() + hours * HOUR_MS);
+
+/** The populated dataset with `patch` applied to one application. */
+function withApplication(id: string, patch: Partial<Application>): FixtureDataset {
+  return {
+    ...populatedDataset,
+    applications: populatedDataset.applications.map((application) =>
+      application.id === id ? { ...application, ...patch } : application,
+    ),
+  };
+}
+
+/** A user event on the timeline, as `useTrackerActions` writes it. */
+function userEvent(
+  id: string,
+  applicationId: string,
+  type: ApplicationEvent["type"],
+  occurredAt: Date,
+  extra: Partial<ApplicationEvent> = {},
+): ApplicationEvent {
+  return {
+    id,
+    applicationId,
+    type,
+    fromStatus: null,
+    toStatus: null,
+    actor: "user",
+    confidence: null,
+    evidence: null,
+    text: null,
+    revertsEventId: null,
+    occurredAt,
+    createdAt: occurredAt,
+    ...extra,
+  };
+}
 
 function build(
   data: FixtureDataset,
@@ -35,7 +74,7 @@ describe("buildTodayModel — populated", () => {
       // Only the 3 emails waiting for confirmation count (D01); the 3 automatic changes don't.
       ["toReview", "To review", "3"],
       ["followUps", "Follow-ups", "2"],
-      ["deadlines", "Deadlines", "2"],
+      ["deadlines", "Deadlines", "5"],
       ["newMatches", "New matches", "3"],
     ]);
     expect(model.sections.find((section) => section.id === "newMatches")?.seeAllLabel).toBe(
@@ -57,8 +96,8 @@ describe("buildTodayModel — populated", () => {
     expect(model.items.map((item) => item.id)).toEqual(
       model.sections.flatMap((section) => section.items.map((item) => item.id)),
     );
-    expect(model.items).toHaveLength(14);
-    expect(new Set(model.items.map((item) => item.id)).size).toBe(14);
+    expect(model.items).toHaveLength(17);
+    expect(new Set(model.items.map((item) => item.id)).size).toBe(17);
     expect(model.selectedId).toBe("interview:int-kervan-2");
     expect(build(populatedDataset, { item: "followUp:app-quill" }).selectedId).toBe("followUp:app-quill");
     expect(build(populatedDataset, { item: "review:does-not-exist" }).selectedId).toBe(
@@ -144,32 +183,67 @@ describe("buildTodayModel — populated", () => {
       ["Quill Docs", "followUp", "Applied 9 days ago · no reply yet"],
     ]);
     expect(itemsOf(model, "followUp")[1]?.nudge).toMatchObject({
-      primaryLabel: "Draft follow-up",
+      primaryLabel: "I followed up",
       secondaryLabel: "Not needed",
     });
-    // "Draft follow-up" opens the job's Apply panel, so the row carries the application's job.
-    for (const item of itemsOf(model, "followUp"))
-      expect(item.jobId).toBe(
-        populatedDataset.applications.find((application) => application.id === item.nudge.applicationId)
-          ?.jobId ?? null,
-      );
+    expect(itemsOf(model, "followUp").every((item) => item.snoozed === null)).toBe(true);
+    expect(model.later).toEqual([]);
   });
 
-  it("lists the take-home and the offer reply date with relative chips", () => {
+  it("lists reminders, the take-home and the offer reply date with relative chips", () => {
     expect(
       itemsOf(model, "deadline").map((item) => [
         item.company.name,
         item.deadlineKind,
         item.title,
+        item.context,
         item.due.label,
       ]),
     ).toEqual([
-      ["Grachten Commerce", "assessment", "Assessment due", "In 5 days"],
-      ["Lumenpay", "offerReply", "Offer reply due", "29 Oct, 18:00"],
+      ["Northstar Maps", "reminder", "Tailor CV for the map platform role", expect.any(String), "Tomorrow, 10:30"],
+      ["Polder Energy", "reminder", "Write cover letter", expect.any(String), "In 2 days"],
+      ["Thames Ledger", "reminder", "Prepare the pairing exercise", expect.any(String), "In 4 days"],
+      ["Grachten Commerce", "assessment", "Assessment due", expect.any(String), "In 5 days"],
+      ["Lumenpay", "offerReply", "Offer reply due", expect.any(String), "29 Oct, 18:00"],
     ]);
     // Tannenbaum's reply date sits in a pending email: it shows in the review proposal instead.
     expect(itemsOf(model, "deadline").some((item) => item.company.name === "Tannenbaum Software")).toBe(
       false,
+    );
+  });
+
+  it("shows a reminder with its own text, the role as context and the application to clear it on", () => {
+    const northstar = populatedDataset.applications.find((application) => application.id === "app-northstar");
+    expect(itemsOf(model, "deadline")[0]).toMatchObject({
+      id: "deadline:reminder:app-northstar",
+      deadlineKind: "reminder",
+      title: "Tailor CV for the map platform role",
+      context: northstar?.role,
+      applicationId: "app-northstar",
+      mailMessageId: null,
+    });
+  });
+
+  it("leaves out reminders that repeat an interview or an email's date of the same application", () => {
+    // Kervan's "On-site interview" reminder is the Next up interview; Grachten's "Submit the
+    // take-home" and Lumenpay's "Reply to the offer" are the dates from their emails.
+    const titles = itemsOf(model, "deadline").map((item) => item.title);
+    expect(titles).not.toContain("On-site interview");
+    expect(titles).not.toContain("Submit the take-home");
+    expect(titles).not.toContain("Reply to the offer");
+    // Moved off the interview's start, the reminder is its own item again.
+    const moved = withApplication("app-kervan", { nextActionAt: at(2) });
+    expect(itemsOf(build(moved), "deadline").map((item) => item.id)).toContain("deadline:reminder:app-kervan");
+  });
+
+  it("drops a reminder once it's done (next action cleared) or its application closed", () => {
+    const done = withApplication("app-northstar", { nextAction: null, nextActionAt: null });
+    expect(itemsOf(build(done), "deadline").map((item) => item.id)).not.toContain(
+      "deadline:reminder:app-northstar",
+    );
+    const closed = withApplication("app-northstar", { status: "withdrawn" });
+    expect(itemsOf(build(closed), "deadline").map((item) => item.id)).not.toContain(
+      "deadline:reminder:app-northstar",
     );
   });
 
@@ -181,7 +255,7 @@ describe("buildTodayModel — populated", () => {
         job.id === "job-aurora-react-native" ? { ...job, expiresAt } : job,
       ),
     };
-    const [closing] = itemsOf(build(data), "deadline");
+    const closing = itemsOf(build(data), "deadline").find((item) => item.deadlineKind === "jobClosing");
     expect(closing).toMatchObject({
       id: "deadline:job:job-aurora-react-native",
       deadlineKind: "jobClosing",
@@ -239,7 +313,7 @@ describe("buildTodayModel — populated", () => {
       "review:mail-nordlicht-invite",
       "autoUpdate:evt-lumenpay-offer",
       "followUp:app-quill",
-      "deadline:mail-grachten-assessment:0",
+      "deadline:mail:mail-grachten-assessment:0",
       "match:job-mercator-frontend",
     ]);
     expect(model.items.some((item) => item.pendingSync)).toBe(false);
@@ -254,10 +328,13 @@ describe("buildTodayModel — populated", () => {
       ]),
     ).toEqual([
       ["Today", [["15:00", "Kervan Teknoloji", "interview:int-kervan-2"]]],
+      ["Tomorrow", [["10:30", "Northstar Maps", "deadline:reminder:app-northstar"]]],
+      ["Saturday 24 October", [["10:30", "Polder Energy", "deadline:reminder:app-polder"]]],
+      ["Monday 26 October", [["10:30", "Thames Ledger", "deadline:reminder:app-thames"]]],
       [
         "Tuesday 27 October",
         [
-          ["00:59", "Grachten Commerce", "deadline:mail-grachten-assessment:0"],
+          ["00:59", "Grachten Commerce", "deadline:mail:mail-grachten-assessment:0"],
           ["14:00", "Thames Ledger", null],
         ],
       ],
@@ -304,20 +381,18 @@ describe("buildTodayModel — populated", () => {
 describe("buildTodayModel — empty", () => {
   const model = build(emptyDataset);
 
-  it("offers the connect-email card and Find jobs on first run", () => {
+  it("offers adding an application on first run, and says email comes later", () => {
     expect(model.sections).toEqual([]);
     expect(model.items).toEqual([]);
     expect(model.selectedId).toBeNull();
     expect(model.firstUse).toEqual({
-      connectMail: {
-        message: "Connect your email to see interview invites and replies here.",
-        estimate: "About 2 minutes.",
-        actionLabel: "Connect email",
-      },
-      findJobs: { actionLabel: "Find jobs" },
+      title: "Add the jobs you've applied to",
+      body: "Today then shows your interviews, follow-ups and reminders. Email invites and replies come in a later update.",
+      actionLabel: "Add application",
     });
     expect(model.caughtUp).toBeNull();
     expect(model.doneToday).toBeNull();
+    expect(model.later).toEqual([]);
     expect(model.agenda).toEqual({ title: "Next 7 days", days: [], emptyLabel: "No interviews this week" });
     expect(model.dateLabel).toBe("Thursday 22 October");
   });
@@ -328,14 +403,163 @@ describe("buildTodayModel — empty", () => {
     expect(connected.caughtUp).toEqual({ message: "You're all caught up. New updates will show up here." });
   });
 
-  it("keeps the connect card above open items when mail isn't connected", () => {
-    const noMail = build({ ...populatedDataset, mailAccounts: [] });
-    expect(noMail.firstUse).toEqual({
-      connectMail: expect.objectContaining({ estimate: "About 2 minutes." }),
-      findJobs: null,
+  it("says caught up, not first run, when applications are tracked but nothing needs the user (M3)", () => {
+    const quiet: FixtureDataset = {
+      ...emptyDataset,
+      applications: populatedDataset.applications.filter((application) => application.id === "app-northstar")
+        .map((application) => ({ ...application, nextAction: null, nextActionAt: null })),
+    };
+    const model = build(quiet);
+    expect(model.items).toEqual([]);
+    expect(model.firstUse).toBeNull();
+    expect(model.caughtUp).toEqual({ message: "You're all caught up. New updates will show up here." });
+  });
+
+  it("shows open items without a set-up card when mail isn't connected (production M3)", () => {
+    // No mail, matches or automatic changes until M4/M5.
+    const noMail = build({
+      ...populatedDataset,
+      mailAccounts: [],
+      mailMessages: [],
+      jobMatches: [],
+      applicationEvents: populatedDataset.applicationEvents.filter((event) => event.actor === "user"),
     });
+    expect(noMail.firstUse).toBeNull();
     expect(noMail.caughtUp).toBeNull();
-    expect(noMail.sections.map((section) => section.id)).toContain("nextUp");
+    // No email and no matches: To review and New matches stay hidden.
+    expect(noMail.sections.map((section) => section.id)).toEqual(["nextUp", "followUps", "deadlines"]);
+    expect(itemsOf(noMail, "deadline").map((item) => item.deadlineKind)).toEqual([
+      "reminder",
+      "reminder",
+      "reminder",
+      "reminder",
+      "reminder",
+    ]);
+  });
+});
+
+describe("buildTodayModel — suggestions the user answered", () => {
+  it("moves a snoozed follow-up to the Later view with when it's back", () => {
+    const tomorrow = new Date("2026-10-23T06:00:00.000Z"); // 09:00 in Istanbul
+    const model = build(withApplication("app-quill", { followUpSnoozedUntil: tomorrow }));
+    expect(model.items.map((item) => item.id)).not.toContain("followUp:app-quill");
+    expect(model.later).toHaveLength(1);
+    expect(model.later[0]).toMatchObject({
+      id: "later:app-quill",
+      kind: "followUp",
+      company: { name: "Quill Docs" },
+      nudge: { applicationId: "app-quill", kind: "followUp", primaryLabel: "I followed up" },
+      snoozed: {
+        until: { iso: tomorrow.toISOString(), label: "Tomorrow, 09:00" },
+        rowLabel: "Back on Fri 23 Oct",
+        title: "Snoozed until Friday 23 October, 09:00",
+      },
+    });
+  });
+
+  it("says 'Back at' for a snooze ending later today, and lists the soonest back first", () => {
+    const data: FixtureDataset = {
+      ...withApplication("app-quill", { followUpSnoozedUntil: at(3 * 24) }),
+    };
+    const both = build({
+      ...data,
+      applications: data.applications.map((application) =>
+        application.id === "app-kiez" ? { ...application, ghostedSnoozedUntil: at(3) } : application,
+      ),
+    });
+    expect(both.later.map((item) => [item.id, item.nudge.kind, item.snoozed?.rowLabel])).toEqual([
+      ["later:app-kiez", "noResponse", "Back at 13:30"],
+      ["later:app-quill", "followUp", "Back on Sun 25 Oct"],
+    ]);
+    expect(both.sections.find((section) => section.id === "followUps")).toBeUndefined();
+  });
+
+  it("brings a suggestion back to the open list once its snooze has ended", () => {
+    const model = build(withApplication("app-quill", { followUpSnoozedUntil: at(-1) }));
+    expect(model.items.map((item) => item.id)).toContain("followUp:app-quill");
+    expect(model.later).toEqual([]);
+  });
+
+  it("doesn't list a snooze whose suggestion no longer applies", () => {
+    const moved = withApplication("app-quill", { status: "screening", followUpSnoozedUntil: at(24) });
+    expect(build(moved).later).toEqual([]);
+  });
+
+  it("hides a follow-up marked Not needed and lists it in Done today", () => {
+    const model = build(withApplication("app-quill", { followUpDismissedAt: at(-1) }));
+    expect(model.items.map((item) => item.id)).not.toContain("followUp:app-quill");
+    expect(model.later).toEqual([]);
+    expect(model.doneToday?.items).toEqual([
+      expect.objectContaining({
+        id: "done:notNeeded:app-quill",
+        kind: "suggestion",
+        company: expect.objectContaining({ name: "Quill Docs" }),
+        outcome: "Follow-up not needed",
+        doneAt: expect.objectContaining({ label: "1 hour ago" }),
+      }),
+    ]);
+  });
+
+  it("hides a no-response suggestion after Keep waiting; an earlier day's answer isn't in Done today", () => {
+    const today = build(withApplication("app-kiez", { ghostedDismissedAt: at(-2) }));
+    expect(today.items.map((item) => item.id)).not.toContain("followUp:app-kiez");
+    expect(today.doneToday?.items.map((item) => [item.id, item.outcome])).toEqual([
+      ["done:keptWaiting:app-kiez", "Still waiting"],
+    ]);
+    const yesterday = build(withApplication("app-kiez", { ghostedDismissedAt: at(-24) }));
+    expect(yesterday.items.map((item) => item.id)).not.toContain("followUp:app-kiez");
+    expect(yesterday.doneToday).toBeNull();
+  });
+});
+
+describe("buildTodayModel — Done today from the timeline", () => {
+  const withEvents = (...events: ApplicationEvent[]): FixtureDataset => ({
+    ...populatedDataset,
+    applicationEvents: [...populatedDataset.applicationEvents, ...events],
+  });
+
+  it("lists a follow-up logged today, and the follow-up suggestion starts a new round", () => {
+    const model = build(withEvents(userEvent("evt-quill-followed-up", "app-quill", "mail_sent", at(-2))));
+    expect(model.items.map((item) => item.id)).not.toContain("followUp:app-quill");
+    expect(model.doneToday?.items.map((item) => [item.id, item.kind, item.title, item.outcome])).toEqual([
+      ["done:followedUp:evt-quill-followed-up", "followedUp", expect.any(String), "Followed up"],
+    ]);
+  });
+
+  it("lists notes, no-response moves and undone moves of today, newest first", () => {
+    const model = build(
+      withEvents(
+        userEvent("evt-note", "app-thames", "note", at(-3), { text: "Asked about the team" }),
+        userEvent("evt-kiez-ghosted", "app-kiez", "status_changed", at(-1), {
+          fromStatus: "applied",
+          toStatus: "ghosted",
+        }),
+        userEvent("evt-yesterday-note", "app-thames", "note", new Date(FIXTURE_NOW.getTime() - DAY_MS)),
+      ),
+    );
+    expect(model.doneToday?.items.map((item) => [item.id, item.outcome, item.doneAt.label])).toEqual([
+      ["done:noResponse:evt-kiez-ghosted", "Marked as no response", "1 hour ago"],
+      ["done:note:evt-note", "Note added", "3 hours ago"],
+    ]);
+    expect(model.doneToday?.countLabel).toBe("2");
+
+    // Undoing the move from its toast leaves only the undo in Done today.
+    const undone = build(
+      withEvents(
+        userEvent("evt-kiez-ghosted", "app-kiez", "status_changed", at(-1), {
+          fromStatus: "applied",
+          toStatus: "ghosted",
+        }),
+        userEvent("evt-kiez-back", "app-kiez", "status_changed", at(-0.5), {
+          fromStatus: "ghosted",
+          toStatus: "applied",
+          revertsEventId: "evt-kiez-ghosted",
+        }),
+      ),
+    );
+    expect(undone.doneToday?.items.map((item) => [item.id, item.outcome])).toEqual([
+      ["done:undone:evt-kiez-ghosted", "Undone · back to Applied"],
+    ]);
   });
 });
 

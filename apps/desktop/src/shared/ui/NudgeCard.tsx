@@ -20,7 +20,7 @@ const messages = defineMessages({
 export interface NudgeCardProps {
   /** The suggestion (`nudgeVMs`): labels and message are display-ready. */
   nudge: NudgeVM;
-  /** Runs `nudge.primaryLabel` ("Draft follow-up" / "Mark as no response"). */
+  /** Runs `nudge.primaryLabel` ("I followed up" / "Mark as no response"). */
   onPrimary: () => void;
   /** Runs `nudge.secondaryLabel` ("Not needed" / "Keep waiting"). */
   onSecondary: () => void;
@@ -29,6 +29,11 @@ export interface NudgeCardProps {
   /** Controls the Snooze menu, so the screen can open it with `H` on the selected item. */
   snoozeOpen?: boolean;
   onSnoozeOpenChange?: (open: boolean) => void;
+  /**
+   * On the application's own page: no monogram and no "Acme · Frontend Engineer" line, the
+   * message is the card's heading.
+   */
+  hideApplication?: boolean;
   className?: string;
 }
 
@@ -44,6 +49,7 @@ export function NudgeCard({
   onSnooze,
   snoozeOpen,
   onSnoozeOpenChange,
+  hideApplication = false,
   className,
 }: NudgeCardProps) {
   const titleId = useId();
@@ -52,20 +58,22 @@ export function NudgeCard({
   return (
     <article
       aria-labelledby={titleId}
-      aria-describedby={messageId}
+      aria-describedby={hideApplication ? undefined : messageId}
       className={cx("bg-surface-base border-line-subtle flex gap-3 rounded-lg border p-3", className)}
     >
-      <Monogram company={nudge.company} size="md" />
+      {!hideApplication && <Monogram company={nudge.company} size="md" />}
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         <div className="flex flex-wrap items-baseline gap-x-2">
-          <h3 id={titleId} className="text-callout text-fg-primary font-medium">
-            {nudge.company.name} · {nudge.role}
+          <h3 id={titleId} className="text-callout text-fg-primary font-medium text-pretty">
+            {hideApplication ? nudge.message : `${nudge.company.name} · ${nudge.role}`}
           </h3>
           {nudge.pendingSync && <SyncGlyph />}
         </div>
-        <p id={messageId} className="text-callout text-fg-secondary text-pretty">
-          {nudge.message}
-        </p>
+        {!hideApplication && (
+          <p id={messageId} className="text-callout text-fg-secondary text-pretty">
+            {nudge.message}
+          </p>
+        )}
         <div className="mt-1.5 flex flex-wrap items-center gap-2">
           <Button size="sm" onClick={onPrimary}>
             {nudge.primaryLabel}

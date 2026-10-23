@@ -236,7 +236,11 @@ const messages = defineMessages({
       "{days, plural, =0 {Applied today · no reply yet} =1 {Applied yesterday · no reply yet} other {Applied # days ago · no reply yet}}",
     description: "Follow-up suggestion; {days} is whole calendar days since applying (days, never weeks)",
   },
-  followUpPrimary: { id: "shared.blocks.nudge.followUp.primary", defaultMessage: "Draft follow-up" },
+  followUpPrimary: {
+    id: "shared.blocks.nudge.followUp.primary",
+    defaultMessage: "I followed up",
+    description: "Button: the user sent a follow-up outside the app; records it and starts a new round",
+  },
   followUpSecondary: { id: "shared.blocks.nudge.followUp.secondary", defaultMessage: "Not needed" },
   timelineAddedAs: {
     id: "shared.blocks.timeline.addedAs",

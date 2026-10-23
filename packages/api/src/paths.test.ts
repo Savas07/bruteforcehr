@@ -13,6 +13,7 @@ describe("firestorePaths", () => {
     expect(firestorePaths.appConfig("ios")).toBe("appConfig/ios");
     expect(storagePaths.renderedFile("u1", "f1")).toBe("users/u1/rendered/f1");
     expect(storagePaths.cvImport("u1", "f1")).toBe("users/u1/cv-imports/f1");
+    expect(storagePaths.cvPhoto("u1", "f1")).toBe("users/u1/cv-photos/f1");
   });
 
   it("rejects ids that would escape their segment", () => {

@@ -1,2 +1,5 @@
 # Generated conformance vectors (pnpm --filter @bfhr/core conformance, @bfhr/fixtures conformance)
 packages/*/conformance/
+
+# Generated base64 fonts (pnpm --filter @bfhr/cv-render fonts)
+packages/cv-render/src/fonts.generated.ts

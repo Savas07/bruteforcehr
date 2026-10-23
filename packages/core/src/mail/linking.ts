@@ -61,8 +61,13 @@ export function linkApplication({ signals, applications, company, role, modelCho
     const roleConflicts = role !== null && !rolesMatch(only.role, role);
     if (!roleConflicts) return { applicationId: only.id, linkStrength: "company_domain" };
   }
-  if (modelChoice !== null && applications.some((application) => application.id === modelChoice)) {
-    return { applicationId: modelChoice, linkStrength: "llm" };
+  const chosen = modelChoice === null ? undefined : applications.find((application) => application.id === modelChoice);
+  if (chosen !== undefined) {
+    // Two applications at one company and the message names no role: the model would be guessing.
+    const sibling = applications.some(
+      (application) => application.id !== chosen.id && companiesMatch(application.company, chosen.company),
+    );
+    if (role !== null || !sibling) return { applicationId: chosen.id, linkStrength: "llm" };
   }
   if (candidates.length === 1 && candidates[0] !== undefined && (role === null || rolesMatch(candidates[0].role, role))) {
     return { applicationId: candidates[0].id, linkStrength: "llm" };

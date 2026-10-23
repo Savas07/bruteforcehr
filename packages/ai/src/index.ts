@@ -52,3 +52,14 @@ export {
   type Effort,
   type StructuredRequest,
 } from "./provider";
+export {
+  analyzeMail,
+  groundExtraction,
+  MAIL_CLASSIFY_EFFORT,
+  MAIL_CLASSIFY_MODEL,
+  toInstant,
+  type AnalyzeMailAi,
+  type AnalyzeMailInput,
+  type MailAnalysis,
+} from "./mail-classify";
+export { MAIL_CLASSIFY_PROMPT_VERSION } from "./prompts/mail-classify";

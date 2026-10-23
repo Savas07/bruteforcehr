@@ -24,6 +24,8 @@ export interface ImapPreset {
   readonly appPasswordUrl: string | null;
   /** Alternative user names to try when the full address is refused (iCloud accepts the local part). */
   readonly tryLocalPartUsername: boolean;
+  /** The provider files mail sent over SMTP in Sent itself, so no IMAP APPEND (no duplicate). */
+  readonly smtpSavesSent: boolean;
 }
 
 const tls = (host: string, port = 993): MailEndpoint => ({ host, port, security: "tls" });
@@ -45,6 +47,7 @@ export const IMAP_PRESETS = [
     oauthOnly: null,
     appPasswordUrl: "https://myaccount.google.com/apppasswords",
     tryLocalPartUsername: false,
+    smtpSavesSent: true,
   },
   {
     id: "icloud",
@@ -55,6 +58,7 @@ export const IMAP_PRESETS = [
     oauthOnly: null,
     appPasswordUrl: "https://account.apple.com/account/manage",
     tryLocalPartUsername: true,
+    smtpSavesSent: false,
   },
   {
     id: "outlook",
@@ -65,6 +69,7 @@ export const IMAP_PRESETS = [
     oauthOnly: "microsoft",
     appPasswordUrl: null,
     tryLocalPartUsername: false,
+    smtpSavesSent: true,
   },
   {
     id: "yahoo",
@@ -75,6 +80,7 @@ export const IMAP_PRESETS = [
     oauthOnly: null,
     appPasswordUrl: "https://login.yahoo.com/account/security",
     tryLocalPartUsername: false,
+    smtpSavesSent: false,
   },
   {
     id: "yandex",
@@ -85,6 +91,7 @@ export const IMAP_PRESETS = [
     oauthOnly: null,
     appPasswordUrl: "https://id.yandex.com/security/app-passwords",
     tryLocalPartUsername: false,
+    smtpSavesSent: false,
   },
   {
     id: "gmx",
@@ -95,6 +102,7 @@ export const IMAP_PRESETS = [
     oauthOnly: null,
     appPasswordUrl: "https://www.gmx.net/mein-account/",
     tryLocalPartUsername: false,
+    smtpSavesSent: false,
   },
   {
     id: "webde",
@@ -105,6 +113,7 @@ export const IMAP_PRESETS = [
     oauthOnly: null,
     appPasswordUrl: "https://web.de/mein-account/",
     tryLocalPartUsername: false,
+    smtpSavesSent: false,
   },
 ] as const satisfies readonly ImapPreset[];
 

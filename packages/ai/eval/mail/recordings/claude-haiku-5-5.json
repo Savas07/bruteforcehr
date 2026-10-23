@@ -1,0 +1,4817 @@
+{
+ "model": "claude-haiku-5-5",
+ "promptVersion": "mail-classify@2",
+ "recordedAt": "2026-10-23T22:19:25.178Z",
+ "entries": {
+  "de-001": {
+   "promptHash": "d32a9725d1c4afe2",
+   "output": {
+    "category": "application_received",
+    "confidence": 0.97,
+    "language": "de",
+    "screening": false,
+    "company": "Nordlicht Logistik GmbH",
+    "role": "Senior Backend Engineer",
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": "de-app-nordlicht"
+   },
+   "usage": {
+    "inputTokens": 1542,
+    "outputTokens": 111,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "de-002": {
+   "promptHash": "f707a64a702e2a03",
+   "output": {
+    "category": "application_received",
+    "confidence": 0.97,
+    "language": "de",
+    "screening": false,
+    "company": "Alpbau Digital AG",
+    "role": "Full-Stack Entwickler",
+    "contactName": "Magdalena Gruber",
+    "contactEmail": "m.gruber@alpbau.example",
+    "dates": [
+     {
+      "kind": "reply_deadline",
+      "local": "2026-09-15T00:00",
+      "utcOffset": null,
+      "timeZone": null,
+      "label": "Antwort voraussichtlich bis Mitte September"
+     }
+    ],
+    "meetingUrls": [],
+    "applicationId": "de-app-alpbau"
+   },
+   "usage": {
+    "inputTokens": 1534,
+    "outputTokens": 193,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "de-003": {
+   "promptHash": "d1e08aefd155eeb8",
+   "output": {
+    "category": "application_received",
+    "confidence": 0.97,
+    "language": "de",
+    "screening": false,
+    "company": "Wolkenwerk",
+    "role": "Backend Engineer (Go)",
+    "contactName": "Lena",
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": "de-app-wolkenwerk-be"
+   },
+   "usage": {
+    "inputTokens": 1439,
+    "outputTokens": 112,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "de-004": {
+   "promptHash": "a96261d02e716c97",
+   "output": {
+    "category": "application_received",
+    "confidence": 0.97,
+    "language": "de",
+    "screening": false,
+    "company": "Sonnenhof Commerce GmbH",
+    "role": "Senior Software Engineer (m/w/d)",
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1508,
+    "outputTokens": 108,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "de-005": {
+   "promptHash": "9ce5374c502a97f8",
+   "output": {
+    "category": "application_received",
+    "confidence": 0.95,
+    "language": "de",
+    "screening": false,
+    "company": "Fichte & Partner GmbH",
+    "role": "Softwareentwickler Java",
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": "de-app-fichte"
+   },
+   "usage": {
+    "inputTokens": 1439,
+    "outputTokens": 107,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "de-006": {
+   "promptHash": "caf39e7b7f05312e",
+   "output": {
+    "category": "application_received",
+    "confidence": 0.95,
+    "language": "de",
+    "screening": false,
+    "company": "Taunus Bank Digital",
+    "role": "Senior Product Manager",
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": "de-app-taunus"
+   },
+   "usage": {
+    "inputTokens": 1487,
+    "outputTokens": 103,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "de-007": {
+   "promptHash": "73d059b40e4f8116",
+   "output": {
+    "category": "application_received",
+    "confidence": 0.95,
+    "language": "en",
+    "screening": false,
+    "company": "Kiezkraft",
+    "role": "Senior Product Engineer",
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1360,
+    "outputTokens": 93,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "de-008": {
+   "promptHash": "328783ecc6ba3574",
+   "output": {
+    "category": "application_received",
+    "confidence": 0.97,
+    "language": "de",
+    "screening": false,
+    "company": "Brandauer Automotive AG",
+    "role": "Cloud Architect",
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1584,
+    "outputTokens": 95,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "de-009": {
+   "promptHash": "ae7b88223b46cae8",
+   "output": {
+    "category": "application_received",
+    "confidence": 0.95,
+    "language": "de",
+    "screening": false,
+    "company": "Isarwerk Software GmbH",
+    "role": "Product Manager Payments",
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": "de-app-isarwerk"
+   },
+   "usage": {
+    "inputTokens": 1387,
+    "outputTokens": 107,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "de-010": {
+   "promptHash": "7d93392d5a79508d",
+   "output": {
+    "category": "rejection",
+    "confidence": 0.97,
+    "language": "de",
+    "screening": false,
+    "company": "Lindwurm Games GmbH",
+    "role": "Senior Unity Developer",
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1483,
+    "outputTokens": 98,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "de-011": {
+   "promptHash": "5e5ec4a71f1995ff",
+   "output": {
+    "category": "rejection",
+    "confidence": 0.97,
+    "language": "de",
+    "screening": false,
+    "company": "Kranich Health GmbH",
+    "role": "Staff Engineer Platform",
+    "contactName": "Sophie Brandt",
+    "contactEmail": "sophie.brandt@kranich-health.example",
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": "de-app-kranich"
+   },
+   "usage": {
+    "inputTokens": 1576,
+    "outputTokens": 126,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "de-012": {
+   "promptHash": "102df0cc726ae51e",
+   "output": {
+    "category": "rejection",
+    "confidence": 0.97,
+    "language": "de",
+    "screening": false,
+    "company": "Elbtal Mobility GmbH",
+    "role": "Senior Frontend Engineer (React)",
+    "contactName": "Jonas Petersen",
+    "contactEmail": "jonas.petersen@elbtal-mobility.example",
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": "de-app-elbtal"
+   },
+   "usage": {
+    "inputTokens": 1536,
+    "outputTokens": 137,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "de-013": {
+   "promptHash": "d5f1fda303a7ca57",
+   "output": {
+    "category": "rejection",
+    "confidence": 0.97,
+    "language": "de",
+    "screening": false,
+    "company": "Möwe Reisen GmbH",
+    "role": "iOS Developer",
+    "contactName": "Personalabteilung Möwe Reisen GmbH",
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1433,
+    "outputTokens": 113,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "de-014": {
+   "promptHash": "f7f12c86158aff9b",
+   "output": {
+    "category": "rejection",
+    "confidence": 0.97,
+    "language": "de",
+    "screening": false,
+    "company": "Wolkenwerk",
+    "role": "Product Owner Data Platform",
+    "contactName": "Lena",
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": "de-app-wolkenwerk-po"
+   },
+   "usage": {
+    "inputTokens": 1425,
+    "outputTokens": 111,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "de-015": {
+   "promptHash": "5621ab9f2e07d105",
+   "output": {
+    "category": "rejection",
+    "confidence": 0.97,
+    "language": "de",
+    "screening": false,
+    "company": "Brezel Labs GmbH",
+    "role": "Engineering Manager",
+    "contactName": null,
+    "contactEmail": "jobs@brezel-labs.example",
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": "de-app-brezel"
+   },
+   "usage": {
+    "inputTokens": 1386,
+    "outputTokens": 114,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "de-016": {
+   "promptHash": "3d92ea733696cca5",
+   "output": {
+    "category": "rejection",
+    "confidence": 0.97,
+    "language": "de",
+    "screening": false,
+    "company": "Nordstern Versicherung AG",
+    "role": "Lead Developer Kundenportal",
+    "contactName": "Talent Acquisition",
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1483,
+    "outputTokens": 108,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "de-017": {
+   "promptHash": "011dbf8840187920",
+   "output": {
+    "category": "rejection",
+    "confidence": 0.97,
+    "language": "de",
+    "screening": false,
+    "company": "Alpbau Digital AG",
+    "role": "Full-Stack Entwickler",
+    "contactName": "Magdalena Gruber",
+    "contactEmail": "m.gruber@alpbau.example",
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": "de-app-alpbau"
+   },
+   "usage": {
+    "inputTokens": 1463,
+    "outputTokens": 126,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "de-018": {
+   "promptHash": "15028cd72c6264ee",
+   "output": {
+    "category": "rejection",
+    "confidence": 0.97,
+    "language": "de",
+    "screening": false,
+    "company": "Wolkenwerk GmbH",
+    "role": null,
+    "contactName": "Felix Hartmann",
+    "contactEmail": "felix.hartmann@wolkenwerk.example",
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": "de-app-wolkenwerk-be"
+   },
+   "usage": {
+    "inputTokens": 1412,
+    "outputTokens": 127,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "de-019": {
+   "promptHash": "7d62e0549a8babd3",
+   "output": {
+    "category": "interview_invite",
+    "confidence": 0.95,
+    "language": "de",
+    "screening": false,
+    "company": "Kranich Health GmbH",
+    "role": "Staff Engineer Platform",
+    "contactName": "Sophie Brandt",
+    "contactEmail": "sophie.brandt@kranich-health.example",
+    "dates": [
+     {
+      "kind": "interview",
+      "local": "2026-09-15T14:00",
+      "utcOffset": "+02:00",
+      "timeZone": "Europe/Berlin",
+      "label": "Systemdesign-Interview, zweite Runde"
+     }
+    ],
+    "meetingUrls": [
+     "https://teams.microsoft.com/l/meetup-join/19%3ameeting_KRN8842ab%40thread.v2/0"
+    ],
+    "applicationId": "de-app-kranich"
+   },
+   "usage": {
+    "inputTokens": 1502,
+    "outputTokens": 245,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "de-020": {
+   "promptHash": "e537ca82ae6e6eea",
+   "output": {
+    "category": "interview_invite",
+    "confidence": 0.95,
+    "language": "de",
+    "screening": false,
+    "company": "Elbtal Mobility GmbH",
+    "role": "Senior Frontend Engineer (React)",
+    "contactName": "Jonas Petersen",
+    "contactEmail": "jonas.petersen@elbtal-mobility.example",
+    "dates": [
+     {
+      "kind": "interview",
+      "local": "2026-09-10T11:00",
+      "utcOffset": "+02:00",
+      "timeZone": "Europe/Berlin",
+      "label": "Technisches Interview"
+     }
+    ],
+    "meetingUrls": [
+     "https://meet.google.com/elb-qwrt-zux"
+    ],
+    "applicationId": "de-app-elbtal"
+   },
+   "usage": {
+    "inputTokens": 1492,
+    "outputTokens": 221,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "de-021": {
+   "promptHash": "e1805a4a4bf05857",
+   "output": {
+    "category": "interview_invite",
+    "confidence": 0.9,
+    "language": "de",
+    "screening": true,
+    "company": "Nordlicht Logistik GmbH",
+    "role": "Senior Backend Engineer",
+    "contactName": "Anna Feld",
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": "de-app-nordlicht"
+   },
+   "usage": {
+    "inputTokens": 1478,
+    "outputTokens": 118,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "de-022": {
+   "promptHash": "d6eb8ef1e5645403",
+   "output": {
+    "category": "interview_invite",
+    "confidence": 0.95,
+    "language": "de",
+    "screening": false,
+    "company": "Rheinblick Media GmbH",
+    "role": "Senior Software Engineer",
+    "contactName": "Carla Neumann",
+    "contactEmail": "c.neumann@rheinblick-media.example",
+    "dates": [
+     {
+      "kind": "interview",
+      "local": "2026-09-25T15:00",
+      "utcOffset": "+02:00",
+      "timeZone": "Europe/Berlin",
+      "label": "Freitag, 25. September 2026, 15:00 Uhr (MESZ)"
+     }
+    ],
+    "meetingUrls": [
+     "https://zoom.us/j/84712096631"
+    ],
+    "applicationId": "de-app-rheinblick"
+   },
+   "usage": {
+    "inputTokens": 1444,
+    "outputTokens": 228,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "de-023": {
+   "promptHash": "7b4ada2f976a28b1",
+   "output": {
+    "category": "interview_invite",
+    "confidence": 0.9,
+    "language": "de",
+    "screening": false,
+    "company": "Isarwerk",
+    "role": "Product Manager Payments",
+    "contactName": "Theresa Kolb",
+    "contactEmail": null,
+    "dates": [
+     {
+      "kind": "interview",
+      "local": "2026-10-01T10:00",
+      "utcOffset": "+02:00",
+      "timeZone": "Europe/Berlin",
+      "label": "Interview Product Manager Payments"
+     }
+    ],
+    "meetingUrls": [
+     "https://meet.google.com/isa-pmpy-kfd"
+    ],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1515,
+    "outputTokens": 187,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "de-024": {
+   "promptHash": "dd22c1f6fa69e4f8",
+   "output": {
+    "category": "interview_invite",
+    "confidence": 0.97,
+    "language": "de",
+    "screening": false,
+    "company": "Zugspitz Robotics GmbH",
+    "role": "Embedded Software Engineer",
+    "contactName": "Robert Haller",
+    "contactEmail": "r.haller@zugspitz-robotics.example",
+    "dates": [
+     {
+      "kind": "interview",
+      "local": "2026-10-14T10:30",
+      "utcOffset": null,
+      "timeZone": "Europe/Berlin",
+      "label": "Vorstellungsgespräch, Mittwoch 14. Oktober 2026"
+     }
+    ],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1552,
+    "outputTokens": 203,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "de-025": {
+   "promptHash": "aa6f6b4bd8694776",
+   "output": {
+    "category": "interview_invite",
+    "confidence": 0.95,
+    "language": "de",
+    "screening": true,
+    "company": "Alpbau Digital AG",
+    "role": "Full-Stack Entwickler",
+    "contactName": "Magdalena Gruber",
+    "contactEmail": "m.gruber@alpbau.example",
+    "dates": [
+     {
+      "kind": "interview",
+      "local": "2026-09-02T09:00",
+      "utcOffset": "+02:00",
+      "timeZone": "Europe/Vienna",
+      "label": "Erstgespräch Mittwoch, 2. September 2026, 9:00 Uhr (Wiener Zeit)"
+     }
+    ],
+    "meetingUrls": [
+     "https://teams.microsoft.com/l/meetup-join/19%3ameeting_ALP55c1d%40thread.v2/0"
+    ],
+    "applicationId": "de-app-alpbau"
+   },
+   "usage": {
+    "inputTokens": 1474,
+    "outputTokens": 269,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "de-026": {
+   "promptHash": "b34654157842fc82",
+   "output": {
+    "category": "interview_invite",
+    "confidence": 0.9,
+    "language": "de",
+    "screening": false,
+    "company": "Wolkenwerk",
+    "role": "Backend Engineer (Go)",
+    "contactName": "Lena",
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": "de-app-wolkenwerk-be"
+   },
+   "usage": {
+    "inputTokens": 1432,
+    "outputTokens": 114,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "de-027": {
+   "promptHash": "9fae448ef4aac473",
+   "output": {
+    "category": "interview_invite",
+    "confidence": 0.95,
+    "language": "en",
+    "screening": false,
+    "company": "Seeblick Versicherungen",
+    "role": "Software Engineer Mobile",
+    "contactName": "Nina Keller",
+    "contactEmail": "nina.keller@seeblick.example",
+    "dates": [
+     {
+      "kind": "interview",
+      "local": "2026-10-13T14:00",
+      "utcOffset": "+02:00",
+      "timeZone": "Europe/Zurich",
+      "label": "Technical interview, Tuesday 13 October 2026"
+     }
+    ],
+    "meetingUrls": [
+     "https://zoom.us/j/93018475520"
+    ],
+    "applicationId": "de-app-seeblick"
+   },
+   "usage": {
+    "inputTokens": 1407,
+    "outputTokens": 213,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "de-028": {
+   "promptHash": "e1969229df4e6ffc",
+   "output": {
+    "category": "assessment",
+    "confidence": 0.97,
+    "language": "de",
+    "screening": false,
+    "company": "Nordlicht Logistik GmbH",
+    "role": "Senior Backend Engineer",
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [
+     {
+      "kind": "assessment_deadline",
+      "local": "2026-08-27T23:59",
+      "utcOffset": "+02:00",
+      "timeZone": "Europe/Berlin",
+      "label": "Testfrist (MESZ)"
+     }
+    ],
+    "meetingUrls": [],
+    "applicationId": "de-app-nordlicht"
+   },
+   "usage": {
+    "inputTokens": 1445,
+    "outputTokens": 182,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "de-029": {
+   "promptHash": "55a0795b045d042a",
+   "output": {
+    "category": "assessment",
+    "confidence": 0.95,
+    "language": "de",
+    "screening": false,
+    "company": "Wolkenwerk GmbH",
+    "role": "Backend Engineer (Go)",
+    "contactName": null,
+    "contactEmail": "support@hackerrank.com",
+    "dates": [
+     {
+      "kind": "assessment_deadline",
+      "local": "2026-09-11T18:00",
+      "utcOffset": "+02:00",
+      "timeZone": "Europe/Berlin",
+      "label": "Testfrist MESZ"
+     }
+    ],
+    "meetingUrls": [],
+    "applicationId": "de-app-wolkenwerk-be"
+   },
+   "usage": {
+    "inputTokens": 1436,
+    "outputTokens": 191,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "de-030": {
+   "promptHash": "2c38e7c3c36d7359",
+   "output": {
+    "category": "assessment",
+    "confidence": 0.95,
+    "language": "de",
+    "screening": false,
+    "company": "Fjordlicht Energy",
+    "role": "Product Analyst",
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [
+     {
+      "kind": "assessment_deadline",
+      "local": "2026-09-19T00:00",
+      "utcOffset": null,
+      "timeZone": null,
+      "label": "Assessment innerhalb von 5 Tagen abschließen"
+     }
+    ],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1442,
+    "outputTokens": 164,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "de-031": {
+   "promptHash": "0c27f66856b64d56",
+   "output": {
+    "category": "assessment",
+    "confidence": 0.95,
+    "language": "de",
+    "screening": false,
+    "company": "Kranich Health GmbH",
+    "role": "Staff Engineer Platform",
+    "contactName": "Mira Schulz",
+    "contactEmail": "mira.schulz@kranich-health.example",
+    "dates": [
+     {
+      "kind": "assessment_deadline",
+      "local": "2026-09-28T12:00",
+      "utcOffset": null,
+      "timeZone": null,
+      "label": "Abgabe Case Study Montag, 28. September 2026, 12:00 Uhr"
+     }
+    ],
+    "meetingUrls": [],
+    "applicationId": "de-app-kranich"
+   },
+   "usage": {
+    "inputTokens": 1412,
+    "outputTokens": 204,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "de-032": {
+   "promptHash": "d5b664d8813078d1",
+   "output": {
+    "category": "assessment",
+    "confidence": 0.95,
+    "language": "de",
+    "screening": false,
+    "company": "Taunus Bank Digital",
+    "role": "Senior Product Manager",
+    "contactName": "Katrin Vogel",
+    "contactEmail": "katrin.vogel@taunusbank-digital.example",
+    "dates": [
+     {
+      "kind": "assessment_deadline",
+      "local": "2026-10-02T17:00",
+      "utcOffset": "+03:00",
+      "timeZone": null,
+      "label": "Abgabe der Fallstudie, Freitag"
+     }
+    ],
+    "meetingUrls": [],
+    "applicationId": "de-app-taunus"
+   },
+   "usage": {
+    "inputTokens": 1440,
+    "outputTokens": 197,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "de-033": {
+   "promptHash": "45d10bd96ba9378b",
+   "output": {
+    "category": "assessment",
+    "confidence": 0.95,
+    "language": "de",
+    "screening": false,
+    "company": "Quellwerk Systems",
+    "role": "Software Engineer Backend",
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [
+     {
+      "kind": "assessment_deadline",
+      "local": "2026-10-15T23:59",
+      "utcOffset": "+02:00",
+      "timeZone": "Europe/Berlin",
+      "label": "Deadline Coding Challenge"
+     }
+    ],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1405,
+    "outputTokens": 166,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "de-034": {
+   "promptHash": "414e96ff7bb58be0",
+   "output": {
+    "category": "offer",
+    "confidence": 0.97,
+    "language": "de",
+    "screening": false,
+    "company": "Kranich Health GmbH",
+    "role": "Staff Engineer Platform",
+    "contactName": "Sophie Brandt",
+    "contactEmail": "sophie.brandt@kranich-health.example",
+    "dates": [
+     {
+      "kind": "reply_deadline",
+      "local": "2026-10-16T00:00",
+      "utcOffset": null,
+      "timeZone": null,
+      "label": "Antwortfrist Angebot"
+     },
+     {
+      "kind": "start_date",
+      "local": "2026-12-01T00:00",
+      "utcOffset": null,
+      "timeZone": "Europe/Berlin",
+      "label": "Gewünschter Eintrittstermin"
+     }
+    ],
+    "meetingUrls": [],
+    "applicationId": "de-app-kranich"
+   },
+   "usage": {
+    "inputTokens": 1541,
+    "outputTokens": 252,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "de-035": {
+   "promptHash": "fbf0916d86b49a24",
+   "output": {
+    "category": "offer",
+    "confidence": 0.95,
+    "language": "de",
+    "screening": false,
+    "company": "Hafenkontor Analytics GmbH",
+    "role": "Data Engineer",
+    "contactName": "Henrik Lange",
+    "contactEmail": "henrik.lange@hafenkontor.example",
+    "dates": [
+     {
+      "kind": "start_date",
+      "local": "2026-11-01T00:00",
+      "utcOffset": null,
+      "timeZone": null,
+      "label": "Eintritt"
+     },
+     {
+      "kind": "reply_deadline",
+      "local": "2026-09-09T00:00",
+      "utcOffset": null,
+      "timeZone": null,
+      "label": "Vertrag zurücksenden bis"
+     }
+    ],
+    "meetingUrls": [],
+    "applicationId": "de-app-hafenkontor"
+   },
+   "usage": {
+    "inputTokens": 1496,
+    "outputTokens": 241,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "de-036": {
+   "promptHash": "d622c208a78a79b5",
+   "output": {
+    "category": "offer",
+    "confidence": 0.97,
+    "language": "de",
+    "screening": false,
+    "company": "Rheinblick Media GmbH",
+    "role": "Senior Software Engineer",
+    "contactName": "Carla Neumann",
+    "contactEmail": "c.neumann@rheinblick-media.example",
+    "dates": [
+     {
+      "kind": "start_date",
+      "local": "2027-01-01T00:00",
+      "utcOffset": null,
+      "timeZone": null,
+      "label": "Eintritt zum 1. Januar 2027"
+     }
+    ],
+    "meetingUrls": [],
+    "applicationId": "de-app-rheinblick"
+   },
+   "usage": {
+    "inputTokens": 1446,
+    "outputTokens": 189,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "de-037": {
+   "promptHash": "4e5745071d7190ed",
+   "output": {
+    "category": "offer",
+    "confidence": 0.95,
+    "language": "de",
+    "screening": false,
+    "company": "Bergquell Software GmbH",
+    "role": "Senior iOS Engineer",
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [
+     {
+      "kind": "reply_deadline",
+      "local": "2026-10-23T00:00",
+      "utcOffset": null,
+      "timeZone": null,
+      "label": "Angebot gültig bis"
+     },
+     {
+      "kind": "start_date",
+      "local": "2027-02-01T00:00",
+      "utcOffset": null,
+      "timeZone": null,
+      "label": "Startdatum"
+     }
+    ],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1444,
+    "outputTokens": 206,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "de-038": {
+   "promptHash": "2f71981538b15c4f",
+   "output": {
+    "category": "recruiter_outreach",
+    "confidence": 0.95,
+    "language": "de",
+    "screening": false,
+    "company": "Talentbrücke Personalberatung GmbH",
+    "role": "Head of Engineering",
+    "contactName": "Tobias Rehm",
+    "contactEmail": "t.rehm@talentbruecke.example",
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1477,
+    "outputTokens": 126,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "de-039": {
+   "promptHash": "7374149763fdc12d",
+   "output": {
+    "category": "recruiter_outreach",
+    "confidence": 0.9,
+    "language": "de",
+    "screening": false,
+    "company": "Hirewerk Executive Search",
+    "role": "Lead Backend Engineer (Kotlin)",
+    "contactName": "Sabine Kurz",
+    "contactEmail": "sabine.kurz@hirewerk.example",
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1480,
+    "outputTokens": 131,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "de-040": {
+   "promptHash": "121749cbf5e72acb",
+   "output": {
+    "category": "recruiter_outreach",
+    "confidence": 0.9,
+    "language": "de",
+    "screening": false,
+    "company": "Donaublick IT Services GmbH",
+    "role": "Senior DevOps Engineer",
+    "contactName": "Markus Engel",
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1433,
+    "outputTokens": 111,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "de-041": {
+   "promptHash": "68556de3bed4498e",
+   "output": {
+    "category": "recruiter_outreach",
+    "confidence": 0.95,
+    "language": "de",
+    "screening": false,
+    "company": "Bavaria Cloud",
+    "role": "Staff Product Manager",
+    "contactName": "Laura Winter",
+    "contactEmail": "laura.winter@bavaria-cloud.example",
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1445,
+    "outputTokens": 119,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "de-042": {
+   "promptHash": "845234e13d50080f",
+   "output": {
+    "category": "recruiter_outreach",
+    "confidence": 0.95,
+    "language": "de",
+    "screening": false,
+    "company": "Halmbruch Technologies GmbH",
+    "role": "Senior Backend Engineer (Node.js/TypeScript)",
+    "contactName": "Jan Fischer",
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1435,
+    "outputTokens": 124,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "de-043": {
+   "promptHash": "ea0b945ec0db94cf",
+   "output": {
+    "category": "info_request",
+    "confidence": 0.95,
+    "language": "de",
+    "screening": false,
+    "company": "Elbtal Mobility GmbH",
+    "role": "Senior Frontend Engineer (React)",
+    "contactName": "Jonas Petersen",
+    "contactEmail": "jonas.petersen@elbtal-mobility.example",
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": "de-app-elbtal"
+   },
+   "usage": {
+    "inputTokens": 1448,
+    "outputTokens": 137,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "de-044": {
+   "promptHash": "581b6a16b4f4973f",
+   "output": {
+    "category": "info_request",
+    "confidence": 0.95,
+    "language": "de",
+    "screening": false,
+    "company": "Kranich Health GmbH",
+    "role": "Staff Engineer Platform",
+    "contactName": "Sophie Brandt",
+    "contactEmail": "sophie.brandt@kranich-health.example",
+    "dates": [
+     {
+      "kind": "reply_deadline",
+      "local": "2026-10-02T00:00",
+      "utcOffset": null,
+      "timeZone": null,
+      "label": "Ende dieser Woche"
+     }
+    ],
+    "meetingUrls": [],
+    "applicationId": "de-app-kranich"
+   },
+   "usage": {
+    "inputTokens": 1414,
+    "outputTokens": 184,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "de-045": {
+   "promptHash": "0b1c5cdf663ff009",
+   "output": {
+    "category": "info_request",
+    "confidence": 0.95,
+    "language": "de",
+    "screening": false,
+    "company": "Alpbau Digital AG",
+    "role": "Full-Stack Entwickler",
+    "contactName": "Magdalena Gruber",
+    "contactEmail": "m.gruber@alpbau.example",
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": "de-app-alpbau"
+   },
+   "usage": {
+    "inputTokens": 1399,
+    "outputTokens": 126,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "de-046": {
+   "promptHash": "dd88c5cfd905cc76",
+   "output": {
+    "category": "info_request",
+    "confidence": 0.9,
+    "language": "de",
+    "screening": false,
+    "company": "Weißdorn Pharma GmbH",
+    "role": "Software Engineer Laborsysteme",
+    "contactName": "Recruiting-Team der Weißdorn Pharma GmbH",
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1454,
+    "outputTokens": 126,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "de-047": {
+   "promptHash": "6c6d5841f1d71177",
+   "output": {
+    "category": "info_request",
+    "confidence": 0.9,
+    "language": "de",
+    "screening": false,
+    "company": "Seeblick Versicherungen AG",
+    "role": "Software Engineer Mobile",
+    "contactName": "Nina Keller",
+    "contactEmail": "nina.keller@seeblick.example",
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": "de-app-seeblick"
+   },
+   "usage": {
+    "inputTokens": 1387,
+    "outputTokens": 125,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "de-048": {
+   "promptHash": "b35ecc90a4cafaef",
+   "output": {
+    "category": "job_alert",
+    "confidence": 0.95,
+    "language": "de",
+    "screening": false,
+    "company": null,
+    "role": "Senior Backend Developer",
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1454,
+    "outputTokens": 88,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "de-049": {
+   "promptHash": "59e9dc414cfa21de",
+   "output": {
+    "category": "job_alert",
+    "confidence": 0.95,
+    "language": "de",
+    "screening": false,
+    "company": null,
+    "role": null,
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1424,
+    "outputTokens": 80,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "de-050": {
+   "promptHash": "971d4b797beb230a",
+   "output": {
+    "category": "job_alert",
+    "confidence": 0.85,
+    "language": "de",
+    "screening": false,
+    "company": null,
+    "role": null,
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1483,
+    "outputTokens": 80,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "de-051": {
+   "promptHash": "aa63ea98f5eba628",
+   "output": {
+    "category": "job_alert",
+    "confidence": 0.95,
+    "language": "de",
+    "screening": false,
+    "company": null,
+    "role": "Frontend Entwickler React",
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1395,
+    "outputTokens": 89,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "de-052": {
+   "promptHash": "17336b897f62581c",
+   "output": {
+    "category": "job_alert",
+    "confidence": 0.95,
+    "language": "de",
+    "screening": false,
+    "company": null,
+    "role": null,
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1383,
+    "outputTokens": 80,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "de-053": {
+   "promptHash": "eb8326a0fc22da88",
+   "output": {
+    "category": "job_alert",
+    "confidence": 0.95,
+    "language": "de",
+    "screening": false,
+    "company": null,
+    "role": "Product Manager Payments",
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1411,
+    "outputTokens": 87,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "de-054": {
+   "promptHash": "704e46eaf3951b20",
+   "output": {
+    "category": "recruiter_outreach",
+    "confidence": 0.8,
+    "language": "de",
+    "screening": false,
+    "company": null,
+    "role": "Software Engineer",
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1404,
+    "outputTokens": 89,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "de-055": {
+   "promptHash": "193d594e0c4e9472",
+   "output": {
+    "category": "other_job",
+    "confidence": 0.8,
+    "language": "de",
+    "screening": false,
+    "company": "Brandauer Automotive AG",
+    "role": null,
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [
+     {
+      "kind": "reply_deadline",
+      "local": "2026-09-16T09:10",
+      "utcOffset": "+03:00",
+      "timeZone": null,
+      "label": "Passwort-Link gültig bis"
+     }
+    ],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1408,
+    "outputTokens": 153,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "de-056": {
+   "promptHash": "77be9e894225f73c",
+   "output": {
+    "category": "other_job",
+    "confidence": 0.7,
+    "language": "de",
+    "screening": false,
+    "company": "Kiezkraft",
+    "role": null,
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [
+     {
+      "kind": "other",
+      "local": "2026-10-17T10:00",
+      "utcOffset": null,
+      "timeZone": "Europe/Berlin",
+      "label": "Tech-Karrieremesse, 10–17 Uhr"
+     }
+    ],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1452,
+    "outputTokens": 157,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "de-057": {
+   "promptHash": "58dbd7b6cf8e81ea",
+   "output": {
+    "category": "other_job",
+    "confidence": 0.8,
+    "language": "de",
+    "screening": false,
+    "company": "StepStone",
+    "role": null,
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1378,
+    "outputTokens": 82,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "de-058": {
+   "promptHash": "5277300e8df13461",
+   "output": {
+    "category": "other_job",
+    "confidence": 0.8,
+    "language": "de",
+    "screening": false,
+    "company": "Nordstern Versicherung AG",
+    "role": null,
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1404,
+    "outputTokens": 90,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "de-059": {
+   "promptHash": "b49864285de49e9e",
+   "output": {
+    "category": "other_job",
+    "confidence": 0.9,
+    "language": "de",
+    "screening": false,
+    "company": "Spreewerk Energie GmbH",
+    "role": "Platform Engineer",
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": "de-app-spreewerk"
+   },
+   "usage": {
+    "inputTokens": 1393,
+    "outputTokens": 107,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "de-061": {
+   "promptHash": "babbc41cc13af75f",
+   "output": {
+    "category": "not_job",
+    "confidence": 0.95,
+    "language": "de",
+    "screening": false,
+    "company": "Lindenbank Kreditservice",
+    "role": null,
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1397,
+    "outputTokens": 90,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "de-063": {
+   "promptHash": "e7883e2fbf6e3669",
+   "output": {
+    "category": "not_job",
+    "confidence": 0.9,
+    "language": "de",
+    "screening": false,
+    "company": "Code & Kaffee Podcast",
+    "role": null,
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1399,
+    "outputTokens": 90,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "de-064": {
+   "promptHash": "402c8e37d763fbcd",
+   "output": {
+    "category": "not_job",
+    "confidence": 0.9,
+    "language": "de",
+    "screening": false,
+    "company": "Hausverwaltung Prenzlberg GmbH",
+    "role": null,
+    "contactName": null,
+    "contactEmail": "vermietung@hv-prenzlberg.example",
+    "dates": [
+     {
+      "kind": "other",
+      "local": "2026-09-12T17:30",
+      "utcOffset": null,
+      "timeZone": "Europe/Berlin",
+      "label": "Besichtigung Kastanienallee 12"
+     }
+    ],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1421,
+    "outputTokens": 178,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "de-067": {
+   "promptHash": "5e7b8210434f3bae",
+   "output": {
+    "category": "other_job",
+    "confidence": 0.6,
+    "language": "de",
+    "screening": false,
+    "company": "Personio",
+    "role": null,
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [
+     {
+      "kind": "other",
+      "local": "2026-10-29T00:00",
+      "utcOffset": null,
+      "timeZone": null,
+      "label": "Webinar am 29. Oktober"
+     }
+    ],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1425,
+    "outputTokens": 137,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "de-069": {
+   "promptHash": "57dc273125f94c3b",
+   "output": {
+    "category": "not_job",
+    "confidence": 0.9,
+    "language": "de",
+    "screening": false,
+    "company": null,
+    "role": null,
+    "contactName": "Elif Schneider",
+    "contactEmail": "elif.schneider@mail.example",
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1354,
+    "outputTokens": 95,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "en-001": {
+   "promptHash": "b00531d23e5094cf",
+   "output": {
+    "category": "application_received",
+    "confidence": 0.95,
+    "language": "en",
+    "screening": false,
+    "company": "Northwind Ledger",
+    "role": "Senior Backend Engineer",
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": "en-app-northwind-backend"
+   },
+   "usage": {
+    "inputTokens": 1433,
+    "outputTokens": 106,
+    "cacheWriteTokens": 2588,
+    "cacheReadTokens": 0
+   }
+  },
+  "en-002": {
+   "promptHash": "5cbeba3d3019182a",
+   "output": {
+    "category": "application_received",
+    "confidence": 0.97,
+    "language": "en",
+    "screening": false,
+    "company": "Canalworks",
+    "role": "Staff Software Engineer",
+    "contactName": "Canalworks Recruiting",
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": "en-app-canalworks-staff"
+   },
+   "usage": {
+    "inputTokens": 1341,
+    "outputTokens": 112,
+    "cacheWriteTokens": 2588,
+    "cacheReadTokens": 0
+   }
+  },
+  "en-003": {
+   "promptHash": "cd9760198c4d096b",
+   "output": {
+    "category": "application_received",
+    "confidence": 0.97,
+    "language": "en",
+    "screening": false,
+    "company": "Copperleaf",
+    "role": "Senior Software Engineer, Payments",
+    "contactName": "Copperleaf Recruiting",
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1320,
+    "outputTokens": 106,
+    "cacheWriteTokens": 2588,
+    "cacheReadTokens": 0
+   }
+  },
+  "en-004": {
+   "promptHash": "bbfd3a17f84f0c1a",
+   "output": {
+    "category": "application_received",
+    "confidence": 0.97,
+    "language": "en",
+    "screening": false,
+    "company": "Graystone Insurance",
+    "role": "Software Engineer II",
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1418,
+    "outputTokens": 92,
+    "cacheWriteTokens": 2588,
+    "cacheReadTokens": 0
+   }
+  },
+  "en-005": {
+   "promptHash": "926cb0e39c4e4e89",
+   "output": {
+    "category": "application_received",
+    "confidence": 0.95,
+    "language": "en",
+    "screening": false,
+    "company": "Pebble & Finch Studio",
+    "role": "Backend Developer",
+    "contactName": null,
+    "contactEmail": "jobs@pebblefinch.example",
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": "en-app-pebble-backend"
+   },
+   "usage": {
+    "inputTokens": 1412,
+    "outputTokens": 116,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "en-006": {
+   "promptHash": "ce6ba5513ceeeb8a",
+   "output": {
+    "category": "application_received",
+    "confidence": 0.97,
+    "language": "en",
+    "screening": false,
+    "company": "Harbor Analytics",
+    "role": "Data Engineer",
+    "contactName": "Harbor Analytics Talent Team",
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": "en-app-harbor-data"
+   },
+   "usage": {
+    "inputTokens": 1364,
+    "outputTokens": 113,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "en-007": {
+   "promptHash": "1094c3220200e3e5",
+   "output": {
+    "category": "application_received",
+    "confidence": 0.95,
+    "language": "en",
+    "screening": false,
+    "company": "Meridian Atlas",
+    "role": "Full-Stack Developer",
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": "en-app-meridian-fullstack"
+   },
+   "usage": {
+    "inputTokens": 1309,
+    "outputTokens": 107,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "en-008": {
+   "promptHash": "3730d66bc61e1fc3",
+   "output": {
+    "category": "application_received",
+    "confidence": 0.8,
+    "language": "en",
+    "screening": false,
+    "company": "Fjordline Games",
+    "role": "Backend Engineer (Live Services)",
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1329,
+    "outputTokens": 97,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "en-009": {
+   "promptHash": "29100dd3b74d6c92",
+   "output": {
+    "category": "rejection",
+    "confidence": 0.97,
+    "language": "en",
+    "screening": false,
+    "company": "Juniper Robotics",
+    "role": "Software Engineer, Developer Tooling",
+    "contactName": "Juniper Robotics Recruiting",
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": "en-app-juniper-tooling"
+   },
+   "usage": {
+    "inputTokens": 1370,
+    "outputTokens": 123,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "en-010": {
+   "promptHash": "4c03945ad7e5491a",
+   "output": {
+    "category": "rejection",
+    "confidence": 0.97,
+    "language": "en",
+    "screening": false,
+    "company": "Quillstack",
+    "role": "Site Reliability Engineer",
+    "contactName": "Hannah Price",
+    "contactEmail": "hannah.price@quillstack.example",
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": "en-app-quillstack-sre"
+   },
+   "usage": {
+    "inputTokens": 1420,
+    "outputTokens": 120,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "en-011": {
+   "promptHash": "2883ad0f9e81f01b",
+   "output": {
+    "category": "rejection",
+    "confidence": 0.97,
+    "language": "en",
+    "screening": false,
+    "company": "Wexford Systems",
+    "role": "Senior Platform Engineer",
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1376,
+    "outputTokens": 94,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "en-012": {
+   "promptHash": "cbd103f5b7c5a142",
+   "output": {
+    "category": "rejection",
+    "confidence": 0.97,
+    "language": "en",
+    "screening": false,
+    "company": "Orbit Mobility",
+    "role": "Senior Product Manager",
+    "contactName": "Orbit Mobility Talent Acquisition",
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": "en-app-orbit-pm"
+   },
+   "usage": {
+    "inputTokens": 1344,
+    "outputTokens": 119,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "en-013": {
+   "promptHash": "77c63e48be1d2c8f",
+   "output": {
+    "category": "rejection",
+    "confidence": 0.97,
+    "language": "en",
+    "screening": false,
+    "company": "Harbor Analytics",
+    "role": null,
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1335,
+    "outputTokens": 86,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "en-014": {
+   "promptHash": "0fdea2a3b1db7b7a",
+   "output": {
+    "category": "rejection",
+    "confidence": 0.97,
+    "language": "en",
+    "screening": false,
+    "company": "Brightloop",
+    "role": "iOS Engineer",
+    "contactName": "Brightloop Talent",
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1346,
+    "outputTokens": 96,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "en-015": {
+   "promptHash": "1b352a1b7f106140",
+   "output": {
+    "category": "rejection",
+    "confidence": 0.97,
+    "language": "en",
+    "screening": false,
+    "company": "Graystone Insurance",
+    "role": "Software Engineer II",
+    "contactName": "Talent Acquisition",
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1341,
+    "outputTokens": 99,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "en-016": {
+   "promptHash": "19fd6e42732a2310",
+   "output": {
+    "category": "rejection",
+    "confidence": 0.97,
+    "language": "en",
+    "screening": false,
+    "company": "Lumen Health",
+    "role": "Frontend Engineer",
+    "contactName": "Priya Natarajan",
+    "contactEmail": "priya.natarajan@lumenhealth.example",
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": "en-app-lumen-frontend"
+   },
+   "usage": {
+    "inputTokens": 1366,
+    "outputTokens": 125,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "en-017": {
+   "promptHash": "95967a9cf981f3c8",
+   "output": {
+    "category": "rejection",
+    "confidence": 0.97,
+    "language": "other",
+    "screening": false,
+    "company": "Canalworks",
+    "role": "Staff Software Engineer",
+    "contactName": "Sanne de Vries",
+    "contactEmail": "sanne.devries@canalworks.example",
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": "en-app-canalworks-staff"
+   },
+   "usage": {
+    "inputTokens": 1407,
+    "outputTokens": 122,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "en-018": {
+   "promptHash": "569a71e6f1de0690",
+   "output": {
+    "category": "interview_invite",
+    "confidence": 0.97,
+    "language": "en",
+    "screening": false,
+    "company": "Lumen Health",
+    "role": "Frontend Engineer",
+    "contactName": "Priya Natarajan",
+    "contactEmail": "priya.natarajan@lumenhealth.example",
+    "dates": [
+     {
+      "kind": "interview",
+      "local": "2026-08-25T10:00",
+      "utcOffset": "-04:00",
+      "timeZone": "America/New_York",
+      "label": "Technical interview, Tuesday 25 August 2026"
+     }
+    ],
+    "meetingUrls": [
+     "https://zoom.us/j/84213397021"
+    ],
+    "applicationId": "en-app-lumen-frontend"
+   },
+   "usage": {
+    "inputTokens": 1373,
+    "outputTokens": 212,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "en-019": {
+   "promptHash": "7395f0c9cae5ef5d",
+   "output": {
+    "category": "interview_invite",
+    "confidence": 0.95,
+    "language": "en",
+    "screening": false,
+    "company": "Quillstack",
+    "role": "Site Reliability Engineer",
+    "contactName": "Hannah Price",
+    "contactEmail": "hannah.price@quillstack.example",
+    "dates": [
+     {
+      "kind": "interview",
+      "local": "2026-09-07T14:00",
+      "utcOffset": null,
+      "timeZone": "Europe/London",
+      "label": "System design interview, Monday 7 September 14:00 UK time"
+     }
+    ],
+    "meetingUrls": [
+     "https://meet.google.com/qsk-wdpr-tmn"
+    ],
+    "applicationId": "en-app-quillstack-sre"
+   },
+   "usage": {
+    "inputTokens": 1351,
+    "outputTokens": 213,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "en-020": {
+   "promptHash": "4daf7b0e50363a69",
+   "output": {
+    "category": "interview_invite",
+    "confidence": 0.95,
+    "language": "en",
+    "screening": false,
+    "company": "Northwind Ledger",
+    "role": "Senior Backend Engineer",
+    "contactName": "Marcus Bell",
+    "contactEmail": "marcus.bell@northwind-ledger.example",
+    "dates": [
+     {
+      "kind": "interview",
+      "local": "2026-09-10T15:00",
+      "utcOffset": "+01:00",
+      "timeZone": "Europe/London",
+      "label": "Interview with Marcus Bell"
+     }
+    ],
+    "meetingUrls": [
+     "https://meet.google.com/nwl-bkxe-qra"
+    ],
+    "applicationId": "en-app-northwind-backend"
+   },
+   "usage": {
+    "inputTokens": 1486,
+    "outputTokens": 213,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "en-021": {
+   "promptHash": "cc688d3c7729885b",
+   "output": {
+    "category": "interview_invite",
+    "confidence": 0.95,
+    "language": "en",
+    "screening": true,
+    "company": "Harbor Analytics",
+    "role": "Product Manager",
+    "contactName": "Ellie Watson",
+    "contactEmail": "ellie.watson@harbor-analytics.example",
+    "dates": [
+     {
+      "kind": "interview",
+      "local": "2026-08-14T11:00",
+      "utcOffset": "+02:00",
+      "timeZone": "Europe/Berlin",
+      "label": "Intro call, Friday 14 August"
+     }
+    ],
+    "meetingUrls": [
+     "https://teams.microsoft.com/l/meetup-join/19%3ameeting_HbrPm7c2NjYtZTQ1Mi00@thread.v2/0"
+    ],
+    "applicationId": "en-app-harbor-pm"
+   },
+   "usage": {
+    "inputTokens": 1409,
+    "outputTokens": 249,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "en-022": {
+   "promptHash": "3d85f6ca6d31b917",
+   "output": {
+    "category": "recruiter_outreach",
+    "confidence": 0.6,
+    "language": "en",
+    "screening": false,
+    "company": "Copperleaf",
+    "role": "Senior Software Engineer, Payments",
+    "contactName": "Jordan",
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1385,
+    "outputTokens": 104,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "en-023": {
+   "promptHash": "8c8bf49eaae63c69",
+   "output": {
+    "category": "interview_invite",
+    "confidence": 0.95,
+    "language": "en",
+    "screening": false,
+    "company": "Pebble & Finch Studio",
+    "role": "Backend Developer",
+    "contactName": "Olly Finch",
+    "contactEmail": "olly@pebblefinch.example",
+    "dates": [
+     {
+      "kind": "interview",
+      "local": "2026-09-02T11:00",
+      "utcOffset": null,
+      "timeZone": "Europe/London",
+      "label": "Wednesday 2 September, 11:00 UK time"
+     }
+    ],
+    "meetingUrls": [
+     "https://teams.microsoft.com/l/meetup-join/19%3ameeting_PfS2bQx9ZmItODk3@thread.v2/0"
+    ],
+    "applicationId": "en-app-pebble-backend"
+   },
+   "usage": {
+    "inputTokens": 1408,
+    "outputTokens": 241,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "en-024": {
+   "promptHash": "edf8e7d67d8bdf8f",
+   "output": {
+    "category": "interview_invite",
+    "confidence": 0.95,
+    "language": "en",
+    "screening": false,
+    "company": "Meridian Atlas",
+    "role": "Full-Stack Developer",
+    "contactName": "Rosa Lindqvist",
+    "contactEmail": "rosa@meridian-atlas.example",
+    "dates": [
+     {
+      "kind": "interview",
+      "local": "2026-09-03T13:30",
+      "utcOffset": "+01:00",
+      "timeZone": "Europe/London",
+      "label": "Thursday 3 September, 13:30 BST"
+     }
+    ],
+    "meetingUrls": [
+     "https://meet.google.com/mrd-atlf-xse"
+    ],
+    "applicationId": "en-app-meridian-fullstack"
+   },
+   "usage": {
+    "inputTokens": 1406,
+    "outputTokens": 218,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "en-025": {
+   "promptHash": "2c0ef8eb4412a001",
+   "output": {
+    "category": "interview_invite",
+    "confidence": 0.9,
+    "language": "en",
+    "screening": false,
+    "company": "Fjordline Games",
+    "role": "Backend Engineer (Live Services)",
+    "contactName": "Kari Holm",
+    "contactEmail": null,
+    "dates": [
+     {
+      "kind": "interview",
+      "local": "2026-09-15T14:00",
+      "utcOffset": "+02:00",
+      "timeZone": "Europe/Oslo",
+      "label": "Interview, Tuesday September 15"
+     }
+    ],
+    "meetingUrls": [
+     "https://teams.microsoft.com/l/meetup-join/19%3ameeting_FjLs4YzEtNWQ3Ny00@thread.v2/0"
+    ],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1453,
+    "outputTokens": 226,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "en-026": {
+   "promptHash": "197548a1c6e582f2",
+   "output": {
+    "category": "interview_invite",
+    "confidence": 0.95,
+    "language": "en",
+    "screening": false,
+    "company": "Tidal Freight",
+    "role": "Full-Stack Engineer",
+    "contactName": "Jamal Ortiz",
+    "contactEmail": "jamal.ortiz@tidal-freight.example",
+    "dates": [
+     {
+      "kind": "interview",
+      "local": "2026-09-21T09:00",
+      "utcOffset": "-04:00",
+      "timeZone": "America/New_York",
+      "label": "Final round, product deep-dive (Monday, September 21, 9:00 AM ET)"
+     }
+    ],
+    "meetingUrls": [
+     "https://zoom.us/j/93017745520"
+    ],
+    "applicationId": "en-app-tidal-fullstack"
+   },
+   "usage": {
+    "inputTokens": 1398,
+    "outputTokens": 229,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "en-027": {
+   "promptHash": "1febe0c050828f99",
+   "output": {
+    "category": "assessment",
+    "confidence": 0.95,
+    "language": "en",
+    "screening": false,
+    "company": "Northwind Ledger",
+    "role": "Senior Backend Engineer",
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [
+     {
+      "kind": "assessment_deadline",
+      "local": "2026-08-05T23:59",
+      "utcOffset": "+01:00",
+      "timeZone": null,
+      "label": "test deadline"
+     }
+    ],
+    "meetingUrls": [],
+    "applicationId": "en-app-northwind-backend"
+   },
+   "usage": {
+    "inputTokens": 1368,
+    "outputTokens": 163,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "en-028": {
+   "promptHash": "e84a6626936e119f",
+   "output": {
+    "category": "assessment",
+    "confidence": 0.9,
+    "language": "en",
+    "screening": false,
+    "company": "Canalworks",
+    "role": "Staff Software Engineer",
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [
+     {
+      "kind": "assessment_deadline",
+      "local": "2026-08-26T23:59",
+      "utcOffset": "+02:00",
+      "timeZone": "Europe/Berlin",
+      "label": "Test expires 26 Aug, 11:59 PM CEST"
+     }
+    ],
+    "meetingUrls": [],
+    "applicationId": "en-app-canalworks-staff"
+   },
+   "usage": {
+    "inputTokens": 1390,
+    "outputTokens": 184,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "en-029": {
+   "promptHash": "48930ac86060a04f",
+   "output": {
+    "category": "assessment",
+    "confidence": 0.9,
+    "language": "en",
+    "screening": false,
+    "company": "Ostrava Digital",
+    "role": "Senior Product Engineer – EU Remote",
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [
+     {
+      "kind": "assessment_deadline",
+      "local": "2026-09-21T00:00",
+      "utcOffset": null,
+      "timeZone": null,
+      "label": "complete within 5 days of invitation"
+     }
+    ],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1346,
+    "outputTokens": 161,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "en-030": {
+   "promptHash": "84c3cbd1875270e8",
+   "output": {
+    "category": "assessment",
+    "confidence": 0.95,
+    "language": "en",
+    "screening": false,
+    "company": "Harbor Analytics",
+    "role": "Data Engineer",
+    "contactName": "The Coderbyte Team",
+    "contactEmail": null,
+    "dates": [
+     {
+      "kind": "assessment_deadline",
+      "local": "2026-08-26T18:00",
+      "utcOffset": "+02:00",
+      "timeZone": "Europe/Berlin",
+      "label": "Assessment submission deadline"
+     }
+    ],
+    "meetingUrls": [],
+    "applicationId": "en-app-harbor-data"
+   },
+   "usage": {
+    "inputTokens": 1370,
+    "outputTokens": 178,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "en-031": {
+   "promptHash": "c6162213a8a5b9f1",
+   "output": {
+    "category": "assessment",
+    "confidence": 0.95,
+    "language": "en",
+    "screening": false,
+    "company": "Lumen Health",
+    "role": "Frontend Engineer",
+    "contactName": "Priya Natarajan",
+    "contactEmail": "priya.natarajan@lumenhealth.example",
+    "dates": [
+     {
+      "kind": "assessment_deadline",
+      "local": "2026-10-01T17:00",
+      "utcOffset": null,
+      "timeZone": "America/New_York",
+      "label": "Take-home submission deadline, Thursday 1 October 5:00 PM ET"
+     }
+    ],
+    "meetingUrls": [],
+    "applicationId": "en-app-lumen-frontend"
+   },
+   "usage": {
+    "inputTokens": 1373,
+    "outputTokens": 206,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "en-032": {
+   "promptHash": "a391da19a42c1523",
+   "output": {
+    "category": "offer",
+    "confidence": 0.97,
+    "language": "en",
+    "screening": false,
+    "company": "Tidal Freight",
+    "role": "Full-Stack Engineer",
+    "contactName": "Jamal Ortiz",
+    "contactEmail": "jamal.ortiz@tidal-freight.example",
+    "dates": [
+     {
+      "kind": "start_date",
+      "local": "2026-11-02T00:00",
+      "utcOffset": null,
+      "timeZone": null,
+      "label": "Start date"
+     },
+     {
+      "kind": "reply_deadline",
+      "local": "2026-10-06T17:00",
+      "utcOffset": "-04:00",
+      "timeZone": "America/New_York",
+      "label": "Decision deadline"
+     }
+    ],
+    "meetingUrls": [],
+    "applicationId": "en-app-tidal-fullstack"
+   },
+   "usage": {
+    "inputTokens": 1442,
+    "outputTokens": 241,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "en-033": {
+   "promptHash": "0a158ef4d9f7ff51",
+   "output": {
+    "category": "offer",
+    "confidence": 0.97,
+    "language": "en",
+    "screening": false,
+    "company": "Meridian Atlas Ltd",
+    "role": "Full-Stack Developer",
+    "contactName": "Rosa Lindqvist",
+    "contactEmail": "rosa@meridian-atlas.example",
+    "dates": [
+     {
+      "kind": "start_date",
+      "local": "2027-01-04T00:00",
+      "utcOffset": null,
+      "timeZone": null,
+      "label": "Start date"
+     },
+     {
+      "kind": "reply_deadline",
+      "local": "2026-10-16T00:00",
+      "utcOffset": null,
+      "timeZone": null,
+      "label": "Acceptance deadline"
+     }
+    ],
+    "meetingUrls": [],
+    "applicationId": "en-app-meridian-fullstack"
+   },
+   "usage": {
+    "inputTokens": 1378,
+    "outputTokens": 237,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "en-034": {
+   "promptHash": "e5c82e10e2126ae6",
+   "output": {
+    "category": "offer",
+    "confidence": 0.95,
+    "language": "en",
+    "screening": false,
+    "company": "Halden Bio",
+    "role": "Senior Software Engineer, Lab Automation",
+    "contactName": "Mila Jansen",
+    "contactEmail": null,
+    "dates": [
+     {
+      "kind": "reply_deadline",
+      "local": "2026-10-21T00:00",
+      "utcOffset": null,
+      "timeZone": null,
+      "label": "sign by 21 October 2026"
+     },
+     {
+      "kind": "start_date",
+      "local": "2026-12-01T00:00",
+      "utcOffset": null,
+      "timeZone": null,
+      "label": "proposed start date 1 December 2026"
+     }
+    ],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1440,
+    "outputTokens": 221,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "en-035": {
+   "promptHash": "6e3b84dc9a201d19",
+   "output": {
+    "category": "offer",
+    "confidence": 0.95,
+    "language": "en",
+    "screening": false,
+    "company": "Fernway",
+    "role": "Platform Engineer",
+    "contactName": "Leo Brandt",
+    "contactEmail": "leo.brandt@fernway.example",
+    "dates": [
+     {
+      "kind": "start_date",
+      "local": "2026-10-01T00:00",
+      "utcOffset": null,
+      "timeZone": null,
+      "label": "starting 1 October 2026"
+     },
+     {
+      "kind": "reply_deadline",
+      "local": "2026-09-04T00:00",
+      "utcOffset": null,
+      "timeZone": null,
+      "label": "let me know by Friday"
+     }
+    ],
+    "meetingUrls": [],
+    "applicationId": "en-app-fernway-platform"
+   },
+   "usage": {
+    "inputTokens": 1355,
+    "outputTokens": 226,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "en-036": {
+   "promptHash": "fb4f63c69648bf2e",
+   "output": {
+    "category": "recruiter_outreach",
+    "confidence": 0.95,
+    "language": "en",
+    "screening": false,
+    "company": "Sterling Vault",
+    "role": "Staff Engineer",
+    "contactName": "Chloe Hartley",
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1454,
+    "outputTokens": 103,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "en-037": {
+   "promptHash": "26548e0488ed7d44",
+   "output": {
+    "category": "recruiter_outreach",
+    "confidence": 0.95,
+    "language": "en",
+    "screening": false,
+    "company": "Ridgeway Recruitment",
+    "role": "Senior Backend Engineer (Kotlin/Java)",
+    "contactName": "Tom Okafor",
+    "contactEmail": "tom.okafor@ridgeway-recruitment.example",
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1421,
+    "outputTokens": 137,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "en-038": {
+   "promptHash": "5979d56e1fea6955",
+   "output": {
+    "category": "recruiter_outreach",
+    "confidence": 0.95,
+    "language": "en",
+    "screening": false,
+    "company": "Kestrel Pay",
+    "role": "TypeScript Engineer",
+    "contactName": "Ava Clarke",
+    "contactEmail": "ava.clarke@kestrelpay.example",
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1385,
+    "outputTokens": 119,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "en-039": {
+   "promptHash": "53a60bca9b2a1b28",
+   "output": {
+    "category": "recruiter_outreach",
+    "confidence": 0.95,
+    "language": "en",
+    "screening": false,
+    "company": null,
+    "role": "Lead Product Manager",
+    "contactName": "Nina Shah",
+    "contactEmail": "nina@talentforge.example",
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1361,
+    "outputTokens": 104,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "en-040": {
+   "promptHash": "cfdff429341e950e",
+   "output": {
+    "category": "recruiter_outreach",
+    "confidence": 0.95,
+    "language": "en",
+    "screening": false,
+    "company": "Vellum Cloud",
+    "role": "Engineering Manager, Data Platform",
+    "contactName": "Ben Harper",
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1375,
+    "outputTokens": 108,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "en-041": {
+   "promptHash": "06456285e72e7b56",
+   "output": {
+    "category": "recruiter_outreach",
+    "confidence": 0.9,
+    "language": "en",
+    "screening": false,
+    "company": "Saltmarsh Labs",
+    "role": "Go Engineer",
+    "contactName": "Gus Moreno",
+    "contactEmail": "gus@saltmarsh-labs.example",
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": "en-app-saltmarsh-go"
+   },
+   "usage": {
+    "inputTokens": 1343,
+    "outputTokens": 130,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "en-042": {
+   "promptHash": "bdd25276073dd71b",
+   "output": {
+    "category": "info_request",
+    "confidence": 0.95,
+    "language": "en",
+    "screening": false,
+    "company": "Northwind Ledger",
+    "role": "Senior Backend Engineer",
+    "contactName": "Marcus Bell",
+    "contactEmail": "marcus.bell@northwind-ledger.example",
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": "en-app-northwind-backend"
+   },
+   "usage": {
+    "inputTokens": 1369,
+    "outputTokens": 127,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "en-043": {
+   "promptHash": "f454ede9023d4b22",
+   "output": {
+    "category": "info_request",
+    "confidence": 0.95,
+    "language": "en",
+    "screening": false,
+    "company": "Tidal Freight",
+    "role": "Full-Stack Engineer",
+    "contactName": "Jamal Ortiz",
+    "contactEmail": "jamal.ortiz@tidal-freight.example",
+    "dates": [
+     {
+      "kind": "reply_deadline",
+      "local": "2026-09-25T00:00",
+      "utcOffset": null,
+      "timeZone": null,
+      "label": "Friday deadline for references"
+     }
+    ],
+    "meetingUrls": [],
+    "applicationId": "en-app-tidal-fullstack"
+   },
+   "usage": {
+    "inputTokens": 1315,
+    "outputTokens": 188,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "en-044": {
+   "promptHash": "0746fd87b8bf6e84",
+   "output": {
+    "category": "info_request",
+    "confidence": 0.95,
+    "language": "en",
+    "screening": false,
+    "company": "Harbor Analytics",
+    "role": "Product Manager",
+    "contactName": "Ellie Watson",
+    "contactEmail": "ellie.watson@harbor-analytics.example",
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": "en-app-harbor-pm"
+   },
+   "usage": {
+    "inputTokens": 1334,
+    "outputTokens": 122,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "en-045": {
+   "promptHash": "6cf5c94e90e0bc94",
+   "output": {
+    "category": "info_request",
+    "confidence": 0.9,
+    "language": "en",
+    "screening": false,
+    "company": "Fjordline Games",
+    "role": "Backend Engineer (Live Services)",
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1311,
+    "outputTokens": 97,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "en-046": {
+   "promptHash": "68990781f6b4bc1b",
+   "output": {
+    "category": "info_request",
+    "confidence": 0.92,
+    "language": "en",
+    "screening": false,
+    "company": "Meridian Atlas",
+    "role": "Full-Stack Developer",
+    "contactName": "Rosa Lindqvist",
+    "contactEmail": "rosa@meridian-atlas.example",
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": "en-app-meridian-fullstack"
+   },
+   "usage": {
+    "inputTokens": 1307,
+    "outputTokens": 128,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "en-047": {
+   "promptHash": "60026c40a521d7a0",
+   "output": {
+    "category": "recruiter_outreach",
+    "confidence": 0.8,
+    "language": "en",
+    "screening": false,
+    "company": "Larkspur Health",
+    "role": "Senior Software Engineer",
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1405,
+    "outputTokens": 98,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "en-048": {
+   "promptHash": "5c909fa82640ae02",
+   "output": {
+    "category": "job_alert",
+    "confidence": 0.95,
+    "language": "en",
+    "screening": false,
+    "company": null,
+    "role": "Backend Engineer",
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1373,
+    "outputTokens": 86,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "en-049": {
+   "promptHash": "ee93384e0b12b561",
+   "output": {
+    "category": "job_alert",
+    "confidence": 0.95,
+    "language": "en",
+    "screening": false,
+    "company": null,
+    "role": null,
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1372,
+    "outputTokens": 80,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "en-050": {
+   "promptHash": "d13d3925a7380c0c",
+   "output": {
+    "category": "job_alert",
+    "confidence": 0.95,
+    "language": "en",
+    "screening": false,
+    "company": null,
+    "role": null,
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1389,
+    "outputTokens": 80,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "en-051": {
+   "promptHash": "0b8eca6916f66a70",
+   "output": {
+    "category": "job_alert",
+    "confidence": 0.95,
+    "language": "en",
+    "screening": false,
+    "company": null,
+    "role": null,
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1337,
+    "outputTokens": 80,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "en-052": {
+   "promptHash": "1592c3ca659bc528",
+   "output": {
+    "category": "recruiter_outreach",
+    "confidence": 0.8,
+    "language": "en",
+    "screening": false,
+    "company": null,
+    "role": null,
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1331,
+    "outputTokens": 84,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "en-053": {
+   "promptHash": "8457ff15c6dbd818",
+   "output": {
+    "category": "job_alert",
+    "confidence": 0.95,
+    "language": "en",
+    "screening": false,
+    "company": null,
+    "role": null,
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1368,
+    "outputTokens": 80,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "en-054": {
+   "promptHash": "56f0cd14088db075",
+   "output": {
+    "category": "other_job",
+    "confidence": 0.8,
+    "language": "en",
+    "screening": false,
+    "company": null,
+    "role": null,
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1360,
+    "outputTokens": 79,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "en-055": {
+   "promptHash": "3d7e2eb1e9b74455",
+   "output": {
+    "category": "other_job",
+    "confidence": 0.8,
+    "language": "en",
+    "screening": false,
+    "company": "Graystone Insurance",
+    "role": null,
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1307,
+    "outputTokens": 86,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "en-056": {
+   "promptHash": "5923a9be4a7dd230",
+   "output": {
+    "category": "job_alert",
+    "confidence": 0.6,
+    "language": "en",
+    "screening": false,
+    "company": null,
+    "role": null,
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1314,
+    "outputTokens": 80,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "en-057": {
+   "promptHash": "fcd8749b900c6871",
+   "output": {
+    "category": "recruiter_outreach",
+    "confidence": 0.6,
+    "language": "en",
+    "screening": false,
+    "company": null,
+    "role": null,
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [
+     {
+      "kind": "other",
+      "local": "2026-10-15T10:00",
+      "utcOffset": "+02:00",
+      "timeZone": "Europe/Berlin",
+      "label": "Virtual careers fair"
+     }
+    ],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1381,
+    "outputTokens": 146,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "en-058": {
+   "promptHash": "9e416cc98c8f8d5b",
+   "output": {
+    "category": "other_job",
+    "confidence": 0.95,
+    "language": "en",
+    "screening": false,
+    "company": "Fernway",
+    "role": "Platform Engineer",
+    "contactName": "Fernway Recruiting",
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": "en-app-fernway-platform"
+   },
+   "usage": {
+    "inputTokens": 1301,
+    "outputTokens": 107,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "en-059": {
+   "promptHash": "3775b7cdd3cd70af",
+   "output": {
+    "category": "not_job",
+    "confidence": 0.9,
+    "language": "en",
+    "screening": false,
+    "company": "Corvid Bank",
+    "role": null,
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1316,
+    "outputTokens": 85,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "en-061": {
+   "promptHash": "98a31e8cf0c98520",
+   "output": {
+    "category": "not_job",
+    "confidence": 0.93,
+    "language": "en",
+    "screening": false,
+    "company": "Canal House Lettings",
+    "role": null,
+    "contactName": null,
+    "contactEmail": "lettings@canalhouse-lettings.example",
+    "dates": [
+     {
+      "kind": "reply_deadline",
+      "local": "2026-09-21T00:00",
+      "utcOffset": null,
+      "timeZone": null,
+      "label": "Monday deadline for documents"
+     }
+    ],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1319,
+    "outputTokens": 158,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "en-062": {
+   "promptHash": "40b81a651188c531",
+   "output": {
+    "category": "other_job",
+    "confidence": 0.3,
+    "language": "en",
+    "screening": false,
+    "company": "Thamesgate University",
+    "role": "MSc Software Engineering (part-time, online)",
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [
+     {
+      "kind": "start_date",
+      "local": "2027-01-01T00:00",
+      "utcOffset": null,
+      "timeZone": null,
+      "label": "programme start January 2027"
+     }
+    ],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1333,
+    "outputTokens": 153,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "en-065": {
+   "promptHash": "23d26f9b903e2985",
+   "output": {
+    "category": "not_job",
+    "confidence": 0.9,
+    "language": "en",
+    "screening": false,
+    "company": "Corvid Bank",
+    "role": null,
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1284,
+    "outputTokens": 85,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "tr-001": {
+   "promptHash": "a2b9c23d7e456cbf",
+   "output": {
+    "category": "application_received",
+    "confidence": 0.97,
+    "language": "tr",
+    "screening": false,
+    "company": "Kervan Teknoloji",
+    "role": "Backend Geliştirici",
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": "tr-app-kervan"
+   },
+   "usage": {
+    "inputTokens": 1536,
+    "outputTokens": 106,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "tr-002": {
+   "promptHash": "03939af67f0574a9",
+   "output": {
+    "category": "application_received",
+    "confidence": 0.95,
+    "language": "tr",
+    "screening": false,
+    "company": "Lale Bank",
+    "role": "Dijital Ürün Yöneticisi",
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": "tr-app-lale-pm"
+   },
+   "usage": {
+    "inputTokens": 1496,
+    "outputTokens": 110,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "tr-003": {
+   "promptHash": "2f407de9ebfcbed2",
+   "output": {
+    "category": "application_received",
+    "confidence": 0.9,
+    "language": "tr",
+    "screening": false,
+    "company": "Trendova",
+    "role": "Kıdemli React Geliştirici",
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1471,
+    "outputTokens": 95,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "tr-004": {
+   "promptHash": "3e899a62c96a1957",
+   "output": {
+    "category": "application_received",
+    "confidence": 0.95,
+    "language": "tr",
+    "screening": false,
+    "company": "Ege Veri Analitik A.Ş.",
+    "role": "Veri Mühendisi",
+    "contactName": null,
+    "contactEmail": "kariyer@egeveri.example",
+    "dates": [
+     {
+      "kind": "reply_deadline",
+      "local": "2026-08-15T00:00",
+      "utcOffset": null,
+      "timeZone": null,
+      "label": "15 iş günü içinde iletişim"
+     }
+    ],
+    "meetingUrls": [],
+    "applicationId": "tr-app-egeveri"
+   },
+   "usage": {
+    "inputTokens": 1455,
+    "outputTokens": 185,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "tr-005": {
+   "promptHash": "e56d0569a44305f7",
+   "output": {
+    "category": "application_received",
+    "confidence": 0.8,
+    "language": "tr",
+    "screening": false,
+    "company": "Yıldız Market",
+    "role": "Mühendislik Müdürü",
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [
+     {
+      "kind": "reply_deadline",
+      "local": "2026-09-18T00:00",
+      "utcOffset": null,
+      "timeZone": null,
+      "label": "en geç iki hafta içinde dönüş"
+     }
+    ],
+    "meetingUrls": [],
+    "applicationId": "tr-app-yildiz"
+   },
+   "usage": {
+    "inputTokens": 1465,
+    "outputTokens": 170,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "tr-006": {
+   "promptHash": "d8c8e74bdecbd064",
+   "output": {
+    "category": "application_received",
+    "confidence": 0.95,
+    "language": "tr",
+    "screening": false,
+    "company": "Marmara Telekom",
+    "role": "Bulut Platform Mühendisi",
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1499,
+    "outputTokens": 99,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "tr-007": {
+   "promptHash": "40cbe52df346c825",
+   "output": {
+    "category": "application_received",
+    "confidence": 0.95,
+    "language": "tr",
+    "screening": false,
+    "company": "Başkent Savunma Yazılım A.Ş.",
+    "role": "Yazılım Geliştirme Uzmanı",
+    "contactName": "Gülşen Yalçın",
+    "contactEmail": "gulsen.yalcin@baskentsavunma.example",
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": "tr-app-baskent"
+   },
+   "usage": {
+    "inputTokens": 1557,
+    "outputTokens": 150,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "tr-008": {
+   "promptHash": "f6483fe681d4d369",
+   "output": {
+    "category": "application_received",
+    "confidence": 0.95,
+    "language": "en",
+    "screening": false,
+    "company": "Sardunya Health Tech",
+    "role": "Senior Product Engineer",
+    "contactName": "The Sardunya Talent Team",
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1360,
+    "outputTokens": 106,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "tr-009": {
+   "promptHash": "479cfa8dba33851f",
+   "output": {
+    "category": "application_received",
+    "confidence": 0.95,
+    "language": "tr",
+    "screening": false,
+    "company": "Mavi Sigorta",
+    "role": "DevOps Mühendisi",
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": "tr-app-mavi"
+   },
+   "usage": {
+    "inputTokens": 1390,
+    "outputTokens": 106,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "tr-010": {
+   "promptHash": "2d4efe22937ef4b5",
+   "output": {
+    "category": "rejection",
+    "confidence": 0.97,
+    "language": "tr",
+    "screening": false,
+    "company": "Pazarix",
+    "role": "Frontend Geliştirici",
+    "contactName": "Pazarix Yetenek Ekibi",
+    "contactEmail": "no-reply@hire.lever.co",
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": "tr-app-pazarix"
+   },
+   "usage": {
+    "inputTokens": 1473,
+    "outputTokens": 128,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "tr-011": {
+   "promptHash": "2c95e5331d8b5c25",
+   "output": {
+    "category": "rejection",
+    "confidence": 0.97,
+    "language": "tr",
+    "screening": false,
+    "company": "Lale Bank",
+    "role": "Kıdemli Yazılım Mühendisi",
+    "contactName": "Ece Karaca",
+    "contactEmail": "ece.karaca@lalebank.example",
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": "tr-app-lale-swe"
+   },
+   "usage": {
+    "inputTokens": 1586,
+    "outputTokens": 130,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "tr-012": {
+   "promptHash": "0dfb04dc51545bd6",
+   "output": {
+    "category": "rejection",
+    "confidence": 0.97,
+    "language": "tr",
+    "screening": false,
+    "company": "Anadolu Yazılım",
+    "role": "Mobil Uygulama Geliştirici",
+    "contactName": "Anadolu Yazılım İnsan Kaynakları",
+    "contactEmail": "ik@anadoluyazilim.example",
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": "tr-app-anadolu"
+   },
+   "usage": {
+    "inputTokens": 1429,
+    "outputTokens": 144,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "tr-013": {
+   "promptHash": "323cbb078bbabbb9",
+   "output": {
+    "category": "rejection",
+    "confidence": 0.97,
+    "language": "tr",
+    "screening": false,
+    "company": "Netrota Kariyer",
+    "role": "Site Reliability Engineer",
+    "contactName": "Netrota İnsan Kaynakları",
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1426,
+    "outputTokens": 110,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "tr-014": {
+   "promptHash": "3a2d4d535019e55c",
+   "output": {
+    "category": "rejection",
+    "confidence": 0.97,
+    "language": "tr",
+    "screening": false,
+    "company": "Kapadokya Oyun Stüdyosu",
+    "role": "Oyun Sunucu Geliştirici",
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": "tr-app-kapadokya"
+   },
+   "usage": {
+    "inputTokens": 1389,
+    "outputTokens": 121,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "tr-015": {
+   "promptHash": "3f539772c8a53784",
+   "output": {
+    "category": "rejection",
+    "confidence": 0.97,
+    "language": "tr",
+    "screening": false,
+    "company": "Çınar Holding",
+    "role": "Ürün Analisti",
+    "contactName": null,
+    "contactEmail": "kariyer@cinarholding.example",
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": "tr-app-cinar"
+   },
+   "usage": {
+    "inputTokens": 1394,
+    "outputTokens": 113,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "tr-016": {
+   "promptHash": "d61cb204f477bd78",
+   "output": {
+    "category": "rejection",
+    "confidence": 0.97,
+    "language": "tr",
+    "screening": false,
+    "company": "Doruk Perakende",
+    "role": "Yazılım Test Uzmanı",
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1482,
+    "outputTokens": 99,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "tr-017": {
+   "promptHash": "a4a1b2dc60b3c4c7",
+   "output": {
+    "category": "rejection",
+    "confidence": 0.97,
+    "language": "tr",
+    "screening": false,
+    "company": "Kervan Teknoloji",
+    "role": "Backend Geliştirici",
+    "contactName": "Kervan Teknoloji İnsan Kaynakları",
+    "contactEmail": "noreply@personio.de",
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": "tr-app-kervan"
+   },
+   "usage": {
+    "inputTokens": 1473,
+    "outputTokens": 132,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "tr-018": {
+   "promptHash": "348c32c27b5b4cc0",
+   "output": {
+    "category": "rejection",
+    "confidence": 0.97,
+    "language": "en",
+    "screening": false,
+    "company": "Dorukware",
+    "role": "Platform Engineer",
+    "contactName": "Dorukware Talent Team",
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1326,
+    "outputTokens": 98,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "tr-019": {
+   "promptHash": "9f44e2bb810ff256",
+   "output": {
+    "category": "interview_invite",
+    "confidence": 0.95,
+    "language": "tr",
+    "screening": false,
+    "company": "Boğaziçi Ödeme Sistemleri",
+    "role": "Full Stack Geliştirici",
+    "contactName": "Mert Doğan",
+    "contactEmail": "mert.dogan@bogazicipay.example",
+    "dates": [
+     {
+      "kind": "interview",
+      "local": "2026-09-23T14:00",
+      "utcOffset": "+03:00",
+      "timeZone": "Europe/Istanbul",
+      "label": "Teknik mülakat başlangıcı"
+     },
+     {
+      "kind": "interview",
+      "local": "2026-09-23T15:30",
+      "utcOffset": "+03:00",
+      "timeZone": "Europe/Istanbul",
+      "label": "Teknik mülakat bitişi"
+     }
+    ],
+    "meetingUrls": [
+     "https://meet.google.com/bqx-trmn-kpw"
+    ],
+    "applicationId": "tr-app-bogazici"
+   },
+   "usage": {
+    "inputTokens": 1482,
+    "outputTokens": 298,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "tr-020": {
+   "promptHash": "160dae2b16d74860",
+   "output": {
+    "category": "interview_invite",
+    "confidence": 0.95,
+    "language": "tr",
+    "screening": true,
+    "company": "Kervan Teknoloji",
+    "role": "Backend Geliştirici",
+    "contactName": "Selin Aktaş",
+    "contactEmail": "selin.aktas@kervan-tech.example",
+    "dates": [
+     {
+      "kind": "interview",
+      "local": "2026-08-06T10:30",
+      "utcOffset": "+03:00",
+      "timeZone": "Europe/Istanbul",
+      "label": "Ön görüşme, 6 Ağustos 2026 Perşembe 10:30"
+     }
+    ],
+    "meetingUrls": [
+     "https://zoom.us/j/84213097765"
+    ],
+    "applicationId": "tr-app-kervan"
+   },
+   "usage": {
+    "inputTokens": 1449,
+    "outputTokens": 229,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "tr-021": {
+   "promptHash": "1e17e6719c198426",
+   "output": {
+    "category": "interview_invite",
+    "confidence": 0.95,
+    "language": "tr",
+    "screening": false,
+    "company": "Yıldız Market",
+    "role": "Mühendislik Müdürü",
+    "contactName": "Kaan Erdem",
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": "tr-app-yildiz"
+   },
+   "usage": {
+    "inputTokens": 1467,
+    "outputTokens": 115,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "tr-022": {
+   "promptHash": "02f6ca4424d93e3e",
+   "output": {
+    "category": "interview_invite",
+    "confidence": 0.9,
+    "language": "tr",
+    "screening": false,
+    "company": "Lale Bank",
+    "role": "Kıdemli Yazılım Mühendisi",
+    "contactName": "Ece Karaca",
+    "contactEmail": "ece.karaca@lalebank.example",
+    "dates": [
+     {
+      "kind": "interview",
+      "local": "2026-10-01T15:00",
+      "utcOffset": "+03:00",
+      "timeZone": null,
+      "label": "Yeni görüşme zamanı (Perşembe)"
+     }
+    ],
+    "meetingUrls": [
+     "https://teams.microsoft.com/l/meetup-join/19%3ameeting_LaLeBnk4471%40thread.v2/0"
+    ],
+    "applicationId": "tr-app-lale-swe"
+   },
+   "usage": {
+    "inputTokens": 1490,
+    "outputTokens": 246,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "tr-023": {
+   "promptHash": "4c98239542028885",
+   "output": {
+    "category": "interview_invite",
+    "confidence": 0.9,
+    "language": "tr",
+    "screening": false,
+    "company": "Ege Veri Analitik",
+    "role": "Teknik Görüşme",
+    "contactName": "Burak Öztürk",
+    "contactEmail": "burak.ozturk@egeveri.example",
+    "dates": [
+     {
+      "kind": "interview",
+      "local": "2026-10-08T14:00",
+      "utcOffset": "+03:00",
+      "timeZone": "Europe/Istanbul",
+      "label": "Teknik Görüşme, Perşembe 8 Ekim 2026 14:00-15:00"
+     }
+    ],
+    "meetingUrls": [
+     "https://meet.google.com/egv-dnzr-tkn"
+    ],
+    "applicationId": "tr-app-egeveri"
+   },
+   "usage": {
+    "inputTokens": 1430,
+    "outputTokens": 239,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "tr-024": {
+   "promptHash": "e1ef82c3b91c3dd1",
+   "output": {
+    "category": "interview_invite",
+    "confidence": 0.9,
+    "language": "tr",
+    "screening": false,
+    "company": "Kuzey Bulut Teknolojileri",
+    "role": "Kıdemli Go Geliştirici",
+    "contactName": "Tuğba Er",
+    "contactEmail": "ik@kuzeybulut.example",
+    "dates": [
+     {
+      "kind": "interview",
+      "local": "2026-10-14T16:00",
+      "utcOffset": "+03:00",
+      "timeZone": null,
+      "label": "İkinci aşama görüşme, 14 Ekim 2026 Çarşamba"
+     }
+    ],
+    "meetingUrls": [
+     "https://zoom.us/j/93120457781"
+    ],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1472,
+    "outputTokens": 219,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "tr-025": {
+   "promptHash": "e92e86a68de09e71",
+   "output": {
+    "category": "interview_invite",
+    "confidence": 0.9,
+    "language": "tr",
+    "screening": false,
+    "company": "Lale Bank",
+    "role": null,
+    "contactName": "Lale Bank İnsan Kaynakları",
+    "contactEmail": "ik.davet@lalebank.example",
+    "dates": [
+     {
+      "kind": "interview",
+      "local": "2026-10-09T10:00",
+      "utcOffset": "+03:00",
+      "timeZone": "Europe/Istanbul",
+      "label": "Yetkinlik mülakatı, 9 Ekim 2026 Cuma"
+     }
+    ],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1479,
+    "outputTokens": 197,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "tr-026": {
+   "promptHash": "b348b88d9cae7426",
+   "output": {
+    "category": "interview_invite",
+    "confidence": 0.95,
+    "language": "tr",
+    "screening": true,
+    "company": "Anadolu Yazılım",
+    "role": "Mobil Uygulama Geliştirici",
+    "contactName": "Zeynep Kılıç",
+    "contactEmail": "zeynep.kilic@anadoluyazilim.example",
+    "dates": [
+     {
+      "kind": "interview",
+      "local": "2026-09-03T11:00",
+      "utcOffset": "+03:00",
+      "timeZone": null,
+      "label": "Telefon görüşmesi, 3 Eylül 2026 Perşembe 11:00"
+     }
+    ],
+    "meetingUrls": [],
+    "applicationId": "tr-app-anadolu"
+   },
+   "usage": {
+    "inputTokens": 1426,
+    "outputTokens": 221,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "tr-027": {
+   "promptHash": "59a859a5e612dea2",
+   "output": {
+    "category": "interview_invite",
+    "confidence": 0.95,
+    "language": "tr",
+    "screening": false,
+    "company": "Başkent Savunma Yazılım A.Ş.",
+    "role": "Yazılım Geliştirme Uzmanı",
+    "contactName": "Gülşen Yalçın",
+    "contactEmail": "gulsen.yalcin@baskentsavunma.example",
+    "dates": [
+     {
+      "kind": "interview",
+      "local": "2026-09-16T13:30",
+      "utcOffset": "+03:00",
+      "timeZone": "Europe/Istanbul",
+      "label": "Teknik mülakat, 16 Eylül 2026 Çarşamba"
+     }
+    ],
+    "meetingUrls": [],
+    "applicationId": "tr-app-baskent"
+   },
+   "usage": {
+    "inputTokens": 1466,
+    "outputTokens": 234,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "tr-028": {
+   "promptHash": "bff3e80d50c99e61",
+   "output": {
+    "category": "assessment",
+    "confidence": 0.95,
+    "language": "tr",
+    "screening": false,
+    "company": "Kervan Teknoloji",
+    "role": "Backend Geliştirici",
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [
+     {
+      "kind": "assessment_deadline",
+      "local": "2026-08-12T23:59",
+      "utcOffset": "+03:00",
+      "timeZone": null,
+      "label": "Test son tarihi"
+     }
+    ],
+    "meetingUrls": [],
+    "applicationId": "tr-app-kervan"
+   },
+   "usage": {
+    "inputTokens": 1455,
+    "outputTokens": 166,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "tr-029": {
+   "promptHash": "ab939630c590c630",
+   "output": {
+    "category": "assessment",
+    "confidence": 0.95,
+    "language": "tr",
+    "screening": false,
+    "company": "Mavi Sigorta",
+    "role": "DevOps Mühendisi",
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [
+     {
+      "kind": "assessment_deadline",
+      "local": "2026-09-25T18:00",
+      "utcOffset": "+03:00",
+      "timeZone": null,
+      "label": "Test süresi doluyor"
+     }
+    ],
+    "meetingUrls": [],
+    "applicationId": "tr-app-mavi"
+   },
+   "usage": {
+    "inputTokens": 1435,
+    "outputTokens": 168,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "tr-030": {
+   "promptHash": "3cc9f94c88c45e0f",
+   "output": {
+    "category": "assessment",
+    "confidence": 0.9,
+    "language": "tr",
+    "screening": false,
+    "company": "Trendova",
+    "role": "Kıdemli React Geliştirici",
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [
+     {
+      "kind": "assessment_deadline",
+      "local": "2026-08-25T00:00",
+      "utcOffset": null,
+      "timeZone": null,
+      "label": "7 gün içinde tamamlama"
+     }
+    ],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1406,
+    "outputTokens": 157,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "tr-031": {
+   "promptHash": "8c423a68d88bd42e",
+   "output": {
+    "category": "assessment",
+    "confidence": 0.95,
+    "language": "tr",
+    "screening": false,
+    "company": "Yıldız Market",
+    "role": "Mühendislik Müdürü",
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [
+     {
+      "kind": "assessment_deadline",
+      "local": "2026-09-18T23:59",
+      "utcOffset": "+03:00",
+      "timeZone": "Europe/Istanbul",
+      "label": "Değerlendirme son tarihi"
+     }
+    ],
+    "meetingUrls": [],
+    "applicationId": "tr-app-yildiz"
+   },
+   "usage": {
+    "inputTokens": 1416,
+    "outputTokens": 179,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "tr-032": {
+   "promptHash": "e3b74ccbee8612ee",
+   "output": {
+    "category": "assessment",
+    "confidence": 0.95,
+    "language": "tr",
+    "screening": false,
+    "company": "Pazarix",
+    "role": "Frontend Geliştirici",
+    "contactName": "Can Yurt",
+    "contactEmail": "can.yurt@pazarix.example",
+    "dates": [
+     {
+      "kind": "assessment_deadline",
+      "local": "2026-09-04T18:00",
+      "utcOffset": "+03:00",
+      "timeZone": null,
+      "label": "Teslim tarihi (GitHub reposu linki)"
+     }
+    ],
+    "meetingUrls": [],
+    "applicationId": "tr-app-pazarix"
+   },
+   "usage": {
+    "inputTokens": 1438,
+    "outputTokens": 191,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "tr-033": {
+   "promptHash": "78f1dd3fc032e8d7",
+   "output": {
+    "category": "offer",
+    "confidence": 0.97,
+    "language": "tr",
+    "screening": false,
+    "company": "Galata Fintech",
+    "role": "Kıdemli Backend Mühendisi",
+    "contactName": "Nil Sarı",
+    "contactEmail": null,
+    "dates": [
+     {
+      "kind": "reply_deadline",
+      "local": "2026-10-23T18:00",
+      "utcOffset": "+03:00",
+      "timeZone": "Europe/Istanbul",
+      "label": "Teklif yanıt son tarihi"
+     },
+     {
+      "kind": "start_date",
+      "local": "2026-11-02T00:00",
+      "utcOffset": null,
+      "timeZone": null,
+      "label": "İşe başlama tarihi"
+     }
+    ],
+    "meetingUrls": [],
+    "applicationId": "tr-app-galata"
+   },
+   "usage": {
+    "inputTokens": 1549,
+    "outputTokens": 242,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "tr-034": {
+   "promptHash": "e4f39ebf15e4a956",
+   "output": {
+    "category": "offer",
+    "confidence": 0.97,
+    "language": "tr",
+    "screening": false,
+    "company": "Boğaziçi Ödeme Sistemleri",
+    "role": "Full Stack Geliştirici",
+    "contactName": "Mert Doğan",
+    "contactEmail": "mert.dogan@bogazicipay.example",
+    "dates": [
+     {
+      "kind": "start_date",
+      "local": "2026-11-16T00:00",
+      "utcOffset": null,
+      "timeZone": null,
+      "label": "Başlangıç tarihi"
+     }
+    ],
+    "meetingUrls": [],
+    "applicationId": "tr-app-bogazici"
+   },
+   "usage": {
+    "inputTokens": 1465,
+    "outputTokens": 192,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "tr-035": {
+   "promptHash": "444b45cb5c39c76a",
+   "output": {
+    "category": "offer",
+    "confidence": 0.95,
+    "language": "tr",
+    "screening": false,
+    "company": "Kuzey Bulut Teknolojileri",
+    "role": "Kıdemli Go Geliştirici",
+    "contactName": "Tuğba Er",
+    "contactEmail": "tugba.er@kuzeybulut.example",
+    "dates": [
+     {
+      "kind": "start_date",
+      "local": "2026-12-01T00:00",
+      "utcOffset": null,
+      "timeZone": null,
+      "label": "İşe başlama tarihi"
+     },
+     {
+      "kind": "reply_deadline",
+      "local": "2026-10-21T00:00",
+      "utcOffset": null,
+      "timeZone": null,
+      "label": "Teklif mektubunu imzalayarak iletme tarihi"
+     }
+    ],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1444,
+    "outputTokens": 254,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "tr-036": {
+   "promptHash": "0a8f85040d818c49",
+   "output": {
+    "category": "offer",
+    "confidence": 0.9,
+    "language": "tr",
+    "screening": false,
+    "company": "Lale Bank",
+    "role": "Kıdemli Yazılım Mühendisi",
+    "contactName": "Ece Karaca",
+    "contactEmail": "ece.karaca@lalebank.example",
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": "tr-app-lale-swe"
+   },
+   "usage": {
+    "inputTokens": 1381,
+    "outputTokens": 129,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "tr-037": {
+   "promptHash": "de97e8d7efe34fa0",
+   "output": {
+    "category": "recruiter_outreach",
+    "confidence": 0.95,
+    "language": "tr",
+    "screening": false,
+    "company": "Talentist İK Danışmanlık",
+    "role": "Staff Engineer",
+    "contactName": "Ayşe Polat",
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1518,
+    "outputTokens": 110,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "tr-038": {
+   "promptHash": "c4e695906c58b16b",
+   "output": {
+    "category": "recruiter_outreach",
+    "confidence": 0.95,
+    "language": "tr",
+    "screening": false,
+    "company": null,
+    "role": "Engineering Lead",
+    "contactName": "Oğuz Kaplan",
+    "contactEmail": "oguz.kaplan@seckinsearch.example",
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1506,
+    "outputTokens": 116,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "tr-039": {
+   "promptHash": "22b264211f1f3081",
+   "output": {
+    "category": "recruiter_outreach",
+    "confidence": 0.9,
+    "language": "tr",
+    "screening": false,
+    "company": "Marmara Telekom",
+    "role": "Platform Takım Lideri",
+    "contactName": "Elif Taş",
+    "contactEmail": "elif.tas@marmaratelekom.example",
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1438,
+    "outputTokens": 120,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "tr-040": {
+   "promptHash": "2731ad4c03575369",
+   "output": {
+    "category": "recruiter_outreach",
+    "confidence": 0.8,
+    "language": "tr",
+    "screening": false,
+    "company": "Safran Yazılım",
+    "role": "Kıdemli .NET Geliştirici",
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1499,
+    "outputTokens": 106,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "tr-041": {
+   "promptHash": "ed85a9ed463ffcaa",
+   "output": {
+    "category": "recruiter_outreach",
+    "confidence": 0.9,
+    "language": "en",
+    "screening": false,
+    "company": "Lojix",
+    "role": "Founding Backend Engineer",
+    "contactName": "Kerem Aydın",
+    "contactEmail": "kerem@lojix.example",
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1348,
+    "outputTokens": 111,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "tr-042": {
+   "promptHash": "9dcf5b07723b1f1c",
+   "output": {
+    "category": "info_request",
+    "confidence": 0.95,
+    "language": "tr",
+    "screening": false,
+    "company": "Lale Bank",
+    "role": "Kıdemli Yazılım Mühendisi",
+    "contactName": "Ece Karaca",
+    "contactEmail": "ece.karaca@lalebank.example",
+    "dates": [
+     {
+      "kind": "reply_deadline",
+      "local": "2026-10-07T00:00",
+      "utcOffset": null,
+      "timeZone": null,
+      "label": "7 Ekim 2026 Çarşamba belge teslim tarihi"
+     }
+    ],
+    "meetingUrls": [],
+    "applicationId": "tr-app-lale-swe"
+   },
+   "usage": {
+    "inputTokens": 1442,
+    "outputTokens": 204,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "tr-043": {
+   "promptHash": "c90bed94ba40e67c",
+   "output": {
+    "category": "info_request",
+    "confidence": 0.95,
+    "language": "tr",
+    "screening": false,
+    "company": "Boğaziçi Ödeme Sistemleri",
+    "role": "Full Stack Geliştirici",
+    "contactName": "Boğaziçi Ödeme Sistemleri İK",
+    "contactEmail": "ik@bogazicipay.example",
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": "tr-app-bogazici"
+   },
+   "usage": {
+    "inputTokens": 1381,
+    "outputTokens": 146,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "tr-044": {
+   "promptHash": "15c3245f70c9651c",
+   "output": {
+    "category": "info_request",
+    "confidence": 0.85,
+    "language": "tr",
+    "screening": false,
+    "company": "Ege Veri Analitik",
+    "role": "Veri Mühendisi",
+    "contactName": "Burak Öztürk",
+    "contactEmail": "burak.ozturk@egeveri.example",
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": "tr-app-egeveri"
+   },
+   "usage": {
+    "inputTokens": 1502,
+    "outputTokens": 127,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "tr-045": {
+   "promptHash": "47b6001ecb65cc6f",
+   "output": {
+    "category": "offer",
+    "confidence": 0.9,
+    "language": "tr",
+    "screening": false,
+    "company": "Galata Fintech",
+    "role": "Kıdemli Backend Mühendisi",
+    "contactName": "Nil Sarı",
+    "contactEmail": "people@galatafintech.example",
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": "tr-app-galata"
+   },
+   "usage": {
+    "inputTokens": 1409,
+    "outputTokens": 121,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "tr-046": {
+   "promptHash": "808870fe9ab4d3c1",
+   "output": {
+    "category": "job_alert",
+    "confidence": 0.93,
+    "language": "tr",
+    "screening": false,
+    "company": null,
+    "role": null,
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1477,
+    "outputTokens": 81,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "tr-047": {
+   "promptHash": "af0c05286ed0b206",
+   "output": {
+    "category": "job_alert",
+    "confidence": 0.95,
+    "language": "tr",
+    "screening": false,
+    "company": null,
+    "role": null,
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1513,
+    "outputTokens": 81,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "tr-048": {
+   "promptHash": "42877f9530bef4eb",
+   "output": {
+    "category": "job_alert",
+    "confidence": 0.95,
+    "language": "tr",
+    "screening": false,
+    "company": null,
+    "role": null,
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1482,
+    "outputTokens": 81,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "tr-049": {
+   "promptHash": "8b2161ec79e30eba",
+   "output": {
+    "category": "job_alert",
+    "confidence": 0.95,
+    "language": "tr",
+    "screening": false,
+    "company": null,
+    "role": "DevOps Mühendisi",
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1503,
+    "outputTokens": 90,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "tr-050": {
+   "promptHash": "c563092bf43f629d",
+   "output": {
+    "category": "job_alert",
+    "confidence": 0.95,
+    "language": "tr",
+    "screening": false,
+    "company": null,
+    "role": "Yazılım Mühendisi",
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1487,
+    "outputTokens": 91,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "tr-051": {
+   "promptHash": "50f86e01c7a2516d",
+   "output": {
+    "category": "job_alert",
+    "confidence": 0.95,
+    "language": "tr",
+    "screening": false,
+    "company": null,
+    "role": null,
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1400,
+    "outputTokens": 81,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "tr-052": {
+   "promptHash": "7ec68ec72905e0b2",
+   "output": {
+    "category": "job_alert",
+    "confidence": 0.95,
+    "language": "tr",
+    "screening": false,
+    "company": null,
+    "role": null,
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1403,
+    "outputTokens": 81,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "tr-053": {
+   "promptHash": "0869d17594689893",
+   "output": {
+    "category": "other_job",
+    "confidence": 0.8,
+    "language": "tr",
+    "screening": false,
+    "company": "Lale Bank Kariyer",
+    "role": null,
+    "contactName": "Lale Bank",
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1396,
+    "outputTokens": 95,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "tr-054": {
+   "promptHash": "981611e9d4ec658c",
+   "output": {
+    "category": "other_job",
+    "confidence": 0.85,
+    "language": "tr",
+    "screening": false,
+    "company": null,
+    "role": null,
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1467,
+    "outputTokens": 80,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "tr-055": {
+   "promptHash": "acc9976d1c6375b0",
+   "output": {
+    "category": "recruiter_outreach",
+    "confidence": 0.6,
+    "language": "tr",
+    "screening": false,
+    "company": "Marmara Telekom",
+    "role": null,
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [
+     {
+      "kind": "other",
+      "local": "2026-10-17T00:00",
+      "utcOffset": null,
+      "timeZone": "Europe/Istanbul",
+      "label": "Teknoloji Kariyer Günleri"
+     }
+    ],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1471,
+    "outputTokens": 159,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "tr-056": {
+   "promptHash": "843b487169ff3bb6",
+   "output": {
+    "category": "job_alert",
+    "confidence": 0.8,
+    "language": "tr",
+    "screening": false,
+    "company": null,
+    "role": null,
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [
+     {
+      "kind": "other",
+      "local": "2026-11-05T00:00",
+      "utcOffset": null,
+      "timeZone": null,
+      "label": "Yazılım Kariyer Zirvesi"
+     }
+    ],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1471,
+    "outputTokens": 141,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "tr-057": {
+   "promptHash": "4d05fd01495ae3f0",
+   "output": {
+    "category": "other_job",
+    "confidence": 0.9,
+    "language": "tr",
+    "screening": false,
+    "company": "Çınar Holding",
+    "role": "Ürün Analisti",
+    "contactName": "Çınar Holding İnsan Kaynakları",
+    "contactEmail": "kariyer@cinarholding.example",
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": "tr-app-cinar"
+   },
+   "usage": {
+    "inputTokens": 1337,
+    "outputTokens": 129,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "tr-058": {
+   "promptHash": "cf22e99864f8203d",
+   "output": {
+    "category": "not_job",
+    "confidence": 0.95,
+    "language": "tr",
+    "screening": false,
+    "company": "Lale Bank",
+    "role": null,
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1377,
+    "outputTokens": 85,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "tr-060": {
+   "promptHash": "7caab2f049bc08a7",
+   "output": {
+    "category": "not_job",
+    "confidence": 0.95,
+    "language": "tr",
+    "screening": false,
+    "company": "Defne Emlak",
+    "role": null,
+    "contactName": null,
+    "contactEmail": "info@defneemlak.example",
+    "dates": [
+     {
+      "kind": "other",
+      "local": "2026-09-12T11:00",
+      "utcOffset": "+03:00",
+      "timeZone": "Europe/Istanbul",
+      "label": "Cumartesi 11:00 daire görüşmesi"
+     }
+    ],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1365,
+    "outputTokens": 168,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "tr-061": {
+   "promptHash": "7707aa660f6b47e3",
+   "output": {
+    "category": "not_job",
+    "confidence": 0.8,
+    "language": "tr",
+    "screening": false,
+    "company": "Ege Üniversitesi Fen Bilimleri Enstitüsü",
+    "role": null,
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1368,
+    "outputTokens": 105,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "tr-062": {
+   "promptHash": "03d4ec62132a1d65",
+   "output": {
+    "category": "not_job",
+    "confidence": 0.97,
+    "language": "tr",
+    "screening": false,
+    "company": "Pazarix",
+    "role": null,
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [
+     {
+      "kind": "reply_deadline",
+      "local": "2026-09-27T00:00",
+      "utcOffset": null,
+      "timeZone": null,
+      "label": "Son gün (kampanya kodu PZRX30)"
+     }
+    ],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1402,
+    "outputTokens": 151,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "tr-064": {
+   "promptHash": "6b88c32c9d23820b",
+   "output": {
+    "category": "not_job",
+    "confidence": 0.97,
+    "language": "tr",
+    "screening": false,
+    "company": "Ardıç Finans",
+    "role": null,
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1390,
+    "outputTokens": 87,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  },
+  "tr-065": {
+   "promptHash": "4402947a97ce519b",
+   "output": {
+    "category": "not_job",
+    "confidence": 0.95,
+    "language": "tr",
+    "screening": false,
+    "company": "Personio",
+    "role": null,
+    "contactName": null,
+    "contactEmail": null,
+    "dates": [
+     {
+      "kind": "other",
+      "local": "2026-10-28T14:00",
+      "utcOffset": null,
+      "timeZone": null,
+      "label": "Ücretsiz webinar"
+     }
+    ],
+    "meetingUrls": [],
+    "applicationId": null
+   },
+   "usage": {
+    "inputTokens": 1392,
+    "outputTokens": 136,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 2588
+   }
+  }
+ }
+}

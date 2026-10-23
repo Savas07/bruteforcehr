@@ -12,7 +12,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "eval": "tsx eval/run.ts",
-    "eval:fixtures": "tsx eval/build-fixtures.ts"
+    "eval:fixtures": "tsx eval/build-fixtures.ts",
+    "eval:mail": "tsx eval/mail/run.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.1.0",

@@ -61,6 +61,10 @@ export interface MailSignals {
   phrases: Readonly<Partial<Record<RuleCategory, string>>>;
   /** Job-search vocabulary present (application, interview, Bewerbung, başvuru…). */
   jobVocabulary: boolean;
+  /** No list or bulk headers (a person wrote it). */
+  personal: boolean;
+  /** Candidate-facing career content (fairs, "complete your profile"). */
+  careerContent: boolean;
 }
 
 type RuleCategory = Exclude<MailCategory, "not_job" | "other_job">;
@@ -93,7 +97,7 @@ const PATTERNS: Readonly<Record<RuleCategory, readonly Pattern[]>> = {
     p(/olumsuz (?:sonuc|donus|degerlendir)/),
     p(/(?:baska|diger) (?:bir )?(?:aday|adaylar)(?:la|imiz| ile)/),
     p(/(?:surece|surecinize|degerlendirme surecine) devam (?:edemeyecegimizi|edilmeyecek|etmeme)/),
-    p(/(?:uygun|uyumlu) (?:bulunmadi|bulunmamistir|gorulmedi|olmadigi)/),
+    p(/\b(?:uygun|uyumlu) (?:bulunmadi\w*|bulunmamistir|gorulmedi\w*)\b/),
     p(/ilerleyemeyecegimizi|ilerlemeyecegimizi|ilerletemeyecegimizi|degerlendiremeyecegimizi|degerlendirmeye alamayacagimizi/),
     p(/pozisyon(?:umuz)? (?:doldu|dolduruldu|kapatildi|kapanmistir|askiya)/),
     p(/leider/, 1),
@@ -137,7 +141,7 @@ const PATTERNS: Readonly<Record<RuleCategory, readonly Pattern[]>> = {
     p(/vorstellungsgesprach/),
     p(/(?:einladung|einladen|laden (?:sie|dich) .{0,40}ein).{0,60}(?:gesprach|interview|kennenlernen)/),
     p(/(?:kennenlern|telefon|video|zweit|erst)(?:gesprach|interview)/),
-    p(/terminvorschlag|terminvorschlage|terminfindung/),
+    p(/terminvorschlag|terminvorschlage|terminfindung|terminvereinbarung|telefonisch\w* kennenlernen/),
   ],
   assessment: [
     p(/(?:online |technical |coding |skills? |cognitive |psychometric )(?:assessment|test|challenge|exercise)/),
@@ -188,7 +192,11 @@ const PATTERNS: Readonly<Record<RuleCategory, readonly Pattern[]>> = {
 
 /** Job-search vocabulary: a message without any of it (and without a sender signal) is skipped. */
 const JOB_VOCABULARY =
-  /\b(?:application|applied|applying|candidate|candidacy|interview|recruit\w*|hiring|vacanc\w*|job|jobs|position|role|offer letter|resume|cv|talent acquisition|assessment|basvuru\w*|mulakat\w*|gorusme\w*|aday\w*|ise alim|insan kaynaklari|pozisyon\w*|is ilan\w*|ozgecmis\w*|bewerbung\w*|bewerber\w*|vorstellungsgesprach\w*|stelle\w*|stellenangebot\w*|kandidat\w*|lebenslauf|personalabteilung|recruiting)\b/;
+  /\b(?:application|applied|applying|candidate|candidacy|interview|recruit\w*|hiring|vacanc\w*|job|jobs|position|role|offer letter|resume|cv|talent acquisition|assessment|careers?|basvuru\w*|mulakat\w*|gorusme\w*|aday\w*|ise alim|insan kaynaklari|pozisyon\w*|is ilan\w*|ozgecmis\w*|kariyer\w*|bewerbung\w*|bewerber\w*|vorstellungsgesprach\w*|stelle\w*|stellenangebot\w*|kandidat\w*|vakanz\w*|lebenslauf|personalabteilung|personalberat\w*|recruiting)\b/;
+
+/** Candidate-facing career content that arrives as bulk mail (other_job): fairs, profile nudges. */
+const CAREER_CONTENT =
+  /career(?:s)? fair|job fair|careers? event|complete your (?:profile|cv|resume)|kariyer fuar\w*|(?:ozgecmis|profil)\w* tamamla\w*|karrieremesse|jobmesse|recruiting-?(?:messe|event)|profil vervollstandig\w*|vervollstandig\w* (?:ihr|dein) profil/;
 
 /** How much of the body the rules read (quoted history further down adds noise). */
 const RULE_BODY_CHARS = 4_000;
@@ -269,20 +277,28 @@ export function mailSignals(mail: MailInput, applications: readonly TrackedAppli
     hits,
     phrases,
     jobVocabulary: JOB_VOCABULARY.test(text),
+    personal: !mail.bulk && !mail.listUnsubscribe,
+    careerContent: CAREER_CONTENT.test(text),
   };
 }
 
 /**
  * Whether the message may be job mail (BRIEF §4.7 step 2). Non-candidates are dropped before any
  * model call; only a hash of their id is kept. Tuned for recall: the classifier sorts out the rest.
+ * Personal mail (no list or bulk headers) with job vocabulary is a candidate (recruiters write
+ * from anywhere); bulk mail needs a category phrase, a tracked company or candidate-facing career
+ * content (fairs, profile nudges).
  */
 export function isJobCandidate(signals: MailSignals): boolean {
   if (signals.threadApplicationId !== null || signals.ats || signals.assessmentPlatform) return true;
   if (signals.domainApplicationIds.length > 0) return true;
   if (signals.jobBoard) return true;
+  if (!signals.jobVocabulary) return false;
   return (
-    signals.jobVocabulary &&
-    (signals.namedApplicationIds.length > 0 || Object.values(signals.hits).some((weight) => weight > 0))
+    signals.personal ||
+    signals.careerContent ||
+    signals.namedApplicationIds.length > 0 ||
+    Object.values(signals.hits).some((weight) => weight > 0)
   );
 }
 
@@ -296,7 +312,18 @@ export interface RuleClassification {
 }
 
 const SCREENING_HINT =
-  /(?:phone|recruiter|intro(?:ductory)?|initial|first|screening) (?:screen|call|chat|conversation|interview)|(?:telefon|on|ilk|tanisma) gorusme|ik gorusme|insan kaynaklari gorusme|(?:telefon|kennenlern|erst)(?:gesprach|interview)|telefoninterview/;
+  /\b(?:(?:phone|recruiter|intro(?:ductory)?|initial|first|screening) (?:screen|call|chat|conversation|interview)|(?:telefon|on|ilk|tanisma|ik|insan kaynaklari) gorusme\w*|(?:telefon|kennenlern|erst)(?:gesprach|interview)\w*|telefoninterview|telefonisch\w* kennenlernen)/;
+
+type StatusCategory = "application_received" | "rejection" | "interview_invite" | "assessment" | "offer";
+const STATUS_CATEGORIES: readonly StatusCategory[] = [
+  "application_received",
+  "rejection",
+  "interview_invite",
+  "assessment",
+  "offer",
+];
+/** Rules confidence when phrases of two status categories appear (below the 0.9 auto-apply default). */
+const AMBIGUOUS_CAP = 0.8;
 
 /**
  * Rules-only classification (used as is when "Allow sending email text to AI" is off, and as a
@@ -311,12 +338,24 @@ export function classifyByRules(mail: MailInput, signals: MailSignals): RuleClas
     signals.assessmentPlatform ||
     signals.domainApplicationIds.length > 0;
   const { hits, phrases } = signals;
-  const result = (category: MailCategory, confidence: number, evidence: string | null): RuleClassification => ({
-    category,
-    confidence: Math.round(confidence * 100) / 100,
-    screening: category === "interview_invite" && SCREENING_HINT.test(text),
-    evidence,
-  });
+  const result = (category: MailCategory, confidence: number, evidence: string | null): RuleClassification => {
+    // Phrases of another status category make the rules unsure: such mail never changes the
+    // tracker by rules alone. A receipt phrase next to a rejection is the usual "thank you for
+    // applying … unfortunately" and doesn't count.
+    const competing = STATUS_CATEGORIES.some(
+      (other) =>
+        other !== category &&
+        hits[other] > 0 &&
+        !(category === "rejection" && other === "application_received"),
+    );
+    const capped = STATUS_CATEGORIES.includes(category as StatusCategory) && competing ? Math.min(confidence, AMBIGUOUS_CAP) : confidence;
+    return {
+      category,
+      confidence: Math.round(capped * 100) / 100,
+      screening: category === "interview_invite" && SCREENING_HINT.test(text),
+      evidence,
+    };
+  };
 
   if (!isJobCandidate(signals)) return result("not_job", 0.9, null);
 
@@ -341,6 +380,7 @@ export function classifyByRules(mail: MailInput, signals: MailSignals): RuleClas
   if (signals.jobBoard && (mail.listUnsubscribe || mail.bulk))
     return result("job_alert", 0.7, signals.senderDomain);
   if (hits.rejection >= 2) return result("rejection", 0.7, phrases.rejection ?? null);
+  if (signals.careerContent) return result("other_job", 0.6, null);
   // A candidate with job words but no phrase and no tie to an application: most likely not job mail.
   if (!anchored && signals.namedApplicationIds.length === 0 && !signals.jobBoard) return result("not_job", 0.6, null);
   return result("other_job", 0.5, null);

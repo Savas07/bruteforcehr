@@ -171,6 +171,81 @@ final class CVEditorAccessibilityAuditTests: XCTestCase {
         try audit(app, scalesAtAX: true)
     }
 
+    // MARK: CV Studio (M2) panes
+
+    /// Opens a design pane, waits for `marker`, saves `name[-ax]` and audits it, at the default
+    /// size (scaling covered by the AX run) and at the largest accessibility size.
+    @MainActor
+    private func auditPane(_ pane: String, name: String, ignoringPage: Bool = false, marker: (XCUIApplication) -> XCUIElement) throws {
+        for size in [nil, largestSize] {
+            let app = launch(dataset: "populated", contentSize: size, pane: pane)
+            XCTAssertTrue(marker(app).waitForExistence(timeout: 15), "\(pane) opened")
+            Thread.sleep(forTimeInterval: 1)
+            try snapshot(size == nil ? name : "\(name)-ax")
+            try audit(app, ignoringPage: ignoringPage, scalesAtAX: size == nil, "\(#function)-\(pane)-\(size == nil ? "default" : "ax")")
+            app.terminate()
+        }
+    }
+
+    @MainActor
+    func testTemplatePicker() throws {
+        try auditPane("template", name: "template", ignoringPage: true) { $0.buttons["cv.template.done"] }
+    }
+
+    @MainActor
+    func testExportSheet() throws {
+        try auditPane("export", name: "export") { $0.buttons["cv.export.share"] }
+    }
+
+    @MainActor
+    func testRevisionViewer() throws {
+        try auditPane("revision", name: "revision") { $0.buttons["cv.history.restore"] }
+    }
+
+    @MainActor
+    func testConflictBanner() throws {
+        try auditPane("conflict", name: "conflict") { $0.buttons["cv.conflict.keep"] }
+    }
+
+    @MainActor
+    func testCompare() throws {
+        try auditPane("compare", name: "compare") { $0.navigationBars["Compare versions"] }
+    }
+
+    @MainActor
+    func testImportReview() throws {
+        try auditPane("import", name: "import-review") { $0.buttons["cv.import.create"] }
+    }
+
+    @MainActor
+    func testLanguageVariant() throws {
+        try auditPane("languageVariant", name: "language-variant") { $0.buttons["cv.languageVariant.create"] }
+    }
+
+    /// Restore from the version viewer asks first, then shows the restored version as current.
+    @MainActor
+    func testRestoreFlow() throws {
+        let app = launch(dataset: "populated", contentSize: nil, pane: "revision")
+        let restore = app.buttons["cv.history.restore"]
+        XCTAssertTrue(restore.waitForExistence(timeout: 15))
+        restore.tap()
+        let confirm = app.buttons["Restore"]
+        XCTAssertTrue(confirm.waitForExistence(timeout: 5))
+        try snapshot("restore-confirm")
+        confirm.tap()
+        XCTAssertTrue(app.staticTexts.containing(NSPredicate(format: "label BEGINSWITH %@", "Restored the version from")).firstMatch.waitForExistence(timeout: 5))
+    }
+
+    /// Keep this version resolves the conflict banner.
+    @MainActor
+    func testConflictKeep() throws {
+        let app = launch(dataset: "populated", contentSize: nil, pane: "conflict")
+        let keep = app.buttons["cv.conflict.keep"]
+        XCTAssertTrue(keep.waitForExistence(timeout: 15))
+        keep.tap()
+        XCTAssertTrue(keep.waitForNonExistence(timeout: 5))
+    }
+
     /// Audits the current screen and logs every issue (appended to `audit-issues.txt` next to the
     /// shots when `BFHR_CV_SHOTS` is set). Exempt, each for a stated reason (accessibility.md):
     /// - system chrome outside this screen: tab bar, status bar, navigation-bar buttons;

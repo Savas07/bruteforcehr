@@ -1,5 +1,15 @@
 # @bfhr/desktop
 
+## 0.2.2
+
+### Patch Changes
+
+- d5b8fc0: Release fix: the ATS check test waits long enough for the real PDF read-back on loaded CI runners.
+- @bfhr/api@0.2.2
+  - @bfhr/core@0.2.2
+  - @bfhr/cv-render@0.2.2
+  - @bfhr/ui-tokens@0.2.2
+
 ## 0.2.1
 
 ### Patch Changes

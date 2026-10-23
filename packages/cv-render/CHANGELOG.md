@@ -1,5 +1,11 @@
 # @bfhr/cv-render
 
+## 0.2.2
+
+### Patch Changes
+
+- @bfhr/core@0.2.2
+
 ## 0.2.1
 
 ### Patch Changes

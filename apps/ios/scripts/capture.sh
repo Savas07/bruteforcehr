@@ -6,13 +6,16 @@
 # artifacts/screens/ios/<device>/ (repository root of this worktree; gitignored):
 #
 #   design screens (--screen):  <screen>-<state>-<theme>[-ax].png
+#   update gate (--screen update-gate):  update-gate-<available|required>-<theme>[-ax].png
 #   title-only shell (default): <tab>-<theme>[-ax].png
 #
 # Usage: apps/ios/scripts/capture.sh [--screen NAME|all]... [--state NAME]... [--size default|ax]...
 #                                     [--ax] [--device NAME]... [--theme light|dark]... [--skip-build]
 #   --screen    core screen in design mode: today, job-detail, cv-editor, tracker-board, mail-review,
 #               or all (repeatable). Without it the tabs of the title-only shell are captured.
-#   --state     populated, empty, loading, error, offline (repeatable; default: all five)
+#               update-gate (on its own): the update banner and blocking screen over Today.
+#   --state     populated, empty, loading, error, offline (repeatable; default: all five);
+#               for update-gate: available, required (default: both)
 #   --size      default (Large) or ax (largest accessibility size, files end in -ax)
 #               (repeatable; default: default)
 #   --ax        same as --size ax
@@ -51,7 +54,7 @@ while (($# > 0)); do
     --device) devices+=("$2"); shift ;;
     --theme) themes+=("$2"); shift ;;
     --skip-build) build=false ;;
-    -h | --help) sed -n '2,29p' "$0"; exit 0 ;;
+    -h | --help) sed -n '2,33p' "$0"; exit 0 ;;
     *) echo "capture.sh: unknown argument $1" >&2; exit 64 ;;
   esac
   shift
@@ -59,9 +62,16 @@ done
 ((${#devices[@]} > 0)) || devices=("iPhone 17e" "iPhone 17 Pro Max")
 ((${#themes[@]} > 0)) || themes=(light dark)
 ((${#sizes[@]} > 0)) || sizes=(default)
+contains() { local needle="$1"; shift; for item in "$@"; do [[ "$item" == "$needle" ]] && return 0; done; return 1; }
+update_states=(available required)
+update_gate=false
+if contains update-gate ${screens[@]+"${screens[@]}"}; then
+  ((${#screens[@]} == 1)) || { echo "capture.sh: capture update-gate on its own" >&2; exit 64; }
+  update_gate=true
+  ((${#states[@]} > 0)) || states=("${update_states[@]}")
+fi
 ((${#states[@]} > 0)) || states=("${all_states[@]}")
 
-contains() { local needle="$1"; shift; for item in "$@"; do [[ "$item" == "$needle" ]] && return 0; done; return 1; }
 for theme in "${themes[@]}"; do
   contains "$theme" light dark || { echo "capture.sh: theme must be light or dark" >&2; exit 64; }
 done
@@ -69,10 +79,11 @@ for size in "${sizes[@]}"; do
   contains "$size" default ax || { echo "capture.sh: size must be default or ax" >&2; exit 64; }
 done
 for screen in ${screens[@]+"${screens[@]}"}; do
-  contains "$screen" "${all_screens[@]}" || { echo "capture.sh: unknown screen $screen (${all_screens[*]})" >&2; exit 64; }
+  contains "$screen" "${all_screens[@]}" update-gate || { echo "capture.sh: unknown screen $screen (${all_screens[*]} update-gate)" >&2; exit 64; }
 done
+if $update_gate; then valid_states=("${update_states[@]}"); else valid_states=("${all_states[@]}"); fi
 for state in "${states[@]}"; do
-  contains "$state" "${all_states[@]}" || { echo "capture.sh: unknown state $state (${all_states[*]})" >&2; exit 64; }
+  contains "$state" "${valid_states[@]}" || { echo "capture.sh: unknown state $state (${valid_states[*]})" >&2; exit 64; }
 done
 
 udid_for() {

@@ -9,6 +9,9 @@ struct RootView: View {
     @State private var toasts = ToastCenter()
     /// Badge counts reported by each tab's screen (`bfhrTabBadge`); only Mail uses one.
     @State private var badges: [AppTab: Int] = [:]
+    /// `appConfig/ios` against this build: the update banner and the blocking update screen.
+    @State private var updateGate = RootView.makeUpdateGate()
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         TabView(selection: $selection) {
@@ -16,6 +19,7 @@ struct RootView: View {
                 Tab(tab.title, systemImage: tab.systemImage, value: tab) {
                     TabRootView(tab: tab)
                         .onPreferenceChange(BFHRTabBadgeKey.self) { badges[tab] = $0 }
+                        .bfhrUpdateBanner(updateGate)
                 }
                 .badge(badges[tab] ?? 0)
             }
@@ -32,6 +36,29 @@ struct RootView: View {
         .onOpenURL { url in
             if let tab = AppTab(deepLink: url) { selection = tab }
         }
+        .bfhrUpdateGate(updateGate)
+        // At launch and on every return to the foreground (PRD M1-UPD-2).
+        .onChange(of: scenePhase, initial: true) { _, phase in
+            guard phase == .active, RootView.readsAppConfig else { return }
+            Task { await updateGate.check(AppConfigReader.iosVersions) }
+        }
+    }
+
+    private static func makeUpdateGate() -> UpdateGateModel {
+        #if DEBUG
+        if let state = DesignUpdateState.launch { return state.model() }
+        #endif
+        return UpdateGateModel(installedVersion: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String)
+    }
+
+    /// Design mode shows fixed states and never reads Firestore, so captures and audits don't
+    /// depend on the live config.
+    private static var readsAppConfig: Bool {
+        #if DEBUG
+        return DesignScenario.launch == nil && DesignUpdateState.launch == nil
+        #else
+        return true
+        #endif
     }
 
     private static var initialTab: AppTab {

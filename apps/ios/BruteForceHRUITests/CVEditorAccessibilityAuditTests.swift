@@ -282,7 +282,9 @@ final class CVEditorAccessibilityAuditTests: XCTestCase {
                     exempt = "under a translucent bar"
                 } else if scalesAtAX, issue.auditType == .dynamicType {
                     exempt = "scales: audited at AX5 separately"
-                } else if ignoringPage, Self.isPageText(element, in: app), [.dynamicType, .textClipped, .contrast].contains(issue.auditType) {
+                } else if ignoringPage, Self.isPageText(element, in: app) {
+                    // The CV page is the printed document: fixed print sizes in paper colours, and
+                    // its contact lines are the user's own e-mail and URLs (links don't navigate).
                     exempt = "printed page"
                 }
             } else {
@@ -312,8 +314,12 @@ final class CVEditorAccessibilityAuditTests: XCTestCase {
     @MainActor
     private static func isPageText(_ element: XCUIElement, in app: XCUIApplication) -> Bool {
         guard element.elementType == .staticText || element.elementType == .link else { return false }
-        let pages = app.webViews.matching(identifier: "cv.preview.web")
-        return pages.allElementsBoundByIndex.contains { $0.frame.intersects(element.frame) }
+        if app.webViews.allElementsBoundByIndex.contains(where: { $0.frame.intersects(element.frame) }) { return true }
+        // WebKit may expose the page's text without a web-view ancestor: on Preview, the page is
+        // everything between the Edit · Preview bar and the Share bar.
+        let segment = app.descendants(matching: .any)["cv.segment"], share = app.buttons["cv.preview.share"]
+        guard segment.exists, share.exists else { return false }
+        return element.frame.minY >= segment.frame.maxY && element.frame.maxY <= share.frame.minY
     }
 
     /// Swipes up until `element` is on screen (lists load rows lazily).

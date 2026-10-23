@@ -169,7 +169,7 @@ struct CVLanguageVariantSheet: View {
                         .pickerStyle(.inline)
                         .labelsHidden()
                 } header: {
-                    Text(L.variantLanguage)
+                    Text(L.variantLanguage).cvListHeader()
                 }
                 Section {
                     Picker(selection: $translate) {
@@ -180,9 +180,9 @@ struct CVLanguageVariantSheet: View {
                         .labelsHidden()
                         .disabled(!model.canRequestSuggestions)
                 } header: {
-                    Text(L.variantText)
+                    Text(L.variantText).cvListHeader()
                 } footer: {
-                    Text(model.canRequestSuggestions ? L.translateFooter : L.translateUnavailable)
+                    Text(model.canRequestSuggestions ? L.translateFooter : L.translateUnavailable).cvListFooter()
                 }
             }
             .navigationTitle(Text(L.newLanguageVariant))

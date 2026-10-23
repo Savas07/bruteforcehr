@@ -62,7 +62,7 @@ struct CVTemplatePicker: View {
                 }
                 .padding(.vertical, BFHRSpace.s2)
             } footer: {
-                Text(L.templateFooter)
+                Text(L.templateFooter).cvListFooter()
             }
             Section {
                 accentRow(catalog)
@@ -79,9 +79,9 @@ struct CVTemplatePicker: View {
                     Text(verbatim: "Letter").tag(CvPaperSize.letter)
                 } label: { Text(L.paper) }
             } header: {
-                Text(L.themeHeader)
+                Text(L.themeHeader).cvListHeader()
             } footer: {
-                Text(L.paperFooter)
+                Text(L.paperFooter).cvListFooter()
             }
         }
     }

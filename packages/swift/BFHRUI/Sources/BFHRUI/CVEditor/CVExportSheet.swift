@@ -86,9 +86,9 @@ struct CVExportSheet: View {
                     .pickerStyle(.segmented)
                     .accessibilityIdentifier("cv.export.format")
                 } header: {
-                    Text(L.exportFormat)
+                    Text(L.exportFormat).cvListHeader()
                 } footer: {
-                    Text(L.exportFormatFooter(format))
+                    Text(L.exportFormatFooter(format)).cvListFooter().fixedSize(horizontal: false, vertical: true)
                 }
                 if format != .json {
                     Section {
@@ -98,6 +98,10 @@ struct CVExportSheet: View {
                         } label: {
                             Text(L.paper)
                         }
+                        .pickerStyle(.segmented)
+                        .accessibilityIdentifier("cv.export.paper")
+                    } header: {
+                        Text(L.paper).cvListHeader()
                     }
                 }
                 Section {
@@ -113,7 +117,7 @@ struct CVExportSheet: View {
                             .accessibilityHidden(true)
                     }
                 } header: {
-                    Text(L.fileName)
+                    Text(L.fileName).cvListHeader()
                 }
                 if failed {
                     Section {

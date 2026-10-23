@@ -72,11 +72,20 @@ Missing job → `.failed(.notFound)`. `header: Header?` (title, company, locatio
 Actions: `toggleSave() -> ToastItem?` (unsave is silent) · `hide(reasons:) -> ToastItem?` · `unhide()` · `markHaveSkill(_:) -> ToastItem?`.
 Design: populated → `job-lighthouse-senior-frontend` (rationale, a gap, 3 sources); empty → that job stripped to no description and no match.
 
-### CV editor — `CVEditorModel(selectedCvId:now:calendar:)`
+### CV editor — `CVEditorModel(selectedCvId:now:calendar:)` (CV Studio, M2)
 
-List: `groups: [CVListGroup]` (base + variants, `CVVariantKind` role / language), `filter: CVListFilter`, `isEmpty` (→ Import a CV / Start from scratch), `archivedCount`. Selected CV: `document: CVDocument?` (title, language, variant info with `baseChangedSections`, template, theme, content, importedFrom, `hasLocalEdits`) · `sections: [CVSection]` (Header and Summary pinned, then `meta.sectionOrder`; `CVSectionSummary`, `items: [CVSectionItem]`, `isEmpty` → `GhostRow`) · `hiddenSections` · `revisionDays: [CVRevisionDay]` · `syncStatus: CVSyncStatus?` (`.saved(at:)`, `.saving`, `.savedOnDevice`, `.failed`) · `failedWriteIDs`.
-Actions: `select(cvId:)` · `moveSection(from:to:)` · `removeItem(sectionKind:at:) -> ToastItem?` · `archive(cvId:) -> ToastItem?` · `unarchive(cvId:)`.
-Design: populated → `cv-en` selected; empty → the list's empty state.
+List: `groups: [CVListGroup]` (base + variants, `CVVariantKind` role / language), `filter: CVListFilter`, `isEmpty` (→ Import a CV / Start from scratch), `archivedCount`. Selected CV: `document: CVDocument?` (title, language, variant info with `baseChangedSections`, template, theme, content, importedFrom, `hasLocalEdits` = this device holds a draft: failed save or conflict) · `sections: [CVSection]` (Header and Summary pinned, then `meta.sectionOrder`; `CVSectionSummary`, `items: [CVSectionItem]`, `isEmpty` → `GhostRow`) · `hiddenSections` · `revisionDays: [CVRevisionDay]` · `syncStatus: CVSyncStatus?` (`.saved(at:)`, `.saving`, `.savedOnDevice`, `.failed`) · `failedWriteIDs` · `conflict: CVConflictInfo?` · `notice: CVNotice?`.
+Actions: `select(cvId:)` · item/header/summary saves · `moveSection(from:to:)` · `removeItem(sectionKind:at:) -> ToastItem?` · `archive(cvId:) -> ToastItem?` · `unarchive(cvId:)` · `rename` · `makeDefault` · `duplicate` / `newRoleVariant` / `newLanguageVariant(translate:)` (async) · `restore(revisionId:)` · `applyDesign(templateId:theme:templateName:)` · `retrySave()` · `keepThisVersion()` / `useOtherVersion()` · `createImported(…)` · `render(_:language:)`, `catalog()`, `exportFileName(format:)`, `jsonExport()`, `docxExport(paper:)`.
+Services set by the app (nil in tests): `writer: CVWriter` (Firestore), `suggestionProvider` (`cvAssist`), `importer: CVImporter` (Storage + `cvImport`), `renderEngine: CVRenderEngine` (cv-render in JavaScriptCore). Every saved change is one revision + `version` bump in one batch (no transactions, so it works offline); a refused update is a version conflict: this device's content is written as its own revision and the banner offers Keep this version / Use the other version / Compare (docs/adr/0009).
+Design: populated → `cv-en` selected; empty → the list's empty state. `-BFHRCVPane preview|item|assist|summary|history|revision|reorder|template|export|conflict|compare|import|languageVariant` opens one pane (design importer and canned suggestions; never in Release).
+
+#### Live data, rendering and the cv-render bundle
+
+- `apps/ios/BruteForceHR/CVsTab.swift` puts `CVEditorScreen` on live data for the signed-in uid; `CVCloudStore.swift` (`FirestoreCVStore`: listeners on `users/{uid}`, `cvs` with metadata changes → `pendingSyncIDs`, revisions of the open CV and its base; `NWPathMonitor` → `connection`; batches; Firestore Codable mapping with `schemaVersion`) and `CVCloudServices.swift` (`CloudCVAssist`, `CloudCVImporter`). The other tabs stay title-only until their milestones.
+- Preview, template thumbnails, version pages and Compare show cv-render's HTML in `WKWebView` (`CVWebPage`, viewport = paper width). PDF: `CVPDFRenderer` (UIPrintPageRenderer, paper rect A4/Letter, printable rect inset by cv-render's `page.marginsMm`). DOCX: `buildCvDocxBase64` in the same bundle. JSON: the content with `meta`.
+- The build phase **Copy cv-render bundle** (`apps/ios/scripts/copy-cv-render.sh`) copies `packages/cv-render/dist/cv-render.iife.js` into the app and **fails when it is missing or stale** (recomputes the sha256 of the esbuild inputs listed in `dist/cv-render.iife.inputs.xcfilelist`). Run `pnpm install && pnpm --filter @bfhr/cv-render build` before building the app. `swift test` uses the same dist file (`CVStudioTests`, skipped when it isn't built).
+- `apps/ios/scripts/with-ios-lock.sh <command>` runs a build or UI test inside the machine-wide simulator lock (use with `BFHR_DERIVED_DATA`).
+- Live check (`CVStudioEndToEndTests`, skipped without its variables): sign in a throwaway user as in "Sign-in" below (but run `testSignsInAndEditsCV` with `TEST_RUNNER_BFHR_E2E_LINK` instead of signing out), then `testImportsJSONResume` with `TEST_RUNNER_BFHR_E2E_IMPORT=<JSON Resume path on the Mac>` (Debug-only `-BFHRImportFile` skips the Files picker); verify `users/{uid}/cvs/**` through the Firestore REST API; delete the documents, `users/{uid}/cv-imports/*` and the user.
 
 ### Tracker board — `TrackerBoardModel(now:calendar:)`
 
@@ -206,8 +215,9 @@ cd apps/ios && xcodebuild build -project BruteForceHR.xcodeproj -scheme BruteFor
   -derivedDataPath build/DerivedData -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO -quiet
 app=build/DerivedData/Build/Products/Release-iphonesimulator/BruteForceHR.app
 find "$app" -iname '*fixture*' -o -name 'populated.json' -o -name 'empty.json'             # nothing
-strings "$app/BruteForceHR" | grep -E -- '-BFHRDesign|BFHRScreen|BFHRUpdate|BFHRSignIn|FixtureStore|BFHRFixtures|Lighthouse Learning|deniz\.aksoy'  # nothing
-nm "$app/BruteForceHR" | grep -iE 'FixtureStore|DesignScenario|DesignScreenView|DesignTabRoot|DesignUpdateState|DesignSignInState|DesignSignInService'     # nothing
+strings "$app/BruteForceHR" | grep -E -- '-BFHRDesign|BFHRScreen|BFHRUpdate|BFHRSignIn|BFHRCVPane|BFHRImportFile|FixtureStore|BFHRFixtures|Lighthouse Learning|deniz\.aksoy'  # nothing
+nm "$app/BruteForceHR" | grep -iE 'FixtureStore|DesignScenario|DesignScreenView|DesignTabRoot|DesignUpdateState|DesignSignInState|DesignSignInService|CVDesignImporter|CVDesignSuggestions|CVDesignPane'     # nothing
+ls "$app/cv-render.iife.js"                                                                    # the renderer is bundled
 ```
 
 The fixture copy phase writes to `$(BFHR_DESIGN_FIXTURES_DIR)`, which is the app's `BFHRFixtures/` folder in Debug and a throwaway folder in DerivedSources in Release (script sandboxing stays on).

@@ -66,6 +66,13 @@ public struct CVEditorScreen: View {
         #if DEBUG
         .task {
             if CVDesignPane.opensList, CVDesignPane.takeLaunchPane() == .import { openDesignImport() }
+            // Live end-to-end test (CVStudioEndToEndTests): `-BFHRImportFile <path>` imports that
+            // file through the real importer instead of the Files picker, once the list is loaded.
+            let arguments = ProcessInfo.processInfo.arguments
+            if let index = arguments.firstIndex(of: "-BFHRImportFile"), arguments.indices.contains(index + 1), model.importer != nil {
+                while !model.isLoaded { try? await Task.sleep(for: .milliseconds(200)) }
+                startImport(URL(fileURLWithPath: arguments[index + 1]))
+            }
         }
         #endif
     }

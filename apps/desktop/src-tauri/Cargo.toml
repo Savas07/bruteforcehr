@@ -17,6 +17,10 @@ tauri = { version = "2.12.5", features = [] }
 tauri-plugin-opener = "2.7.2"
 url = "2.5.8"
 sys-locale = "0.3.2"
+# `bruteforcehr://` links (src/auth_link.rs); single-instance first, so a link opened while the app
+# runs reaches the running window (ADR 0007).
+tauri-plugin-deep-link = "2.6.2"
+tauri-plugin-single-instance = { version = "2.5.4", features = ["deep-link"] }
 # In-app updates (src/updater.rs): signed bundles from the GitHub release manifest.
 tauri-plugin-updater = "2.14.0"
 time = { version = "0.3", features = ["formatting"] }

@@ -1,13 +1,16 @@
 import { Outlet, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
-import { useIntl } from "react-intl";
+import { defineMessages, useIntl } from "react-intl";
 import { chrome, onMenuCommand } from "../lib/desktop";
 import { destinations, type DestinationId } from "../lib/destinations";
 import { shortcutForKey, shortcutMessage, shortcuts, type MenuCommand } from "../lib/shortcuts";
+import { AuthGate } from "../features/auth/AuthGate";
+import { useAuth } from "../features/auth/session";
 import { keymap } from "../shared/keyboard/keymap";
 import { useKeyBindings } from "../shared/keyboard/useKeyBindings";
 import { ConnectionBanner } from "../shared/ui/ConnectionBanner";
-import { ToastProvider, ToastViewport } from "../shared/ui/Toast";
+import { ToastProvider, ToastViewport, useToast } from "../shared/ui/Toast";
+import { saveUnsavedChanges } from "../shared/unsavedChanges";
 import { CommandPalette } from "./CommandPalette";
 import { ROUTE_TITLE_ID } from "./RouteContainer";
 import { ShortcutsSheet } from "./ShortcutsSheet";
@@ -18,10 +21,22 @@ import { CheckForUpdatesDialog, ReleaseNotesDialog, SaveFirstDialog } from "./up
 import { UpdateRequired } from "./updates/UpdateRequired";
 import { useUpdateController } from "./updates/useUpdateController";
 
+const messages = defineMessages({
+  signOutNotSaved: {
+    id: "shell.signOut.notSaved",
+    defaultMessage: "Couldn’t save your changes, so you’re still signed in. Try again in a moment.",
+  },
+});
+
+/** The signed-in app; signed out, the sign-in screen (src/features/auth). */
 export function AppShell() {
   return (
     <UpdatesProvider>
-      <Shell />
+      <AuthGate>
+        <ToastProvider>
+          <Shell />
+        </ToastProvider>
+      </AuthGate>
     </UpdatesProvider>
   );
 }
@@ -29,10 +44,22 @@ export function AppShell() {
 function Shell() {
   const navigate = useNavigate();
   const intl = useIntl();
+  const toast = useToast();
+  const { signOut } = useAuth();
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const updates = useUpdateController();
   const { checkNow, blocking } = updates;
+
+  /** Saves open edits first; if they can't be saved, nobody is signed out. */
+  const requestSignOut = useCallback(() => {
+    setPaletteOpen(false);
+    setShortcutsOpen(false);
+    saveUnsavedChanges().then(signOut, (error: unknown) => {
+      console.error("Couldn't save before signing out", error);
+      toast.show({ variant: "info", message: intl.formatMessage(messages.signOutNotSaved) });
+    });
+  }, [signOut, toast, intl]);
 
   /** Keyboard-driven navigation moves focus to the new section's heading. */
   const goTo = useCallback(
@@ -54,8 +81,8 @@ function Shell() {
 
   const runCommand = useCallback(
     (command: MenuCommand) => {
-      // Behind "Update required" only the update check still works.
-      if (blocking && command.type !== "check-for-updates") return;
+      // Behind "Update required" only the update check and signing out still work.
+      if (blocking && command.type !== "check-for-updates" && command.type !== "sign-out") return;
       switch (command.type) {
         case "navigate":
           void goTo(command.destination);
@@ -72,9 +99,12 @@ function Shell() {
           setShortcutsOpen(false);
           checkNow();
           break;
+        case "sign-out":
+          requestSignOut();
+          break;
       }
     },
-    [goTo, openShortcuts, checkNow, blocking],
+    [goTo, openShortcuts, checkNow, requestSignOut, blocking],
   );
 
   // Native menu clicks (src-tauri/src/menu.rs).
@@ -127,7 +157,6 @@ function Shell() {
 
   const isMac = chrome.platform === "macos";
   return (
-    <ToastProvider>
       <div className="text-fg-primary flex h-full flex-col">
         <div className="flex min-h-0 flex-1">
           <Sidebar
@@ -155,6 +184,7 @@ function Shell() {
           onNavigate={(id) => void goTo(id)}
           onOpenShortcuts={openShortcuts}
           onCheckForUpdates={checkNow}
+          onSignOut={requestSignOut}
         />
         <ShortcutsSheet open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
         <CheckForUpdatesDialog controller={updates} />
@@ -163,6 +193,5 @@ function Shell() {
         {/* After the gate, so "Save and restart" opens above it. */}
         <SaveFirstDialog controller={updates} />
       </div>
-    </ToastProvider>
   );
 }

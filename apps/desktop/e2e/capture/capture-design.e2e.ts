@@ -5,7 +5,9 @@
  * `pnpm capture:app:design`. Narrow it with `BFHR_SCREENS=today,mail-review` and
  * `BFHR_STATES=populated,offline` (comma-separated); `BFHR_LOCALE=tr|de` captures another UI
  * language. `BFHR_UPDATE_STATES=all` (or `ready,notes,…`) adds the update UI states
- * (`updateDesignStates`, each at its own size) as update-<state>-…png; `BFHR_SCREENS=none` skips
+ * (`updateDesignStates`, each at its own size) as update-<state>-…png; `BFHR_AUTH_STATES=all` (or
+ * `email,check-email,…`) adds the sign-in states (`authDesignStates`, 1280×800) as
+ * sign-in-<state>-…png; `BFHR_SCREENS=none` skips
  * the screens. Every route pins the locale and time zone (`?locale=&tz=`, CAPTURE_PIN) so macOS,
  * Windows and the browser harness render the same text. Writes
  *   artifacts/screens/desktop/<macos|windows>/design/<screen>-<state>-<theme>-<w>x<h>.png
@@ -14,6 +16,10 @@ import { mkdir } from "node:fs/promises";
 import path from "node:path";
 import { $, browser, expect } from "@wdio/globals";
 import {
+  authCaptureFileName,
+  authDesignHash,
+  type AuthDesignState,
+  authDesignStates,
   CAPTURE_LOCALES,
   CAPTURE_PIN,
   type CaptureLanguage,
@@ -52,6 +58,11 @@ const updateStates = !process.env["BFHR_UPDATE_STATES"]
   : process.env["BFHR_UPDATE_STATES"] === "all"
     ? updateDesignStates
     : fromEnv<UpdateDesignState>("BFHR_UPDATE_STATES", updateDesignStates);
+const authStates = !process.env["BFHR_AUTH_STATES"]
+  ? []
+  : process.env["BFHR_AUTH_STATES"] === "all"
+    ? authDesignStates
+    : fromEnv<AuthDesignState>("BFHR_AUTH_STATES", authDesignStates);
 const states = fromEnv<DesignState>("BFHR_STATES", designStates);
 const languageEnv = process.env["BFHR_LOCALE"] || "en";
 if (!Object.hasOwn(CAPTURE_LOCALES, languageEnv))
@@ -102,6 +113,9 @@ describe("design-build screenshots", () => {
         await setViewport(size.width, size.height);
         await capture(updateDesignHash(state, pin), updateCaptureFileName(state, theme, size));
       }
+      if (authStates.length > 0) await setViewport(captureSizes[0].width, captureSizes[0].height);
+      for (const state of authStates)
+        await capture(authDesignHash(state, pin), authCaptureFileName(state, theme, captureSizes[0]));
     }
     console.log(written.join("\n"));
   });

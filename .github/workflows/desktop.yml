@@ -33,6 +33,10 @@ on:
         description: "design_capture: BFHR_UPDATE_STATES (all, comma-separated, or empty)"
         type: string
         default: ""
+      auth_states:
+        description: "design_capture: BFHR_AUTH_STATES (all, comma-separated, or empty)"
+        type: string
+        default: ""
       locale:
         description: "design_capture: BFHR_LOCALE (en, tr, de)"
         type: string
@@ -119,11 +123,32 @@ jobs:
           retention-days: 14
 
       # Test build (cargo feature `e2e`): replaces the release binary, after the bundles are built.
-      - run: pnpm build:e2e
-      - run: pnpm test:e2e
+      # macOS: bundled and installed in /Applications, so LaunchServices delivers `bruteforcehr://`
+      # sign-in links to it (e2e/specs/auth.e2e.ts); Windows registers the scheme for the test
+      # binary at launch (src-tauri/src/main.rs).
+      - name: Build E2E app
+        run: |
+          if [ "$RUNNER_OS" = macOS ]; then
+            pnpm tauri build --features e2e --bundles app --config src-tauri/tauri.e2e.conf.json \
+              --config src-tauri/tauri.unsigned.conf.json --config "$(scripts/compile-app-icon.sh "$RUNNER_TEMP/app-icon-e2e")"
+            built=src-tauri/target/release/bundle/macos/BruteForceHR.app
+            app=/Applications/BruteForceHR.app
+            rm -rf "$app"
+            ditto "$built" "$app"
+            lsregister=/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister
+            "$lsregister" -u "$built" || true
+            "$lsregister" -f "$app"
+            echo "BFHR_APP_BINARY=$app/Contents/MacOS/$(defaults read "$app/Contents/Info" CFBundleExecutable)" >> "$GITHUB_ENV"
+          else
+            pnpm build:e2e
+          fi
+      # Sign-in runs against the Firebase Auth emulator (scripts/with-auth-emulator.sh), from a
+      # global firebase-tools so the emulator starts within the script's wait.
+      - run: npm install --global --no-fund --no-audit firebase-tools@15.34.1
+      - run: scripts/with-auth-emulator.sh pnpm test:e2e
       # windows-latest has a 1024×768 display that Set-DisplayResolution can't change (run
       # 39797339032), so Windows captures are zoomed out to 75 % / 50 % (e2e/capture/capture.e2e.ts).
-      - run: pnpm capture
+      - run: scripts/with-auth-emulator.sh pnpm capture
         if: success() || failure()
       - uses: actions/upload-artifact@v7
         if: always()
@@ -174,6 +199,7 @@ jobs:
           BFHR_SCREENS: ${{ inputs.screens }}
           BFHR_STATES: ${{ inputs.states }}
           BFHR_UPDATE_STATES: ${{ inputs.update_states }}
+          BFHR_AUTH_STATES: ${{ inputs.auth_states }}
           BFHR_LOCALE: ${{ inputs.locale }}
       - uses: actions/upload-artifact@v7
         if: always()

@@ -61,7 +61,7 @@ function NoViewYet({ spec }: { spec: DesignScreenSpec<unknown> }) {
 }
 
 /** Ready once the forced state has painted; skeletons appear after `timing.skeletonDelay`. */
-function useDesignReady(key: string, loading: boolean): void {
+export function useDesignReady(key: string, loading: boolean): void {
   useEffect(() => {
     const root = document.documentElement;
     root.removeAttribute(DESIGN_READY_ATTRIBUTE);

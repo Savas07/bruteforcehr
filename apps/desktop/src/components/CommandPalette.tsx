@@ -1,5 +1,5 @@
 import { Command } from "cmdk";
-import { Keyboard, RefreshCw, Search } from "lucide-react";
+import { Keyboard, LogOut, RefreshCw, Search } from "lucide-react";
 import { Dialog } from "radix-ui";
 import { useRef, type ReactNode } from "react";
 import { defineMessages, useIntl } from "react-intl";
@@ -24,6 +24,8 @@ const messages = defineMessages({
   help: { id: "shell.commandPalette.help", defaultMessage: "Help", description: "Group heading" },
   keyboardShortcuts: { id: "shell.commandPalette.keyboardShortcuts", defaultMessage: "Keyboard shortcuts" },
   checkForUpdates: { id: "shell.commandPalette.checkForUpdates", defaultMessage: "Check for updates" },
+  account: { id: "shell.commandPalette.account", defaultMessage: "Account", description: "Group heading" },
+  signOut: { id: "shell.commandPalette.signOut", defaultMessage: "Sign out" },
   move: {
     id: "shell.commandPalette.move",
     defaultMessage: "to move",
@@ -70,12 +72,14 @@ export function CommandPalette({
   onNavigate,
   onOpenShortcuts,
   onCheckForUpdates,
+  onSignOut,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onNavigate: (destination: DestinationId) => void;
   onOpenShortcuts: () => void;
   onCheckForUpdates: () => void;
+  onSignOut: () => void;
 }) {
   // After choosing a command, focus moves to its target instead of back to the opener.
   const intl = useIntl();
@@ -162,6 +166,16 @@ export function CommandPalette({
                     strokeWidth={1.75}
                   />
                   <span className="flex-1 truncate">{intl.formatMessage(messages.checkForUpdates)}</span>
+                </Command.Item>
+              </Command.Group>
+              <Command.Group heading={intl.formatMessage(messages.account)} className={groupClass}>
+                <Command.Item
+                  value={intl.formatMessage(messages.signOut)}
+                  onSelect={() => run(onSignOut)}
+                  className={itemClass}
+                >
+                  <LogOut aria-hidden="true" className="text-fg-secondary size-4 shrink-0" strokeWidth={1.75} />
+                  <span className="flex-1 truncate">{intl.formatMessage(messages.signOut)}</span>
                 </Command.Item>
               </Command.Group>
             </Command.List>

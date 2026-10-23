@@ -11,7 +11,13 @@ import path from "node:path";
 export const appDir = path.resolve(import.meta.dirname, "..");
 
 const binaryName = process.platform === "win32" ? "bruteforcehr.exe" : "bruteforcehr";
-export const appBinaryPath = path.join(appDir, "src-tauri/target/release", binaryName);
+/**
+ * The unbundled test build, or `BFHR_APP_BINARY`: on macOS CI the test build is installed as
+ * /Applications/BruteForceHR.app, so `bruteforcehr://` links reach it through LaunchServices
+ * (e2e/specs/auth.e2e.ts).
+ */
+export const appBinaryPath =
+  process.env["BFHR_APP_BINARY"] || path.join(appDir, "src-tauri/target/release", binaryName);
 
 export function baseConfig(specs: string[], timeout: number): WebdriverIO.Config {
   return {

@@ -4,8 +4,8 @@
 //! (`tauri-apps/wry#451`), and on macOS a handled `keydown` keeps the menu from firing again.
 
 use serde::Serialize;
-use tauri::menu::{Menu, MenuBuilder, MenuEvent, MenuItemBuilder, SubmenuBuilder};
-use tauri::{AppHandle, Emitter, Runtime};
+use tauri::menu::{Menu, MenuBuilder, MenuEvent, MenuItem, MenuItemBuilder, SubmenuBuilder};
+use tauri::{AppHandle, Emitter, Manager, Runtime};
 
 use crate::window::MAIN_WINDOW;
 
@@ -27,6 +27,7 @@ const PALETTE_KEY: &str = "K";
 const SHORTCUTS_ID: &str = "keyboard-shortcuts";
 const SHORTCUTS_KEY: &str = "/";
 const CHECK_UPDATES_ID: &str = "check-for-updates";
+const SIGN_OUT_ID: &str = "sign-out";
 const GO_PREFIX: &str = "go-";
 
 /// Payload of [`MENU_COMMAND_EVENT`]; matches `MenuCommand` in src/lib/shortcuts.ts.
@@ -40,6 +41,8 @@ pub enum MenuCommand {
     OpenShortcuts,
     /// "Check for Updates…": the UI shows the check's progress and result (src/updater.rs).
     CheckForUpdates,
+    /// "Sign Out": the UI signs out. Enabled only while someone is signed in ([`set_signed_in`]).
+    SignOut,
 }
 
 /// Maps a menu item id to its command; ids that aren't ours (predefined items) map to `None`.
@@ -48,6 +51,7 @@ pub fn command_for(id: &str) -> Option<MenuCommand> {
         PALETTE_ID => Some(MenuCommand::OpenPalette),
         SHORTCUTS_ID => Some(MenuCommand::OpenShortcuts),
         CHECK_UPDATES_ID => Some(MenuCommand::CheckForUpdates),
+        SIGN_OUT_ID => Some(MenuCommand::SignOut),
         _ => {
             let destination = id.strip_prefix(GO_PREFIX)?;
             DESTINATIONS
@@ -62,6 +66,18 @@ fn accelerator(key: &str) -> String {
     format!("CmdOrCtrl+{key}")
 }
 
+/// The "Sign Out" item, kept so the UI can enable it after sign-in.
+struct SignOutItem<R: Runtime>(MenuItem<R>);
+
+/// Enables "Sign Out" while someone is signed in (the `set_signed_in` command).
+pub fn set_signed_in<R: Runtime>(app: &AppHandle<R>, signed_in: bool) {
+    if let Some(item) = app.try_state::<SignOutItem<R>>()
+        && let Err(error) = item.0.set_enabled(signed_in)
+    {
+        eprintln!("failed to update the Sign Out item: {error}");
+    }
+}
+
 /// Builds the application menu (macOS menu bar; the window menu bar on Windows).
 pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
     let palette = MenuItemBuilder::with_id(PALETTE_ID, "Command Palette…")
@@ -73,6 +89,19 @@ pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
     // macOS: in the app menu, under About (the platform convention); Windows: in Help.
     let check_updates =
         MenuItemBuilder::with_id(CHECK_UPDATES_ID, "Check for Updates…").build(app)?;
+    // macOS: in the app menu (account items sit there); Windows: in File, above Exit. Disabled
+    // until the UI reports a signed-in user.
+    let sign_out = MenuItemBuilder::with_id(
+        SIGN_OUT_ID,
+        if cfg!(target_os = "macos") {
+            "Sign Out"
+        } else {
+            "Sign out"
+        },
+    )
+    .enabled(false)
+    .build(app)?;
+    app.manage(SignOutItem(sign_out.clone()));
 
     let mut go = SubmenuBuilder::new(app, "Go");
     for (index, (id, label)) in DESTINATIONS.iter().enumerate() {
@@ -98,6 +127,8 @@ pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
         let app_menu = SubmenuBuilder::new(app, "BruteForceHR")
             .about(None)
             .item(&check_updates)
+            .separator()
+            .item(&sign_out)
             .separator()
             .services()
             .separator()
@@ -133,6 +164,8 @@ pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
     #[cfg(not(target_os = "macos"))]
     {
         let file = SubmenuBuilder::new(app, "File")
+            .item(&sign_out)
+            .separator()
             .quit_with_text("Exit")
             .build()?;
         let edit = SubmenuBuilder::new(app, "Edit")
@@ -211,6 +244,7 @@ mod tests {
             command_for("check-for-updates"),
             Some(MenuCommand::CheckForUpdates)
         );
+        assert_eq!(command_for("sign-out"), Some(MenuCommand::SignOut));
         assert_eq!(command_for("go-settings"), None);
         assert_eq!(command_for("today"), None);
         assert_eq!(command_for("quit"), None);
@@ -232,5 +266,6 @@ mod tests {
             json(MenuCommand::CheckForUpdates),
             r#"{"type":"check-for-updates"}"#
         );
+        assert_eq!(json(MenuCommand::SignOut), r#"{"type":"sign-out"}"#);
     }
 }

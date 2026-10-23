@@ -12,9 +12,22 @@ public final class InsightsModel: ScreenModel {
     public var connection: ConnectionState = .online
     public var pendingSyncIDs: Set<String> = []
 
-    /// `4W · 12W · All` (D31). The host persists it per device.
+    /// `4W · 12W · All` (D31). The host persists it per device (`onRangeChange`).
     public var range: InsightsRangePreset = .twelveWeeks {
-        didSet { if range != oldValue { rebuild() } }
+        didSet {
+            guard range != oldValue else { return }
+            rebuild()
+            onRangeChange?(range)
+        }
+    }
+
+    /// Called when the user picks another range, to remember it on this device.
+    public var onRangeChange: ((InsightsRangePreset) -> Void)?
+
+    /// Applies the range a `bruteforcehr://insights?range=` link asked for (iOS ranges only).
+    public func applyLinkRange(_ value: String?) {
+        guard let value, let preset = InsightsRangePreset(rawValue: value), InsightsRangePreset.ios.contains(preset) else { return }
+        range = preset
     }
 
     /// "Where responses come from": Source · Channel · CV.

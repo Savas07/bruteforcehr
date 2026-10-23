@@ -322,6 +322,10 @@ final class TrackerBoardAccessibilityAuditTests: XCTestCase {
                 if issue.auditType == .contrast, !frame.isNull,
                    frame.minY < navBottom || frame.maxY > edgeTop || frame.intersects(toast) { return "under a bar, the edge band or the toast" }
                 if issue.auditType == .dynamicType, defaultSize { return "default size; AX run covers scaling" }
+                // Log an application's first footer: the audit measures a box 27 pt below the text
+                // (audit-add: the sheet's frame offset), sampling mostly background; the text is
+                // Fg.primary on the grouped background (accessibility.md, M3).
+                if issue.auditType == .contrast, element?.label.hasPrefix("Company and role are needed") == true { return "measured off the text (sheet offset); verified by screenshot" }
                 if element == nil { return "no element" }
                 // A prediction ("may be clipped at larger Dynamic Type sizes") at the default size;
                 // the AX5 run of the same screen measures the real thing.

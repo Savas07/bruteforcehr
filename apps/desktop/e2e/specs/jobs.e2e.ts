@@ -168,7 +168,8 @@ describe("Jobs", () => {
   it("applies on the company site and records the answer to “Did you apply?”", async () => {
     await $(`[id="job-title-${KEEP.id}"]`).waitForDisplayed({ timeout: 10_000 });
     await browser.keys("a");
-    const yes = $("button=Yes, I applied");
+    // Partial text: the button also shows its keycap.
+    const yes = $("button*=Yes, I applied");
     await yes.waitForDisplayed({ timeout: 10_000 });
     await yes.click();
     await browser.waitUntil(

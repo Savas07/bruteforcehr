@@ -86,6 +86,8 @@ struct Inner {
     pending: Option<Pending>,
     /// A check or download is running; a second request only reports the current status.
     busy: bool,
+    /// The saved channel, read from preferences.json on first use.
+    channel: Option<UpdateChannel>,
 }
 
 /// Managed state: the current status and the downloaded bundle.
@@ -100,6 +102,7 @@ impl Default for Updates {
                 status: UpdateStatus::Idle,
                 pending: None,
                 busy: false,
+                channel: None,
             }),
         }
     }
@@ -160,10 +163,19 @@ fn progress_step(before: u64, after: u64, total: Option<u64>) -> bool {
     }
 }
 
+/// The saved channel; the file is read once, then [`set_channel`] keeps the copy current.
+fn channel<R: Runtime>(app: &AppHandle<R>) -> UpdateChannel {
+    let state = app.state::<Updates>();
+    let mut inner = state.lock();
+    *inner
+        .channel
+        .get_or_insert_with(|| preferences::load(app).update_channel)
+}
+
 fn snapshot<R: Runtime>(app: &AppHandle<R>, status: UpdateStatus) -> UpdateSnapshot {
     UpdateSnapshot {
         status,
-        channel: preferences::load(app).update_channel,
+        channel: channel(app),
     }
 }
 
@@ -211,7 +223,7 @@ async fn find_and_download<R: Runtime>(
 ) -> Result<UpdateStatus, (FailedStep, String)> {
     let check_failed = |error: &dyn std::fmt::Display| (FailedStep::Check, error.to_string());
     let mut builder = app.updater_builder();
-    if preferences::load(app).update_channel == UpdateChannel::Beta {
+    if channel(app) == UpdateChannel::Beta {
         let endpoints = beta_endpoints(app.config().plugins.0.get("updater"))
             .map_err(|error| check_failed(&error))?;
         builder = builder.endpoints(endpoints).map_err(|e| check_failed(&e))?;
@@ -321,6 +333,8 @@ pub fn set_channel<R: Runtime>(app: &AppHandle<R>, channel: UpdateChannel) -> st
     {
         let state = app.state::<Updates>();
         let mut inner = state.lock();
+        inner.channel = Some(channel);
+        // A check already running finishes on the old channel; the next one uses the new one.
         if !inner.busy {
             inner.pending = None;
             inner.status = UpdateStatus::Idle;

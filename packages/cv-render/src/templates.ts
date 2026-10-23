@@ -83,6 +83,16 @@ function fontFaces(pair: FontPairDefinition): string {
 const pt = (value: number) => `${Math.round(value * 100) / 100}pt`;
 
 /**
+ * Space (pt) moved from a section's top margin into its heading's top padding. WebKit's print painter
+ * draws every line whose glyph ink reaches into a page, and a heading line's ascenders and accents
+ * (Ä, İ) rise above its line box. A heading that pagination pushed to the top of the next page
+ * therefore poked into the page before, where it was clipped but still written to the PDF text layer
+ * ("LANGUAGES" twice for an ATS). Padding keeps the ink inside the heading's own box, which starts
+ * on the new page; the visible spacing is unchanged except at a page top.
+ */
+const HEADING_INK_PAD = 3;
+
+/**
  * `font-size` plus a `line-height` of `ratio` × size, snapped to a multiple of 0.8 pt. WebKit floors
  * every line box to whole layout px, and a WebKit print px is 0.8 pt (see the zoom note below), so
  * an unsnapped 13.8 pt line printed as 13.6 pt in WebKit but 13.8 pt in Chromium: a full page drifted
@@ -139,8 +149,8 @@ a{color:inherit;text-decoration:none}
 .cv-sep{padding:0 0.1em}
 .cv-photo{flex:0 0 auto;width:30mm;height:40mm;object-fit:cover;border-radius:1.5mm}
 .cv-keep,.cv-entry-top{break-inside:avoid;page-break-inside:avoid}
-.cv-section{margin-top:${pt(13 * s)}}
-.cv-heading{font-family:${headingFont};color:var(--accent);font-weight:700;break-inside:avoid}
+.cv-section{margin-top:${pt(13 * s - HEADING_INK_PAD)}}
+.cv-heading{font-family:${headingFont};color:var(--accent);font-weight:700;padding-top:${pt(HEADING_INK_PAD)};break-inside:avoid}
 .cv-entry{margin-top:${pt(8 * s)}}
 .cv-heading+.cv-entry,.cv-heading+.cv-text,.cv-heading+.cv-lines{margin-top:${pt(6 * s)}}
 .cv-entry-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;column-gap:${pt(10)};break-inside:avoid}
@@ -173,7 +183,7 @@ mark.cv-ph{color:inherit;background:#FFF1B8;box-shadow:0 0 0 0.6pt #9C5D00 inset
 .cv--modern .cv-header{padding-bottom:${pt(10 * s)};border-bottom:2pt solid var(--accent)}
 .cv--modern .cv-name{${type(f * 2.4, 1.15)};color:var(--accent);font-weight:700}
 .cv--modern .cv-label{${type(f * 1.15, lh)}}
-.cv--modern .cv-section{margin-top:${pt(15 * s)}}
+.cv--modern .cv-section{margin-top:${pt(15 * s - HEADING_INK_PAD)}}
 .cv--modern .cv-heading{${type(f * 1.3, 1.2)};font-weight:650}
 .cv--modern .cv-entry-org{font-weight:400}
 .cv--modern .cv-bullets{list-style-type:"–  "}

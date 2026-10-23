@@ -148,9 +148,8 @@ interface PageTexts {
   /** Per page: the text inside the page box (whitespace removed). */
   readonly pages: string[];
   /**
-   * Text drawn below the page box's bottom margin. WebKit paints the top of the next page's first
-   * block, clipped, into the foot of the page before (invisible, but in the text layer); reported,
-   * not compared.
+   * Text drawn below the page box's bottom margin: clipped, so invisible, but in the text layer an
+   * ATS reads (WebKit wrote a page-top heading there once more before HEADING_INK_PAD). Any fails.
    */
   readonly outside: string[];
 }
@@ -472,7 +471,10 @@ for (const item of cases) {
       webkit: extracted.webkit.outside,
       server: extracted.server.outside,
     },
-    ok: baseline.ok && pairs.every((pair) => pair.ok),
+    ok:
+      baseline.ok &&
+      pairs.every((pair) => pair.ok) &&
+      ENGINES.every((engine) => extracted[engine].outside.length === 0),
   });
 }
 
@@ -511,7 +513,7 @@ const report = [
   "",
   `${passed}/${results.length} cases pass.`,
   "",
-  "Text drawn outside the page box (clipped, invisible, but in the PDF text layer; not compared):",
+  "Text drawn outside the page box (clipped, invisible, but in the PDF text layer; fails the case):",
   "",
   ...results.flatMap((result) =>
     ENGINES.filter((engine) => result.outside[engine].length > 0).map(

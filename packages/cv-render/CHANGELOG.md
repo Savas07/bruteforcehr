@@ -1,5 +1,12 @@
 # @bfhr/cv-render
 
+## 0.2.1
+
+### Patch Changes
+
+- 4e69e6c: Release fixes: the CV renderer reads its version from package.json (version bumps no longer break the build), the iOS release job builds the renderer bundle before archiving, and the secret scan allowlists the public Firebase web key.
+- @bfhr/core@0.2.1
+
 ## 0.2.0
 
 ### Minor Changes

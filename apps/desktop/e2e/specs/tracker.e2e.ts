@@ -53,17 +53,26 @@ async function waitForStatus(status: string, message: string): Promise<void> {
   });
 }
 
-/** The visible field labelled `label` inside the open dialog. */
+/**
+ * The field labelled `label` inside the open dialog, once it is there (the dialog shows a skeleton
+ * until the tracker data has loaded).
+ */
 async function field(label: string) {
-  const id = await browser.execute((text) => {
-    const dialog = document.querySelector('[role="dialog"]');
-    const match = [...(dialog?.querySelectorAll("label") ?? [])].find((node) =>
-      (node.textContent ?? "").trim().startsWith(text),
-    );
-    return match?.htmlFor ?? null;
-  }, label);
-  if (!id) throw new Error(`no field labelled "${label}" in the dialog`);
-  return $(`[id="${id}"]`);
+  let id: string | null = null;
+  await browser.waitUntil(
+    async () => {
+      id = await browser.execute((text) => {
+        const dialog = document.querySelector('[role="dialog"]');
+        const match = [...(dialog?.querySelectorAll("label") ?? [])].find((node) =>
+          (node.textContent ?? "").trim().startsWith(text),
+        );
+        return match?.htmlFor || null;
+      }, label);
+      return id !== null;
+    },
+    { timeout: 20_000, timeoutMsg: `no field labelled "${label}" in the dialog` },
+  );
+  return $(`[id="${id ?? ""}"]`);
 }
 
 let applicationId = "";
@@ -82,7 +91,7 @@ describe("Tracker", () => {
     await (await field("Role")).setValue(ROLE);
     await (await field("Link to the posting")).setValue("https://jobs.example.com/e2e-robotics/frontend");
     await capture("add-dialog");
-    await $('[role="dialog"] button=Add application').click();
+    await $('[role="dialog"]').$("button=Add application").click();
     await $('[role="dialog"]').waitForDisplayed({ reverse: true });
 
     const doc = await application();
@@ -104,11 +113,20 @@ describe("Tracker", () => {
     // The corner "Move to…" button shows on hover and focus.
     await card.moveTo();
     await card.$('button[aria-label="Move to…"]').click();
-    await $('[role="menuitemradio"]=Screening').click();
+    await $('[role="menuitemradio"]').waitForDisplayed();
+    const picked = await browser.execute(() => {
+      const item = [...document.querySelectorAll<HTMLElement>('[role="menuitemradio"]')].find(
+        (node) => (node.textContent ?? "").trim() === "Screening",
+      );
+      item?.click();
+      return item !== undefined;
+    });
+    if (!picked) throw new Error("no Screening item in Move to…");
     await waitForStatus("screening", "the move to Screening never reached the emulator");
     await capture("board-moved");
 
-    await $('[role="status"] button*=Undo').click();
+    // The toast's Undo (Mod+Z does the same).
+    await browser.keys([isMac ? Key.Command : Key.Ctrl, "z"]);
     await waitForStatus("applied", "Undo didn't move the application back to Applied");
     const history = await events(applicationId);
     const move = history.find((event) => plain(event.fields["toStatus"]) === "screening");
@@ -131,7 +149,7 @@ describe("Tracker", () => {
     await $("button=Add round").click();
     await $('[role="dialog"]').waitForDisplayed();
     await (await field("Title")).setValue("Technical interview");
-    await $('[role="dialog"] button=Save round').click();
+    await $('[role="dialog"]').$("button=Save round").click();
     await $('[role="dialog"]').waitForDisplayed({ reverse: true });
 
     let interview: FirestoreDoc | undefined;

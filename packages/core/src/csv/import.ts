@@ -174,7 +174,8 @@ export function guessColumnMapping(table: SpreadsheetTable): ColumnMapping {
     if (share(sample, looksLikeUrl) >= SNIFF_SHARE) candidates.push({ column, field: "link", score: 40 });
     if (share(sample, (value) => matchSynonyms(value, STATUS_SYNONYMS).exact) >= SNIFF_SHARE)
       candidates.push({ column, field: "status", score: 40 });
-    if (share(sample, (value) => parseSpreadsheetDate(value, "dmy") !== null) >= SNIFF_SHARE)
+    // Unknown named columns may hold other dates ("Added on"); only unnamed ones are guessed.
+    if (header === "" && share(sample, (value) => parseSpreadsheetDate(value, "dmy") !== null) >= SNIFF_SHARE)
       candidates.push({ column, field: "appliedAt", score: 20 });
   });
 

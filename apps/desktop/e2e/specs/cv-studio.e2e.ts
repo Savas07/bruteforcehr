@@ -4,15 +4,25 @@
  * save from "another device" → Keep this version → restore from history → export a PDF printed by
  * the OS webview, whose text must read back.
  */
-import { existsSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, rmSync } from "node:fs";
+import { osName, repoRoot, saveScreenshot, setTheme } from "../capture/helpers";
 import path from "node:path";
 import { $, browser, expect } from "@wdio/globals";
 import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
 import { Key } from "webdriverio";
 import { ensureSignedIn, expectHeading, testEmail } from "../support/auth";
 import { findCv, getDoc, listRevisions, plain, remoteEdit, summaryOf, type FirestoreDoc } from "../support/firestore";
-
 const TITLE = `E2E CV ${process.pid}`;
+const SHOTS = path.join(repoRoot, "artifacts/screens/desktop", osName, "cv-studio");
+
+/** Real-app capture of the current state in light and dark (critique input). */
+async function capture(name: string): Promise<void> {
+  mkdirSync(SHOTS, { recursive: true });
+  for (const theme of ["dark", "light"] as const) {
+    await setTheme(theme);
+    await saveScreenshot(path.join(SHOTS, `${name}-${theme}.png`));
+  }
+}
 const NAME = "Deniz Aksoy";
 const isMac = process.platform === "darwin";
 
@@ -81,6 +91,7 @@ describe("CV Studio", () => {
     // Nothing is written while the session is open…
     expect(await listRevisions(cv.name)).toHaveLength(1);
     // …and one revision when it ends (Mod+S).
+    await capture("editor-editing");
     await pressShortcut("s");
     await waitForSummary("Builds reliable desktop apps.", "the session's revision never arrived");
     expect(await listRevisions(cv.name)).toHaveLength(2);
@@ -91,7 +102,10 @@ describe("CV Studio", () => {
     await typeSummary("Local change.");
     await remoteEdit(cv.name, "Remote change.");
     await $("*=This CV changed on another device").waitForDisplayed({ timeout: 20_000 });
+    await capture("conflict-banner");
     await $("button=Compare").click();
+    await $('[role="dialog"]').waitForDisplayed();
+    await capture("conflict-compare");
     await expect($('[role="dialog"]*=Remote change.')).toBeDisplayed();
     await browser.keys(Key.Escape);
     await $("button=Keep this version").click();
@@ -104,6 +118,7 @@ describe("CV Studio", () => {
     await pressShortcut("Shift", "h");
     const restore = $("button*=Restore this version");
     await restore.waitForDisplayed();
+    await capture("history");
     await restore.click();
     await $('[role="alertdialog"] button=Restore').click();
     await browser.waitUntil(async () => (await listRevisions(cv.name)).length === before + 1, {
@@ -123,6 +138,7 @@ describe("CV Studio", () => {
     await pressShortcut("e");
     await $('[role="dialog"]').waitForDisplayed();
     await $('[role="dialog"] input:not([type])').setValue("Acme");
+    await capture("export-dialog");
     await $('[role="dialog"] button[type="submit"]').click();
     await browser.waitUntil(() => existsSync(file), { timeout: 60_000, timeoutMsg: `no PDF at ${file}` });
 

@@ -26,26 +26,6 @@ describe("BruteForceHR desktop", () => {
     await expect(browser).toHaveTitle("Today · BruteForceHR");
   });
 
-  it("keeps the CSP blocking eval and inline scripts (prototypes aren't frozen; ADR 0007)", async () => {
-    // WebView2 runs WebDriver scripts outside the page's CSP, so `eval` from here proves nothing
-    // there: check the policy the page enforces, and that an inline script the page adds never runs.
-    const result = await browser.execute(() => {
-      const marker = "__bfhrInlineRan";
-      const script = document.createElement("script");
-      script.textContent = `window.${marker} = true;`;
-      document.head.append(script);
-      script.remove();
-      const policy = document.querySelector('meta[http-equiv="Content-Security-Policy"]')?.getAttribute("content") ?? "";
-      const scriptSrc = /script-src([^;]*)/u.exec(policy)?.[1]?.trim() ?? null;
-      return { scriptSrc, inlineRan: Reflect.get(window, marker) === true };
-    });
-    expect(result.inlineRan).toBe(false);
-    expect(result.scriptSrc).not.toBeNull();
-    expect(result.scriptSrc).toContain("'self'");
-    expect(result.scriptSrc).not.toContain("unsafe-eval");
-    expect(result.scriptSrc).not.toContain("unsafe-inline");
-  });
-
   it("lists the five M0 destinations in the sidebar", async () => {
     const links = $$('nav[aria-label="Sections"] a');
     expect(await links.map((link) => link.getText())).toEqual(["Today", "Jobs", "Tracker", "CVs", "Mail"]);

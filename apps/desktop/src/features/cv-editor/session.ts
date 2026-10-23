@@ -76,7 +76,7 @@ interface Session {
   draft: CvDraft;
   design: CvDesignChoice;
   dirty: boolean;
-  /** Revisions this device wrote (their snapshots aren't remote edits). */
+  /** Revisions this device wrote or already decided on in a conflict (not remote edits). */
   readonly own: Set<string>;
   /** The revision our next commit builds on (the last one we wrote, else `baseRevisionId`). */
   headRevisionId: string;
@@ -226,6 +226,8 @@ export class CvSessionStore {
     const conflict = session?.conflict;
     if (!session || !editor || !conflict) return;
     session.conflict = null;
+    // Theirs is decided on: until our write's snapshot arrives, the CV still points at it.
+    session.own.add(conflict.theirsRevisionId);
     session.dirty = false;
     session.version = editor.version;
     this.forget(session);

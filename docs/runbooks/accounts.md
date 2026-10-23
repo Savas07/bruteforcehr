@@ -6,7 +6,7 @@ Run `firebase` commands from the repo root (`/Users/savas/Desktop/BruteForceHR`,
 
 | # | Item | Needed by | Status |
 |---|---|---|---|
-| 1 | Brevo account, verified sender, API key | M1 (email code sign-in) | pending |
+| 1 | Sign-in email: none needed (Firebase Authentication email link, no mail vendor) | M1 (sign-in) | configured 2026-10-23; owner check pending |
 | 2 | Anthropic API key | M2 (AI assists) | key exists; secret not set |
 | 3 | Google OAuth consent screen + Gmail scopes + OAuth client | M5 | pending |
 | 4 | Microsoft Entra app registration | M5 | pending |
@@ -17,18 +17,15 @@ Run `firebase` commands from the repo root (`/Users/savas/Desktop/BruteForceHR`,
 
 ---
 
-## 1. Brevo (transactional email for sign-in codes)
+## 1. Sign-in email (no account needed)
 
-1. Sign up at <https://www.brevo.com/> (free plan, no card) and confirm your email.
-2. **Verify a sender:** Brevo → *Senders, Domains & Dedicated IPs* → *Senders* → *Add a sender*: name `BruteForceHR`, email you control (e.g. your Gmail). Click the confirmation link Brevo emails you. (No custom domain yet, so DKIM/DMARC for an own domain isn't possible — [ADR 0006](../adr/0006-hosting-domains.md).) API reference: [Create sender](https://developers.brevo.com/reference/create-sender).
-3. Activate transactional email if prompted (*Transactional* → *Settings*).
-4. **API key:** profile menu → *SMTP & API* → *API Keys* → *Generate a new API key*, name `bruteforcehr-functions`. Copy it once. (Brevo auth: [Send a transactional email — before you start](https://developers.brevo.com/docs/send-a-transactional-email).)
-5. Store it:
-   ```sh
-   firebase functions:secrets:set BREVO_API_KEY
-   ```
-6. Tell the agent the **sender email + name** (not secret) so it goes into function config (`BREVO_SENDER_EMAIL`, `BREVO_SENDER_NAME` params).
-7. Check: send a sign-in code to yourself after the next functions deploy; it should arrive within 30 s (check Spam the first time).
+Sign-in uses Firebase Authentication's email link ([ADR 0008](../adr/0008-auth-email-link.md)); Firebase sends the email from `noreply@bruteforcehr.firebaseapp.com`. There is no mail vendor, API key or secret (owner decision 2026-10-23: no Brevo). The provider, authorized domains, sender name and the `blockPasswordSignUp` blocking function were set up on 2026-10-23.
+
+Owner check, once a build with the new sign-in is installed:
+
+1. In the app, send yourself a sign-in link. It should arrive within a minute; the first time, look in Spam and mark it "Not spam".
+2. On a Mac or Windows PC, open the link in the email: the browser shows "Opening BruteForceHR" and asks to open the app; choose Open. On iPhone, the link opens the app directly.
+3. Optional: Firebase console → Authentication → Templates shows the sender name `BruteForceHR`. The sign-in email itself has no editable template.
 
 ## 2. Anthropic API key
 

@@ -1,7 +1,7 @@
 # BruteForceHR — Product Requirements (v1)
 
 - **Status:** Draft for M0 approval · **Date:** 2026-10-22
-- **Sources:** [BRIEF.md](BRIEF.md) (product brief) adapted by kickoff decisions recorded in [adr/0001-stack.md](adr/0001-stack.md), [adr/0002-data-model.md](adr/0002-data-model.md), [adr/0003-auth-email-otp.md](adr/0003-auth-email-otp.md), [adr/0004-release-updates-signing.md](adr/0004-release-updates-signing.md), [adr/0005-job-sources-scraping.md](adr/0005-job-sources-scraping.md), [adr/0006-hosting-domains.md](adr/0006-hosting-domains.md), [adr/0007-native-ios-tauri-desktop.md](adr/0007-native-ios-tauri-desktop.md).
+- **Sources:** [BRIEF.md](BRIEF.md) (product brief) adapted by kickoff decisions recorded in [adr/0001-stack.md](adr/0001-stack.md), [adr/0002-data-model.md](adr/0002-data-model.md), [adr/0008-auth-email-link.md](adr/0008-auth-email-link.md), [adr/0004-release-updates-signing.md](adr/0004-release-updates-signing.md), [adr/0005-job-sources-scraping.md](adr/0005-job-sources-scraping.md), [adr/0006-hosting-domains.md](adr/0006-hosting-domains.md), [adr/0007-native-ios-tauri-desktop.md](adr/0007-native-ios-tauri-desktop.md).
 - **Design tracking:** [STATUS.md](STATUS.md)
 
 ## 1. Product
@@ -14,7 +14,7 @@
 | Languages | English, Turkish, German — UI, CVs, mail parsing |
 | Audience | Personal tool; multi-user-capable architecture (unverified Google OAuth app "In production", TestFlight internal) |
 | AI | Anthropic Claude via the owner's key, server-side only |
-| Backend | Firebase project `bruteforcehr`: Firestore (europe-west1), Auth (custom email code), Storage, Cloud Functions gen2 (europe-west1), Hosting |
+| Backend | Firebase project `bruteforcehr`: Firestore (europe-west1), Auth (email link, passwordless), Storage, Cloud Functions gen2 (europe-west1), Hosting |
 
 **Mission.** One person can (1) find jobs from many sources ranked against their profile and CVs, (2) send applications by email from their own accounts or via the employer's site with everything prepared, (3) create, import, tailor, version and export CVs, (4) track every application from Saved to Offer, (5) connect Gmail, Outlook/Microsoft 365 and IMAP accounts so incoming mail updates applications automatically.
 
@@ -71,9 +71,10 @@ Exit: owner approves the design checkpoint; all three apps launch.
 
 Exit: BRIEF §7 acceptance demonstrated ([ADR 0004](adr/0004-release-updates-signing.md)).
 
-**M1-AUTH-1 — Email code sign-in.** As a user, I sign in with a 6-digit code emailed to me, no password.
-- Code sent via Brevo within 30 s; hashed at rest, with TTL, attempt limit and resend throttling as specified in ADR 0003; success mints a custom token and `signInWithCustomToken` signs in on both clients ([ADR 0003](adr/0003-auth-email-otp.md)).
-- Wrong/expired code shows calm, specific copy; session persists across restarts (Keychain on iOS).
+**M1-AUTH-1 — Email link sign-in.** As a user, I sign in with a one-time link emailed to me, no password.
+- Firebase Authentication sends the link (no mail vendor); iOS opens it as a universal link, desktop through `https://bruteforcehr.web.app/auth/finish` and the `bruteforcehr://auth/finish?link=…` deep link; both clients call `signInWithEmailLink` ([ADR 0008](adr/0008-auth-email-link.md)).
+- The email is localized (EN/TR/DE); opening the link on another device asks for the email again; used, replaced or expired links show calm, specific copy; session persists across restarts (Keychain on iOS).
+- Password sign-ups through the public API are refused (blocking function) and unverified accounts get no data access (rules).
 
 **M1-REL-1 — Release pipeline.** As the owner, publishing `vX.Y.Z` ships everything.
 - Tag → `release.yml`: backend deploy; macOS universal signed + notarized DMG and updater `.app.tar.gz` + `.sig`; Windows unsigned NSIS `-setup.exe` + `.sig`; iOS archive + TestFlight upload via `xcodebuild`; `latest.json` published to `Savas07/bruteforcehr-releases`; `appConfig/{macos,windows,ios}` written.
@@ -195,4 +196,4 @@ Android, Linux, browser-extension autofill, automated form submission, LinkedIn 
 
 ## 5. Open items owned by the user
 
-Brevo account (needed for M1 sign-in), Microsoft Entra app registration (M5), job API keys (M4), Windows signing (before sharing). Steps: [runbooks/accounts.md](runbooks/accounts.md).
+Microsoft Entra app registration (M5), job API keys (M4), Windows signing (before sharing). Steps: [runbooks/accounts.md](runbooks/accounts.md).

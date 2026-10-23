@@ -4,7 +4,7 @@
 - **Date:** 2026-10-22
 - **Deciders:** Savas (owner), lead engineer agent
 - **Supersedes:** BRIEF.md §6 "Architecture (default stack)" where noted below
-- **Related:** [0002-data-model.md](0002-data-model.md), [0003-auth-email-otp.md](0003-auth-email-otp.md), [0004-release-updates-signing.md](0004-release-updates-signing.md), [0005-job-sources-scraping.md](0005-job-sources-scraping.md), [0006-hosting-domains.md](0006-hosting-domains.md), [0007-native-ios-tauri-desktop.md](0007-native-ios-tauri-desktop.md)
+- **Related:** [0002-data-model.md](0002-data-model.md), [0008-auth-email-link.md](0008-auth-email-link.md) (supersedes 0003), [0004-release-updates-signing.md](0004-release-updates-signing.md), [0005-job-sources-scraping.md](0005-job-sources-scraping.md), [0006-hosting-domains.md](0006-hosting-domains.md), [0007-native-ios-tauri-desktop.md](0007-native-ios-tauri-desktop.md)
 
 ## Context
 
@@ -87,7 +87,7 @@ The Electron and Expo/React Native client decisions that used to be here were re
 | pgvector | **Firestore vector search** (`findNearest`, flat index) on server-written `embedding` fields, queried from Functions (client SDKs don't support it — see Context). |
 | Supabase Realtime | Firestore snapshot listeners. |
 | Client cache + outbox | Firestore offline persistence (native on iOS, IndexedDB on desktop): queued writes replay on reconnect. |
-| Supabase Auth email OTP | **Firebase Auth + custom email one-time code**: a Function issues a 6-digit code (hashed, TTL, attempt limit), emails it through **Brevo**, verifies it and mints a custom token; clients call `signInWithCustomToken` ([Create custom tokens](https://firebase.google.com/docs/auth/admin/create-custom-tokens)). Details in [0003-auth-email-otp.md](0003-auth-email-otp.md). |
+| Supabase Auth email OTP | **Firebase Authentication email link (passwordless)**: Firebase emails a one-time sign-in link from its own mailer; iOS opens it as a universal link, desktop through the `/auth/finish` page and the `bruteforcehr://` deep link; clients call `signInWithEmailLink`. No mail vendor (owner decision 2026-10-23). Details in [0008-auth-email-link.md](0008-auth-email-link.md); the custom code of [0003](0003-auth-email-otp.md) is superseded. |
 | Supabase Storage | Cloud Storage for Firebase with `firebase/storage.rules`. |
 | Supabase Vault | Secret Manager via `defineSecret` ([Configure your environment](https://firebase.google.com/docs/functions/config-env)); per-user OAuth mail tokens encrypted (AES-256-GCM envelope) and stored under `serverOnly/**`, never readable by clients. |
 | Fly.io worker (HTTP API, pg-boss queue, schedulers, Chromium) | **Cloud Functions for Firebase 2nd gen, region `europe-west1`**: `onRequest` HTTPS API behind Hosting rewrites `/api/**` and `/connect/**` (ADR 0006); `onSchedule` for mail polling and saved searches; `onTaskDispatched` task-queue functions (Cloud Tasks) for fan-out work (per-account sync, backfill, embeddings, PDF render, send); headless Chromium for PDF in a high-memory function. |

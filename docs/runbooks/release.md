@@ -4,7 +4,7 @@ The pipeline itself is specified in [ADR 0004](../adr/0004-release-updates-signi
 
 Releases are GitHub Releases of the **public** source repo `Savas07/bruteforcehr` (BRIEF §0: the source repo is the public releases repo when it's public). `Savas07/bruteforcehr-releases` is unused.
 
-**Every secret below is CI-only.** They are GitHub Actions secrets on `Savas07/bruteforcehr` (Settings → Secrets and variables → Actions), read only by `release.yml` jobs. None of them goes into a client bundle, Firestore, chat or a commit. How to create each Apple value: [accounts.md](accounts.md) §6. Runtime secrets of the functions (Brevo, Anthropic, OAuth, job APIs) are in Secret Manager, not here ([accounts.md](accounts.md) §1–5).
+**Every secret below is CI-only.** They are GitHub Actions secrets on `Savas07/bruteforcehr` (Settings → Secrets and variables → Actions), read only by `release.yml` jobs. None of them goes into a client bundle, Firestore, chat or a commit. How to create each Apple value: [accounts.md](accounts.md) §6. Runtime secrets of the functions (Anthropic, OAuth, job APIs) are in Secret Manager, not here ([accounts.md](accounts.md) §2–5).
 
 ## Secrets inventory
 
@@ -61,7 +61,7 @@ gcloud storage buckets get-iam-policy gs://bruteforcehr.firebasestorage.app
 
 The provider accepts only tokens whose `repository` is `Savas07/bruteforcehr` **and** whose `repository_id` is `1429601845` (a deleted and re-created repo with the same name doesn't match). Only that repository's principal set may impersonate `github-deployer`. The `gcf-artifacts` repository in `europe-west1` has a cleanup policy (images older than 1 day), so `firebase deploy` doesn't need `--force`.
 
-**Deploying the `auth` functions codebase** (when Brevo exists, [accounts.md §1](accounts.md#1-brevo-transactional-email-for-sign-in-codes)): deploy it once by hand as the owner (`firebase deploy --only functions:auth`), which also grants the runtime service account access to `BREVO_API_KEY` and `OTP_PEPPER`. To let CI deploy it afterwards, grant `github-deployer` `roles/secretmanager.admin` **on those two secrets only** (the CLI reads their versions and manages the runtime account's access), then add `functions:auth` to the `backend` job's `--only` list and remove its `skipped:` line.
+**Deploying the `identity` functions codebase** (Identity Platform blocking function `blockPasswordSignUp`, [ADR 0008](../adr/0008-auth-email-link.md)): CI doesn't deploy it, because registering a blocking function reads and writes the Identity Platform config and `github-deployer` has no Firebase Authentication role. When `apps/functions/src/block-password-sign-up.ts` changes, deploy it by hand as the owner: `firebase deploy --only functions:identity`. Check: `accounts:signUp` with a password is refused with `BLOCKING_FUNCTION_ERROR_RESPONSE`, and email-link sign-in still works.
 
 ## One-time setup
 

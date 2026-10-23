@@ -157,18 +157,6 @@
   ],
   "fieldOverrides": [
     {
-      "collectionGroup": "challenges",
-      "fieldPath": "expiresAt",
-      "ttl": true,
-      "indexes": []
-    },
-    {
-      "collectionGroup": "sendLogs",
-      "fieldPath": "expiresAt",
-      "ttl": true,
-      "indexes": []
-    },
-    {
       "collectionGroup": "mailMessages",
       "fieldPath": "bodyPurgeAt",
       "indexes": [

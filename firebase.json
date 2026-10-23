@@ -18,8 +18,8 @@
       "predeploy": ["pnpm --filter @bfhr/functions run build"]
     },
     {
-      "codebase": "auth",
-      "source": "apps/functions/lib/auth",
+      "codebase": "identity",
+      "source": "apps/functions/lib/identity",
       "runtime": "nodejs22",
       "ignore": ["node_modules", "*.local"],
       "predeploy": ["pnpm --filter @bfhr/functions run build"]
@@ -28,11 +28,29 @@
   "hosting": {
     "public": "apps/web/dist",
     "cleanUrls": true,
-    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "ignore": ["firebase.json", "**/.DS_Store", "**/node_modules/**"],
     "rewrites": [
+      { "source": "/auth/finish", "destination": "/auth/finish/index.html" },
       {
         "source": "/api/health",
         "function": { "functionId": "health", "region": "europe-west1" }
+      }
+    ],
+    "headers": [
+      {
+        "source": "/.well-known/apple-app-site-association",
+        "headers": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Cache-Control", "value": "public, max-age=3600" }
+        ]
+      },
+      {
+        "source": "/auth/finish{,/**}",
+        "headers": [
+          { "key": "Referrer-Policy", "value": "no-referrer" },
+          { "key": "X-Robots-Tag", "value": "noindex" },
+          { "key": "Cache-Control", "value": "no-cache" }
+        ]
       }
     ]
   },

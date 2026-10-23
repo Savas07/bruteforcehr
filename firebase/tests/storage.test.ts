@@ -14,7 +14,9 @@ beforeAll(async () => {
 afterAll(() => env.cleanup());
 beforeEach(() => env.clearStorage());
 
-const client = (uid: string) => env.authenticatedContext(uid).storage();
+// Email-link sign-in always yields a verified email (docs/adr/0008-auth-email-link.md).
+const client = (uid: string) => env.authenticatedContext(uid, { email_verified: true }).storage();
+const unverified = (uid: string) => env.authenticatedContext(uid, { email_verified: false }).storage();
 const anonymous = () => env.unauthenticatedContext().storage();
 
 function bytes(size: number): Uint8Array {
@@ -47,6 +49,14 @@ describe("users/{uid}/**: owner only", () => {
     );
     await assertFails(client("bob").ref(file).delete());
     await assertFails(anonymous().ref(file).getMetadata());
+  });
+
+  it("denies an owner whose email is not verified (password sign-up)", async () => {
+    await seed(file);
+    await assertFails(unverified("alice").ref(file).getMetadata());
+    await assertFails(
+      unverified("alice").ref("users/alice/cv-imports/new.pdf").put(bytes(1024), { contentType: PDF }).then(),
+    );
   });
 
   it("denies uploads outside the CV folders", async () => {

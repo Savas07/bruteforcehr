@@ -1,6 +1,6 @@
 # ADR 0003 — Sign-in with an emailed one-time code
 
-- **Status:** Accepted
+- **Status:** Superseded by [0008-auth-email-link.md](0008-auth-email-link.md) (2026-10-23). Never deployed: the owner decided against Brevo and any third-party mail vendor, and the `auth` functions codebase, `OTP_PEPPER` secret and OTP TTL policies were removed. Kept for the record.
 - **Date:** 2026-10-22
 - **Deciders:** Savas (owner), lead engineer agent
 - **Supersedes:** BRIEF.md §6 "Supabase Auth (email OTP via custom SMTP)" and §6.4 "App login"

@@ -2,7 +2,7 @@
 layout: ../layouts/LegalLayout.astro
 title: Terms of Use
 description: The rules for using BruteForceHR, in plain words. It's a free personal tool, provided as is.
-effective: "2026-10-22"
+effective: "2026-10-23"
 keyPoints:
   - "BruteForceHR is a free tool for your own job search, provided as is."
   - "Nothing is sent without your confirmation, and you're responsible for what you send."
@@ -31,7 +31,7 @@ BruteForceHR helps you find jobs, prepare CVs and cover letters, apply, and trac
 </div>
 
 - You need to be at least 16 to use BruteForceHR.
-- You sign in with a one-time code sent to your email address, so keep that email account secure. Anyone who can read your email can sign in as you.
+- You sign in with a one-time link sent to your email address, so keep that email account secure. Anyone who can read your email can sign in as you.
 - Use one account for yourself. Don't create accounts for other people or use someone else's account.
 
 ## You're in control of what you send

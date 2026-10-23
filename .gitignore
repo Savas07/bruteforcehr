@@ -45,8 +45,6 @@ artifacts/
 .env
 .env.*
 !.env.example
-# non-secret Cloud Functions params (Firebase convention: committed .env.<projectId>)
-!apps/functions/.env.bruteforcehr
 *.p8
 *.p12
 *.mobileprovision

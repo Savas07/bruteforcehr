@@ -22,7 +22,7 @@ interface PackageJson {
 /** Codebase name (firebase.json `functions[].codebase`) → entry module. */
 const CODEBASES = {
   default: "src/default.ts",
-  auth: "src/auth.ts",
+  identity: "src/identity.ts",
 } as const;
 
 const packageDir = path.resolve(fileURLToPath(new URL("..", import.meta.url)));
@@ -73,7 +73,7 @@ async function installedManifest(name: string): Promise<z.infer<typeof installed
   }
 }
 
-/** Dotenv files carry non-secret params (e.g. BREVO_SENDER_EMAIL); the CLI reads them from the source dir. */
+/** Dotenv files (`.env.<projectId>`) carry non-secret params; the CLI reads them from the source dir. */
 async function copyDotenvFiles(outDir: string): Promise<void> {
   for (const file of await readdir(packageDir)) {
     if ((/^\.env(\..+)?$/.test(file) && file !== ".env.example") || file === ".secret.local") {

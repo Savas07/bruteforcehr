@@ -10,7 +10,9 @@ beforeAll(async () => {
 afterAll(() => env.cleanup());
 beforeEach(() => env.clearFirestore());
 
-const client = (uid: string) => env.authenticatedContext(uid).firestore();
+// Email-link sign-in always yields a verified email (docs/adr/0008-auth-email-link.md).
+const client = (uid: string) => env.authenticatedContext(uid, { email_verified: true }).firestore();
+const unverified = (uid: string) => env.authenticatedContext(uid, { email_verified: false }).firestore();
 const anonymous = () => env.unauthenticatedContext().firestore();
 
 async function seed(path: string, data: Record<string, unknown>): Promise<void> {
@@ -36,6 +38,13 @@ describe("users/{uid}: owner only", () => {
     await assertFails(client("alice").doc("users/bob").delete());
     await assertFails(client("alice").collection("users").get());
     await assertFails(anonymous().doc("users/bob").get());
+  });
+
+  it("denies an owner whose email is not verified (password sign-up)", async () => {
+    await seed("users/alice", { displayName: "Alice" });
+    await assertFails(unverified("alice").doc("users/alice").get());
+    await assertFails(unverified("alice").doc("users/alice").set({ displayName: "Mallory" }));
+    await assertFails(unverified("alice").doc("users/alice/contacts/c1").set({ schemaVersion: 1 }));
   });
 
   it.each(OWNER_COLLECTIONS)("%s: owner CRUD, other users denied", async (collection) => {
@@ -342,16 +351,13 @@ describe("appConfig/{platform}: public read, server write", () => {
 });
 
 describe("serverOnly/**: no client access", () => {
-  it.each(["serverOnly/otp/challenges/abc", "serverOnly/otp/sendLogs/abc", "serverOnly/mail/tokens/acc-gmail"])(
-    "%s",
-    async (path) => {
-      await seed(path, { secret: true });
-      await assertFails(client("alice").doc(path).get());
-      await assertFails(client("alice").doc(path).set({ secret: false }));
-      await assertFails(client("alice").doc(path).delete());
-      await assertFails(anonymous().doc(path).get());
-    },
-  );
+  it.each(["serverOnly/mail/tokens/acc-gmail", "serverOnly/jobSources/keys/adzuna"])("%s", async (path) => {
+    await seed(path, { secret: true });
+    await assertFails(client("alice").doc(path).get());
+    await assertFails(client("alice").doc(path).set({ secret: false }));
+    await assertFails(client("alice").doc(path).delete());
+    await assertFails(anonymous().doc(path).get());
+  });
 });
 
 describe("unknown top-level paths", () => {

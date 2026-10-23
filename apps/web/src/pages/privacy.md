@@ -33,7 +33,7 @@ BruteForceHR is made for personal job searching. It is free and is currently use
 
 </div>
 
-- **Your account:** your email address. While you sign in, we also keep a scrambled (hashed) copy of your one-time code, which expires after 10 minutes.
+- **Your account:** your email address. When you sign in, Google's Firebase Authentication emails you a one-time sign-in link; we don't store the link.
 - **Your profile and preferences:** your name, the roles, seniority, locations and minimum salary you're looking for, your work authorization, languages, time zone, skills, companies you've hidden, and your app settings.
 - **Your CVs and documents:** CV content and its earlier versions, files you import (the original file is kept), PDFs and Word files the app creates, and cover letters. A photo or date of birth is only stored if you add one to a CV.
 - **Your job search:** saved jobs, saved searches, match scores and their explanations, applications, notes, interviews, reminders, and the answers you save for application forms.
@@ -41,7 +41,7 @@ BruteForceHR is made for personal job searching. It is free and is currently use
 - **Connected email accounts:** the provider, the address, the permissions you granted, the account's status, and the access tokens or app password that let us read and send mail. Tokens and passwords are encrypted (see [Your email accounts](#your-email-accounts)).
 - **Job-related email:** see [Your email accounts](#your-email-accounts).
 - **Your devices:** app version, operating system version, language, when the device last connected, and, if you allow notifications, the device's push token.
-- **Server logs:** times, error codes and scrambled identifiers needed to run the service and investigate problems. They don't contain your email text, CV content or sign-in codes.
+- **Server logs:** times, error codes and scrambled identifiers needed to run the service and investigate problems. They don't contain your email text, CV content or sign-in links.
 
 We don't collect your location, your phone's contacts or photos, advertising identifiers, or analytics. The apps contain no advertising or analytics software and don't send crash reports.
 
@@ -59,7 +59,7 @@ If the EU or UK GDPR applies to you, our legal bases are:
 
 - **To provide the service you asked for** (contract): your account, profile, CVs, jobs, applications and the features that use them.
 - **Your consent:** connecting an email account, permission to send from it, sending email text to AI, and notifications. You can withdraw consent at any time in Settings; this doesn't affect what was done before.
-- **Legitimate interests:** keeping the service secure and preventing abuse, for example limiting how many sign-in codes can be requested.
+- **Legitimate interests:** keeping the service secure and preventing abuse, for example limiting how many sign-in links can be requested.
 - **Legal obligations:** where a law requires us to keep or disclose data.
 
 We never sell your data, use it for advertising, or use it to decide creditworthiness.
@@ -181,15 +181,9 @@ When you share a job link from another app, the link is sent to our servers so t
 </div>
 <div>
 <dt>Google</dt>
-<dd>Firebase Authentication keeps you signed in; Firebase Hosting serves this website.</dd>
-<dd><span>Receives:</span> your account ID, email address and IP address.</dd>
+<dd>Firebase Authentication sends the emails with your sign-in links and keeps you signed in; Firebase Hosting serves this website.</dd>
+<dd><span>Receives:</span> your account ID, email address and IP address, and the sign-in emails it sends you.</dd>
 <dd><span>Where:</span> Google's global network.</dd>
-</div>
-<div>
-<dt>Brevo</dt>
-<dd>Sends the emails with your sign-in codes.</dd>
-<dd><span>Receives:</span> your email address and the email with your code.</dd>
-<dd><span>Where:</span> European Union.</dd>
 </div>
 <div>
 <dt>Anthropic</dt>
@@ -231,7 +225,7 @@ Notifications on iPhone pass through Apple. They contain a short summary, such a
 
 <div class="plain-summary">
 
-**In short:** Most data stays until you delete it. Email text and sign-in data are deleted automatically.
+**In short:** Most data stays until you delete it. Email text is deleted automatically, and sign-in links expire.
 
 </div>
 
@@ -241,7 +235,7 @@ Notifications on iPhone pass through Apple. They contain a short summary, such a
 | Job-related email text and snippet                          | While the application is active, then 180 days (adjustable)                       |
 | Other details of job-related email                          | Until you delete the application, disconnect the account, or delete your account  |
 | Email that isn't job-related                                | Never stored; its ID and hash are kept only for the look-back window              |
-| Sign-in codes                                               | Stored only as a hash; expire after 10 minutes and are deleted within about a day |
+| Sign-in links                                               | Not stored by us; each link works once and expires (Firebase Authentication)      |
 | Data exports                                                | The ZIP file is deleted 7 days after it's created                                 |
 | Server logs                                                 | Up to 30 days                                                                     |
 
@@ -260,7 +254,7 @@ We don't keep separate backups of your data, so deleted data can't be restored.
 - **Disconnect an email account:** Settings › Mail accounts (see [Disconnecting](#disconnecting)).
 - **Turn off AI or email text for AI:** Settings › AI & sending.
 - **Turn off notifications:** Settings › Notifications, or your device's settings.
-- **Delete your account:** Settings › Data & privacy › Delete account. After you confirm with a sign-in code, we revoke our access to your connected email accounts, delete all your data and files, and delete your sign-in account. This is permanent.
+- **Delete your account:** Settings › Data & privacy › Delete account. After you confirm by signing in again with a link from your email, we revoke our access to your connected email accounts, delete all your data and files, and delete your sign-in account. This is permanent.
 
 Depending on where you live (for example under the EU or UK GDPR, or Turkey's KVKK), you also have the right to access, correct, delete, restrict or object to the processing of your data, to receive it in a portable format, and to withdraw consent. You can also complain to your local data protection authority.
 
@@ -275,7 +269,7 @@ Depending on where you live (for example under the EU or UK GDPR, or Turkey's KV
 - All connections use TLS encryption, and Google Cloud encrypts stored data.
 - Email access tokens and app passwords get an extra layer of encryption (AES-256-GCM) with a key held only by our servers.
 - Access rules let each signed-in account read only its own data. Server-only data, such as tokens, can't be read by any app.
-- There are no passwords to leak: you sign in with one-time codes, stored only as hashes, limited to 5 attempts, and they expire after 10 minutes.
+- There are no passwords to leak: you sign in with a one-time link sent to your email address. Each link works once, expires, and only signs in the email address it was sent to.
 - The apps keep a copy of your data on your device so they work offline. On iPhone, your session is stored in the Keychain. Protect your devices with a passcode or password.
 
 ## This website

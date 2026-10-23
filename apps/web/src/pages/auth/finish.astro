@@ -1,0 +1,149 @@
+---
+/**
+ * Sign-in link landing page (docs/adr/0008-auth-email-link.md). Firebase Authentication's email link
+ * ends here in the browser as `/auth/finish?apiKey=…&oobCode=…&mode=signIn&lang=…`. Nothing signs in
+ * in the browser: the page hands the whole URL to the desktop app as
+ * `bruteforcehr://auth/finish?link=<URL-encoded URL>` (tauri-plugin-deep-link, ADR 0006) and keeps a
+ * calm fallback on screen. Copy follows the app's language from Firebase's `lang` parameter
+ * (EN, TR with "siz", DE with "du"). Research and critique:
+ * docs/design/research/onboarding-signin.md › Sign-in link landing page,
+ * docs/design/critiques/web/auth-finish/.
+ */
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import Wordmark from "../../components/Wordmark.astro";
+---
+
+<BaseLayout title="Finish signing in" description="Finish signing in to the BruteForceHR app.">
+  <meta slot="head" name="robots" content="noindex" />
+  <meta slot="head" name="referrer" content="no-referrer" />
+  <div class="flex min-h-dvh flex-col px-5 md:px-6">
+    <header class="mx-auto flex w-full max-w-xl pt-6 md:pt-10">
+      <a href="/" class="flex min-h-11 items-center rounded-full text-fg-primary">
+        <Wordmark gradientId="bfhr-wordmark-finish" class="h-6 w-auto" />
+      </a>
+    </header>
+
+    <main id="main" class="mx-auto flex w-full max-w-xl flex-1 flex-col justify-center py-12">
+      <!-- Link present: the script fills in the deep link and shows this state. -->
+      <section id="handoff" aria-labelledby="handoff-title" hidden>
+        <h1 id="handoff-title" class="font-display text-title1 text-fg-primary" data-i18n="title">
+          Opening BruteForceHR
+        </h1>
+        <p class="mt-4 text-lead text-fg-secondary" data-i18n="prompt">
+          Your browser may ask to open the app. Choose Open to finish signing in.
+        </p>
+        <p class="mt-8">
+          <a id="return-link" class="button button-primary button-large" data-i18n="cta">Return to BruteForceHR</a>
+        </p>
+
+        <div class="mt-10 space-y-4 border-t border-line-subtle pt-6 text-prose text-fg-secondary">
+          <p>
+            <span class="font-semibold text-fg-primary" data-i18n="notOpenedLead">Didn't open?</span>{" "}
+            <span class="hyphens-manual" data-i18n="notOpened">Make sure the BruteForceHR app is installed on this computer.</span>{" "}
+            <a class="prose-link hyphens-manual" href="/download/" data-i18n="download">Download BruteForceHR</a>
+          </p>
+          <p data-i18n="device">
+            Open the link on the device where you asked for it. If you asked on your iPhone or another computer,
+            open the email there.
+          </p>
+          <p class="text-subheadline" data-i18n="browser">
+            You won't be signed in to this browser. You can close this tab once the app is open.
+          </p>
+        </div>
+      </section>
+
+      <!-- No usable link (opened without its parameters, or JavaScript is off). -->
+      <section id="incomplete" aria-labelledby="incomplete-title">
+        <h1 id="incomplete-title" class="font-display text-title1 text-fg-primary" data-i18n="incompleteTitle">
+          This link isn't complete
+        </h1>
+        <p class="mt-4 text-lead text-fg-secondary" data-i18n="incompleteBody">
+          Open the sign-in link from your email again. If it still doesn't work, ask for a new link in the app.
+        </p>
+        <noscript>
+          <p class="mt-4 text-prose text-fg-secondary">
+            This page needs JavaScript to pass the sign-in link to the app. Turn it on, then open the link again.
+          </p>
+        </noscript>
+        <p class="mt-8">
+          <a class="button button-secondary" href="/support/#signing-in" data-i18n="help">Get help with signing in</a>
+        </p>
+      </section>
+    </main>
+  </div>
+  <!--
+    Inline (not bundled) so it runs before first paint: the hand-off state replaces the "incomplete"
+    fallback without a flash, and the app opens as early as possible.
+  -->
+  <script is:inline>
+    (() => {
+      // English is the static HTML; Turkish uses "siz", German "du" (kickoff copy decisions).
+      const COPY = {
+        tr: {
+          pageTitle: "Girişi tamamlayın · BruteForceHR",
+          title: "BruteForceHR açılıyor",
+          prompt: "Tarayıcınız uygulamayı açmak için izin isteyebilir. Girişi tamamlamak için Aç'ı seçin.",
+          cta: "BruteForceHR'a dönün",
+          notOpenedLead: "Açılmadı mı?",
+          notOpened: "BruteForceHR uygulamasının bu bilgisayarda yüklü olduğundan emin olun.",
+          download: "BruteForceHR'ı indirin",
+          device:
+            "Bağlantıyı, istediğiniz cihazda açın. iPhone'unuzda ya da başka bir bilgisayarda istediyseniz e-postayı orada açın.",
+          browser: "Bu tarayıcıda oturum açılmayacak. Uygulama açılınca bu sekmeyi kapatabilirsiniz.",
+          incompleteTitle: "Bu bağlantı eksik",
+          incompleteBody:
+            "E-postanızdaki giriş bağlantısını yeniden açın. Yine de çalışmazsa uygulamadan yeni bir bağlantı isteyin.",
+          help: "Giriş için yardım alın",
+        },
+        de: {
+          pageTitle: "Anmeldung abschließen · BruteForceHR",
+          title: "BruteForceHR wird geöffnet",
+          prompt: "Dein Browser fragt eventuell, ob er die App öffnen darf. Wähle „Öffnen“, um die Anmeldung abzuschließen.",
+          cta: "Zurück zu BruteForceHR",
+          notOpenedLead: "Nicht geöffnet?",
+          notOpened: "Prüfe, ob die BruteForceHR-App auf diesem Computer installiert ist.",
+          download: "BruteForceHR herunterladen",
+          device:
+            "Öffne den Link auf dem Gerät, auf dem du ihn angefordert hast. Hast du ihn auf deinem iPhone oder einem anderen Computer angefordert, öffne die E-Mail dort.",
+          browser: "In diesem Browser wirst du nicht angemeldet. Du kannst den Tab schließen, sobald die App offen ist.",
+          incompleteTitle: "Dieser Link ist unvollständig",
+          incompleteBody:
+            "Öffne den Anmeldelink aus deiner E-Mail noch einmal. Klappt es weiterhin nicht, fordere in der App einen neuen Link an.",
+          help: "Hilfe zur Anmeldung",
+        },
+      };
+
+      const params = new URLSearchParams(window.location.search);
+
+      /** Firebase passes the app's `auth.languageCode` as `lang`; the browser language is the fallback. */
+      function pickLanguage() {
+        for (const candidate of [params.get("lang"), navigator.language]) {
+          const base = candidate?.toLowerCase().split(/[-_]/)[0];
+          if (base === "en" || base === "tr" || base === "de") return base;
+        }
+        return "en";
+      }
+
+      const lang = pickLanguage();
+      if (lang !== "en") {
+        const copy = COPY[lang];
+        document.documentElement.lang = lang;
+        document.title = copy.pageTitle;
+        for (const element of document.querySelectorAll("[data-i18n]")) {
+          element.textContent = copy[element.dataset.i18n];
+        }
+      }
+
+      // Only a Firebase email sign-in link is handed over; the page never navigates to a URL taken from
+      // its parameters (no open redirect). The app validates the link again before using it.
+      const isSignInLink = params.get("mode") === "signIn" && params.has("oobCode") && params.has("apiKey");
+      if (isSignInLink) {
+        const deepLink = `bruteforcehr://auth/finish?${new URLSearchParams({ link: window.location.href }).toString()}`;
+        document.getElementById("return-link")?.setAttribute("href", deepLink);
+        document.getElementById("incomplete")?.setAttribute("hidden", "");
+        document.getElementById("handoff")?.removeAttribute("hidden");
+        window.location.href = deepLink;
+      }
+    })();
+  </script>
+</BaseLayout>

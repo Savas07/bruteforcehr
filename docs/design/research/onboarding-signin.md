@@ -1,6 +1,6 @@
-# Research: Onboarding and sign-in with email code
+# Research: Onboarding and sign-in with an email link
 
-Status: research complete (M0). Feeds the IA, the flow diagrams, the tokens and the component inventory (brief §5.4). Critique rounds start once the screens are built (brief §5.5).
+Status: research complete (M0); sign-in revised 2026-10-23 from a 6-digit code to Firebase Authentication's email link ([ADR 0008](../../adr/0008-auth-email-link.md); owner decision: no mail vendor). The code-entry references below informed the email and "Check your email" steps and are kept for the record. Feeds the IA, the flow diagrams, the tokens and the component inventory (brief §5.4). Critique rounds start once the screens are built (brief §5.5).
 
 ## Scope
 
@@ -8,11 +8,11 @@ Research matrix rows (brief §5.3):
 
 | Row | iOS | Desktop (`web`) |
 |---|---|---|
-| Onboarding, sign-in with email code | flows: onboarding, sign in | flows: onboarding, sign in |
+| Onboarding, sign-in with email (link) | flows: onboarding, sign in | flows: onboarding, sign in |
 
 The onboarding steps from brief §4.2 that this doc covers:
 
-1. **Sign in with a 6-digit email code.** No passwords and no social login (App Review Guideline 4.8). Backend per kickoff: a Cloud Function issues a hashed code with a TTL and an attempt limit, sends it through Brevo, verifies it, and the client calls `signInWithCustomToken`.
+1. **Sign in with an email link.** No passwords and no social login (App Review Guideline 4.8). Firebase Authentication emails a one-time link; iOS opens it as a universal link, desktop through the `/auth/finish` page and the `bruteforcehr://` deep link; the client calls `signInWithEmailLink` ([ADR 0008](../../adr/0008-auth-email-link.md)).
 2. **CV import step:** PDF, DOCX, JSON Resume or LinkedIn data-export ZIP, or start from scratch.
 3. **Preferences step:** roles, seniority, locations and remote, salary floor and currency, work authorization, languages.
 
@@ -39,7 +39,7 @@ Every reference below was judged from its screenshots, not its metadata. Mobbin 
 |---|---|---|---|---|
 | Netflix | Logging in (9 screens) | https://mobbin.com/flows/1c2c93fb-4c7b-46e5-adcb-8cfbeeebc217 | Title "Enter the code we sent to your email", email shown in a chip with "Change", segmented code cells, a helper with expiry plus "Didn't get a code? Resend code.", collapsed "Get help" | This is the most complete code screen we found: it covers the expiry, the resend and a fix for a wrong email |
 | Claude | Logging in (6 screens) | https://mobbin.com/flows/34ee8283-6a62-4b6e-b6d2-970e86c495ee | Email field directly on the welcome screen. The code screen "Check your email to finish signing in" has a single code field with a number pad, "Change email address", and the legal line kept visible | The email entry lives on the first screen, which saves one screen |
-| Taco Bell | Logging in (4 screens) | https://mobbin.com/flows/86ded475-f9e2-4ceb-b65d-1765847a7e3d | Copy "It may take a few minutes to arrive. If you can't find it, check your spam folder." plus an **Open Mail App** button next to Confirm and Resend | Brevo mail can land in Spam. The spam hint and the shortcut to the mail app both cut down drop-off |
+| Taco Bell | Logging in (4 screens) | https://mobbin.com/flows/86ded475-f9e2-4ceb-b65d-1765847a7e3d | Copy "It may take a few minutes to arrive. If you can't find it, check your spam folder." plus an **Open Mail App** button next to Confirm and Resend | Sign-in mail from a shared sender can land in Spam. The spam hint and the shortcut to the mail app both cut down drop-off |
 | TextNow | Logging in (4 screens) | https://mobbin.com/flows/73b4b4a2-249b-45f8-ac58-1e0cffb8a827 | Auto-submits on the last digit with an inline spinner instead of a button tap. An inline "Open mail app" link. The return visit offers "Welcome back — you last logged in with {email}" | Removes a tap at the most frequent auth moment. Pre-filling the last email speeds up re-login after a sign-out |
 | v0 | Logging in (7 screens) | https://mobbin.com/flows/0568fe34-9298-4861-8239-c755312f65d7 | Six separate digit boxes with the focus ring on the active box, and "Use a Different Email" as a text button | Shows the 6-digit length at a glance. Matches the 6-digit code from kickoff |
 
@@ -138,7 +138,7 @@ Every reference below was judged from its screenshots, not its metadata. Mobbin 
 
 ```mermaid
 flowchart LR
-  A[Sign in: email] --> B[Sign in: 6-digit code]
+  A[Sign in: email] --> B[Sign in: open the emailed link]
   B -->|new user, or profile incomplete| C[Step 1/3 · CV]
   B -->|returning user| T[Today]
   C -->|upload starts background parse| D[Step 2/3 · Preferences, pre-filled from CV]
@@ -150,7 +150,7 @@ flowchart LR
 
 | Step | Budget | How we hit it |
 |---|---|---|
-| Sign in (email + code) | ≤ 45 s | Email on the first screen. `oneTimeCode` autofill. Auto-submit on the 6th digit. Open Mail button |
+| Sign in (email + link) | ≤ 45 s | Email on the first screen. Open Mail button. The link signs in on open, no typing |
 | CV | ≤ 30 s of user time | Pick the file → Continue is enabled immediately. Parsing runs in the background while the user does preferences |
 | Preferences | ≤ 60 s | One screen, pre-filled from the parsed CV. The user confirms instead of typing |
 | Connect mail | ≤ 45 s | Covered in connect-email.md. The backfill runs server-side and the user is not blocked |
@@ -160,23 +160,21 @@ Detailed review of low-confidence parsed CV fields (brief §4.5) is **not** part
 
 ### Screen 1 — Sign in (email)
 
-- **Layout:** no carousel and no splash marketing (rejected Scoot and Life Reset). Top: app mark (48 pt). Large title "Sign in to BruteForceHR". Body: "We'll email you a 6-digit code. No password needed." One email field. Full-width primary **Send code** above the keyboard. Small legal line under it: "By continuing you agree to the Terms and Privacy Policy." (links). One screen serves both sign-in and sign-up (Claude). The server creates the user on first verify.
-- **Email field:** `keyboardType="email-address"`, `textContentType="emailAddress"`, `autoComplete="email"`, `autoCapitalize="none"`, `autoCorrect={false}`, return key "Send" submits. Send code stays disabled until the address passes a basic syntax check. No live red errors while the user types.
+- **Layout:** no carousel and no splash marketing (rejected Scoot and Life Reset). Top: app mark (48 pt). Large title "Sign in to BruteForceHR". Body: "We'll email you a link to sign in. No password needed." One email field. Full-width primary **Send link** above the keyboard. Small legal line under it: "By continuing, you agree to the Terms and the Privacy Policy." (links). One screen serves both sign-in and sign-up (Claude): Firebase creates the account on the first completed link.
+- **Email field:** `.keyboardType(.emailAddress)`, `.textContentType(.emailAddress)`, no autocapitalization or autocorrection, return key "Send" submits. Send link stays disabled until the address passes a basic syntax check. No live red errors while the user types.
 - **Returning user** (TextNow, Mobbin): after a sign-out, pre-fill the last used email and show "Not you?" as a text button that clears it.
-- **Sending state** (Sana AI): the button shows a spinner and the label "Sending…". The field becomes read-only.
-- **Errors:** network failure → inline banner under the button: "We couldn't send the code. Check your connection and try again." If Brevo rejects the address, the inline field error is "This address can't receive email. Check for typos."
+- **Sending state** (Sana AI): the button shows a spinner and "Sending…". The field becomes read-only.
+- **Errors** (inline under the button): offline → "We couldn't send the link. Check your connection and try again."; Firebase rate limit → "Several links were sent just now. Wait a few minutes, then try again. The last link still works."; invalid address → "This address can't receive a sign-in link. Check it for typos."
 
-### Screen 2 — Sign in (code)
+### Screen 2 — Check your email
 
-- **Title** "Check your email". **Body** "We sent a 6-digit code to" followed by the email in a chip with **Change** (Netflix). Change returns to Screen 1 with the field filled.
-- **Code input:** one hidden `TextInput` (`keyboardType="number-pad"`, `textContentType="oneTimeCode"`, `autoComplete="one-time-code"`, `maxLength={6}`) rendered as 6 cells of 48×56 pt with a 12 pt gap (v0 and Netflix look). The active cell gets the focus ring. Paste fills all cells. A single input keeps VoiceOver to one element: "Verification code, 6 digits, {n} entered". Do **not** build six separate inputs.
-- **Auto-submit** on the 6th digit (TextNow). A spinner replaces the helper line ("Checking…"). The **Verify** button stays visible and becomes enabled at 6 digits, for Switch Control and VoiceOver users and for pasted codes.
-- **Helper (Taco Bell, Netflix):** "It can take a minute to arrive. Check Spam if you don't see it." Below that are two secondary actions side by side: **Open Mail** (opens the default mail app) and **Resend code**. Resend is disabled for a cooldown period and shows "Resend in 0:24".
-- **Error states** appear inline under the cells. The cells clear and keep focus, and the haptic is `notificationError`:
-  - Wrong code: "That code doesn't match. Try again or send a new one."
-  - Expired: "This code has expired." plus an inline **Send a new code** button.
-  - Attempt limit reached: "Too many tries. Send a new code to continue." The cells are disabled until a new code is sent.
-- **Success:** a check animation in the cells (Reduce Motion: none), then route to Today for a returning user or to Step 1/3 otherwise.
+- **Title** "Check your email". **Body** "We sent a sign-in link to {email}." plus "Open it on this iPhone to finish signing in." (Netflix-style address with **Use a different email**).
+- **Helper (Taco Bell):** "It can take a minute to arrive. Check Spam if you don't see it." Secondary actions: **Open Mail** and **Resend link** (cooldown; a new link replaces the old one — verified against Firebase, ADR 0008).
+- **Opening the link:** the universal link (`applinks:bruteforcehr.firebaseapp.com`) opens the app, which shows "Signing you in…" and calls `signIn(withEmail:link:)` with the stored address.
+- **Link opened without a stored address** (another device): "Confirm your email" with one field; Firebase rejects a different address ("This link went to a different address. Enter the email you asked with.").
+- **Link errors:** expired → "This link has expired" + **Send a new link**; used or replaced → "This link doesn't work anymore" + **Send a new link**; offline → "Signing in didn't finish … Your link still works."
+- **Success:** route to Today for a returning user or to Step 1/3 otherwise.
+- Shipped strings: `packages/swift/BFHRUI/Sources/BFHRUI/SignIn/SignInStrings.swift` (EN source + `SignIn.xcstrings`).
 
 ### Screen 3 — Onboarding step 1/3: CV
 
@@ -222,10 +220,26 @@ Detailed review of low-confidence parsed CV fields (brief §4.5) is **not** part
 ### Window and sign-in
 
 - **Sign-in lives in the app window**, which is 960×640 at minimum (the desktop shell owns window sizing). The content is a centered 400 px column on the app background color with no split hero image (rejected the Mobbin/Sana split: it needs real product imagery and placeholders are banned). The top 40 px is a draggable title-bar region (macOS traffic lights and Windows caption buttons stay native).
-- **Email step:** app mark, "Sign in to BruteForceHR", body, a labeled **Email** field (autofocus), primary **Send code**, and the legal line. `Enter` submits.
-- **Code step** (v0 + Jasper): the title "Check your email" and the body "We sent a 6-digit code to **{email}**." are followed by **six digit boxes** (44×52 px, 8 px gap). The boxes are one input underneath, so it's one tab stop and one screen-reader label. Pasting a 6-digit string fills all boxes. The form auto-submits on the 6th digit, and `Enter` also submits. Below: "Didn't get it? **Resend code**" (with cooldown) and **← Use a different email**; `Esc` does the same. Desktop has no Open Mail button: there's no reliable cross-platform target.
+- **Email step:** app mark, "Sign in to BruteForceHR", body, a labeled **Email** field (autofocus), primary **Send sign-in link**, and the legal line. `Enter` submits.
+- **Check your email** (Jasper + v0 tone): "We sent a sign-in link to **{email}**. Open it on this computer to sign in." Helper with the Spam hint, **Send again** (cooldown), **← Use a different email**; `Esc` does the same. No Open Mail button on desktop (no reliable cross-platform target).
+- **Opening the link:** the email opens in the browser, Firebase forwards to `https://bruteforcehr.web.app/auth/finish`, and that page hands the link to the app through `bruteforcehr://auth/finish?link=…` (see Sign-in link landing page below). The app shows "Signing you in…".
 - **Returning user** (Mobbin): "Welcome back" plus the remembered email plus "Not you?".
-- **States and copy** are the same as iOS (wrong, expired, locked, sending, network). Errors render inline under the boxes with `role="alert"`.
+- **States and copy** match iOS (confirm email on another device, expired, used, offline, rate limited). Errors render inline with `role="alert"`. Shipped strings: `apps/desktop/src/i18n/{en,tr,de}.json` (`auth.*`).
+
+### Sign-in link landing page (web, `/auth/finish`)
+
+References (`search_screens` web, deep: "browser page that hands off to the installed desktop app with an open app button"; examined 8, kept 4):
+
+| App    | Screen                | mobbin_url                                                      | What we borrow                                                                                         | Why                                                                             |
+| ------ | --------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------- |
+| Air    | Launching Air Flow    | https://mobbin.com/screens/505f10ac-90ee-443e-ba5a-0ae358ae85b7 | "The app should open automatically. If the launch fails, click here." + "Don't have the app? Download" | Automatic hand-off with a manual retry and an install path, in one quiet column |
+| Zoom   | Launch Meeting        | https://mobbin.com/screens/76e3ba53-8ddc-4c03-917b-6b012f807f62 | Names the browser's own "Open …?" dialog before it appears, then a manual button                       | The browser prompt is the main source of confusion on hand-off pages            |
+| Slack  | Open Slack            | https://mobbin.com/screens/7ce5f60f-9ede-4808-90fd-f413f7cca4b3 | One calm sentence plus a "Not working?" line                                                           | Short and non-technical                                                         |
+| Sketch | Launching the Mac app | https://mobbin.com/screens/5873b15c-c841-44cd-88c5-ab120077f77e | "If nothing happens, you may need to install the Mac app"                                              | The honest fallback, since a page can't detect whether the app opened           |
+
+Rejected: Framer and Dropbox Dash (download upsell, not a hand-off), Microsoft Teams (marketing hero), Portrait (download modal).
+
+Decision: wordmark, title "Opening BruteForceHR", "Your browser may ask to open the app. Choose Open to finish signing in.", primary **Return to BruteForceHR** (the deep link, also opened automatically once), then below a divider: "Didn't open? Make sure the BruteForceHR app is installed on this computer. Download BruteForceHR", "Open the link on the device where you asked for it…", and "You won't be signed in to this browser." A bare or broken URL shows "This link isn't complete" + **Get help with signing in**. Copy follows Firebase's `lang` parameter (EN, TR siz, DE du). Critique: [critiques/web/auth-finish](../critiques/web/auth-finish/r3.md).
 
 ### Onboarding wizard
 
@@ -254,8 +268,8 @@ Detailed review of low-confidence parsed CV fields (brief §4.5) is **not** part
 | Component | iOS | Desktop | Notes |
 |---|---|---|---|
 | `EmailField` | ✓ | ✓ | Platform autofill props; inline error slot |
-| `OtpCodeInput` | ✓ | ✓ | One input, 6 visual cells, paste, auto-submit callback, error/disabled/success states, `oneTimeCode` on iOS |
-| `ResendCodeButton` | ✓ | ✓ | Cooldown countdown, announces when enabled |
+| `LinkSentPanel` / `ConfirmEmailForm` | ✓ | ✓ | Check-your-email state; asks for the address when a link opens without one |
+| `ResendLinkButton` | ✓ | ✓ | Cooldown countdown, announces when enabled |
 | `OpenMailButton` | ✓ | — | Opens the default mail app |
 | `StepProgress` | bar + "Step n of m" | labeled stepper with ✓ | Same data: steps[], current |
 | `OnboardingHeader` | nav bar + Skip | stepper + account email + Sign out | — |
@@ -277,22 +291,10 @@ Detailed review of low-confidence parsed CV fields (brief §4.5) is **not** part
 
 Tone: calm, plain, no exclamation marks, no hype, no guilt ("Skip for now", never "Are you sure you want to miss out?"). We say **CV** everywhere, not "resume", because the target markets are TR, EU and UK. German uses **du**, Turkish uses **sen** (open question below). Layout must allow about **+35 % for German** and about **+25 % for Turkish**. Buttons size to their content, titles wrap to 3 lines, and nothing is truncated.
 
+Sign-in strings now live with the code (iOS `SignInStrings.swift` / `SignIn.xcstrings`, desktop `apps/desktop/src/i18n/*.json` `auth.*`); the code-entry rows were removed with ADR 0008. Turkish uses **siz** and German **du** (kickoff decision; the rows below predate it).
+
 | Key | EN | TR | DE |
 |---|---|---|---|
-| signin.title | Sign in to BruteForceHR | BruteForceHR'a giriş yap | Bei BruteForceHR anmelden |
-| signin.body | We'll email you a 6-digit code. No password needed. | E-postana 6 haneli bir kod göndereceğiz. Şifreye gerek yok. | Wir schicken dir einen 6-stelligen Code per E-Mail. Kein Passwort nötig. |
-| signin.cta | Send code | Kodu gönder | Code senden |
-| signin.notYou | Not you? | Sen değil misin? | Nicht du? |
-| code.title | Check your email | E-postanı kontrol et | Schau in dein Postfach |
-| code.body | We sent a 6-digit code to {email}. | {email} adresine 6 haneli bir kod gönderdik. | Wir haben einen 6-stelligen Code an {email} gesendet. |
-| code.helper | It can take a minute to arrive. Check Spam if you don't see it. | Gelmesi bir dakika sürebilir. Göremiyorsan Spam klasörüne bak. | Das kann eine Minute dauern. Sieh auch im Spam-Ordner nach. |
-| code.resend | Resend code | Kodu tekrar gönder | Code erneut senden |
-| code.resendIn | Resend in {mm:ss} | {mm:ss} sonra tekrar gönder | Erneut senden in {mm:ss} |
-| code.openMail | Open Mail | Mail'i aç | Mail öffnen |
-| code.wrong | That code doesn't match. Try again or send a new one. | Bu kod eşleşmedi. Tekrar dene ya da yeni bir kod iste. | Dieser Code stimmt nicht. Versuch es noch einmal oder fordere einen neuen an. |
-| code.expired | This code has expired. | Bu kodun süresi doldu. | Dieser Code ist abgelaufen. |
-| code.sendNew | Send a new code | Yeni kod gönder | Neuen Code senden |
-| code.locked | Too many tries. Send a new code to continue. | Çok fazla deneme yapıldı. Devam etmek için yeni bir kod iste. | Zu viele Versuche. Fordere einen neuen Code an, um weiterzumachen. |
 | onb.step | Step {n} of {total} | Adım {n}/{total} | Schritt {n} von {total} |
 | onb.skip | Skip for now | Şimdilik geç | Vorerst überspringen |
 | onb.continue | Continue | Devam et | Weiter |
@@ -318,11 +320,11 @@ Turkish country names need the locative/genitive form ("Almanya'da"). The `prefs
 
 ## Open questions
 
-1. **Code TTL, attempt limit and resend cooldown.** The backend (BackendFirebase, ADR) owns these numbers. The design assumes **10 min TTL, 5 attempts, 30 s resend cooldown**, and the copy above doesn't hard-code them except the countdown. Confirm before Copy freeze.
-2. **iOS code autofill from Mail.** We rely on `textContentType="oneTimeCode"` to surface codes that arrive in Apple Mail (iOS 17+). Verify on a device with the real Brevo template, which needs the code early in the email body. [INFERENCE, not yet verified on device]
+1. **Link lifetime and resend cooldown.** *Resolved 2026-10-23:* Firebase owns link lifetime; each link works once and a new link replaces the previous one (verified, ADR 0008). Clients use a short resend cooldown and don't promise a duration in copy.
+2. **iOS code autofill from Mail.** *Obsolete:* there is no code; the link opens the app as a universal link.
 3. **Open Mail target.** Verify which URL opens the user's default mail app (Apple Mail `message:` vs a user-chosen default client) on iOS 26. If no reliable target exists, hide the button rather than open the wrong app.
 4. **LinkedIn export timing.** LinkedIn emails the data export in two waves (a faster partial archive, then the complete one). Confirm current timing and which archive contains `Positions.csv`/`Profile.csv` before writing the "How to get it" sheet. Owner: research for the CV import integration (docs/integrations).
 5. **Seniority enum, language proficiency enum, currency list and salary period** must match the zod schemas in `@bfhr/core` (CoreDomain). Also: should the salary floor record gross vs net? TR offers are often net and monthly, DE offers gross and annual. The design shows no gross/net control. Add one only if the matching engine needs it.
 6. **Formality:** German **du** vs **Sie**, Turkish **sen** vs **siz**. The proposal is du/sen to match the calm, personal tone. Needs a user decision before the TR/DE string pass.
 7. **"CV" in German UI:** the body copy uses "Lebenslauf", but the tab label "CVs" may stay "CVs" because "Lebensläufe" is long in the tab bar. Decide this with the IA.
-8. **Brevo is pending** (user action). Until it's ready the code email can't be tested end to end, and the spam-folder guidance can't be validated against real deliverability.
+8. **Sign-in email deliverability.** Firebase sends from the shared `noreply@bruteforcehr.firebaseapp.com`; validate the Spam guidance with the owner's first real sign-in (runbooks/accounts.md §1).

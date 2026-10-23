@@ -3,7 +3,7 @@
 - **Status:** Accepted
 - **Date:** 2026-10-22
 - **Supersedes:** BRIEF.md §0 "Domain" and §6 "Website: Astro on GitHub Pages"
-- **Related:** [0001-stack.md](0001-stack.md), [0003-auth-email-otp.md](0003-auth-email-otp.md), [0004-release-updates-signing.md](0004-release-updates-signing.md), [0007-native-ios-tauri-desktop.md](0007-native-ios-tauri-desktop.md), [runbooks/accounts.md](../runbooks/accounts.md)
+- **Related:** [0001-stack.md](0001-stack.md), [0008-auth-email-link.md](0008-auth-email-link.md), [0004-release-updates-signing.md](0004-release-updates-signing.md), [0007-native-ios-tauri-desktop.md](0007-native-ios-tauri-desktop.md), [runbooks/accounts.md](../runbooks/accounts.md)
 
 ## Context
 
@@ -37,7 +37,7 @@
 
 - `/` … static Astro website (Home, Features, Download, Changelog, Privacy, Terms, Support).
 - `/api/**` → `api` (HTTPS `onRequest`, gen2, `europe-west1`): app API (AI, render, send, job import). Calls must finish within Hosting's 60 s; longer work is enqueued to task-queue functions and reported through Firestore. Until `api` exists, `firebase.json` rewrites only `/api/health` → `health`; each rewrite is added with the function it targets.
-- Sign-in is **not** routed through Hosting: `authRequestCode` / `authVerifyCode` are callable functions (codebase `auth`, [0003-auth-email-otp.md](0003-auth-email-otp.md)) that clients reach through the Firebase SDK's `httpsCallable` at their Cloud Functions URL.
+- `/auth/finish` … static sign-in link landing page, and `/.well-known/apple-app-site-association` (served as `application/json`): Firebase Authentication's email link ends here in the browser and the page hands it to the desktop app as `bruteforcehr://auth/finish?link=…`; the AASA lets iOS open the link in the app ([0008-auth-email-link.md](0008-auth-email-link.md)). A rewrite `/auth/finish` → `/auth/finish/index.html` serves it without a trailing-slash redirect.
 - `/connect/**` → `connect`: mail-account OAuth start + callbacks.
 - Function names `api` and `connect` are the contract between Hosting and `apps/functions`.
 
@@ -65,7 +65,7 @@ Risk: `web.app` is a shared Firebase domain. If Google rejects `bruteforcehr.web
 
 ### Firebase Auth
 
-Sign-in uses custom tokens ([0003-auth-email-otp.md](0003-auth-email-otp.md)), so no Firebase Auth redirect domain is involved; `bruteforcehr.web.app` and `bruteforcehr.firebaseapp.com` are on the Auth authorized-domains list by default.
+Sign-in uses Firebase Authentication email links ([0008-auth-email-link.md](0008-auth-email-link.md)). Both default domains are authorized Auth domains. The emailed link is on **`bruteforcehr.firebaseapp.com`** (Firebase's `/__/auth/links` and `/__/auth/action` pages; `ActionCodeSettings.linkDomain` only accepts a custom domain) and continues to `https://bruteforcehr.web.app/auth/finish`. iOS associates both hosts (`applinks:bruteforcehr.firebaseapp.com`, `applinks:bruteforcehr.web.app`); one Hosting site serves the same AASA on both. The browser API key allows both hosts as referrers so Firebase's pages can load the project config.
 
 ## Migration path to a custom domain (later)
 
@@ -73,7 +73,7 @@ Sign-in uses custom tokens ([0003-auth-email-otp.md](0003-auth-email-otp.md)), s
 2. Keep `bruteforcehr.web.app` serving the same site (it can't be removed), so old links and redirect URIs keep working.
 3. Verify the domain property in Search Console (DNS TXT), add it to the consent screen authorized domains.
 4. **Add** new redirect URIs (`https://<domain>/connect/{google,microsoft}/callback`) alongside the old ones in Google and Entra; ship a release whose functions use the new base URL (config param `PUBLIC_BASE_URL`); remove old URIs only after all accounts have re-authed or tokens refreshed (refresh tokens are not bound to the redirect URI).
-5. Update `appConfig`, website canonical URLs, privacy/terms links, the Brevo sender domain (DKIM/SPF for proper deliverability), and the honest scraping User-Agent URL (ADR 0005).
+5. Update `appConfig`, website canonical URLs, privacy/terms links, the email-link domain (`linkDomain` = the custom domain, plus its AASA and Associated Domains entry), and the honest scraping User-Agent URL (ADR 0005).
 6. Optional: `web.app` → custom domain 301 redirect for website pages only (never for `/connect/**` until old URIs are retired).
 
 ## Consequences
@@ -81,7 +81,7 @@ Sign-in uses custom tokens ([0003-auth-email-otp.md](0003-auth-email-otp.md)), s
 - Zero-cost hosting with TLS; website and API share one origin (no CORS for the website; the desktop renderer calls `https://bruteforcehr.web.app/api/...`).
 - Hosting's 60 s timeout shapes the API: long operations are asynchronous.
 - Branding/verification is limited on a shared domain; acceptable while the app is personal.
-- Email OTP sends from a Brevo-verified single sender (no own domain ⇒ no custom DKIM); deliverability may be lower until a domain exists.
+- Sign-in emails come from Firebase's shared `noreply@bruteforcehr.firebaseapp.com` sender; deliverability may be lower than from an own domain.
 
 ## Alternatives considered
 

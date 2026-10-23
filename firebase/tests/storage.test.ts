@@ -132,15 +132,24 @@ describe("users/{uid}/cv-photos: opt-in CV photo, JPEG/PNG/HEIC up to 5 MiB", ()
 
   it.each(["image/jpeg", "image/png", "image/heic"])("accepts %s", async (contentType) => {
     await assertSucceeds(
-      client("alice").ref(photo(contentType.replace("/", "_"))).put(bytes(1024), { contentType }).then(),
+      client("alice")
+        .ref(photo(contentType.replace("/", "_")))
+        .put(bytes(1024), { contentType })
+        .then(),
     );
   });
 
-  it.each(["image/gif", "image/svg+xml", "image/webp", PDF, "text/html"])("rejects %s", async (contentType) => {
-    await assertFails(
-      client("alice").ref(photo(contentType.replace(/\W/g, "_"))).put(bytes(1024), { contentType }).then(),
-    );
-  });
+  it.each(["image/gif", "image/svg+xml", "image/webp", PDF, "text/html"])(
+    "rejects %s",
+    async (contentType) => {
+      await assertFails(
+        client("alice")
+          .ref(photo(contentType.replace(/\W/g, "_")))
+          .put(bytes(1024), { contentType })
+          .then(),
+      );
+    },
+  );
 
   it("enforces the size limit and is create-only", async () => {
     const put = (name: string, size: number) =>

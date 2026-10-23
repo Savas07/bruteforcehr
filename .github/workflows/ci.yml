@@ -37,6 +37,8 @@ jobs:
           key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
           restore-keys: pnpm-${{ runner.os }}-
       - run: pnpm install --frozen-lockfile
+      # @bfhr/cv-render's ATS round trip prints PDFs in headless Chromium (docs/adr/0009-cv-rendering.md).
+      - run: pnpm --filter @bfhr/cv-render exec playwright install --with-deps chromium-headless-shell
       - run: pnpm turbo run lint typecheck test
 
   swift:

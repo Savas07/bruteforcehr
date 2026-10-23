@@ -11,7 +11,7 @@
   "scripts": {
     "build": "node scripts/build.ts",
     "fonts": "node scripts/fonts.ts",
-    "critique": "node scripts/critique.ts",
+    "critique": "tsx scripts/critique.ts",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
@@ -30,6 +30,7 @@
     "jszip": "^3.10.1",
     "pdfjs-dist": "^6.4.299",
     "playwright": "^1.64.1",
+    "tsx": "^4.23.15",
     "vitest": "^5.0.5"
   }
 }

@@ -5,10 +5,12 @@ import { exportFileName, exportJsonResume, JSON_RESUME_SCHEMA_URL, splitName } f
 
 describe("exportFileName", () => {
   it("builds First-Last-CV-<Company>.<ext>, or First-Last-CV.<ext> without a company", () => {
-    expect(exportFileName({ firstName: "Deniz", lastName: "Aksoy", company: "Tannenbaum GmbH", ext: "pdf" })).toBe(
-      "Deniz-Aksoy-CV-Tannenbaum-GmbH.pdf",
+    expect(
+      exportFileName({ firstName: "Deniz", lastName: "Aksoy", company: "Tannenbaum GmbH", ext: "pdf" }),
+    ).toBe("Deniz-Aksoy-CV-Tannenbaum-GmbH.pdf");
+    expect(exportFileName({ firstName: "Deniz", lastName: "Aksoy", ext: "docx" })).toBe(
+      "Deniz-Aksoy-CV.docx",
     );
-    expect(exportFileName({ firstName: "Deniz", lastName: "Aksoy", ext: "docx" })).toBe("Deniz-Aksoy-CV.docx");
     expect(exportFileName({ ext: "json" })).toBe("CV.json");
   });
 
@@ -17,12 +19,18 @@ describe("exportFileName", () => {
       "Sukru-Ozturk-CV-Isik-A-S.pdf",
     );
     expect(exportFileName({ firstName: "İpek", lastName: "Çağlar", ext: "pdf" })).toBe("Ipek-Caglar-CV.pdf");
-    expect(exportFileName({ firstName: "Jürgen", lastName: "Weiß", company: "Müller & Söhne", ext: "pdf", locale: "de" })).toBe(
-      "Juergen-Weiss-CV-Mueller-Soehne.pdf",
-    );
-    expect(exportFileName({ firstName: "Anna Maria", lastName: "O'Neil", company: "../../etc", ext: "pdf" })).toBe(
-      "Anna-Maria-O-Neil-CV-etc.pdf",
-    );
+    expect(
+      exportFileName({
+        firstName: "Jürgen",
+        lastName: "Weiß",
+        company: "Müller & Söhne",
+        ext: "pdf",
+        locale: "de",
+      }),
+    ).toBe("Juergen-Weiss-CV-Mueller-Soehne.pdf");
+    expect(
+      exportFileName({ firstName: "Anna Maria", lastName: "O'Neil", company: "../../etc", ext: "pdf" }),
+    ).toBe("Anna-Maria-O-Neil-CV-etc.pdf");
   });
 
   it("splits basics.name on the last word", () => {

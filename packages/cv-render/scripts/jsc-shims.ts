@@ -14,7 +14,12 @@ class Utf8Encoder {
       else if (code < 0x800) out.push(0xc0 | (code >> 6), 0x80 | (code & 63));
       else if (code < 0x10000) out.push(0xe0 | (code >> 12), 0x80 | ((code >> 6) & 63), 0x80 | (code & 63));
       else {
-        out.push(0xf0 | (code >> 18), 0x80 | ((code >> 12) & 63), 0x80 | ((code >> 6) & 63), 0x80 | (code & 63));
+        out.push(
+          0xf0 | (code >> 18),
+          0x80 | ((code >> 12) & 63),
+          0x80 | ((code >> 6) & 63),
+          0x80 | (code & 63),
+        );
       }
     }
     return new Uint8Array(out);

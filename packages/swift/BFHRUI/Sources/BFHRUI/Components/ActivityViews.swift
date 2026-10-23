@@ -76,11 +76,21 @@ public struct NudgeCard: View {
     private let now: Date
     private let onPrimary: () -> Void
     private let onDismiss: () -> Void
+    private let primaryOverride: LocalizedStringResource?
     @Environment(\.calendar) private var calendar
 
-    public init(_ item: NudgeItem, now: Date, onPrimary: @escaping () -> Void, onDismiss: @escaping () -> Void) {
+    /// `primaryTitle` replaces "Draft follow-up" / "Mark as no response" where the primary
+    /// action differs (the Tracker detail's follow-up sets a reminder until compose lands).
+    public init(
+        _ item: NudgeItem,
+        now: Date,
+        primaryTitle: LocalizedStringResource? = nil,
+        onPrimary: @escaping () -> Void,
+        onDismiss: @escaping () -> Void
+    ) {
         self.item = item
         self.now = now
+        self.primaryOverride = primaryTitle
         self.onPrimary = onPrimary
         self.onDismiss = onDismiss
     }
@@ -116,7 +126,8 @@ public struct NudgeCard: View {
     }
 
     private var primaryTitle: LocalizedStringResource {
-        if case .followUp = item.kind { Strings.draftFollowUp } else { Strings.markNoResponse }
+        if let primaryOverride { return primaryOverride }
+        if case .followUp = item.kind { return Strings.draftFollowUp } else { return Strings.markNoResponse }
     }
 
     private var dismissTitle: LocalizedStringResource {
@@ -244,7 +255,9 @@ public struct TimelineRow: View {
                     .foregroundStyle(BFHRColor.Fg.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            if entry.isAutomatic, let reason = entry.reason {
+            // Automatic changes name their evidence; a created event's reason says where it came
+            // from ("Imported from applications.csv · row 4", written by the desktop CSV import).
+            if let reason = entry.reason, entry.isAutomatic || entry.kind == .created {
                 Text(verbatim: reason)
                     .font(.bfhr(.footnote))
                     .foregroundStyle(BFHRColor.Fg.secondary)

@@ -20,9 +20,14 @@ public struct TodayScreen: View {
     @State private var showsDone = false
     @State private var showsPrep = false
     @State private var reviewDetent: PresentationDetent = .large
+    @State private var errorCount = 0
+    private let showsSettingsButton: Bool
 
-    public init(model: TodayModel) {
+    /// `showsSettingsButton` false when the host puts its own account menu in the toolbar (the
+    /// live app until Settings lands).
+    public init(model: TodayModel, showsSettingsButton: Bool = true) {
         self.model = model
+        self.showsSettingsButton = showsSettingsButton
     }
 
     public var body: some View {
@@ -36,16 +41,23 @@ public struct TodayScreen: View {
         .bfhrToastHost()
         .environment(\.bfhrNow, model.now)
         .toolbar {
-            ToolbarItem(placement: .bfhrTrailing) {
-                if model.profileName.isEmpty {
-                    // Loading or failed: no initials yet, Settings stays reachable.
-                    IconButton(Strings.settings, systemImage: "person.crop.circle") { openURL(TodayLink.settings) }
-                } else {
-                    AvatarButton(name: model.profileName, needsAttention: model.accountNeedsAttention) {
-                        openURL(TodayLink.settings)
+            if showsSettingsButton {
+                ToolbarItem(placement: .bfhrTrailing) {
+                    if model.profileName.isEmpty {
+                        // Loading or failed: no initials yet, Settings stays reachable.
+                        IconButton(Strings.settings, systemImage: "person.crop.circle") { openURL(TodayLink.settings) }
+                    } else {
+                        AvatarButton(name: model.profileName, needsAttention: model.accountNeedsAttention) {
+                            openURL(TodayLink.settings)
+                        }
                     }
                 }
             }
+        }
+        .bfhrHaptic(.error, trigger: errorCount)
+        .onChange(of: model.writeFailures) {
+            errorCount += 1
+            show(ToastItem(glyph: ToastGlyph.info, message: TodayStrings.couldntSave))
         }
         .todaySubtitle(dateLine)
         .sheet(item: $reviewing) { proposal in
@@ -143,6 +155,30 @@ public struct TodayScreen: View {
                     }
                 }
             }
+            if model.showsInsightsLink {
+                Section {
+                    Button { openURL(TodayLink.insights) } label: {
+                        Label { Text(TodayStrings.insightsLink) } icon: { Image(systemName: "chart.bar.xaxis") }
+                            .labelStyle(.bfhrCompact)
+                            .font(.bfhr(.body))
+                            .foregroundStyle(BFHRColor.Accent.text)
+                            .frame(maxWidth: .infinity, minHeight: BFHRHitTarget.minimum, alignment: .leading)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("today.insights")
+                }
+            }
+            if model.showsComingNote {
+                Section {
+                    Text(TodayStrings.comingNote)
+                        .font(.bfhr(.footnote))
+                        .foregroundStyle(BFHRColor.Fg.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .listRowBackground(Color.clear)
+                        .accessibilityIdentifier("today.comingNote")
+                }
+            }
         }
         .bfhrInsetGroupedList()
         .animation(BFHRMotion.spring(reduceMotion: reduceMotion), value: model.sections)
@@ -158,7 +194,9 @@ public struct TodayScreen: View {
                 glyph: "sun.max",
                 title: TodayStrings.firstRunTitle,
                 message: TodayStrings.firstRunBody,
-                primary: .init(TodayStrings.findJobs) { openURL(TodayLink.jobs) }
+                primary: model.matchesAvailable
+                    ? .init(TodayStrings.findJobs) { openURL(TodayLink.jobs) }
+                    : .init(TodayStrings.logApplication) { openURL(TodayLink.logApplication) }
             )
         } else {
             EmptyState(.caughtUp, glyph: "checkmark.circle", title: TodayStrings.caughtUpTitle, message: TodayStrings.caughtUpBody)

@@ -227,21 +227,24 @@ extension UserData {
         )
     }
 
-    /// Follow-up and no-response suggestions at `now` (BFHRCore `followUpDue` / `suggestGhosted`
-    /// with the profile's day settings), oldest first.
+    /// Follow-up and no-response suggestions at `now`, after the user's answers on the cards
+    /// (BFHRCore `visibleSuggestions` with the profile's day settings), oldest first.
     public func nudges(at now: Date) -> [NudgeItem] {
-        let followUpDays = profile?.settings.followUpAfterDays ?? defaultFollowUpAfterDays
-        let ghostedDays = profile?.settings.ghostedAfterDays ?? defaultGhostedAfterDays
+        let settings = SuggestionSettings(
+            followUpAfterDays: profile?.settings.followUpAfterDays ?? defaultFollowUpAfterDays,
+            ghostedAfterDays: profile?.settings.ghostedAfterDays ?? defaultGhostedAfterDays
+        )
         var items: [(Date, NudgeItem)] = []
         for application in applications {
             let events = events(forApplication: application.id)
             let company = CompanyIdentity(name: application.company, domain: application.companyDomain)
-            if let followUp = try? followUpDue(application, events: events, now: now, days: followUpDays) {
+            guard let visible = try? visibleSuggestions(application, events: events, now: now, settings: settings) else { continue }
+            if let followUp = visible.followUp {
                 items.append((followUp.since, NudgeItem(
                     id: "\(application.id).followUp", applicationId: application.id, company: company,
                     role: application.role, kind: .followUp(since: followUp.since, dueAt: followUp.dueAt)
                 )))
-            } else if let ghosted = try? suggestGhosted(application, events: events, now: now, days: ghostedDays) {
+            } else if let ghosted = visible.ghosted {
                 items.append((ghosted.silentSince, NudgeItem(
                     id: "\(application.id).noResponse", applicationId: application.id, company: company,
                     role: application.role, kind: .noResponse(silentSince: ghosted.silentSince, silentDays: ghosted.silentDays)

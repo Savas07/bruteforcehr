@@ -1,5 +1,6 @@
 #if DEBUG
 import BFHRCore
+import BFHRUIFixtures
 import Foundation
 
 extension DesignScenario {

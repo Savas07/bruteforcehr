@@ -95,7 +95,10 @@ describe("printHtmlToPdf (real Chromium)", () => {
   afterAll(() => closeBrowser());
 
   it("runs the Chromium build that ships in @sparticuz/chromium", async () => {
-    expect(await browserVersion()).toContain(SERVER_CHROMIUM_VERSION);
+    // @sparticuz/chromium's own build reports patch 0 (`153.0.8010.0`); Chrome for Testing the real
+    // patch. Major, minor and build number identify the Chromium build.
+    const build = SERVER_CHROMIUM_VERSION.split(".").slice(0, 3).join(".");
+    expect(await browserVersion()).toMatch(new RegExp(`/${build.replaceAll(".", "\\.")}\\.`, "u"));
   }, 120_000);
 
   it.each([

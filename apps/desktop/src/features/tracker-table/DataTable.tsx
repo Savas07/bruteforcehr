@@ -244,6 +244,10 @@ export function DataTable({
     estimateSize: () => ROW_HEIGHT,
     getItemKey: (index) => rows[index]?.applicationId ?? index,
     overscan: 8,
+    // Rows enter during scrolling as a regular update after the frame, not synchronously inside
+    // the scroll event, so a frame's rendering step holds only style, layout and paint; the
+    // overscan covers the rows the scroll reveals meanwhile (docs/runbooks/performance.md).
+    useFlushSync: false,
   });
 
   const focusedIndex = rows.findIndex((row) => row.applicationId === focusedId);

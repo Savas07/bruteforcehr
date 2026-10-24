@@ -49,7 +49,10 @@ udid="$(xcrun simctl list devices available -j | node -e '
 
 case "$only" in
   "") tests=(-only-testing:BruteForceHRUITests/PerformanceTests) ;;
-  launch) tests=(-only-testing:BruteForceHRUITests/PerformanceTests/testLaunchToInteractive) ;;
+  launch)
+    tests=(-only-testing:BruteForceHRUITests/PerformanceTests/testLaunchToInteractive
+      -only-testing:BruteForceHRUITests/PerformanceTests/testLaunchBaselineSignedOut
+      -only-testing:BruteForceHRUITests/PerformanceTests/testLaunchBaselineSystemApp) ;;
   scroll)
     tests=(-only-testing:BruteForceHRUITests/PerformanceTests/testScrollJobsFeed
       -only-testing:BruteForceHRUITests/PerformanceTests/testScrollTrackerBoard) ;;

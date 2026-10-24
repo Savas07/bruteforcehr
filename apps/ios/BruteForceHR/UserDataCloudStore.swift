@@ -65,6 +65,11 @@ final class FirestoreUserDataStore: UserDataWriter {
     /// The collections that must arrive before the screens leave the skeleton.
     private static let required: Set<String> = ["applications", "applicationEvents", "interviews", "contacts"]
 
+    /// `users/{uid}` as seen: exists, from the cache, decoded (the onboarding gate).
+    var onProfileSnapshot: ((_ exists: Bool, _ fromCache: Bool, _ profile: Profile?) -> Void)?
+    /// How many saved searches the account has.
+    var onSavedSearches: ((Int) -> Void)?
+
     init(uid: String, db: Firestore = .firestore()) {
         self.uid = uid
         self.db = db
@@ -91,9 +96,19 @@ final class FirestoreUserDataStore: UserDataWriter {
         self.models = models
         for model in models { model.phase = .loading }
 
-        registrations.listeners.append(user.addSnapshotListener { [weak self] snapshot, _ in
-            guard let self, let snapshot, snapshot.exists, let data = snapshot.data() else { return }
-            profile = try? Self.decode(Profile.self, data, ids: ["id": snapshot.documentID])
+        // With metadata changes: a missing document from the cache is followed by the server's
+        // answer, which decides whether onboarding runs (`onProfileSnapshot`).
+        registrations.listeners.append(user.addSnapshotListener(includeMetadataChanges: true) { [weak self] snapshot, _ in
+            guard let self, let snapshot else { return }
+            let fromCache = snapshot.metadata.isFromCache
+            guard snapshot.exists, let data = snapshot.data() else {
+                onProfileSnapshot?(false, fromCache, nil)
+                return
+            }
+            let decoded = try? Self.decode(Profile.self, data, ids: ["id": snapshot.documentID])
+            onProfileSnapshot?(true, fromCache, decoded)
+            guard decoded != profile else { return }
+            profile = decoded
             push()
         })
         listen("applications") { [weak self] documents in
@@ -122,6 +137,7 @@ final class FirestoreUserDataStore: UserDataWriter {
         }
         listen("savedSearches") { [weak self] documents in
             self?.savedSearches = documents.compactMap { try? Self.decode(SavedSearch.self, $0.data(), ids: ["id": $0.documentID]) }
+            self?.onSavedSearches?(documents.count)
         }
         listen("mailAccounts") { [weak self] documents in
             self?.mailAccounts = documents.compactMap { try? Self.decode(MailAccount.self, $0.data(), ids: ["id": $0.documentID]) }

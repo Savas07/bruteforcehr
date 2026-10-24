@@ -193,7 +193,7 @@ final class MailReviewAccessibilityAuditTests: XCTestCase {
             if !element.isEnabled { return ignore("disabled control") }
             if !atAccessibilitySize, [.dynamicType, .textClipped].contains(issue.auditType) { return ignore("default-size Dynamic Type, AX run checks it") }
             if !content.contains(element.frame) { return ignore("under bars / off screen") }
-            if atAccessibilitySize, [.dynamicType, .textClipped].contains(issue.auditType), wrapped.contains(element.label) {
+            if atAccessibilitySize, [.dynamicType, .textClipped].contains(issue.auditType), wrapped.contains(element.label.replacingOccurrences(of: "\u{202F}", with: " ")) {
                 return ignore("verified wrapped in full by screenshot")
             }
             print("AUDIT FAILED \(issue.auditType.rawValue) | \(issue.compactDescription) | \(element.elementType.rawValue) '\(element.label)' \(element.frame)")

@@ -32,30 +32,75 @@ const goTo = (hash: string) =>
     location.hash = value;
   }, hash);
 
-/** A visible, enabled button whose text (or accessible name) starts with `label`. */
+/**
+ * Finds the visible, enabled button whose accessible name (aria-label, else its text) starts with
+ * `label`, in one in-page query, and tags it so WebDriver can address exactly that node. Scanning
+ * every button with WebDriver calls instead (three round trips each) fails whenever any other
+ * button in the window is re-rendered during the scan: the element goes stale and the whole poll
+ * throws.
+ */
 async function button(label: string, timeout = 30_000) {
   let found: WebdriverIO.Element | undefined;
-  await browser.waitUntil(
-    async () => {
-      for (const candidate of await $("main").$$("button")) {
-        const name = (await candidate.getAttribute("aria-label")) ?? (await candidate.getText()).trim();
-        if (name.startsWith(label) && (await candidate.isDisplayed()) && (await candidate.getAttribute("aria-disabled")) !== "true") {
-          found = candidate;
-          return true;
-        }
-      }
-      return false;
-    },
-    { timeout, timeoutMsg: `no enabled "${label}" button` },
-  ).catch(async (error: unknown) => {
-    // Say why: the panel's one-line blocker (or PDF status) and the buttons it shows.
-    const status = await browser.execute(() =>
-      [...document.querySelectorAll("main [role=status], main [role=alert], main footer")].map((node) => node.textContent).join(" | "),
-    );
-    throw new Error(`${String(error)} — panel says: ${status}`);
-  });
+  await browser
+    .waitUntil(
+      async () => {
+        const tag = await browser.execute((wanted: string) => {
+          for (const node of document.querySelectorAll<HTMLButtonElement>("main button, [role=dialog] button")) {
+            const name = (node.getAttribute("aria-label") ?? node.innerText).trim();
+            if (!name.startsWith(wanted) || node.getAttribute("aria-disabled") === "true") continue;
+            if (node.getClientRects().length === 0) continue;
+            const id = `pick-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+            node.setAttribute("data-e2e-pick", id);
+            return id;
+          }
+          return null;
+        }, label);
+        if (tag === null) return false;
+        const element = await $(`[data-e2e-pick="${tag}"]`).getElement();
+        if (!(await element.isExisting())) return false;
+        found = element;
+        return true;
+      },
+      { timeout, timeoutMsg: `no enabled "${label}" button` },
+    )
+    .catch(async (error: unknown) => {
+      // Say why: the panel's one-line blocker (or PDF status) and the buttons it shows.
+      const status = await browser.execute(() =>
+        [...document.querySelectorAll("main [role=status], main [role=alert], main footer")]
+          .map((node) => node.textContent)
+          .join(" | "),
+      );
+      throw new Error(`${String(error)} — panel says: ${status}`);
+    });
   if (!found) throw new Error(`no "${label}" button`);
   return found;
+}
+
+/** Counts buttons removed from the DOM per accessible name (CI evidence for re-render churn). */
+async function watchRemovedButtons(): Promise<void> {
+  await browser.execute(() => {
+    const removed = new Map<string, number>();
+    const name = (node: Element) => (node.getAttribute("aria-label") ?? node.textContent ?? "").trim().slice(0, 50);
+    new MutationObserver((records) => {
+      for (const record of records)
+        for (const node of record.removedNodes) {
+          if (!(node instanceof Element)) continue;
+          for (const removedButton of [...(node.matches("button") ? [node] : []), ...node.querySelectorAll("button")])
+            removed.set(name(removedButton), (removed.get(name(removedButton)) ?? 0) + 1);
+        }
+    }).observe(document.body, { subtree: true, childList: true });
+    Object.assign(window, { __bfhrRemovedButtons: removed });
+  });
+}
+
+async function reportRemovedButtons(test: string): Promise<void> {
+  const removed = await browser.execute(() => {
+    const counts = Reflect.get(window, "__bfhrRemovedButtons") as Map<string, number> | undefined;
+    const top = [...(counts ?? [])].toSorted((a, b) => b[1] - a[1]).slice(0, 8);
+    counts?.clear();
+    return top;
+  });
+  console.log(`apply.e2e removed buttons during "${test}": ${JSON.stringify(removed)}`);
 }
 
 async function field(label: string) {
@@ -98,6 +143,11 @@ describe("Apply", function () {
     await $(`[data-nav-id="${EMAIL_JOB.id}"]`).waitForDisplayed({ timeout: 30_000 });
     await goTo("#/jobs");
     await useRecordedCallables();
+    await watchRemovedButtons();
+  });
+
+  afterEach(async function () {
+    await reportRemovedButtons(this.currentTest?.title ?? "");
   });
 
   after(async () => {

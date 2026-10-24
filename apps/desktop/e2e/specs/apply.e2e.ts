@@ -103,6 +103,8 @@ function job(entry: { id: string; company: string }, apply: { url: string | null
 }
 
 const application = async (company: string) => (await findDocs("applications", "company", company))[0];
+/** The seeded CV's revisions (`listRevisions` takes a REST document name). */
+const revisions = () => listRevisions(`/documents/users/${uid}/cvs/${CV_ID}`);
 
 describe("Apply", () => {
   before(async () => {
@@ -133,6 +135,21 @@ describe("Apply", () => {
     });
     await writeDoc(`users/${uid}/jobs/${EMAIL_JOB.id}`, job(EMAIL_JOB, { url: null, email: `jobs-${RUN}@example.com` }));
     await writeDoc(`users/${uid}/jobs/${SITE_JOB.id}`, job(SITE_JOB, { url: `https://boards.greenhouse.io/e2e/jobs/${RUN}`, email: null }));
+    // The feed lists jobs through their matches ("the server scored them").
+    for (const entry of [EMAIL_JOB, SITE_JOB])
+      await writeDoc(`users/${uid}/jobMatches/${entry.id}`, {
+        score: 90,
+        basedOnCvId: null,
+        basedOnCvRevisionId: null,
+        reasons: [],
+        gaps: [],
+        skills: { matched: ["typescript"], unmatched: [] },
+        rationale: null,
+        state: "new",
+        dismissReasons: [],
+        stateChangedAt: null,
+        computedAt: now,
+      });
     await writeDoc(`users/${uid}/answers/${ANSWER_ID}`, {
       kind: "notice_period",
       label: "Notice period",
@@ -156,10 +173,12 @@ describe("Apply", () => {
       }
     }
     for (const letter of await findDocs("coverLetters", "jobId", EMAIL_JOB.id)) await deleteDoc(letter.name);
-    for (const revision of await listRevisions(`users/${uid}/cvs/${CV_ID}`)) await deleteDoc(revision.name);
+    for (const revision of await revisions()) await deleteDoc(revision.name);
     await deleteDoc(`users/${uid}/cvs/${CV_ID}`);
     await deleteDoc(`users/${uid}/jobs/${EMAIL_JOB.id}`);
     await deleteDoc(`users/${uid}/jobs/${SITE_JOB.id}`);
+    await deleteDoc(`users/${uid}/jobMatches/${EMAIL_JOB.id}`);
+    await deleteDoc(`users/${uid}/jobMatches/${SITE_JOB.id}`);
     await deleteDoc(`users/${uid}/answers/${ANSWER_ID}`);
   });
 
@@ -180,7 +199,7 @@ describe("Apply", () => {
     let tailored: FirestoreDoc | undefined;
     await browser.waitUntil(
       async () => {
-        tailored = (await listRevisions(`users/${uid}/cvs/${CV_ID}`)).find((revision) => plain(revision.fields["source"]) === "ai_tailor");
+        tailored = (await revisions()).find((revision) => plain(revision.fields["source"]) === "ai_tailor");
         return tailored !== undefined;
       },
       { timeout: 20_000, timeoutMsg: "the tailored revision didn't reach the emulator" },
@@ -210,7 +229,7 @@ describe("Apply", () => {
       timeoutMsg: "I sent it didn't reach the emulator",
     });
     const applied = await application(EMAIL_JOB.company);
-    const tailored = (await listRevisions(`users/${uid}/cvs/${CV_ID}`)).find((revision) => plain(revision.fields["source"]) === "ai_tailor");
+    const tailored = (await revisions()).find((revision) => plain(revision.fields["source"]) === "ai_tailor");
     expect(plain(applied?.fields["cvRevisionId"])).toBe(docId(tailored as FirestoreDoc));
     const letterId = plain(applied?.fields["coverLetterId"]);
     expect(letterId).toEqual(expect.any(String));

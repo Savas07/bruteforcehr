@@ -14,8 +14,11 @@ export const ACCOUNT_EXPORT_LIMITS = {
   perDay: 5,
   /** Total bytes of documents + files; beyond this the export is refused (`export_too_large`). */
   maxBytes: 300 * 1024 * 1024,
-  /** How long the ZIP stays downloadable; the Storage lifecycle rule deletes it afterwards. */
-  availableHours: 24,
+  /**
+   * Days the ZIP stays downloadable; the Storage lifecycle rule (same age) deletes it then. The
+   * privacy policy states "deleted 7 days after it's created".
+   */
+  availableDays: 7,
 } as const;
 
 /** `accountExport` takes no input. */

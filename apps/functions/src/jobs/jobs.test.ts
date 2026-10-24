@@ -666,6 +666,7 @@ describe("deleteUserData", () => {
       "serverOnly/jobAlerts/users/u1",
       "serverOnly/jobQuota/users/u1",
       "serverOnly/mail/users/u1",
+      "serverOnly/accountExport/users/u1",
     ]);
     expect(steps.some((root) => serverOnlyPaths.jobAlert("u1", "j").startsWith(root))).toBe(true);
     expect(prefix).toBe("users/u1/");

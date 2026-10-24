@@ -102,6 +102,13 @@ export const firestorePaths = {
   jobSource: (sourceId: string) => `${COLLECTION_IDS.jobSources}/${segment(sourceId)}`,
 } as const;
 
+/**
+ * Suffix of every account export object. The bucket lifecycle rule
+ * (firebase/storage.lifecycle.json) deletes objects with this suffix `ACCOUNT_EXPORT_LIMITS.availableDays` after creation; no
+ * other object may end with it.
+ */
+export const ACCOUNT_EXPORT_SUFFIX = ".bfhr-export.zip";
+
 /** Cloud Storage object paths (mirrored by `firebase/storage.rules`). */
 export const storagePaths = {
   /** Original uploaded CV (PDF, DOCX, JSON Resume, LinkedIn ZIP), kept attached to the CV. */
@@ -114,9 +121,10 @@ export const storagePaths = {
   mailAttachment: (uid: string, fileId: string) => `${user(uid)}/mail-attachments/${segment(fileId)}`,
   /**
    * "Export everything" ZIP built by `accountExport` (server-written, owner-readable; deleted by
-   * the bucket lifecycle rule in firebase/storage.lifecycle.json and never included in a later export).
+   * the bucket lifecycle rule and never included in a later export).
    */
-  accountExport: (uid: string, exportId: string) => `${user(uid)}/exports/${segment(exportId)}.zip`,
+  accountExport: (uid: string, exportId: string) =>
+    `${user(uid)}/exports/${segment(exportId)}${ACCOUNT_EXPORT_SUFFIX}`,
   /** Prefix of every export of a user. */
   accountExports: (uid: string) => `${user(uid)}/exports/`,
 } as const;

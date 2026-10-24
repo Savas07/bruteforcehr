@@ -39,12 +39,22 @@ struct StringCatalogTests {
         return usages
     }
 
+    /// `Resources/Localizable.xcstrings`, or the screen's `<Table>.xcstrings` wherever its folder
+    /// sits (`Today/Today.xcstrings`, `Settings/DataPrivacy/DataPrivacy.xcstrings`).
     private static func catalog(_ table: String) throws -> [String: Any] {
         let url = table == "Localizable"
             ? sources.appendingPathComponent("Resources/Localizable.xcstrings")
-            : sources.appendingPathComponent("\(table)/\(table).xcstrings")
+            : try catalogURL(table)
         let json = try JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any]
         return json?["strings"] as? [String: Any] ?? [:]
+    }
+
+    private static func catalogURL(_ table: String) throws -> URL {
+        let files = FileManager.default.enumerator(at: sources, includingPropertiesForKeys: nil)!
+        for case let url as URL in files where url.lastPathComponent == "\(table).xcstrings" {
+            return url
+        }
+        throw CocoaError(.fileNoSuchFile, userInfo: [NSFilePathErrorKey: "\(table).xcstrings"])
     }
 
     private static func specifiers(_ value: String) -> [String] {

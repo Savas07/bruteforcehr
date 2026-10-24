@@ -1,5 +1,6 @@
 #if DEBUG
 import BFHRCore
+import BFHRUIFixtures
 import Foundation
 
 /// Design-mode panes of the Mail tab for critique captures and UI tests: `-BFHRMailPane

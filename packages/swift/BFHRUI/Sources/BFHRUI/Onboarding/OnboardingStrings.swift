@@ -162,6 +162,7 @@ enum OnboardingStrings {
     static let jobPreferences = LocalizedStringResource.bfhr("jobPreferences.title", default: "Job preferences", table: "Onboarding")
     static let jobPreferencesFooter = LocalizedStringResource.bfhr("jobPreferences.footer", default: "These shape your matches and your saved searches. Changes count from the next time your searches run.", table: "Onboarding")
     static let notSet = LocalizedStringResource.bfhr("jobPreferences.notSet", default: "Not set", table: "Onboarding")
+    static let loadFailed = LocalizedStringResource.bfhr("jobPreferences.loadFailed", default: "We couldn't load your preferences.", table: "Onboarding")
     static let loading = LocalizedStringResource.bfhr("jobPreferences.loading", default: "Loading your preferences…", table: "Onboarding")
     static func answered(_ count: Int) -> LocalizedStringResource {
         .bfhr("jobPreferences.answered", default: "\(count) answered", table: "Onboarding", comment: "Work authorization summary. %lld = answered countries.")

@@ -29,6 +29,7 @@ extension SettingsModel {
 struct JobPreferencesPage: View {
     @Bindable var model: SettingsModel
     @Environment(\.locale) private var locale
+    @Environment(\.bfhrReload) private var reload
 
     var body: some View {
         List {
@@ -56,8 +57,10 @@ struct JobPreferencesPage: View {
                 }
             } else if case .failed = model.phase {
                 Section {
-                    Text(SettingsStrings.loadFailed)
-                        .foregroundStyle(BFHRColor.Fg.secondary)
+                    InlineAlert(.warning, title: OnboardingStrings.loadFailed, actionTitle: Strings.tryAgain, action: reload)
+                        .listRowInsets(EdgeInsets())
+                        .listRowBackground(Color.clear)
+                        .accessibilityIdentifier("jobPreferences.loadFailed")
                 }
             } else {
                 Section {
@@ -92,7 +95,7 @@ struct JobPreferencesPage: View {
             return draft.seniority.map { Text(JobDetailViewStrings.seniority($0)) } ?? notSet
         case .location:
             var parts = draft.workplaces.map { String(localized: JobDetailViewStrings.workMode($0)) }
-            parts += draft.locations.map(\.label)
+            parts += draft.locations.map { JobPreferencesDraft.displayName(of: $0, locale: locale) }
             if draft.remoteWorldwide { parts.append(String(localized: OnboardingStrings.remoteWorldwide)) }
             if draft.openToRelocation, !draft.locations.isEmpty { parts.append(String(localized: OnboardingStrings.relocation)) }
             return parts.isEmpty ? notSet : Text(verbatim: parts.joined(separator: " · "))

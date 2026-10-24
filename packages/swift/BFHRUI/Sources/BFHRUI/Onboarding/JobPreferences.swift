@@ -190,6 +190,15 @@ public struct JobPreferencesDraft: Hashable, Sendable {
         return true
     }
 
+    /// A place's name in `locale`: a country without a city is named from its code (the stored label
+    /// is in the language it was picked in); cities and free text keep their label.
+    public static func displayName(of location: TargetLocation, locale: Locale) -> String {
+        guard location.city == nil, let code = location.countryCode, let name = locale.localizedString(forRegionCode: code) else {
+            return location.label
+        }
+        return name
+    }
+
     public mutating func removeLocation(_ location: TargetLocation) {
         locations.removeAll { $0 == location }
     }

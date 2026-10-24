@@ -136,6 +136,15 @@ struct OnboardingModelTests {
         #expect(!reread.remoteWorldwide, "with places picked, remote is a workplace")
     }
 
+    @Test("Country places are named in the app's language; cities keep their label")
+    func placeNames() {
+        let germany = TargetLocation(label: "Germany", city: nil, countryCode: "DE", relocation: false)
+        let berlin = TargetLocation(label: "Berlin", city: "Berlin", countryCode: nil, relocation: false)
+        #expect(JobPreferencesDraft.displayName(of: germany, locale: Locale(identifier: "de")) == "Deutschland")
+        #expect(JobPreferencesDraft.displayName(of: germany, locale: Locale(identifier: "tr")) == "Almanya")
+        #expect(JobPreferencesDraft.displayName(of: berlin, locale: Locale(identifier: "tr")) == "Berlin")
+    }
+
     @Test("Salary: TRY is monthly by default, other currencies yearly; no amount clears it")
     func salary() {
         var draft = JobPreferencesDraft(salaryCurrency: JobPreferencesDraft.defaultCurrency(region: "TR"))

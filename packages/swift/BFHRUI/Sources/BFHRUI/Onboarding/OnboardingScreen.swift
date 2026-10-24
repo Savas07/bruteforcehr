@@ -506,7 +506,7 @@ struct OnboardingFinishStep: View {
 
     /// "Germany, Berlin · Remote", or Anywhere.
     private var places: String {
-        var names = model.draft.locations.map(\.label)
+        var names = model.draft.locations.map { JobPreferencesDraft.displayName(of: $0, locale: locale) }
         if model.draft.remoteWorldwide { names.append(String(localized: OnboardingStrings.remoteWorldwide)) }
         guard !names.isEmpty else { return String(localized: OnboardingStrings.anywhere) }
         return names.formatted(.list(type: .and).locale(locale))

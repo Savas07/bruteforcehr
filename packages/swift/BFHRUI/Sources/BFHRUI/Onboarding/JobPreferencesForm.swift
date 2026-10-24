@@ -269,7 +269,7 @@ struct LocationSection: View {
                         .accessibilityIdentifier("prefs.market.\(market.id)")
                     }
                     ForEach(otherLocations, id: \.self) { location in
-                        PreferenceToken(title: location.label) { draft.removeLocation(location) }
+                        PreferenceToken(title: JobPreferencesDraft.displayName(of: location, locale: locale)) { draft.removeLocation(location) }
                     }
                 }
             }

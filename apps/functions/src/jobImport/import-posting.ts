@@ -16,7 +16,8 @@ import {
   siteFor,
   withApiResult,
 } from "@bfhr/core";
-import { decodeBody, FetchFailedError, FetchRefusedError, type SafeResponse } from "./safe-fetch";
+import { decodeBody, FetchFailedError, FetchRefusedError, type SafeResponse } from "../net/safe-fetch";
+import { isDeniedHost, type JobImportConfig } from "./config";
 
 /** Page and API bodies above this are refused (`too_large`). */
 export const MAX_PAGE_BYTES = 3 * 1024 * 1024;
@@ -33,13 +34,6 @@ export class JobImportError extends Error {
     super(message);
     this.name = "JobImportError";
   }
-}
-
-/** Owner switches in `serverOnly/jobImport` (ADR 0005 kill switch and denylist). */
-export interface JobImportConfig {
-  deniedHosts: readonly string[];
-  /** Off: LinkedIn/Indeed/Glassdoor/StepStone/Xing/Kariyer.net pages are refused. */
-  restrictedSitesEnabled: boolean;
 }
 
 export interface FetchRequest {
@@ -74,13 +68,6 @@ export interface ImportedPosting {
 }
 
 const HTML_ACCEPT = "text/html,application/xhtml+xml;q=0.9,*/*;q=0.5";
-
-function hostMatches(host: string, list: readonly string[]): boolean {
-  return list.some((entry) => {
-    const suffix = entry.toLowerCase().replace(/^\*?\./, "");
-    return host === suffix || host.endsWith(`.${suffix}`);
-  });
-}
 
 async function fetchOrFail(
   dependencies: ImportDependencies,
@@ -121,7 +108,7 @@ export async function importPosting(
   const requested = new URL(parsed.href);
   const checkAllowed = (url: URL): void => {
     const host = url.hostname.toLowerCase();
-    if (hostMatches(host, dependencies.config.deniedHosts)) {
+    if (isDeniedHost(host, dependencies.config.deniedHosts)) {
       throw new JobImportError("blocked_url", "Importing from this website is turned off.");
     }
     const site = siteFor(url);

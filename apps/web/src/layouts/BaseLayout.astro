@@ -35,27 +35,10 @@ const canonical = new URL(Astro.url.pathname, Astro.site).href;
     <meta property="og:url" content={canonical} />
     <meta name="generator" content={Astro.generator} />
     <!--
-      Download buttons follow the visitor's system (website.md › Decision — Desktop). Set before
-      first paint so the matching variant shows without a layout shift; nothing is stored or sent.
+      Download buttons follow the visitor's system (website.md › Decision — Desktop). A blocking
+      same-origin script (the Hosting CSP allows no inline scripts), so it runs before first paint.
     -->
-    <script is:inline>
-      (() => {
-        const ua = navigator.userAgent;
-        // `userAgentData.platform` says "macOS" / "Windows"; `navigator.platform` "MacIntel" / "Win32".
-        const platform = navigator.userAgentData?.platform ?? navigator.platform ?? "";
-        const isMac = /^mac/i.test(platform);
-        // iPadOS reports a Mac platform; touch support tells them apart.
-        const os =
-          /iPhone|iPad|iPod/.test(ua) || (isMac && navigator.maxTouchPoints > 1)
-            ? "ios"
-            : isMac
-              ? "mac"
-              : /^win/i.test(platform)
-                ? "windows"
-                : undefined;
-        if (os !== undefined) document.documentElement.dataset.os = os;
-      })();
-    </script>
+    <script is:inline src="/scripts/platform.js"></script>
     <slot name="head" />
   </head>
   <body class="min-h-dvh antialiased">

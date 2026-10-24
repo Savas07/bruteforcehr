@@ -69,12 +69,14 @@ public nonisolated struct InterviewCalendarFile: Transferable, Hashable, Sendabl
         )
     }
 
-    /// TEXT escaping (RFC 5545 §3.3.11).
+    /// TEXT escaping (RFC 5545 §3.3.11). Every line break (CRLF, a lone CR or LF) becomes `\n`, so
+    /// no text can end the content line and start a property of its own.
     static func escape(_ text: String) -> String {
         text.replacingOccurrences(of: "\\", with: "\\\\")
             .replacingOccurrences(of: ";", with: "\\;")
             .replacingOccurrences(of: ",", with: "\\,")
             .replacingOccurrences(of: "\r\n", with: "\\n")
+            .replacingOccurrences(of: "\r", with: "\\n")
             .replacingOccurrences(of: "\n", with: "\\n")
     }
 

@@ -57,6 +57,8 @@ final class FirebaseEmailLinkService: EmailLinkAuthService {
         let nsError = error as NSError
         if nsError.domain == NSURLErrorDomain { return .offline }
         guard nsError.domain == AuthErrors.domain, let code = AuthErrorCode(rawValue: nsError.code) else { return .other }
+        // The invite-only blocking function (`SIGNUP_NOT_ALLOWED` in @bfhr/core) refuses a new account.
+        if code == .blockingCloudFunctionError, nsError.localizedDescription.contains("SIGNUP_NOT_ALLOWED") { return .inviteOnly }
         switch code {
         case .networkError, .webNetworkRequestFailed: return .offline
         case .invalidEmail, .invalidRecipientEmail, .missingEmail: return .invalidEmail

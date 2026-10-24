@@ -84,11 +84,13 @@ function connector(
 }
 
 function context(secrets: Record<string, string | null> = {}) {
+  const http = new HttpClient({
+    userAgent: "BruteForceHR/test",
+    fetch: (async () => new Response("")) as typeof fetch,
+  });
   return {
-    http: new HttpClient({
-      userAgent: "BruteForceHR/test",
-      fetch: (async () => new Response("")) as typeof fetch,
-    }),
+    http,
+    pageHttp: http,
     cache: { get: async () => null, put: async () => undefined },
     secrets,
     now: NOW,
@@ -436,6 +438,24 @@ describe("quota", () => {
     ).toBe(2);
     expect(takeUnits(EMPTY_QUOTA_DAY, "connectorCalls", 10).day.connectorCalls).toBe(10);
   });
+
+  it("caps client-created job embeddings and careers page resolves per day", () => {
+    const embedded = { ...EMPTY_QUOTA_DAY, createdJobEmbeddings: JOB_BUDGETS.createdJobEmbeddingsPerDay };
+    expect(takeUnits(embedded, "createdJobEmbeddings", 1).granted).toBe(0);
+    expect(takeUnits(EMPTY_QUOTA_DAY, "createdJobEmbeddings", 1)).toMatchObject({
+      granted: 1,
+      day: { createdJobEmbeddings: 1 },
+    });
+    const resolved = { ...EMPTY_QUOTA_DAY, watchlistResolves: JOB_BUDGETS.watchlistResolvesPerDay - 1 };
+    expect(takeUnits(resolved, "watchlistResolves", 1).granted).toBe(1);
+    expect(
+      takeUnits(
+        { ...resolved, watchlistResolves: JOB_BUDGETS.watchlistResolvesPerDay },
+        "watchlistResolves",
+        1,
+      ).granted,
+    ).toBe(0);
+  });
 });
 
 describe("source state", () => {
@@ -587,6 +607,17 @@ describe("watchlist resolution", () => {
     });
     expect(failing.status).toBe("error");
     expect(failing.lastError).not.toContain("http");
+    const deferred = resolvedFields({
+      careersUrl: "https://acme.com/careers",
+      outcome: { error: new SourceError("rate_limited", "watchlist resolve quota") },
+      now: NOW,
+    });
+    expect(deferred).toMatchObject({
+      ats: "web",
+      boardToken: "https://acme.com/careers",
+      status: "error",
+      lastError: "We'll check this careers page with your next search.",
+    });
   });
 });
 

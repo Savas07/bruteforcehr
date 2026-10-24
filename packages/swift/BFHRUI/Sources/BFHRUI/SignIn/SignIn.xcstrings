@@ -737,6 +737,52 @@
         }
       }
     },
+    "signIn.link.inviteOnly.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diese E-Mail-Adresse steht noch nicht auf der Liste, deshalb wurde kein Konto angelegt. Bitte den Inhaber, deine E-Mail hinzuzufügen, und schick dann einen neuen Link."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This email address isn't on the list yet, so no account was created. Ask the owner to add your email, then send a new link."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bu e-posta adresi henüz listede değil, bu yüzden hesap oluşturulmadı. Sahibinden e-postanızı eklemesini isteyin, ardından yeni bir bağlantı gönderin."
+          }
+        }
+      }
+    },
+    "signIn.link.inviteOnly.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "BruteForceHR ist gerade nur mit Einladung nutzbar"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "BruteForceHR is invite-only for now"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "BruteForceHR şimdilik yalnızca davetle kullanılabiliyor"
+          }
+        }
+      }
+    },
     "signIn.link.retry.offline" : {
       "extractionState" : "manual",
       "localizations" : {

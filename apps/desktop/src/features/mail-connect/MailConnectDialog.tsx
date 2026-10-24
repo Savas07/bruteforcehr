@@ -50,7 +50,6 @@ import { Button, IconButton } from "../../shared/ui/Button";
 import { InlineAlert } from "../../shared/ui/InlineAlert";
 import { failureMessage, HELP_STEPS, messages, RETURN_MESSAGES } from "./copy";
 import {
-  accountProviderOf,
   choiceForAddress,
   type ConnectView,
   type DraftField,
@@ -345,7 +344,6 @@ function OAuthStep({
   provider,
   phase,
   reconnect,
-  accounts,
   lookback,
   address,
   offline,
@@ -358,7 +356,6 @@ function OAuthStep({
   provider: OAuthMailProvider;
   phase: OAuthPhase;
   reconnect: boolean;
-  accounts: readonly MailAccount[];
   lookback: LookbackDays;
   address: string | null;
   offline: boolean;
@@ -377,7 +374,15 @@ function OAuthStep({
   const [now, setNow] = useState(() => Date.now());
   // The parent passes fresh callbacks every render; the effects below only follow `phase`.
   const phaseChanged = useEffectEvent(onPhase);
-  const connectedAccount = useEffectEvent(onConnected);
+  const finish = useEffectEvent(async (nonce: string, handoff: string) => {
+    try {
+      const finished = await repository.connectFinish({ nonce, handoff });
+      onConnected(finished.accountId);
+    } catch (error) {
+      setFailure(classifyMailError(error, { online: !offline }));
+      onPhase({ step: "intro" });
+    }
+  });
 
   const start = async () => {
     setFailure(null);
@@ -389,16 +394,12 @@ function OAuthStep({
     setBusy(true);
     try {
       const response = await repository.connectStart({ provider, lookbackDays: lookback, address });
-      const known = accounts
-        .filter((account) => account.provider === accountProviderOf(provider))
-        .map((account) => account.id);
       onPhase({
         step: "waiting",
         url: response.url,
         nonce: response.nonce,
         expiresAt: Date.parse(response.expiresAt),
         startedAt: Date.now(),
-        known,
       });
       openExternal(response.url).catch(() => setOpenFailed(true));
     } catch (error) {
@@ -410,7 +411,8 @@ function OAuthStep({
     }
   };
 
-  // Waiting: the return link (matching nonce) or a new account in the snapshot completes it.
+  // Waiting: the return link (matching nonce) hands over to `mailConnectFinish`, which saves the
+  // account only for this signed-in user and names the mailbox that was connected.
   const waiting = phase.step === "waiting" ? phase : null;
   useEffect(() => {
     if (waiting === null) return;
@@ -418,13 +420,14 @@ function OAuthStep({
     const take = async () => {
       const result = await takeMailConnect();
       if (!active || result === null || result.nonce !== waiting.nonce) return;
-      if (!result.ok) {
+      if (!result.ok || result.handoff === null) {
         const reason = MAIL_OAUTH_RETURN_REASONS.find((known) => known === result.reason) ?? "failed";
         phaseChanged(
           reason === "provider_not_configured" ? { step: "unavailable" } : { step: "error", reason },
         );
+        return;
       }
-      // ok: the account appears in the snapshot (below), usually within a second.
+      await finish(result.nonce, result.handoff);
     };
     void take();
     const stop = onMailConnect(() => void take());
@@ -435,18 +438,6 @@ function OAuthStep({
       window.clearInterval(timer);
     };
   }, [waiting]);
-
-  const connected =
-    waiting === null
-      ? null
-      : (accounts.find(
-          (account) =>
-            account.provider === accountProviderOf(provider) &&
-            (!waiting.known.includes(account.id) || account.connectedAt.getTime() >= waiting.startedAt),
-        ) ?? null);
-  useEffect(() => {
-    if (connected !== null) connectedAccount(connected.id);
-  }, [connected]);
 
   const intro = (
     <div className="flex flex-col gap-3">
@@ -973,7 +964,6 @@ export function MailConnectDialog({
         provider={view.provider}
         phase={view.phase}
         reconnect={reconnecting !== null}
-        accounts={accounts}
         lookback={lookback}
         address={reconnecting?.address ?? (address.trim() || null)}
         offline={offline}

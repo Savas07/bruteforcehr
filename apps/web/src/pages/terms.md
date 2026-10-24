@@ -31,6 +31,7 @@ BruteForceHR helps you find jobs, prepare CVs and cover letters, apply, and trac
 </div>
 
 - You need to be at least 16 to use BruteForceHR.
+- For now, new accounts are by invitation: the owner adds the email addresses that can create one.
 - You sign in with a one-time link sent to your email address, so keep that email account secure. Anyone who can read your email can sign in as you.
 - Use one account for yourself. Don't create accounts for other people or use someone else's account.
 

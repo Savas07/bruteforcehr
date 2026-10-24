@@ -206,7 +206,7 @@ describe("microsoftOAuth", () => {
         "openid email profile offline_access https://graph.microsoft.com/Mail.Read https://graph.microsoft.com/User.Read " +
         "https://graph.microsoft.com/Mail.Send",
       state: "state-1",
-      prompt: "select_account",
+      prompt: "consent",
       code_challenge: "challenge-1",
       code_challenge_method: "S256",
       login_hint: "ada@contoso.com",

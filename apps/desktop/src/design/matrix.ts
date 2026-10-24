@@ -188,6 +188,7 @@ export const authDesignStates = [
   "link-offline",
   "link-unavailable",
   "link-disabled",
+  "link-invite-only",
   /** After Settings › Delete account: the email step with the one-time "deleted" notice. */
   "account-deleted",
 ] as const;

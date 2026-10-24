@@ -16,5 +16,7 @@ export default defineConfig({
   },
   vite: {
     plugins: [tailwindcss()],
+    // No inlined scripts or assets: the Hosting CSP (firebase.json) allows same-origin files only.
+    build: { assetsInlineLimit: 0 },
   },
 });

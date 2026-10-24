@@ -435,6 +435,8 @@ struct LinkProblemStep: View {
                 case .accountDisabled:
                     Button { openURL(Self.support) } label: { Text(SignInStrings.getHelp) }
                         .buttonStyle(.bfhr(.primary, fullWidth: true))
+                case .inviteOnly:
+                    EmptyView()
                 }
                 Button { model.useDifferentEmail() } label: { Text(SignInStrings.differentEmail) }
                     .buttonStyle(.bfhrPlain)
@@ -447,6 +449,7 @@ struct LinkProblemStep: View {
         case .expired: "clock"
         case .unusable: "link"
         case .accountDisabled: "person.crop.circle.badge.xmark"
+        case .inviteOnly: "envelope.badge.shield.half.filled"
         case .retryable(let offline, _, _): offline ? "wifi.slash" : "arrow.clockwise"
         }
     }
@@ -456,6 +459,7 @@ struct LinkProblemStep: View {
         case .expired: SignInStrings.expiredTitle
         case .unusable: SignInStrings.unusableTitle
         case .accountDisabled: SignInStrings.disabledTitle
+        case .inviteOnly: SignInStrings.inviteOnlyTitle
         case .retryable: SignInStrings.retryTitle
         }
     }
@@ -465,6 +469,7 @@ struct LinkProblemStep: View {
         case .expired: SignInStrings.expiredMessage
         case .unusable: SignInStrings.unusableMessage
         case .accountDisabled: SignInStrings.disabledMessage
+        case .inviteOnly: SignInStrings.inviteOnlyMessage
         case .retryable(let offline, _, _): offline ? SignInStrings.retryOfflineMessage : SignInStrings.retryOtherMessage
         }
     }

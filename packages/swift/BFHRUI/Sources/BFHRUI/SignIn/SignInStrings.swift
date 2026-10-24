@@ -194,6 +194,14 @@ enum SignInStrings {
         "signIn.link.disabled.message", default: "Signing in isn't possible with this address right now. Get help if you didn't expect this.", table: "SignIn",
         comment: "What to do about a disabled account."
     )
+    static let inviteOnlyTitle = LocalizedStringResource.bfhr(
+        "signIn.link.inviteOnly.title", default: "BruteForceHR is invite-only for now", table: "SignIn",
+        comment: "A new account was refused: the address isn't on the owner's invite list."
+    )
+    static let inviteOnlyMessage = LocalizedStringResource.bfhr(
+        "signIn.link.inviteOnly.message", default: "This email address isn't on the list yet, so no account was created. Ask the owner to add your email, then send a new link.", table: "SignIn",
+        comment: "What to do when sign-up is invite-only."
+    )
     static let sendNewLink = LocalizedStringResource.bfhr(
         "signIn.action.sendNewLink", default: "Send a new link", table: "SignIn",
         comment: "From an expired or used link: back to the email field to send a fresh link."

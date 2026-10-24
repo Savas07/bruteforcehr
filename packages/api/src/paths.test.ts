@@ -86,6 +86,7 @@ describe("userDataRoots", () => {
       "serverOnly/jobImport/users/u1",
       "serverOnly/mail/users/u1",
       "serverOnly/accountExport/users/u1",
+      "serverOnly/render/users/u1",
     ]);
     expect(userStoragePrefix("u1")).toBe("users/u1/");
   });
@@ -97,6 +98,7 @@ describe("userDataRoots", () => {
       serverOnlyPaths.jobAlert("u1", "j1"),
       serverOnlyPaths.jobQuotaDay("u1", "2026-10-24"),
       serverOnlyPaths.accountExportDay("u1", "2026-10-24"),
+      serverOnlyPaths.renderDay("u1", "2026-10-24"),
       serverOnlyPaths.jobImportPage("u1", "abc123"),
     ]) {
       expect(
@@ -115,6 +117,7 @@ describe("userDataRoots", () => {
       serverOnlyPaths.mailSeenCollection("u1"),
       serverOnlyPaths.mailOutbox("u1", "s1"),
       serverOnlyPaths.mailSendDay("u1", "2026-10-24"),
+      serverOnlyPaths.mailConnectDay("u1", "2026-10-24"),
       serverOnlyPaths.mailCorrections("u1"),
     ]) {
       expect(path.startsWith(`${mailRoot}/`), path).toBe(true);

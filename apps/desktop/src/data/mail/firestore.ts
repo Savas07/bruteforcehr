@@ -6,6 +6,8 @@
  */
 import { firestorePaths } from "@bfhr/api";
 import {
+  MailConnectFinishRequestSchema,
+  MailConnectFinishResponseSchema,
   MailConnectImapRequestSchema,
   MailConnectImapResponseSchema,
   MailConnectStartRequestSchema,
@@ -198,6 +200,14 @@ export function createFirestoreMailRepository(uid: string): MailRepository {
     async connectStart(request: MailConnectStartRequest) {
       const data = await call("mailConnectStart", MailConnectStartRequestSchema.parse(request));
       return MailConnectStartResponseSchema.parse(data);
+    },
+    async connectFinish(request) {
+      const data = await call(
+        "mailConnectFinish",
+        MailConnectFinishRequestSchema.parse(request),
+        CONNECT_TIMEOUT_MS,
+      );
+      return MailConnectFinishResponseSchema.parse(data);
     },
     async connectImap(request: MailConnectImapRequest) {
       const data = await call(

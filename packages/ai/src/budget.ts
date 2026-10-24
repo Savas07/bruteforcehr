@@ -4,10 +4,13 @@ import { AiProviderError, type AiProvider, type StructuredRequest, type Structur
 /** Per-user daily AI spend limit (docs/adr/0010-ai.md): 0.50 USD, resetting at 00:00 UTC. */
 export const DAILY_COST_CAP_MICRO_USD = 500_000;
 
-/** The per-user daily cap would be exceeded by this request. */
+/**
+ * A daily cap would be exceeded by this request: the user's own (`DAILY_COST_CAP_MICRO_USD`) or the
+ * project-wide ceiling every user shares (set by the server's ledger).
+ */
 export class DailyCapError extends Error {
-  constructor() {
-    super("daily AI cost cap reached");
+  constructor(readonly scope: "user" | "project" = "user") {
+    super(scope === "user" ? "daily AI cost cap reached" : "project-wide daily AI ceiling reached");
     this.name = "DailyCapError";
   }
 }

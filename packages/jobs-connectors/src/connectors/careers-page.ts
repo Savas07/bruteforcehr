@@ -1,4 +1,4 @@
-import { type EmploymentType, type SalaryPeriod, type SalaryRange, hostOf, httpUrlParts } from "@bfhr/core";
+import { type EmploymentType, type SalaryPeriod, type SalaryRange, hostOf } from "@bfhr/core";
 import { z } from "zod";
 import { employerDomain, parseDate, salaryRange } from "../listing";
 import { type BoardConnector, type Listing, SourceError } from "../types";
@@ -107,8 +107,10 @@ function baseSalary(salary: JobPosting["baseSalary"]): SalaryRange | null {
 
 /**
  * A followed company's own careers page (`ats: "web"`, board token = the page URL): schema.org
- * `JobPosting` JSON-LD read from the page. robots.txt is recorded, not binding (watchlisted page,
- * ADR 0005); a bot challenge stops with `blocked`. Pages without postings yield nothing.
+ * `JobPosting` JSON-LD read from the page. The URL is the user's, so it is fetched only over https
+ * through `context.pageHttp` (the server's SSRF guard). robots.txt is recorded, not binding
+ * (watchlisted page, ADR 0005); a bot challenge stops with `blocked`. Pages without postings yield
+ * nothing.
  */
 export const careersPage: BoardConnector = {
   id: "web",
@@ -118,9 +120,9 @@ export const careersPage: BoardConnector = {
   markets: ["remote", "TR", "DE", "NL", "GB", "US"],
   attribution: { label: "Company careers page", url: "https://schema.org/JobPosting", minSize: null },
   async list(board, context): Promise<Listing[]> {
-    if (httpUrlParts(board.boardToken) === null)
-      throw new SourceError("invalid_response", "careers URL is not http(s)");
-    const response = await context.http.getText(board.boardToken, {
+    if (!URL.canParse(board.boardToken) || new URL(board.boardToken).protocol !== "https:")
+      throw new SourceError("invalid_response", "careers URL is not https");
+    const response = await context.pageHttp.getText(board.boardToken, {
       robots: "record",
       headers: { Accept: "text/html,application/xhtml+xml" },
     });

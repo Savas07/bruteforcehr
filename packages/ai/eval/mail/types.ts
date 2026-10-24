@@ -50,6 +50,11 @@ export interface MailEvalMessage {
   listUnsubscribe: boolean;
   /** `Precedence: bulk` / `Auto-Submitted: auto-generated`. */
   bulk: boolean;
+  /**
+   * The provider's `Authentication-Results` vouch for the From domain (DMARC pass / aligned DKIM).
+   * Omitted = true (genuine mail); false for a forged sender (`fixtures/spoofed.ts`).
+   */
+  authenticated?: boolean;
 }
 
 export interface MailEvalExpected {

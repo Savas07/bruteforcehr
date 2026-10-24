@@ -167,6 +167,8 @@ export const serverOnlyPaths = {
   jobQuotaRoot: (uid: string) => `serverOnly/jobQuota/users/${segment(uid)}`,
   jobQuotaDay: (uid: string, day: string) =>
     `serverOnly/jobQuota/users/${segment(uid)}/jobQuotaDays/${segment(day)}`,
+  /** Invite-only sign-up allowlist `{ allowedEmails, allowedDomains }` (docs/runbooks/accounts.md). */
+  signupConfig: () => "serverOnly/signup",
   /** URL import: owner config (denied hosts, restricted-site switch; docs/adr/0005-job-sources-scraping.md). */
   jobImportConfig: () => "serverOnly/jobImport",
   /** URL import: per-host politeness budget and cached robots.txt (shared by all users). */
@@ -191,12 +193,24 @@ export const serverOnlyPaths = {
     `serverOnly/mail/users/${segment(uid)}/mailSendDays/${segment(day)}`,
   /** Review corrections kept as labeled examples (category from/to, sender domain; no body). */
   mailCorrections: (uid: string) => `serverOnly/mail/users/${segment(uid)}/mailCorrections`,
+  /** `mailConnectImap` attempts per UTC day (TTL `expireAt`). */
+  mailConnectDay: (uid: string, day: string) =>
+    `serverOnly/mail/users/${segment(uid)}/mailConnectDays/${segment(day)}`,
   /** `accountExport` rate limit, one document per UTC day (TTL `expireAt`). */
   accountExportRoot: (uid: string) => `serverOnly/accountExport/users/${segment(uid)}`,
   accountExportDay: (uid: string, day: string) =>
     `serverOnly/accountExport/users/${segment(uid)}/accountExportDays/${segment(day)}`,
-  /** Pending OAuth connect (nonce → uid, PKCE verifier; TTL `expireAt`, minutes). */
+  /** `cvRenderPdf` renders per UTC day (TTL `expireAt`). */
+  renderRoot: (uid: string) => `serverOnly/render/users/${segment(uid)}`,
+  renderDay: (uid: string, day: string) =>
+    `serverOnly/render/users/${segment(uid)}/renderDays/${segment(day)}`,
+  /** Pending OAuth connect (nonce → uid, PKCE verifier, then the encrypted grant; TTL `expireAt`, minutes). */
   mailConnect: (nonce: string) => `serverOnly/mailConnect/mailConnectNonces/${segment(nonce)}`,
+  /**
+   * Project-wide spend per UTC day (AI micro-USD, PDF renders) against the ceilings in
+   * docs/runbooks/limits.md; not per user (TTL `expireAt`).
+   */
+  projectUsageDay: (day: string) => `serverOnly/projectUsage/projectUsageDays/${segment(day)}`,
 } as const;
 
 /**
@@ -214,6 +228,7 @@ export function userDataRoots(uid: string): readonly string[] {
     serverOnlyPaths.jobImportRoot(uid),
     serverOnlyPaths.mailRoot(uid),
     serverOnlyPaths.accountExportRoot(uid),
+    serverOnlyPaths.renderRoot(uid),
   ];
 }
 

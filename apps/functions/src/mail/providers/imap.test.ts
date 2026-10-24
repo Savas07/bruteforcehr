@@ -2,7 +2,7 @@
 import { simpleParser } from "mailparser";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { classifyConnectError, ImapAdapter, ImapConnectError } from "./imap";
-import { resolvePublicHost } from "./net-guard";
+import { resolvePublicHost } from "../../net/address-guard";
 import { rfc822, startTestMailServers, TEST_USER, type TestMailServers } from "./test-servers";
 import { MailAuthError, MailCursorExpiredError } from "./types";
 

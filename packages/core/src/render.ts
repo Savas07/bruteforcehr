@@ -58,5 +58,10 @@ export const CV_RENDER_ERROR_REASONS = [
   "photo_unavailable",
   /** `internal`: the print engine failed; try again. */
   "render_failed",
+  /**
+   * `resource-exhausted`: today's PDF limit is used up (the user's own or the service-wide one,
+   * docs/runbooks/limits.md); it resets at midnight UTC.
+   */
+  "daily_limit",
 ] as const;
 export type CvRenderErrorReason = (typeof CV_RENDER_ERROR_REASONS)[number];

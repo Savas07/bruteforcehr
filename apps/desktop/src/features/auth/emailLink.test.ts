@@ -156,6 +156,18 @@ describe("errors", () => {
     expect(linkErrorOf(error("auth/expired-action-code"))).toBe("expired");
     expect(linkErrorOf(error("auth/invalid-email"))).toBe("wrong-email");
     expect(linkErrorOf(error("auth/user-disabled"))).toBe("disabled");
+    // The invite-only blocking function: a generic internal error carrying our token.
+    expect(
+      linkErrorOf(
+        Object.assign(
+          new Error(
+            'Firebase: HTTP Cloud Function returned an error: {"error":{"message":"SIGNUP_NOT_ALLOWED: BruteForceHR is invite-only for now.","status":"PERMISSION_DENIED"}} (auth/internal-error).',
+          ),
+          { code: "auth/internal-error" },
+        ),
+      ),
+    ).toBe("invite-only");
+    expect(linkErrorOf(error("auth/internal-error"))).toBe("unavailable");
     expect(linkErrorOf(error("auth/network-request-failed"))).toBe("offline");
     expect(linkErrorOf(undefined)).toBe("unavailable");
   });

@@ -4,11 +4,12 @@
 // window, `mailSendNow` skips the rest. On dispatch the server sends through the account's provider,
 // pins the documents and records the move to applied as the user's action.
 import { randomBytes } from "node:crypto";
-import { firestorePaths, serverOnlyPaths } from "@bfhr/api";
+import { firestorePaths, serverOnlyPaths, storagePaths } from "@bfhr/api";
 import {
   type Application,
   type ApplicationEvent,
   DEFAULT_PROFILE_SETTINGS,
+  MAIL_DAILY_SEND_CAP_MAX,
   type EmailSend,
   MAIL_SEND_MAX_ATTACHMENT_BYTES,
   MAIL_SEND_UNDO_SECONDS,
@@ -175,12 +176,21 @@ export async function scheduleSend(
       const snapshot = await db.doc(firestorePaths.renderedFile(uid, attachment.renderedFileId)).get();
       if (!snapshot.exists) throw sendError("attachment_not_found", "An attached file was not found.");
       const file = converters.renderedFile.fromSnapshot(snapshot);
+      // The document is client-written: only its own rendered object may be attached, and the
+      // size comes from Storage, not from the document.
+      const storagePath = storagePaths.renderedFile(uid, file.id);
+      if (file.storagePath !== storagePath)
+        throw sendError("attachment_not_found", "An attached file was not found.");
+      const object = getStorage().bucket().file(storagePath);
+      const [exists] = await object.exists();
+      if (!exists) throw sendError("attachment_not_found", "An attached file was not found.");
+      const [metadata] = await object.getMetadata();
       renderedIds.add(file.id);
       attachments.push({
-        storagePath: file.storagePath,
+        storagePath,
         fileName: file.fileName,
         contentType: CONTENT_TYPE_BY_KIND[file.kind] ?? "application/octet-stream",
-        sizeBytes: file.sizeBytes,
+        sizeBytes: Number(metadata.size ?? 0),
       });
     } else {
       if (!attachment.storagePath.startsWith(`users/${uid}/mail-attachments/`))
@@ -237,7 +247,13 @@ export async function scheduleSend(
   }
 
   const profile = await db.doc(firestorePaths.user(uid)).get();
-  const cap = Number(profile.get("settings.dailySendCap") ?? DEFAULT_PROFILE_SETTINGS.dailySendCap);
+  // `settings` is client-written: anything but an integer falls back to the default, and the cap
+  // never exceeds MAIL_DAILY_SEND_CAP_MAX.
+  const stored: unknown = profile.get("settings.dailySendCap");
+  const cap = Math.min(
+    Math.max(Number.isInteger(stored) ? (stored as number) : DEFAULT_PROFILE_SETTINGS.dailySendCap, 0),
+    MAIL_DAILY_SEND_CAP_MAX,
+  );
   const now = new Date();
   const sendAt = new Date(now.getTime() + MAIL_SEND_UNDO_SECONDS * 1000);
   const sendId = randomBytes(12).toString("hex");

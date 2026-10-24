@@ -9,6 +9,8 @@
 import type {
   MailAccount,
   MailCategory,
+  MailConnectFinishRequest,
+  MailConnectFinishResponse,
   MailConnectImapRequest,
   MailConnectImapResponse,
   MailConnectStartRequest,
@@ -59,6 +61,11 @@ export interface MailRepository {
   review(decision: MailReviewDecision): PendingWrite;
   /** Gmail / Microsoft: the `/connect/{provider}` URL to open in the browser. */
   connectStart(request: MailConnectStartRequest): Promise<MailConnectStartResponse>;
+  /**
+   * Gmail / Microsoft, after the `bruteforcehr://connected?…&status=ok` return link: saves the
+   * account (only for the user who started the connect) and names the connected mailbox.
+   */
+  connectFinish(request: MailConnectFinishRequest): Promise<MailConnectFinishResponse>;
   /** App password: tested server-side, then stored encrypted (also Reconnect with `accountId`). */
   connectImap(request: MailConnectImapRequest): Promise<MailConnectImapResponse>;
   /** Revokes access and deletes the account's stored mail. */

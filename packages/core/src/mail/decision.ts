@@ -1,7 +1,7 @@
 import type { ApplicationStatus, EventActor, MailCategory, ReviewState } from "../enums";
 import { canTransition, isActiveStatus } from "../status";
 import { isStrongLink } from "./linking";
-import type { LinkStrength } from "./schemas";
+import type { LinkStrength, MailFolder } from "./schemas";
 
 /**
  * What a classified, linked message does to the tracker (BRIEF §4.7 step 6, flows.md §3):
@@ -37,6 +37,8 @@ export interface MailDecisionInput {
   actor: Exclude<EventActor, "user">;
   /** `profile.settings.autoApplyConfidence` (default 0.9). */
   autoApplyConfidence: number;
+  /** Mail in the spam/junk folder is never applied automatically (it goes to review). */
+  folder: MailFolder;
 }
 
 export interface MailDecision {
@@ -71,7 +73,10 @@ export function decideMailAction(input: MailDecisionInput): MailDecision {
     const fileOnly = isStrongLink(input.linkStrength) && input.category !== "other_job";
     return { suggestedStatus: null, reviewState: fileOnly ? "not_required" : "pending", autoApply: false };
   }
-  const autoApply = input.confidence >= input.autoApplyConfidence && isStrongLink(input.linkStrength);
+  const autoApply =
+    input.folder !== "spam" &&
+    input.confidence >= input.autoApplyConfidence &&
+    isStrongLink(input.linkStrength);
   return { suggestedStatus, reviewState: autoApply ? "auto_applied" : "pending", autoApply };
 }
 

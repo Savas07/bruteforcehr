@@ -71,7 +71,7 @@ public struct SavedSearchesScreen: View {
             Section {
                 NavigationLink(value: JobsRoute.hiddenJobs) {
                     LabeledContent {
-                        Text(model.hiddenJobs.count, format: .number)
+                        Text(model.hiddenJobs.count, format: .number).foregroundStyle(BFHRColor.Fg.secondary)
                     } label: {
                         Label { Text(JobsStrings.hiddenJobsTitle) } icon: { Image(systemName: "eye.slash") }
                             .labelStyle(.bfhrCompact)
@@ -109,9 +109,15 @@ public struct SavedSearchesScreen: View {
 struct SavedSearchRow: View {
     let search: SavedSearch
     let newCount: Int
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
-        HStack(alignment: .top, spacing: BFHRSpace.s3) {
+        // At accessibility sizes the badge goes under the text, so the name keeps the full width
+        // instead of breaking words (r2).
+        let layout = dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: BFHRSpace.s2))
+            : AnyLayout(HStackLayout(alignment: .top, spacing: BFHRSpace.s3))
+        layout {
             VStack(alignment: .leading, spacing: BFHRSpace.s1) {
                 Text(verbatim: search.name)
                     .font(.bfhr(.headline))

@@ -140,7 +140,7 @@ function readme(input: {
     "  accounts, stored job emails, devices). Each entry is `{ id, path, data }`.",
     "- `data/internal/<area>/…json`: records the service keeps about your account (AI usage per day, job",
     "  search quota, pending job alerts, recently imported job pages, mail send counters and outbox, review",
-    "  corrections, export counters).",
+    "  corrections, mail connect attempts, export and PDF render counters).",
     "- `files/…`: the files you uploaded or created, as stored (CV imports, rendered PDFs and Word files,",
     "  CV photos, email attachments). `data/renderedFiles.json` maps each rendered file to its name.",
     "",

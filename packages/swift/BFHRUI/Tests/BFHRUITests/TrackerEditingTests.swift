@@ -266,6 +266,18 @@ struct TrackerEditingTests {
         #expect(file.fileName.hasSuffix(".ics"))
     }
 
+    @Test(".ics: a lone CR, LF or CRLF in text can't start a property of its own")
+    func icsLineBreaks() throws {
+        #expect(InterviewCalendarFile.escape("a\rATTENDEE:x") == "a\\nATTENDEE:x")
+        #expect(InterviewCalendarFile.escape("a\nb\r\nc") == "a\\nb\\nc")
+        let (model, _) = try makeModel()
+        var interview = try #require(model.data.interviews.first { $0.id == "int-thames-2" })
+        interview.location = "Room 4\rBEGIN:VALARM"
+        let lines = model.calendarFile(for: interview).contents.components(separatedBy: "\r\n")
+        #expect(!lines.contains { $0.hasPrefix("BEGIN:VALARM") })
+        #expect(!lines.contains { $0.contains("\r") })
+    }
+
     // MARK: Insights filter
 
     @Test("An Insights drill-down shows only its applications across every stage until cleared")

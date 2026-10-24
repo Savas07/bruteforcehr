@@ -85,6 +85,7 @@ const views: Readonly<Record<AuthDesignState, SignInView>> = {
   "link-offline": linkError("offline", true),
   "link-unavailable": linkError("unavailable", true),
   "link-disabled": linkError("disabled"),
+  "link-invite-only": linkError("invite-only"),
   /** Right after Settings › Delete account: the email step with the one-time notice. */
   "account-deleted": email(""),
 };

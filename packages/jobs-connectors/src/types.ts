@@ -69,7 +69,14 @@ export interface FeedCache {
 export type ConnectorSecrets = Readonly<Record<string, string | null>>;
 
 export interface ConnectorContext {
+  /** Job APIs and boards at fixed hosts. */
   http: HttpClient;
+  /**
+   * Pages at user-supplied URLs (followed careers pages). Its `fetch` must be the server's SSRF
+   * guard: https on 443 only, every resolved address public, the socket pinned to the checked
+   * address, every redirect checked again, and the owner's denied hosts (ADR 0005).
+   */
+  pageHttp: HttpClient;
   cache: FeedCache;
   secrets: ConnectorSecrets;
   now: Date;

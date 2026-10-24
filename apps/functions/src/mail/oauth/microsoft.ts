@@ -1,7 +1,7 @@
 // Microsoft identity platform, authorization code flow with PKCE (multi-tenant + personal accounts):
 // https://learn.microsoft.com/entra/identity-platform/v2-oauth2-auth-code-flow
 import type { MailConnectIntent } from "@bfhr/core";
-import { GRAPH_READ_SCOPE, GRAPH_SEND_SCOPE, GRAPH_WRITE_SCOPE, graphErrorDialect } from "../providers/graph";
+import { GRAPH_READ_SCOPE, GRAPH_SEND_SCOPE, graphErrorDialect } from "../providers/graph";
 import { RestClient } from "../providers/rest";
 import type { Fetch } from "../providers/types";
 import { requestTokens, type TokenEndpoint } from "./token-endpoint";
@@ -18,15 +18,13 @@ const AUTHORITY = "https://login.microsoftonline.com/common/oauth2/v2.0";
 const PROFILE_URL = "https://graph.microsoft.com/v1.0/me?$select=mail,userPrincipalName,displayName";
 const GRAPH_RESOURCE = "https://graph.microsoft.com/";
 const USER_READ_SCOPE = "https://graph.microsoft.com/User.Read";
+/** What the privacy policy lists for reading: Mail.Read, User.Read, offline_access and OpenID. */
 const READ_SCOPES = ["openid", "email", "profile", "offline_access", GRAPH_READ_SCOPE, USER_READ_SCOPE];
-/** Drafts and upload sessions (attachments ≥ 3 MB) need Mail.ReadWrite; sending needs Mail.Send. */
-const SEND_SCOPES = [GRAPH_WRITE_SCOPE, GRAPH_SEND_SCOPE];
 /** OpenID Connect scopes are never resource-qualified. */
 const OIDC_SCOPES: Record<string, true> = { openid: true, email: true, profile: true, offline_access: true };
 /** Canonical spelling of the Graph scopes we compare against, keyed by lower-cased short name. */
 const GRAPH_SCOPES: Record<string, string> = {
   "mail.read": GRAPH_READ_SCOPE,
-  "mail.readwrite": GRAPH_WRITE_SCOPE,
   "mail.send": GRAPH_SEND_SCOPE,
   "user.read": USER_READ_SCOPE,
 };
@@ -67,8 +65,9 @@ export function microsoftOAuth(config: OAuthClientConfig, options: { fetch?: Fet
     readScope: GRAPH_READ_SCOPE,
     sendScope: GRAPH_SEND_SCOPE,
 
+    // Sending adds Mail.Send only (incremental consent: the read scopes are already granted).
     scopesFor(intent: MailConnectIntent): string[] {
-      return intent === "send" ? [...READ_SCOPES, ...SEND_SCOPES] : [...READ_SCOPES];
+      return intent === "send" ? [...READ_SCOPES, GRAPH_SEND_SCOPE] : [...READ_SCOPES];
     },
 
     authorizeUrl(params: AuthorizeParams): string {
@@ -80,7 +79,9 @@ export function microsoftOAuth(config: OAuthClientConfig, options: { fetch?: Fet
         response_mode: "query",
         scope: this.scopesFor(params.intent).join(" "),
         state: params.state,
-        prompt: "select_account",
+        // Always show the consent screen (as Google does), so a returning user can't be walked
+        // through a connect someone else started with only an account picker.
+        prompt: "consent",
         code_challenge: params.codeChallenge,
         code_challenge_method: "S256",
         ...(params.loginHint === null ? {} : { login_hint: params.loginHint }),

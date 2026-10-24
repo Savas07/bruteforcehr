@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { IdSchema, TimestampSchema, UrlSchema } from "../common";
+import { IdSchema, TimestampSchema } from "../common";
 import { JobSourceIdSchema } from "../job";
 import { httpUrlParts } from "./normalize";
 
@@ -13,6 +13,15 @@ import { httpUrlParts } from "./normalize";
 export const WatchedCompanyStatusSchema = z.enum(["pending", "ok", "not_found", "error"]);
 export type WatchedCompanyStatus = z.infer<typeof WatchedCompanyStatusSchema>;
 
+/** Longest careers URL a client may store (mirrored by firestore.rules). */
+export const WATCHLIST_CAREERS_URL_MAX_LENGTH = 2048;
+
+/**
+ * A followed company's careers page. The server fetches it, so only https is accepted (the rules
+ * check `^https://` and the length; the fetch guard checks host, port and addresses).
+ */
+export const CareersUrlSchema = z.url({ protocol: /^https$/ }).max(WATCHLIST_CAREERS_URL_MAX_LENGTH);
+
 /**
  * `users/{uid}/watchlist/{id}` — "Companies you follow" (PRD M4-JOB-2). The user enters a careers
  * URL; the server detects the ATS (`detectAtsBoard`) and fetches its postings on every saved-search
@@ -21,7 +30,7 @@ export type WatchedCompanyStatus = z.infer<typeof WatchedCompanyStatusSchema>;
 export const WatchedCompanySchema = z.object({
   id: IdSchema,
   name: z.string().min(1).max(200),
-  careersUrl: UrlSchema,
+  careersUrl: CareersUrlSchema,
   enabled: z.boolean(),
   /** Detected board type: an ATS source slug, or `web` for a careers page with JSON-LD postings. */
   ats: JobSourceIdSchema.nullable(),

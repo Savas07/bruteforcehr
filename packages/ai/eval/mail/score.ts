@@ -72,6 +72,8 @@ export function mailInputOf(testCase: MailEvalCase): MailInput {
     references: [],
     listUnsubscribe: message.listUnsubscribe,
     bulk: message.bulk,
+    // Fixtures are genuine mail unless marked spoofed: the provider's DMARC check passed.
+    senderAuthenticated: message.authenticated ?? true,
   };
 }
 

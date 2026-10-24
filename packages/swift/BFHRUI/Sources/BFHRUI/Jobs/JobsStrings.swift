@@ -18,7 +18,6 @@ enum JobsStrings {
     static let importDuplicateTitle = LocalizedStringResource.bfhr("jobs.import.duplicate", default: "Already in your jobs", table: "Jobs")
     static let importDuplicateBody = LocalizedStringResource.bfhr("jobs.import.duplicate.body", default: "Adding it keeps one job and lists this page as another source.", table: "Jobs")
     static let importCheckHeader = LocalizedStringResource.bfhr("jobs.import.check", default: "Check the details", table: "Jobs")
-    static let importCheckThis = LocalizedStringResource.bfhr("jobs.import.checkThis", default: "Check this", table: "Jobs")
     static let importTitle = LocalizedStringResource.bfhr("jobs.import.title", default: "Job title", table: "Jobs")
     static let importCompany = LocalizedStringResource.bfhr("jobs.import.company", default: "Company", table: "Jobs")
     static let importLocation = LocalizedStringResource.bfhr("jobs.import.location", default: "Location", table: "Jobs")

@@ -51,8 +51,6 @@ export type OAuthPhase =
       readonly expiresAt: number;
       /** Epoch ms, for "Still waiting?" after 10 minutes. */
       readonly startedAt: number;
-      /** Accounts of this provider that existed before, so a new one in the snapshot means done. */
-      readonly known: readonly string[];
     }
   | { readonly step: "error"; readonly reason: MailOAuthReturnReason }
   | { readonly step: "unavailable" };
@@ -62,11 +60,6 @@ export type ConnectView =
   | { readonly kind: "oauth"; readonly provider: OAuthMailProvider; readonly phase: OAuthPhase }
   | { readonly kind: "imap"; readonly choice: ImapChoice }
   | { readonly kind: "scanning"; readonly accountId: string; readonly smtpWarning: boolean };
-
-/** The account kind a sign-in provider creates. */
-export function accountProviderOf(provider: OAuthMailProvider): MailAccount["provider"] {
-  return provider === "google" ? "gmail" : "microsoft";
-}
 
 /** The tile a typed address points at (domain detection), or null for unknown domains. */
 export function choiceForAddress(address: string): ProviderChoice | null {

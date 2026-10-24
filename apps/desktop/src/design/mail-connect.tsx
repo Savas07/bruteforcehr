@@ -122,7 +122,6 @@ const INITIAL: Readonly<
           nonce: "design-nonce-0000000000",
           expiresAt: FIXTURE_NOW.getTime() + 10 * MINUTE_MS,
           startedAt: Date.now(),
-          known: ["acc-gmail"],
         },
       },
     },

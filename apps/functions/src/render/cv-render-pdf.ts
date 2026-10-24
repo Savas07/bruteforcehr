@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { firestorePaths, storagePaths } from "@bfhr/api";
+import { firestorePaths, serverOnlyPaths, storagePaths } from "@bfhr/api";
 import {
   type CvRenderErrorReason,
   type CvRenderPdfResponse,
@@ -13,6 +13,7 @@ import { logger } from "firebase-functions/v2";
 import { HttpsError, onCall } from "firebase-functions/v2/https";
 import { ReasonedHttpsError, verifiedUid } from "../callable";
 import { adminConverters as converters } from "../converters";
+import { projectCounter, takeDaily, USER_DAILY_LIMITS, utcDayKey } from "../daily-usage";
 import { type PdfRenderJob, pdfRenderJob, UnknownTemplateError } from "./input";
 import { loadCvPhoto, PhotoUnavailableError } from "./photo";
 import { pdfPageCount, printHtmlToPdf } from "./print";
@@ -69,6 +70,32 @@ export const cvRenderPdf = onCall(
         );
       }
       throw error;
+    }
+
+    // Each render runs Chromium and stores a file: per-user and project-wide daily limits.
+    const day = utcDayKey(new Date());
+    const refused = await takeDaily(
+      [
+        {
+          name: "user" as const,
+          path: serverOnlyPaths.renderDay(uid, day),
+          field: "count",
+          amount: 1,
+          limit: USER_DAILY_LIMITS.renders,
+        },
+        projectCounter("project" as const, "renders", day),
+      ],
+      day,
+    );
+    if (refused !== null) {
+      logger.warn("cv_render_pdf_limit", { scope: refused });
+      throw new RenderError(
+        "resource-exhausted",
+        "daily_limit",
+        refused === "user"
+          ? "You've made a lot of PDFs today. You can make more after midnight UTC."
+          : "PDF making has reached today's limit for everyone. It resets at midnight UTC.",
+      );
     }
 
     const rendered = renderCvHtml(job.input);

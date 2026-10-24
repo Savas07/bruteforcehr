@@ -11,6 +11,9 @@ import {
 } from "./common";
 import { RemoteTypeSchema, SenioritySchema, UiLanguageSchema } from "./enums";
 
+/** Highest `settings.dailySendCap` (decisions.md F5); the server clamps stored values to it. */
+export const MAIL_DAILY_SEND_CAP_MAX = 50;
+
 export const TargetLocationSchema = z.object({
   /** Display label, e.g. "Istanbul", "Berlin", "Netherlands", "US (remote)". */
   label: z.string().min(1).max(120),
@@ -89,8 +92,8 @@ export const ProfileSettingsSchema = z.object({
   autoApplyConfidence: z.number().min(0.5).max(1),
   /** §4.9: "Allow sending email text to AI". */
   aiMailTextAllowed: z.boolean(),
-  /** §4.4: daily cap for emails sent through the Apply flow. */
-  dailySendCap: z.int().min(0).max(200),
+  /** §4.4: daily cap for emails sent through the Apply flow (`mailSend` clamps it the same way). */
+  dailySendCap: z.int().min(0).max(MAIL_DAILY_SEND_CAP_MAX),
   /** Pushes wait until `end` (in `Profile.timezone`); `start` > `end` spans midnight. */
   quietHours: z.object({ start: ClockTimeSchema, end: ClockTimeSchema }).nullable(),
   /** Notify about rejections (gentle copy; can be muted). */

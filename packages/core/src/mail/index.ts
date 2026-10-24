@@ -1,5 +1,6 @@
 export * from "./schemas";
 export * from "./send";
+export * from "./authentication";
 export * from "./connect";
 export * from "./senders";
 export * from "./text";

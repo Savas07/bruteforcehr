@@ -3,6 +3,7 @@
  * sends, the address remembered between "send" and "open the link", and how Firebase errors map
  * to what the screen says. Shared by the live session (firebaseAuth.ts) and the tests.
  */
+import { isSignupNotAllowed } from "@bfhr/core";
 import type { ActionCodeSettings } from "firebase/auth";
 
 /**
@@ -77,6 +78,8 @@ export type LinkError =
   /** The link was sent to another address than the one entered. */
   | "wrong-email"
   | "disabled"
+  /** A new account for an address that isn't on the owner's allowlist (invite-only sign-up). */
+  | "invite-only"
   | "offline"
   | "unavailable";
 
@@ -104,6 +107,8 @@ export function sendErrorOf(error: unknown): SendError {
 
 /** `signInWithEmailLink` failures. With a well-formed address, `invalid-email` means "not the address this link was sent to". */
 export function linkErrorOf(error: unknown): LinkError {
+  // The blocking function's refusal arrives as a generic `auth/internal-error` carrying our token.
+  if (isSignupNotAllowed(error)) return "invite-only";
   switch (codeOf(error)) {
     case "auth/invalid-action-code":
     case "auth/argument-error":

@@ -1226,29 +1226,6 @@
         }
       }
     },
-    "jobs.import.checkThis" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bitte prüfen"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Check this"
-          }
-        },
-        "tr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Kontrol edin"
-          }
-        }
-      }
-    },
     "jobs.import.company" : {
       "extractionState" : "manual",
       "localizations" : {

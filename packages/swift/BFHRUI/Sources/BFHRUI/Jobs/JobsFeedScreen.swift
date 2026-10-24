@@ -15,6 +15,7 @@ public struct JobsFeedScreen: View {
     @Environment(\.bfhrApply) private var apply
     @Environment(\.bfhrAddFromLink) private var addFromLink
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var facet: FilterSheetRequest?
     @State private var reasonsFor: ReasonRequest?
     @State private var editor: SavedSearchEditorRequest?
@@ -228,11 +229,26 @@ public struct JobsFeedScreen: View {
 
     // MARK: Header, search status, empty
 
+    /// "Jobs: 37 · Best match ⌃⌄ ⓘ"; at accessibility sizes the count sits above the sort so no
+    /// word breaks mid-line (r2).
     private var resultHeader: some View {
-        HStack(spacing: BFHRSpace.s2) {
+        let layout = dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: 0))
+            : AnyLayout(HStackLayout(spacing: BFHRSpace.s2))
+        return layout {
             Text(JobsStrings.jobCount(model.jobCount))
                 .foregroundStyle(BFHRColor.Fg.secondary)
-            Spacer(minLength: BFHRSpace.s2)
+            if !dynamicTypeSize.isAccessibilitySize { Spacer(minLength: BFHRSpace.s2) }
+            HStack(spacing: BFHRSpace.s2) {
+                sortMenu
+                rankingInfoButton
+            }
+        }
+        .textCase(nil)
+        .font(.bfhr(.footnote))
+    }
+
+    private var sortMenu: some View {
             Menu {
                 Picker(selection: $model.sort) {
                     ForEach(JobFeedSort.allCases) { sort in
@@ -250,16 +266,16 @@ public struct JobsFeedScreen: View {
             }
             .accessibilityLabel(Text(JobsStrings.sortAccessibility(model.sort)))
             .accessibilityIdentifier("jobs.sort")
-            Button { showsRankingInfo = true } label: {
-                Image(systemName: "info.circle")
-                    .foregroundStyle(BFHRColor.Accent.text)
-                    .frame(minWidth: BFHRHitTarget.minimum, minHeight: BFHRHitTarget.minimum)
-            }
-            .buttonStyle(.borderless)
-            .accessibilityLabel(Text(JobsStrings.rankingInfoTitle))
+    }
+
+    private var rankingInfoButton: some View {
+        Button { showsRankingInfo = true } label: {
+            Image(systemName: "info.circle")
+                .foregroundStyle(BFHRColor.Accent.text)
+                .frame(minWidth: BFHRHitTarget.minimum, minHeight: BFHRHitTarget.minimum)
         }
-        .textCase(nil)
-        .font(.bfhr(.footnote))
+        .buttonStyle(.borderless)
+        .accessibilityLabel(Text(JobsStrings.rankingInfoTitle))
     }
 
     @ViewBuilder private var searchStatus: some View {
@@ -405,10 +421,12 @@ struct ScopeChip: View {
             HStack(spacing: BFHRSpace.s1) {
                 title
                 if count > 0 {
+                    // Solid fills only: the audit measured the translucent badge below 4.5:1.
                     Text(count, format: .number)
                         .font(.bfhr(.caption1, emphasized: true))
+                        .foregroundStyle(isSelected ? BFHRColor.Accent.text : BFHRColor.Fg.primary)
                         .padding(.horizontal, 6)
-                        .background(isSelected ? BFHRColor.Fg.onAccent.opacity(0.2) : BFHRColor.Surface.sunken, in: Capsule())
+                        .background(isSelected ? BFHRColor.Surface.base : BFHRColor.Surface.sunken, in: Capsule())
                 }
             }
             .font(.bfhr(.subheadline, emphasized: isSelected))

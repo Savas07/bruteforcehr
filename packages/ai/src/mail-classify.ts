@@ -200,6 +200,7 @@ export async function analyzeMail(input: AnalyzeMailInput, ai: AnalyzeMailAi | n
           linkStrength: link.linkStrength,
           actor,
           autoApplyConfidence: input.autoApplyConfidence,
+          folder: mail.folder,
         });
   return {
     ...base,

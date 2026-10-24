@@ -20,10 +20,12 @@ import { logger } from "firebase-functions/v2";
 import { aiProvider } from "../ai/common";
 import { firestoreUsageLedger } from "../ai/usage-ledger";
 import { adminConverters } from "../converters";
+import { loadJobImportConfig } from "../jobImport/config";
 import { jobSourceSecrets } from "../secrets";
 import { collectListings, type WatchedBoard } from "./collect";
 import { type Embedder, profileEmbeddingText } from "./embeddings";
 import { type MatchOutcome, matchJobs } from "./matcher";
+import { guardedPageFetch } from "./page-fetch";
 import { loadMatchingContext, type MatchingContext } from "./profile-context";
 import type { UserQuota } from "./quota";
 import { SourceState, storageFeedCache } from "./source-state";
@@ -128,8 +130,13 @@ export async function runSearch(input: RunInput, quota: UserQuota): Promise<Jobs
     userAgent: userAgent(input.version),
     onRobots: (record) => robots.push(record),
   });
+  const pageHttp = new HttpClient({
+    userAgent: userAgent(input.version),
+    fetch: guardedPageFetch((await loadJobImportConfig()).deniedHosts),
+    onRobots: (record) => robots.push(record),
+  });
   const sourceState = new SourceState(db, now);
-  const context = { http, cache: storageFeedCache(), secrets, now };
+  const context = { http, pageHttp, cache: storageFeedCache(), secrets, now };
   const [matching, watched] = await Promise.all([
     loadMatchingContext(db, uid),
     input.mode === "saved" ? watchedBoards(db, uid) : Promise.resolve([]),

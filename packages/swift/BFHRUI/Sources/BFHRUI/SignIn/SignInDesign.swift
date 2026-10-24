@@ -26,6 +26,8 @@ public enum DesignSignInState: String, CaseIterable, Sendable {
     case expired
     /// A used or broken link.
     case unusable
+    /// A new account refused by the invite list.
+    case inviteOnly
     /// The link is fine but the connection failed.
     case retry
     /// The welcome screen right after Delete account: the one-time deletion notice.
@@ -75,6 +77,8 @@ public enum DesignSignInState: String, CaseIterable, Sendable {
             model.step = .linkFailed(.expired)
         case .unusable:
             model.step = .linkFailed(.unusable)
+        case .inviteOnly:
+            model.step = .linkFailed(.inviteOnly)
         case .retry:
             model.step = .linkFailed(.retryable(offline: true, email: Self.address, actionLink: Self.link))
         case .deleted:

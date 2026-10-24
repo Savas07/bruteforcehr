@@ -114,6 +114,15 @@ export const signInMessages = defineMessages({
     id: "auth.link.disabled.body",
     defaultMessage: "You can’t sign in with this address right now. Try a different email address.",
   },
+  inviteOnlyTitle: {
+    id: "auth.link.inviteOnly.title",
+    defaultMessage: "BruteForceHR is invite-only for now",
+  },
+  inviteOnlyBody: {
+    id: "auth.link.inviteOnly.body",
+    defaultMessage:
+      "This email address isn’t on the list yet, so no account was created. Ask the owner to add your email, then open a new link.",
+  },
   offlineTitle: { id: "auth.link.offline.title", defaultMessage: "You’re offline" },
   offlineBody: {
     id: "auth.link.offline.body",
@@ -153,6 +162,7 @@ export const linkErrorCopy: Readonly<
   invalid: { title: messages.invalidTitle, body: messages.invalidBody },
   expired: { title: messages.expiredTitle, body: messages.expiredBody },
   disabled: { title: messages.disabledTitle, body: messages.disabledBody },
+  "invite-only": { title: messages.inviteOnlyTitle, body: messages.inviteOnlyBody },
   offline: { title: messages.offlineTitle, body: messages.offlineBody },
   unavailable: { title: messages.unavailableTitle, body: messages.unavailableBody },
 };
@@ -472,7 +482,7 @@ function LinkErrorStep({ view }: { view: Extract<SignInView, { step: "link-error
         {intl.formatMessage(messages.tryAgain)}
       </Button>
     );
-  else if (reason !== "disabled")
+  else if (reason !== "disabled" && reason !== "invite-only")
     primary = (
       <Button
         variant="primary"
@@ -505,7 +515,9 @@ function LinkErrorStep({ view }: { view: Extract<SignInView, { step: "link-error
         <InlineAlert tone="error" fromAction title={sendErrorMessage(intl, view.sendError)} />
       )}
       {/* Offline or a server problem: the address isn't the issue, so no way back to it. */}
-      {!canRetry && (email !== null || reason === "disabled") && <BackButton onClick={changeEmail} />}
+      {!canRetry && (email !== null || reason === "disabled" || reason === "invite-only") && (
+        <BackButton onClick={changeEmail} />
+      )}
     </>
   );
 }

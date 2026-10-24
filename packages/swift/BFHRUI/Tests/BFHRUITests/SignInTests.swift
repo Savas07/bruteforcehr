@@ -270,6 +270,7 @@ struct SignInModelTests {
         (SignInError.expired, SignInModel.LinkFailure.expired),
         (.unusable, .unusable),
         (.accountDisabled, .accountDisabled),
+        (.inviteOnly, .inviteOnly),
         (.offline, .retryable(offline: true, email: "deniz@example.com", actionLink: action)),
         (.other, .retryable(offline: false, email: "deniz@example.com", actionLink: action)),
     ])

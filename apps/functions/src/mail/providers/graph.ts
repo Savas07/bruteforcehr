@@ -1,6 +1,12 @@
 // Microsoft Graph mail adapter (plain REST, no Graph SDK).
-import type { MailAddress, MailFolder } from "@bfhr/core";
+import {
+  type MailAddress,
+  type MailFolder,
+  MAIL_SEND_MICROSOFT_MAX_ATTACHMENT_BYTES,
+  MAIL_SEND_MICROSOFT_MAX_REQUEST_BYTES,
+} from "@bfhr/core";
 import { z } from "zod";
+import { newMessageId } from "./mime";
 import { mapConcurrent, query, RestClient, type RestErrorDialect } from "./rest";
 import {
   type AccessTokenSource,
@@ -9,8 +15,8 @@ import {
   type FetchedMail,
   MailCursorExpiredError,
   type MailProviderAdapter,
+  MailTooLargeError,
   type MessageRef,
-  type OutgoingAttachment,
   type OutgoingMail,
   type RefPage,
   type SentMail,
@@ -18,9 +24,8 @@ import {
 
 const BASE = "https://graph.microsoft.com/v1.0/me";
 export const GRAPH_READ_SCOPE = "https://graph.microsoft.com/Mail.Read";
+/** The only scope sending needs: `sendMail` and `reply` take the whole message in one request. */
 export const GRAPH_SEND_SCOPE = "https://graph.microsoft.com/Mail.Send";
-/** Drafts, replies and attachments need write access to the mailbox (Mail.Send only sends). */
-export const GRAPH_WRITE_SCOPE = "https://graph.microsoft.com/Mail.ReadWrite";
 
 /** Well-known folder names we sync, in listing order. */
 const FOLDERS = ["inbox", "junkemail"] as const;
@@ -30,10 +35,9 @@ const FOLDER_KIND: Record<GraphFolder, MailFolder> = { inbox: "inbox", junkemail
 const PAGE_SIZE = 200;
 const CHANGES_LIMIT = 2000;
 const FETCH_CONCURRENCY = 8;
-/** Attachments at or above this size go through an upload session (the POST must stay < 4 MB). */
-const SMALL_ATTACHMENT_LIMIT = 3_000_000;
-/** Upload-session chunk: a multiple of 320 KiB and at most 4 MiB (12 × 320 KiB). */
-export const UPLOAD_CHUNK_SIZE = 12 * 320 * 1024;
+// PidTagInternetMessageId (MS-OXPROPS): sendMail and reply answer 202 without an id, so we choose
+// the Message-ID; incoming replies link to the application through it (In-Reply-To / References).
+const MESSAGE_ID_PROPERTY = "String 0x1035";
 /**
  * The "now" cursor's delta query only tracks mail received after (now − skew); the lookback scan
  * covers everything before, and the overlap is deduped on refs.
@@ -41,7 +45,7 @@ export const UPLOAD_CHUNK_SIZE = 12 * 320 * 1024;
 const CURSOR_SKEW_MS = 15 * 60 * 1000;
 const MESSAGE_FIELDS = "id,conversationId,receivedDateTime";
 
-// Immutable ids survive moves between folders and keep a sent draft's id valid in Sent Items:
+// Immutable ids survive moves between folders, so a stored message id stays valid for `reply`:
 // https://learn.microsoft.com/graph/outlook-immutable-id
 const IMMUTABLE_ID = 'IdType="ImmutableId"';
 
@@ -106,6 +110,56 @@ function recipients(addresses: readonly MailAddress[]) {
   return addresses.map(({ name, address }) => ({
     emailAddress: name === null ? { address } : { name, address },
   }));
+}
+
+type SendFields = Pick<OutgoingMail, "from" | "to" | "cc" | "subject" | "text" | "replyTo">;
+
+/** What a Graph send request is built from; attachments by size, so it can be sized before download. */
+export type GraphSendDraft = SendFields & {
+  attachments: readonly { fileName: string; contentType: string; sizeBytes: number }[];
+};
+
+/**
+ * JSON body of `POST /me/sendMail` (new mail; the one copy lands in Sent Items) or
+ * `POST /me/messages/{id}/reply` (follow-ups: Exchange sets In-Reply-To, References and the
+ * conversation; our body replaces the quoted original). `contentBytes` gives an attachment's base64.
+ */
+function sendRequestBody<A extends { fileName: string; contentType: string }>(
+  draft: SendFields & { attachments: readonly A[] },
+  messageId: string,
+  contentBytes: (attachment: A) => string,
+): string {
+  const message = {
+    subject: draft.subject,
+    body: { contentType: "Text", content: draft.text },
+    toRecipients: recipients(draft.to),
+    ccRecipients: recipients(draft.cc),
+    ...(draft.attachments.length === 0
+      ? {}
+      : {
+          attachments: draft.attachments.map((attachment) => ({
+            "@odata.type": "#microsoft.graph.fileAttachment",
+            name: attachment.fileName,
+            contentType: attachment.contentType,
+            contentBytes: contentBytes(attachment),
+          })),
+        }),
+    singleValueExtendedProperties: [{ id: MESSAGE_ID_PROPERTY, value: messageId }],
+  };
+  return JSON.stringify(draft.replyTo === null ? { message, saveToSentItems: true } : { message });
+}
+
+/**
+ * Null when the send request for `draft` fits Graph's request limit, else the attachment total that
+ * would fit next to this message. Sized from file sizes (base64 needs no JSON escaping, and every
+ * Message-ID from `newMessageId` has the same length), so `mailSend` refuses before scheduling.
+ */
+export function graphSendOverLimit(draft: GraphSendDraft): number | null {
+  const message = Buffer.byteLength(sendRequestBody(draft, newMessageId(draft.from.address), () => ""));
+  const encoded = draft.attachments.reduce((sum, file) => sum + 4 * Math.ceil(file.sizeBytes / 3), 0);
+  if (message + encoded <= MAIL_SEND_MICROSOFT_MAX_REQUEST_BYTES) return null;
+  const room = Math.floor(Math.max(0, MAIL_SEND_MICROSOFT_MAX_REQUEST_BYTES - message) / 4) * 3;
+  return Math.min(room, MAIL_SEND_MICROSOFT_MAX_ATTACHMENT_BYTES);
 }
 
 export class GraphAdapter implements MailProviderAdapter {
@@ -242,117 +296,39 @@ export class GraphAdapter implements MailProviderAdapter {
     return fetched.filter((mail): mail is FetchedMail => mail !== null);
   }
 
-  // Draft, attach, send: https://learn.microsoft.com/graph/api/user-post-messages,
-  // https://learn.microsoft.com/graph/api/message-createreply,
-  // https://learn.microsoft.com/graph/api/message-send (the sent copy lands in Sent Items).
+  // One request with Mail.Send only: https://learn.microsoft.com/graph/api/user-sendmail (JSON,
+  // file attachments inline, `saveToSentItems`) and https://learn.microsoft.com/graph/api/message-reply
+  // (follow-ups; always saved to Sent Items). Both answer 202 without the sent message's id.
   async send(message: OutgoingMail): Promise<SentMail> {
-    const content = {
-      subject: message.subject,
-      body: { contentType: "Text", content: message.text },
-      toRecipients: recipients(message.to),
-      ccRecipients: recipients(message.cc),
-    };
-    const write = {
-      headers: { Prefer: IMMUTABLE_ID, "Content-Type": "application/json" },
-      scope: GRAPH_WRITE_SCOPE,
-    };
-    let draftId: string;
-    if (message.replyTo === null) {
-      draftId = (
-        await this.#client.json<{ id: string }>(`${BASE}/messages`, {
-          ...write,
-          method: "POST",
-          body: JSON.stringify(content),
-        })
-      ).id;
-    } else {
-      const replyTo = encodeURIComponent(message.replyTo.providerMessageId);
-      draftId = (
-        await this.#client.json<{ id: string }>(`${BASE}/messages/${replyTo}/createReply`, {
-          ...write,
-          method: "POST",
-          body: "{}",
-        })
-      ).id;
-      // createReply fills in a quoted HTML body and the original recipients: replace both.
-      await this.#client.json(`${BASE}/messages/${encodeURIComponent(draftId)}`, {
-        ...write,
-        method: "PATCH",
-        body: JSON.stringify(content),
-      });
-    }
-    const draft = `${BASE}/messages/${encodeURIComponent(draftId)}`;
-    for (const attachment of message.attachments) await this.#attach(draft, attachment);
-    const sent = await this.#client.json<{ internetMessageId?: string; conversationId?: string }>(
-      `${draft}${query({ $select: "internetMessageId,conversationId" })}`,
-      { headers: { Prefer: IMMUTABLE_ID }, scope: GRAPH_WRITE_SCOPE },
-    );
-    const response = await this.#client.request(`${draft}/send`, {
-      headers: { Prefer: IMMUTABLE_ID },
+    const limitBytes = graphSendOverLimit({
+      ...message,
+      attachments: message.attachments.map(({ fileName, contentType, content }) => ({
+        fileName,
+        contentType,
+        sizeBytes: content.length,
+      })),
+    });
+    if (limitBytes !== null) throw new MailTooLargeError(limitBytes);
+    const messageId = newMessageId(message.from.address);
+    const url =
+      message.replyTo === null
+        ? `${BASE}/sendMail`
+        : `${BASE}/messages/${encodeURIComponent(message.replyTo.providerMessageId)}/reply`;
+    const response = await this.#client.request(url, {
       method: "POST",
+      headers: { Prefer: IMMUTABLE_ID, "Content-Type": "application/json" },
+      body: sendRequestBody(message, messageId, (attachment) => attachment.content.toString("base64")),
       scope: GRAPH_SEND_SCOPE,
     });
     await response.body?.cancel();
     return {
-      providerMessageId: draftId,
-      threadId: sent.conversationId ?? null,
-      rfc822MessageId: sent.internetMessageId ?? null,
+      providerMessageId: messageId,
+      threadId: message.replyTo?.providerThreadId ?? null,
+      rfc822MessageId: messageId,
     };
   }
 
   async close(): Promise<void> {}
-
-  // < 3 MB: https://learn.microsoft.com/graph/api/message-post-attachments
-  // ≥ 3 MB: https://learn.microsoft.com/graph/outlook-large-attachments and
-  // https://learn.microsoft.com/graph/api/attachment-createuploadsession (pre-authenticated
-  // uploadUrl: no Authorization header; ranges in multiples of 320 KiB, ≤ 4 MB each).
-  async #attach(draft: string, attachment: OutgoingAttachment): Promise<void> {
-    const write = {
-      headers: { "Content-Type": "application/json" },
-      method: "POST",
-      scope: GRAPH_WRITE_SCOPE,
-    };
-    if (attachment.content.length < SMALL_ATTACHMENT_LIMIT) {
-      await this.#client.json(`${draft}/attachments`, {
-        ...write,
-        body: JSON.stringify({
-          "@odata.type": "#microsoft.graph.fileAttachment",
-          name: attachment.fileName,
-          contentType: attachment.contentType,
-          contentBytes: attachment.content.toString("base64"),
-        }),
-      });
-      return;
-    }
-    const total = attachment.content.length;
-    const session = await this.#client.json<{ uploadUrl: string }>(
-      `${draft}/attachments/createUploadSession`,
-      {
-        ...write,
-        body: JSON.stringify({
-          AttachmentItem: {
-            attachmentType: "file",
-            name: attachment.fileName,
-            size: total,
-            contentType: attachment.contentType,
-          },
-        }),
-      },
-    );
-    for (let start = 0; start < total; start += UPLOAD_CHUNK_SIZE) {
-      const chunk = attachment.content.subarray(start, Math.min(start + UPLOAD_CHUNK_SIZE, total));
-      const response = await this.#client.unauthenticated(session.uploadUrl, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/octet-stream",
-          "Content-Range": `bytes ${start}-${start + chunk.length - 1}/${total}`,
-        },
-        body: chunk,
-        scope: GRAPH_WRITE_SCOPE,
-      });
-      await response.body?.cancel();
-    }
-  }
 
   async #delta(url: string): Promise<GraphPage> {
     return this.#client.json<GraphPage>(url, {

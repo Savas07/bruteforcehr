@@ -32,6 +32,11 @@ export interface MailInput {
   listUnsubscribe: boolean;
   /** `Precedence: bulk|list|junk` or `Auto-Submitted` other than `no`. */
   bulk: boolean;
+  /**
+   * The provider's `Authentication-Results` vouch for the `From` domain (`senderAuthenticated`:
+   * DMARC pass or aligned DKIM). Without it the sender domain is only a hint, never strong evidence.
+   */
+  senderAuthenticated: boolean;
 }
 
 /** What the linker needs to know about an application. */
@@ -46,6 +51,8 @@ export interface TrackedApplication {
 
 export interface MailSignals {
   senderDomain: string;
+  /** `MailInput.senderAuthenticated`: the sender domain is verified, not just claimed. */
+  senderAuthenticated: boolean;
   ats: boolean;
   jobBoard: boolean;
   assessmentPlatform: boolean;
@@ -304,6 +311,7 @@ export function mailSignals(mail: MailInput, applications: readonly TrackedAppli
   const { hits, phrases } = scoreCategories(text);
   return {
     senderDomain: domain,
+    senderAuthenticated: mail.senderAuthenticated,
     ats,
     jobBoard,
     assessmentPlatform,

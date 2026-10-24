@@ -81,6 +81,23 @@ The provider accepts only tokens whose `repository` is `Savas07/bruteforcehr` **
 
 **Deploying the `identity` functions codebase** (Identity Platform blocking function `blockPasswordSignUp`, [ADR 0008](../adr/0008-auth-email-link.md)): CI doesn't deploy it, because registering a blocking function reads and writes the Identity Platform config and `github-deployer` has no Firebase Authentication role. When `apps/functions/src/block-password-sign-up.ts` changes, deploy it by hand as the owner: `firebase deploy --only functions:identity`. Check: `accounts:signUp` with a password is refused with `BLOCKING_FUNCTION_ERROR_RESPONSE`, and email-link sign-in still works.
 
+### Release environment and deploy identity (M6 security review)
+
+- Every `release.yml` job that holds signing, store or deploy secrets runs in the GitHub **Environment `release`** (created 2026-10-24), whose deployment policy allows only tags `v*` and branches `release-dry-run/**`. Environment secrets are only handed to those runs. Set on 2026-10-24: `GCP_WORKLOAD_IDENTITY_PROVIDER`, `GCP_DEPLOY_SERVICE_ACCOUNT` (identifiers). **Owner, after this change is on `main`:** re-create `TAURI_SIGNING_PRIVATE_KEY`, `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`, `RELEASES_REPO_TOKEN` and the Apple secrets as environment secrets (`gh secret set NAME --env release --repo Savas07/bruteforcehr`), then delete the repository-level copies (`gh secret delete NAME --repo Savas07/bruteforcehr`).
+- Jobs that can mint Google credentials (`backend`, `publish`, `website`) install with `pnpm install --frozen-lockfile --ignore-scripts`.
+- The WIF provider should trust only `release.yml` on `v*` tags in the `release` environment. Apply with (owner; not applied by CI):
+
+  ```sh
+  gcloud iam workload-identity-pools providers update-oidc bruteforcehr-repo \
+    --workload-identity-pool=github --location=global --project=bruteforcehr \
+    --attribute-mapping="google.subject=assertion.sub,attribute.repository=assertion.repository,attribute.repository_id=assertion.repository_id,attribute.ref=assertion.ref,attribute.workflow_ref=assertion.workflow_ref,attribute.job_workflow_ref=assertion.job_workflow_ref,attribute.environment=assertion.environment" \
+    --attribute-condition="assertion.repository_id == '1429601845' && assertion.repository == 'Savas07/bruteforcehr' && assertion.ref.startsWith('refs/tags/v') && assertion.job_workflow_ref.startsWith('Savas07/bruteforcehr/.github/workflows/release.yml@refs/tags/v') && assertion.environment == 'release'"
+  ```
+
+  Dry runs from `release-dry-run/**` branches then build, sign and assemble but skip the Google steps (`if: github.ref_type == 'tag'`). Owner deploys from a laptop use the owner's own credentials and are unaffected.
+
+- **Task-queue functions are private.** Checked 2026-10-24: `gcloud run services get-iam-policy` for `mailsenddispatch`, `mailsynctask`, `pushdeliver` and `pushjobalertdigest` (europe-west1) shows no bindings (no `allUsers`/`allAuthenticatedUsers` invoker), and an unauthenticated `POST` to each service URL answers `403`. Cloud Tasks calls them with the compute service account's OIDC token.
+
 ## One-time setup
 
 Done on 2026-10-23: updater key + secrets, WIF pool/provider/service account + secrets, **Settings → Actions → General → "Allow GitHub Actions to create and approve pull requests"** (needed by `changesets/action` for the version PR). The `updater-beta` pre-release is created by the first `publish`.

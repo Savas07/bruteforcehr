@@ -1,21 +1,29 @@
-import { lookup as dnsLookup } from "node:dns/promises";
 import type { IncomingHttpHeaders } from "node:http";
 import { request } from "node:https";
-import { BlockList, isIP } from "node:net";
+import { isIP } from "node:net";
 import { brotliDecompressSync, gunzipSync, inflateSync } from "node:zlib";
+import { BlockedHostError, resolvePublicHost, type Resolver } from "./address-guard";
 
 /**
- * Outbound HTTPS for user-supplied URLs (server-side request forgery guard). Every hop:
+ * Outbound HTTPS for user-supplied URLs (server-side request forgery guard), used by URL import
+ * and followed careers pages. Every hop:
  * - is `https:` on port 443, without credentials, to a host name that is not local/internal;
- * - resolves through DNS, and **every** resolved address must be public unicast; the connection
- *   is then pinned to the checked address (no second lookup an attacker could rebind);
+ * - resolves through DNS, and **every** resolved address must be public unicast (`address-guard.ts`);
+ *   the connection is then pinned to the checked address (no second lookup an attacker could rebind);
+ * - passes the caller's `checkUrl` (ADR 0005 `deniedHosts`);
  * - follows at most `maxRedirects` redirects, each validated the same way.
  * Bodies are capped (compressed and decompressed), and the whole exchange has a deadline.
  */
 
 /** Why a URL was refused before any byte was sent to it. */
 export type FetchRefusal =
-  "not_https" | "bad_port" | "credentials" | "internal_host" | "private_address" | "dns_failed";
+  | "not_https"
+  | "bad_port"
+  | "credentials"
+  | "internal_host"
+  | "private_address"
+  | "dns_failed"
+  | "denied_host";
 
 export class FetchRefusedError extends Error {
   constructor(
@@ -40,101 +48,33 @@ export class FetchFailedError extends Error {
   }
 }
 
-/** Non-public IPv4/IPv6 ranges (IANA special-purpose registries). */
-const BLOCKED = new BlockList();
-for (const [network, prefix] of [
-  ["0.0.0.0", 8],
-  ["10.0.0.0", 8],
-  ["100.64.0.0", 10],
-  ["127.0.0.0", 8],
-  ["169.254.0.0", 16],
-  ["172.16.0.0", 12],
-  ["192.0.0.0", 24],
-  ["192.0.2.0", 24],
-  ["192.88.99.0", 24],
-  ["192.168.0.0", 16],
-  ["198.18.0.0", 15],
-  ["198.51.100.0", 24],
-  ["203.0.113.0", 24],
-  ["224.0.0.0", 4],
-  ["240.0.0.0", 4],
-] as const) {
-  BLOCKED.addSubnet(network, prefix, "ipv4");
-}
-for (const [network, prefix] of [
-  ["::", 128],
-  ["::1", 128],
-  ["64:ff9b::", 96],
-  ["64:ff9b:1::", 48],
-  ["100::", 64],
-  ["2001::", 23],
-  ["2001:db8::", 32],
-  ["2002::", 16],
-  ["fc00::", 7],
-  ["fe80::", 10],
-  ["fec0::", 10],
-  ["ff00::", 8],
-] as const) {
-  BLOCKED.addSubnet(network, prefix, "ipv6");
-}
-
-/** True for a public unicast address; IPv4-mapped IPv6 is judged by its IPv4 part. */
-export function isPublicAddress(address: string): boolean {
-  const family = isIP(address);
-  if (family === 4) return !BLOCKED.check(address, "ipv4");
-  if (family !== 6) return false;
-  const mapped = /^::ffff:(\d+\.\d+\.\d+\.\d+)$/i.exec(address);
-  if (mapped?.[1] !== undefined) return !BLOCKED.check(mapped[1], "ipv4");
-  if (/^::ffff:/i.test(address)) return false;
-  return !BLOCKED.check(address, "ipv6");
-}
-
-const INTERNAL_HOST =
-  /(^|\.)(localhost|local|localdomain|internal|intranet|lan|home|corp|arpa)$|^metadata(\.|$)/i;
-
 export interface ResolvedTarget {
   url: URL;
   address: string;
   family: 4 | 6;
 }
 
-export type Resolver = (host: string) => Promise<{ address: string; family: number }[]>;
-
-const systemResolver: Resolver = (host) => dnsLookup(host, { all: true, verbatim: true });
-
 /** Validates a URL and resolves its host to a checked public address (throws `FetchRefusedError`). */
-export async function resolvePublicTarget(
-  url: URL,
-  resolve: Resolver = systemResolver,
-): Promise<ResolvedTarget> {
+export async function resolvePublicTarget(url: URL, resolve?: Resolver): Promise<ResolvedTarget> {
   if (url.protocol !== "https:")
     throw new FetchRefusedError("not_https", "Only https pages can be imported.");
   if (url.port !== "" && url.port !== "443")
     throw new FetchRefusedError("bad_port", "Only the default https port is allowed.");
   if (url.username !== "" || url.password !== "")
     throw new FetchRefusedError("credentials", "URLs with credentials are refused.");
-  const host = url.hostname.replace(/^\[|\]$/g, "").replace(/\.$/, "");
-  const literal = isIP(host);
-  if (literal !== 0) {
-    if (!isPublicAddress(host)) throw new FetchRefusedError("private_address", "That address is not public.");
-    return { url, address: host, family: literal as 4 | 6 };
-  }
-  if (!host.includes(".") || INTERNAL_HOST.test(host)) {
-    throw new FetchRefusedError("internal_host", "That host is not a public website.");
-  }
-  let addresses: { address: string; family: number }[];
   try {
-    addresses = await resolve(host);
-  } catch {
-    throw new FetchRefusedError("dns_failed", "The host name could not be resolved.");
+    const resolved = await resolvePublicHost(url.hostname, resolve === undefined ? {} : { resolve });
+    return { url, address: resolved.address, family: resolved.family };
+  } catch (error) {
+    if (!(error instanceof BlockedHostError)) throw error;
+    const message =
+      error.refusal === "dns_failed"
+        ? "The host name could not be resolved."
+        : error.refusal === "internal_host"
+          ? "That host is not a public website."
+          : "That host resolves to a non-public address.";
+    throw new FetchRefusedError(error.refusal, message);
   }
-  const first = addresses[0];
-  if (first === undefined) throw new FetchRefusedError("dns_failed", "The host name could not be resolved.");
-  // All answers must be public: a mix is how DNS rebinding sneaks an internal address in.
-  if (!addresses.every((entry) => isPublicAddress(entry.address))) {
-    throw new FetchRefusedError("private_address", "That host resolves to a non-public address.");
-  }
-  return { url, address: first.address, family: first.family === 6 ? 6 : 4 };
 }
 
 export interface SafeFetchOptions {
@@ -147,6 +87,8 @@ export interface SafeFetchOptions {
   timeoutMs: number;
   maxRedirects?: number;
   resolve?: Resolver;
+  /** Called for the first URL and every redirect target; throws to refuse it (e.g. `deniedHosts`). */
+  checkUrl?: (url: URL) => void;
   /** Test seam: performs one validated hop. */
   transport?: Transport;
 }
@@ -261,6 +203,7 @@ export async function safeFetch(input: URL, options: SafeFetchOptions): Promise<
   let method = options.method ?? "GET";
   let body = options.body;
   for (let hop = 0; ; hop++) {
+    options.checkUrl?.(url);
     const target = await resolvePublicTarget(url, options.resolve);
     let response: HopResponse;
     try {

@@ -9,7 +9,7 @@ import { ImapFlow, type ImapFlowOptions } from "imapflow";
 import { createTransport } from "nodemailer";
 import { z } from "zod";
 import { composeMime } from "./mime";
-import { resolvePublicHost } from "./net-guard";
+import { resolveMailServer } from "../../net/address-guard";
 import {
   type ChangesPage,
   type FetchedMail,
@@ -107,7 +107,7 @@ export function classifyConnectError(error: unknown, side: "imap" | "smtp"): Ima
     /^(?:ENOTFOUND|ECONNREFUSED|ECONNRESET|EHOSTUNREACH|ENETUNREACH|ETIMEDOUT|EAI_AGAIN|CONNECT_TIMEOUT|GREETING_TIMEOUT|ETIMEOUT|ECONNECTION|EDNS|NoConnection|BlockedHost)$/u.test(
       code,
     ) ||
-    (error instanceof Error && error.name === "BlockedHostError")
+    (error instanceof Error && (error.name === "BlockedHostError" || error.name === "MailPortError"))
   )
     return new ImapConnectError("host_unreachable", side, "server unreachable");
   return null;
@@ -151,7 +151,9 @@ export class ImapAdapter implements MailProviderAdapter {
   private async connection(): Promise<ImapFlow> {
     if (this.client !== null && this.client.usable) return this.client;
     const { imap, username, password } = this.credentials;
-    const target = await resolvePublicHost(imap.host, this.test.allowPrivateHosts === true);
+    const target = await resolveMailServer("imap", imap, {
+      allowPrivate: this.test.allowPrivateHosts === true,
+    });
     const options: ImapFlowOptions = {
       host: target.address,
       ...(isIP(imap.host) === 0 ? { servername: target.servername } : {}),
@@ -418,7 +420,7 @@ async function countSince(client: ImapFlow, path: string, since: Date): Promise<
 }
 
 async function smtpTransport(credentials: ImapCredentials, smtp: MailEndpoint, test: ImapTestOptions) {
-  const target = await resolvePublicHost(smtp.host, test.allowPrivateHosts === true);
+  const target = await resolveMailServer("smtp", smtp, { allowPrivate: test.allowPrivateHosts === true });
   return createTransport({
     host: target.address,
     port: smtp.port,

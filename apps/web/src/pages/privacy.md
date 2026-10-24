@@ -2,7 +2,7 @@
 layout: ../layouts/LegalLayout.astro
 title: Privacy Policy
 description: What BruteForceHR collects, why, where it's kept, and how you can download or delete it.
-effective: "2026-10-23"
+effective: "2026-10-24"
 keyPoints:
   - "Only job-related email is kept. Other email is never stored."
   - "Nothing is sent from your email account until you've reviewed the message and pressed Send."
@@ -119,7 +119,7 @@ BruteForceHR never sends a message without you reviewing that specific message �
 
 ### Disconnecting
 
-When you disconnect an account in Settings › Mail accounts, we revoke our access with Google or Microsoft, and delete the account's stored messages and its tokens or app password. For IMAP accounts, we delete the app password; to be sure it can't be used again, also delete it at your email provider. Applications, interviews and contacts that were created from that account's email stay in your tracker until you delete them.
+When you disconnect an account in Settings › Mail accounts, we revoke our access with Google, and delete the account's stored messages and its tokens or app password. For Microsoft accounts, we delete the stored access tokens, so we can't use them anymore; Microsoft doesn't let apps revoke their own access, so you can also remove BruteForceHR at [account.live.com/consent/Manage](https://account.live.com/consent/Manage) (work or school accounts: [myapps.microsoft.com](https://myapps.microsoft.com)). For IMAP accounts, we delete the app password; to be sure it can't be used again, also delete it at your email provider. Applications, interviews and contacts that were created from that account's email stay in your tracker until you delete them.
 
 You can also remove BruteForceHR's access from your Google or Microsoft account settings at any time.
 
@@ -254,7 +254,7 @@ We don't keep separate backups of your data, so deleted data can't be restored.
 - **Disconnect an email account:** Settings › Mail accounts (see [Disconnecting](#disconnecting)).
 - **Turn off AI or email text for AI:** Settings › AI & sending.
 - **Turn off notifications:** Settings › Notifications, or your device's settings.
-- **Delete your account:** Settings › Data & privacy › Delete account. After you confirm by signing in again with a link from your email, we revoke our access to your connected email accounts, delete all your data and files, and delete your sign-in account. This is permanent.
+- **Delete your account:** Settings › Data & privacy › Delete account. After you confirm by signing in again with a link from your email, we revoke our access to your connected Google accounts and delete the access tokens for all your connected email accounts (see [Disconnecting](#disconnecting)), delete all your data and files, and delete your sign-in account. This is permanent.
 
 Depending on where you live (for example under the EU or UK GDPR, or Turkey's KVKK), you also have the right to access, correct, delete, restrict or object to the processing of your data, to receive it in a portable format, and to withdraw consent. You can also complain to your local data protection authority.
 

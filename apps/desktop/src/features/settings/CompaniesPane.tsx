@@ -4,7 +4,7 @@
  * remove it (Undo brings it back). Clients write only name, careers URL, enabled and updatedAt;
  * the server resolves the board.
  */
-import type { WatchedCompany } from "@bfhr/core";
+import { CareersUrlSchema, type WatchedCompany } from "@bfhr/core";
 import {
   Building2,
   CircleAlert,
@@ -97,13 +97,10 @@ const messages = defineMessages({
 const controlClass =
   "bg-surface-base border-line-control text-callout text-fg-primary placeholder:text-fg-tertiary h-8 w-full min-w-0 rounded-md border px-2 aria-invalid:border-danger-solid";
 
+/** https only (the server fetches the page; firestore.rules refuses anything else). */
 function validUrl(value: string): boolean {
-  try {
-    const url = new URL(value.trim());
-    return (url.protocol === "https:" || url.protocol === "http:") && url.hostname.includes(".");
-  } catch {
-    return false;
-  }
+  const parsed = CareersUrlSchema.safeParse(value.trim());
+  return parsed.success && new URL(parsed.data).hostname.includes(".");
 }
 
 /** Add or edit form. */

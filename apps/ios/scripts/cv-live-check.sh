@@ -54,6 +54,9 @@ trap cleanup EXIT
 
 export TEST_RUNNER_BFHR_E2E_EMAIL="$email" TEST_RUNNER_BFHR_CAPTURE_DIR="$out"
 run_test SignInEndToEndTests/testSendsLink
+# Sign-up is invite-only (docs/runbooks/accounts.md): create the throwaway user with the admin API
+# first, so the app signs in to an existing account and the allowlist stays untouched.
+api -X POST "https://identitytoolkit.googleapis.com/v1/projects/$project/accounts" -d "{\"email\":\"$email\"}" >/dev/null
 link="$(api -X POST "https://identitytoolkit.googleapis.com/v1/projects/$project/accounts:sendOobCode" -d "{\"requestType\":\"EMAIL_SIGNIN\",\"email\":\"$email\",\"continueUrl\":\"https://bruteforcehr.web.app/auth/finish\",\"canHandleCodeInApp\":true,\"iOSBundleId\":\"com.savas07.bruteforcehr\",\"returnOobLink\":true}" | python3 -c 'import json,sys;print(json.load(sys.stdin)["oobLink"])')"
 export TEST_RUNNER_BFHR_E2E_LINK="$link"
 run_test CVStudioEndToEndTests/testSignsInAndEditsCV

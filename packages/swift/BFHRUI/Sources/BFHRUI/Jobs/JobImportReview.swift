@@ -232,7 +232,7 @@ public struct JobImportReviewView: View {
         VStack(alignment: .leading, spacing: BFHRSpace.s1) {
             HStack {
                 Text(title).font(.bfhr(.footnote)).foregroundStyle(BFHRColor.Fg.secondary)
-                if check { ConfidenceTag(reason: JobsStrings.importCheckThis) }
+                if check { ConfidenceTag() }
             }
             TextField(text: text) { Text(title) }
                 .accessibilityIdentifier(id)

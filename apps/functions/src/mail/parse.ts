@@ -1,4 +1,4 @@
-import { htmlToText, type MailInput } from "@bfhr/core";
+import { htmlToText, type MailInput, senderAuthenticated } from "@bfhr/core";
 import { simpleParser } from "mailparser";
 import type { FetchedMail } from "./providers/types";
 
@@ -39,6 +39,12 @@ export async function parseMail(accountId: string, fetched: FetchedMail): Promis
       : Array.isArray(parsed.references)
         ? parsed.references
         : [parsed.references];
+  // The topmost Authentication-Results is the receiving provider's own (Gmail, Microsoft and IMAP
+  // hosts add it last); lower ones may come from the sender and are ignored.
+  const authenticationResults =
+    parsed.headerLines.find((line) => line.key === "authentication-results")?.line.replace(/^[^:]*:/u, "") ??
+    null;
+  const fromAddress = (sender?.address ?? "unknown@invalid").toLowerCase();
   const precedence = header("precedence");
   const autoSubmitted = header("auto-submitted");
   const calendars = parsed.attachments
@@ -54,7 +60,7 @@ export async function parseMail(accountId: string, fetched: FetchedMail): Promis
       accountId,
       from: {
         name: sender?.name?.trim() || null,
-        address: (sender?.address ?? "unknown@invalid").toLowerCase(),
+        address: fromAddress,
       },
       subject: (parsed.subject ?? "").slice(0, 1_000),
       bodyText: text,
@@ -64,6 +70,9 @@ export async function parseMail(accountId: string, fetched: FetchedMail): Promis
       references,
       listUnsubscribe: parsed.headers.has("list-unsubscribe"),
       bulk: /^(?:bulk|list|junk)$/u.test(precedence) || (autoSubmitted !== "" && autoSubmitted !== "no"),
+      // Several From addresses: only the first is read, so don't vouch for it.
+      senderAuthenticated:
+        (parsed.from?.value.length ?? 0) === 1 && senderAuthenticated(authenticationResults, fromAddress),
     },
     receivedAt: fetched.receivedAt,
     rfc822MessageId: parsed.messageId ?? null,

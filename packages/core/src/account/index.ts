@@ -5,6 +5,21 @@ import { z } from "zod";
  * account". Both are callables of the `default` codebase; the apps render the reasons below.
  */
 
+/**
+ * Invite-only sign-up (docs/adr/0008-auth-email-link.md): the `beforeUserCreated` blocking function
+ * refuses addresses that aren't on the owner's allowlist with this token in its error message. The
+ * Firebase SDKs surface it as a generic blocking-function error (JS `auth/internal-error`, iOS
+ * `blockingCloudFunctionError`) whose message contains the token; the apps look for it.
+ */
+export const SIGNUP_NOT_ALLOWED = "SIGNUP_NOT_ALLOWED";
+
+/** Whether a Firebase Auth error is the invite-only refusal of a new account. */
+export function isSignupNotAllowed(error: unknown): boolean {
+  const message =
+    typeof error === "object" && error !== null && "message" in error ? String(error.message) : String(error);
+  return message.includes(SIGNUP_NOT_ALLOWED);
+}
+
 /** `accountDelete` needs a sign-in at most this old (`auth_time` claim); otherwise re-authenticate. */
 export const ACCOUNT_RECENT_SIGN_IN_SECONDS = 300;
 

@@ -21,6 +21,25 @@ Run `firebase` commands from the repo root (`/Users/savas/Desktop/BruteForceHR`,
 
 Sign-in uses Firebase Authentication's email link ([ADR 0008](../adr/0008-auth-email-link.md)); Firebase sends the email from `noreply@bruteforcehr.firebaseapp.com`. There is no mail vendor, API key or secret (owner decision 2026-10-23: no Brevo). The provider, authorized domains, sender name and the `blockPasswordSignUp` blocking function were set up on 2026-10-23.
 
+### Invite-only sign-up
+
+New accounts are allowed only for addresses on the allowlist in Firestore `serverOnly/signup` (`{ allowedEmails: [], allowedDomains: [] }`, checked by the `blockPasswordSignUp` blocking function, [ADR 0008](../adr/0008-auth-email-link.md)). Matching is case-insensitive; `allowedDomains` matches the exact domain, not subdomains. A missing document allows nobody. Existing accounts always sign in again; the list only matters when an account is created.
+
+The document was created empty on 2026-10-24 (no owner address was recorded in the repo). Manage it as the owner (`gcloud auth application-default login` once):
+
+```sh
+pnpm --filter @bfhr/functions signup:allow list
+pnpm --filter @bfhr/functions signup:allow add someone@example.com
+pnpm --filter @bfhr/functions signup:allow remove someone@example.com
+pnpm --filter @bfhr/functions signup:allow add-domain example.com
+```
+
+Someone not on the list gets the sign-in email, and opening it shows "BruteForceHR is invite-only for now. Ask the owner to add your email." Nothing is created. After adding them, they send themselves a new link.
+
+Smoke scripts and live checks create their throwaway users with the Admin SDK (`apps/functions/scripts/*`) or the admin REST API (`apps/ios/scripts/*-live-check.sh`) before signing in, which doesn't run the blocking function, so they never touch the list. The desktop E2E run with the Functions emulator allows `example.com` in the emulator's own Firestore only (`apps/desktop/scripts/with-emulators.sh`).
+
+Deploying the gate (the `identity` codebase is never deployed by CI): `firebase deploy --only functions:identity --project bruteforcehr` from the repository root (its predeploy builds `apps/functions`). Check afterwards: an address not on the list is refused at the link (`BLOCKING_FUNCTION_ERROR_RESPONSE … SIGNUP_NOT_ALLOWED`), and your own existing account still signs in.
+
 Owner check, once a build with the new sign-in is installed:
 
 1. In the app, send yourself a sign-in link. It should arrive within a minute; the first time, look in Spam and mark it "Not spam".
@@ -85,12 +104,11 @@ Uses Microsoft Graph delegated `Mail.Read`, `Mail.Send`, `offline_access`, `User
    - Redirect URI: platform **Web**, `https://bruteforcehr.web.app/connect/microsoft/callback`.
 2. _Overview_: copy **Application (client) ID**.
 3. _Certificates & secrets_ → _Client secrets_ → _New client secret_, description `bruteforcehr-connect`, expiry 24 months (put a calendar reminder 2 weeks before expiry). Copy the **Value** (shown once).
-4. _API permissions_ → _Add a permission_ → _Microsoft Graph_ → _Delegated permissions_: `Mail.Read`, `Mail.Send`, `offline_access`, `User.Read` ([Graph permissions reference](https://learn.microsoft.com/en-us/graph/permissions-reference)). Remove nothing else needed; no application permissions.
+4. _API permissions_ → _Add a permission_ → _Microsoft Graph_ → _Delegated permissions_: `Mail.Read`, `Mail.Send`, `offline_access`, `User.Read` (plus `openid`, `email`, `profile`) ([Graph permissions reference](https://learn.microsoft.com/en-us/graph/permissions-reference)). Nothing else: no `Mail.ReadWrite`, no application permissions.
 5. _Authentication_: confirm the Web redirect URI; leave implicit grant off.
-6. Store:
+6. Store, as one JSON secret (details in [runbooks/mail.md](mail.md#microsoft-entra-app)):
    ```sh
-   firebase functions:secrets:set MS_OAUTH_CLIENT_ID
-   firebase functions:secrets:set MS_OAUTH_CLIENT_SECRET
+   firebase functions:secrets:set MICROSOFT_OAUTH_CLIENT   # {"clientId":"<Application (client) ID>","clientSecret":"<Value>"}
    ```
 
 ## 5. Job API keys (M4)

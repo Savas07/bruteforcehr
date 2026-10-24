@@ -27,7 +27,6 @@ public struct DesignScreenView: View {
         Group {
             switch holder.model {
             case .today(let model): TodayScreen(model: model)
-            case .jobDetail(let model): JobDetailScreen(model: model)
             case .jobs(let screen): DesignJobsTab(screen: screen, scenario: scenario)
             case .cvEditor(let model): CVEditorScreen(model: model)
             case .trackerBoard(let model, let insights):
@@ -75,7 +74,6 @@ private final class ModelHolder {
 
     enum Model {
         case today(TodayModel)
-        case jobDetail(JobDetailModel)
         /// The Jobs tab's own stack (feed, Saved searches, Apply).
         case jobs(DesignScreen)
         case cvEditor(CVEditorModel)
@@ -93,8 +91,8 @@ private final class ModelHolder {
         now = scenario.now
         model = switch screen {
         case .today: .today(scenario.todayModel())
-        case .jobDetail: .jobDetail(scenario.jobDetailModel())
-        case .jobs, .savedSearches, .apply: .jobs(screen)
+        // Job detail is pushed on the real Jobs stack (toolbar, back button, Apply sheet).
+        case .jobs, .jobDetail, .savedSearches, .apply: .jobs(screen)
         case .cvEditor: .cvEditor(scenario.cvEditorModel())
         case .trackerBoard: Self.tracker(scenario)
         case .insights: .insights(scenario.insightsModel())

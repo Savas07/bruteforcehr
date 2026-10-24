@@ -4,11 +4,12 @@
 // window, `mailSendNow` skips the rest. On dispatch the server sends through the account's provider,
 // pins the documents and records the move to applied as the user's action.
 import { randomBytes } from "node:crypto";
-import { firestorePaths, serverOnlyPaths } from "@bfhr/api";
+import { firestorePaths, serverOnlyPaths, storagePaths } from "@bfhr/api";
 import {
   type Application,
   type ApplicationEvent,
   DEFAULT_PROFILE_SETTINGS,
+  MAIL_DAILY_SEND_CAP_MAX,
   type EmailSend,
   MAIL_SEND_MAX_ATTACHMENT_BYTES,
   MAIL_SEND_UNDO_SECONDS,
@@ -37,7 +38,8 @@ import { adminConverters as converters } from "../converters";
 import { openAdapter } from "./accounts";
 import { MAIL_SECRETS } from "./config";
 import { MailCallableError } from "./errors";
-import { MailAuthError, MailScopeError, type OutgoingMail } from "./providers/types";
+import { graphSendOverLimit } from "./providers/graph";
+import { MailAuthError, MailScopeError, MailTooLargeError, type OutgoingMail } from "./providers/types";
 
 const DISPATCH_FUNCTION = "mailSendDispatch";
 /** Outbox payloads that never dispatched are removed by TTL after this. */
@@ -85,8 +87,17 @@ const CONTENT_TYPE_BY_KIND: Readonly<Record<string, string>> = {
 
 const utcDay = (date: Date) => date.toISOString().slice(0, 10);
 
-function sendError(reason: MailSendErrorReason, message: string): MailCallableError {
-  return new MailCallableError(reasonCode(reason), reason, message);
+function sendError(
+  reason: MailSendErrorReason,
+  message: string,
+  extra: { limitBytes?: number } = {},
+): MailCallableError {
+  return new MailCallableError(reasonCode(reason), reason, message, extra);
+}
+
+/** `attachments_too_large` copy; the limit is rounded down to 0.1 MB so it never overstates. */
+function tooLargeMessage(limitBytes: number): string {
+  return `Attachments can be at most ${Math.floor(limitBytes / 100_000) / 10} MB in total from this account.`;
 }
 
 function reasonCode(reason: MailSendErrorReason) {
@@ -165,12 +176,21 @@ export async function scheduleSend(
       const snapshot = await db.doc(firestorePaths.renderedFile(uid, attachment.renderedFileId)).get();
       if (!snapshot.exists) throw sendError("attachment_not_found", "An attached file was not found.");
       const file = converters.renderedFile.fromSnapshot(snapshot);
+      // The document is client-written: only its own rendered object may be attached, and the
+      // size comes from Storage, not from the document.
+      const storagePath = storagePaths.renderedFile(uid, file.id);
+      if (file.storagePath !== storagePath)
+        throw sendError("attachment_not_found", "An attached file was not found.");
+      const object = getStorage().bucket().file(storagePath);
+      const [exists] = await object.exists();
+      if (!exists) throw sendError("attachment_not_found", "An attached file was not found.");
+      const [metadata] = await object.getMetadata();
       renderedIds.add(file.id);
       attachments.push({
-        storagePath: file.storagePath,
+        storagePath,
         fileName: file.fileName,
         contentType: CONTENT_TYPE_BY_KIND[file.kind] ?? "application/octet-stream",
-        sizeBytes: file.sizeBytes,
+        sizeBytes: Number(metadata.size ?? 0),
       });
     } else {
       if (!attachment.storagePath.startsWith(`users/${uid}/mail-attachments/`))
@@ -187,7 +207,9 @@ export async function scheduleSend(
     }
   }
   if (attachments.reduce((sum, file) => sum + file.sizeBytes, 0) > MAIL_SEND_MAX_ATTACHMENT_BYTES) {
-    throw sendError("attachments_too_large", "Attachments are over 18 MB in total.");
+    throw sendError("attachments_too_large", tooLargeMessage(MAIL_SEND_MAX_ATTACHMENT_BYTES), {
+      limitBytes: MAIL_SEND_MAX_ATTACHMENT_BYTES,
+    });
   }
   for (const pinned of [input.pins.cvFileId, input.pins.coverLetterFileId]) {
     if (pinned !== null && !renderedIds.has(pinned))
@@ -208,8 +230,30 @@ export async function scheduleSend(
     }
   }
 
+  // Graph takes the whole message in one request of at most about 4 MB (ADR 0012): refuse now
+  // rather than fail after the undo window.
+  if (account.provider === "microsoft") {
+    const limitBytes = graphSendOverLimit({
+      from: { name: null, address: account.address },
+      to: input.to,
+      cc: input.cc,
+      subject: input.subject,
+      text: input.bodyText,
+      replyTo,
+      attachments,
+    });
+    if (limitBytes !== null)
+      throw sendError("attachments_too_large", tooLargeMessage(limitBytes), { limitBytes });
+  }
+
   const profile = await db.doc(firestorePaths.user(uid)).get();
-  const cap = Number(profile.get("settings.dailySendCap") ?? DEFAULT_PROFILE_SETTINGS.dailySendCap);
+  // `settings` is client-written: anything but an integer falls back to the default, and the cap
+  // never exceeds MAIL_DAILY_SEND_CAP_MAX.
+  const stored: unknown = profile.get("settings.dailySendCap");
+  const cap = Math.min(
+    Math.max(Number.isInteger(stored) ? (stored as number) : DEFAULT_PROFILE_SETTINGS.dailySendCap, 0),
+    MAIL_DAILY_SEND_CAP_MAX,
+  );
   const now = new Date();
   const sendAt = new Date(now.getTime() + MAIL_SEND_UNDO_SECONDS * 1000);
   const sendId = randomBytes(12).toString("hex");
@@ -487,18 +531,27 @@ export async function dispatch(uid: string, sendId: string): Promise<"sent" | "f
     logger.info("mail_sent", { provider: account.provider, attachments: files.length });
     return "sent";
   } catch (error) {
-    const code =
+    const failure =
       error instanceof MailAuthError
-        ? "needs_reauth"
+        ? { code: "needs_reauth", message: "Reconnect this account, then send again." }
         : error instanceof MailScopeError
-          ? "scope_missing"
-          : "send_failed";
-    logger.error("mail_send_failed", { code, name: error instanceof Error ? error.name : typeof error });
-    await recordFailed(uid, sendId, claimed, code);
-    if (code !== "send_failed" && accountSnapshot.exists) {
+          ? { code: "scope_missing", message: "Allow sending for this account, then send again." }
+          : error instanceof MailTooLargeError
+            ? { code: "attachments_too_large", message: tooLargeMessage(error.limitBytes) }
+            : { code: "send_failed", message: "The email couldn't be sent. Nothing was delivered." };
+    logger.error("mail_send_failed", {
+      code: failure.code,
+      name: error instanceof Error ? error.name : typeof error,
+    });
+    await recordFailed(uid, sendId, claimed, failure);
+    if ((failure.code === "needs_reauth" || failure.code === "scope_missing") && accountSnapshot.exists) {
       await accountSnapshot.ref.update({
         status: "needs_reauth",
-        lastError: { code, message: "Reconnect this account to keep sending.", at: Timestamp.now() },
+        lastError: {
+          code: failure.code,
+          message: "Reconnect this account to keep sending.",
+          at: Timestamp.now(),
+        },
         updatedAt: Timestamp.now(),
       });
     }
@@ -608,7 +661,12 @@ function pinPatch(application: Application, pins: MailSendPins): Partial<Applica
   return patch;
 }
 
-async function recordFailed(uid: string, sendId: string, outbox: Outbox, code: string): Promise<void> {
+async function recordFailed(
+  uid: string,
+  sendId: string,
+  outbox: Outbox,
+  error: { code: string; message: string },
+): Promise<void> {
   const db = getFirestore();
   const appRef = db.doc(firestorePaths.application(uid, outbox.applicationId));
   const dayRef = db.doc(serverOnlyPaths.mailSendDay(uid, outbox.day));
@@ -620,16 +678,10 @@ async function recordFailed(uid: string, sendId: string, outbox: Outbox, code: s
     if (!snapshot.exists) return;
     const application = converters.application.fromSnapshot(snapshot);
     if (application.emailSend?.sendId !== sendId) return;
-    const message =
-      code === "needs_reauth"
-        ? "Reconnect this account, then send again."
-        : code === "scope_missing"
-          ? "Allow sending for this account, then send again."
-          : "The email couldn't be sent. Nothing was delivered.";
     tx.update(
       appRef,
       converters.application.toFirestoreUpdate({
-        emailSend: { ...application.emailSend, state: "failed", error: { code, message } },
+        emailSend: { ...application.emailSend, state: "failed", error },
         updatedAt: new Date(),
       }),
     );

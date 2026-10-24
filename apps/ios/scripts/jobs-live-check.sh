@@ -121,7 +121,10 @@ uid="$(api -X POST "$identity/accounts" -d "{\"email\":\"$email\",\"emailVerifie
 echo "--- user $uid ($email)"
 
 mail_send=""
-if firebase functions:list --project "$project" 2>/dev/null | grep -q '│ mailSend '; then mail_send="e2e-halden"; fi
+# Cloud Functions API (the firebase CLI's table output was unreliable under the lock).
+if [[ "$(api -o /dev/null -w '%{http_code}' "https://cloudfunctions.googleapis.com/v2/projects/$project/locations/europe-west1/functions/mailSend")" == 200 ]]; then
+  mail_send="e2e-halden"
+fi
 
 fs '
 import json

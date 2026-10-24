@@ -4,7 +4,7 @@ import { groundJobExtraction, type JobExtractResult } from "@bfhr/ai";
 import { JobSchema } from "@bfhr/core";
 import { describe, expect, it } from "vitest";
 import { type FetchRequest, type ImportDependencies, importPosting, JobImportError } from "./import-posting";
-import { FetchRefusedError, type SafeResponse } from "./safe-fetch";
+import { FetchRefusedError, type SafeResponse } from "../net/safe-fetch";
 
 // Recorded pages from packages/fixtures/job-pages (see scripts/record-job-page.ts there).
 const fixture = (name: string): string =>

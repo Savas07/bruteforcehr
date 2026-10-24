@@ -11,7 +11,7 @@ export { jobMatchesRefresh, jobsSearch, savedSearchRunNow } from "./jobs/callabl
 export { savedSearchesRunner } from "./jobs/scheduler";
 export { jobCreatedMatch, watchlistResolve } from "./jobs/triggers";
 export { cvRenderPdf } from "./render/cv-render-pdf";
-export { connect, mailConnectStart } from "./mail/connect-oauth";
+export { connect, mailConnectFinish, mailConnectStart } from "./mail/connect-oauth";
 export { mailConnectImap } from "./mail/connect-imap";
 export {
   mailApplicationChanged,

@@ -1,6 +1,7 @@
-import { firestorePaths } from "@bfhr/api";
+import { firestorePaths, serverOnlyPaths } from "@bfhr/api";
 import {
   imapPresetById,
+  mailEndpointAllowed,
   type MailAccount,
   type MailConnectImapResponse,
   MailConnectImapRequestSchema,
@@ -12,6 +13,7 @@ import { logger } from "firebase-functions/v2";
 import { HttpsError, onCall } from "firebase-functions/v2/https";
 import { verifiedUid } from "../callable";
 import { adminConverters as converters } from "../converters";
+import { takeDaily, USER_DAILY_LIMITS, utcDayKey } from "../daily-usage";
 import { saveMailSecret, secretRefOf } from "./accounts";
 import { MAIL_TOKEN_KEYS } from "./config";
 import { MailCallableError } from "./errors";
@@ -32,29 +34,26 @@ function connectError(error: ImapConnectError): MailCallableError {
         "permission-denied",
         "auth_failed",
         "We couldn't sign in with this app password.",
-        "password",
+        { field: "password" },
       );
     case "imap_disabled":
       return new MailCallableError(
         "failed-precondition",
         "imap_disabled",
         "IMAP access is turned off for this account at the provider.",
-        "password",
+        { field: "password" },
       );
     case "tls_failed":
       return new MailCallableError(
         "failed-precondition",
         "tls_failed",
         "The server's security certificate couldn't be verified.",
-        "imapHost",
+        { field: "imapHost" },
       );
     default:
-      return new MailCallableError(
-        "unavailable",
-        "host_unreachable",
-        "Can't reach the mail server.",
-        "imapHost",
-      );
+      return new MailCallableError("unavailable", "host_unreachable", "Can't reach the mail server.", {
+        field: "imapHost",
+      });
   }
 }
 
@@ -84,6 +83,43 @@ export const mailConnectImap = onCall(
       throw new HttpsError("invalid-argument", "IMAP server settings are required for other providers.");
     const smtp: MailEndpoint | null = input.smtp ?? preset?.smtp ?? null;
     const address = input.address.toLowerCase();
+    // Only mail ports with their TLS mode (MAIL_ENDPOINT_PORTS): the form must not reach other services.
+    for (const [kind, endpoint] of [
+      ["imap", imap],
+      ["smtp", smtp],
+    ] as const) {
+      if (endpoint !== null && !mailEndpointAllowed(kind, endpoint)) {
+        throw new MailCallableError(
+          "invalid-argument",
+          "port_not_allowed",
+          kind === "imap"
+            ? "Use port 993 with SSL/TLS or 143 with STARTTLS for IMAP."
+            : "Use port 465 with SSL/TLS or 587 with STARTTLS for SMTP.",
+          { field: kind === "imap" ? "imapHost" : "smtpHost" },
+        );
+      }
+    }
+    // Each attempt logs in at a user-chosen server: a daily limit keeps it from being a relay.
+    const day = utcDayKey(new Date());
+    const refused = await takeDaily(
+      [
+        {
+          name: "user" as const,
+          path: serverOnlyPaths.mailConnectDay(uid, day),
+          field: "attempts",
+          amount: 1,
+          limit: USER_DAILY_LIMITS.mailConnectAttempts,
+        },
+      ],
+      day,
+    );
+    if (refused !== null) {
+      throw new MailCallableError(
+        "resource-exhausted",
+        "too_many_attempts",
+        "That's a lot of connection attempts for today. Try again tomorrow.",
+      );
+    }
 
     const usernames = [input.username ?? address];
     if (input.username === null && preset?.tryLocalPartUsername)

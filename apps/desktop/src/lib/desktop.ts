@@ -146,7 +146,8 @@ export function setSignedIn(signedIn: boolean): Promise<void> {
 /**
  * The result of a mail OAuth connect from `bruteforcehr://connected?…`, checked in Rust
  * (src-tauri/src/mail_connect.rs). Mirrors `MailConnectResult` there; `reason` is one of
- * `MAIL_OAUTH_RETURN_REASONS` when `ok` is false.
+ * `MAIL_OAUTH_RETURN_REASONS` when `ok` is false, `handoff` the secret `mailConnectFinish`
+ * redeems when `ok` is true.
  */
 export interface MailConnectResult {
   readonly nonce: string;
@@ -154,6 +155,7 @@ export interface MailConnectResult {
   readonly intent: "read" | "send";
   readonly ok: boolean;
   readonly reason: string | null;
+  readonly handoff: string | null;
 }
 
 /** Event emitted by src-tauri/src/mail_connect.rs when a return link arrives; call `takeMailConnect`. */

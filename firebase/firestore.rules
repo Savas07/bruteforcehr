@@ -31,8 +31,16 @@ service cloud.firestore {
       }
 
       // Rendered PDF/DOCX metadata: immutable, its sha256 identifies the bytes an application used.
+      // The path must be this file's own object (mailSend attaches it with the Admin SDK), and the
+      // size stays within the Storage upload limit of `users/{uid}/rendered/{fileId}`.
       match /renderedFiles/{fileId} {
-        allow read, create: if isOwner(uid);
+        allow read: if isOwner(uid);
+        allow create: if isOwner(uid)
+          && request.resource.data.storagePath == 'users/' + uid + '/rendered/' + fileId
+          && request.resource.data.kind in ['pdf', 'docx']
+          && request.resource.data.sizeBytes is int
+          && request.resource.data.sizeBytes > 0
+          && request.resource.data.sizeBytes <= 10 * 1024 * 1024;
       }
 
       // Jobs: the embedding vector (JOB_EMBEDDING_FIELD) is written by the server only.
@@ -96,9 +104,17 @@ service cloud.firestore {
 
       // "Companies you follow". Clients create entries pending resolution and change only the
       // fields they own (WATCHLIST_CLIENT_FIELDS); the server writes the detected board and status.
+      // `careersUrl` is fetched server-side, so it must be https (WATCHLIST_CAREERS_URL_MAX_LENGTH).
+      function careersUrlValid() {
+        return request.resource.data.careersUrl is string
+          && request.resource.data.careersUrl.size() <= 2048
+          && request.resource.data.careersUrl.matches('^https://.+');
+      }
+
       match /watchlist/{companyId} {
         allow read, delete: if isOwner(uid);
         allow create: if isOwner(uid)
+          && careersUrlValid()
           && request.resource.data.status == 'pending'
           && request.resource.data.get('ats', null) == null
           && request.resource.data.get('boardToken', null) == null
@@ -107,6 +123,7 @@ service cloud.firestore {
           && request.resource.data.get('openJobs', null) == null
           && request.resource.data.get('lastFetchedAt', null) == null;
         allow update: if isOwner(uid)
+          && careersUrlValid()
           && changedKeys().hasOnly(['name', 'careersUrl', 'enabled', 'updatedAt']);
       }
 

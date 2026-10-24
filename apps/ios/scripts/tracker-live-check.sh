@@ -52,6 +52,9 @@ xcrun simctl boot "$udid" 2>/dev/null || true
 xcrun simctl uninstall "$udid" com.savas07.bruteforcehr 2>/dev/null || true
 xcrun simctl keychain "$udid" reset
 # The link is created here (no email is sent); the app asks for the address when it opens it.
+# Sign-up is invite-only (docs/runbooks/accounts.md): create the throwaway user with the admin API
+# first, so the app signs in to an existing account and the allowlist stays untouched.
+api -X POST "https://identitytoolkit.googleapis.com/v1/projects/$project/accounts" -d "{\"email\":\"$email\"}" >/dev/null
 link="$(api -X POST "https://identitytoolkit.googleapis.com/v1/projects/$project/accounts:sendOobCode" -d "{\"requestType\":\"EMAIL_SIGNIN\",\"email\":\"$email\",\"continueUrl\":\"https://bruteforcehr.web.app/auth/finish\",\"canHandleCodeInApp\":true,\"iOSBundleId\":\"com.savas07.bruteforcehr\",\"returnOobLink\":true}" | python3 -c 'import json,sys;print(json.load(sys.stdin)["oobLink"])')"
 export TEST_RUNNER_BFHR_E2E_LINK="$link"
 run_test TrackerEndToEndTests/testTrackerOnLiveData

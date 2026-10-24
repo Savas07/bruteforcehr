@@ -207,6 +207,7 @@ describe("Connect your email", () => {
       intent: "read",
       ok: false,
       reason: "failed",
+      handoff: null,
     };
     await act(async () => desktop.listener?.());
     expect(dialog().textContent).toContain("Finish in your browser");
@@ -216,8 +217,62 @@ describe("Connect your email", () => {
       intent: "read",
       ok: false,
       reason: "scope_missing",
+      handoff: null,
     };
     await act(async () => desktop.listener?.());
     expect(dialog().textContent).toContain("didn't get permission to read your email");
+  });
+
+  it("redeems the handoff with mailConnectFinish and names the connected mailbox", async () => {
+    await render(true);
+    click("Continue");
+    click("Continue to Google");
+    await settle();
+    const handoff = "h".repeat(43);
+    // Another connect's return link is not redeemed.
+    desktop.pending = {
+      nonce: "another-nonce-000000",
+      provider: "google",
+      intent: "read",
+      ok: true,
+      reason: null,
+      handoff,
+    };
+    await act(async () => desktop.listener?.());
+    expect(store.log.filter((entry) => entry.kind === "connectFinish")).toEqual([]);
+    expect(dialog().textContent).toContain("Finish in your browser");
+
+    desktop.pending = {
+      nonce: "memory-nonce-0000000000",
+      provider: "google",
+      intent: "read",
+      ok: true,
+      reason: null,
+      handoff,
+    };
+    await act(async () => desktop.listener?.());
+    await settle();
+    expect(store.log).toContainEqual({ kind: "connectFinish", nonce: "memory-nonce-0000000000", handoff });
+    expect(dialog().textContent).toContain("Connected to gmail@memory.example");
+  });
+
+  it("explains calmly when the sign-in belongs to another account", async () => {
+    await render(true);
+    click("Continue");
+    click("Continue to Google");
+    await settle();
+    desktop.pending = {
+      nonce: "memory-nonce-0000000000",
+      provider: "google",
+      intent: "read",
+      ok: true,
+      reason: null,
+      handoff: "w".repeat(43),
+    };
+    await act(async () => desktop.listener?.());
+    await settle();
+    expect(dialog().textContent).toContain("started from another BruteForceHR account");
+    expect(dialog().textContent).toContain("Try again");
+    expect(store.source.getState()).toMatchObject({ status: "ready", data: { mailAccounts: [] } });
   });
 });

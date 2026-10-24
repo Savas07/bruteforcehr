@@ -16,3 +16,6 @@ export * from "./jobs";
 export * from "./matching";
 export * from "./account";
 export * from "./jobImport";
+export * from "./apply";
+export * from "./coverLetters";
+export * from "./answers";

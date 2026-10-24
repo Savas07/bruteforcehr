@@ -13,8 +13,8 @@ public protocol MailConnectService: AnyObject {
     /// `mailConnectStart`: the `/connect/{provider}?nonce=…` URL to open.
     func startOAuth(provider: OAuthMailProvider, lookbackDays: Int, address: String?) async throws(MailConnectError) -> URL
     /// `mailConnectFinish`: redeems the return link's `handoff` for this signed-in user; nothing is
-    /// stored before it succeeds. Returns the connected account's id.
-    func finishOAuth(nonce: String, handoff: String) async throws(MailConnectError) -> String
+    /// stored before it succeeds.
+    func finishOAuth(nonce: String, handoff: String) async throws(MailConnectError) -> MailConnectFinishResult
     /// `mailConnectImap`: tests IMAP (and SMTP), stores the password encrypted, starts the scan.
     func connectImap(_ request: ImapConnectRequest) async throws(MailConnectError) -> ImapConnectResult
     /// `mailBackfillStart`: scans the last `lookbackDays` again.
@@ -58,6 +58,20 @@ public struct ImapConnectResult: Hashable, Sendable {
     }
 }
 
+/// `mailConnectFinish`'s answer: the connected mailbox, and whether it reconnected an existing
+/// account (no new lookback scan then).
+public struct MailConnectFinishResult: Hashable, Sendable {
+    public var accountId: String
+    public var address: String
+    public var reconnect: Bool
+
+    public init(accountId: String, address: String, reconnect: Bool) {
+        self.accountId = accountId
+        self.address = address
+        self.reconnect = reconnect
+    }
+}
+
 /// Connect errors in the form's terms (`MAIL_CONNECT_ERROR_REASONS`, `MAIL_OAUTH_RETURN_REASONS`
 /// and the transport).
 public enum MailConnectError: Error, Hashable, Sendable {
@@ -81,6 +95,10 @@ public enum MailConnectError: Error, Hashable, Sendable {
     case expired
     /// The provider's return link belongs to another BruteForceHR account; nothing was saved.
     case wrongUser
+    /// A server port/security pair outside the allowed ones (993/143, 465/587).
+    case portNotAllowed(field: ImapField)
+    /// Too many connection tests today.
+    case tooManyAttempts
     case offline
     /// Anything else, with details for "Copy details".
     case failed(String)
@@ -109,6 +127,8 @@ public enum MailConnectError: Error, Hashable, Sendable {
         case "admin_consent_required": return .adminConsentRequired
         case "nonce_invalid", "connect_expired": return .expired
         case "connect_wrong_user": return .wrongUser
+        case "port_not_allowed": return .portNotAllowed(field: field ?? .imapHost)
+        case "too_many_attempts": return .tooManyAttempts
         default: return .failed(reason ?? "unknown")
         }
     }
@@ -196,6 +216,10 @@ public final class MailConnectModel: ScreenModel {
     // Result
     /// The account being scanned (both callables return it).
     public internal(set) var connectedAccountId: String?
+    /// The mailbox `mailConnectFinish` named, shown before the account's document arrives.
+    public private(set) var connectedAddress: String?
+    /// The connect replaced an existing account's credentials: no new lookback scan.
+    public private(set) var reconnected = false
     public private(set) var accounts: [MailAccount] = []
     public private(set) var backfillRetryFailed = false
 
@@ -285,7 +309,10 @@ public final class MailConnectModel: ScreenModel {
             let callback = try await oauthSession.authenticate(url: url, callbackScheme: "bruteforcehr")
             switch MailOAuthReturn(callback) {
             case .connected(_, let nonce, let handoff):
-                connectedAccountId = try await service.finishOAuth(nonce: nonce, handoff: handoff)
+                let result = try await service.finishOAuth(nonce: nonce, handoff: handoff)
+                connectedAccountId = result.accountId
+                connectedAddress = result.address
+                reconnected = result.reconnect
                 oauthState = .idle
                 path.append(.scanning)
                 onConnected?()
@@ -355,8 +382,15 @@ public final class MailConnectModel: ScreenModel {
     }
 
     public var canConnect: Bool {
-        guard formState != .testing, isAddressValid, !password.isEmpty, !addressNeedsOAuth else { return false }
-        return !imap.host.trimmingCharacters(in: .whitespaces).isEmpty && (1...65_535).contains(imap.port)
+        guard formState != .testing, isAddressValid, !password.isEmpty, !addressNeedsOAuth, portProblem == nil else { return false }
+        return !imap.host.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    /// A typed port/security pair the server won't accept (checked before Connect).
+    public var portProblem: MailConnectError.ImapField? {
+        if !imap.isAllowed(as: .imap) { return .imapHost }
+        if !smtp.host.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, !smtp.isAllowed(as: .smtp) { return .smtpHost }
+        return nil
     }
 
     /// The field an error marks.
@@ -364,7 +398,7 @@ public final class MailConnectModel: ScreenModel {
         guard case .failed(let error) = formState else { return nil }
         switch error {
         case .authFailed, .imapDisabled: return .password
-        case .hostUnreachable(let field), .tlsFailed(let field): return field
+        case .hostUnreachable(let field), .tlsFailed(let field), .portNotAllowed(let field): return field
         default: return nil
         }
     }
@@ -380,7 +414,7 @@ public final class MailConnectModel: ScreenModel {
             preset: presetId,
             username: username.trimmingCharacters(in: .whitespaces).isEmpty ? nil : username.trimmingCharacters(in: .whitespaces),
             imap: custom ? trimmed(imap) : nil,
-            smtp: custom ? (smtp.host.trimmingCharacters(in: .whitespaces).isEmpty ? nil : trimmed(smtp)) : nil,
+            smtp: custom ? (smtp.host.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : trimmed(smtp)) : nil,
             lookbackDays: lookbackDays,
             accountId: reconnecting?.id
         )
@@ -390,12 +424,13 @@ public final class MailConnectModel: ScreenModel {
             formState = .editing
             smtpWarning = result.smtpWarning
             connectedAccountId = result.accountId
+            connectedAddress = request.address
+            reconnected = reconnecting != nil
             path.append(.scanning)
             onConnected?()
         } catch {
             formState = .failed(error)
-            if case .hostUnreachable = error { showsServerSettings = true }
-            if case .tlsFailed = error { showsServerSettings = true }
+            if errorField == .imapHost || errorField == .smtpHost { showsServerSettings = true }
         }
     }
 
@@ -405,7 +440,8 @@ public final class MailConnectModel: ScreenModel {
     }
 
     private func trimmed(_ endpoint: MailEndpoint) -> MailEndpoint {
-        MailEndpoint(host: endpoint.host.trimmingCharacters(in: .whitespaces).lowercased(), port: endpoint.port, security: endpoint.security)
+        let host = endpoint.host.filter { !$0.isWhitespace && !$0.isNewline }.lowercased()
+        return MailEndpoint(host: host, port: endpoint.port, security: endpoint.security)
     }
 
     // MARK: Scan

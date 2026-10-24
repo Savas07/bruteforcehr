@@ -361,13 +361,17 @@ private struct AppPasswordForm: View {
                 DisclosureGroup(isExpanded: $model.showsServerSettings) {
                     TextField(text: $model.username, prompt: Text(MailConnectStrings.usernamePrompt)) { Text(MailConnectStrings.username) }
                         .bfhrLiteralInput()
-                    EndpointFields(title: MailConnectStrings.incoming, endpoint: $model.imap, identifier: "imap")
+                    EndpointFields(title: MailConnectStrings.incoming, endpoint: $model.imap, kind: .imap)
                     if model.errorField == .imapHost, let message = formError {
                         FieldError(message)
+                    } else if model.portProblem == .imapHost {
+                        FieldError(MailConnectStrings.errorPortNotAllowed)
                     }
-                    EndpointFields(title: MailConnectStrings.outgoing, endpoint: $model.smtp, identifier: "smtp")
+                    EndpointFields(title: MailConnectStrings.outgoing, endpoint: $model.smtp, kind: .smtp)
                     if model.errorField == .smtpHost, let message = formError {
                         FieldError(message)
+                    } else if model.portProblem == .smtpHost {
+                        FieldError(MailConnectStrings.errorPortNotAllowed)
                     }
                 } label: {
                     Text(MailConnectStrings.serverSettings)
@@ -452,6 +456,7 @@ private struct AppPasswordForm: View {
                 FieldError(message)
             } else {
                 Text(MailConnectStrings.passwordCaption)
+                    .foregroundStyle(BFHRColor.Fg.secondary)
             }
         }
     }
@@ -533,7 +538,8 @@ private struct FieldError: View {
 private struct EndpointFields: View {
     let title: LocalizedStringResource
     @Binding var endpoint: MailEndpoint
-    let identifier: String
+    let kind: MailEndpointKind
+    private var identifier: String { kind.rawValue }
 
     var body: some View {
         VStack(alignment: .leading, spacing: BFHRSpace.s2) {
@@ -541,10 +547,13 @@ private struct EndpointFields: View {
                 .font(.bfhr(.footnote, emphasized: true))
                 .foregroundStyle(BFHRColor.Fg.secondary)
                 .accessibilityAddTraits(.isHeader)
-            TextField(text: $endpoint.host, prompt: Text(verbatim: identifier == "imap" ? "imap.example.com" : "smtp.example.com")) {
+            // Wraps at large text sizes instead of clipping a long host name.
+            TextField(text: $endpoint.host, prompt: Text(verbatim: identifier == "imap" ? "imap.example.com" : "smtp.example.com"), axis: .vertical) {
                 Text(MailConnectStrings.host)
             }
+            .lineLimit(1...3)
             .bfhrLiteralInput()
+            .accessibilityLabel(Text(MailConnectStrings.host))
             .accessibilityIdentifier("connect.\(identifier).host")
             LabeledContent {
                 TextField(value: $endpoint.port, format: .number.grouping(.never)) { Text(MailConnectStrings.port) }
@@ -558,6 +567,10 @@ private struct EndpointFields: View {
                 Text(MailConnectStrings.securitySTARTTLS).tag(MailSecurity.starttls)
             } label: {
                 Text(MailConnectStrings.security)
+            }
+            // The usual port follows the security choice (993/143, 465/587).
+            .onChange(of: endpoint.security) { _, security in
+                endpoint.port = MailEndpoint.defaultPort(kind, security: security)
             }
         }
         .padding(.vertical, BFHRSpace.s1)
@@ -590,12 +603,12 @@ private struct ScanProgressView: View {
     var body: some View {
         List {
             Section {
-                if let account = model.connectedAccount {
+                if let address = model.connectedAccount?.address ?? model.connectedAddress {
                     HStack(alignment: .firstTextBaseline, spacing: BFHRSpace.s2) {
                         Image(systemName: "checkmark.circle.fill")
                             .foregroundStyle(BFHRTone.success.text)
                             .accessibilityHidden(true)
-                        Text(bfhrPlain: MailConnectStrings.connectedTo(account.address))
+                        Text(bfhrPlain: model.reconnected ? MailConnectStrings.reconnectedTo(address) : MailConnectStrings.connectedTo(address))
                             .fixedSize(horizontal: false, vertical: true)
                     }
                     .font(.bfhr(.headline))
@@ -613,7 +626,13 @@ private struct ScanProgressView: View {
                         .listRowBackground(Color.clear)
                 }
             }
-            if let account = model.connectedAccount {
+            if model.reconnected {
+                Section {
+                    Text(MailConnectStrings.reconnectedBody)
+                        .font(.bfhr(.subheadline))
+                        .foregroundStyle(BFHRColor.Fg.secondary)
+                }
+            } else if let account = model.connectedAccount {
                 content(account)
             }
         }

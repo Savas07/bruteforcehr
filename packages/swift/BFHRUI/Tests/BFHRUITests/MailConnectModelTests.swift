@@ -17,10 +17,10 @@ final class FakeMailService: MailConnectService {
         return URL(string: "https://bruteforcehr.web.app/connect/\(provider.rawValue)?nonce=abc")!
     }
 
-    var finishResult: Result<String, MailConnectError> = .success("acc-g")
+    var finishResult: Result<MailConnectFinishResult, MailConnectError> = .success(MailConnectFinishResult(accountId: "acc-g", address: "deniz@gmail.com", reconnect: false))
     var finishes: [(String, String)] = []
 
-    func finishOAuth(nonce: String, handoff: String) async throws(MailConnectError) -> String {
+    func finishOAuth(nonce: String, handoff: String) async throws(MailConnectError) -> MailConnectFinishResult {
         finishes.append((nonce, handoff))
         return try finishResult.get()
     }
@@ -110,6 +110,7 @@ struct MailConnectModelTests {
         #expect(service.finishes.map(\.0) == ["n1"] && service.finishes.map(\.1) == ["h1"])
         #expect(model.path == [.scanning])
         #expect(model.connectedAccountId == "acc-g")
+        #expect(model.connectedAddress == "deniz@gmail.com" && !model.reconnected)
         model.load([try account("acc-g", provider: .gmail, updatedAt: Self.now)])
         #expect(model.connectedAccount?.id == "acc-g")
 
@@ -202,8 +203,26 @@ struct MailConnectModelTests {
         #expect(service.backfills.first?.0 == "acc-icloud")
     }
 
+    @Test("Ports outside 993/143 and 465/587 are refused before Connect; security picks the port")
+    func ports() {
+        let model = MailConnectModel(service: FakeMailService(), oauthSession: nil, now: { Self.now })
+        model.chooseAppPassword(ImapPreset.otherID)
+        model.address = "deniz@posteo.example"
+        model.password = "x"
+        model.imap = MailEndpoint(host: "mail.posteo.example", port: 995, security: .tls)
+        #expect(model.portProblem == .imapHost && !model.canConnect)
+        model.imap.port = 993
+        model.smtp = MailEndpoint(host: "mail.posteo.example", port: 25, security: .starttls)
+        #expect(model.portProblem == .smtpHost)
+        model.smtp.port = 587
+        #expect(model.portProblem == nil && model.canConnect)
+    }
+
     @Test("Callable error reasons map to form errors")
     func errorReasons() {
+        #expect(MailConnectError.reason("port_not_allowed", field: "smtpHost") == .portNotAllowed(field: .smtpHost))
+        #expect(MailConnectError.reason("too_many_attempts") == .tooManyAttempts)
+        #expect(MailConnectError.reason("connect_expired") == .expired)
         #expect(MailConnectError.reason("auth_failed", field: "password") == .authFailed)
         #expect(MailConnectError.reason("host_unreachable", field: "smtpHost") == .hostUnreachable(field: .smtpHost))
         #expect(MailConnectError.reason("provider_not_configured") == .providerNotConfigured)

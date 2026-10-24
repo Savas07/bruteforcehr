@@ -16,6 +16,7 @@ private struct MailVectors: Decodable {
     }
 
     let presets: [ImapPreset]
+    let endpointPorts: [String: [MailEndpoint.PortSecurity]]
     let presetFor: [PresetFor]
     let categoryTargets: [CategoryTarget]
 }
@@ -36,6 +37,16 @@ struct MailConformanceTests {
         for vector in vectors.presetFor {
             #expect(ImapPreset.preset(for: vector.address)?.id == vector.preset, "\(vector.address)")
         }
+    }
+
+    @Test func endpointPortsMatchTypeScript() {
+        #expect(vectors.endpointPorts.count == MailEndpointKind.allCases.count)
+        for kind in MailEndpointKind.allCases {
+            #expect(mailEndpointPorts[kind] == vectors.endpointPorts[kind.rawValue], "\(kind)")
+        }
+        #expect(MailEndpoint.tls("imap.example.com").isAllowed(as: .imap))
+        #expect(!MailEndpoint.tls("imap.example.com", port: 143).isAllowed(as: .imap))
+        #expect(MailEndpoint.defaultPort(.smtp, security: .starttls) == 587)
     }
 
     @Test func categoryTargetsMatchTypeScript() {

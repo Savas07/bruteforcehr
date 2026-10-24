@@ -18,7 +18,7 @@ final class DesignMailService: MailConnectService {
         throw .providerNotConfigured
     }
 
-    func finishOAuth(nonce: String, handoff: String) async throws(MailConnectError) -> String {
+    func finishOAuth(nonce: String, handoff: String) async throws(MailConnectError) -> MailConnectFinishResult {
         throw .providerNotConfigured
     }
 

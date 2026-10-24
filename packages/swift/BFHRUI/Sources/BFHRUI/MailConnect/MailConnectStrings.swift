@@ -115,6 +115,12 @@ enum MailConnectStrings {
     static let errorScope = LocalizedStringResource.bfhr("error.scope", default: "BruteForceHR didn't get permission to read your email. Try again and keep the mail permission checked.", table: "MailConnect")
     static let errorAdmin = LocalizedStringResource.bfhr("error.admin", default: "Your organization needs to approve BruteForceHR before it can read this mailbox. Ask your IT admin, or connect a personal account instead.", table: "MailConnect")
     static let errorExpired = LocalizedStringResource.bfhr("error.expired", default: "The sign-in took too long. Try again.", table: "MailConnect")
+    static let errorPortNotAllowed = LocalizedStringResource.bfhr("imap.error.port", default: "Use port 993 with SSL/TLS or 143 with STARTTLS for incoming mail, and 465 with SSL/TLS or 587 with STARTTLS for outgoing mail.", table: "MailConnect")
+    static let errorTooManyAttempts = LocalizedStringResource.bfhr("error.tooManyAttempts", default: "We've paused connection tests for today after several tries. Try again tomorrow.", table: "MailConnect")
+    static func reconnectedTo(_ address: String) -> LocalizedStringResource {
+        .bfhr("scan.reconnected", default: "Reconnected \(address)", table: "MailConnect", comment: "%@ = address.")
+    }
+    static let reconnectedBody = LocalizedStringResource.bfhr("scan.reconnected.body", default: "We'll pick up new emails from here. Emails we already stored stay as they are.", table: "MailConnect")
     static let errorWrongUser = LocalizedStringResource.bfhr("error.wrongUser", default: "That sign-in belongs to another BruteForceHR account, so nothing was saved. Try again from this account.", table: "MailConnect")
 
     // Scan (Screen D/E)
@@ -170,6 +176,8 @@ enum MailConnectStrings {
         case .adminConsentRequired: errorAdmin
         case .expired: errorExpired
         case .wrongUser: errorWrongUser
+        case .portNotAllowed: errorPortNotAllowed
+        case .tooManyAttempts: errorTooManyAttempts
         case .cancelled, .providerNotConfigured, .oauthRequired: nil
         case .failed: errorFailed
         }

@@ -461,6 +461,29 @@
         }
       }
     },
+    "error.tooManyAttempts" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nach mehreren Versuchen haben wir die Verbindungstests für heute pausiert. Versuch es morgen noch einmal."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We've paused connection tests for today after several tries. Try again tomorrow."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Birkaç denemeden sonra bugünlük bağlantı testlerine ara verdik. Yarın tekrar deneyin."
+          }
+        }
+      }
+    },
     "error.unverified" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -595,6 +618,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bu hesapta IMAP erişimi kapalı. Sağlayıcınızın e-posta ayarlarından açıp tekrar deneyin."
+          }
+        }
+      }
+    },
+    "imap.error.port" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nimm für eingehende Mails Port 993 mit SSL/TLS oder 143 mit STARTTLS und für ausgehende Mails 465 mit SSL/TLS oder 587 mit STARTTLS."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use port 993 with SSL/TLS or 143 with STARTTLS for incoming mail, and 465 with SSL/TLS or 587 with STARTTLS for outgoing mail."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gelen posta için 993 (SSL/TLS) veya 143 (STARTTLS), giden posta için 465 (SSL/TLS) veya 587 (STARTTLS) portunu kullanın."
           }
         }
       }
@@ -2136,6 +2182,52 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Bu birkaç dakika sürebilir. Devam edebilirsiniz: yeni e-postalar bulundukça E-posta'da görünür."
+          }
+        }
+      }
+    },
+    "scan.reconnected" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ wieder verbunden"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reconnected %@"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ yeniden bağlandı"
+          }
+        }
+      }
+    },
+    "scan.reconnected.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ab jetzt holen wir neue E-Mails ab. Bereits gespeicherte E-Mails bleiben, wie sie sind."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We'll pick up new emails from here. Emails we already stored stay as they are."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yeni e-postaları buradan itibaren alacağız. Daha önce sakladığımız e-postalar olduğu gibi kalır."
           }
         }
       }

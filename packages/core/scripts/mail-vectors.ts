@@ -4,7 +4,13 @@
  * status a category moves an application to (`categoryTargetStatus`, used by the review trigger
  * and the automatic decision).
  */
-import { categoryTargetStatus, IMAP_PRESETS, imapPresetFor, MailCategorySchema } from "../src/index";
+import {
+  categoryTargetStatus,
+  IMAP_PRESETS,
+  imapPresetFor,
+  MAIL_ENDPOINT_PORTS,
+  MailCategorySchema,
+} from "../src/index";
 
 const ADDRESSES = [
   "deniz@gmail.com",
@@ -33,6 +39,7 @@ export function buildMailVectors() {
       appPasswordUrl: preset.appPasswordUrl,
     })),
     presetFor: ADDRESSES.map((address) => ({ address, preset: imapPresetFor(address)?.id ?? null })),
+    endpointPorts: MAIL_ENDPOINT_PORTS,
     categoryTargets: MailCategorySchema.options.flatMap((category) =>
       [false, true].map((screening) => ({
         category,

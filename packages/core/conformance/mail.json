@@ -22,6 +22,16 @@
     {"address":"deniz@example.com","preset":null},
     {"address":"deniz@sub.gmail.com","preset":null}
   ],
+  "endpointPorts": {
+    "imap": [
+      {"port":993,"security":"tls"},
+      {"port":143,"security":"starttls"}
+    ],
+    "smtp": [
+      {"port":465,"security":"tls"},
+      {"port":587,"security":"starttls"}
+    ]
+  },
   "categoryTargets": [
     {"category":"application_received","screening":false,"target":"acknowledged"},
     {"category":"application_received","screening":true,"target":"acknowledged"},

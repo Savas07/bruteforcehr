@@ -19,10 +19,12 @@ final class CloudMailService: MailConnectService {
         return url
     }
 
-    func finishOAuth(nonce: String, handoff: String) async throws(MailConnectError) -> String {
+    func finishOAuth(nonce: String, handoff: String) async throws(MailConnectError) -> MailConnectFinishResult {
         let data = try await call("mailConnectFinish", ["nonce": nonce, "handoff": handoff])
-        guard let accountId = data?["accountId"] as? String else { throw .failed("mailConnectFinish returned no accountId") }
-        return accountId
+        guard let accountId = data?["accountId"] as? String, let address = data?["address"] as? String else {
+            throw .failed("mailConnectFinish returned no account")
+        }
+        return MailConnectFinishResult(accountId: accountId, address: address, reconnect: data?["reconnect"] as? Bool ?? false)
     }
 
     func connectImap(_ request: ImapConnectRequest) async throws(MailConnectError) -> ImapConnectResult {

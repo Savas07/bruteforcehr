@@ -94,7 +94,39 @@ public struct ImapPreset: Codable, Hashable, Sendable, Identifiable {
     }
 }
 
+/// Which side of a mailbox an endpoint serves (`MAIL_ENDPOINT_PORTS`).
+public enum MailEndpointKind: String, Codable, Hashable, Sendable, CaseIterable {
+    case imap
+    case smtp
+}
+
+/// The port/security pairs `mailConnectImap` accepts (`MAIL_ENDPOINT_PORTS`).
+public let mailEndpointPorts: [MailEndpointKind: [MailEndpoint.PortSecurity]] = [
+    .imap: [.init(port: 993, security: .tls), .init(port: 143, security: .starttls)],
+    .smtp: [.init(port: 465, security: .tls), .init(port: 587, security: .starttls)],
+]
+
 extension MailEndpoint {
+    public struct PortSecurity: Codable, Hashable, Sendable {
+        public var port: Int
+        public var security: MailSecurity
+
+        public init(port: Int, security: MailSecurity) {
+            self.port = port
+            self.security = security
+        }
+    }
+
+    /// The endpoint uses an allowed port/security pair (`mailEndpointAllowed`).
+    public func isAllowed(as kind: MailEndpointKind) -> Bool {
+        mailEndpointPorts[kind]?.contains(PortSecurity(port: port, security: security)) ?? false
+    }
+
+    /// The usual port for a security on this side (993/143, 465/587).
+    public static func defaultPort(_ kind: MailEndpointKind, security: MailSecurity) -> Int {
+        mailEndpointPorts[kind]?.first { $0.security == security }?.port ?? 993
+    }
+
     /// Implicit TLS (IMAP 993 by default).
     public static func tls(_ host: String, port: Int = 993) -> MailEndpoint {
         MailEndpoint(host: host, port: port, security: .tls)

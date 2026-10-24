@@ -27,6 +27,9 @@ public final class JobsFeedModel: ScreenModel {
     public weak var searchService: (any JobSearchService)?
     /// Live data: writes are stamped with the system clock.
     public var usesSystemClock = false
+    /// A saved search's alerts were turned on: the app asks for notification permission in
+    /// context (decisions.md D25). Nil in tests and design mode.
+    public var onAlertsTurnedOn: (@MainActor () -> Void)?
     /// Counts writes the server refused; the screen shows a toast when it changes.
     public private(set) var writeFailures = 0
 
@@ -268,6 +271,7 @@ public final class JobsFeedModel: ScreenModel {
             updatedAt: writeTime
         )
         mutate { $0.savedSearches.append(search) }
+        onAlertsTurnedOn?()
         scope = .search(search.id)
         return ToastItem(
             glyph: ToastGlyph.confirmed,
@@ -281,6 +285,7 @@ public final class JobsFeedModel: ScreenModel {
     public func createSavedSearch(_ draft: SavedSearchDraft) -> String {
         let search = draft.makeSearch(id: UserData.makeID(), at: writeTime)
         mutate { $0.savedSearches.append(search) }
+        if search.enabled { onAlertsTurnedOn?() }
         return search.id
     }
 
@@ -295,6 +300,7 @@ public final class JobsFeedModel: ScreenModel {
         }
         guard updated != current else { return }
         mutate { $0.savedSearches[index] = updated }
+        if updated.enabled && !current.enabled { onAlertsTurnedOn?() }
         if scope == .search(id) {
             query = updated.query
             filters = JobFeedFilters(criteria: updated.filters, minimumBand: filters.minimumBand, hidesUnstatedSalary: filters.hidesUnstatedSalary)

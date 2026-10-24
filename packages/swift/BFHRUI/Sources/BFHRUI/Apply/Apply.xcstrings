@@ -908,6 +908,29 @@
         }
       }
     },
+    "apply.error.loadFailed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wir konnten „Bewerben“ für diese Stelle nicht öffnen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't open Apply for this job"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bu ilan için başvuru ekranını açamadık"
+          }
+        }
+      }
+    },
     "apply.error.title" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -996,6 +1019,52 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Formun dosya seçicisinin dosyalarınızı bulabilmesi için Paylaş › Dosyalar'a Kaydet'i kullanın."
+          }
+        }
+      }
+    },
+    "apply.files.kind.cv" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dein CV, PDF"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your CV, PDF"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CV'niz, PDF"
+          }
+        }
+      }
+    },
+    "apply.files.kind.letter" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dein Anschreiben, PDF"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your cover letter, PDF"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ön yazınız, PDF"
           }
         }
       }

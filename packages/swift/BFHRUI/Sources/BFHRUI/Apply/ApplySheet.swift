@@ -10,6 +10,8 @@ public struct ApplySheet: View {
     @Bindable private var model: ApplyModel
     @Environment(ToastCenter.self) private var toasts: ToastCenter?
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.bfhrReload) private var reload
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.openURL) private var openURL
     @State private var siteURL: URL?
     @State private var composesMail = false
@@ -32,9 +34,9 @@ public struct ApplySheet: View {
                 }
                 .bfhrToastHost()
             } skeleton: {
-                List { Text(verbatim: "Loading").bfhrSkeleton() }
+                ApplyChecklistSkeleton()
             } failure: { failure in
-                PaneError(failure, title: ApplyStrings.errorTitle, goBack: { dismiss() })
+                PaneError(failure, title: ApplyStrings.errorTitle(failure), retry: reload, goBack: { dismiss() })
             }
             .navigationTitle(Text(verbatim: model.role))
             .bfhrInlineTitle()
@@ -244,21 +246,45 @@ public struct ApplySheet: View {
         Form {
             if model.asksIfSubmitted { submitPrompt }
             Section {
+                // From and To stack and wrap at accessibility sizes: an address is never cut to
+                // "deni…e.com" on the screen that reviews what goes out.
                 if model.canSendFromAccount {
-                    Picker(selection: $model.email.accountId) {
-                        ForEach(model.sendingAccounts) { account in
-                            Text(verbatim: account.address).tag(Optional(account.id))
+                    Menu {
+                        Picker(selection: $model.email.accountId) {
+                            ForEach(model.sendingAccounts) { account in
+                                Text(verbatim: account.address).tag(Optional(account.id))
+                            }
+                        } label: { Text(ApplyStrings.from) }
+                        .pickerStyle(.inline)
+                    } label: {
+                        ApplyFieldRow(label: ApplyStrings.from) {
+                            HStack(alignment: .firstTextBaseline, spacing: BFHRSpace.s1) {
+                                Text(verbatim: fromAddress)
+                                    .foregroundStyle(BFHRColor.Accent.text)
+                                    .multilineTextAlignment(dynamicTypeSize.isAccessibilitySize ? .leading : .trailing)
+                                Image(systemName: "chevron.up.chevron.down")
+                                    .imageScale(.small)
+                                    .foregroundStyle(BFHRColor.Accent.text)
+                                    .accessibilityHidden(true)
+                            }
                         }
-                    } label: { Text(ApplyStrings.from) }
+                    }
+                    .accessibilityLabel(Text(ApplyStrings.from))
+                    .accessibilityValue(Text(verbatim: fromAddress))
+                    .accessibilityIdentifier("apply.email.from")
                 } else {
-                    LabeledContent { Text(ApplyStrings.fromMailApp) } label: { Text(ApplyStrings.from) }
+                    ApplyFieldRow(label: ApplyStrings.from) { Text(ApplyStrings.fromMailApp).foregroundStyle(BFHRColor.Fg.secondary) }
                 }
-                LabeledContent {
-                    TextField(text: $model.email.to) { Text(ApplyStrings.to) }
+                ApplyFieldRow(label: ApplyStrings.to) {
+                    TextField(text: $model.email.to, axis: .vertical) { Text(ApplyStrings.to) }
                         .bfhrEmailField()
-                        .multilineTextAlignment(.trailing)
+                        .multilineTextAlignment(dynamicTypeSize.isAccessibilitySize ? .leading : .trailing)
                         .accessibilityIdentifier("apply.email.to")
-                } label: { Text(ApplyStrings.to) }
+                        .onChange(of: model.email.to) { _, text in
+                            // Wraps like a multi-line field, but an address is one line.
+                            if text.contains(where: \.isNewline) { model.email.to = text.filter { !$0.isNewline } }
+                        }
+                }
                 // A visible label that stays once the subject is filled in (From and To have theirs).
                 VStack(alignment: .leading, spacing: 2) {
                     Text(ApplyStrings.subject)
@@ -267,6 +293,9 @@ public struct ApplySheet: View {
                         .accessibilityHidden(true)
                     TextField(text: $model.email.subject, axis: .vertical) { Text(ApplyStrings.subject) }
                         .accessibilityIdentifier("apply.email.subject")
+                        .onChange(of: model.email.subject) { _, text in
+                            if text.contains(where: \.isNewline) { model.email.subject = text.filter { !$0.isNewline } }
+                        }
                 }
                 TextEditor(text: $model.email.body)
                     .frame(minHeight: 180)
@@ -308,6 +337,10 @@ public struct ApplySheet: View {
                 .accessibilityIdentifier("apply.send")
             }
         }
+    }
+
+    private var fromAddress: String {
+        model.sendingAccounts.first { $0.id == model.email.accountId }?.address ?? model.sendingAccounts.first?.address ?? ""
     }
 
     private var canSend: Bool {
@@ -372,18 +405,26 @@ public struct ApplySheet: View {
     }
 }
 
-/// A selectable row with a trailing checkmark (inset-grouped radio list).
+/// A selectable row with a trailing checkmark (inset-grouped radio list). At accessibility sizes
+/// the trailing accessory (the match pill) moves under the label, so neither is squeezed into
+/// broken words.
 struct RadioRow<Label: View, Trailing: View>: View {
     let isSelected: Bool
     let action: () -> Void
     @ViewBuilder let label: () -> Label
     @ViewBuilder let trailing: () -> Trailing
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         Button(action: action) {
             HStack(spacing: BFHRSpace.s3) {
-                label().frame(maxWidth: .infinity, alignment: .leading)
-                trailing()
+                let layout = dynamicTypeSize.isAccessibilitySize
+                    ? AnyLayout(VStackLayout(alignment: .leading, spacing: BFHRSpace.s1))
+                    : AnyLayout(HStackLayout(spacing: BFHRSpace.s3))
+                layout {
+                    label().frame(maxWidth: .infinity, alignment: .leading)
+                    trailing()
+                }
                 Image(systemName: "checkmark")
                     .font(.bfhr(.body, emphasized: true))
                     .foregroundStyle(BFHRColor.Accent.text)
@@ -394,6 +435,53 @@ struct RadioRow<Label: View, Trailing: View>: View {
         }
         .buttonStyle(.plain)
         .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+}
+
+/// "From" / "To": label leading and value trailing; stacked, value wrapping, at accessibility
+/// sizes.
+struct ApplyFieldRow<Value: View>: View {
+    let label: LocalizedStringResource
+    @ViewBuilder let value: () -> Value
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    var body: some View {
+        let layout = dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: BFHRSpace.s1))
+            : AnyLayout(HStackLayout(alignment: .firstTextBaseline, spacing: BFHRSpace.s3))
+        layout {
+            Text(label).foregroundStyle(BFHRColor.Fg.primary)
+            value().frame(maxWidth: .infinity, alignment: dynamicTypeSize.isAccessibilitySize ? .leading : .trailing)
+        }
+    }
+}
+
+/// The checklist's shape while the job loads: CV rows, the cover letter row, Send via rows.
+struct ApplyChecklistSkeleton: View {
+    var body: some View {
+        Form {
+            Section {
+                ForEach(0..<2, id: \.self) { _ in
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(verbatim: "Base CV — English").font(.bfhr(.body))
+                        Text(verbatim: "EN · Default").font(.bfhr(.footnote))
+                    }
+                }
+            } header: { Text(ApplyStrings.cvSection) }
+            Section {
+                Text(verbatim: "Cover letter · None").font(.bfhr(.body))
+            } header: { Text(ApplyStrings.letterSection) }
+            Section {
+                ForEach(0..<2, id: \.self) { _ in
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(verbatim: "Company site").font(.bfhr(.body))
+                        Text(verbatim: "apply.workable.com · opens here in Safari").font(.bfhr(.footnote))
+                    }
+                }
+            } header: { Text(ApplyStrings.channelSection) }
+        }
+        .bfhrInsetGroupedList()
+        .bfhrSkeleton()
     }
 }
 
@@ -425,7 +513,9 @@ struct ApplyFileRow: View {
                 .foregroundStyle(BFHRColor.Accent.text)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
+                // The file name is what the form's file picker shows; VoiceOver reads what it is.
                 Text(verbatim: file.fileName).font(.bfhr(.body)).foregroundStyle(BFHRColor.Fg.primary)
+                    .accessibilityLabel(Text(ApplyStrings.fileKind(file.kind)))
                 Text(verbatim: ByteCountFormatter.string(fromByteCount: Int64(file.sizeBytes), countStyle: .file))
                     .font(.bfhr(.footnote)).foregroundStyle(BFHRColor.Fg.secondary)
             }
@@ -436,7 +526,7 @@ struct ApplyFileRow: View {
                         .frame(minWidth: BFHRHitTarget.minimum, minHeight: BFHRHitTarget.minimum)
                 }
                 .buttonStyle(.borderless)
-                .accessibilityLabel(Text(ApplyStrings.shareFile(file.fileName)))
+                .accessibilityLabel(Text(ApplyStrings.shareFile(String(localized: ApplyStrings.fileKind(file.kind)))))
             }
         }
     }

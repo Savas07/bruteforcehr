@@ -22,6 +22,20 @@ repo_root="$(cd "$(dirname "$0")/../../.." && pwd)"
 log="${RUNNER_TEMP:-${TMPDIR:-/tmp}}/emulators.log"
 if command -v firebase >/dev/null; then cli=(firebase); else cli=(npx --yes firebase-tools@15.34.1); fi
 
+# Waits (up to a minute) until no emulator answers on its port any more.
+wait_for_free_ports() {
+  for _ in $(seq 60); do
+    local busy=false
+    for port in 9099 8080 9199 5001 4400; do
+      if curl -s -o /dev/null "http://127.0.0.1:$port/"; then busy=true; fi
+    done
+    $busy || return 0
+    sleep 1
+  done
+}
+# A previous step's emulators may still be shutting down.
+wait_for_free_ports
+
 only="${BFHR_EMULATORS:-auth,firestore,storage}"
 with_functions=false
 case ",$only," in *,functions,*) with_functions=true ;; esac
@@ -39,6 +53,9 @@ stop() {
   if command -v taskkill >/dev/null; then taskkill //F //T //PID "$emulator" >/dev/null 2>&1 || true; fi
   pkill -P "$emulator" 2>/dev/null || true
   kill "$emulator" 2>/dev/null || true
+  # The next step's emulators need the ports (the Functions emulator's workers take a few
+  # seconds to exit on Windows).
+  wait_for_free_ports
 }
 trap stop EXIT
 

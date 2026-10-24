@@ -413,14 +413,14 @@ Explicitly **not stored**:
 
 ## Apply (M4 desktop)
 
-### D43 · Tailor review offers "Accept all"
+### D44 · Tailor review offers "Accept all"
 
 - **Options:** (a) no bulk accept (research/apply.md: only "Keep original for the rest", since bulk acceptance can add content unseen); (b) "Accept all" beside "Keep original for the rest".
 - **Decision:** (b), at the owner's request (M4 desktop Apply). "Accept all" accepts every suggestion **without a `[gap]`**; suggestions with a gap stay "Keep original". Every card stays visible with its decision, "Decide again" reverts one, the preview shows the result before saving, and the disclosure ("AI suggestions. Check every change before saving.") stays in the rail header. Nothing is stored until "Save as new version".
-- **Why:** the server already drops any edit whose facts aren't in the CV or the posting (ADR 0010), and the saved result is a separate version for one application, never the CV itself (D44); one click for a reviewed set is what the owner asked for.
+- **Why:** the server already drops any edit whose facts aren't in the CV or the posting (ADR 0010), and the saved result is a separate version for one application, never the CV itself (D45); one click for a reviewed set is what the owner asked for.
 - **Affects:** apply (Tailor review, desktop; iOS when built).
 
-### D44 · Pins before applying are the current choice and can be replaced
+### D45 · Pins before applying are the current choice and can be replaced
 
 - **Options:** (a) pins are write-once from the first write, before and after applying; (b) write-once only from `appliedAt` on (what the rules enforce), replaceable before.
 - **Decision:** (b). A tailored version is pinned on the Saved/Preparing application so the composer, the kit and "Yes, I applied" use it; when the user applies with another CV or adds the PDFs and cover letter, `planRecordApplied` replaces the pre-apply pins with what was actually used. From `appliedAt` on only empty pins are filled (ADR 0002).

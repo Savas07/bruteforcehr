@@ -181,7 +181,8 @@ describe("Apply", () => {
     });
     const copied = () => browser.execute(() => (Reflect.get(window, "__bfhrCopied") as string[] | undefined) ?? []);
     await (await button("Copy Notice period")).click();
-    await $("*=Notice period copied").waitForDisplayed({ timeout: 10_000 });
+    // The toast's message is a span (`*=` alone matches links only).
+    await $("span=Notice period copied").waitForDisplayed({ timeout: 10_000 });
     expect(await copied()).toEqual([`Three months (${RUN})`]);
     const cv = await field("CV");
     await cv.selectByAttribute("value", CV_ID);

@@ -45,15 +45,46 @@ final class OnboardingAccessibilityAuditTests: XCTestCase {
     @MainActor
     private func audit(_ app: XCUIApplication, _ context: String, language: String, scrolled: Bool, ax: Bool) throws {
         Thread.sleep(forTimeInterval: 0.8)
-        let keyboard = app.keyboards.firstMatch
         // The sticky bottom bar (Continue / Start searching) on its material.
         let bottomBar = app.descendants(matching: .any).matching(
             NSPredicate(format: "identifier IN %@", ["onboarding.continue", "onboarding.finish"])
         ).firstMatch
         let barTop = bottomBar.exists ? bottomBar.frame.minY - 12 : .greatestFiniteMagnitude
+        let navigationBars = app.navigationBars.allElementsBoundByIndex.filter(\.exists).map(\.frame)
+        // "Audit failed to complete in time" (-56) on long AX pages while the simulator is busy:
+        // retry up to twice after letting it settle (JobDetailAccessibilityAuditTests policy).
+        for attempt in 0..<3 {
+            do {
+                try runAudit(app, context, language: language, scrolled: scrolled, ax: ax, barTop: barTop, navigationBars: navigationBars)
+                return
+            } catch let error as NSError where error.code == -56 && attempt < 2 {
+                // A hung audit is usually stuck on one cell mid-layout: settle, and on the second
+                // retry move the viewport a little (pages overlap, so nothing is skipped).
+                Thread.sleep(forTimeInterval: 2)
+                if attempt == 1 {
+                    let window = app.windows.firstMatch
+                    window.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.55))
+                        .press(forDuration: 0.05, thenDragTo: window.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.45)),
+                               withVelocity: .slow, thenHoldForDuration: 0.3)
+                }
+            }
+        }
+    }
+
+    @MainActor
+    private func runAudit(
+        _ app: XCUIApplication, _ context: String, language: String, scrolled: Bool, ax: Bool, barTop: CGFloat, navigationBars: [CGRect]
+    ) throws {
+        let keyboard = app.keyboards.firstMatch
         try app.performAccessibilityAudit { issue in
-            guard let element = issue.element else {
+            guard let live = issue.element else {
                 XCTContext.runActivity(named: "IGNORED (no element) \(context): \(issue.compactDescription)") { _ in }
+                return true
+            }
+            // Read once: the element can change while the audit runs (a list cell recycled, the
+            // busy button's spinner); a snapshot throws instead of failing the test.
+            guard let element = try? live.snapshot() else {
+                XCTContext.runActivity(named: "IGNORED (element gone) \(context): \(issue.compactDescription)") { _ in }
                 return true
             }
             if [.statusBar, .keyboard, .key].contains(element.elementType) { return true }
@@ -65,7 +96,7 @@ final class OnboardingAccessibilityAuditTests: XCTestCase {
             // Same policy as TrackerBoardAccessibilityAuditTests / ShareSheetAccessibilityAuditTests:
             // the system navigation bar's items are capped by iOS by design; a Dynamic Type report
             // or a clipping prediction at the default size is measured by the AX5 run of the state.
-            if app.navigationBars.allElementsBoundByIndex.contains(where: { $0.exists && $0.frame.contains(element.frame) }) {
+            if navigationBars.contains(where: { $0.contains(element.frame) }) {
                 XCTContext.runActivity(named: "IGNORED (system navigation bar item) \(context): \(element.label)") { _ in }
                 return true
             }
@@ -92,7 +123,7 @@ final class OnboardingAccessibilityAuditTests: XCTestCase {
                 XCTContext.runActivity(named: "IGNORED (known false positive, German clipping prediction) \(context): \(element.label)") { _ in }
                 return true
             }
-            XCTContext.runActivity(named: "ISSUE \(context): \(issue.compactDescription) — \(element.debugDescription.prefix(240))") { _ in }
+            XCTContext.runActivity(named: "ISSUE \(context): \(issue.compactDescription) — \(element.elementType.rawValue) \(element.identifier) '\(element.label)' \(element.frame)") { _ in }
             return false
         }
     }

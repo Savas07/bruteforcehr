@@ -32,9 +32,7 @@ final class PerformanceTests: XCTestCase {
         measure(metrics: [XCTApplicationLaunchMetric(waitUntilResponsive: true), inApp], options: options) {
             app.launch()
             let mark = app.descendants(matching: .any)["perf.launchToInteractive"]
-            if mark.waitForExistence(timeout: 30), let milliseconds = Double(mark.label) {
-                inApp.record(milliseconds: milliseconds)
-            }
+            if mark.waitForExistence(timeout: 30) { inApp.record(label: mark.label) }
         }
         XCTAssertTrue(app.descendants(matching: .any)["design.today"].waitForExistence(timeout: 20))
     }
@@ -96,15 +94,25 @@ final class PerformanceTests: XCTestCase {
     }
 }
 
-/// Launch to interactive as the app measures it (`perf.launchToInteractive`, DesignMode.swift),
-/// reported with the other metrics so perf.sh reads it from the result bundle.
+/// Launch to interactive as the app measures it (`perf.launchToInteractive`, DesignMode.swift:
+/// `<total ms>;<step>=<ms>;…`), reported with the other metrics so perf.sh reads it from the
+/// result bundle: the total (the budget) and each step since process start (where the time goes).
 private final class InAppLaunchMetric: NSObject, XCTMetric, @unchecked Sendable {
-    /// One value per measured launch, in order. XCTest may ask for the measurements only after
+    /// One timeline per measured launch, in order. XCTest may ask for the measurements only after
     /// the last iteration, so each report takes the oldest.
-    private var pending: [Double] = []
+    private var pending: [[(name: String, ms: Double)]] = []
 
     /// Records the launch the measured block just read from the app's mark.
-    func record(milliseconds: Double) { pending.append(milliseconds) }
+    func record(label: String) {
+        let parts = label.split(separator: ";")
+        guard let total = parts.first.flatMap({ Double($0) }) else { return }
+        let steps = parts.dropFirst().compactMap { part -> (name: String, ms: Double)? in
+            let pair = part.split(separator: "=")
+            guard pair.count == 2, let ms = Double(pair[1]) else { return nil }
+            return (String(pair[0]), ms)
+        }
+        pending.append([("total", total)] + steps)
+    }
 
     func copy(with zone: NSZone? = nil) -> Any { self }
 
@@ -119,13 +127,15 @@ private final class InAppLaunchMetric: NSObject, XCTMetric, @unchecked Sendable 
         guard !pending.isEmpty else {
             throw NSError(domain: "PerformanceTests", code: 1, userInfo: [NSLocalizedDescriptionKey: "The app showed no launch mark"])
         }
-        return [
+        return pending.removeFirst().map { step in
             XCTPerformanceMeasurement(
-                identifier: "com.savas07.bruteforcehr.launch-to-interactive",
-                displayName: "Launch to interactive (in app)",
-                doubleValue: pending.removeFirst() / 1000,
+                identifier: step.name == "total"
+                    ? "com.savas07.bruteforcehr.launch-to-interactive"
+                    : "com.savas07.bruteforcehr.launch-step.\(step.name)",
+                displayName: step.name == "total" ? "Launch to interactive (in app)" : "Launch step \(step.name) (in app)",
+                doubleValue: step.ms / 1000,
                 unitSymbol: "s"
-            ),
-        ]
+            )
+        }
     }
 }

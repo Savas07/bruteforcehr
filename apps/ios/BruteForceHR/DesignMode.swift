@@ -56,42 +56,61 @@ struct DesignTabRoot: View {
     }
 }
 
-/// `-BFHRPerf YES` (PerformanceTests): once Today is on screen and the main thread is free again,
-/// shows the time since the process started as a one-point element (`perf.launchToInteractive`,
-/// label = milliseconds) for the test to read: launch to interactive as the app sees it, without
-/// the simulator's own launch overhead (docs/runbooks/performance.md).
-private struct LaunchMark: ViewModifier {
+/// `-BFHRPerf YES` (PerformanceTests): when the launch reached each step, in milliseconds since
+/// the process started (docs/runbooks/performance.md).
+enum LaunchTimeline {
     static let requested = ProcessInfo.processInfo.arguments.contains("-BFHRPerf")
+    /// Main-actor only: the app's init and view callbacks.
+    nonisolated(unsafe) private(set) static var steps: [(name: String, ms: Int)] = []
 
-    let enabled: Bool
-    @State private var elapsedMs: Int?
-
-    func body(content: Content) -> some View {
-        content
-            .onAppear {
-                guard enabled, elapsedMs == nil, let started = Self.processStart() else { return }
-                // The next main-queue turn: the first frame with Today is committed by then.
-                DispatchQueue.main.async { elapsedMs = Int(Date().timeIntervalSince(started) * 1000) }
-            }
-            .overlay(alignment: .topLeading) {
-                if let elapsedMs {
-                    Color.clear
-                        .frame(width: 1, height: 1)
-                        .accessibilityElement()
-                        .accessibilityIdentifier("perf.launchToInteractive")
-                        .accessibilityLabel(String(elapsedMs))
-                }
-            }
+    static func mark(_ name: String) {
+        guard requested, let started = processStart else { return }
+        steps.append((name, Int(Date().timeIntervalSince(started) * 1000)))
     }
 
     /// When the kernel started this process.
-    private static func processStart() -> Date? {
+    static let processStart: Date? = {
         var info = kinfo_proc()
         var size = MemoryLayout<kinfo_proc>.stride
         var mib: [Int32] = [CTL_KERN, KERN_PROC, KERN_PROC_PID, getpid()]
         guard sysctl(&mib, u_int(mib.count), &info, &size, nil, 0) == 0 else { return nil }
         let start = info.kp_proc.p_un.__p_starttime
         return Date(timeIntervalSince1970: TimeInterval(start.tv_sec) + TimeInterval(start.tv_usec) / 1_000_000)
+    }()
+}
+
+/// Once Today is on screen and the main thread is free again, shows the launch timeline as a
+/// one-point element (`perf.launchToInteractive`) for the test to read, its label
+/// `<total ms>;<step>=<ms>;…`: launch to interactive as the app sees it, without the simulator's
+/// own launch overhead.
+private struct LaunchMark: ViewModifier {
+    static let requested = LaunchTimeline.requested
+
+    let enabled: Bool
+    @State private var label: String?
+
+    func body(content: Content) -> some View {
+        content
+            .onAppear {
+                guard enabled, label == nil else { return }
+                LaunchTimeline.mark("today-appear")
+                // The next main-queue turn: the first frame with Today is committed by then.
+                DispatchQueue.main.async {
+                    LaunchTimeline.mark("interactive")
+                    let steps = LaunchTimeline.steps
+                    guard let total = steps.last?.ms else { return }
+                    label = ([String(total)] + steps.map { "\($0.name)=\($0.ms)" }).joined(separator: ";")
+                }
+            }
+            .overlay(alignment: .topLeading) {
+                if let label {
+                    Color.clear
+                        .frame(width: 1, height: 1)
+                        .accessibilityElement()
+                        .accessibilityIdentifier("perf.launchToInteractive")
+                        .accessibilityLabel(label)
+                }
+            }
     }
 }
 #endif

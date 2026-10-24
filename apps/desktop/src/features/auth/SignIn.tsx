@@ -14,9 +14,10 @@ import { Button } from "../../shared/ui/Button";
 import { InlineAlert } from "../../shared/ui/InlineAlert";
 import { type LinkError, resendWaitMs, type SendError } from "./emailLink";
 import { webmailInboxFor } from "./mailProviders";
-import { type SignInView, useAuth } from "./session";
+import { type SignInNotice, type SignInView, useAuth } from "./session";
 
-const messages = defineMessages({
+/** Also used by the re-authentication in Settings › Delete account (same link, same words). */
+export const signInMessages = defineMessages({
   documentTitle: { id: "auth.documentTitle", defaultMessage: "Sign in · BruteForceHR" },
   title: { id: "auth.email.title", defaultMessage: "Sign in to BruteForceHR" },
   body: {
@@ -123,12 +124,18 @@ const messages = defineMessages({
     id: "auth.link.unavailable.body",
     defaultMessage: "Something went wrong on our side. Try again in a moment.",
   },
+  accountDeleted: {
+    id: "auth.notice.accountDeleted",
+    defaultMessage: "Your account and all its data were deleted.",
+    description: "Shown once on the sign-in screen right after Settings › Delete account finished",
+  },
 });
+const messages = signInMessages;
 
 const TERMS_URL = "https://bruteforcehr.web.app/terms";
 const PRIVACY_URL = "https://bruteforcehr.web.app/privacy";
 
-const sendErrorMessage = (intl: IntlShape, error: SendError): string =>
+export const sendErrorMessage = (intl: IntlShape, error: SendError): string =>
   intl.formatMessage(
     error === "offline"
       ? messages.sendOffline
@@ -137,7 +144,7 @@ const sendErrorMessage = (intl: IntlShape, error: SendError): string =>
         : messages.sendUnavailable,
   );
 
-const linkErrorCopy: Readonly<
+export const linkErrorCopy: Readonly<
   Record<
     Exclude<LinkError, "wrong-email">,
     { readonly title: MessageDescriptor; readonly body: MessageDescriptor }
@@ -518,8 +525,8 @@ function Step({ view }: { view: SignInView }) {
   }
 }
 
-/** The whole window while signed out. */
-export function SignIn({ view }: { view: SignInView }) {
+/** The whole window while signed out; `notice` says why, once (after deleting the account). */
+export function SignIn({ view, notice = null }: { view: SignInView; notice?: SignInNotice | null }) {
   const intl = useIntl();
   const title = intl.formatMessage(messages.documentTitle);
   useEffect(() => {
@@ -531,6 +538,9 @@ export function SignIn({ view }: { view: SignInView }) {
       {chrome.platform === "macos" && <div data-tauri-drag-region className="h-(--chrome-height) shrink-0" />}
       <main className="flex min-h-0 flex-1 overflow-y-auto px-8 py-10">
         <div className="m-auto flex w-full max-w-100 flex-col items-stretch gap-6">
+          {notice === "account-deleted" && (
+            <InlineAlert tone="info" title={intl.formatMessage(messages.accountDeleted)} />
+          )}
           {/* A new step (or a different link error) starts fresh: focus, field contents. */}
           <Step key={view.step === "link-error" ? `${view.step}-${view.error}` : view.step} view={view} />
         </div>

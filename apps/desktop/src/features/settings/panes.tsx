@@ -1,14 +1,23 @@
 /**
  * The Settings panes in nav order (`/settings/$pane`). The shell renders each `label` as the page
- * `<h1>` and in the nav; a pane renders only its sections (`SettingsSection`). Data & privacy
- * (AccountData) joins as the last entry.
+ * `<h1>` and in the nav; a pane renders only its sections (`SettingsSection`).
  */
-import { Bell, Building2, Mail, Radar, Settings2, Sparkles, type LucideIcon } from "lucide-react";
+import {
+  Bell,
+  Building2,
+  Mail,
+  Radar,
+  Settings2,
+  ShieldCheck,
+  Sparkles,
+  type LucideIcon,
+} from "lucide-react";
 import type { ComponentType } from "react";
 import { defineMessages, type MessageDescriptor, useIntl } from "react-intl";
 import { PaneError } from "../../shared/ui/PaneError";
 import { SkeletonBlock, SkeletonRegion } from "../../shared/ui/Skeleton";
 import { AiPane } from "./AiPane";
+import { DataPrivacyPane, dataPrivacyPaneLabel } from "./data-privacy";
 import { CompaniesPane } from "./CompaniesPane";
 import { GeneralPane } from "./GeneralPane";
 import { JobSourcesPane } from "./JobSourcesPane";
@@ -72,4 +81,5 @@ export const settingsPanes: readonly SettingsPaneEntry[] = [
   { id: "companies", label: labels.companies, icon: Building2, Pane: CompaniesPane },
   { id: "ai", label: labels.ai, icon: Sparkles, Pane: withProfile(AiPane) },
   { id: "general", label: labels.general, icon: Settings2, Pane: GeneralPane },
+  { id: "data-privacy", label: dataPrivacyPaneLabel, icon: ShieldCheck, Pane: DataPrivacyPane },
 ];

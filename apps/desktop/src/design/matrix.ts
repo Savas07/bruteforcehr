@@ -57,6 +57,8 @@ export const designScreenPaths = {
   "settings-companies": "/settings/companies",
   "settings-ai": "/settings/ai",
   "settings-general": "/settings/general",
+  /** Data & privacy; `?privacy=` forces the export and delete states (src/design/data-privacy.tsx). */
+  "settings-data-privacy": "/settings/data-privacy",
 } as const;
 export type DesignScreenName = keyof typeof designScreenPaths;
 
@@ -186,6 +188,8 @@ export const authDesignStates = [
   "link-offline",
   "link-unavailable",
   "link-disabled",
+  /** After Settings › Delete account: the email step with the one-time "deleted" notice. */
+  "account-deleted",
 ] as const;
 export type AuthDesignState = (typeof authDesignStates)[number];
 
@@ -222,4 +226,59 @@ export function csvCaptureFileName(
   size: { readonly width: number; readonly height: number },
 ): string {
   return `tracker-csv-${state}-${theme}-${size.width}x${size.height}.png`;
+}
+
+/**
+ * Settings › Data & privacy states (`?privacy=<state>`, src/design/data-privacy.tsx) in the Settings
+ * shell: the export section (idle, working, ready, saved, each failure, offline) and the delete
+ * dialog (typing, re-authenticating, deleting, failures, offline).
+ */
+export const privacyDesignStates = [
+  "idle",
+  "preparing",
+  "ready",
+  "saving",
+  "saved",
+  "download-failed",
+  "too-soon",
+  "daily-limit",
+  "too-large",
+  "export-failed",
+  "offline",
+  "delete-empty",
+  "delete-typed",
+  "delete-reauth",
+  "delete-reauth-sent",
+  "delete-reauth-failed",
+  "delete-reauth-done",
+  "delete-deleting",
+  "delete-failed",
+  "delete-offline",
+] as const;
+export type PrivacyDesignState = (typeof privacyDesignStates)[number];
+
+/** The Settings pane the states render in. */
+export const PRIVACY_DESIGN_PATH = "/settings/data-privacy";
+
+/** The hash route of a Data & privacy state; the two offline states also force the connection. */
+export function privacyDesignHash(
+  state: PrivacyDesignState,
+  extra: Readonly<Record<string, string>> = {},
+): string {
+  const offline = state === "offline" || state === "delete-offline";
+  const params = new URLSearchParams({
+    ...designSearchByState[offline ? "offline" : "populated"],
+    privacy: state,
+    ...extra,
+  });
+  return `#${PRIVACY_DESIGN_PATH}?${params.toString()}`;
+}
+
+/** `data-privacy-<state>-<theme>-<w>x<h>.png`. */
+export function privacyCaptureFileName(
+  state: PrivacyDesignState,
+  theme: CaptureTheme,
+  size: { readonly width: number; readonly height: number },
+): string {
+  return `data-privacy-${state}-${theme}-${size.width}x${size.height}.png`;
 }

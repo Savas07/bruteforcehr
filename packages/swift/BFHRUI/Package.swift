@@ -51,6 +51,7 @@ let package = Package(
                 .process("Insights/Insights.xcstrings"),
                 .process("UpdateGate/UpdateGate.xcstrings"),
                 .process("SignIn/SignIn.xcstrings"),
+                .process("Settings/DataPrivacy/DataPrivacy.xcstrings"),
                 .process("JobImport/JobImport.xcstrings"),
             ],
             swiftSettings: swiftSettings

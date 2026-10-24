@@ -2,6 +2,7 @@
 // the callables the apps use).
 import "./options";
 
+export { accountDelete, accountExport } from "./account/functions";
 export { cvAssist } from "./ai/cv-assist";
 export { cvImport } from "./ai/cv-import";
 export { health } from "./health";

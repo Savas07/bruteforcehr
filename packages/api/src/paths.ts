@@ -102,6 +102,13 @@ export const firestorePaths = {
   jobSource: (sourceId: string) => `${COLLECTION_IDS.jobSources}/${segment(sourceId)}`,
 } as const;
 
+/**
+ * Suffix of every account export object. The bucket lifecycle rule
+ * (firebase/storage.lifecycle.json) deletes objects with this suffix `ACCOUNT_EXPORT_LIMITS.availableDays` after creation; no
+ * other object may end with it.
+ */
+export const ACCOUNT_EXPORT_SUFFIX = ".bfhr-export.zip";
+
 /** Cloud Storage object paths (mirrored by `firebase/storage.rules`). */
 export const storagePaths = {
   /** Original uploaded CV (PDF, DOCX, JSON Resume, LinkedIn ZIP), kept attached to the CV. */
@@ -112,6 +119,14 @@ export const storagePaths = {
   cvPhoto: (uid: string, fileId: string) => `${user(uid)}/cv-photos/${segment(fileId)}`,
   /** A file attached from the device to an email apply (`mailSend` upload attachments). */
   mailAttachment: (uid: string, fileId: string) => `${user(uid)}/mail-attachments/${segment(fileId)}`,
+  /**
+   * "Export everything" ZIP built by `accountExport` (server-written, owner-readable; deleted by
+   * the bucket lifecycle rule and never included in a later export).
+   */
+  accountExport: (uid: string, exportId: string) =>
+    `${user(uid)}/exports/${segment(exportId)}${ACCOUNT_EXPORT_SUFFIX}`,
+  /** Prefix of every export of a user. */
+  accountExports: (uid: string) => `${user(uid)}/exports/`,
 } as const;
 
 /**
@@ -176,6 +191,10 @@ export const serverOnlyPaths = {
     `serverOnly/mail/users/${segment(uid)}/mailSendDays/${segment(day)}`,
   /** Review corrections kept as labeled examples (category from/to, sender domain; no body). */
   mailCorrections: (uid: string) => `serverOnly/mail/users/${segment(uid)}/mailCorrections`,
+  /** `accountExport` rate limit, one document per UTC day (TTL `expireAt`). */
+  accountExportRoot: (uid: string) => `serverOnly/accountExport/users/${segment(uid)}`,
+  accountExportDay: (uid: string, day: string) =>
+    `serverOnly/accountExport/users/${segment(uid)}/accountExportDays/${segment(day)}`,
   /** Pending OAuth connect (nonce → uid, PKCE verifier; TTL `expireAt`, minutes). */
   mailConnect: (nonce: string) => `serverOnly/mailConnect/mailConnectNonces/${segment(nonce)}`,
 } as const;
@@ -194,6 +213,7 @@ export function userDataRoots(uid: string): readonly string[] {
     serverOnlyPaths.jobQuotaRoot(uid),
     serverOnlyPaths.jobImportRoot(uid),
     serverOnlyPaths.mailRoot(uid),
+    serverOnlyPaths.accountExportRoot(uid),
   ];
 }
 

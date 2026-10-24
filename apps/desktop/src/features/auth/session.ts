@@ -3,6 +3,11 @@
  * the screens call. One state machine (`useAuthMachine`) runs against an `AuthBackend`: Firebase
  * Authentication in the app (firebaseAuth.ts), a scripted backend in the design build
  * (src/design/auth.tsx), so the harness clicks through the same transitions.
+ *
+ * While signed in, the same machine runs a re-authentication (Settings › Data & privacy › Delete
+ * account needs a sign-in less than 5 minutes old): it sends the normal sign-in link to the
+ * signed-in address and completes that link when it comes back, which renews the session's
+ * `auth_time` for the same user.
  */
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { AuthLinkDelivery } from "../../lib/desktop";
@@ -70,10 +75,29 @@ export type SignInView =
       readonly sendError: SendError | null;
     };
 
+/** A calm one-time line on the sign-in screen about why the user is signed out. */
+export type SignInNotice = "account-deleted";
+
 export type AuthState =
   | { readonly status: "loading" }
   | { readonly status: "signed-in"; readonly email: string | null }
-  | { readonly status: "signed-out"; readonly view: SignInView };
+  | { readonly status: "signed-out"; readonly view: SignInView; readonly notice?: SignInNotice };
+
+/**
+ * Re-authentication of the signed-in user. `email` is the normalized address the link goes to.
+ * Links that arrive while signed in are completed only after `sent` (or a failed completion).
+ */
+export type ReauthView =
+  | { readonly step: "idle" }
+  | { readonly step: "sending"; readonly email: string }
+  | { readonly step: "sent"; readonly email: string; readonly sentAt: number }
+  | { readonly step: "send-error"; readonly email: string; readonly error: SendError }
+  | { readonly step: "completing"; readonly email: string }
+  | { readonly step: "link-error"; readonly email: string; readonly error: LinkError }
+  /** Signed in again just now: the new session's `auth_time` is fresh. */
+  | { readonly step: "done"; readonly email: string };
+
+export const REAUTH_IDLE: ReauthView = { step: "idle" };
 
 export interface AuthValue {
   readonly state: AuthState;
@@ -89,6 +113,14 @@ export interface AuthValue {
   readonly signOut: () => void;
   /** A link from the deep-link handler. */
   readonly receiveLink: (delivery: AuthLinkDelivery) => void;
+  /** The signed-in user's re-authentication (idle unless a screen started one). */
+  readonly reauth: ReauthView;
+  /** Sends a sign-in link to the signed-in address (again, after an error or a resend). */
+  readonly sendReauthLink: () => void;
+  /** Forgets the re-authentication (its dialog closed, or the fresh sign-in got too old). */
+  readonly endReauth: () => void;
+  /** After `accountDelete`: signs out, forgets the address, and the sign-in screen says so once. */
+  readonly signOutAfterDeletion: () => void;
 }
 
 export const AuthContext = createContext<AuthValue | null>(null);
@@ -119,9 +151,13 @@ function signedOutView(pending: PendingSignIn | null, lastEmail: string, now: nu
 
 /**
  * Runs sign-in against `backend`. `initial` is `loading` in the app (the backend's first `watch`
- * report decides); the design build starts in a forced state.
+ * report decides); the design build starts in a forced state, `initialReauth` included.
  */
-export function useAuthMachine(backend: AuthBackend, initial: AuthState = { status: "loading" }): AuthValue {
+export function useAuthMachine(
+  backend: AuthBackend,
+  initial: AuthState = { status: "loading" },
+  initialReauth: ReauthView = REAUTH_IDLE,
+): AuthValue {
   const [state, setState] = useState<AuthState>(initial);
   /** The latest state for the actions (updated with every commit, so repeated clicks see it). */
   const stateRef = useRef(state);
@@ -133,8 +169,34 @@ export function useAuthMachine(backend: AuthBackend, initial: AuthState = { stat
   const lastEmail = useRef("");
   /** A link that arrived before the first `watch` report. */
   const queuedLink = useRef<AuthLinkDelivery | null>(null);
+  /** Shown on the next email step only (`signOutAfterDeletion`). */
+  const notice = useRef<SignInNotice | null>(null);
 
-  const setView = useCallback((view: SignInView) => commit({ status: "signed-out", view }), [commit]);
+  const [reauth, setReauth] = useState<ReauthView>(initialReauth);
+  const reauthRef = useRef(reauth);
+  /** Bumped when a re-authentication ends, so a late answer from the previous one is dropped. */
+  const reauthRun = useRef(0);
+  const commitReauth = useCallback((next: ReauthView) => {
+    reauthRef.current = next;
+    setReauth(next);
+  }, []);
+  const endReauth = useCallback(() => {
+    reauthRun.current += 1;
+    commitReauth(REAUTH_IDLE);
+  }, [commitReauth]);
+
+  const setView = useCallback(
+    (view: SignInView) => {
+      const shown = notice.current;
+      if (view.step !== "email") notice.current = null;
+      commit(
+        shown !== null && view.step === "email"
+          ? { status: "signed-out", view, notice: shown }
+          : { status: "signed-out", view },
+      );
+    },
+    [commit],
+  );
 
   const complete = useCallback(
     (email: string, link: string, from: "link" | "confirm") => {
@@ -193,20 +255,47 @@ export function useAuthMachine(backend: AuthBackend, initial: AuthState = { stat
     [backend, complete, setView],
   );
 
+  /** Signed in with a re-authentication waiting: the link renews the same user's session. */
+  const completeReauth = useCallback(
+    (delivery: AuthLinkDelivery) => {
+      const pending = reauthRef.current;
+      if (pending.step !== "sent" && pending.step !== "link-error") return;
+      const { email } = pending;
+      if (delivery.kind === "invalid" || !backend.isSignInLink(delivery.link)) {
+        commitReauth({ step: "link-error", email, error: "invalid" });
+        return;
+      }
+      const run = reauthRun.current;
+      commitReauth({ step: "completing", email });
+      backend.completeSignIn(email, delivery.link).then(
+        () => {
+          if (run === reauthRun.current) commitReauth({ step: "done", email });
+        },
+        (error: unknown) => {
+          if (run === reauthRun.current) commitReauth({ step: "link-error", email, error: linkErrorOf(error) });
+        },
+      );
+    },
+    [backend, commitReauth],
+  );
+
   const receiveLink = useCallback(
     (delivery: AuthLinkDelivery) => {
       const current = stateRef.current;
-      // Already signed in: the link has nothing left to do.
-      if (current.status === "signed-in") return;
-      if (current.status === "loading") queuedLink.current = delivery;
+      // Signed in, the link only matters to a re-authentication; otherwise it has nothing left to do.
+      if (current.status === "signed-in") completeReauth(delivery);
+      else if (current.status === "loading") queuedLink.current = delivery;
       else handleLink(delivery);
     },
-    [handleLink],
+    [handleLink, completeReauth],
   );
 
   useEffect(
     () =>
       backend.watch((user) => {
+        const previous = stateRef.current;
+        // Another account (or none): its re-authentication doesn't carry over.
+        if (!user || previous.status !== "signed-in" || previous.email !== user.email) endReauth();
         if (user) {
           lastEmail.current = user.email ?? "";
           queuedLink.current = null;
@@ -218,8 +307,26 @@ export function useAuthMachine(backend: AuthBackend, initial: AuthState = { stat
         setView(signedOutView(readPendingSignIn(backend.storage), lastEmail.current, backend.now()));
         if (queued) handleLink(queued);
       }),
-    [backend, commit, handleLink, setView],
+    [backend, commit, handleLink, setView, endReauth],
   );
+
+  const sendReauthLink = useCallback(() => {
+    const current = stateRef.current;
+    const step = reauthRef.current.step;
+    if (current.status !== "signed-in" || current.email === null) return;
+    if (step === "sending" || step === "completing") return;
+    const email = normalizeEmail(current.email);
+    const run = reauthRun.current;
+    commitReauth({ step: "sending", email });
+    backend.sendLink(email).then(
+      () => {
+        if (run === reauthRun.current) commitReauth({ step: "sent", email, sentAt: backend.now() });
+      },
+      (error: unknown) => {
+        if (run === reauthRun.current) commitReauth({ step: "send-error", email, error: sendErrorOf(error) });
+      },
+    );
+  }, [backend, commitReauth]);
 
   const sendLink = useCallback(
     (input: string) => {
@@ -302,8 +409,42 @@ export function useAuthMachine(backend: AuthBackend, initial: AuthState = { stat
     void backend.signOut().catch((error: unknown) => console.error("Couldn't sign out", error));
   }, [backend]);
 
+  const signOutAfterDeletion = useCallback(() => {
+    // The account is gone: don't prefill its address or resume its sign-in.
+    notice.current = "account-deleted";
+    lastEmail.current = "";
+    backend.storage.removeItem(PENDING_SIGN_IN_KEY);
+    signOut();
+  }, [backend, signOut]);
+
   return useMemo(
-    () => ({ state, now: backend.now, sendLink, changeEmail, confirmEmail, retry, signOut, receiveLink }),
-    [state, backend.now, sendLink, changeEmail, confirmEmail, retry, signOut, receiveLink],
+    () => ({
+      state,
+      now: backend.now,
+      sendLink,
+      changeEmail,
+      confirmEmail,
+      retry,
+      signOut,
+      receiveLink,
+      reauth,
+      sendReauthLink,
+      endReauth,
+      signOutAfterDeletion,
+    }),
+    [
+      state,
+      backend.now,
+      sendLink,
+      changeEmail,
+      confirmEmail,
+      retry,
+      signOut,
+      receiveLink,
+      reauth,
+      sendReauthLink,
+      endReauth,
+      signOutAfterDeletion,
+    ],
   );
 }

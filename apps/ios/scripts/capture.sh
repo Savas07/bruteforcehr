@@ -8,23 +8,30 @@
 #   design screens (--screen):  <screen>-<state>-<theme>[-ax].png
 #   update gate (--screen update-gate):  update-gate-<available|required>-<theme>[-ax].png
 #   sign-in (--screen sign-in):  sign-in-<state>-<theme>[-ax].png
+#   data & privacy (--screen data-privacy):  data-privacy-<state>-<theme>[-ax].png
 #   title-only shell (default): <tab>-<theme>[-ax].png
 #
 # Usage: apps/ios/scripts/capture.sh [--screen NAME|all]... [--state NAME]... [--size default|ax]...
-#                                     [--ax] [--device NAME]... [--theme light|dark]... [--skip-build]
+#                                     [--ax] [--device NAME]... [--theme light|dark]... [--lang en|tr|de]
+#                                     [--skip-build]
 #   --screen    core screen in design mode: today, job-detail, cv-editor, tracker-board, mail-review, insights,
 #               or all (repeatable). Without it the tabs of the title-only shell are captured.
 #               update-gate (on its own): the update banner and blocking screen over Today.
 #               sign-in (on its own): the signed-out screens (`-BFHRSignIn`).
+#               data-privacy (on its own): Settings › Data & privacy and Delete account (`-BFHRDataPrivacy`).
 #   --state     populated, empty, loading, error, offline (repeatable; default: all five);
 #               for update-gate: available, required (default: both);
 #               for sign-in: email, invalid, offline, check, resent, finishing, confirm, expired,
-#               unusable, retry (default: all)
+#               unusable, retry, deleted (default: all);
+#               for data-privacy: idle, preparing, downloading, ready, saved, downloadError, tooSoon,
+#               dailyLimit, tooLarge, exportError, offline, deleteEmpty, deleteTyped, reauthNeeded,
+#               linkSent, linkExpired, reauthDone, deleting, deleteError, deleteOffline (default: all)
 #   --size      default (Large) or ax (largest accessibility size, files end in -ax)
 #               (repeatable; default: default)
 #   --ax        same as --size ax
 #   --device    simulator name (repeatable; default: "iPhone 17e" and "iPhone 17 Pro Max")
 #   --theme     appearance (repeatable; default: light and dark)
+#   --lang      app language (default en; tr / de add -tr / -de to the file names)
 #   --skip-build  reuse the last build in this worktree's DerivedData
 #
 # DerivedData lives in this worktree (apps/ios/build/DerivedData), so worktrees build in
@@ -49,6 +56,7 @@ sizes=()
 devices=()
 themes=()
 build=true
+lang=en
 while (($# > 0)); do
   case "$1" in
     --screen) if [[ "$2" == all ]]; then screens+=("${all_screens[@]}"); else screens+=("$2"); fi; shift ;;
@@ -57,8 +65,9 @@ while (($# > 0)); do
     --ax) sizes+=(ax) ;;
     --device) devices+=("$2"); shift ;;
     --theme) themes+=("$2"); shift ;;
+    --lang) lang="$2"; shift ;;
     --skip-build) build=false ;;
-    -h | --help) sed -n '2,33p' "$0"; exit 0 ;;
+    -h | --help) sed -n '2,41p' "$0"; exit 0 ;;
     *) echo "capture.sh: unknown argument $1" >&2; exit 64 ;;
   esac
   shift
@@ -68,10 +77,13 @@ done
 ((${#sizes[@]} > 0)) || sizes=(default)
 contains() { local needle="$1"; shift; for item in "$@"; do [[ "$item" == "$needle" ]] && return 0; done; return 1; }
 update_states=(available required)
-sign_in_states=(email invalid offline check resent finishing confirm expired unusable retry)
+sign_in_states=(email invalid offline check resent finishing confirm expired unusable retry deleted)
+data_privacy_states=(idle preparing downloading ready saved downloadError tooSoon dailyLimit tooLarge exportError offline
+  deleteEmpty deleteTyped reauthNeeded linkSent linkExpired reauthDone deleting deleteError deleteOffline)
 share_states=(reading ready ai existing saved logged blocked offline signed-out manual)
 update_gate=false
 sign_in=false
+data_privacy=false
 share_sheet=false
 if contains update-gate ${screens[@]+"${screens[@]}"}; then
   ((${#screens[@]} == 1)) || { echo "capture.sh: capture update-gate on its own" >&2; exit 64; }
@@ -82,6 +94,11 @@ if contains sign-in ${screens[@]+"${screens[@]}"}; then
   ((${#screens[@]} == 1)) || { echo "capture.sh: capture sign-in on its own" >&2; exit 64; }
   sign_in=true
   ((${#states[@]} > 0)) || states=("${sign_in_states[@]}")
+fi
+if contains data-privacy ${screens[@]+"${screens[@]}"}; then
+  ((${#screens[@]} == 1)) || { echo "capture.sh: capture data-privacy on its own" >&2; exit 64; }
+  data_privacy=true
+  ((${#states[@]} > 0)) || states=("${data_privacy_states[@]}")
 fi
 if contains share-sheet ${screens[@]+"${screens[@]}"}; then
   ((${#screens[@]} == 1)) || { echo "capture.sh: capture share-sheet on its own" >&2; exit 64; }
@@ -96,10 +113,14 @@ done
 for size in "${sizes[@]}"; do
   contains "$size" default ax || { echo "capture.sh: size must be default or ax" >&2; exit 64; }
 done
+contains "$lang" en tr de || { echo "capture.sh: lang must be en, tr or de" >&2; exit 64; }
+if [[ "$lang" == en ]]; then lang_suffix=""; else lang_suffix="-$lang"; fi
 for screen in ${screens[@]+"${screens[@]}"}; do
-  contains "$screen" "${all_screens[@]}" update-gate sign-in share-sheet || { echo "capture.sh: unknown screen $screen (${all_screens[*]} update-gate sign-in share-sheet)" >&2; exit 64; }
+  contains "$screen" "${all_screens[@]}" update-gate sign-in data-privacy share-sheet || { echo "capture.sh: unknown screen $screen (${all_screens[*]} update-gate sign-in data-privacy share-sheet)" >&2; exit 64; }
 done
-if $update_gate; then valid_states=("${update_states[@]}"); elif $sign_in; then valid_states=("${sign_in_states[@]}"); elif $share_sheet; then valid_states=("${share_states[@]}"); else valid_states=("${all_states[@]}"); fi
+if $update_gate; then valid_states=("${update_states[@]}"); elif $sign_in; then valid_states=("${sign_in_states[@]}");
+elif $data_privacy; then valid_states=("${data_privacy_states[@]}"); elif $share_sheet; then valid_states=("${share_states[@]}");
+else valid_states=("${all_states[@]}"); fi
 for state in "${states[@]}"; do
   contains "$state" "${valid_states[@]}" || { echo "capture.sh: unknown state $state (${valid_states[*]})" >&2; exit 64; }
 done
@@ -186,16 +207,17 @@ $was_booted || xcrun simctl shutdown $udid || true"
     for theme in "${themes[@]}"; do
       echo "Capturing ${device} · ${theme}${suffix}${screen_list:+ · $screen_list}…"
       xcrun simctl ui "$udid" appearance "$theme"
-      TEST_RUNNER_BFHR_CAPTURE_DIR="$out_dir" TEST_RUNNER_BFHR_CAPTURE_SUFFIX="$theme$suffix" \
+      TEST_RUNNER_BFHR_CAPTURE_DIR="$out_dir" TEST_RUNNER_BFHR_CAPTURE_SUFFIX="$theme$suffix$lang_suffix" \
         TEST_RUNNER_BFHR_CAPTURE_SCREENS="$screen_list" TEST_RUNNER_BFHR_CAPTURE_STATES="$state_list" \
+        TEST_RUNNER_BFHR_CAPTURE_LANGUAGE="$lang" \
         xcodebuild test-without-building "${xcodebuild_args[@]}" -destination "platform=iOS Simulator,id=$udid" \
         -only-testing:"BruteForceHRUITests/ScreenCaptureTests/$test_name"
       if [[ -n "$screen_list" ]]; then
         for screen in "${screens[@]}"; do
-          for state in "${states[@]}"; do echo "$out_dir/$screen-$state-$theme$suffix.png"; done
+          for state in "${states[@]}"; do echo "$out_dir/$screen-$state-$theme$suffix$lang_suffix.png"; done
         done
       else
-        for tab in today jobs tracker cvs mail; do echo "$out_dir/$tab-$theme$suffix.png"; done
+        for tab in today jobs tracker cvs mail; do echo "$out_dir/$tab-$theme$suffix$lang_suffix.png"; done
       fi
     done
   done

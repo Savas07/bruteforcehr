@@ -3,7 +3,7 @@
  * Settings store (src/features/settings/memory.ts) with fixture job sources and followed
  * companies, so switches, quiet hours, the watchlist and the channel behave as in the app.
  * `?fixture=empty` starts with no companies and no source health; `?state=loading|error` forces
- * the lists' load state.
+ * the lists' load state; `?privacy=` forces a Data & privacy state (src/design/data-privacy.tsx).
  */
 import { emptyDataset, FIXTURE_NOW, populatedDataset } from "@bfhr/fixtures";
 import type { JobSourceStatus, WatchedCompany } from "@bfhr/core";
@@ -17,6 +17,7 @@ import {
   type SettingsStore,
   SettingsStoreContext,
 } from "../features/settings/store";
+import { DesignAccountData } from "./data-privacy";
 import { useDesignReady } from "./DesignScreen";
 import { readDesignParams } from "./search";
 import { DesignTrackerProviders } from "./tracker";
@@ -193,10 +194,15 @@ function DesignSettingsScreen() {
     }),
     [base, search.state],
   );
-  useDesignReady(`settings:${pane ?? ""}:${search.fixture}:${search.state}`, false);
+  useDesignReady(
+    `settings:${pane ?? ""}:${search.fixture}:${search.state}:${search.rest["privacy"] ?? ""}`,
+    false,
+  );
   return (
     <SettingsStoreContext.Provider value={store}>
-      <SettingsScreen pane={pane ?? ""} />
+      <DesignAccountData>
+        <SettingsScreen pane={pane ?? ""} />
+      </DesignAccountData>
     </SettingsStoreContext.Provider>
   );
 }

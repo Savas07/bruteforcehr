@@ -154,6 +154,11 @@ struct EmailStep: View {
             title: confirming ? SignInStrings.confirmTitle : SignInStrings.title,
             identifier: confirming ? "signIn.confirm" : "signIn.email"
         ) {
+            if !confirming, model.notice == .accountDeleted {
+                // Calm, not an error (Vestiaire's clean reset with a quiet note).
+                InlineAlert(.info, title: DataPrivacyStrings.done, onDismiss: model.dismissNotice)
+                    .accessibilityIdentifier("signIn.notice.deleted")
+            }
             SignInParagraph(text: Text(confirming ? SignInStrings.confirmBody : SignInStrings.body))
             field
                 .padding(.top, BFHRSpace.s2)

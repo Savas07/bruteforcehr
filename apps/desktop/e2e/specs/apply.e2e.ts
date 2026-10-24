@@ -14,7 +14,8 @@ import path from "node:path";
 import { $, browser, expect } from "@wdio/globals";
 import { ensureSignedIn, testEmail } from "../support/auth";
 import { docId, findDocs, type FirestoreDoc, getDoc, listRevisions, plain } from "../support/firestore";
-import { APPLY_CV_CONTENT, useRecordedCallables } from "../support/recorded";
+import { seedAnswer, seedCv, seedJob, seedMatch, seedRevision } from "../support/applySeed";
+import { useRecordedCallables } from "../support/recorded";
 import { deleteDoc, signedInUid, writeDoc } from "../support/seed";
 
 const RUN = process.pid;
@@ -57,51 +58,6 @@ async function field(label: string) {
   return $(`[id="${await element.getAttribute("for")}"]`);
 }
 
-function job(entry: { id: string; company: string }, apply: { url: string | null; email: string | null }) {
-  const now = new Date();
-  const url = apply.url ?? `https://example.com/jobs/${entry.id}`;
-  return {
-    sources: [
-      {
-        source: "url_import",
-        sourceId: null,
-        url,
-        applyUrl: apply.url,
-        applyEmail: apply.email,
-        isDirectFromEmployer: true,
-        title: "Frontend Engineer",
-        locationText: "Berlin",
-        salary: null,
-        postedAt: now,
-        firstSeenAt: now,
-        lastSeenAt: now,
-      },
-    ],
-    sourceKeys: [`url_import:${entry.id}`],
-    applyUrl: apply.url,
-    applyEmail: apply.email,
-    company: entry.company,
-    companyDomain: null,
-    title: "Frontend Engineer",
-    locations: [{ label: "Berlin", city: "Berlin", countryCode: "DE" }],
-    remoteType: "hybrid",
-    remoteEligibility: null,
-    employmentType: "full_time",
-    seniority: "mid",
-    salary: null,
-    visaSponsorship: null,
-    relocationSupport: null,
-    language: "en",
-    description: `${entry.company} wants fast, measurable frontend work in TypeScript.`,
-    skills: ["typescript", "react"],
-    postedAt: now,
-    expiresAt: null,
-    fingerprint: `${entry.company}|frontend engineer`.toLowerCase(),
-    createdAt: now,
-    updatedAt: now,
-  };
-}
-
 const application = async (company: string) => (await findDocs("applications", "company", company))[0];
 /** The seeded CV's revisions (`listRevisions` takes a REST document name). */
 const revisions = () => listRevisions(`/documents/users/${uid}/cvs/${CV_ID}`);
@@ -111,55 +67,16 @@ describe("Apply", () => {
     await ensureSignedIn(testEmail("apply"));
     uid = await signedInUid();
     const now = new Date();
-    await writeDoc(`users/${uid}/cvs/${CV_ID}/revisions/${REV_ID}`, {
-      content: APPLY_CV_CONTENT,
-      source: "manual",
-      basedOnRevisionId: null,
-      jobId: null,
-      diffSummary: null,
-      createdAt: now,
-    });
-    await writeDoc(`users/${uid}/cvs/${CV_ID}`, {
-      title: `E2E Apply CV ${RUN}`,
-      language: "en",
-      parentCvId: null,
-      currentRevisionId: REV_ID,
-      templateId: "classic",
-      theme: APPLY_CV_CONTENT.meta.theme,
-      isDefault: false,
-      archivedAt: null,
-      version: 1,
-      importedFrom: null,
-      createdAt: now,
-      updatedAt: new Date(now.getTime() + 60_000),
-    });
-    await writeDoc(`users/${uid}/jobs/${EMAIL_JOB.id}`, job(EMAIL_JOB, { url: null, email: `jobs-${RUN}@example.com` }));
-    await writeDoc(`users/${uid}/jobs/${SITE_JOB.id}`, job(SITE_JOB, { url: `https://boards.greenhouse.io/e2e/jobs/${RUN}`, email: null }));
+    await writeDoc(`users/${uid}/cvs/${CV_ID}/revisions/${REV_ID}`, seedRevision(now));
+    await writeDoc(`users/${uid}/cvs/${CV_ID}`, seedCv(`E2E Apply CV ${RUN}`, REV_ID, now));
+    await writeDoc(`users/${uid}/jobs/${EMAIL_JOB.id}`, seedJob(EMAIL_JOB, { url: null, email: `jobs-${RUN}@example.com` }, now));
+    await writeDoc(`users/${uid}/jobs/${SITE_JOB.id}`, seedJob(SITE_JOB, { url: `https://boards.greenhouse.io/e2e/jobs/${RUN}`, email: null }, now));
     // The feed lists jobs through their matches ("the server scored them").
-    for (const entry of [EMAIL_JOB, SITE_JOB])
-      await writeDoc(`users/${uid}/jobMatches/${entry.id}`, {
-        score: 90,
-        basedOnCvId: null,
-        basedOnCvRevisionId: null,
-        reasons: [],
-        gaps: [],
-        skills: { matched: ["typescript"], unmatched: [] },
-        rationale: null,
-        state: "new",
-        dismissReasons: [],
-        stateChangedAt: null,
-        computedAt: now,
-      });
-    await writeDoc(`users/${uid}/answers/${ANSWER_ID}`, {
-      kind: "notice_period",
-      label: "Notice period",
-      values: [{ language: "en", text: `Three months (${RUN})` }],
-      countries: [],
-      currency: null,
-      position: 0,
-      createdAt: now,
-      updatedAt: now,
-    });
+    for (const entry of [EMAIL_JOB, SITE_JOB]) await writeDoc(`users/${uid}/jobMatches/${entry.id}`, seedMatch(now));
+    await writeDoc(`users/${uid}/answers/${ANSWER_ID}`, seedAnswer(`Three months (${RUN})`, now));
+    await goTo("#/jobs");
+    // The feed has the seeded jobs before the spec opens their Apply panels.
+    await $(`[data-nav-id="${EMAIL_JOB.id}"]`).waitForDisplayed({ timeout: 30_000 });
     await goTo("#/jobs");
     await useRecordedCallables();
   });

@@ -86,6 +86,14 @@ public enum CoverLetterAuthor: String, Codable, Hashable, Sendable, CaseIterable
     case ai
 }
 
+public enum AnswerKind: String, Codable, Hashable, Sendable, CaseIterable {
+    case workAuthorization = "work_authorization"
+    case noticePeriod = "notice_period"
+    case salaryExpectation = "salary_expectation"
+    case link
+    case qa
+}
+
 public enum EmploymentType: String, Codable, Hashable, Sendable, CaseIterable {
     case fullTime = "full_time"
     case partTime = "part_time"
@@ -358,6 +366,41 @@ public enum Platform: String, Codable, Hashable, Sendable, CaseIterable {
     case ios
     case macos
     case windows
+}
+
+public enum TailorIntensity: String, Codable, Hashable, Sendable, CaseIterable {
+    case light
+    case thorough
+}
+
+public enum TailorEditOp: String, Codable, Hashable, Sendable, CaseIterable {
+    case replace
+    case insert
+    case remove
+    case reorder
+}
+
+public enum CoverLetterTone: String, Codable, Hashable, Sendable, CaseIterable {
+    case formal
+    case warm
+    case concise
+}
+
+public enum CvAssistLanguage: String, Codable, Hashable, Sendable, CaseIterable {
+    case en
+    case tr
+    case de
+}
+
+public enum MergeField: String, Codable, Hashable, Sendable, CaseIterable {
+    case name
+    case email
+    case phone
+    case role
+    case company
+    case hiringManager = "hiring_manager"
+    case jobSource = "job_source"
+    case date
 }
 
 public enum JobImportErrorReason: String, Codable, Hashable, Sendable, CaseIterable {
@@ -1554,7 +1597,7 @@ public struct RenderedFile: Codable, Hashable, Sendable, Identifiable {
     }
 }
 
-/// `users/{uid}/coverLetters/{id}`.
+/// `users/{uid}/coverLetters/{id}` (templates: `isTemplate`).
 public struct CoverLetter: Codable, Hashable, Sendable, Identifiable {
     public var id: String
     public var applicationId: String?
@@ -1601,6 +1644,73 @@ public struct CoverLetter: Codable, Hashable, Sendable, Identifiable {
         try container.encode(body, forKey: .body)
         try container.encode(author, forKey: .author)
         try container.encode(isTemplate, forKey: .isTemplate)
+        try container.encode(createdAt, forKey: .createdAt)
+        try container.encode(updatedAt, forKey: .updatedAt)
+    }
+}
+
+public struct AnswerValue: Codable, Hashable, Sendable {
+    public var language: String
+    public var text: String
+
+    public init(
+        language: String,
+        text: String
+    ) {
+        self.language = language
+        self.text = text
+    }
+
+    public func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(language, forKey: .language)
+        try container.encode(text, forKey: .text)
+    }
+}
+
+/// `users/{uid}/answers/{id}` (answers library).
+public struct Answer: Codable, Hashable, Sendable, Identifiable {
+    public var id: String
+    public var kind: AnswerKind
+    public var label: String
+    public var values: [AnswerValue]
+    public var countries: [String]
+    public var currency: String?
+    public var position: Int
+    public var createdAt: Date
+    public var updatedAt: Date
+
+    public init(
+        id: String,
+        kind: AnswerKind,
+        label: String,
+        values: [AnswerValue],
+        countries: [String],
+        currency: String?,
+        position: Int,
+        createdAt: Date,
+        updatedAt: Date
+    ) {
+        self.id = id
+        self.kind = kind
+        self.label = label
+        self.values = values
+        self.countries = countries
+        self.currency = currency
+        self.position = position
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+    }
+
+    public func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(kind, forKey: .kind)
+        try container.encode(label, forKey: .label)
+        try container.encode(values, forKey: .values)
+        try container.encode(countries, forKey: .countries)
+        try container.encode(currency, forKey: .currency)
+        try container.encode(position, forKey: .position)
         try container.encode(createdAt, forKey: .createdAt)
         try container.encode(updatedAt, forKey: .updatedAt)
     }
@@ -3674,6 +3784,185 @@ public struct AppConfig: Codable, Hashable, Sendable, Identifiable {
         try container.encode(releaseNotesUrl, forKey: .releaseNotesUrl)
         try container.encode(featureFlags, forKey: .featureFlags)
         try container.encode(updatedAt, forKey: .updatedAt)
+    }
+}
+
+/// Request of the `cvTailor` callable.
+public struct CvTailorRequest: Codable, Hashable, Sendable {
+    public var cvId: String
+    public var revisionId: String
+    public var jobId: String
+    public var locale: UiLanguage
+    public var intensity: TailorIntensity
+
+    public init(
+        cvId: String,
+        revisionId: String,
+        jobId: String,
+        locale: UiLanguage,
+        intensity: TailorIntensity
+    ) {
+        self.cvId = cvId
+        self.revisionId = revisionId
+        self.jobId = jobId
+        self.locale = locale
+        self.intensity = intensity
+    }
+
+    public func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(cvId, forKey: .cvId)
+        try container.encode(revisionId, forKey: .revisionId)
+        try container.encode(jobId, forKey: .jobId)
+        try container.encode(locale, forKey: .locale)
+        try container.encode(intensity, forKey: .intensity)
+    }
+}
+
+public struct TailorEdit: Codable, Hashable, Sendable, Identifiable {
+    public var id: String
+    public var path: String
+    public var op: TailorEditOp
+    public var before: String?
+    public var after: String?
+    public var order: [Int]?
+    public var reason: String
+    public var groundedIn: [String]
+
+    public init(
+        id: String,
+        path: String,
+        op: TailorEditOp,
+        before: String?,
+        after: String?,
+        order: [Int]?,
+        reason: String,
+        groundedIn: [String]
+    ) {
+        self.id = id
+        self.path = path
+        self.op = op
+        self.before = before
+        self.after = after
+        self.order = order
+        self.reason = reason
+        self.groundedIn = groundedIn
+    }
+
+    public func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(path, forKey: .path)
+        try container.encode(op, forKey: .op)
+        try container.encode(before, forKey: .before)
+        try container.encode(after, forKey: .after)
+        try container.encode(order, forKey: .order)
+        try container.encode(reason, forKey: .reason)
+        try container.encode(groundedIn, forKey: .groundedIn)
+    }
+}
+
+/// Response of the `cvTailor` callable.
+public struct CvTailorResponse: Codable, Hashable, Sendable {
+    public var edits: [TailorEdit]
+    public var dropped: Int
+    public var model: String
+    public var promptVersion: String
+
+    public init(
+        edits: [TailorEdit],
+        dropped: Int,
+        model: String,
+        promptVersion: String
+    ) {
+        self.edits = edits
+        self.dropped = dropped
+        self.model = model
+        self.promptVersion = promptVersion
+    }
+
+    public func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(edits, forKey: .edits)
+        try container.encode(dropped, forKey: .dropped)
+        try container.encode(model, forKey: .model)
+        try container.encode(promptVersion, forKey: .promptVersion)
+    }
+}
+
+/// Request of the `coverLetterDraft` callable.
+public struct CoverLetterDraftRequest: Codable, Hashable, Sendable {
+    public var cvId: String
+    public var revisionId: String
+    public var jobId: String
+    public var tone: CoverLetterTone
+    public var language: CvAssistLanguage
+    public var templateId: String?
+
+    public init(
+        cvId: String,
+        revisionId: String,
+        jobId: String,
+        tone: CoverLetterTone,
+        language: CvAssistLanguage,
+        templateId: String? = nil
+    ) {
+        self.cvId = cvId
+        self.revisionId = revisionId
+        self.jobId = jobId
+        self.tone = tone
+        self.language = language
+        self.templateId = templateId
+    }
+
+    public func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(cvId, forKey: .cvId)
+        try container.encode(revisionId, forKey: .revisionId)
+        try container.encode(jobId, forKey: .jobId)
+        try container.encode(tone, forKey: .tone)
+        try container.encode(language, forKey: .language)
+        try container.encodeIfPresent(templateId, forKey: .templateId)
+    }
+}
+
+/// Response of the `coverLetterDraft` callable.
+public struct CoverLetterDraftResponse: Codable, Hashable, Sendable {
+    public var subject: String?
+    public var body: String
+    public var placeholders: [String]
+    public var unresolvedFields: [MergeField]
+    public var droppedSentences: Int
+    public var model: String
+    public var promptVersion: String
+
+    public init(
+        subject: String?,
+        body: String,
+        placeholders: [String],
+        unresolvedFields: [MergeField],
+        droppedSentences: Int,
+        model: String,
+        promptVersion: String
+    ) {
+        self.subject = subject
+        self.body = body
+        self.placeholders = placeholders
+        self.unresolvedFields = unresolvedFields
+        self.droppedSentences = droppedSentences
+        self.model = model
+        self.promptVersion = promptVersion
+    }
+
+    public func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(subject, forKey: .subject)
+        try container.encode(body, forKey: .body)
+        try container.encode(placeholders, forKey: .placeholders)
+        try container.encode(unresolvedFields, forKey: .unresolvedFields)
+        try container.encode(droppedSentences, forKey: .droppedSentences)
+        try container.encode(model, forKey: .model)
+        try container.encode(promptVersion, forKey: .promptVersion)
     }
 }
 

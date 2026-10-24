@@ -68,6 +68,7 @@ describe("matchDocumentPath", () => {
       mailAccount: firestorePaths.mailAccount("u", "x"),
       mailMessage: firestorePaths.mailMessage("u", "x"),
       device: firestorePaths.device("u", "x"),
+      answer: firestorePaths.answer("u", "x"),
       appConfig: firestorePaths.appConfig("windows"),
     } satisfies Record<keyof typeof DOCUMENT_PATTERNS, string>;
     for (const [entity, path] of Object.entries(built)) {

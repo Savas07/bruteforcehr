@@ -4,16 +4,16 @@ Owner actions that agents can't do (accounts, money, legal). Each section ends w
 
 Run `firebase` commands from the repo root (`/Users/savas/Desktop/BruteForceHR`, project `bruteforcehr` from `.firebaserc`). `functions:secrets:set` prompts for the value (paste, Enter) and creates a new secret version; functions pick it up on next deploy.
 
-| #   | Item                                                                            | Needed by                  | Status                                                |
-| --- | ------------------------------------------------------------------------------- | -------------------------- | ----------------------------------------------------- |
-| 1   | Sign-in email: none needed (Firebase Authentication email link, no mail vendor) | M1 (sign-in)               | configured 2026-10-23; owner check pending            |
-| 2   | Anthropic API key                                                               | M2 (AI import + assists)   | secret set; `cvImport`/`cvAssist` deployed 2026-10-23 |
-| 3   | Google OAuth consent screen + Gmail scopes + OAuth client                       | M5                         | pending                                               |
-| 4   | Microsoft Entra app registration                                                | M5                         | pending                                               |
-| 5   | Job API keys: Adzuna, Jooble, USAJOBS, Reed                                     | M4                         | pending                                               |
-| 6   | Apple: Team ID, App Store Connect API key, Developer ID cert, app record        | M1                         | membership exists; items pending                      |
-| 7   | Tauri updater signing key                                                       | M1 (first desktop release) | pending                                               |
-| 8   | Windows code signing                                                            | before sharing the app     | deferred                                              |
+| #   | Item                                                                            | Needed by                                               | Status                                                                                          |
+| --- | ------------------------------------------------------------------------------- | ------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| 1   | Sign-in email: none needed (Firebase Authentication email link, no mail vendor) | M1 (sign-in)                                            | configured 2026-10-23; owner check pending                                                      |
+| 2   | Anthropic API key                                                               | M2 (AI import + assists), M4 (tailoring, cover letters) | secret set; `cvImport`/`cvAssist` deployed 2026-10-23, `cvTailor`/`coverLetterDraft` 2026-10-24 |
+| 3   | Google OAuth consent screen + Gmail scopes + OAuth client                       | M5                                                      | pending                                                                                         |
+| 4   | Microsoft Entra app registration                                                | M5                                                      | pending                                                                                         |
+| 5   | Job API keys: Adzuna, Jooble, USAJOBS, Reed                                     | M4                                                      | pending                                                                                         |
+| 6   | Apple: Team ID, App Store Connect API key, Developer ID cert, app record        | M1                                                      | membership exists; items pending                                                                |
+| 7   | Tauri updater signing key                                                       | M1 (first desktop release)                              | pending                                                                                         |
+| 8   | Windows code signing                                                            | before sharing the app                                  | deferred                                                                                        |
 
 ---
 
@@ -48,7 +48,7 @@ Owner check, once a build with the new sign-in is installed:
 
 ## 2. Anthropic API key
 
-Status 2026-10-23: the secret `ANTHROPIC_API_KEY` exists in Secret Manager. `cvImport` and `cvAssist` (europe-west1) use it. Design, models and limits are in [ADR 0010](../adr/0010-ai.md).
+Status 2026-10-24: the secret `ANTHROPIC_API_KEY` exists in Secret Manager. `cvImport`, `cvAssist`, `cvTailor` and `coverLetterDraft` (europe-west1) use it. Design, models and limits are in [ADR 0010](../adr/0010-ai.md).
 
 1. <https://console.anthropic.com/> → _API Keys_ → _Create Key_, name `bruteforcehr-functions` (a dedicated key, so you can revoke it on its own). Optionally set a monthly spend limit under _Limits_.
 2. Store it, then redeploy so the functions pick up the new version:
@@ -69,7 +69,8 @@ Status 2026-10-23: the secret `ANTHROPIC_API_KEY` exists in Secret Manager. `cvI
 **Checks**
 
 - `ANTHROPIC_API_KEY=… pnpm --filter @bfhr/ai eval` re-runs the live quality eval (about $0.35) and rewrites `packages/ai/eval/report.md`.
-- `pnpm --filter @bfhr/functions smoke:ai` calls the deployed callables with a temporary user and deletes it afterwards (about $0.02). It needs `gcloud auth application-default login` as the owner.
+- `ANTHROPIC_API_KEY=… pnpm --filter @bfhr/ai eval:apply` re-runs the tailoring and cover letter eval (about $0.30) and rewrites `packages/ai/eval/apply/report.md` and its recording, which CI replays.
+- `pnpm --filter @bfhr/functions smoke:ai` calls the deployed callables with a temporary user and deletes it afterwards (about $0.02). It needs `gcloud auth application-default login` as the owner. `smoke:apply` does the same for `cvTailor` and `coverLetterDraft` (about $0.04).
 
 ## 3. Google OAuth (Gmail)
 

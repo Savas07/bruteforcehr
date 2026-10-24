@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { describe, expect, it } from "vitest";
+import { buildApplyVectors } from "./apply-vectors";
 import { buildInsightsVectors } from "./insights-vectors";
 import { buildJobImportVectors } from "./job-import-vectors";
 import { buildMailVectors } from "./mail-vectors";
@@ -34,6 +35,13 @@ describe("committed conformance outputs", () => {
       await readFile(new URL("../conformance/mail.json", import.meta.url), "utf8"),
     );
     expect(committed).toEqual(JSON.parse(JSON.stringify(buildMailVectors())));
+  });
+
+  it("apply.json matches the tailor, merge-field and answers logic", async () => {
+    const committed: unknown = JSON.parse(
+      await readFile(new URL("../conformance/apply.json", import.meta.url), "utf8"),
+    );
+    expect(committed).toEqual(JSON.parse(JSON.stringify(buildApplyVectors())));
   });
 
   it("BFHRCore Models.swift matches the zod schemas", async () => {

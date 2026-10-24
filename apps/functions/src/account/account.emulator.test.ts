@@ -47,6 +47,11 @@ function userDocuments(uid: string): Record<string, Record<string, unknown>> {
       storagePath: storagePaths.renderedFile(uid, "file-1"),
     },
     [firestorePaths.coverLetter(uid, "cl-1")]: { title: "Initech", body: "Dear team" },
+    [firestorePaths.answer(uid, "answer-1")]: {
+      kind: "notice_period",
+      label: "Notice period",
+      values: [{ language: "en", text: "One month" }],
+    },
     [firestorePaths.job(uid, "job-1")]: {
       title: "Backend Engineer",
       company: "Initech",
@@ -226,6 +231,7 @@ describe("accountExport", () => {
       [
         "README.md",
         "data/profile.json",
+        "data/answers.json",
         "data/applicationEvents.json",
         "data/applications.json",
         "data/contacts.json",

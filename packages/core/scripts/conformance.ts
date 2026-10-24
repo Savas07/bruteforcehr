@@ -3,9 +3,11 @@
 // - conformance/insights.json (Insights metrics vectors)
 // - conformance/job-import.json (`jobImportUrl` responses from recorded pages)
 // - conformance/mail.json (IMAP presets, preset detection, category → status targets)
+// - conformance/apply.json (tailor edits, merge fields, answers kit)
 // - packages/swift/BFHRCore/Sources/BFHRCore/Models.swift (Codable models from the zod schemas)
 // `scripts/conformance.test.ts` fails when the committed files are stale.
 import { writeFile } from "node:fs/promises";
+import { buildApplyVectors } from "./apply-vectors";
 import { buildInsightsVectors } from "./insights-vectors";
 import { buildJobImportVectors } from "./job-import-vectors";
 import { buildMailVectors } from "./mail-vectors";
@@ -39,10 +41,11 @@ await writeFile(
   `${lineJson(buildJobImportVectors())}\n`,
 );
 await writeFile(new URL("../conformance/mail.json", import.meta.url), `${lineJson(buildMailVectors())}\n`);
+await writeFile(new URL("../conformance/apply.json", import.meta.url), `${lineJson(buildApplyVectors())}\n`);
 await writeFile(
   new URL("../../swift/BFHRCore/Sources/BFHRCore/Models.swift", import.meta.url),
   renderSwiftModels(),
 );
 console.log(
-  "core: wrote conformance/{state-machine,insights,job-import,mail}.json and swift/BFHRCore/Sources/BFHRCore/Models.swift",
+  "core: wrote conformance/{state-machine,insights,job-import,mail,apply}.json and swift/BFHRCore/Sources/BFHRCore/Models.swift",
 );

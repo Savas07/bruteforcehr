@@ -4,7 +4,14 @@ import Foundation
 /// Copy of the Apply sheet (table "Apply"). Tone: calm, explicit about what leaves the device.
 enum ApplyStrings {
     static let loading = LocalizedStringResource.bfhr("apply.loading", default: "Loading", table: "Apply")
-    static let errorTitle = LocalizedStringResource.bfhr("apply.error.title", default: "This job isn't in your list anymore", table: "Apply")
+    static let notFoundTitle = LocalizedStringResource.bfhr("apply.error.title", default: "This job isn't in your list anymore", table: "Apply")
+    static let loadFailedTitle = LocalizedStringResource.bfhr("apply.error.loadFailed", default: "We couldn't open Apply for this job", table: "Apply")
+
+    /// "Isn't in your list anymore" only when the job is gone; otherwise a load failure, whose
+    /// reason PaneError states below the title.
+    static func errorTitle(_ failure: LoadFailure) -> LocalizedStringResource {
+        failure.kind == .notFound ? notFoundTitle : loadFailedTitle
+    }
     static let writeFailed = LocalizedStringResource.bfhr("apply.toast.writeFailed", default: "A change didn't save. The Tracker shows what's stored.", table: "Apply")
     static let cancel = LocalizedStringResource.bfhr("apply.action.cancel", default: "Cancel", table: "Apply")
     static let back = LocalizedStringResource.bfhr("apply.action.back", default: "Back", table: "Apply")

@@ -908,6 +908,29 @@
         }
       }
     },
+    "apply.error.loadFailed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wir konnten „Bewerben“ für diese Stelle nicht öffnen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't open Apply for this job"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bu ilan için başvuru ekranını açamadık"
+          }
+        }
+      }
+    },
     "apply.error.title" : {
       "extractionState" : "manual",
       "localizations" : {

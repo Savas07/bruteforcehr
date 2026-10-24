@@ -90,7 +90,7 @@ final class FirebaseAccountDataService: AccountDataService {
     /// The server's name without path separators.
     static func safeFileName(_ name: String) -> String {
         let cleaned = name.replacingOccurrences(of: "/", with: "-").replacingOccurrences(of: ":", with: "-")
-        return cleaned.isEmpty ? "bruteforcehr-export.zip" : cleaned
+        return cleaned.isEmpty ? "BruteForceHR-export.zip" : cleaned
     }
 
     // MARK: Delete

@@ -1,4 +1,5 @@
 import type {
+  Answer,
   Application,
   ApplicationEvent,
   Contact,
@@ -15,6 +16,7 @@ import type {
   RenderedFile,
   SavedSearch,
 } from "@bfhr/core";
+import { answers } from "./answers";
 import { coverLetters, cvRevisions, cvs, renderedFiles } from "./cvs";
 import { jobMatches, jobs, savedSearches } from "./jobs";
 import { mailAccounts, mailMessages } from "./mail";
@@ -30,6 +32,7 @@ export interface FixtureDataset {
   readonly cvRevisions: readonly CvRevision[];
   readonly renderedFiles: readonly RenderedFile[];
   readonly coverLetters: readonly CoverLetter[];
+  readonly answers: readonly Answer[];
   readonly jobs: readonly Job[];
   readonly jobMatches: readonly JobMatch[];
   readonly savedSearches: readonly SavedSearch[];
@@ -50,6 +53,7 @@ export const populatedDataset: FixtureDataset = {
   cvRevisions,
   renderedFiles,
   coverLetters,
+  answers,
   jobs,
   jobMatches,
   savedSearches,
@@ -77,6 +81,7 @@ export const emptyDataset: FixtureDataset = {
   cvRevisions: [],
   renderedFiles: [],
   coverLetters: [],
+  answers: [],
   jobs: [],
   jobMatches: [],
   savedSearches: [],

@@ -79,7 +79,9 @@ async function openApply(jobId: string): Promise<void> {
   await browser.keys("a");
 }
 
-describe("Apply", () => {
+describe("Apply", function () {
+  // Printing the CV and letter PDFs in the webview takes up to a few minutes on hosted macOS runners.
+  this.timeout(600_000);
   before(async () => {
     await ensureSignedIn(testEmail("apply"));
     uid = await signedInUid();
@@ -157,7 +159,7 @@ describe("Apply", () => {
     await manager.setValue("Ms Weber");
     await (await button("Review email")).click();
     // Enabled once the CV and letter PDFs are printed (slow on the hosted macOS runners).
-    await (await button("I sent it", 120_000)).click();
+    await (await button("I sent it", 240_000)).click();
 
     await browser.waitUntil(async () => plain((await application(EMAIL_JOB.company))?.fields["status"]) === "applied", {
       timeout: 30_000,
@@ -193,7 +195,8 @@ describe("Apply", () => {
     expect(await copied()).toEqual([`Three months (${RUN})`]);
     const cv = await field("CV");
     await cv.selectByAttribute("value", CV_ID);
-    await (await button("Copy path")).click();
+    // Enabled once the CV's PDF is printed.
+    await (await button("Copy path", 240_000)).click();
     const dir = process.env["BFHR_E2E_EXPORT_DIR"];
     if (!dir) throw new Error("BFHR_E2E_EXPORT_DIR is not set (desktop.yml sets it)");
     const kit = path.join(dir, "kit");

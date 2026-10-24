@@ -45,8 +45,19 @@ final class ShareExtensionEndToEndTests: XCTestCase {
         safari.open(posting)
         Thread.sleep(forTimeInterval: 6)
         shot("1-safari")
-        let share = safari.buttons["ShareButton"].firstMatch.exists ? safari.buttons["ShareButton"].firstMatch : safari.buttons["Share"].firstMatch
-        XCTAssertTrue(share.waitForExistence(timeout: 15), "Safari share button")
+        // iOS 26 Safari keeps Share in the ⋯ menu (a first-run tip points at it).
+        let tipClose = safari.buttons["Close"].firstMatch
+        if tipClose.exists { tipClose.tap() }
+        let share: XCUIElement
+        if safari.buttons["ShareButton"].firstMatch.exists {
+            share = safari.buttons["ShareButton"].firstMatch
+        } else {
+            let more = safari.buttons.matching(NSPredicate(format: "label IN %@ OR identifier IN %@", ["More", "Page Menu", "More options"], ["MoreButton", "PageMenuButton"])).firstMatch
+            XCTAssertTrue(more.waitForExistence(timeout: 15), "Safari ⋯ button\n\(safari.debugDescription.prefix(3000))")
+            more.tap()
+            share = safari.descendants(matching: .any).matching(NSPredicate(format: "label == %@", "Share")).firstMatch
+        }
+        XCTAssertTrue(share.waitForExistence(timeout: 15), "Safari share button\n\(safari.debugDescription.prefix(3000))")
         share.tap()
         let target = safari.descendants(matching: .any).matching(NSPredicate(format: "label == %@", "BruteForceHR")).firstMatch
         if !target.waitForExistence(timeout: 10) {

@@ -19,7 +19,7 @@ public struct JobImportShareSheet: View {
     public var body: some View {
         NavigationStack {
             content
-                .navigationTitle(Text(JobImportStrings.title))
+                .navigationTitle(Text(model.phase == .manual ? JobImportStrings.manualTitle : JobImportStrings.title))
                 .bfhrInlineTitle()
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
@@ -130,10 +130,10 @@ public struct JobImportShareSheet: View {
             }
             Section {
                 if model.isExisting {
-                    LabeledContent { Text(verbatim: model.title) } label: { Text(JobImportStrings.role) }
-                    LabeledContent { Text(verbatim: model.company) } label: { Text(JobImportStrings.company) }
+                    readOnlyRow(JobImportStrings.role, model.title)
+                    readOnlyRow(JobImportStrings.company, model.company)
                     if !model.location.isEmpty {
-                        LabeledContent { Text(verbatim: model.location) } label: { Text(JobImportStrings.location) }
+                        readOnlyRow(JobImportStrings.location, model.location)
                     }
                 } else {
                     TrackerFormField(JobImportStrings.role, text: $model.title, kind: .jobTitle)
@@ -148,8 +148,6 @@ public struct JobImportShareSheet: View {
                     )
                         .accessibilityIdentifier("share.location")
                 }
-            } header: {
-                if manual { Text(JobImportStrings.manualTitle) }
             } footer: {
                 Text(model.canSave ? (manual ? JobImportStrings.manualFooter : JobImportStrings.footer) : JobImportStrings.requiredFooter)
                     .font(.bfhr(.footnote))
@@ -170,9 +168,24 @@ public struct JobImportShareSheet: View {
         }
     }
 
+    /// A saved job's value: label above, value in the primary color (the system's trailing grey
+    /// value only nearly passes contrast), wrapping at large sizes like the editable fields.
+    private func readOnlyRow(_ label: LocalizedStringResource, _ value: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(label)
+                .font(.bfhr(.footnote))
+                .foregroundStyle(BFHRColor.Fg.secondary)
+            Text(verbatim: value)
+                .font(.bfhr(.body))
+                .foregroundStyle(BFHRColor.Fg.primary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .accessibilityElement(children: .combine)
+    }
+
     private var sourceRow: some View {
         VStack(alignment: .leading, spacing: BFHRSpace.s1) {
-            Label { Text(bfhrPlain: JobImportStrings.source(model.sourceHost)) } icon: { Image(systemName: "link") }
+            Label { Text(bfhrPlain: JobImportStrings.source(model.sourceHost)).fixedSize(horizontal: false, vertical: true) } icon: { Image(systemName: "link") }
                 .labelStyle(.bfhrCompact)
                 .font(.bfhr(.subheadline, emphasized: true))
                 .foregroundStyle(BFHRColor.Fg.primary)

@@ -227,6 +227,17 @@ find "$app" -iname '*fixture*' -o -name 'populated.json' -o -name 'empty.json'  
 strings "$app/BruteForceHR" | grep -E -- '-BFHRDesign|BFHRScreen|BFHRUpdate|BFHRSignIn|BFHRCVPane|BFHRTrackerPane|BFHRImportFile|FixtureStore|BFHRFixtures|Lighthouse Learning|deniz\.aksoy'  # nothing
 nm "$app/BruteForceHR" | grep -iE 'FixtureStore|DesignScenario|DesignScreenView|DesignTabRoot|DesignUpdateState|DesignSignInState|DesignSignInService|CVDesignImporter|CVDesignSuggestions|CVDesignPane|TrackerDesignPane'     # nothing
 ls "$app/cv-render.iife.js"                                                                    # the renderer is bundled
+ext="$app/PlugIns/BruteForceHRShare.appex"                                                    # the Share Extension is embedded
+strings "$ext/BruteForceHRShare" | grep -E -- 'BFHRShareSheet|job-ramp'                          # nothing
+nm "$ext/BruteForceHRShare" "$app/BruteForceHR" | grep -E 'JobImportShareDesignState|DesignShareService|ShareSheetDesignHost'  # nothing
 ```
 
 The fixture copy phase writes to `$(BFHR_DESIGN_FIXTURES_DIR)`, which is the app's `BFHRFixtures/` folder in Debug and a throwaway folder in DerivedSources in Release (script sandboxing stays on).
+
+## Share Extension (M4)
+
+`BruteForceHRShare` (`apps/ios/BruteForceHRShare/`, bundle `com.savas07.bruteforcehr.share`, embedded in the app) adds "BruteForceHR" to the system share sheet for one web URL or text. `ShareViewController` reads the shared URL (or the text; the server finds the first link) and hosts `JobImportShareSheet` (BFHRUI `JobImport/`, model `JobImportShareModel`, table `JobImport`). `FirebaseShareService` calls `jobImportUrl` and writes, in one batch, the job (create, or update of the existing duplicate) plus an application in Saved or Applied and its `created` event (decisions.md D02); the `jobCreatedMatch` trigger adds the match.
+
+- **Shared session**: both targets compile `apps/ios/Shared/SharedSession.swift`. `useSharedKeychain()` moves the Firebase Auth session into the keychain access group `$(AppIdentifierPrefix)com.savas07.bruteforcehr.shared` (Info.plist `BFHRKeychainAccessGroup`; a session from an older build is carried over). The App Group `group.com.savas07.bruteforcehr` holds a link shared while signed out (`pendingSharedJobURL`). Automatic signing registers the extension id, the group and the keychain group for team 67NPXV7CSZ. Unsigned builds (CI archive) have no entitlements and keep the default keychain.
+- **Design mode**: `-BFHRShareSheet <reading|ready|ai|existing|saved|logged|blocked|offline|signed-out|manual>` shows the sheet in the app (the extension can't take arguments). `capture.sh --screen share-sheet` captures it, and `ShareSheetAccessibilityAuditTests` audits every state at the default and AX5 sizes, plus TR and DE.
+- **Live check**: `BFHR_DERIVED_DATA=… apps/ios/scripts/with-ios-lock.sh apps/ios/scripts/share-live-check.sh` signs a throwaway user in, opens a posting in Safari, then runs Share → BruteForceHR → Save and log as applied. It reads the documents back and deletes everything (`ShareExtensionEndToEndTests`).

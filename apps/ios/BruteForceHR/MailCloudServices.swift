@@ -52,7 +52,7 @@ final class CloudMailService: MailConnectService {
         ["host": endpoint.host, "port": endpoint.port, "security": endpoint.security.rawValue]
     }
 
-    private func call(_ name: String, _ payload: [String: Any], timeout: TimeInterval = 70) async throws(MailConnectError) -> [String: Any]? {
+    private func call(_ name: String, _ payload: sending [String: Any], timeout: TimeInterval = 70) async throws(MailConnectError) -> [String: Any]? {
         let callable = functions.httpsCallable(name)
         callable.timeoutInterval = timeout
         do {

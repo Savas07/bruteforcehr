@@ -38,10 +38,7 @@ await writeFile(
   new URL("../conformance/job-import.json", import.meta.url),
   `${lineJson(buildJobImportVectors())}\n`,
 );
-await writeFile(
-  new URL("../conformance/mail.json", import.meta.url),
-  `${lineJson(buildMailVectors())}\n`,
-);
+await writeFile(new URL("../conformance/mail.json", import.meta.url), `${lineJson(buildMailVectors())}\n`);
 await writeFile(
   new URL("../../swift/BFHRCore/Sources/BFHRCore/Models.swift", import.meta.url),
   renderSwiftModels(),

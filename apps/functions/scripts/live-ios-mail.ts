@@ -5,6 +5,7 @@
 //   gcloud auth application-default login   # once; the owner account
 //   pnpm --filter @bfhr/functions exec tsx scripts/live-ios-mail.ts seed <uid> <email>
 //   pnpm --filter @bfhr/functions exec tsx scripts/live-ios-mail.ts report <uid>
+//   pnpm --filter @bfhr/functions exec tsx scripts/live-ios-mail.ts delete <uid>   (deleteUserData)
 // First: initializes the Admin app before src/callable.ts would (see live-app.ts).
 import "./live-app";
 import { readFileSync } from "node:fs";
@@ -18,19 +19,27 @@ import {
   type Profile,
 } from "@bfhr/core";
 import { getFirestore } from "firebase-admin/firestore";
+import { getStorage } from "firebase-admin/storage";
+import { deleteUserData } from "../src/account/user-data";
 import { adminConverters as converters } from "../src/converters";
 
 const db = getFirestore();
 const [command, uid, email] = process.argv.slice(2);
-if ((command !== "seed" && command !== "report") || uid === undefined) {
-  console.error("usage: live-ios-mail.ts seed <uid> <email> | report <uid>");
+if (!["seed", "report", "delete"].includes(command ?? "") || uid === undefined) {
+  console.error("usage: live-ios-mail.ts seed <uid> <email> | report <uid> | delete <uid>");
   process.exit(64);
 }
 
 const now = new Date();
 const hoursAgo = (hours: number) => new Date(now.getTime() - hours * 3_600_000);
 
-function application(id: string, company: string, role: string, status: Application["status"], since: Date): Application {
+function application(
+  id: string,
+  company: string,
+  role: string,
+  status: Application["status"],
+  since: Date,
+): Application {
   return {
     id,
     jobId: null,
@@ -64,7 +73,9 @@ function application(id: string, company: string, role: string, status: Applicat
   };
 }
 
-function message(input: Pick<MailMessage, "id" | "category" | "subject" | "from" | "reviewState"> & Partial<MailMessage>): MailMessage {
+function message(
+  input: Pick<MailMessage, "id" | "category" | "subject" | "from" | "reviewState"> & Partial<MailMessage>,
+): MailMessage {
   const receivedAt = input.receivedAt ?? hoursAgo(2);
   return {
     accountId: "acc-live",
@@ -77,7 +88,14 @@ function message(input: Pick<MailMessage, "id" | "category" | "subject" | "from"
     language: "en",
     receivedAt,
     confidence: 0.82,
-    extracted: { company: null, role: null, contactName: null, contactEmail: null, dates: [], meetingUrls: [] },
+    extracted: {
+      company: null,
+      role: null,
+      contactName: null,
+      contactEmail: null,
+      dates: [],
+      meetingUrls: [],
+    },
     applicationId: null,
     linkStrength: "company_domain",
     suggestedStatus: null,
@@ -157,7 +175,14 @@ async function seed(uid: string, address: string): Promise<void> {
     applicationId: acme.id,
     suggestedStatus: "interviewing",
     confidence: 0.74,
-    extracted: { company: "Acme Live", role: "iOS Engineer", contactName: "Lena Vogel", contactEmail: "lena@acmelive.example", dates: [], meetingUrls: [] },
+    extracted: {
+      company: "Acme Live",
+      role: "iOS Engineer",
+      contactName: "Lena Vogel",
+      contactEmail: "lena@acmelive.example",
+      dates: [],
+      meetingUrls: [],
+    },
     interviewSuggestion: {
       title: "Interview: iOS Engineer",
       startsAt: new Date(now.getTime() + 2 * 86_400_000),
@@ -187,11 +212,19 @@ async function seed(uid: string, address: string): Promise<void> {
   batch.set(db.doc(firestorePaths.mailAccount(uid, account.id)), converters.mailAccount.toFirestore(account));
   for (const app of [acme, globex])
     batch.set(db.doc(firestorePaths.application(uid, app.id)), converters.application.toFirestore(app));
-  batch.set(db.collection(firestorePaths.applicationEvents(uid)).doc(autoEvent.id), converters.applicationEvent.toFirestore(autoEvent));
+  batch.set(
+    db.collection(firestorePaths.applicationEvents(uid)).doc(autoEvent.id),
+    converters.applicationEvent.toFirestore(autoEvent),
+  );
   for (const mail of [invite, assessment])
-    batch.set(db.collection(firestorePaths.mailMessages(uid)).doc(mail.id), converters.mailMessage.toFirestore(mail));
+    batch.set(
+      db.collection(firestorePaths.mailMessages(uid)).doc(mail.id),
+      converters.mailMessage.toFirestore(mail),
+    );
   await batch.commit();
-  console.log(`seeded users/${uid}: profile, mail account, 2 applications, 1 automatic event, 2 mail messages`);
+  console.log(
+    `seeded users/${uid}: profile, mail account, 2 applications, 1 automatic event, 2 mail messages`,
+  );
 }
 
 async function report(uid: string): Promise<void> {
@@ -219,4 +252,5 @@ async function report(uid: string): Promise<void> {
 }
 
 if (command === "seed") await seed(uid, email ?? `${uid}@example.com`);
-else await report(uid);
+else if (command === "report") await report(uid);
+else await deleteUserData(db, getStorage().bucket(), uid);

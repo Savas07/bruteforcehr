@@ -30,13 +30,7 @@ cleanup() {
   [[ -n "$uid" ]] || uid="$(lookup_uid)"
   [[ -n "$uid" ]] || return 0
   # Every per-user tree (Firestore, Storage, mail serverOnly data), then the Auth user.
-  (cd "$repo_root/apps/functions" && pnpm exec tsx -e "
-    import './scripts/live-app.ts';
-    import { getStorage } from 'firebase-admin/storage';
-    import { getFirestore } from 'firebase-admin/firestore';
-    import { deleteUserData } from './src/account/user-data.ts';
-    await deleteUserData(getFirestore(), getStorage().bucket(), '$uid');
-  ") >/dev/null 2>&1 || echo "cleanup: deleteUserData reported an error"
+  admin delete "$uid" || echo "cleanup: deleteUserData reported an error"
   api -X POST "https://identitytoolkit.googleapis.com/v1/projects/$project/accounts:delete" -d "{\"localId\":\"$uid\"}" >/dev/null
   echo "cleanup: user $uid and its data deleted"
   [[ -z "$(lookup_uid)" ]] && echo "cleanup: verified, no user for $email"

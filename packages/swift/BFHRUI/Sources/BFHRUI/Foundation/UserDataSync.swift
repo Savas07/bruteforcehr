@@ -22,8 +22,9 @@ public enum DocumentChange<Document: Identifiable & Hashable & Sendable>: Hashab
     }
 }
 
-/// The documents a mutation touched, per collection. Events are append-only, so only creates are
-/// carried; mail messages and job matches only ever change, the server creates them.
+/// The documents a mutation touched, per collection. Events and rendered files are immutable, so
+/// only creates are carried; mail messages and job matches only ever change, the server creates
+/// them.
 public struct UserDataChanges: Hashable, Sendable {
     public var applications: [DocumentChange<Application>] = []
     public var applicationEvents: [ApplicationEvent] = []
@@ -31,6 +32,10 @@ public struct UserDataChanges: Hashable, Sendable {
     public var contacts: [DocumentChange<Contact>] = []
     public var mailMessages: [DocumentChange<MailMessage>] = []
     public var jobMatches: [DocumentChange<JobMatch>] = []
+    public var jobs: [DocumentChange<Job>] = []
+    public var savedSearches: [DocumentChange<SavedSearch>] = []
+    public var coverLetters: [DocumentChange<CoverLetter>] = []
+    public var renderedFiles: [RenderedFile] = []
 
     public init() {}
 
@@ -47,11 +52,21 @@ public struct UserDataChanges: Hashable, Sendable {
         jobMatches = Self.diff(before.jobMatches, after.jobMatches).filter {
             if case .updated = $0 { true } else { false }
         }
+        // Clients create and update jobs (a link import, a logged application); the server
+        // deletes them.
+        jobs = Self.diff(before.jobs, after.jobs).filter {
+            if case .deleted = $0 { false } else { true }
+        }
+        savedSearches = Self.diff(before.savedSearches, after.savedSearches)
+        coverLetters = Self.diff(before.coverLetters, after.coverLetters)
+        let knownFiles = Set(before.renderedFiles.map(\.id))
+        renderedFiles = after.renderedFiles.filter { !knownFiles.contains($0.id) }
     }
 
     public var isEmpty: Bool {
         applications.isEmpty && applicationEvents.isEmpty && interviews.isEmpty && contacts.isEmpty
-            && mailMessages.isEmpty && jobMatches.isEmpty
+            && mailMessages.isEmpty && jobMatches.isEmpty && jobs.isEmpty && savedSearches.isEmpty
+            && coverLetters.isEmpty && renderedFiles.isEmpty
     }
 
     /// Ids of every touched document (the rows that show `SyncGlyph` until the write lands).
@@ -62,6 +77,9 @@ public struct UserDataChanges: Hashable, Sendable {
         ids.formUnion(contacts.map(\.id))
         ids.formUnion(mailMessages.map(\.id))
         ids.formUnion(jobMatches.map(\.id))
+        ids.formUnion(jobs.map(\.id))
+        ids.formUnion(savedSearches.map(\.id))
+        ids.formUnion(coverLetters.map(\.id))
         return ids
     }
 

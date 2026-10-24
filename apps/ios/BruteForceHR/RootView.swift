@@ -116,12 +116,16 @@ struct RootView: View {
     }
 
     /// Selects the link's tab; Tracker links (applications, interviews, Log an application, the
-    /// calendar) also open their destination.
+    /// calendar) and Jobs links (a job, Saved, a saved search, Hidden jobs, Apply) also open
+    /// their destination.
     private func navigate(to url: URL) {
         guard let tab = AppTab(deepLink: url) else { return }
         selection = tab
         if tab == .tracker, let live, let route = live.tracker.route(for: url) {
             live.tracker.route = route
+        }
+        if tab == .jobs, let live {
+            live.jobsNavigation.open(url, feed: live.jobs)
         }
     }
 
@@ -132,7 +136,10 @@ struct RootView: View {
         #endif
         let user = signIn.isSignedIn ? Auth.auth().currentUser : nil
         guard let user else {
-            if live != nil { NotificationReminderScheduler.removeAll() }
+            if live != nil {
+                NotificationReminderScheduler.removeAll()
+                PushRegistrar.shared.signedOut()
+            }
             live = nil
             dataPrivacy = nil
             return
@@ -143,6 +150,7 @@ struct RootView: View {
         guard live?.uid != user.uid else { return }
         let session = LiveUserData(uid: user.uid)
         live = session
+        PushRegistrar.shared.signedIn(uid: user.uid)
         Task { await session.refreshNotifications() }
     }
 
@@ -198,8 +206,8 @@ struct RootView: View {
     }
 }
 
-/// Root screen of one tab. Today, Tracker (M3) and CVs (M2) show live data; Jobs and Mail land
-/// with their milestones (docs/STATUS.md). Debug builds launched with design arguments show the
+/// Root screen of one tab. Today, Tracker (M3), CVs (M2) and Jobs (M4) show live data; Mail lands
+/// with its milestone (docs/STATUS.md). Debug builds launched with design arguments show the
 /// fixture-backed screens instead (DesignMode.swift).
 struct TabRootView: View {
     let tab: AppTab
@@ -231,7 +239,9 @@ struct TabRootView: View {
             if let live { TodayTabRoot(live: live) } else { shell }
         case .tracker:
             if let live { TrackerTabRoot(live: live) } else { shell }
-        case .jobs, .mail:
+        case .jobs:
+            if let live { JobsTabRoot(live: live) } else { shell }
+        case .mail:
             shell
         }
     }

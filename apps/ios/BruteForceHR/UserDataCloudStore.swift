@@ -4,17 +4,25 @@ import FirebaseFirestore
 import Foundation
 import Network
 
-/// Today and the Tracker on Firestore (M3, docs/adr/0002-data-model.md): snapshot listeners on
-/// `users/{uid}` and its `applications`, `applicationEvents`, `interviews`, `contacts`, `cvs` and
-/// `coverLetters` (titles for the Documents section) feed one `UserData` to both screen models;
-/// their optimistic mutations come back as `UserDataChanges` and are written as one batch each
-/// (`UserDataWriter`). Firestore's offline persistence is the outbox: offline writes show at once
-/// (`hasPendingWrites` → `SyncGlyph`), survive a relaunch and sync when the device is back online.
-/// Jobs, matches and mail are read from M4 / M5, when the server starts writing them.
+/// Today, the Tracker and Jobs on Firestore (M3, M4; docs/adr/0002-data-model.md): snapshot
+/// listeners on `users/{uid}` and its `applications`, `applicationEvents`, `interviews`,
+/// `contacts`, `cvs`, `coverLetters`, `jobs`, `jobMatches`, `savedSearches`, `mailAccounts` and
+/// `renderedFiles` feed one `UserData` to every screen model; their optimistic mutations come
+/// back as `UserDataChanges` and are written as one batch each (`UserDataWriter`). Firestore's
+/// offline persistence is the outbox: offline writes show at once (`hasPendingWrites` →
+/// `SyncGlyph`), survive a relaunch and sync when the device is back online. Screens opened later
+/// (Job detail, Apply) `attach` and get the same data.
 final class FirestoreUserDataStore: UserDataWriter {
     private let uid: String
     private let db: Firestore
     private var models: [any ScreenModel] = []
+    /// Pushed screens' models, held weakly: they leave with their view.
+    private var attached: [WeakModel] = []
+
+    private final class WeakModel {
+        weak var model: (any ScreenModel)?
+        init(_ model: any ScreenModel) { self.model = model }
+    }
 
     private let registrations = Registrations()
 
@@ -25,6 +33,12 @@ final class FirestoreUserDataStore: UserDataWriter {
     private var contacts: [Contact] = []
     private var cvs: [Cv] = []
     private var coverLetters: [CoverLetter] = []
+    private var jobs: [Job] = []
+    private var jobMatches: [JobMatch] = []
+    private var savedSearches: [SavedSearch] = []
+    private var mailAccounts: [MailAccount] = []
+    private var renderedFiles: [RenderedFile] = []
+    private var lastData: UserData?
     private var pending: [String: Set<String>] = [:]
     private var received: Set<String> = []
     private var lastServerSync: Date?
@@ -81,6 +95,21 @@ final class FirestoreUserDataStore: UserDataWriter {
         listen("coverLetters") { [weak self] documents in
             self?.coverLetters = documents.compactMap { try? Self.decode(CoverLetter.self, $0.data(), ids: ["id": $0.documentID]) }
         }
+        listen("jobs") { [weak self] documents in
+            self?.jobs = documents.compactMap { try? Self.decode(Job.self, $0.data(), ids: ["id": $0.documentID]) }
+        }
+        listen("jobMatches") { [weak self] documents in
+            self?.jobMatches = documents.compactMap { try? Self.decode(JobMatch.self, $0.data(), ids: ["id": $0.documentID]) }
+        }
+        listen("savedSearches") { [weak self] documents in
+            self?.savedSearches = documents.compactMap { try? Self.decode(SavedSearch.self, $0.data(), ids: ["id": $0.documentID]) }
+        }
+        listen("mailAccounts") { [weak self] documents in
+            self?.mailAccounts = documents.compactMap { try? Self.decode(MailAccount.self, $0.data(), ids: ["id": $0.documentID]) }
+        }
+        listen("renderedFiles") { [weak self] documents in
+            self?.renderedFiles = documents.compactMap { try? Self.decode(RenderedFile.self, $0.data(), ids: ["id": $0.documentID]) }
+        }
 
         registrations.pathMonitor.pathUpdateHandler = { [weak self] path in
             let online = path.status == .satisfied
@@ -97,7 +126,7 @@ final class FirestoreUserDataStore: UserDataWriter {
             guard let self else { return }
             guard let snapshot else {
                 if Self.required.contains(collection), !received.contains(collection), let error {
-                    for model in models { model.phase = .failed(Self.loadFailure(error)) }
+                    for model in allModels { model.phase = .failed(Self.loadFailure(error)) }
                 }
                 return
             }
@@ -112,7 +141,7 @@ final class FirestoreUserDataStore: UserDataWriter {
     }
 
     private func connectionChanged(online: Bool) {
-        for model in models {
+        for model in allModels {
             if online {
                 model.connection = .online
             } else if !model.connection.isOffline {
@@ -121,19 +150,43 @@ final class FirestoreUserDataStore: UserDataWriter {
         }
     }
 
+    private var allModels: [any ScreenModel] {
+        attached.removeAll { $0.model == nil }
+        return models + attached.compactMap(\.model)
+    }
+
+    /// A screen opened after `start` (Job detail, Apply): it gets the current data and every
+    /// update until it goes away.
+    func attach(_ model: any ScreenModel) {
+        attached.append(WeakModel(model))
+        if let first = models.first { model.connection = first.connection }
+        if let lastData {
+            model.load(lastData)
+            model.pendingSyncIDs = pending.values.reduce(into: Set<String>()) { $0.formUnion($1) }
+        } else {
+            model.phase = .loading
+        }
+    }
+
     private func push() {
         guard Self.required.isSubset(of: received) else { return }
         let data = UserData(
             profile: profile,
             cvs: cvs,
+            renderedFiles: renderedFiles,
             coverLetters: coverLetters,
+            jobs: jobs,
+            jobMatches: jobMatches,
+            savedSearches: savedSearches,
             applications: applications,
             applicationEvents: events,
             interviews: interviews,
-            contacts: contacts
+            contacts: contacts,
+            mailAccounts: mailAccounts
         )
+        lastData = data
         let pendingIDs = pending.values.reduce(into: Set<String>()) { $0.formUnion($1) }
-        for model in models {
+        for model in allModels {
             model.load(data)
             model.pendingSyncIDs = pendingIDs
         }
@@ -159,6 +212,14 @@ final class FirestoreUserDataStore: UserDataWriter {
         for case .updated(let before, let after) in changes.jobMatches {
             let fields = try Self.changedFields(before, after).filter { Self.jobMatchFields.contains($0.key) }
             if !fields.isEmpty { batch.updateData(fields, forDocument: user.collection("jobMatches").document(after.id)) }
+        }
+        // Jobs: a client never writes the server-only `embedding` (JOB_EMBEDDING_FIELD); the
+        // encoder never produces it.
+        for change in changes.jobs { try write(change, in: "jobs", batch) }
+        for change in changes.savedSearches { try write(change, in: "savedSearches", batch) }
+        for change in changes.coverLetters { try write(change, in: "coverLetters", batch) }
+        for file in changes.renderedFiles {
+            batch.setData(try Self.encode(file, dropping: ["id"]), forDocument: user.collection("renderedFiles").document(file.id))
         }
         try await batch.commit()
     }

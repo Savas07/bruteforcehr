@@ -140,7 +140,8 @@ struct JobDetailModelTests {
         let brisk = model("job-brisk-frontend")
         #expect(brisk.applyRoute == .applied(date: date("2026-10-11T07:30:00Z"), applicationId: "app-brisk"))
         #expect(brisk.applicationStatus == .acknowledged)
-        #expect(brisk.isSaved)
+        // Past Saved, the status replaces the bookmark (D02).
+        #expect(!brisk.isSaved)
         #expect(!brisk.canToggleSave)
 
         // A side exit after applying still reads as applied.
@@ -173,8 +174,10 @@ struct JobDetailModelTests {
         data.jobMatches.removeAll { $0.id == Self.featured }
         let pending = model(data: data)
         #expect(pending.match == .pending)
-        #expect(!pending.canToggleSave && !pending.canHide)
-        #expect(pending.toggleSave() == nil)
+        // No match yet: Save still works (D02, an application in Saved); Not for me needs one.
+        #expect(pending.canToggleSave && !pending.canHide)
+        #expect(pending.toggleSave() != nil)
+        #expect(pending.data.application(forJob: Self.featured)?.status == .saved)
         #expect(pending.hide() == nil)
 
         data = self.data
@@ -232,13 +235,17 @@ struct JobDetailModelTests {
         let toast = try #require(model.toggleSave())
         #expect(model.isSaved)
         #expect(model.data.match(forJob: Self.featured)?.state == .saved)
+        // D02: one batch writes the Saved application, its created event and the match state.
+        let application = try #require(model.data.application(forJob: Self.featured))
+        #expect(application.status == .saved)
+        #expect(model.data.events(forApplication: application.id).map(\.type) == [.created])
         #expect(toast.resolvedMessage == "Saved to your list")
         #expect(toast.glyph == ToastGlyph.saved)
         #expect(toast.action?.role == .undo)
         toast.action?.perform()
         #expect(!model.isSaved)
         #expect(model.data.match(forJob: Self.featured)?.state == .new)
-        #expect(model.data.match(forJob: Self.featured)?.stateChangedAt == nil)
+        #expect(model.data.application(forJob: Self.featured) == nil)
     }
 
     @Test("Unsave is silent")

@@ -2,25 +2,34 @@ import BFHRCore
 import BFHRUI
 import SwiftUI
 
-/// Today, the Tracker and Insights on live data (M3): one Firestore store feeds every screen model,
-/// so a change made in one shows in the others at once. One instance per signed-in user, kept by
-/// `RootView` for the session.
+/// Today, the Tracker, Insights and Jobs on live data (M3, M4): one Firestore store feeds every
+/// screen model, so a change made in one shows in the others at once. One instance per signed-in
+/// user, kept by `RootView` for the session.
 @MainActor
 final class LiveUserData {
     let today: TodayModel
     let tracker: TrackerBoardModel
     let insights: InsightsModel
+    let jobs: JobsFeedModel
+    /// The Jobs stack and its Apply sheet, so links (`bruteforcehr://jobs/…`) can drive them.
+    let jobsNavigation = JobsNavigation()
     private(set) var store: FirestoreUserDataStore
     let uid: String
     private let scheduler = NotificationReminderScheduler()
+    private let jobSearch = CloudJobSearch()
+    /// `jobImportUrl` behind "Add a job from a link".
+    let linkImporter = CloudJobLinkImporter()
+    private let applyServices: CloudApplyServices
+    private let applyRenderer: DeviceApplyRenderer?
+    private var details: [String: JobDetailModel] = [:]
 
     init(uid: String) {
         self.uid = uid
         today = TodayModel(now: .now)
         today.usesSystemClock = true
-        // Email (M5) and job matching (M4) aren't on yet: Today says so instead of offering them.
+        // Mail (M5) isn't on yet: Today says so instead of offering it. Job matching is (M4).
         today.mailAvailable = false
-        today.matchesAvailable = false
+        today.matchesAvailable = true
         tracker = TrackerBoardModel(now: .now)
         tracker.usesSystemClock = true
         tracker.reminderScheduler = scheduler
@@ -33,7 +42,16 @@ final class LiveUserData {
         }
         insights.onRangeChange = { range in UserDefaults.standard.set(range.rawValue, forKey: Self.insightsRangeKey) }
         today.insightsAvailable = true
+        jobs = JobsFeedModel(now: .now)
+        applyServices = CloudApplyServices(uid: uid)
+        // The app always bundles cv-render (the build phase fails otherwise).
+        applyRenderer = (try? CVRenderEngine.bundled()).map(DeviceApplyRenderer.init)
         store = FirestoreUserDataStore(uid: uid)
+        jobs.usesSystemClock = true
+        jobs.searchService = jobSearch
+        // Turning a saved search's alerts on is the first moment a push makes sense (D25); the
+        // system asks once, later calls just register.
+        jobs.onAlertsTurnedOn = { Task { await PushRegistrar.shared.requestPermission() } }
         connect()
         // Relative times ("Tomorrow, 09:00", "Overdue") and suggestions follow the clock; the
         // loop ends with the session (weak self).
@@ -44,6 +62,8 @@ final class LiveUserData {
                 today.now = .now
                 tracker.now = .now
                 insights.now = .now
+                jobs.now = .now
+                for detail in details.values { detail.now = .now }
             }
         }
     }
@@ -63,7 +83,35 @@ final class LiveUserData {
     private func connect() {
         today.writer = store
         tracker.writer = store
-        store.start([today, tracker, insights])
+        jobs.writer = store
+        store.start([today, tracker, insights, jobs])
+        // Open Job details move to the new store.
+        for detail in details.values {
+            detail.writer = store
+            store.attach(detail)
+        }
+    }
+
+    /// Job detail on live data, one model per job for the session (the stack may rebuild it).
+    func detailModel(_ jobId: String) -> JobDetailModel {
+        if let model = details[jobId] { return model }
+        let model = JobDetailModel(jobId: jobId, now: .now)
+        model.usesSystemClock = true
+        model.writer = store
+        store.attach(model)
+        details[jobId] = model
+        return model
+    }
+
+    /// A fresh Apply sheet for a job: Firestore, Storage and the callables behind it.
+    func applyModel(_ jobId: String) -> ApplyModel {
+        let model = ApplyModel(jobId: jobId, now: .now)
+        model.usesSystemClock = true
+        model.writer = store
+        model.services = applyServices
+        model.renderer = applyRenderer
+        store.attach(model)
+        return model
     }
 
     // MARK: Device preferences

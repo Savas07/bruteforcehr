@@ -2130,6 +2130,29 @@
         }
       }
     },
+    "jobDetail.section.application" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deine Bewerbung"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your application"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Başvurunuz"
+          }
+        }
+      }
+    },
     "jobDetail.section.details" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2824,6 +2847,30 @@
         }
       }
     },
+    "jobDetail.toast.backToSaved" : {
+      "comment" : "Toast after I'm not applying: the job's application moves back to Saved.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wieder in Gemerkt"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Back in Saved"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kaydedilenlere döndü"
+          }
+        }
+      }
+    },
     "jobDetail.toast.hidden" : {
       "comment" : "Toast after Not for me on a job (decisions.md D19). Followed by Undo.",
       "extractionState" : "manual",
@@ -2844,6 +2891,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Akışınızdan gizlendi"
+          }
+        }
+      }
+    },
+    "jobDetail.toast.markedApplied" : {
+      "comment" : "Toast after Yes, I applied on the Did you apply? card. Followed by Undo.",
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Als Beworben markiert"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Marked as Applied"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Başvuruldu olarak işaretlendi"
           }
         }
       }
@@ -2915,6 +2986,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ becerilerinize eklendi"
+          }
+        }
+      }
+    },
+    "jobDetail.toast.writeFailed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eine Änderung wurde nicht gespeichert. Diese Seite zeigt den gespeicherten Stand."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A change didn't save. This page shows what's stored."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bir değişiklik kaydedilmedi. Bu sayfa kayıtlı olanı gösteriyor."
           }
         }
       }

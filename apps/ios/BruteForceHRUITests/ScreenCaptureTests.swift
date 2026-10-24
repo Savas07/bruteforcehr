@@ -10,7 +10,9 @@ import XCTest
 ///   state, launched with `-BFHRScreen`, `-BFHRDesign` and `-BFHRState`; or, for the screen
 ///   `update-gate`, the update banner / blocking screen over Today (`-BFHRUpdate`); for
 ///   `sign-in`, the signed-out screens (`-BFHRSignIn`); for `data-privacy`, Settings › Data &
-///   privacy and Delete account (`-BFHRDataPrivacy`).
+///   privacy and Delete account (`-BFHRDataPrivacy`). `BFHR_CAPTURE_ARGS` (comma-separated)
+///   adds launch arguments for a sub-state, e.g. `-BFHRApplyStep,kit`, and `BFHR_CAPTURE_TAG`
+///   names it in the file: `<screen>-<tag>-<state>-<theme>[-ax].png`.
 ///
 /// `BFHR_CAPTURE_LANGUAGE` (en, tr, de; default en) sets the app's language.
 ///
@@ -96,28 +98,35 @@ final class ScreenCaptureTests: XCTestCase {
             return
         }
 
+        let extraArguments = list("BFHR_CAPTURE_ARGS") ?? []
+        let tag = ProcessInfo.processInfo.environment["BFHR_CAPTURE_TAG"].flatMap { $0.isEmpty ? nil : "-\($0)" } ?? ""
         for screen in screens {
             for state in states {
                 let app = XCUIApplication()
-                app.launchArguments += languageArguments + ["-BFHRScreen", screen] + designArguments(for: state)
+                app.launchArguments += languageArguments + ["-BFHRScreen", screen] + designArguments(for: state) + extraArguments
                 app.launch()
-                // The screen's tab is selected, then the screen is showing: its design root
-                // (`design.<screen>`), or a view the screen pushed over that root (the root leaves
-                // the tree then, e.g. the CV editor opens the selected CV over the CVs list), which
-                // shows a back button.
-                let tabBar = app.tabBars.firstMatch
-                XCTAssertTrue(tabBar.waitForExistence(timeout: 20), "\(screen) \(state)")
-                XCTAssertTrue(tabBar.buttons[tabTitle(for: screen)].isSelected, "\(screen) \(state): tab")
+                // The screen is showing: its design root (`design.<screen>`), a view the screen
+                // pushed over that root (the root leaves the tree then, e.g. the CV editor opens
+                // the selected CV over the CVs list), which shows a back button, or a sheet it
+                // presents at launch (Apply, paste a link), which hides the tab bar from the tree.
                 let root = app.descendants(matching: .any)["design.\(screen)"]
                 let back = app.navigationBars.buttons["BackButton"]
+                let sheet = app.descendants(matching: .any).matching(
+                    NSPredicate(format: "identifier IN %@", ["apply.sheet", "import.sheet"])
+                ).firstMatch
                 let shown = XCTNSPredicateExpectation(
-                    predicate: NSPredicate { _, _ in root.exists || back.exists },
+                    predicate: NSPredicate { _, _ in root.exists || back.exists || sheet.exists },
                     object: nil
                 )
                 XCTAssertEqual(XCTWaiter().wait(for: [shown], timeout: 20), .completed, "\(screen) \(state)")
-                // Past the 300 ms skeleton delay, toasts and the banner's appearance.
+                if !sheet.exists {
+                    let tabBar = app.tabBars.firstMatch
+                    XCTAssertTrue(tabBar.waitForExistence(timeout: 20), "\(screen) \(state)")
+                    XCTAssertTrue(tabBar.buttons[tabTitle(for: screen)].isSelected, "\(screen) \(state): tab")
+                }
+                // Past the 300 ms skeleton delay, toasts, the banner's appearance and a sheet's slide-up.
                 Thread.sleep(forTimeInterval: state == "loading" ? 1.0 : 1.5)
-                let file = directory.appendingPathComponent("\(screen)-\(state)-\(suffix).png")
+                let file = directory.appendingPathComponent("\(screen)\(tag)-\(state)-\(suffix).png")
                 try XCUIScreen.main.screenshot().pngRepresentation.write(to: file)
                 app.terminate()
             }
@@ -198,7 +207,7 @@ final class ScreenCaptureTests: XCTestCase {
     /// The English title of the tab that hosts a design screen (DesignMode.swift).
     private func tabTitle(for screen: String) -> String {
         switch screen {
-        case "job-detail": "Jobs"
+        case "jobs", "job-detail", "saved-searches", "apply": "Jobs"
         case "cv-editor": "CVs"
         case "tracker-board", "insights": "Tracker"
         case "mail-review": "Mail"

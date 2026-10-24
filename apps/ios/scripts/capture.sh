@@ -5,7 +5,7 @@
 # and text size runs ScreenCaptureTests, which launches the app and saves PNGs under
 # artifacts/screens/ios/<device>/ (repository root of this worktree; gitignored):
 #
-#   design screens (--screen):  <screen>-<state>-<theme>[-ax].png
+#   design screens (--screen):  <screen>[-<tag>]-<state>-<theme>[-ax].png
 #   update gate (--screen update-gate):  update-gate-<available|required>-<theme>[-ax].png
 #   sign-in (--screen sign-in):  sign-in-<state>-<theme>[-ax].png
 #   data & privacy (--screen data-privacy):  data-privacy-<state>-<theme>[-ax].png
@@ -13,9 +13,10 @@
 #
 # Usage: apps/ios/scripts/capture.sh [--screen NAME|all]... [--state NAME]... [--size default|ax]...
 #                                     [--ax] [--device NAME]... [--theme light|dark]... [--lang en|tr|de]
-#                                     [--skip-build]
-#   --screen    core screen in design mode: today, job-detail, cv-editor, tracker-board, mail-review, insights,
-#               or all (repeatable). Without it the tabs of the title-only shell are captured.
+#                                     [--skip-build] [--arg LAUNCH_ARGUMENT]... [--tag NAME]
+#   --screen    core screen in design mode: today, jobs, job-detail, saved-searches, apply, cv-editor,
+#               tracker-board, mail-review, insights, or all (repeatable). Without it the tabs of the
+#               title-only shell are captured.
 #               update-gate (on its own): the update banner and blocking screen over Today.
 #               sign-in (on its own): the signed-out screens (`-BFHRSignIn`).
 #               data-privacy (on its own): Settings › Data & privacy and Delete account (`-BFHRDataPrivacy`).
@@ -33,6 +34,9 @@
 #   --theme     appearance (repeatable; default: light and dark)
 #   --lang      app language (default en; tr / de add -tr / -de to the file names)
 #   --skip-build  reuse the last build in this worktree's DerivedData
+#   --arg       extra launch argument for a design screen's sub-state (repeatable, in order), e.g.
+#               --arg -BFHRApplyStep --arg kit
+#   --tag       names the sub-state in the file name (default with --arg: the last --arg value)
 #
 # DerivedData lives in this worktree (apps/ios/build/DerivedData), so worktrees build in
 # parallel. Set BFHR_DERIVED_DATA to share one DerivedData across worktrees instead (one compiled
@@ -47,7 +51,7 @@ ios_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 repo_root="$(cd "$ios_dir/../.." && pwd)"
 derived_data="${BFHR_DERIVED_DATA:-$ios_dir/build/DerivedData}"
 lock_dir="/tmp/bfhr-ios-capture.lock"
-all_screens=(today job-detail cv-editor tracker-board mail-review insights)
+all_screens=(today jobs job-detail saved-searches apply cv-editor tracker-board mail-review insights)
 all_states=(populated empty loading error offline)
 
 screens=()
@@ -55,6 +59,8 @@ states=()
 sizes=()
 devices=()
 themes=()
+extra_args=()
+tag=""
 build=true
 lang=en
 while (($# > 0)); do
@@ -67,7 +73,9 @@ while (($# > 0)); do
     --theme) themes+=("$2"); shift ;;
     --lang) lang="$2"; shift ;;
     --skip-build) build=false ;;
-    -h | --help) sed -n '2,41p' "$0"; exit 0 ;;
+    --arg) extra_args+=("$2"); shift ;;
+    --tag) tag="$2"; shift ;;
+    -h | --help) sed -n '2,43p' "$0"; exit 0 ;;
     *) echo "capture.sh: unknown argument $1" >&2; exit 64 ;;
   esac
   shift
@@ -75,6 +83,12 @@ done
 ((${#devices[@]} > 0)) || devices=("iPhone 17e" "iPhone 17 Pro Max")
 ((${#themes[@]} > 0)) || themes=(light dark)
 ((${#sizes[@]} > 0)) || sizes=(default)
+if ((${#extra_args[@]} > 0)); then
+  [[ -n "$tag" ]] || tag="${extra_args[${#extra_args[@]}-1]#-}"
+  for arg in "${extra_args[@]}"; do
+    [[ "$arg" != *,* ]] || { echo "capture.sh: --arg values can't contain commas" >&2; exit 64; }
+  done
+fi
 contains() { local needle="$1"; shift; for item in "$@"; do [[ "$item" == "$needle" ]] && return 0; done; return 1; }
 update_states=(available required)
 sign_in_states=(email invalid offline check resent finishing confirm expired unusable retry deleted)
@@ -179,6 +193,8 @@ else
   screen_list=""
   state_list=""
 fi
+arg_list="$(IFS=,; echo "${extra_args[*]+"${extra_args[*]}"}")"
+
 
 for index in "${!devices[@]}"; do
   device="${devices[$index]}"
@@ -209,12 +225,13 @@ $was_booted || xcrun simctl shutdown $udid || true"
       xcrun simctl ui "$udid" appearance "$theme"
       TEST_RUNNER_BFHR_CAPTURE_DIR="$out_dir" TEST_RUNNER_BFHR_CAPTURE_SUFFIX="$theme$suffix$lang_suffix" \
         TEST_RUNNER_BFHR_CAPTURE_SCREENS="$screen_list" TEST_RUNNER_BFHR_CAPTURE_STATES="$state_list" \
+        TEST_RUNNER_BFHR_CAPTURE_ARGS="$arg_list" TEST_RUNNER_BFHR_CAPTURE_TAG="$tag" \
         TEST_RUNNER_BFHR_CAPTURE_LANGUAGE="$lang" \
         xcodebuild test-without-building "${xcodebuild_args[@]}" -destination "platform=iOS Simulator,id=$udid" \
         -only-testing:"BruteForceHRUITests/ScreenCaptureTests/$test_name"
       if [[ -n "$screen_list" ]]; then
         for screen in "${screens[@]}"; do
-          for state in "${states[@]}"; do echo "$out_dir/$screen-$state-$theme$suffix$lang_suffix.png"; done
+          for state in "${states[@]}"; do echo "$out_dir/$screen${tag:+-$tag}-$state-$theme$suffix$lang_suffix.png"; done
         done
       else
         for tab in today jobs tracker cvs mail; do echo "$out_dir/$tab-$theme$suffix$lang_suffix.png"; done

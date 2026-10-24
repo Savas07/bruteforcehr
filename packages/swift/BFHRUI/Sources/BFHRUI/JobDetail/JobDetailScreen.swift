@@ -12,6 +12,8 @@ public struct JobDetailScreen: View {
     @Environment(\.openURL) private var openURL
     @Environment(\.dismiss) private var dismiss
     @Environment(\.bfhrReload) private var reload
+    @Environment(\.bfhrApply) private var applySheet
+    @State private var lastWriteFailures = 0
     @State private var saveCount = 0
     @State private var confirmCount = 0
     @State private var showsTitle = false
@@ -49,6 +51,11 @@ public struct JobDetailScreen: View {
                 if let toast = model.setHiddenReasons(reasons) { toasts?.show(toast) }
             }
         }
+        .onChange(of: model.writeFailures) { _, failures in
+            guard failures > lastWriteFailures else { return }
+            lastWriteFailures = failures
+            toasts?.show(ToastItem(glyph: ToastGlyph.info, message: JobDetailStrings.writeFailedToast))
+        }
     }
 
     // MARK: Content
@@ -56,6 +63,19 @@ public struct JobDetailScreen: View {
     private var content: some View {
         List {
             ConnectionBannerSection(model.connection)
+            if model.asksIfSubmitted, let header = model.header {
+                Section {
+                    SubmitPrompt(
+                        company: header.company.name,
+                        onApplied: { run(model.confirmSubmitted) },
+                        onNotYet: model.deferSubmitted,
+                        onNotApplying: { run(model.stopApplying) }
+                    )
+                    .listRowInsets(EdgeInsets())
+                    .listRowBackground(Color.clear)
+                    .accessibilityIdentifier("jobDetail.submitPrompt")
+                }
+            }
             if model.isHidden {
                 Section {
                     HiddenBanner(reasons: model.hiddenReasons, onUndo: model.unhide, onTellUsWhy: { showsReasons = true })
@@ -63,6 +83,15 @@ public struct JobDetailScreen: View {
             }
             if let header = model.header {
                 JobDetailHeaderSection(header: header, isDelisted: model.isDelisted, isPendingSync: model.isPendingSync)
+            }
+            if let summary = model.applicationSummary {
+                Section {
+                    ApplicationSummaryBlock(summary)
+                        .padding(.vertical, BFHRSpace.s1)
+                } header: {
+                    Text(JobDetailViewStrings.application)
+                        .foregroundStyle(BFHRColor.Fg.secondary)
+                }
             }
             matchSections
             JobFactsSection(facts: model.facts)
@@ -280,7 +309,8 @@ public struct JobDetailScreen: View {
         .accessibilityShowsLargeContentViewer {
             Text(JobDetailViewStrings.apply(route))
         }
-        .accessibilityHint(isExternal ? Text(JobDetailViewStrings.opensInBrowser) : Text(verbatim: ""))
+        .accessibilityHint(isExternal && applySheet == nil ? Text(JobDetailViewStrings.opensInBrowser) : Text(verbatim: ""))
+        .accessibilityIdentifier("jobDetail.apply")
     }
 
     // MARK: Actions
@@ -309,11 +339,23 @@ public struct JobDetailScreen: View {
     }
 
     private func apply(_ route: JobDetailModel.ApplyRoute) {
-        switch route {
-        case .email(let address): open("mailto:\(address)")
-        case .companySite(let url), .board(_, let url): openURL(url)
-        case .applied(_, let applicationId): open("bruteforcehr://applications/\(applicationId)")
+        if case .applied(_, let applicationId) = route {
+            open("bruteforcehr://applications/\(applicationId)")
+        } else if let applySheet {
+            // The Apply sheet (apply.md): CV, cover letter and channel, then the route.
+            applySheet(model.jobId)
+        } else {
+            switch route {
+            case .email(let address): open("mailto:\(address)")
+            case .companySite(let url), .board(_, let url): openURL(url)
+            case .applied: break
+            }
         }
+    }
+
+    /// Runs a throwing action that may return a toast.
+    private func run(_ action: () throws -> ToastItem?) {
+        if let toast = try? action() { toasts?.show(toast) }
     }
 
     private func open(_ link: String) {

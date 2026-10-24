@@ -8,19 +8,28 @@ import Foundation
 //
 //   -BFHRDesign populated|empty            dataset (default populated)
 //   -BFHRState loading|error|offline       forced condition (default none)
-//   -BFHRScreen today|job-detail|cv-editor|tracker-board|mail-review|insights   tab to open at launch
-//                                      (insights opens the Tracker tab with Insights pushed)
+//   -BFHRScreen today|jobs|job-detail|saved-searches|apply|cv-editor|tracker-board|mail-review|insights
+//                                      tab to open at launch (job-detail, saved-searches and apply
+//                                      open over the Jobs feed; insights opens the Tracker tab
+//                                      with Insights pushed)
 //
 // Any one of them turns design mode on. Release builds compile none of this.
 
-/// The five M0 core screens, plus Insights (M3, pushed on the Tracker).
+/// The five M0 core screens, Insights (M3, pushed on the Tracker), and the Jobs tab's screens
+/// (M4: the feed, Saved searches and the Apply sheet).
 public enum DesignScreen: String, CaseIterable, Identifiable, Sendable {
     case today
+    case jobs
     case jobDetail = "job-detail"
+    case savedSearches = "saved-searches"
+    case apply
     case cvEditor = "cv-editor"
     case trackerBoard = "tracker-board"
     case mailReview = "mail-review"
     case insights
+
+    /// Screens shown inside the Jobs stack.
+    public var isJobsScreen: Bool { [.jobs, .jobDetail, .savedSearches, .apply].contains(self) }
 
     public var id: Self { self }
 }

@@ -11,10 +11,23 @@ public final class JobDetailModel: ScreenModel {
     public var pendingSyncIDs: Set<String> = []
 
     public let jobId: String
-    public let now: Date
+    /// The clock for relative values; the data layer advances it.
+    public var now: Date
     public let calendar: Calendar
 
     private(set) var data = UserData.empty
+
+    /// Persists every mutation (the app's Firestore store); nil in tests and design mode.
+    public weak var writer: (any UserDataWriter)?
+    /// Live data: writes are stamped with the system clock.
+    public var usesSystemClock = false
+    /// Counts writes the server refused; the screen shows a toast when it changes.
+    public private(set) var writeFailures = 0
+    /// "Not yet" on the "Did you apply?" card: collapsed for this visit (apply.md: asked again
+    /// the next time the job is opened, never by push).
+    public private(set) var submitPromptDeferred = false
+
+    var writeTime: Date { usesSystemClock ? .now : now }
 
     // MARK: Derived state
 
@@ -37,13 +50,17 @@ public final class JobDetailModel: ScreenModel {
     /// The tracker application made from this job, if any.
     public private(set) var applicationId: String?
     public private(set) var applicationStatus: ApplicationStatus?
-    /// The match is saved, or the job's application sits in Saved.
+    /// The application block once applied ("Applied 22 Oct · by email", CV and cover letter).
+    public private(set) var applicationSummary: ApplicationSummaryBlock.Content?
+    /// Apply was started (Preparing) and not answered: the inline "Did you apply?" card.
+    public private(set) var asksIfSubmitted = false
+    /// The job's application sits in Saved (decisions.md D02).
     public private(set) var isSaved = false
     /// The user chose "Not for me": the "Hidden from your feed · Undo" banner.
     public private(set) var isHidden = false
     public private(set) var hiddenReasons: [DismissReason] = []
-    /// The bookmark toggles the match's saved state. Off while there's no match yet, and once the
-    /// job is in the Tracker (the application owns it there).
+    /// The bookmark saves the job (an application in Saved) or unsaves it while that's all it
+    /// has; once the job has moved on in the Tracker, the application owns it there.
     public private(set) var canToggleSave = false
     /// "Not for me" needs a match document to write to.
     public private(set) var canHide = false
@@ -74,19 +91,45 @@ public final class JobDetailModel: ScreenModel {
 
     // MARK: Actions
 
-    /// Saves or unsaves the job. Saving returns "Saved to your list · Undo"; unsaving is silent
-    /// (nil). Does nothing when `canToggleSave` is false.
+    /// Runs a mutation on `data`, recomputes and hands the changed documents to `writer` as one
+    /// batch (see `TrackerBoardModel.mutate`).
+    @discardableResult
+    func mutate<Result>(_ body: (inout UserData) throws -> Result) rethrows -> Result {
+        let before = data
+        let result = try body(&data)
+        let changes = UserDataChanges(from: before, to: data)
+        if !changes.isEmpty, let writer {
+            Task { [weak self] in
+                do {
+                    try await writer.commit(changes)
+                } catch {
+                    self?.writeFailures += 1
+                }
+            }
+        }
+        recordWrite(jobId)
+        recompute()
+        return result
+    }
+
+    /// Saves or unsaves the job (D02: the Saved application, its event and the match state in
+    /// one batch). Saving returns "Saved to your list · Undo"; unsaving is silent (nil). Does
+    /// nothing when `canToggleSave` is false.
     @discardableResult
     public func toggleSave() -> ToastItem? {
-        guard canToggleSave, let current = data.match(forJob: jobId) else { return nil }
-        let target: JobMatchState = current.state == .saved ? .new : .saved
-        data.setMatchState(jobId, to: target, at: now)
-        commit()
-        guard target == .saved else { return nil }
+        guard canToggleSave else { return nil }
+        if isSaved {
+            mutate { $0.unsaveJob(jobId, at: writeTime) }
+            return nil
+        }
+        mutate { $0.saveJob(jobId, at: writeTime) }
         return ToastItem(
             glyph: ToastGlyph.saved,
             message: JobDetailStrings.savedToast,
-            action: .undo { [weak self] in self?.restoreState(of: current) }
+            action: .undo { [weak self] in
+                guard let self else { return }
+                mutate { $0.unsaveJob(self.jobId, at: self.writeTime) }
+            }
         )
     }
 
@@ -95,8 +138,7 @@ public final class JobDetailModel: ScreenModel {
     @discardableResult
     public func hide(reasons: [DismissReason] = []) -> ToastItem? {
         guard canHide, let current = data.match(forJob: jobId) else { return nil }
-        data.setMatchState(jobId, to: .dismissed, reasons: reasons, at: now)
-        commit()
+        mutate { $0.setMatchState(jobId, to: .dismissed, reasons: reasons, at: writeTime) }
         return ToastItem(
             glyph: ToastGlyph.hidden,
             message: JobDetailStrings.hiddenToast,
@@ -107,8 +149,7 @@ public final class JobDetailModel: ScreenModel {
     /// The hidden banner's Undo: back to a new match.
     public func unhide() {
         guard isHidden else { return }
-        data.setMatchState(jobId, to: .new, at: now)
-        commit()
+        mutate { $0.setMatchState(jobId, to: .new, at: writeTime) }
     }
 
     /// The reason sheet's Save reason on a hidden job: replaces the hidden job's reasons
@@ -117,8 +158,7 @@ public final class JobDetailModel: ScreenModel {
     @discardableResult
     public func setHiddenReasons(_ reasons: [DismissReason]) -> ToastItem? {
         guard isHidden else { return nil }
-        data.setMatchState(jobId, to: .dismissed, reasons: reasons, at: now)
-        commit()
+        mutate { $0.setMatchState(jobId, to: .dismissed, reasons: reasons, at: writeTime) }
         return ToastItem(glyph: ToastGlyph.confirmed, message: JobDetailStrings.reasonsSavedToast)
     }
 
@@ -130,30 +170,68 @@ public final class JobDetailModel: ScreenModel {
 
     /// "I have this" on a skill gap: moves `skill` (an unmatched skill or a skill gap's label) to
     /// the matched skills and drops its gap. Returns "{skill} added to your skills · Undo"; nil
-    /// when the skill isn't unmatched or a gap.
+    /// when the skill isn't unmatched or a gap. Local until the next match run: clients may only
+    /// write a match's state (JOB_MATCH_CLIENT_UPDATABLE_FIELDS).
     @discardableResult
     public func markHaveSkill(_ skill: String) -> ToastItem? {
         guard let current = data.match(forJob: jobId), let shown = data.markHaveSkill(skill, forJob: jobId) else { return nil }
-        commit()
+        recordWrite(jobId)
+        recompute()
         return ToastItem(
             glyph: ToastGlyph.confirmed,
             message: JobDetailStrings.skillAddedToast(shown),
             action: .undo { [weak self] in
                 guard let self else { return }
                 data.setMatchSkills(jobId, skills: current.skills, gaps: current.gaps)
-                commit()
+                recompute()
             }
         )
     }
 
-    private func restoreState(of previous: JobMatch) {
-        data.restoreMatchState(jobId, from: previous)
-        commit()
+    // MARK: "Did you apply?" (apply.md)
+
+    /// "Yes, I applied": Applied, with the CV the match is based on pinned (its current
+    /// revision). Returns "Marked as Applied · Undo".
+    @discardableResult
+    public func confirmSubmitted() throws -> ToastItem? {
+        guard let applicationId else { return nil }
+        let cv = match.scored.flatMap { data.cv(id: $0.basis.cvId) } ?? data.cvs.first { $0.isDefault && $0.archivedAt == nil }
+        let channel: Channel = if case .email = applyRoute { .email } else { .externalLink }
+        let event = try mutate {
+            try $0.markApplied(
+                applicationId,
+                channel: channel,
+                pins: ApplicationPins(cvId: cv?.id, cvRevisionId: cv?.currentRevisionId),
+                at: writeTime
+            )
+        }
+        guard let event else { return nil }
+        return ToastItem(
+            glyph: ToastGlyph.moved,
+            message: JobDetailStrings.markedAppliedToast,
+            action: .undo { [weak self] in
+                guard let self else { return }
+                try? mutate { _ = try $0.revertEvent(event.id, at: self.writeTime) }
+            }
+        )
     }
 
-    private func commit() {
-        recordWrite(jobId)
+    /// "Not yet": the card collapses for this visit.
+    public func deferSubmitted() {
+        submitPromptDeferred = true
         recompute()
+    }
+
+    /// "I'm not applying": back to Saved.
+    @discardableResult
+    public func stopApplying() throws -> ToastItem? {
+        guard let applicationId else { return nil }
+        guard try mutate({ try $0.stopApplying(applicationId, at: writeTime) }) != nil else { return nil }
+        return ToastItem(glyph: ToastGlyph.moved, message: JobDetailStrings.backToSavedToast)
+    }
+
+    private func restoreState(of previous: JobMatch) {
+        mutate { $0.restoreMatchState(jobId, from: previous) }
     }
 
     // MARK: Derivation
@@ -170,6 +248,8 @@ public final class JobDetailModel: ScreenModel {
             applyRoute = nil
             applicationId = nil
             applicationStatus = nil
+            applicationSummary = nil
+            asksIfSubmitted = false
             isSaved = false
             isHidden = false
             hiddenReasons = []
@@ -205,11 +285,25 @@ public final class JobDetailModel: ScreenModel {
         applicationId = application?.id
         applicationStatus = application?.status
         applyRoute = Self.applyRoute(for: job, sources: rows, application: application)
+        // Shown once applied: Applied or later, or a closed outcome after applying.
+        applicationSummary = application.flatMap { application in
+            let pastApplied = statusRank(application.status).map { rank in rank >= (statusRank(.applied) ?? .max) } ?? false
+            guard pastApplied || application.appliedAt != nil else { return nil }
+            return ApplicationSummaryBlock.Content(
+                status: application.status,
+                channel: application.channel,
+                appliedAt: application.appliedAt,
+                cvTitle: application.cvId.flatMap { data.cv(id: $0)?.title },
+                coverLetterTitle: application.coverLetterId.flatMap { id in data.coverLetters.first { $0.id == id }?.title },
+                isPendingSync: pendingSyncIDs.contains(application.id)
+            )
+        }
+        asksIfSubmitted = application?.status == .preparing && !submitPromptDeferred
 
-        isSaved = jobMatch?.state == .saved || application?.status == .saved
+        isSaved = data.isJobSaved(jobId)
         isHidden = jobMatch?.state == .dismissed
         hiddenReasons = isHidden ? jobMatch?.dismissReasons ?? [] : []
-        canToggleSave = jobMatch != nil && application == nil
+        canToggleSave = data.canToggleJobSave(jobId)
         canHide = jobMatch != nil && !isHidden
     }
 

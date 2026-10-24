@@ -280,7 +280,7 @@ public final class DataPrivacyModel {
                 reauth = .needed
                 reauthProblem = .linkExpired
                 pendingActionLink = nil
-            case .unusable, .invalidEmail, .accountDisabled:
+            case .unusable, .invalidEmail, .accountDisabled, .inviteOnly:
                 reauth = .needed
                 reauthProblem = .linkUnusable
                 pendingActionLink = nil

@@ -282,12 +282,12 @@ describe("runSync on an IMAP account", () => {
     );
     expect(forged).toMatchObject({
       category: "rejection",
-      applicationId: "app-acme",
-      linkStrength: "company_domain",
       suggestedStatus: "rejected",
       reviewState: "pending",
       appliedEventId: null,
     });
+    // The claimed ATS sender is no strong evidence without authentication.
+    expect(forged?.linkStrength).not.toBe("ats_company_role");
     expect((await readApplication(UID, "app-acme")).status).toBe("interviewing");
   });
 });

@@ -1,5 +1,22 @@
 # @bfhr/ai
 
+## 0.4.0
+
+### Minor Changes
+
+- 1b35770: Mail: connect IMAP accounts with an app password (Gmail and Outlook through OAuth once their clients are registered), scan the last 30–180 days, sort job mail with rules or Claude (EN/TR/DE) into automatic tracker updates with Undo or the review queue, and send email applications with a 10-second undo window.
+
+### Patch Changes
+
+- Updated dependencies [1f1c8d2]
+- Updated dependencies [bcb03f2]
+- Updated dependencies [0905d17]
+- Updated dependencies [01435f6]
+- Updated dependencies [1b35770]
+- Updated dependencies [fc77c88]
+- Updated dependencies [257f97a]
+  - @bfhr/core@0.4.0
+
 ## 0.3.0
 
 ### Patch Changes

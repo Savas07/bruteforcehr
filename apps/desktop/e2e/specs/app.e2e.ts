@@ -107,7 +107,7 @@ describe("BruteForceHR desktop", () => {
     const modifier = isMac ? "⌘" : "Ctrl";
     const keycaps = await sheet.$$("dd").map((keycap) => keycap.getText());
     expect(keycaps.slice(0, 11)).toEqual(
-      ["1", "2", "3", "4", "5", "6", "K", "/", ",", "N", "Z"].map((key) =>
+      ["1", "2", "3", "4", "5", "6", "K", "/", ",", "Z", "N"].map((key) =>
         expect.stringMatching(`${modifier}\\s*${key}`),
       ),
     );

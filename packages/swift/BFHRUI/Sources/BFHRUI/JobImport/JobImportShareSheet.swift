@@ -9,6 +9,7 @@ import SwiftUI
 public struct JobImportShareSheet: View {
     @Bindable private var model: JobImportShareModel
     private let onClose: () -> Void
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     public init(model: JobImportShareModel, onClose: @escaping () -> Void) {
         self.model = model
@@ -139,20 +140,34 @@ public struct JobImportShareSheet: View {
                         .accessibilityIdentifier("share.role")
                     TrackerFormField(JobImportStrings.company, text: $model.company, kind: .organization)
                         .accessibilityIdentifier("share.company")
-                    TrackerFormField(JobImportStrings.location, text: $model.location, prompt: JobImportStrings.locationPrompt, kind: .city)
+                    TrackerFormField(
+                        JobImportStrings.location,
+                        text: $model.location,
+                        prompt: manual ? JobImportStrings.optional : JobImportStrings.locationPrompt,
+                        kind: .city
+                    )
                         .accessibilityIdentifier("share.location")
                 }
             } header: {
                 if manual { Text(JobImportStrings.manualTitle) }
             } footer: {
-                Text(manual ? JobImportStrings.manualFooter : (model.canSave ? JobImportStrings.footer : JobImportStrings.requiredFooter))
+                Text(model.canSave ? (manual ? JobImportStrings.manualFooter : JobImportStrings.footer) : JobImportStrings.requiredFooter)
                     .font(.bfhr(.footnote))
                     .foregroundStyle(BFHRColor.Fg.primary)
                     .fixedSize(horizontal: false, vertical: true)
             }
+            // At accessibility sizes the two buttons would cover most of the sheet: they scroll
+            // with the fields as the last section instead of staying pinned.
+            if dynamicTypeSize.isAccessibilitySize {
+                Section { actions }
+                    .listRowInsets(EdgeInsets())
+                    .listRowBackground(Color.clear)
+            }
         }
         .scrollDismissesKeyboard(.interactively)
-        .safeAreaInset(edge: .bottom) { actions(manual: manual) }
+        .safeAreaInset(edge: .bottom) {
+            if !dynamicTypeSize.isAccessibilitySize { actions }
+        }
     }
 
     private var sourceRow: some View {
@@ -178,7 +193,7 @@ public struct JobImportShareSheet: View {
         .accessibilityIdentifier("share.source")
     }
 
-    private func actions(manual: Bool) -> some View {
+    private var actions: some View {
         VStack(spacing: BFHRSpace.s2) {
             if model.saveFailed {
                 Text(JobImportStrings.saveFailed)

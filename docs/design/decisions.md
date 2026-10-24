@@ -411,6 +411,14 @@ Explicitly **not stored**:
 - **Why:** the import dialog already has the drop zone, the parse progress and the review step with its error recovery; a second drop zone would duplicate that flow and its states. The review step is part of the import, so the thumbnail adds nothing the review doesn't show.
 - **Affects:** onboarding-signin (Step 1/3 CV desktop), cv-editor (import).
 
+## Desktop chrome
+
+### D43 · macOS Tab reaches links always, buttons per the system setting
+
+- **Decision:** the macOS window's WKWebView has `tabFocusesLinks` on, so Tab always reaches links (the sidebar sections, Settings, in-page links). Buttons and other controls follow macOS's own Keyboard navigation setting (System Settings › Keyboard), as in every Mac app; the app doesn't override it. Windows (WebView2) tabs to everything.
+- **Why:** without it the sidebar was unreachable by Tab on macOS even with Keyboard navigation on (that setting doesn't cover links in a web view). Forcing buttons into the Tab order would diverge from native Mac apps.
+- **Affects:** sidebar, every desktop screen ([keyboard-pass.md](critiques/desktop/keyboard-pass.md)); `src-tauri/src/window.rs`.
+
 ## Other open questions resolved
 
 | Question                                                   | Decision                                                                                                                                                                                                           | Doc                      |

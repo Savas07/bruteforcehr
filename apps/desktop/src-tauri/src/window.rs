@@ -129,7 +129,7 @@ pub fn create_main<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
         None
     };
 
-    let window = WebviewWindowBuilder::from_config(app, &window_config(chrome.material))?
+    let builder = WebviewWindowBuilder::from_config(app, &window_config(chrome.material))?
         .initialization_script(chrome_script(&chrome))
         .on_navigation(move |url| {
             let allowed = navigation::is_allowed(url, dev_url.as_ref());
@@ -144,12 +144,11 @@ pub fn create_main<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
         // and the macOS Window menu.
         .on_document_title_changed(|window, title| {
             let _ = window.set_title(&title);
-        })
-        .build()?;
+        });
     #[cfg(target_os = "macos")]
-    tab_to_links(&window)?;
+    tab_to_links(&builder.build()?)?;
     #[cfg(not(target_os = "macos"))]
-    let _ = window;
+    builder.build()?;
     Ok(())
 }
 

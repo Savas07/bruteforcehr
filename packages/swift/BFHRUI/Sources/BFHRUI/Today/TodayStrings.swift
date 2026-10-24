@@ -23,6 +23,11 @@ enum TodayStrings {
     static let connectBody = LocalizedStringResource.bfhr("today.connect.body", default: "See interview invites and replies here. About 2 minutes.", table: "Today")
     static let connectAction = LocalizedStringResource.bfhr("today.connect.action", default: "Connect email", table: "Today")
     static let looksRight = LocalizedStringResource.bfhr("today.action.looksRight", default: "Looks right", table: "Today")
+    static let scanBody = LocalizedStringResource.bfhr("today.scan.body", default: "This can take a few minutes. New emails show up in Mail as we find them.", table: "Today")
+
+    static func scanTitle(_ address: String) -> LocalizedStringResource {
+        .bfhr("today.scan.title", default: "Checking \(address) for job emails", table: "Today", comment: "Card while a newly connected inbox is scanned. %@ = address.")
+    }
     static let done = LocalizedStringResource.bfhr("today.action.done", default: "Done", table: "Today")
     static let save = LocalizedStringResource.bfhr("today.action.save", default: "Save", table: "Today")
     static let review = LocalizedStringResource.bfhr("today.action.review", default: "Review…", table: "Today")

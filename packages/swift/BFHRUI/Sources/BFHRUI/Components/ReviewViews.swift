@@ -123,6 +123,9 @@ public struct ReviewSheet: View {
                 }
                 evidence
                 fields
+                if let suggestion = proposal.interviewSuggestion {
+                    InterviewSuggestionCard(suggestion, footnote: proposal.applicationId != nil ? Strings.interviewOnConfirm : Strings.interviewNeedsApplication)
+                }
                 Button(action: onNotJobMail) { Text(Strings.notJobMail) }
                     .buttonStyle(.bfhrPlain)
                     .frame(maxWidth: .infinity)
@@ -336,5 +339,70 @@ public struct StatusMenu: View {
         .disabled(!target.isEnabled)
         .accessibilityAddTraits(target.isCurrent ? .isSelected : [])
         .accessibilityHint(Self.denial(of: target)?.reason.map { Text($0) } ?? Text(verbatim: ""))
+    }
+}
+
+/// The interview an invite suggests (ADR 0012 "Interviews from invites"): when in this iPhone's
+/// zone (and in the organiser's, when the email named one), how long, where. Nothing is on the
+/// calendar until the user confirms; the footnote says what adds it.
+public struct InterviewSuggestionCard: View {
+    private let suggestion: InterviewSuggestion
+    private let footnote: LocalizedStringResource?
+    @Environment(\.locale) private var locale
+    @Environment(\.timeZone) private var timeZone
+
+    public init(_ suggestion: InterviewSuggestion, footnote: LocalizedStringResource?) {
+        self.suggestion = suggestion
+        self.footnote = footnote
+    }
+
+    public var body: some View {
+        VStack(alignment: .leading, spacing: BFHRSpace.s2) {
+            Label { Text(Strings.suggestedInterview) } icon: { Image(systemName: "calendar.badge.plus") }
+                .font(.bfhr(.footnote, emphasized: true))
+                .foregroundStyle(BFHRColor.Fg.secondary)
+                .accessibilityAddTraits(.isHeader)
+            Text(verbatim: suggestion.startsAt.formatted(Self.style(locale: locale, zone: timeZone)))
+                .font(.bfhr(.body, emphasized: true))
+                .foregroundStyle(BFHRColor.Fg.primary)
+            if let zone = suggestion.timezone.flatMap(TimeZone.init(identifier:)), zone.identifier != timeZone.identifier {
+                Text(bfhrPlain: Strings.interviewTheirTime(
+                    suggestion.startsAt.formatted(Date.FormatStyle(locale: locale, timeZone: zone).hour().minute()),
+                    zone: zone.localizedName(for: .generic, locale: locale) ?? zone.identifier
+                ))
+                .font(.bfhr(.footnote))
+                .foregroundStyle(BFHRColor.Fg.secondary)
+            } else if suggestion.timezone == nil {
+                Label { Text(Strings.interviewNoZone) } icon: { Image(systemName: "exclamationmark.triangle") }
+                    .font(.bfhr(.footnote))
+                    .foregroundStyle(BFHRTone.warning.text)
+            }
+            if let minutes = suggestion.durationMinutes {
+                Text(Strings.interviewLength(minutes))
+                    .font(.bfhr(.subheadline))
+                    .foregroundStyle(BFHRColor.Fg.primary)
+            }
+            if let place = suggestion.meetingUrl.flatMap({ URL(string: $0)?.host() }) ?? suggestion.location {
+                Text(verbatim: place)
+                    .font(.bfhr(.subheadline))
+                    .foregroundStyle(BFHRColor.Fg.primary)
+            }
+            if let footnote {
+                Text(footnote)
+                    .font(.bfhr(.footnote))
+                    .foregroundStyle(BFHRColor.Fg.secondary)
+            }
+        }
+        .fixedSize(horizontal: false, vertical: true)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(BFHRSpace.s3)
+        .background(BFHRColor.Surface.sunken, in: BFHRRadius.shape(BFHRRadius.lg))
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("interview.suggestion")
+    }
+
+    /// "Tue, 5 Nov, 14:00" in this iPhone's zone.
+    static func style(locale: Locale, zone: TimeZone) -> Date.FormatStyle {
+        Date.FormatStyle(locale: locale, timeZone: zone).weekday(.abbreviated).day().month(.abbreviated).hour().minute()
     }
 }

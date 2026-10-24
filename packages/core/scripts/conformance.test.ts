@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import { describe, expect, it } from "vitest";
 import { buildInsightsVectors } from "./insights-vectors";
 import { buildJobImportVectors } from "./job-import-vectors";
+import { buildMailVectors } from "./mail-vectors";
 import { buildStateMachineVectors } from "./state-machine-vectors";
 import { renderSwiftModels } from "./swift-models";
 
@@ -26,6 +27,13 @@ describe("committed conformance outputs", () => {
       await readFile(new URL("../conformance/job-import.json", import.meta.url), "utf8"),
     );
     expect(committed).toEqual(JSON.parse(JSON.stringify(buildJobImportVectors())));
+  });
+
+  it("mail.json matches the mail presets and category targets", async () => {
+    const committed: unknown = JSON.parse(
+      await readFile(new URL("../conformance/mail.json", import.meta.url), "utf8"),
+    );
+    expect(committed).toEqual(JSON.parse(JSON.stringify(buildMailVectors())));
   });
 
   it("BFHRCore Models.swift matches the zod schemas", async () => {

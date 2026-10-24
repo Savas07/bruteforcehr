@@ -10,6 +10,8 @@ import SwiftUI
 public struct MailReviewScreen: View {
     @Bindable private var model: MailReviewModel
     @Environment(ToastCenter.self) private var toasts: ToastCenter?
+    @Environment(\.bfhrMailConnect) private var mailConnect
+    @State private var connecting = false
 
     public init(model: MailReviewModel) {
         self.model = model
@@ -25,7 +27,7 @@ public struct MailReviewScreen: View {
                     glyph: "envelope",
                     title: MailViewStrings.connectTitle,
                     message: MailViewStrings.connectBody,
-                    primary: .init(MailViewStrings.connectAction) { openURL(.connectEmail) }
+                    primary: .init(MailViewStrings.connectAction) { connect() }
                 )
             }
         } skeleton: {
@@ -82,6 +84,25 @@ public struct MailReviewScreen: View {
             // Opaque: text over the medium detent's glass would take its contrast from the list behind.
             .presentationBackground(BFHRColor.Surface.base)
         }
+        .sheet(isPresented: Binding(get: { model.viewingId != nil }, set: { if !$0 { model.viewingId = nil } })) {
+            if let detail = model.viewing {
+                MailEmailSheet(detail: detail, onAddInterview: { run { try model.addInterview(detail.id) } }, onNotJobMail: {
+                    run { try model.markNotJobMail(detail.id) }
+                }, onClose: { model.viewingId = nil })
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+                .presentationBackground(BFHRColor.Surface.base)
+            }
+        }
+        .bfhrMailConnectSheet(isPresented: $connecting)
+        .onChange(of: model.writeFailures) { _, _ in
+            toasts?.show(ToastItem(glyph: ToastGlyph.info, message: MailViewStrings.actionFailed))
+        }
+    }
+
+    /// Connect email: the sheet where the app provides it, else Settings › Mail accounts.
+    private func connect() {
+        if mailConnect != nil { connecting = true } else { openURL(.connectEmail) }
     }
 
     @Environment(\.openURL) private var openURLAction
@@ -109,6 +130,31 @@ public struct MailReviewScreen: View {
                     )
                     .listRowInsets(EdgeInsets())
                     .listRowBackground(Color.clear)
+                }
+            }
+            ForEach(model.scanning) { account in
+                Section {
+                    HStack(alignment: .firstTextBaseline, spacing: BFHRSpace.s3) {
+                        ProgressView()
+                            .accessibilityHidden(true)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(bfhrPlain: MailViewStrings.scanTitle(account.address))
+                                .font(.bfhr(.subheadline, emphasized: true))
+                                .foregroundStyle(BFHRColor.Fg.primary)
+                            if let scanned = account.backfill?.scanned, scanned > 0 {
+                                Text(MailViewStrings.scanChecked(scanned))
+                                    .font(.bfhr(.footnote))
+                                    .foregroundStyle(BFHRColor.Fg.secondary)
+                                    .monospacedDigit()
+                            }
+                            Text(MailViewStrings.scanBody)
+                                .font(.bfhr(.footnote))
+                                .foregroundStyle(BFHRColor.Fg.secondary)
+                        }
+                        .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .accessibilityElement(children: .combine)
+                    .accessibilityIdentifier("mail.scanning")
                 }
             }
             switch model.filter {
@@ -293,14 +339,29 @@ public struct MailReviewScreen: View {
                 EmptyState(.subArea, title: MailViewStrings.updatesEmpty)
             }
             ForEach(model.updates) { item in
-                AutoChangeRow(item) { run { try model.undoUpdate(item.id) } }
-                    .contextMenu {
-                        if item.canUndo {
-                            Button { run { try model.undoUpdate(item.id) } } label: {
-                                Label { Text(Strings.undo) } icon: { Image(systemName: "arrow.uturn.backward") }
-                            }
+                VStack(alignment: .leading, spacing: BFHRSpace.s2) {
+                    AutoChangeRow(item) { run { try model.undoUpdate(item.id) } }
+                    if item.interviewSuggestion != nil, let messageId = item.mailMessageId {
+                        Button { run { try model.addInterview(messageId) } } label: {
+                            Label { Text(Strings.addInterview) } icon: { Image(systemName: "calendar.badge.plus") }
+                        }
+                        .buttonStyle(.bfhrPlain)
+                        .padding(.leading, -BFHRSpace.s2)
+                        .accessibilityIdentifier("mail.update.addInterview")
+                    }
+                }
+                .contextMenu {
+                    if let messageId = item.mailMessageId {
+                        Button { model.open(messageId) } label: {
+                            Label { Text(Strings.openEmail) } icon: { Image(systemName: "envelope.open") }
                         }
                     }
+                    if item.canUndo {
+                        Button { run { try model.undoUpdate(item.id) } } label: {
+                            Label { Text(Strings.undo) } icon: { Image(systemName: "arrow.uturn.backward") }
+                        }
+                    }
+                }
             }
         } header: {
             Text(MailViewStrings.updatesHeader)
@@ -330,18 +391,28 @@ public struct MailReviewScreen: View {
             ForEach(items) { item in
                 switch item {
                 case .message(let row):
-                    JobMailRow(row: row)
-                        .bfhrRowActions(row.reviewState == .pending ? [
-                            RowAction(MailViewStrings.review, systemImage: "checklist", edge: .menuOnly) { model.beginReview(row.id) },
-                            RowAction(Strings.notJobMail, systemImage: "tray", edge: .trailing) { run { try model.markNotJobMail(row.id) } },
-                        ] : [
-                            RowAction(Strings.notJobMail, systemImage: "tray", edge: .trailing) { run { try model.markNotJobMail(row.id) } },
-                        ])
+                    Button { model.open(row.id) } label: { JobMailRow(row: row) }
+                        .buttonStyle(.plain)
+                        .accessibilityHint(Text(Strings.openEmail))
+                        .bfhrRowActions(jobMailActions(row))
                 case .jobAlerts(let bundle):
                     JobAlertBundleRow(bundle: bundle)
                 }
             }
         }
+    }
+
+    /// Review… for a pending email; Not job mail while the server still acts on a correction (a
+    /// second correction of a corrected email isn't processed).
+    private func jobMailActions(_ row: MailRow) -> [RowAction] {
+        var actions: [RowAction] = []
+        if row.reviewState == .pending {
+            actions.append(RowAction(MailViewStrings.review, systemImage: "checklist", edge: .menuOnly) { model.beginReview(row.id) })
+        }
+        if row.reviewState != .corrected {
+            actions.append(RowAction(Strings.notJobMail, systemImage: "tray", edge: .trailing) { run { try model.markNotJobMail(row.id) } })
+        }
+        return actions
     }
 
     // MARK: Helpers

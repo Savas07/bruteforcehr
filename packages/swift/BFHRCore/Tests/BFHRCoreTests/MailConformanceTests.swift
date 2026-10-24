@@ -1,0 +1,58 @@
+import Foundation
+import Testing
+@testable import BFHRCore
+
+/// `packages/core/conformance/mail.json` (`pnpm --filter @bfhr/core conformance`).
+private struct MailVectors: Decodable {
+    struct PresetFor: Decodable {
+        let address: String
+        let preset: String?
+    }
+
+    struct CategoryTarget: Decodable {
+        let category: MailCategory
+        let screening: Bool
+        let target: ApplicationStatus?
+    }
+
+    let presets: [ImapPreset]
+    let presetFor: [PresetFor]
+    let categoryTargets: [CategoryTarget]
+}
+
+@Suite("Mail conformance (packages/core/conformance/mail.json)")
+struct MailConformanceTests {
+    private let vectors: MailVectors
+
+    init() throws {
+        vectors = try ConformanceFile.decode(MailVectors.self, from: ConformanceFile.mail)
+    }
+
+    @Test func presetsMatchTypeScript() {
+        #expect(ImapPreset.all == vectors.presets)
+    }
+
+    @Test func presetDetectionMatchesTypeScript() {
+        for vector in vectors.presetFor {
+            #expect(ImapPreset.preset(for: vector.address)?.id == vector.preset, "\(vector.address)")
+        }
+    }
+
+    @Test func categoryTargetsMatchTypeScript() {
+        #expect(vectors.categoryTargets.count == MailCategory.allCases.count * 2)
+        for vector in vectors.categoryTargets {
+            #expect(categoryTargetStatus(vector.category, screening: vector.screening) == vector.target, "\(vector.category) \(vector.screening)")
+        }
+    }
+
+    @Test func reviewMoveFollowsTheTrigger() {
+        // Unchanged category: the email's own proposal (a first screen stays screening).
+        #expect(reviewMoveTarget(category: .interviewInvite, previousCategory: .interviewInvite, suggestedStatus: .screening, applicationStatus: .applied) == .screening)
+        // Corrected category: the category's target.
+        #expect(reviewMoveTarget(category: .rejection, previousCategory: .otherJob, suggestedStatus: nil, applicationStatus: .applied) == .rejected)
+        // Never backward, never onto the same status, nothing for categories without a target.
+        #expect(reviewMoveTarget(category: .applicationReceived, previousCategory: .applicationReceived, suggestedStatus: .acknowledged, applicationStatus: .interviewing) == nil)
+        #expect(reviewMoveTarget(category: .assessment, previousCategory: .assessment, suggestedStatus: .screening, applicationStatus: .screening) == nil)
+        #expect(reviewMoveTarget(category: .infoRequest, previousCategory: .infoRequest, suggestedStatus: nil, applicationStatus: .applied) == nil)
+    }
+}

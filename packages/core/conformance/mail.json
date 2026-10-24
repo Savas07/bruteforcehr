@@ -1,0 +1,47 @@
+{
+  "presets": [
+    {"id":"gmail","label":"Gmail","domains":["gmail.com","googlemail.com"],"imap":{"host":"imap.gmail.com","port":993,"security":"tls"},"smtp":{"host":"smtp.gmail.com","port":465,"security":"tls"},"oauthOnly":null,"appPasswordUrl":"https://myaccount.google.com/apppasswords"},
+    {"id":"icloud","label":"iCloud Mail","domains":["icloud.com","me.com","mac.com"],"imap":{"host":"imap.mail.me.com","port":993,"security":"tls"},"smtp":{"host":"smtp.mail.me.com","port":587,"security":"starttls"},"oauthOnly":null,"appPasswordUrl":"https://account.apple.com/account/manage"},
+    {"id":"outlook","label":"Outlook.com","domains":["outlook.com","hotmail.com","live.com","msn.com","outlook.de","hotmail.de","outlook.com.tr"],"imap":{"host":"outlook.office365.com","port":993,"security":"tls"},"smtp":{"host":"smtp-mail.outlook.com","port":587,"security":"starttls"},"oauthOnly":"microsoft","appPasswordUrl":null},
+    {"id":"yahoo","label":"Yahoo Mail","domains":["yahoo.com","yahoo.co.uk","yahoo.de","ymail.com","rocketmail.com"],"imap":{"host":"imap.mail.yahoo.com","port":993,"security":"tls"},"smtp":{"host":"smtp.mail.yahoo.com","port":465,"security":"tls"},"oauthOnly":null,"appPasswordUrl":"https://login.yahoo.com/account/security"},
+    {"id":"yandex","label":"Yandex Mail","domains":["yandex.com","yandex.ru","yandex.com.tr","ya.ru"],"imap":{"host":"imap.yandex.com","port":993,"security":"tls"},"smtp":{"host":"smtp.yandex.com","port":465,"security":"tls"},"oauthOnly":null,"appPasswordUrl":"https://id.yandex.com/security/app-passwords"},
+    {"id":"gmx","label":"GMX","domains":["gmx.de","gmx.net","gmx.at","gmx.ch","gmx.com"],"imap":{"host":"imap.gmx.net","port":993,"security":"tls"},"smtp":{"host":"mail.gmx.net","port":587,"security":"starttls"},"oauthOnly":null,"appPasswordUrl":"https://www.gmx.net/mein-account/"},
+    {"id":"webde","label":"WEB.DE","domains":["web.de"],"imap":{"host":"imap.web.de","port":993,"security":"tls"},"smtp":{"host":"smtp.web.de","port":587,"security":"starttls"},"oauthOnly":null,"appPasswordUrl":"https://web.de/mein-account/"}
+  ],
+  "presetFor": [
+    {"address":"deniz@gmail.com","preset":"gmail"},
+    {"address":"Deniz@GoogleMail.com","preset":"gmail"},
+    {"address":"deniz@icloud.com","preset":"icloud"},
+    {"address":"deniz@me.com","preset":"icloud"},
+    {"address":"deniz@hotmail.de","preset":"outlook"},
+    {"address":"deniz@outlook.com.tr","preset":"outlook"},
+    {"address":"deniz@yahoo.co.uk","preset":"yahoo"},
+    {"address":"deniz@yandex.com.tr","preset":"yandex"},
+    {"address":"deniz@gmx.net","preset":"gmx"},
+    {"address":"deniz@web.de","preset":"webde"},
+    {"address":"deniz@example.com","preset":null},
+    {"address":"deniz@sub.gmail.com","preset":null}
+  ],
+  "categoryTargets": [
+    {"category":"application_received","screening":false,"target":"acknowledged"},
+    {"category":"application_received","screening":true,"target":"acknowledged"},
+    {"category":"rejection","screening":false,"target":"rejected"},
+    {"category":"rejection","screening":true,"target":"rejected"},
+    {"category":"interview_invite","screening":false,"target":"interviewing"},
+    {"category":"interview_invite","screening":true,"target":"screening"},
+    {"category":"assessment","screening":false,"target":"screening"},
+    {"category":"assessment","screening":true,"target":"screening"},
+    {"category":"offer","screening":false,"target":"offer"},
+    {"category":"offer","screening":true,"target":"offer"},
+    {"category":"recruiter_outreach","screening":false,"target":null},
+    {"category":"recruiter_outreach","screening":true,"target":null},
+    {"category":"info_request","screening":false,"target":null},
+    {"category":"info_request","screening":true,"target":null},
+    {"category":"job_alert","screening":false,"target":null},
+    {"category":"job_alert","screening":true,"target":null},
+    {"category":"other_job","screening":false,"target":null},
+    {"category":"other_job","screening":true,"target":null},
+    {"category":"not_job","screening":false,"target":null},
+    {"category":"not_job","screening":true,"target":null}
+  ]
+}

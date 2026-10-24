@@ -1,10 +1,14 @@
 /**
  * The correction popover behind Change… (`M`; IA.md "Mail", components.md `CategoryPicker` /
- * `ApplicationPicker` / `StatusPicker`): one cmdk list per field, Tab cycles Category →
- * Application → Status, typing filters, Enter chooses and moves on (on Status it saves), Mod+Enter
- * saves from any field, Esc cancels. "Create application" is always the first application option.
+ * `ApplicationPicker`): one cmdk list per field, Tab cycles Category ↔ Application, typing filters,
+ * Enter chooses and moves on (on Application it saves), Mod+Enter saves from any field, Esc
+ * cancels. "Create application" is always the first application option.
+ *
+ * The status isn't picked: the server applies the category's status as the user's move, forward
+ * or to a decision only (`mailMessageReviewed`), and clients may write only the review fields. The
+ * Status row says what will happen (`correctionMove`); any other move is made in the Tracker.
  */
-import type { ApplicationStatus, MailCategory } from "@bfhr/core";
+import { type ApplicationStatus, canTransition, categoryTargetStatus, type MailCategory } from "@bfhr/core";
 import { Command } from "cmdk";
 import { Check, Plus, Search } from "lucide-react";
 import { Popover } from "radix-ui";
@@ -16,6 +20,7 @@ import { spokenAlternatives } from "../../shared/keyboard/keymap";
 import { Button } from "../../shared/ui/Button";
 import { Keycaps } from "../../shared/ui/Keycaps";
 import { StatusPill } from "../../shared/ui/StatusPill";
+import type { StatusVM } from "../../shared/model/types";
 import type { MailCorrectionVM } from "./model";
 
 const messages = defineMessages({
@@ -28,7 +33,6 @@ const messages = defineMessages({
     id: "mail-review.correction.searchApplication",
     defaultMessage: "Search applications",
   },
-  searchStatus: { id: "mail-review.correction.searchStatus", defaultMessage: "Search statuses" },
   createApplication: {
     id: "mail-review.correction.createApplication",
     defaultMessage: "Create application: {application}",
@@ -41,6 +45,15 @@ const messages = defineMessages({
   },
   noApplication: { id: "mail-review.correction.noApplication", defaultMessage: "No application" },
   noStatusChange: { id: "mail-review.correction.noStatusChange", defaultMessage: "No status change" },
+  statusMovesTo: {
+    id: "mail-review.correction.statusMovesTo",
+    defaultMessage: "Moves to {status}",
+    description: "What saving the correction does to the application's status",
+  },
+  statusExplain: {
+    id: "mail-review.correction.statusExplain",
+    defaultMessage: "Follows from the category. For another status, move the application in the Tracker.",
+  },
   statusNeedsApplication: {
     id: "mail-review.correction.statusNeedsApplication",
     defaultMessage: "Choose an application first",
@@ -65,18 +78,51 @@ const messages = defineMessages({
   },
 });
 
-export type CorrectionField = "category" | "application" | "status";
+export type CorrectionField = "category" | "application";
 
-const FIELDS: readonly CorrectionField[] = ["category", "application", "status"];
+const FIELDS: readonly CorrectionField[] = ["category", "application"];
 
 /** `applicationId` "new" creates the application the email names. */
 export interface CorrectionDraft {
   readonly category: MailCategory;
   readonly applicationId: string | null;
-  readonly status: ApplicationStatus | null;
 }
 
 export const NEW_APPLICATION = "new";
+
+/** Status a new application from an email starts in, before the email's move. */
+export const NEW_APPLICATION_STATUS: ApplicationStatus = "applied";
+
+/** The classifier's proposal the correction starts from. */
+export interface CorrectionOrigin {
+  readonly category: MailCategory;
+  readonly suggestedStatus: ApplicationStatus | null;
+}
+
+/**
+ * The status move saving `draft` makes (mirrors the `mailMessageReviewed` trigger): the
+ * classifier's suggestion while the category is unchanged, else the category's status; applied
+ * only when it is a forward move or a decision. Null: no status change.
+ */
+export function correctionMove(
+  draft: CorrectionDraft,
+  options: MailCorrectionVM,
+  origin: CorrectionOrigin,
+): StatusVM | null {
+  if (draft.applicationId === null) return null;
+  const target =
+    draft.category === origin.category && origin.suggestedStatus !== null
+      ? origin.suggestedStatus
+      : categoryTargetStatus(draft.category, false);
+  const from =
+    draft.applicationId === NEW_APPLICATION
+      ? NEW_APPLICATION_STATUS
+      : options.applications.find((application) => application.id === draft.applicationId)?.status.key;
+  if (target === null || from === undefined) return null;
+  const check = canTransition(from, target, "user");
+  if (!check.allowed || (check.direction !== "forward" && check.direction !== "exit")) return null;
+  return options.statuses.find((status) => status.key === target) ?? null;
+}
 
 const itemClass =
   "text-callout text-fg-primary data-[selected=true]:bg-surface-hover flex min-h-8 cursor-default items-center gap-2 rounded-md px-2 py-1";
@@ -93,6 +139,8 @@ export interface CorrectionPopoverProps {
   options: MailCorrectionVM;
   /** Values the popover opens with (the proposal as shown). */
   initial: CorrectionDraft;
+  /** The classifier's proposal (decides the status move, `correctionMove`). */
+  origin: CorrectionOrigin;
   /** "Nordlicht Mobility · Frontend Engineer": what Create application would create. */
   newApplicationLabel: string;
   onSave: (draft: CorrectionDraft) => void;
@@ -138,6 +186,7 @@ export function CorrectionPopover({ open, onOpenChange, ...form }: CorrectionPop
 function CorrectionForm({
   options,
   initial,
+  origin,
   newApplicationLabel,
   onSave,
   onCancel,
@@ -158,7 +207,8 @@ function CorrectionForm({
     );
   };
   const categoryLabel = options.categories.find((category) => category.key === draft.category)?.label ?? "";
-  const status = options.statuses.find((candidate) => candidate.key === draft.status) ?? null;
+  const move = correctionMove(draft, options, origin);
+  const statusSummaryId = `${idBase}-status`;
 
   const lists: Readonly<
     Record<CorrectionField, { readonly placeholder: string; readonly options: readonly Option[] }>
@@ -185,21 +235,10 @@ function CorrectionForm({
         { value: "none", label: intl.formatMessage(messages.noApplication) },
       ],
     },
-    status: {
-      placeholder: intl.formatMessage(messages.searchStatus),
-      // Without an application there is nothing to move: say so instead of listing dead options.
-      options: [
-        { value: "none", label: intl.formatMessage(messages.noStatusChange) },
-        ...(draft.applicationId === null
-          ? []
-          : options.statuses.map((candidate) => ({ value: candidate.key, label: candidate.label }))),
-      ],
-    },
   };
   const current: Readonly<Record<CorrectionField, string>> = {
     category: draft.category,
     application: draft.applicationId ?? "none",
-    status: draft.status ?? "none",
   };
   const list = lists[field];
   const [highlight, setHighlight] = useState(() => labelOf(lists.category.options, current.category));
@@ -211,23 +250,13 @@ function CorrectionForm({
   };
 
   const choose = (value: string) => {
-    let next: CorrectionDraft = draft;
-    if (field === "category") next = { ...draft, category: value as MailCategory };
     if (field === "application") {
-      const applicationId = value === "none" ? null : value;
-      next = { ...draft, applicationId, status: applicationId === null ? null : draft.status };
-    }
-    if (field === "status") {
-      onSave({ ...draft, status: value === "none" ? null : (value as ApplicationStatus) });
+      onSave({ ...draft, applicationId: value === "none" ? null : value });
       return;
     }
+    const next: CorrectionDraft = { ...draft, category: value as MailCategory };
     setDraft(next);
-    const index = FIELDS.indexOf(field);
-    goTo(FIELDS[index + 1] ?? "status", {
-      category: next.category,
-      application: next.applicationId ?? "none",
-      status: next.status ?? "none",
-    });
+    goTo("application", { category: next.category, application: next.applicationId ?? "none" });
   };
 
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
@@ -244,7 +273,6 @@ function CorrectionForm({
   const summary: Readonly<Record<CorrectionField, ReactNode>> = {
     category: categoryLabel,
     application: applicationLabel(draft.applicationId),
-    status: status ? <StatusPill status={status} size="sm" /> : intl.formatMessage(messages.noStatusChange),
   };
 
   return (
@@ -273,6 +301,27 @@ function CorrectionForm({
           </button>
         ))}
       </div>
+      {/* What saving does to the status: derived, not chosen (see the file comment). */}
+      <div
+        id={statusSummaryId}
+        className="text-callout mx-2 grid min-h-8 grid-cols-[96px_1fr] items-start gap-2 px-2 py-1"
+      >
+        <span className="text-fg-secondary">{intl.formatMessage(messages.status)}</span>
+        <span className="flex min-w-0 flex-col gap-0.5">
+          <span className="text-fg-primary flex flex-wrap items-center gap-1.5">
+            {move
+              ? intl.formatMessage(messages.statusMovesTo, {
+                  status: <StatusPill key="status" status={move} size="sm" />,
+                })
+              : intl.formatMessage(messages.noStatusChange)}
+          </span>
+          <span className="text-footnote text-fg-secondary">
+            {draft.applicationId === null
+              ? intl.formatMessage(messages.statusNeedsApplication)
+              : intl.formatMessage(messages.statusExplain)}
+          </span>
+        </span>
+      </div>
       <Command
         id={`${idBase}-panel`}
         role="tabpanel"
@@ -291,7 +340,7 @@ function CorrectionForm({
             value={query}
             onValueChange={setQuery}
             placeholder={list.placeholder}
-            aria-describedby={hintId}
+            aria-describedby={`${hintId} ${statusSummaryId}`}
             className="placeholder:text-fg-tertiary text-callout h-10 flex-1 bg-transparent outline-none"
           />
         </div>
@@ -313,11 +362,6 @@ function CorrectionForm({
               )}
             </Command.Item>
           ))}
-          {field === "status" && draft.applicationId === null && (
-            <p className="text-footnote text-fg-secondary px-2 py-2">
-              {intl.formatMessage(messages.statusNeedsApplication)}
-            </p>
-          )}
         </Command.List>
       </Command>
       {/* The search field stays focused while Tab switches fields: say which field it searches now. */}

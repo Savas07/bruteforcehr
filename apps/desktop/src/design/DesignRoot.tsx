@@ -4,6 +4,7 @@ import { useEffect, useMemo } from "react";
 import { RawIntlProvider, useIntl } from "react-intl";
 import { AppShell } from "../components/AppShell";
 import { AddApplicationHost } from "../features/application-add";
+import { MailConnectHost } from "../features/mail-connect";
 import { createAppIntl } from "../i18n/intl";
 import { resolveAppLocale } from "../i18n/locale";
 import { type Connectivity, ConnectivityContext } from "../shared/connectivity";
@@ -13,6 +14,7 @@ import { OFFLINE_PENDING_WRITES } from "./screens";
 import { readDesignParams } from "./search";
 import { DesignAuth } from "./auth";
 import { privacyDesignReauth } from "./data-privacy";
+import { DesignMailConnectState } from "./mail-connect";
 import { DesignTrackerProviders } from "./tracker";
 import { DesignUpdates } from "./updates";
 
@@ -72,6 +74,8 @@ export function DesignRoot() {
             hosts={
               <DesignTrackerProviders>
                 <AddApplicationHost />
+                <MailConnectHost />
+                <DesignMailConnectState />
               </DesignTrackerProviders>
             }
           />

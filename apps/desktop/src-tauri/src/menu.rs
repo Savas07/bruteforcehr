@@ -27,6 +27,8 @@ const PALETTE_ID: &str = "command-palette";
 const PALETTE_KEY: &str = "K";
 const SHORTCUTS_ID: &str = "keyboard-shortcuts";
 const SHORTCUTS_KEY: &str = "/";
+const SETTINGS_ID: &str = "open-settings";
+const SETTINGS_KEY: &str = ",";
 const CHECK_UPDATES_ID: &str = "check-for-updates";
 const SIGN_OUT_ID: &str = "sign-out";
 const GO_PREFIX: &str = "go-";
@@ -42,6 +44,8 @@ pub enum MenuCommand {
     OpenShortcuts,
     /// "Check for Updates…": the UI shows the check's progress and result (src/updater.rs).
     CheckForUpdates,
+    /// "Settings…" (macOS app menu) / "Settings" (Windows File menu): the UI opens Settings.
+    OpenSettings,
     /// "Sign Out": the UI signs out. Enabled only while someone is signed in ([`set_signed_in`]).
     SignOut,
 }
@@ -51,6 +55,7 @@ pub fn command_for(id: &str) -> Option<MenuCommand> {
     match id {
         PALETTE_ID => Some(MenuCommand::OpenPalette),
         SHORTCUTS_ID => Some(MenuCommand::OpenShortcuts),
+        SETTINGS_ID => Some(MenuCommand::OpenSettings),
         CHECK_UPDATES_ID => Some(MenuCommand::CheckForUpdates),
         SIGN_OUT_ID => Some(MenuCommand::SignOut),
         _ => {
@@ -80,6 +85,18 @@ pub fn set_signed_in<R: Runtime>(app: &AppHandle<R>, signed_in: bool) {
 }
 
 /// Builds the application menu (macOS menu bar; the window menu bar on Windows).
+/// "Settings…" in the macOS app menu after About (macOS 13+ naming); "Settings" in Windows' File.
+fn settings_item<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<MenuItem<R>> {
+    let label = if cfg!(target_os = "macos") {
+        "Settings…"
+    } else {
+        "Settings"
+    };
+    MenuItemBuilder::with_id(SETTINGS_ID, label)
+        .accelerator(accelerator(SETTINGS_KEY))
+        .build(app)
+}
+
 pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
     let palette = MenuItemBuilder::with_id(PALETTE_ID, "Command Palette…")
         .accelerator(accelerator(PALETTE_KEY))
@@ -103,6 +120,7 @@ pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
     .enabled(false)
     .build(app)?;
     app.manage(SignOutItem(sign_out.clone()));
+    let settings = settings_item(app)?;
 
     let mut go = SubmenuBuilder::new(app, "Go");
     for (index, (id, label)) in DESTINATIONS.iter().enumerate() {
@@ -128,6 +146,8 @@ pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
         let app_menu = SubmenuBuilder::new(app, "BruteForceHR")
             .about(None)
             .item(&check_updates)
+            .separator()
+            .item(&settings)
             .separator()
             .item(&sign_out)
             .separator()
@@ -165,6 +185,8 @@ pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
     #[cfg(not(target_os = "macos"))]
     {
         let file = SubmenuBuilder::new(app, "File")
+            .item(&settings)
+            .separator()
             .item(&sign_out)
             .separator()
             .quit_with_text("Exit")
@@ -193,7 +215,7 @@ pub fn handle_event<R: Runtime>(app: &AppHandle<R>, event: &MenuEvent) {
 
 #[cfg(test)]
 mod tests {
-    use super::{DESTINATIONS, MenuCommand, PALETTE_KEY, SHORTCUTS_KEY, command_for};
+    use super::{DESTINATIONS, MenuCommand, PALETTE_KEY, SETTINGS_KEY, SHORTCUTS_KEY, command_for};
 
     const DESTINATIONS_TS: &str = include_str!("../../src/lib/destinations.ts");
     const SHORTCUTS_TS: &str = include_str!("../../src/lib/shortcuts.ts");
@@ -217,7 +239,7 @@ mod tests {
 
     #[test]
     fn general_shortcut_keys_match_the_ui() {
-        for key in [PALETTE_KEY, SHORTCUTS_KEY] {
+        for key in [PALETTE_KEY, SHORTCUTS_KEY, SETTINGS_KEY] {
             assert!(
                 SHORTCUTS_TS.contains(&format!(r#"key: "{key}""#)),
                 "shortcuts.ts has no shortcut on {key}"
@@ -246,6 +268,10 @@ mod tests {
             Some(MenuCommand::CheckForUpdates)
         );
         assert_eq!(command_for("sign-out"), Some(MenuCommand::SignOut));
+        assert_eq!(
+            command_for("open-settings"),
+            Some(MenuCommand::OpenSettings)
+        );
         assert_eq!(command_for("go-settings"), None);
         assert_eq!(command_for("today"), None);
         assert_eq!(command_for("quit"), None);
@@ -268,5 +294,9 @@ mod tests {
             r#"{"type":"check-for-updates"}"#
         );
         assert_eq!(json(MenuCommand::SignOut), r#"{"type":"sign-out"}"#);
+        assert_eq!(
+            json(MenuCommand::OpenSettings),
+            r#"{"type":"open-settings"}"#
+        );
     }
 }

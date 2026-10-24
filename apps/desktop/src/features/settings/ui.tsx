@@ -4,6 +4,7 @@
  * control. Panes render only their sections; the shell (`Screen.tsx`) renders the page `<h1>`.
  */
 import { type ReactNode, useId } from "react";
+import { cx } from "../../shared/cx";
 
 export function SettingsSection({
   id,
@@ -82,5 +83,63 @@ export function SettingsRow({
       </div>
       {children}
     </div>
+  );
+}
+
+/**
+ * An On/Off switch with its state as visible text (settings-account.md: "Switches carry a visible
+ * On / Off label"). The accessible name comes from `label` (usually the row title's id).
+ */
+export function SettingsSwitch({
+  id,
+  checked,
+  onCheckedChange,
+  labelledBy,
+  describedBy,
+  disabledReason,
+  onLabel,
+  offLabel,
+}: {
+  readonly id?: string;
+  readonly checked: boolean;
+  readonly onCheckedChange: (checked: boolean) => void;
+  readonly labelledBy: string;
+  readonly describedBy?: string;
+  /** Disabled, with the reason read out and shown under the row by the caller. */
+  readonly disabledReason?: string | null;
+  readonly onLabel: string;
+  readonly offLabel: string;
+}) {
+  const disabled = Boolean(disabledReason);
+  return (
+    <button
+      id={id}
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-labelledby={labelledBy}
+      aria-describedby={describedBy}
+      disabled={disabled}
+      onClick={() => onCheckedChange(!checked)}
+      className="group text-footnote text-fg-secondary flex items-center gap-2 rounded-md disabled:opacity-60"
+    >
+      <span aria-hidden="true" className="min-w-6 text-end">
+        {checked ? onLabel : offLabel}
+      </span>
+      <span
+        aria-hidden="true"
+        className={cx(
+          "relative inline-flex h-5 w-9 shrink-0 items-center rounded-full border transition-colors motion-reduce:transition-none",
+          checked ? "bg-accent-solid border-accent-solid" : "bg-surface-sunken border-line-control",
+        )}
+      >
+        <span
+          className={cx(
+            "bg-surface-base size-4 rounded-full shadow-sm transition-transform motion-reduce:transition-none",
+            checked ? "translate-x-4" : "translate-x-0.5",
+          )}
+        />
+      </span>
+    </button>
   );
 }

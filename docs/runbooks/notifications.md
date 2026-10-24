@@ -28,7 +28,7 @@ Code: `apps/functions/src/notifications/`. Functions (codebase `default`, europe
 4. On tap, open `userInfo["link"]` through the same `onOpenURL` router as other `bruteforcehr://` links. Notification actions are "Open" only.
 5. Settings › Notifications writes `settings.notifications` (whole object) and `settings.notifyRejections`; quiet hours write `settings.quietHours`.
 
-Desktop (Tauri) registers no FCM token: its devices keep `pushToken` null.
+Desktop (Tauri) registers no FCM token: its devices keep `pushToken` null. Instead, while the app runs and Settings › Notifications › "Show notifications on this computer" is on (per device, off by default), `MailNotificationsHost` (apps/desktop/src/features/settings/) shows an OS notification for each new job email that arrives through the `mailMessages` listener, decided by the same categories, `notifyRejections`, quiet hours (profile zone) and the 2-day age limit as the pushes (`mailNotificationDecision`). During quiet hours nothing pops up (no deferral on desktop); saved-search alerts aren't shown on desktop (their items live under `serverOnly`).
 
 ## Owner steps (APNs key; not automatable)
 

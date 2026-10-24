@@ -196,7 +196,7 @@ describe("buildMailReviewModel — reading pane", () => {
     const selected = build({ messageId: "mail-tannenbaum-info" }).selected;
     expect(selected?.body).toContain("Könnten Sie uns Ihre Gehaltsvorstellung");
     expect(selected?.bodyNote).toBeNull();
-    expect(selected?.openOriginalLabel).toBe("Open in Gmail");
+    expect(selected?.openOriginal).toMatchObject({ label: "Open in Gmail", provider: "gmail" });
     expect(selected?.confirmHint).toBe("Confirm: move to Acknowledged");
     expect(selected?.activity.map((event) => event.title)).toEqual([
       "Moved to Applied",
@@ -378,5 +378,63 @@ describe("buildMailReviewModel — Turkish", () => {
     const intl = createAppIntl({ language: "tr", locale: "tr-TR" });
     const model = buildMailReviewModel(populatedDataset, fixtureContext(populatedDataset, [], intl), {});
     expect(model.folders[0]?.label).toBe("İncelenecek");
+  });
+});
+
+describe("buildMailReviewModel — interview suggestions and the inbox scan", () => {
+  it("shows the invite's suggested interview until Confirm adds it", () => {
+    const interview = build({ messageId: "mail-nordlicht-invite" }).selected?.interview;
+    expect(interview).toMatchObject({
+      title: "Interview with Nordlicht Mobility",
+      state: "suggested",
+      where: null,
+      note: "Confirming adds this interview to your Tracker and calendar view. Check the time first.",
+    });
+    expect(interview?.when).toMatch(/ · 30 min$/u);
+  });
+
+  it("says when an automatic change already added the interview", () => {
+    const interview = build({ folder: "updates", messageId: "mail-brightwave-invite" }).selected?.interview;
+    expect(interview).toMatchObject({ state: "added", where: "meet.google.com", note: "Added to your Tracker." });
+  });
+
+  it("offers Add interview on an automatically applied invite without one", () => {
+    const invite = populatedDataset.mailMessages.find((message) => message.id === "mail-brightwave-invite");
+    const suggestion = invite?.interviewSuggestion;
+    if (!invite || !suggestion) throw new Error("fixture invite missing");
+    const data: FixtureDataset = {
+      ...populatedDataset,
+      mailMessages: populatedDataset.mailMessages.map((message) =>
+        message.id === invite.id
+          ? { ...invite, interviewSuggestion: { ...suggestion, interviewId: null } }
+          : message,
+      ),
+    };
+    expect(build({ folder: "updates", messageId: invite.id }, data).selected?.interview?.state).toBe("addable");
+  });
+
+  it("opens the inbox scan's proposals from their bundle row", () => {
+    const base = populatedDataset.mailMessages.find((message) => message.id === "mail-nordlicht-invite");
+    const gmail = populatedDataset.mailAccounts.find((account) => account.id === "acc-gmail");
+    if (!base || !gmail) throw new Error("fixture missing");
+    const scanned = (id: string, days: number): MailMessage => ({
+      ...base,
+      id,
+      applicationId: "app-quill",
+      receivedAt: new Date(gmail.connectedAt.getTime() - days * 86_400_000),
+    });
+    const data: FixtureDataset = {
+      ...populatedDataset,
+      mailMessages: [...populatedDataset.mailMessages, scanned("mail-scan-1", 3), scanned("mail-scan-2", 5)],
+    };
+    expect(build({ bundle: "backfill" }).bundle).toBeNull();
+    const model = build({ bundle: "backfill" }, data);
+    expect(model.bundle).toEqual({ id: "backfill", title: "Inbox scan", backLabel: "Back to To review" });
+    expect(messageIds(model.rows)).toEqual(["mail-scan-1", "mail-scan-2"]);
+  });
+
+  it("opens the webmail of an IMAP preset, and nothing for unknown servers", () => {
+    const selected = build({ messageId: "mail-tannenbaum-info" }).selected;
+    expect(selected?.openOriginal?.provider).toBe("gmail");
   });
 });

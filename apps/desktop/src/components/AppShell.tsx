@@ -3,6 +3,7 @@ import { type ReactNode, useCallback, useEffect, useState } from "react";
 import { defineMessages, useIntl } from "react-intl";
 import { chrome, onMenuCommand } from "../lib/desktop";
 import { destinations, type DestinationId } from "../lib/destinations";
+import { SETTINGS_START_PANE } from "../lib/settings";
 import { shortcutForKey, shortcutMessage, shortcuts, type MenuCommand } from "../lib/shortcuts";
 import { AuthGate } from "../features/auth/AuthGate";
 import { useAuth } from "../features/auth/session";
@@ -19,7 +20,7 @@ import { UpdatesProvider } from "./updates/context";
 import { UpdateCard } from "./updates/UpdateCard";
 import { CheckForUpdatesDialog, ReleaseNotesDialog, SaveFirstDialog } from "./updates/UpdateDialogs";
 import { UpdateRequired } from "./updates/UpdateRequired";
-import { useUpdateController } from "./updates/useUpdateController";
+import { UpdateControllerContext, useUpdateController } from "./updates/useUpdateController";
 
 const messages = defineMessages({
   signOutNotSaved: {
@@ -103,12 +104,17 @@ function Shell({ hosts }: { readonly hosts: ReactNode }) {
           setShortcutsOpen(false);
           checkNow();
           break;
+        case "open-settings":
+          setPaletteOpen(false);
+          setShortcutsOpen(false);
+          void navigate({ to: "/settings/$pane", params: { pane: SETTINGS_START_PANE } });
+          break;
         case "sign-out":
           requestSignOut();
           break;
       }
     },
-    [goTo, openShortcuts, checkNow, requestSignOut, blocking],
+    [goTo, openShortcuts, checkNow, requestSignOut, blocking, navigate],
   );
 
   // Native menu clicks (src-tauri/src/menu.rs).
@@ -177,7 +183,9 @@ function Shell({ hosts }: { readonly hosts: ReactNode }) {
           {isMac && <div data-tauri-drag-region className="h-(--chrome-height) shrink-0" />}
           {/* 28 px offline strip across the content (states.md); renders nothing while online. */}
           <ConnectionBanner />
-          <Outlet />
+          <UpdateControllerContext.Provider value={updates}>
+            <Outlet />
+          </UpdateControllerContext.Provider>
           {/* Toasts sit bottom-left of the content area, not the window (D12). */}
           <ToastViewport />
         </main>
@@ -188,6 +196,7 @@ function Shell({ hosts }: { readonly hosts: ReactNode }) {
         onNavigate={(id) => void goTo(id)}
         onOpenShortcuts={openShortcuts}
         onCheckForUpdates={checkNow}
+        onOpenSettings={(pane) => void navigate({ to: "/settings/$pane", params: { pane } })}
         onSignOut={requestSignOut}
       />
       <ShortcutsSheet open={shortcutsOpen} onOpenChange={setShortcutsOpen} />

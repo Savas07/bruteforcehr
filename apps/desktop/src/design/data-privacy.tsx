@@ -1,6 +1,5 @@
 /**
- * `#/design/data-privacy?privacy=<state>`: Settings › Data & privacy on a scripted backend, in a
- * stand-in settings column with the page heading the Settings shell will render. Each state of
+ * `#/settings/data-privacy?privacy=<state>`: Settings › Data & privacy on a scripted backend. Each state of
  * `privacyDesignStates` (matrix.ts) forces the export view, the delete dialog and the
  * re-authentication (`privacyDesignReauth`, applied by DesignRoot). The scripted backend answers
  * like the real one after a moment, so the harness can click through: Create export → ready,
@@ -9,17 +8,14 @@
 import { FIXTURE_NOW } from "@bfhr/fixtures";
 import type { AccountExportResponse } from "@bfhr/core";
 import { useSearch } from "@tanstack/react-router";
-import { useMemo } from "react";
+import { type ReactNode, useMemo } from "react";
 import { useIntl } from "react-intl";
 import { REAUTH_IDLE, type ReauthView } from "../features/auth/session";
-import { DataPrivacyPane, dataPrivacyPaneLabel } from "../features/settings/data-privacy";
 import type { AccountDataBackend } from "../features/settings/data-privacy/backend";
 import { AccountDataContext, type AccountDataEnvironment } from "../features/settings/data-privacy/context";
 import { DELETE_START, type DeleteView } from "../features/settings/data-privacy/deleteFlow";
 import { deleteMessages } from "../features/settings/data-privacy/messages";
 import { EXPORT_IDLE, ExportFlow, type ExportView } from "../features/settings/data-privacy/exportFlow";
-import { ScreenTitle } from "../shared/ui/ScreenTitle";
-import { useDesignReady } from "./DesignScreen";
 import { type PrivacyDesignState, privacyDesignStates } from "./matrix";
 import { readDesignParams } from "./search";
 
@@ -130,10 +126,10 @@ function scriptedBackend(state: PrivacyDesignState): AccountDataBackend {
   };
 }
 
-export function DesignDataPrivacy() {
+/** The pane's backend and forced state for the Settings design route (`?privacy=`). */
+export function DesignAccountData({ children }: { children: ReactNode }) {
   const intl = useIntl();
-  const search = readDesignParams(useSearch({ strict: false }));
-  const requested = search.rest["privacy"];
+  const requested = readDesignParams(useSearch({ strict: false })).rest["privacy"];
   const state: PrivacyDesignState = isPrivacyState(requested) ? requested : "idle";
   const word = intl.formatMessage(deleteMessages.confirmWord);
 
@@ -148,17 +144,5 @@ export function DesignDataPrivacy() {
     };
   }, [state, word]);
 
-  useDesignReady(`data-privacy:${state}:${search.state}`, false);
-
-  return (
-    <AccountDataContext.Provider value={environment}>
-      <section className="min-h-0 flex-1 overflow-y-auto px-8 pt-5 pb-8">
-        <div className="max-w-160">
-          <ScreenTitle title={intl.formatMessage(dataPrivacyPaneLabel)} />
-          {/* A new state starts a fresh pane (export flow, dialog). */}
-          <DataPrivacyPane key={state} />
-        </div>
-      </section>
-    </AccountDataContext.Provider>
-  );
+  return <AccountDataContext.Provider value={environment}>{children}</AccountDataContext.Provider>;
 }

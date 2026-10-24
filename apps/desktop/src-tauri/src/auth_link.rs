@@ -198,7 +198,7 @@ impl PendingAuthLink {
 }
 
 /// Handles URLs from the deep-link plugin: sign-in links are checked, kept for the UI and
-/// announced; the window comes to the front. Other `bruteforcehr://` links aren't handled yet.
+/// announced; the window comes to the front. Mail connect return links are `mail_connect`'s.
 pub fn handle_urls<R: Runtime>(app: &AppHandle<R>, urls: &[Url]) {
     let Some(url) = urls.iter().rev().find(|url| is_auth_deep_link(url)) else {
         return;

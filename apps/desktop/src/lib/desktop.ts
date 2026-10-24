@@ -1,9 +1,10 @@
 /**
  * The UI's surface to the Tauri backend (src-tauri), with the CV export commands in
  * ./cvExport.ts. Capabilities grant exactly these calls: listening for menu commands,
- * update-status and sign-in-link events, `open_external`, `open_job_url`, `open_mail_inbox`,
- * `open_mailto`, the update commands (src-tauri/src/updater.rs), the sign-in commands
- * (src-tauri/src/auth_link.rs) and `print_cv_pdf` / `save_export` (cvExport.ts).
+ * update-status, sign-in-link and mail-connect events, `open_external`, `open_job_url`,
+ * `open_mail_inbox`, `open_mailto`, the update commands (src-tauri/src/updater.rs), the sign-in
+ * commands (src-tauri/src/auth_link.rs), `take_mail_connect` (src-tauri/src/mail_connect.rs) and
+ * `print_cv_pdf` / `save_export` (cvExport.ts).
  */
 import { invoke, isTauri } from "@tauri-apps/api/core";
 import { getCurrentWebviewWindow } from "@tauri-apps/api/webviewWindow";
@@ -112,7 +113,8 @@ export function openJobUrl(url: string): Promise<void> {
  * the canonical Firebase action URL, or `invalid` when the deep link failed the checks.
  * Mirrors `AuthLinkDelivery` there.
  */
-export type AuthLinkDelivery = { readonly kind: "link"; readonly link: string } | { readonly kind: "invalid" };
+export type AuthLinkDelivery =
+  { readonly kind: "link"; readonly link: string } | { readonly kind: "invalid" };
 
 /** Event emitted by src-tauri/src/auth_link.rs when a sign-in link arrives; call `takeAuthLink`. */
 const AUTH_LINK_EVENT = "auth-link";
@@ -139,6 +141,37 @@ export function onAuthLink(listener: () => void): () => void {
 export function setSignedIn(signedIn: boolean): Promise<void> {
   if (!inShell) return Promise.resolve();
   return invoke("set_signed_in", { signedIn });
+}
+
+/**
+ * The result of a mail OAuth connect from `bruteforcehr://connected?…`, checked in Rust
+ * (src-tauri/src/mail_connect.rs). Mirrors `MailConnectResult` there; `reason` is one of
+ * `MAIL_OAUTH_RETURN_REASONS` when `ok` is false.
+ */
+export interface MailConnectResult {
+  readonly nonce: string;
+  readonly provider: "google" | "microsoft";
+  readonly intent: "read" | "send";
+  readonly ok: boolean;
+  readonly reason: string | null;
+}
+
+/** Event emitted by src-tauri/src/mail_connect.rs when a return link arrives; call `takeMailConnect`. */
+const MAIL_CONNECT_EVENT = "mail-connect";
+
+/** The newest connect result not yet taken, once (null when there is none). */
+export function takeMailConnect(): Promise<MailConnectResult | null> {
+  if (!inShell) return Promise.resolve(null);
+  return invoke("take_mail_connect");
+}
+
+/** Subscribes to connect results; returns the unsubscribe function. */
+export function onMailConnect(listener: () => void): () => void {
+  if (!inShell) return () => undefined;
+  const unlisten = getCurrentWebviewWindow().listen(MAIL_CONNECT_EVENT, () => listener());
+  return () => {
+    void unlisten.then((stop) => stop());
+  };
 }
 
 /** Webmail inboxes the backend can open (src-tauri/src/mail_inbox.rs owns the URLs). */

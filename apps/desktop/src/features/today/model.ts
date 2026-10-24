@@ -224,17 +224,18 @@ export interface AgendaVM {
 }
 
 /**
- * First run: nothing tracked yet and no email connected (`EmptyState` kind `firstUse`). Email
- * connection (M4) and the job feed (M5) aren't in this version, so the card offers the one way in
- * that works now, adding an application, and says calmly that email comes later.
+ * First run: nothing tracked yet and no email connected (`EmptyState` kind `firstUse`): add an
+ * application, or connect email so replies from employers find their way here.
  */
 export interface FirstUseVM {
   /** "Add the jobs you've applied to". */
   readonly title: string;
-  /** "Today then shows your interviews, follow-ups and reminders. Reading … arrives in a later update." */
+  /** "Today then shows your interviews, follow-ups and replies from employers…". */
   readonly body: string;
   /** "Add application" (opens Log an application, ⌘N). */
   readonly actionLabel: string;
+  /** "Connect email" (opens the connect dialog). */
+  readonly connectLabel: string;
 }
 
 export interface TodayModel {
@@ -346,9 +347,13 @@ const messages = defineMessages({
   firstUseBody: {
     id: "today.firstUse.body",
     defaultMessage:
-      "Today then shows your interviews, follow-ups and reminders. Email invites and replies come in a later update.",
-    description:
-      "First-run card body. Email connection isn't available in this version: say so calmly, without a date",
+      "Today then shows your interviews, follow-ups and reminders. Connect your email and replies from employers show up here too.",
+    description: "First-run card body",
+  },
+  firstUseConnect: {
+    id: "today.firstUse.connect",
+    defaultMessage: "Connect email",
+    description: "First-run card: opens the connect-email dialog",
   },
   firstUseAction: {
     id: "today.firstUse.action",
@@ -972,6 +977,7 @@ export function buildTodayModel(
           title: ctx.intl.formatMessage(messages.firstUseTitle),
           body: ctx.intl.formatMessage(messages.firstUseBody),
           actionLabel: ctx.intl.formatMessage(messages.firstUseAction),
+          connectLabel: ctx.intl.formatMessage(messages.firstUseConnect),
         }
       : null;
 

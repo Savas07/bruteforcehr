@@ -4,9 +4,20 @@ use std::fmt;
 
 use url::{Host, Url};
 
-/// Hosts `open_external` may open: the product website and GitHub (releases, support issues).
-/// Exact matches only; subdomains are not included.
-pub const ALLOWED_HOSTS: [&str; 2] = ["bruteforcehr.web.app", "github.com"];
+/// Hosts `open_external` may open: the product website, GitHub (releases, support issues) and
+/// the account pages where mail providers create app passwords (`IMAP_PRESETS[].appPasswordUrl`
+/// in packages/core/src/mail/connect.ts, the connect dialog's help card). Exact matches only;
+/// subdomains are not included.
+pub const ALLOWED_HOSTS: [&str; 8] = [
+    "bruteforcehr.web.app",
+    "github.com",
+    "myaccount.google.com",
+    "account.apple.com",
+    "login.yahoo.com",
+    "id.yandex.com",
+    "www.gmx.net",
+    "web.de",
+];
 
 /// Longer inputs are rejected before parsing.
 const MAX_LENGTH: usize = 2048;
@@ -71,6 +82,12 @@ mod tests {
             "https://github.com/Savas07/bruteforcehr-releases/issues/new",
             "https://GitHub.com/Savas07",
             "https://github.com:443/Savas07",
+            "https://myaccount.google.com/apppasswords",
+            "https://account.apple.com/account/manage",
+            "https://login.yahoo.com/account/security",
+            "https://id.yandex.com/security/app-passwords",
+            "https://www.gmx.net/mein-account/",
+            "https://web.de/mein-account/",
         ] {
             assert!(parse(input).is_ok(), "{input} should be accepted");
         }
@@ -94,6 +111,11 @@ mod tests {
             ),
             ("https://gist.github.com/", ExternalUrlError::HostNotAllowed),
             ("https://web.app/", ExternalUrlError::HostNotAllowed),
+            (
+                "https://accounts.google.com/",
+                ExternalUrlError::HostNotAllowed,
+            ),
+            ("https://mail.web.de/", ExternalUrlError::HostNotAllowed),
             ("https://140.82.112.3/", ExternalUrlError::HostNotAllowed),
             (
                 "https://user:secret@github.com/",

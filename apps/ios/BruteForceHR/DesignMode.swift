@@ -39,6 +39,8 @@ struct DesignTabRoot: View {
     let scenario: DesignScenario
 
     var body: some View {
+        // `-BFHRPerf`: when each tab's content is first built (which tabs a launch builds at all).
+        let _ = LaunchTimeline.mark("\(tab.rawValue)-tab")
         if tab == .jobs {
             let screen = scenario.screen.flatMap { $0.isJobsScreen ? $0 : nil } ?? .jobs
             DesignScreenView(screen, scenario: scenario)
@@ -63,8 +65,9 @@ enum LaunchTimeline {
     /// Main-actor only: the app's init and view callbacks.
     nonisolated(unsafe) private(set) static var steps: [(name: String, ms: Int)] = []
 
+    /// Records the first time the launch reaches `name`.
     static func mark(_ name: String) {
-        guard requested, let started = processStart else { return }
+        guard requested, let started = processStart, !steps.contains(where: { $0.name == name }) else { return }
         steps.append((name, Int(Date().timeIntervalSince(started) * 1000)))
     }
 

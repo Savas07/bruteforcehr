@@ -32,6 +32,8 @@ struct RootView: View {
     var body: some View {
         Group {
             #if DEBUG
+            // `-BFHRPerf`: the first body of the root view (DesignMode.swift).
+            let _ = LaunchTimeline.mark("root")
             if let state = DesignDataPrivacyState.launch {
                 DesignDataPrivacyScreen(state, languageCode: FirebaseEmailLinkService.languageCode)
             } else {

@@ -388,7 +388,10 @@ export interface Keystroke {
 export function keystrokes(keys: readonly string[], platform: Platform): Keystroke[] {
   const mac = platform === "macos";
   return keymap.parseKeys(keys).map((steps) => ({
-    steps: steps.map((chord) => keymap.chordKeycaps(chord, platform)),
+    // U+FE0E keeps ↩ and the arrows as text: some fonts draw them as emoji otherwise.
+    steps: steps.map((chord) =>
+      keymap.chordKeycaps(chord, platform).map((cap) => cap.replace(/[\u2190-\u21ff]/gu, "$&\ufe0e")),
+    ),
     spoken: steps
       .map((chord) =>
         [

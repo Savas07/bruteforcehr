@@ -16,12 +16,13 @@ extension EnvironmentValues {
     @Entry public var bfhrAccount: AccountContext? = nil
 }
 
-/// The avatar's menu (IA.md "Avatar"): who is signed in, and Sign out. Settings joins it as the
-/// first item when the Settings sheet lands.
+/// The avatar's menu (IA.md "Avatar"): who is signed in, Settings (the sheet, through
+/// `bruteforcehr://settings`) and Sign out.
 public struct AccountMenu<MenuLabel: View>: View {
     private let account: AccountContext
     private let label: MenuLabel
     @Environment(ToastCenter.self) private var toasts: ToastCenter?
+    @Environment(\.openURL) private var openURL
 
     public init(_ account: AccountContext, @ViewBuilder label: () -> MenuLabel) {
         self.account = account
@@ -30,6 +31,14 @@ public struct AccountMenu<MenuLabel: View>: View {
 
     public var body: some View {
         Menu {
+            Section {
+                Button {
+                    if let url = URL(string: "bruteforcehr://settings") { openURL(url) }
+                } label: {
+                    Label { Text(Strings.settings) } icon: { Image(systemName: "gearshape") }
+                }
+                .accessibilityIdentifier("account.settings")
+            }
             Section {
                 Button(action: signOut) {
                     Label {

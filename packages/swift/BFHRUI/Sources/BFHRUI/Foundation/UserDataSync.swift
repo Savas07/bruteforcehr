@@ -36,6 +36,9 @@ public struct UserDataChanges: Hashable, Sendable {
     public var savedSearches: [DocumentChange<SavedSearch>] = []
     public var coverLetters: [DocumentChange<CoverLetter>] = []
     public var renderedFiles: [RenderedFile] = []
+    /// `users/{uid}` (Settings: notifications, quiet hours, AI). Only ever updated by clients.
+    public var profile: DocumentChange<Profile>?
+    public var watchlist: [DocumentChange<WatchedCompany>] = []
 
     public init() {}
 
@@ -61,12 +64,16 @@ public struct UserDataChanges: Hashable, Sendable {
         coverLetters = Self.diff(before.coverLetters, after.coverLetters)
         let knownFiles = Set(before.renderedFiles.map(\.id))
         renderedFiles = after.renderedFiles.filter { !knownFiles.contains($0.id) }
+        if let old = before.profile, let new = after.profile, old != new {
+            profile = .updated(before: old, after: new)
+        }
+        watchlist = Self.diff(before.watchlist, after.watchlist)
     }
 
     public var isEmpty: Bool {
         applications.isEmpty && applicationEvents.isEmpty && interviews.isEmpty && contacts.isEmpty
             && mailMessages.isEmpty && jobMatches.isEmpty && jobs.isEmpty && savedSearches.isEmpty
-            && coverLetters.isEmpty && renderedFiles.isEmpty
+            && coverLetters.isEmpty && renderedFiles.isEmpty && profile == nil && watchlist.isEmpty
     }
 
     /// Ids of every touched document (the rows that show `SyncGlyph` until the write lands).
@@ -80,6 +87,8 @@ public struct UserDataChanges: Hashable, Sendable {
         ids.formUnion(jobs.map(\.id))
         ids.formUnion(savedSearches.map(\.id))
         ids.formUnion(coverLetters.map(\.id))
+        if let profile { ids.insert(profile.id) }
+        ids.formUnion(watchlist.map(\.id))
         return ids
     }
 

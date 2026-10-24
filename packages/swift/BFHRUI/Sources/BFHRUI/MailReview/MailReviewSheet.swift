@@ -3,10 +3,10 @@ import BFHRDesignTokens
 import SwiftUI
 
 /// The review sheet of the Mail tab: the shared `ReviewSheet` (proposal, reason, evidence, the
-/// three fields, Confirm / Change… / Not job mail) in its own navigation stack, with Change…
-/// pushing the correction form (Lloyds-style category list, searchable application picker, the
-/// shared `StatusMenu`). The sheet always shows the draft, so after a correction the sentence and
-/// the fields say exactly what Confirm will write. There is no "Confirm all" anywhere.
+/// fields, the interview an invite suggests, Confirm / Change… / Not job mail) in its own
+/// navigation stack, with Change… pushing the correction form (Lloyds-style category list,
+/// searchable application picker). The sheet always shows the draft, so after a correction the
+/// sentence and the fields say exactly what Confirm will do. There is no "Confirm all" anywhere.
 struct MailReviewSheet: View {
     @Bindable var model: MailReviewModel
     let onConfirm: () -> Void
@@ -16,7 +16,6 @@ struct MailReviewSheet: View {
     enum Step: Hashable {
         case change
         case application
-        case status
     }
 
     var body: some View {
@@ -45,22 +44,14 @@ struct MailReviewSheet: View {
                     CorrectionForm(model: model, path: $path, onConfirm: onConfirm)
                 case .application:
                     ApplicationPicker(model: model) { path.removeLast() }
-                case .status:
-                    StatusMenu(model.statusTargets) { status in
-                        let current = model.draftProposal?.currentStatus
-                        model.draft?.status = status == current ? nil : status
-                        path.removeLast()
-                    }
-                    .navigationTitle(Text(Strings.fieldStatusChange))
-                    .bfhrInlineTitle()
                 }
             }
         }
     }
 }
 
-/// Change…: the three fields as native form rows. Confirm stays disabled until the category and
-/// the application are set and the status move is allowed (Alta).
+/// Change…: category and application as native form rows; the status change follows from them
+/// (the server's rule), so it's shown, not picked. Confirm stays disabled until both are set.
 private struct CorrectionForm: View {
     @Bindable var model: MailReviewModel
     @Binding var path: [MailReviewSheet.Step]
@@ -107,27 +98,20 @@ private struct CorrectionForm: View {
                         }
                     }
 
-                    if proposal.applicationId != nil {
-                        NavigationLink(value: MailReviewSheet.Step.status) {
-                            LabeledContent {
-                                if let target = proposal.proposedStatus, target != proposal.currentStatus {
-                                    StatusPill(target, size: .small)
-                                } else {
-                                    Text(Strings.noStatusChange)
-                                }
-                            } label: {
-                                Text(Strings.fieldStatusChange)
-                            }
-                        }
-                    } else {
-                        LabeledContent {
+                    LabeledContent {
+                        if proposal.applicationId == nil {
                             Text(MailViewStrings.statusNeedsApplication)
                                 .font(.bfhr(.footnote))
-                        } label: {
-                            Text(Strings.fieldStatusChange)
+                                .foregroundStyle(BFHRColor.Fg.secondary)
+                        } else if let target = proposal.proposedStatus, target != proposal.currentStatus {
+                            StatusPill(target, size: .small)
+                        } else {
+                            Text(Strings.noStatusChange)
                         }
-                        .foregroundStyle(BFHRColor.Fg.secondary)
+                    } label: {
+                        Text(Strings.fieldStatusChange)
                     }
+                    .accessibilityElement(children: .combine)
                 } footer: {
                     Text(MailViewStrings.changeFooter)
                 }

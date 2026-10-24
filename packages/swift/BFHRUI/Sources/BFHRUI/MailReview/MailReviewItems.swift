@@ -52,17 +52,23 @@ public struct MailAccountItem: Identifiable, Hashable, Sendable {
     public var provider: MailProvider
     public var status: MailAccountStatus
     public var lastSyncedAt: Date?
+    /// The lookback scan after connecting; nil before the first one.
+    public var backfill: MailBackfill?
 
     /// Needs sign-in or failed: the non-dismissible Reconnect banner.
     public var needsAttention: Bool { status == .needsReauth || status == .error }
 
-    init(_ account: MailAccount) {
+    /// The first lookback scan is queued or running.
+    public var isScanning: Bool { backfill.map { $0.state == .queued || $0.state == .running } ?? false }
+
+    public init(_ account: MailAccount) {
         id = account.id
         address = account.address
         displayName = account.displayName
         provider = account.provider
         status = account.status
         lastSyncedAt = account.lastSyncedAt
+        backfill = account.backfill
     }
 }
 
@@ -126,18 +132,64 @@ public struct ReviewDraft: Identifiable, Hashable, Sendable {
     public let messageId: String
     /// nil: "Select category" (Confirm disabled).
     public var category: MailCategory?
-    /// nil: "No application found" with Link to application… / Create application (Confirm disabled).
+    /// nil: "No application found" with Link to application… (Confirm disabled).
     public var applicationId: String?
-    /// The proposed status; nil or the application's current status files the email without a move.
-    public var status: ApplicationStatus?
 
     public var id: String { messageId }
 
-    public init(messageId: String, category: MailCategory?, applicationId: String?, status: ApplicationStatus?) {
+    public init(messageId: String, category: MailCategory?, applicationId: String?) {
         self.messageId = messageId
         self.category = category
         self.applicationId = applicationId
-        self.status = status
+    }
+}
+
+/// A stored email in the read-only sheet: everything we kept, the application it's filed under
+/// and, for an automatically applied invite, the interview it suggests.
+public struct MailMessageDetail: Identifiable, Hashable, Sendable {
+    public var id: String
+    public var accountAddress: String?
+    public var sender: MailAddress
+    public var subject: String
+    public var snippet: String
+    /// nil once purged by retention.
+    public var bodyText: String?
+    public var receivedAt: Date
+    public var category: MailCategory
+    public var reviewState: ReviewState
+    public var applicationId: String?
+    public var company: CompanyIdentity?
+    public var role: String?
+    public var applicationStatus: ApplicationStatus?
+    /// Offered as "Add interview" (an automatically applied invite whose interview isn't on the
+    /// calendar yet).
+    public var interviewSuggestion: InterviewSuggestion?
+    /// The interview already on the calendar from this email.
+    public var interviewId: String?
+}
+
+extension UserData {
+    /// The read-only email sheet's content.
+    public func messageDetail(_ message: MailMessage) -> MailMessageDetail {
+        let application = message.applicationId.flatMap { self.application(id: $0) }
+        return MailMessageDetail(
+            id: message.id,
+            accountAddress: mailAccount(id: message.accountId)?.address,
+            sender: message.from,
+            subject: message.subject,
+            snippet: message.snippet,
+            bodyText: message.bodyText,
+            receivedAt: message.receivedAt,
+            category: message.category,
+            reviewState: message.reviewState,
+            applicationId: application?.id,
+            company: application.map { CompanyIdentity(name: $0.company, domain: $0.companyDomain) }
+                ?? message.extracted.company.map { CompanyIdentity(name: $0) },
+            role: application?.role ?? message.extracted.role,
+            applicationStatus: application?.status,
+            interviewSuggestion: message.reviewState == .autoApplied ? Self.pendingInterview(message) : nil,
+            interviewId: message.interviewSuggestion?.interviewId
+        )
     }
 }
 

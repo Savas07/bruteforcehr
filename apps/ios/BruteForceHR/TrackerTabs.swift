@@ -26,7 +26,10 @@ final class LiveUserData {
     /// `jobImportUrl` behind "Add a job from a link".
     let linkImporter = CloudJobLinkImporter()
     private let applyServices: CloudApplyServices
-    private let applyRenderer: DeviceApplyRenderer?
+    /// cv-render in JavaScriptCore for the Apply sheet's files, loaded on the first Apply instead of
+    /// at sign-in, so a launch doesn't evaluate the 0.9 MB bundle before Today shows
+    /// (docs/runbooks/performance.md). The app always bundles cv-render (the build phase fails otherwise).
+    private lazy var applyRenderer: DeviceApplyRenderer? = (try? CVRenderEngine.bundled()).map(DeviceApplyRenderer.init)
     private var details: [String: JobDetailModel] = [:]
 
     init(uid: String) {
@@ -59,8 +62,6 @@ final class LiveUserData {
         }
         settings.appVersion = Self.appVersion
         applyServices = CloudApplyServices(uid: uid)
-        // The app always bundles cv-render (the build phase fails otherwise).
-        applyRenderer = (try? CVRenderEngine.bundled()).map(DeviceApplyRenderer.init)
         store = FirestoreUserDataStore(uid: uid)
         jobs.usesSystemClock = true
         jobs.searchService = jobSearch

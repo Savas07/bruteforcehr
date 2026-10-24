@@ -163,6 +163,8 @@ struct ExportSection: View {
                 .accessibilityIdentifier("dataPrivacy.preparing")
         case .ready(let ready, let file):
             ReadyCard(model: model, export: ready, file: file, savesToFiles: $savesToFiles)
+            // A fresh export (after editing CVs, say) replaces this one.
+            createButton(DataPrivacyStrings.create)
         case .failed(let failure):
             VStack(alignment: .leading, spacing: BFHRSpace.s2) {
                 ExportFailureAlert(failure: failure)

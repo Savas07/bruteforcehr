@@ -52,15 +52,18 @@ struct DeleteAccountView: View {
                         .contentShape(Rectangle())
                 }
                 .foregroundStyle(isDeleting ? BFHRColor.Fg.disabled : BFHRColor.Accent.text)
+                .disabled(isDeleting)
                 .accessibilityIdentifier("delete.exportFirst")
             }
 
             if model.showsReauth {
                 ReauthSection(model: model)
+                    .disabled(isDeleting)
             }
 
             Section {
                 confirmField
+                    .disabled(isDeleting)
             }
 
             Section {
@@ -70,7 +73,6 @@ struct DeleteAccountView: View {
             }
         }
         .bfhrInsetGroupedList()
-        .disabled(isDeleting)
         .navigationTitle(Text(DataPrivacyStrings.deleteTitle))
         .bfhrInlineTitle()
         .navigationBarBackButtonHidden(isDeleting)
@@ -90,7 +92,8 @@ struct DeleteAccountView: View {
                 .foregroundStyle(BFHRColor.Fg.primary)
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityHidden(true)
-            TextField(text: $model.confirmationText, prompt: nil) {
+            // An empty prompt: the label above already says what to type (no duplicated grey text).
+            TextField(text: $model.confirmationText, prompt: Text(verbatim: "")) {
                 Text(DataPrivacyStrings.confirmLabel(model.confirmWord))
             }
             .font(.bfhr(.body))
@@ -131,6 +134,7 @@ struct DeleteAccountView: View {
                 Text(DataPrivacyStrings.keep)
             }
             .buttonStyle(.bfhr(.primary, fullWidth: true))
+            .disabled(isDeleting)
             .accessibilityIdentifier("delete.keep")
             Button {
                 fieldFocused = false

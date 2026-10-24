@@ -4,7 +4,7 @@
  * Undo behaves as in the app; the callables are the caller's `MemoryJobsCallables` (the design
  * build answers from the fixtures, tests with spies).
  */
-import type { CoverLetter, JobSourceStatus, MailAccount, RenderedFile } from "@bfhr/core";
+import type { Answer, CoverLetter, JobSourceStatus, MailAccount, RenderedFile } from "@bfhr/core";
 import type { MemoryTrackerStore } from "../tracker/memory";
 import type { JobsData, JobsRepository, JobsSource, LiveJobsState } from "./repository";
 import {
@@ -16,6 +16,7 @@ import {
   planRestore,
   planSave,
   planSaveImportedJob,
+  planSaveTailoredRevision,
   planUnsave,
   planUpdateSavedSearch,
 } from "./writes";
@@ -26,11 +27,21 @@ export interface MemoryJobsSeed {
   readonly coverLetters: readonly CoverLetter[];
   readonly renderedFiles: readonly RenderedFile[];
   readonly jobSources: readonly JobSourceStatus[];
+  /** The answers library; none when absent. */
+  readonly answers?: readonly Answer[];
 }
 
 export type MemoryJobsCallables = Pick<
   JobsRepository,
-  "search" | "runSavedSearch" | "importUrl" | "refreshMatches" | "sendEmail" | "cancelEmail" | "sendEmailNow"
+  | "search"
+  | "runSavedSearch"
+  | "importUrl"
+  | "refreshMatches"
+  | "sendEmail"
+  | "cancelEmail"
+  | "sendEmailNow"
+  | "tailorCv"
+  | "draftCoverLetter"
 >;
 
 export interface MemoryJobsStore {
@@ -45,6 +56,7 @@ export function createMemoryJobsStore(
 ): MemoryJobsStore {
   const coverLetters = [...seed.coverLetters];
   const renderedFiles = [...seed.renderedFiles];
+  let answers: readonly Answer[] = [...(seed.answers ?? [])];
   const listeners = new Set<() => void>();
   const snapshot = (): LiveJobsState => {
     const data: JobsData = {
@@ -54,6 +66,7 @@ export function createMemoryJobsStore(
       mailAccounts: seed.mailAccounts,
       coverLetters: [...coverLetters],
       renderedFiles: [...renderedFiles],
+      answers,
       jobSources: seed.jobSources,
       pendingWrites: new Set(),
       fromCache: false,
@@ -123,10 +136,11 @@ export function createMemoryJobsStore(
     saveCoverLetter(input, existing) {
       const at = clock();
       const coverLetterId = existing?.id ?? `mem-coverLetters-${(localIds += 1)}`;
+      const { author, ...fields } = input;
       const letter: CoverLetter = {
         id: coverLetterId,
-        ...input,
-        author: existing?.author ?? "user",
+        ...fields,
+        author: author ?? existing?.author ?? "user",
         isTemplate: false,
         createdAt: existing?.createdAt ?? at,
         updatedAt: at,
@@ -136,6 +150,31 @@ export function createMemoryJobsStore(
       else coverLetters[index] = letter;
       changed();
       return { ids: { coverLetterId }, done: Promise.resolve() };
+    },
+    saveCoverLetterTemplate(input) {
+      const at = clock();
+      const coverLetterId = `mem-coverLetters-${(localIds += 1)}`;
+      coverLetters.push({
+        id: coverLetterId,
+        ...input,
+        jobId: null,
+        applicationId: null,
+        author: "user",
+        isTemplate: true,
+        createdAt: at,
+        updatedAt: at,
+      });
+      changed();
+      return { ids: { coverLetterId }, done: Promise.resolve() };
+    },
+    saveTailoredRevision(input) {
+      const revisionId = `mem-cvRevisions-${(localIds += 1)}`;
+      const plan = planSaveTailoredRevision(
+        { ...input, revision: { ...input.revision, id: revisionId, createdAt: clock() } },
+        clock(),
+        newId,
+      );
+      return pending({ revisionId, applicationId: plan.applicationId }, plan.writes);
     },
     createRenderedFile(input) {
       const file: RenderedFile = {
@@ -153,6 +192,41 @@ export function createMemoryJobsStore(
       renderedFiles.push(file);
       changed();
       return Promise.resolve(file);
+    },
+    uploadMailAttachment() {
+      return Promise.resolve({
+        storagePath: `users/${tracker.repository.uid}/mail-attachments/mem-upload-${(localIds += 1)}`,
+      });
+    },
+    saveAnswer(input, existing) {
+      const at = clock();
+      const answerId = existing?.id ?? `mem-answers-${(localIds += 1)}`;
+      const answer: Answer = { id: answerId, ...input, createdAt: existing?.createdAt ?? at, updatedAt: at };
+      answers = existing
+        ? answers.map((candidate) => (candidate.id === answerId ? answer : candidate))
+        : [...answers, answer];
+      changed();
+      return { ids: { answerId }, done: Promise.resolve() };
+    },
+    deleteAnswer(answerId) {
+      answers = answers.filter((candidate) => candidate.id !== answerId);
+      changed();
+      return { ids: {}, done: Promise.resolve() };
+    },
+    restoreAnswer(answer) {
+      answers = [...answers.filter((candidate) => candidate.id !== answer.id), answer];
+      changed();
+      return { ids: {}, done: Promise.resolve() };
+    },
+    reorderAnswers(positions) {
+      const at = clock();
+      const next = new Map(positions.map((entry) => [entry.answerId, entry.position]));
+      answers = answers.map((answer) => {
+        const position = next.get(answer.id);
+        return position === undefined ? answer : { ...answer, position, updatedAt: at };
+      });
+      changed();
+      return { ids: {}, done: Promise.resolve() };
     },
   };
 

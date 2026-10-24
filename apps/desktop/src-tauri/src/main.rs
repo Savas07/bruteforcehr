@@ -7,6 +7,7 @@ mod cv_pdf;
 mod export_file;
 mod external_url;
 mod job_url;
+mod kit_file;
 mod mail_connect;
 mod mail_inbox;
 mod mailto;
@@ -75,7 +76,10 @@ fn main() {
             commands::open_mail_inbox,
             commands::open_mailto,
             commands::print_cv_pdf,
-            commands::save_export
+            commands::save_export,
+            commands::save_kit_file,
+            commands::open_kit_file,
+            commands::reveal_kit_file
         ])
         .menu(menu::build)
         .on_menu_event(|app, event| menu::handle_event(app, &event))

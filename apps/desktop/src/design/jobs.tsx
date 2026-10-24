@@ -22,6 +22,7 @@ import { JobsProviders } from "../data/jobs/live";
 import { createMemoryJobsStore, type MemoryJobsCallables, type MemoryJobsStore } from "../data/jobs/memory";
 import type { MemoryTrackerStore } from "../data/tracker/memory";
 import { newApplication, planCreateApplications } from "../data/tracker/writes";
+import { designCoverLetter, designTailor } from "./apply";
 import { readDesignParams } from "./search";
 import { designTrackerStore } from "./tracker";
 
@@ -312,6 +313,17 @@ function designCallables(
       }
       return Promise.resolve();
     },
+    tailorCv(request) {
+      const revision = tracker.cvRevisions().find((candidate) => candidate.id === request.revisionId);
+      return designTailor(request, revision?.content ?? null, tracker.jobs().find((job) => job.id === request.jobId));
+    },
+    draftCoverLetter(request) {
+      return designCoverLetter(
+        request,
+        tracker.jobs().find((job) => job.id === request.jobId),
+        trackerData()?.profile?.fullName ?? null,
+      );
+    },
   };
 }
 
@@ -345,6 +357,7 @@ function jobsStoreFor(dataset: FixtureDataset): MemoryJobsStore {
         coverLetters: dataset.coverLetters,
         renderedFiles: dataset.renderedFiles,
         jobSources: DESIGN_JOB_SOURCES,
+        answers: dataset.answers,
       },
       // The send simulation records the application through the store it belongs to.
       designCallables(tracker, () => created.repository),

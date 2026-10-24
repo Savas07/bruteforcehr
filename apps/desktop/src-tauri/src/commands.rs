@@ -13,6 +13,7 @@ use crate::cv_pdf::{self, Paper, PrintError};
 use crate::export_file::{self, ExportError};
 use crate::external_url::{self, ExternalUrlError};
 use crate::job_url::{self, JobUrlError, RateLimiter};
+use crate::kit_file::{self, KitAction, KitFileError};
 use crate::mail_connect::{MailConnectResult, PendingMailConnect};
 use crate::mail_inbox::{self, MailProvider};
 use crate::mailto::{self, MailtoError, MailtoLimiter};
@@ -56,6 +57,22 @@ pub enum CommandError {
     SaveFailed {
         message: String,
     },
+    /// `open_kit_file` / `reveal_kit_file` with a path outside the application kit folder.
+    FileNotAllowed {
+        message: String,
+    },
+}
+
+impl From<KitFileError> for CommandError {
+    fn from(error: KitFileError) -> Self {
+        let message = error.to_string();
+        eprintln!("application kit file: {message}");
+        match error {
+            KitFileError::NotInKit => Self::FileNotAllowed { message },
+            KitFileError::Open(_) => Self::OpenFailed { message },
+            KitFileError::NoFolder(_) | KitFileError::Write(_) => Self::SaveFailed { message },
+        }
+    }
 }
 
 impl From<PrintError> for CommandError {
@@ -313,4 +330,44 @@ pub async fn save_export<R: Runtime>(
     let file_name = export_file::file_name_from_headers(request.headers(), kind)?;
     let path = export_file::save(&window, &bytes, &file_name, kind).await?;
     Ok(path.map(|path| path.to_string_lossy().into_owned()))
+}
+
+/// The application kit's "Open", "Show in Finder" and "Copy path" (`src/kit_file.rs`): saves a
+/// PDF to `Downloads/BruteForceHR` without asking and returns its path. The bytes are the raw
+/// request body, the file name (percent-encoded) the `bfhr-file-name` header. Async, so the write
+/// stays off the main thread.
+#[tauri::command]
+pub async fn save_kit_file<R: Runtime>(
+    app: AppHandle<R>,
+    request: Request<'_>,
+) -> Result<String, CommandError> {
+    let kind = export_file::ExportKind::Pdf;
+    let bytes = export_file::body_bytes(request.body(), kind)?;
+    let file_name = export_file::file_name_from_headers(request.headers(), kind)?;
+    let path = kit_file::save(&kit_file::folder(&app)?, &file_name, &bytes)?;
+    Ok(path.to_string_lossy().into_owned())
+}
+
+/// Opens a PDF saved by `save_kit_file` in the default PDF app.
+#[tauri::command]
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Tauri injects the AppHandle by value"
+)]
+pub fn open_kit_file<R: Runtime>(app: AppHandle<R>, path: &str) -> Result<(), CommandError> {
+    let file = kit_file::checked(&kit_file::folder(&app)?, path)?;
+    kit_file::run(&app, KitAction::Open, &file)?;
+    Ok(())
+}
+
+/// Shows a PDF saved by `save_kit_file` selected in Finder / Explorer.
+#[tauri::command]
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Tauri injects the AppHandle by value"
+)]
+pub fn reveal_kit_file<R: Runtime>(app: AppHandle<R>, path: &str) -> Result<(), CommandError> {
+    let file = kit_file::checked(&kit_file::folder(&app)?, path)?;
+    kit_file::run(&app, KitAction::Reveal, &file)?;
+    Ok(())
 }

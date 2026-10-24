@@ -53,6 +53,7 @@ let tracker: MemoryTrackerStore;
 let jobs: MemoryJobsStore;
 let callables: Record<keyof MemoryJobsCallables, Mock>;
 let onClose: Mock<() => void>;
+const onTailor = vi.fn<(cvId: string, revisionId: string | null) => void>();
 let router: AnyRouter;
 
 async function settle() {
@@ -90,6 +91,18 @@ async function render({ canSend = true } = {}) {
     ),
     cancelEmail: vi.fn(() => Promise.resolve()),
     sendEmailNow: vi.fn(() => Promise.resolve()),
+    tailorCv: vi.fn(),
+    draftCoverLetter: vi.fn(() =>
+      Promise.resolve({
+        subject: null,
+        body: "Sehr geehrte/r {hiring_manager},\n\nbei Pazarbox habe ich das Designsystem neu aufgebaut.\n\nMit freundlichen Grüßen\nDeniz Aksoy",
+        placeholders: [],
+        unresolvedFields: ["hiring_manager"],
+        droppedSentences: 1,
+        model: "recorded",
+        promptVersion: "recorded",
+      }),
+    ),
   };
   jobs = createMemoryJobsStore(
     tracker,
@@ -110,7 +123,7 @@ async function render({ canSend = true } = {}) {
           <TrackerSourceContext.Provider value={tracker.source}>
             <ModelEnvironmentContext.Provider value={environment}>
               <JobsProviders source={jobs.source} repository={jobs.repository}>
-                <EmailApplyPanel jobId={JOB_ID} onClose={onClose as () => void} />
+                <EmailApplyPanel jobId={JOB_ID} onClose={onClose as () => void} onTailor={onTailor} />
               </JobsProviders>
             </ModelEnvironmentContext.Provider>
           </TrackerSourceContext.Provider>
@@ -279,6 +292,36 @@ describe("EmailApplyPanel", () => {
     // Undo deletes the application the record created.
     await click("Undo");
     expect(application()).toBeNull();
+  });
+
+  it("drafts the letter with AI, blocks on the unresolved field, then sends the filled letter", async () => {
+    await render();
+    act(() => field("Attach a cover letter").click());
+    await click("Draft with AI");
+    expect(callables.draftCoverLetter).toHaveBeenCalledWith({
+      cvId: "cv-de",
+      revisionId: "rev-de-2",
+      jobId: JOB_ID,
+      tone: "formal",
+      language: "de",
+      templateId: "starter-de",
+    });
+    expect(text()).toContain("Drafted from your CV and this job. Edit anything.");
+    expect(text()).toContain("1 sentence was left out");
+    expect(text()).toContain("Fill in “Hiring manager” before sending: {hiring_manager} is still in your text.");
+    type(field("Hiring manager {hiring_manager}"), "Frau Weber");
+    press("Enter", { ctrlKey: true });
+    await settle();
+    press("Enter", { ctrlKey: true });
+    await settle();
+    const request = callables.sendEmail.mock.calls[0]?.[0] as MailSendRequest;
+    expect(request.attachments).toHaveLength(2);
+    const state = jobs.source.getState();
+    if (state.status !== "ready") throw new Error("not ready");
+    expect(state.data.coverLetters.find((candidate) => candidate.id === request.pins.coverLetterId)).toMatchObject({
+      author: "ai",
+      body: expect.stringMatching(/^Sehr geehrte\/r Frau Weber,/u) as string,
+    });
   });
 
   it("saves the cover letter and attaches it when turned on", async () => {

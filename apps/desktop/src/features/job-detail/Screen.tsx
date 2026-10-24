@@ -33,7 +33,8 @@ import { JobDetailSkeleton, JobRowSkeleton, SkeletonBlock, SkeletonRegion } from
 import { SplitView } from "../../shared/ui/SplitView";
 import { StaleStamp } from "../../shared/ui/StaleStamp";
 import { useToast } from "../../shared/ui/Toast";
-import { EmailApplyPanel } from "../apply";
+import { ApplyKitPanel, EmailApplyPanel, type SubmitAnswer, TailorHost } from "../apply";
+import type { AppliedPins } from "./useJobsActions";
 import { ImportJobDialog } from "../jobs-import";
 import { SavedSearchesDialog, SaveSearchButton } from "../saved-searches";
 import { DetailPane } from "./DetailPane";
@@ -163,6 +164,8 @@ export default function JobDetailScreen({ model, params }: ScreenProps<JobDetail
   const offline = useConnectivity().status === "offline";
   /** Apply by email (`?apply=1`) takes the detail column; the list's single-key shortcuts pause. */
   const applyOpen = params.apply === "1" && model.status === "ready" && model.data.detail !== null;
+  /** Tailor review (`?tailor=<cvId>[&rev=<revisionId>]`) takes the whole content area. */
+  const tailorOpen = applyOpen && params.tailor !== undefined;
   const [placeholder, setPlaceholder] = useState<HiddenPlaceholder | null>(null);
   // UI-only state: the re-score in flight after "Change" and the external-apply round trip.
   const [rescoring, setRescoring] = useState<ReadonlyMap<string, { id: string; title: string }>>(new Map());
@@ -248,7 +251,7 @@ export default function JobDetailScreen({ model, params }: ScreenProps<JobDetail
       else document.getElementById(`job-title-${jobId}`)?.focus();
     },
     group,
-    enabled: data !== null,
+    enabled: data !== null && !tailorOpen,
   });
 
   const setSearch = (value: string) => {
@@ -350,6 +353,13 @@ export default function JobDetailScreen({ model, params }: ScreenProps<JobDetail
       openApply();
       return;
     }
+    openSite();
+    // The kit sits beside the site the user is filling in.
+    openApply();
+  };
+  /** "Open company site": the posting's link, then "Did you submit?" when the user is back. */
+  const openSite = () => {
+    if (!detail) return;
     openUrl(detail.apply.target);
     setAskSubmit((set) => new Set(set).add(detail.jobId));
     setAnsweredSubmit((set) => {
@@ -359,6 +369,12 @@ export default function JobDetailScreen({ model, params }: ScreenProps<JobDetail
     });
   };
   const answered = (jobId: string) => setAnsweredSubmit((set) => new Set(set).add(jobId));
+  const answerSubmit = (jobId: string, company: string, answer: SubmitAnswer, pins: AppliedPins | null) => {
+    answered(jobId);
+    if (answer === "yes") actions.recordApplied(jobId, pins, viewInTracker);
+    else if (answer === "notYet") toast.show({ variant: "info", message: intl.formatMessage(messages.notYetToast) });
+    else toast.show({ variant: "info", message: intl.formatMessage(messages.notApplyingToast, { company }) });
+  };
   const viewInTracker = (applicationId: string) =>
     void navigate({
       to: "/tracker",
@@ -753,11 +769,29 @@ export default function JobDetailScreen({ model, params }: ScreenProps<JobDetail
   const position = detail ? visibleIds.indexOf(detail.jobId) : -1;
   const detailView =
     detail && applyOpen ? (
-      <EmailApplyPanel
-        key={`apply-${detail.jobId}`}
-        jobId={detail.jobId}
-        onClose={() => setSearchParams({ apply: undefined })}
-      />
+      detail.apply.external ? (
+        <ApplyKitPanel
+          key={`kit-${detail.jobId}`}
+          jobId={detail.jobId}
+          siteUrl={detail.apply.target}
+          showSubmitPrompt={
+            (detail.submitPrompt !== null || askSubmit.has(detail.jobId)) && !answeredSubmit.has(detail.jobId)
+          }
+          onOpenSite={openSite}
+          onSubmitAnswer={(answer, pins) =>
+            answerSubmit(detail.jobId, detail.company.name, answer, pins ?? detail.applyCv)
+          }
+          onClose={() => setSearchParams({ apply: undefined })}
+          onTailor={(cvId, revisionId) => setSearchParams({ tailor: cvId, rev: revisionId ?? undefined })}
+        />
+      ) : (
+        <EmailApplyPanel
+          key={`apply-${detail.jobId}`}
+          jobId={detail.jobId}
+          onClose={() => setSearchParams({ apply: undefined })}
+          onTailor={(cvId, revisionId) => setSearchParams({ tailor: cvId, rev: revisionId ?? undefined })}
+        />
+      )
     ) : detail ? (
       <DetailPane
         key={detail.jobId}
@@ -852,21 +886,32 @@ export default function JobDetailScreen({ model, params }: ScreenProps<JobDetail
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      {scopes}
-      {header}
-      {runBanner}
+      {/* Tailoring takes the whole content area: the feed's search and filters step aside. */}
+      {!tailorOpen && scopes}
+      {!tailorOpen && header}
+      {!tailorOpen && runBanner}
       <div className="border-line-subtle flex min-h-0 flex-1 border-t">
-        <SplitView
-          {...splitLabels}
-          listPane={listPane}
-          list={list}
-          detail={detailView}
-          detailOpen={detailOpen && detail !== null}
-          onBack={() => {
-            setDetailOpen(false);
-            if (selectedId) requestAnimationFrame(() => nav.focusItem(selectedId));
-          }}
-        />
+        {tailorOpen && detail && params.tailor ? (
+          <TailorHost
+            key={`tailor-${detail.jobId}-${params.tailor}`}
+            jobId={detail.jobId}
+            cvId={params.tailor}
+            revisionId={params.rev ?? null}
+            onClose={() => setSearchParams({ tailor: undefined, rev: undefined })}
+          />
+        ) : (
+          <SplitView
+            {...splitLabels}
+            listPane={listPane}
+            list={list}
+            detail={detailView}
+            detailOpen={detailOpen && detail !== null}
+            onBack={() => {
+              setDetailOpen(false);
+              if (selectedId) requestAnimationFrame(() => nav.focusItem(selectedId));
+            }}
+          />
+        )}
       </div>
       {dialogs}
     </div>

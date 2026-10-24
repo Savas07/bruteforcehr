@@ -52,11 +52,18 @@ final class ApplyEndToEndTests: XCTestCase {
         var looked = 0
         while accepted < 2, looked < 12 {
             looked += 1
-            let enabled = accepts.allElementsBoundByIndex.first { $0.isEnabled && $0.isHittable }
+            // Only an Accept fully above the sticky bottom bar: a tap on one half under the bar
+            // lands on the bar's "Keep original for the rest" instead.
+            let barTop = app.buttons["apply.tailor.acceptAll"].frame.minY
+            let enabled = accepts.allElementsBoundByIndex.first {
+                $0.isEnabled && $0.isHittable && $0.frame.maxY < barTop - 8
+            }
             if let button = enabled {
+                let cardID = String(button.identifier.dropFirst("apply.tailor.accept.".count))
                 button.tap()
+                XCTAssertTrue(app.buttons["apply.tailor.undo.\(cardID)"].waitForExistence(timeout: 5), "suggestion \(cardID) accepted")
                 accepted += 1
-                Thread.sleep(forTimeInterval: 0.5)
+                if accepted == 1 { shot("tailor-after-first-accept") }
             } else {
                 scrollDown(app)
             }
@@ -64,12 +71,16 @@ final class ApplyEndToEndTests: XCTestCase {
         XCTAssertEqual(accepted, 2, "two suggestions without a gap to accept")
         let keepRest = app.buttons["apply.tailor.keepRest"]
         if keepRest.exists { keepRest.tap() }
+        // The tally sits at the top of a lazy List: scroll back up before reading it.
         let tally = app.staticTexts["apply.tailor.tally"]
-        if tally.exists { XCTAssertTrue(tally.label.hasPrefix("2 accepted"), tally.label) }
-        app.buttons["apply.tailor.view"].buttons["Preview"].tap()
-        Thread.sleep(forTimeInterval: 2)
+        for _ in 0..<6 where !tally.exists { scrollUp(app) }
+        XCTAssertTrue(tally.label.hasPrefix("2 accepted"), tally.label)
+        // A segmented Picker is a segmented control; its segments are buttons inside it.
+        let views = app.segmentedControls["apply.tailor.view"]
+        views.buttons["Preview"].tap()
+        XCTAssertTrue(app.descendants(matching: .any)["apply.tailor.previewPage"].waitForExistence(timeout: 10), "Preview of the tailored CV")
         shot("tailor-preview")
-        app.buttons["apply.tailor.view"].buttons["Changes"].tap()
+        views.buttons["Changes"].tap()
         let save = app.buttons["apply.tailor.save"]
         XCTAssertTrue(save.isEnabled, "Save as new version")
         save.tap()
@@ -175,6 +186,13 @@ final class ApplyEndToEndTests: XCTestCase {
         let window = app.windows.firstMatch
         window.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.6))
             .press(forDuration: 0.05, thenDragTo: window.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.3)), withVelocity: .slow, thenHoldForDuration: 0.1)
+    }
+
+    @MainActor
+    private func scrollUp(_ app: XCUIApplication) {
+        let window = app.windows.firstMatch
+        window.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.3))
+            .press(forDuration: 0.05, thenDragTo: window.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.8)), withVelocity: .fast, thenHoldForDuration: 0)
     }
 
     @MainActor

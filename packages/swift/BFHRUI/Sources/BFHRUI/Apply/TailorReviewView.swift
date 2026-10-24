@@ -210,6 +210,9 @@ public struct TailorReviewPage: View {
                         decide: { model.decide(card.id, $0) },
                         undecide: { model.undecide(card.id) }
                     )
+                    // A container with its own id: without `.contain`, the card's id replaces the
+                    // ids of the Accept / Keep original buttons inside it.
+                    .accessibilityElement(children: .contain)
                     .accessibilityIdentifier("apply.tailor.card.\(card.id)")
                 }
             }

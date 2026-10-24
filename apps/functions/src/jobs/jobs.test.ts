@@ -26,7 +26,7 @@ import { normalize, dot, jobEmbeddingText, profileEmbeddingText } from "./embedd
 import { buildMatch, rationaleTargets } from "./matcher";
 import { cvContext } from "./profile-context";
 import { admitRun, EMPTY_QUOTA_DAY, JOB_BUDGETS, takeUnits } from "./quota";
-import { alertCandidates, nextRunAt } from "./run";
+import { alertCandidates, nextRunAt, profileVector } from "./run";
 import { pickDue } from "./scheduler";
 import { admitSourceCall, nextSourceStatus } from "./source-state";
 import { planUpserts } from "./store";
@@ -493,6 +493,37 @@ describe("source state", () => {
 });
 
 describe("embeddings", () => {
+  it("doesn't embed an empty profile (new users), so their imports still get matched", async () => {
+    const calls: string[][] = [];
+    const embedder = {
+      embed: async (texts: readonly string[]) => {
+        calls.push([...texts]);
+        return texts.map(() => [1, 0]);
+      },
+    };
+    const empty = {
+      profile: {
+        locations: [],
+        remotePreferences: [],
+        salaryFloor: null,
+        workAuthorization: [],
+        languages: [],
+        seniority: null,
+        targetRoles: [],
+        skills: [],
+        hiddenCompanies: [],
+      },
+      cv: null,
+      uiLanguage: "en" as const,
+      aiEnabled: true,
+    };
+    expect(await profileVector(embedder, empty)).toBeNull();
+    expect(calls).toEqual([]);
+    const withRoles = { ...empty, profile: { ...empty.profile, targetRoles: ["Backend Engineer"] } };
+    expect(await profileVector(embedder, withRoles)).toEqual([1, 0]);
+    expect(calls).toEqual([["Target roles: Backend Engineer"]]);
+  });
+
   it("normalizes to unit length so dot product is cosine", () => {
     const vector = normalize([3, 4]);
     expect(vector).toEqual([0.6, 0.8]);

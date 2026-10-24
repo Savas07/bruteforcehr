@@ -124,12 +124,12 @@ final class MailEndToEndTests: XCTestCase {
         let open = app.buttons["timeline.openEmail"].firstMatch
         scrollTo(app, open)
         open.tap()
-        XCTAssertTrue(app.descendants(matching: .any)["mail.email"].waitForExistence(timeout: 10), "email sheet")
+        XCTAssertTrue(app.descendants(matching: .any)["mail.email"].waitForExistence(timeout: 10), "email sheet (on the Mail tab)")
         shot("email")
         app.buttons["Close"].firstMatch.tap()
 
-        // 6. Settings from the avatar: the inbox, and one notification category off.
-        app.navigationBars.buttons["BackButton"].firstMatch.tap()
+        // 6. Settings from the avatar (Open email took us to the Mail tab): the inbox, and one
+        // notification category off.
         app.buttons["account.menu"].firstMatch.tap()
         app.buttons["account.settings"].firstMatch.tap()
         XCTAssertTrue(app.descendants(matching: .any)["settings"].waitForExistence(timeout: 10))

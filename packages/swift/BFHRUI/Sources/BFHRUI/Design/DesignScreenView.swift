@@ -40,6 +40,8 @@ public struct DesignScreenView: View {
                 }
             case .insights(let model): InsightsScreen(model: model) { _ in }
             case .mailReview(let model): MailReviewScreen(model: model)
+            case .settings(let today): DesignSettingsOverToday(today: today)
+            case .mailConnect(let mail): DesignMailConnectScreen(mail: mail)
             }
         }
         .environment(\.bfhrNow, holder.now)
@@ -80,6 +82,8 @@ private final class ModelHolder {
         case trackerBoard(TrackerBoardModel, InsightsModel)
         case insights(InsightsModel)
         case mailReview(MailReviewModel)
+        case settings(TodayModel)
+        case mailConnect(MailReviewModel)
     }
 
     let model: Model
@@ -95,7 +99,34 @@ private final class ModelHolder {
         case .trackerBoard: Self.tracker(scenario)
         case .insights: .insights(scenario.insightsModel())
         case .mailReview: .mailReview(scenario.mailReviewModel())
+        case .settings:
+            .settings({
+                var today = scenario
+                today.condition = nil
+                return today.todayModel()
+            }())
+        case .mailConnect:
+            .mailConnect({
+                var mail = scenario
+                mail.condition = nil
+                return mail.mailReviewModel()
+            }())
         }
+    }
+}
+
+/// Today with the Settings sheet open on `-BFHRSettingsPage` (the scenario's state applies to
+/// Settings, not to Today).
+private struct DesignSettingsOverToday: View {
+    let today: TodayModel
+    @State private var presented = true
+    @State private var path = DesignSettingsPage.launch.path
+
+    var body: some View {
+        TodayScreen(model: today)
+            .sheet(isPresented: $presented) {
+                DesignSettingsSheet(path: $path)
+            }
     }
 }
 

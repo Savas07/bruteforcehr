@@ -167,7 +167,7 @@ public final class MailConnectModel: ScreenModel {
     public var lookbackDays = defaultMailLookbackDays
     public var oauthState: OAuthState = .idle
     /// Providers this session learned aren't configured (their rows say so).
-    public private(set) var unavailableProviders: Set<OAuthMailProvider> = []
+    public internal(set) var unavailableProviders: Set<OAuthMailProvider> = []
 
     // App-password form
     public var presetId: String = ImapPreset.otherID
@@ -179,13 +179,13 @@ public final class MailConnectModel: ScreenModel {
     public var imap = MailEndpoint(host: "", port: 993, security: .tls)
     public var smtp = MailEndpoint(host: "", port: 587, security: .starttls)
     public var showsServerSettings = false
-    public private(set) var formState: FormState = .editing
+    public internal(set) var formState: FormState = .editing
     /// "Connected for reading" after an SMTP failure.
     public private(set) var smtpWarning: String?
 
     // Result
     /// The account being scanned (IMAP returns it; OAuth finds it by provider when it arrives).
-    public private(set) var connectedAccountId: String?
+    public internal(set) var connectedAccountId: String?
     private var awaitedProvider: MailProvider?
     private var connectStartedAt: Date?
     public private(set) var accounts: [MailAccount] = []
@@ -195,6 +195,9 @@ public final class MailConnectModel: ScreenModel {
     public let reconnecting: MailAccount?
     /// The first screen when reconnecting (the provider's step instead of the provider list).
     public private(set) var rootStep: Step?
+
+    /// Called once an account is connected (the app asks for push permission in context).
+    public var onConnected: (() -> Void)?
 
     public let service: (any MailConnectService)?
     public let oauthSession: (any MailOAuthSession)?
@@ -283,6 +286,7 @@ public final class MailConnectModel: ScreenModel {
                 awaitedProvider = provider == .google ? .gmail : .microsoft
                 load(accounts)
                 path.append(.scanning)
+                onConnected?()
             case .failed(.cancelled):
                 oauthState = .idle
             case .failed(let error):
@@ -385,6 +389,7 @@ public final class MailConnectModel: ScreenModel {
             smtpWarning = result.smtpWarning
             connectedAccountId = result.accountId
             path.append(.scanning)
+            onConnected?()
         } catch {
             formState = .failed(error)
             if case .hostUnreachable = error { showsServerSettings = true }

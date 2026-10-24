@@ -1,16 +1,22 @@
 import BFHRCore
 import BFHRUI
 import SwiftUI
+import UserNotifications
 
-/// Today, the Tracker, Insights and Jobs on live data (M3, M4): one Firestore store feeds every
-/// screen model, so a change made in one shows in the others at once. One instance per signed-in
-/// user, kept by `RootView` for the session.
+/// Today, the Tracker, Insights, Jobs, Mail and Settings on live data (M3–M5): one Firestore store
+/// feeds every screen model, so a change made in one shows in the others at once. One instance per
+/// signed-in user, kept by `RootView` for the session.
 @MainActor
 final class LiveUserData {
     let today: TodayModel
     let tracker: TrackerBoardModel
     let insights: InsightsModel
     let jobs: JobsFeedModel
+    let mail: MailReviewModel
+    let settings: SettingsModel
+    /// The mail callables behind Connect email and Settings › Mail accounts.
+    let mailService = CloudMailService()
+    private let oauthSession = WebAuthSession()
     /// The Jobs stack and its Apply sheet, so links (`bruteforcehr://jobs/…`) can drive them.
     let jobsNavigation = JobsNavigation()
     private(set) var store: FirestoreUserDataStore
@@ -27,8 +33,7 @@ final class LiveUserData {
         self.uid = uid
         today = TodayModel(now: .now)
         today.usesSystemClock = true
-        // Mail (M5) isn't on yet: Today says so instead of offering it. Job matching is (M4).
-        today.mailAvailable = false
+        today.mailAvailable = true
         today.matchesAvailable = true
         tracker = TrackerBoardModel(now: .now)
         tracker.usesSystemClock = true
@@ -43,6 +48,16 @@ final class LiveUserData {
         insights.onRangeChange = { range in UserDefaults.standard.set(range.rawValue, forKey: Self.insightsRangeKey) }
         today.insightsAvailable = true
         jobs = JobsFeedModel(now: .now)
+        mail = MailReviewModel(now: .now)
+        mail.usesSystemClock = true
+        settings = SettingsModel(now: .now)
+        settings.usesSystemClock = true
+        settings.mailService = mailService
+        settings.requestPermission = { [weak settings] in
+            await PushRegistrar.shared.requestPermission()
+            settings?.permission = await Self.notificationPermission()
+        }
+        settings.appVersion = Self.appVersion
         applyServices = CloudApplyServices(uid: uid)
         // The app always bundles cv-render (the build phase fails otherwise).
         applyRenderer = (try? CVRenderEngine.bundled()).map(DeviceApplyRenderer.init)
@@ -63,6 +78,8 @@ final class LiveUserData {
                 tracker.now = .now
                 insights.now = .now
                 jobs.now = .now
+                mail.now = .now
+                settings.now = .now
                 for detail in details.values { detail.now = .now }
             }
         }
@@ -78,13 +95,47 @@ final class LiveUserData {
     /// Settings.
     func refreshNotifications() async {
         await tracker.refreshNotificationAuthorization()
+        settings.permission = await Self.notificationPermission()
+    }
+
+    /// iOS's notification permission for this app, in Settings' terms.
+    static func notificationPermission() async -> NotificationPermission {
+        switch await UNUserNotificationCenter.current().notificationSettings().authorizationStatus {
+        case .authorized, .ephemeral: .authorized
+        case .provisional: .provisional
+        case .denied: .denied
+        case .notDetermined: .notDetermined
+        @unknown default: .notDetermined
+        }
+    }
+
+    /// "1.4 (37)".
+    static var appVersion: String {
+        let info = Bundle.main.infoDictionary
+        let version = info?["CFBundleShortVersionString"] as? String ?? "0"
+        let build = info?["CFBundleVersion"] as? String ?? "0"
+        return "\(version) (\(build))"
+    }
+
+    /// Connect email (or Reconnect) on the callables and the browser session; it follows the
+    /// account snapshots for the scan. The first successful connect asks for push permission in
+    /// context (decisions.md D25).
+    var mailConnect: MailConnectLauncher {
+        MailConnectLauncher { [weak self] reconnecting in
+            let model = MailConnectModel(service: self?.mailService, oauthSession: self?.oauthSession, reconnecting: reconnecting)
+            model.onConnected = { Task { await PushRegistrar.shared.requestPermission() } }
+            if let self { self.store.attach(model) }
+            return model
+        }
     }
 
     private func connect() {
         today.writer = store
         tracker.writer = store
         jobs.writer = store
-        store.start([today, tracker, insights, jobs])
+        mail.writer = store
+        settings.writer = store
+        store.start([today, tracker, insights, jobs, mail, settings])
         // Open Job details move to the new store.
         for detail in details.values {
             detail.writer = store
@@ -193,5 +244,44 @@ struct TrackerTabRoot: View {
                 }
         }
         .environment(\.bfhrReload) { live.reload() }
+    }
+}
+
+/// The Mail tab with live data (M5): the review queue, Updates and All job mail, Connect email.
+struct MailTabRoot: View {
+    let live: LiveUserData
+    @Environment(\.bfhrAccount) private var account
+
+    var body: some View {
+        NavigationStack {
+            MailReviewScreen(model: live.mail)
+                .navigationTitle(AppTab.mail.title)
+                .navigationBarTitleDisplayMode(.large)
+                .accessibilityIdentifier("screen.mail")
+                .toolbar {
+                    if let account {
+                        ToolbarItem(placement: .topBarTrailing) {
+                            AccountMenu(account) {
+                                AvatarMonogram(initials: account.email.first.map { String($0).uppercased() } ?? "")
+                            }
+                        }
+                    }
+                }
+        }
+        .environment(\.bfhrReload) { live.reload() }
+    }
+
+    /// Mail links (IA.md "Deep links"): `mail` (To review), `mail/updates`, `mail/review/{id}`
+    /// (the review sheet, or the email when it's no longer pending), `mail/backfill/{id}` (To
+    /// review: the scan's proposals wait there).
+    static func open(_ url: URL, model: MailReviewModel) {
+        let parts = url.pathComponents.filter { $0 != "/" }
+        switch parts.first {
+        case "updates": model.filter = .updates
+        case "review":
+            if let id = parts.dropFirst().first, model.open(id) { return }
+            model.filter = .toReview
+        default: model.filter = .toReview
+        }
     }
 }

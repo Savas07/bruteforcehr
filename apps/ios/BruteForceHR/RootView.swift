@@ -23,6 +23,10 @@ struct RootView: View {
     /// `DataPrivacyView(model:)`.
     @State private var dataPrivacy: DataPrivacyModel?
     @State private var notifications = NotificationRouter.shared
+    /// The Settings sheet (avatar menu, `bruteforcehr://settings/…`) and its pages.
+    @State private var showsSettings = false
+    @State private var settingsPath: [SettingsRoute] = []
+    @AppStorage(AppAppearance.storageKey) private var appearance: AppAppearance = .system
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
@@ -38,6 +42,7 @@ struct RootView: View {
             #endif
         }
         .tint(BFHRColor.tint)
+        .preferredColorScheme(appearance.colorScheme)
         .environment(toasts)
         // Universal links (the emailed sign-in link) and `bruteforcehr://` links from outside.
         .onOpenURL(perform: open)
@@ -47,6 +52,8 @@ struct RootView: View {
         .bfhrUpdateGate(updateGate)
         // At launch and on every return to the foreground (PRD M1-UPD-2).
         .onChange(of: scenePhase, initial: true) { _, phase in
+            // Held email decisions go out before the app may be suspended.
+            if phase == .background { live?.store.flushHeldReviews() }
             guard phase == .active else { return }
             if RootView.readsAppConfig {
                 Task { await updateGate.check(AppConfigReader.iosVersions) }
@@ -89,9 +96,11 @@ struct RootView: View {
                 .badge(badges[tab] ?? 0)
             }
         }
+        .sheet(isPresented: $showsSettings) { settingsSheet }
         .environment(\.bfhrAccount, signIn.signedInEmail.map { email in
             AccountContext(email: email) { try signIn.signOut() }
         })
+        .environment(\.bfhrMailConnect, mailConnect)
         // `bruteforcehr://` links opened inside the app (`@Environment(\.openURL)`) navigate here
         // directly instead of a round trip through the system; other URLs go to the system.
         .environment(\.openURL, OpenURLAction { url in
@@ -99,6 +108,34 @@ struct RootView: View {
             navigate(to: url)
             return .handled
         })
+    }
+
+    /// Settings over the current tab (IA.md "Avatar"), with Data & privacy from the account-data
+    /// session model.
+    @ViewBuilder private var settingsSheet: some View {
+        if let live {
+            SettingsScreen(model: live.settings, path: $settingsPath) {
+                if let dataPrivacy { DataPrivacyView(model: dataPrivacy) }
+            }
+            .environment(toasts)
+            .environment(\.bfhrMailConnect, mailConnect)
+            .environment(\.bfhrAccount, signIn.signedInEmail.map { email in
+                AccountContext(email: email) { try signIn.signOut() }
+            })
+            .task { await live.refreshNotifications() }
+        } else {
+            #if DEBUG
+            DesignSettingsSheet(path: $settingsPath)
+            #endif
+        }
+    }
+
+    /// Connect email on the live callables, or on the design fakes in design mode.
+    private var mailConnect: MailConnectLauncher? {
+        #if DEBUG
+        if DesignScenario.launch != nil { return DesignMailConnect.launcher }
+        #endif
+        return live?.mailConnect
     }
 
     /// Sign-in links go to the sign-in flow, or, while signed in, to a waiting re-authentication
@@ -115,12 +152,25 @@ struct RootView: View {
         }
     }
 
+    /// `bruteforcehr://settings/…`: the Settings sheet at that page.
+    private func openSettings(_ url: URL) -> Bool {
+        guard let path = SettingsRoute.path(for: url) else { return false }
+        settingsPath = path
+        showsSettings = true
+        return true
+    }
+
     /// Selects the link's tab; Tracker links (applications, interviews, Log an application, the
     /// calendar) and Jobs links (a job, Saved, a saved search, Hidden jobs, Apply) also open
     /// their destination.
     private func navigate(to url: URL) {
+        if openSettings(url) { return }
+        // The OAuth return link ends the browser session; on its own it leads nowhere.
+        if url.host()?.lowercased() == "connected" { return }
         guard let tab = AppTab(deepLink: url) else { return }
+        showsSettings = false
         selection = tab
+        if tab == .mail, let live { MailTabRoot.open(url, model: live.mail) }
         if tab == .tracker, let live, let route = live.tracker.route(for: url) {
             live.tracker.route = route
         }
@@ -206,9 +256,8 @@ struct RootView: View {
     }
 }
 
-/// Root screen of one tab. Today, Tracker (M3), CVs (M2) and Jobs (M4) show live data; Mail lands
-/// with its milestone (docs/STATUS.md). Debug builds launched with design arguments show the
-/// fixture-backed screens instead (DesignMode.swift).
+/// Root screen of one tab, on live data: Today, Tracker (M3), CVs (M2), Jobs (M4), Mail (M5). Debug
+/// builds launched with design arguments show the fixture-backed screens instead (DesignMode.swift).
 struct TabRootView: View {
     let tab: AppTab
     let live: LiveUserData?
@@ -242,7 +291,7 @@ struct TabRootView: View {
         case .jobs:
             if let live { JobsTabRoot(live: live) } else { shell }
         case .mail:
-            shell
+            if let live { MailTabRoot(live: live) } else { shell }
         }
     }
 

@@ -8,10 +8,12 @@ import Foundation
 //
 //   -BFHRDesign populated|empty            dataset (default populated)
 //   -BFHRState loading|error|offline       forced condition (default none)
-//   -BFHRScreen today|jobs|job-detail|saved-searches|apply|cv-editor|tracker-board|mail-review|insights
+//   -BFHRScreen today|jobs|job-detail|saved-searches|apply|cv-editor|tracker-board|mail-review|insights|settings|mail-connect
 //                                      tab to open at launch (job-detail, saved-searches and apply
 //                                      open over the Jobs feed; insights opens the Tracker tab
-//                                      with Insights pushed)
+//                                      with Insights pushed; settings opens the Settings sheet over
+//                                      Today, `-BFHRSettingsPage` pushes a page; mail-connect opens
+//                                      Connect email over Mail on `-BFHRConnectStep`)
 //
 // Any one of them turns design mode on. Release builds compile none of this.
 
@@ -27,6 +29,10 @@ public enum DesignScreen: String, CaseIterable, Identifiable, Sendable {
     case trackerBoard = "tracker-board"
     case mailReview = "mail-review"
     case insights
+    /// The Settings sheet over Today (M5).
+    case settings
+    /// Connect email over the Mail tab (M5).
+    case mailConnect = "mail-connect"
 
     /// Screens shown inside the Jobs stack.
     public var isJobsScreen: Bool { [.jobs, .jobDetail, .savedSearches, .apply].contains(self) }

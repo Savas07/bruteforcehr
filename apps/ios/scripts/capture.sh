@@ -15,8 +15,9 @@
 #                                     [--ax] [--device NAME]... [--theme light|dark]... [--lang en|tr|de]
 #                                     [--skip-build] [--arg LAUNCH_ARGUMENT]... [--tag NAME]
 #   --screen    core screen in design mode: today, jobs, job-detail, saved-searches, apply, cv-editor,
-#               tracker-board, mail-review, insights, or all (repeatable). Without it the tabs of the
-#               title-only shell are captured.
+#               tracker-board, mail-review, insights, settings (sub-page: --arg -BFHRSettingsPage --arg
+#               PAGE), mail-connect (step: --arg -BFHRConnectStep --arg STEP), or all (repeatable).
+#               Without it the tabs of the title-only shell are captured.
 #               update-gate (on its own): the update banner and blocking screen over Today.
 #               sign-in (on its own): the signed-out screens (`-BFHRSignIn`).
 #               data-privacy (on its own): Settings › Data & privacy and Delete account (`-BFHRDataPrivacy`).
@@ -51,7 +52,7 @@ ios_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 repo_root="$(cd "$ios_dir/../.." && pwd)"
 derived_data="${BFHR_DERIVED_DATA:-$ios_dir/build/DerivedData}"
 lock_dir="/tmp/bfhr-ios-capture.lock"
-all_screens=(today jobs job-detail saved-searches apply cv-editor tracker-board mail-review insights)
+all_screens=(today jobs job-detail saved-searches apply cv-editor tracker-board mail-review insights settings mail-connect)
 all_states=(populated empty loading error offline)
 
 screens=()
@@ -75,7 +76,7 @@ while (($# > 0)); do
     --skip-build) build=false ;;
     --arg) extra_args+=("$2"); shift ;;
     --tag) tag="$2"; shift ;;
-    -h | --help) sed -n '2,42p' "$0"; exit 0 ;;
+    -h | --help) sed -n '2,43p' "$0"; exit 0 ;;
     *) echo "capture.sh: unknown argument $1" >&2; exit 64 ;;
   esac
   shift

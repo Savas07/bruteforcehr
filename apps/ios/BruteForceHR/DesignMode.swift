@@ -11,11 +11,11 @@ extension AppTab {
     /// The tab that hosts a design screen.
     init(designScreen: DesignScreen) {
         switch designScreen {
-        case .today: self = .today
+        case .today, .settings: self = .today
         case .jobs, .jobDetail, .savedSearches, .apply: self = .jobs
         case .cvEditor: self = .cvs
         case .trackerBoard, .insights: self = .tracker
-        case .mailReview: self = .mail
+        case .mailReview, .mailConnect: self = .mail
         }
     }
 
@@ -43,8 +43,11 @@ struct DesignTabRoot: View {
             let screen = scenario.screen.flatMap { $0.isJobsScreen ? $0 : nil } ?? .jobs
             DesignScreenView(screen, scenario: scenario)
         } else {
+            // Settings and Connect email are sheets over their tab's screen.
+            let screen = scenario.screen.flatMap { [.settings, .mailConnect].contains($0) && AppTab(designScreen: $0) == tab ? $0 : nil }
+                ?? tab.designScreen
             NavigationStack {
-                DesignScreenView(tab.designScreen, scenario: scenario)
+                DesignScreenView(screen, scenario: scenario)
                     .navigationTitle(tab.title)
                     .navigationBarTitleDisplayMode(.large)
             }

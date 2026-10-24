@@ -48,7 +48,7 @@ final class MailReviewAccessibilityAuditTests: XCTestCase {
             for size in [nil, "UICTContentSizeCategoryAccessibilityXXXL"] {
                 let app = launch(dataset: "populated", contentSize: size, extra: ["-BFHRMailPane", pane])
                 print("AUDIT pane \(pane) \(size ?? "default")")
-                try runAudit(app, atAccessibilitySize: size != nil)
+                try runAudit(app, atAccessibilitySize: size != nil, wrapped: pane == "email" ? emailHeaderLines : [])
                 app.terminate()
             }
         }
@@ -150,18 +150,26 @@ final class MailReviewAccessibilityAuditTests: XCTestCase {
         try runAudit(app, atAccessibilitySize: contentSize != nil)
     }
 
+    /// The email sheet's header lines at AX5: the audit reports them clipped though they wrap in
+    /// full (mail-live-shots/live-email-large-ax.png; mail-review-live/accessibility.md), as the
+    /// Tracker audit's `verifiedWrappedLabels`.
+    private let emailHeaderLines: Set<String> = [
+        "Marcus Reid", "2 days ago, 10:30 AM", "marcus@brightwave.io → deniz.aksoy@example.com",
+    ]
+
     /// Runs Xcode's audit with the exemptions of JobsAccessibilityAuditTests (docs/design/critiques/
     /// ios/job-detail/accessibility.md), each logged as `AUDIT ignored (…)`:
     /// - issues with no element (the audit can't say what they refer to);
     /// - system chrome (tab bar, status bar, navigation bar and its glass toolbar buttons);
     /// - disabled controls (WCAG 1.4.3 exempts them);
     /// - Dynamic Type / text clipping at the default size (text styles scale; the AX runs check);
+    /// - text a caller verified by screenshot to wrap in full at AX5 (`wrapped`);
     /// - elements not fully inside the content area: below the navigation bar, above the tab bar or
     ///   a sheet's sticky bottom bar (`sheet.bar`, capped at AX1 on purpose), minus the 24 pt
     ///   scroll-edge fade. The audit reads contrast and clipping from a screenshot, and iOS 26
     ///   blurs content under the bars.
     @MainActor
-    private func runAudit(_ app: XCUIApplication, atAccessibilitySize: Bool = false) throws {
+    private func runAudit(_ app: XCUIApplication, atAccessibilitySize: Bool = false, wrapped: Set<String> = []) throws {
         Thread.sleep(forTimeInterval: 0.5)
         let window = app.windows.firstMatch.frame
         let top = app.navigationBars.allElementsBoundByIndex.map(\.frame.maxY).max() ?? window.minY
@@ -185,6 +193,9 @@ final class MailReviewAccessibilityAuditTests: XCTestCase {
             if !element.isEnabled { return ignore("disabled control") }
             if !atAccessibilitySize, [.dynamicType, .textClipped].contains(issue.auditType) { return ignore("default-size Dynamic Type, AX run checks it") }
             if !content.contains(element.frame) { return ignore("under bars / off screen") }
+            if atAccessibilitySize, [.dynamicType, .textClipped].contains(issue.auditType), wrapped.contains(element.label) {
+                return ignore("verified wrapped in full by screenshot")
+            }
             print("AUDIT FAILED \(issue.auditType.rawValue) | \(issue.compactDescription) | \(element.elementType.rawValue) '\(element.label)' \(element.frame)")
             return false
         }

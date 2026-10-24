@@ -7,6 +7,8 @@ export type MenuCommand =
   | { readonly type: "navigate"; readonly destination: DestinationId }
   | { readonly type: "open-palette" }
   | { readonly type: "open-shortcuts" }
+  /** Settings: the sidebar row, `Mod+,` and "Settings…" in the app menu (macOS) or File (Windows). */
+  | { readonly type: "open-settings" }
   /** "Check for Updates…" in the app menu (macOS) or Help (Windows); no shortcut. */
   | { readonly type: "check-for-updates" }
   /** "Sign Out" in the app menu (macOS) or File (Windows), and the palette; no shortcut. */
@@ -67,6 +69,14 @@ export const shortcuts: readonly Shortcut[] = [
     alternates: ["?"],
     command: { type: "open-shortcuts" },
   },
+  {
+    id: "open-settings",
+    group: "General",
+    label: "Open settings",
+    key: ",",
+    alternates: [],
+    command: { type: "open-settings" },
+  },
 ];
 
 /**
@@ -80,6 +90,7 @@ export const shortcutMessages: Readonly<Record<string, MessageDescriptor>> = def
   "go-cvs": { id: "shell.shortcut.goCvs", defaultMessage: "Go to CVs" },
   "go-mail": { id: "shell.shortcut.goMail", defaultMessage: "Go to Mail" },
   "go-insights": { id: "shell.shortcut.goInsights", defaultMessage: "Go to Insights" },
+  "open-settings": { id: "shell.shortcut.openSettings", defaultMessage: "Open settings" },
   "command-palette": { id: "shell.shortcut.commandPalette", defaultMessage: "Open command palette" },
   "keyboard-shortcuts": { id: "shell.shortcut.keyboardShortcuts", defaultMessage: "Show keyboard shortcuts" },
 });

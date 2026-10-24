@@ -31,8 +31,8 @@ export function useJobsData(): LiveJobsState {
 }
 
 /**
- * Collections the builders read that the Jobs listeners don't load: revisions come from the CV
- * documents (`currentRevisionId`), mail messages arrive with the Mail area (M5).
+ * Collections the builders read that the Jobs listeners don't load: they come from the outer
+ * providers (CV revisions with the tracker, mail messages from `LiveMailProvider`) or `base`.
  */
 const NOT_LOADED = { cvRevisions: [], mailMessages: [], devices: [] } as const;
 
@@ -49,11 +49,13 @@ export function JobsProviders({
   readonly children: ReactNode;
 }) {
   const state = useSyncExternalStore(source.subscribe, source.getState);
+  const outer = useContext(ModelExtrasContext);
   const extras = useMemo((): ModelExtras | null => {
     if (state.status !== "ready") return null;
     const { data } = state;
     return {
-      ...(base ?? NOT_LOADED),
+      ...(outer ?? NOT_LOADED),
+      ...base,
       jobs: data.jobs,
       jobMatches: data.jobMatches,
       savedSearches: data.savedSearches,
@@ -61,7 +63,7 @@ export function JobsProviders({
       coverLetters: data.coverLetters,
       renderedFiles: data.renderedFiles,
     };
-  }, [state, base]);
+  }, [state, base, outer]);
   const status = useMemo(
     (): ModelExtrasStatus =>
       state.status === "ready"
@@ -69,7 +71,6 @@ export function JobsProviders({
         : state,
     [state],
   );
-  const outer = useContext(ModelExtrasContext);
   return (
     <JobsRepositoryContext.Provider value={repository}>
       <JobsSourceContext.Provider value={source}>

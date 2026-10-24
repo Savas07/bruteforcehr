@@ -6,17 +6,23 @@
  *   (`dismissSuggestion`), "Mark as no response" (a move to No response), snooze
  *   (`snoozeSuggestion`) and "Move back now" (clears the snooze);
  * - reminders: "Mark as done" clears the application's next action and its date;
- * - automatic changes: "Undo this change" (`undoEvent`).
- * Emails, matches, email and posting deadlines and "Mark as seen" have no stored state in this
- * version (mail and jobs arrive in M4/M5; production Today never lists them yet), so in the design
- * build they keep a session-local state: handled ones go to "Done today", snoozed ones to Later.
+ * - automatic changes: "Undo this change" (`undoEvent`; from an email also through the mail
+ *   actions, which record the correction).
+ * Emails go through the mail actions (`data/mail/actions.ts`: held for the Undo window, then the
+ * review fields are written); "Review later" on an email and "Mark as seen" on an automatic change
+ * are kept on this computer (`data/mail/local.ts`), the same state Mail uses. Matches and email and
+ * posting deadlines have no stored state in this version: they keep a session-local state (handled
+ * ones go to "Done today", snoozed ones to Later).
  */
-import type { Application } from "@bfhr/core";
+import type { Application, MailMessage } from "@bfhr/core";
 import { AlarmClock, AlarmClockOff, Bookmark, BookmarkX, Check, MailX, X, type LucideIcon } from "lucide-react";
 import { useCallback, useState } from "react";
 import { defineMessages, useIntl } from "react-intl";
+import { useHeldDecisions, useMailActions } from "../../data/mail/actions";
+import { useMailData } from "../../data/mail/live";
+import { mailLocal } from "../../data/mail/local";
 import { useTrackerSource } from "../../data/tracker/live";
-import type { SnoozeUntil } from "../../data/tracker/snooze";
+import { snoozeInstant, type SnoozeUntil } from "../../data/tracker/snooze";
 import { useTrackerActions } from "../../data/tracker/useTrackerActions";
 import { useToast } from "../../shared/ui/Toast";
 import type {
@@ -148,7 +154,15 @@ export function useTodayActions({
   const toast = useToast();
   const tracker = useTrackerActions();
   const source = useTrackerSource();
+  const mailActions = useMailActions();
+  const mail = useMailData();
+  const held = useHeldDecisions();
   const [local, setLocal] = useState<TodayLocalState>(EMPTY);
+
+  const storedMessage = (messageId: string | null): MailMessage | undefined =>
+    messageId !== null && mail.status === "ready"
+      ? mail.data.mailMessages.find((message) => message.id === messageId)
+      : undefined;
 
   /** The application as stored when the action runs (Undo restores exactly that). */
   const application = (id: string): Application | null => {
@@ -192,13 +206,26 @@ export function useTodayActions({
     });
   };
 
-  const finishLocally = (item: AttentionItemVM, outcome: string, message: string, glyph: LucideIcon) => {
+  /** Moves the item to "Done today" at once; Undo restores it (and runs `undo`, the stored side). */
+  const finishLocally = (
+    item: AttentionItemVM,
+    outcome: string,
+    message: string,
+    glyph: LucideIcon,
+    undo?: () => void,
+  ) => {
     beforeRemove(item);
     setLocal((current) => ({ ...current, done: [{ item, outcome }, ...current.done] }));
     toast.show({
       message,
       glyph,
-      action: { label: intl.formatMessage(messages.undo), run: () => restore(item.id) },
+      action: {
+        label: intl.formatMessage(messages.undo),
+        run: () => {
+          undo?.();
+          restore(item.id);
+        },
+      },
       openAfterUndo: () => reveal(item.id),
     });
   };
@@ -206,8 +233,17 @@ export function useTodayActions({
   const company = (item: AttentionItemVM) => item.company.name;
 
   return {
-    local,
+    // A decided email stays in the local "Done today" only while it is held: once written, the
+    // data lists it there itself.
+    local: {
+      ...local,
+      done: local.done.filter(
+        (entry) => entry.item.kind !== "review" || held.has(entry.item.proposal.messageId),
+      ),
+    },
     confirm: (item) => {
+      const stored = storedMessage(item.proposal.messageId);
+      if (!stored) return;
       const { move } = item.proposal;
       finishLocally(
         item,
@@ -216,26 +252,37 @@ export function useTodayActions({
           ? intl.formatMessage(messages.confirmedMove, { company: company(item), status: move.to.label })
           : intl.formatMessage(messages.confirmed, { company: company(item) }),
         Check,
+        mailActions.review(stored, "confirmed"),
       );
     },
-    notJobMail: (item) =>
+    notJobMail: (item) => {
+      const stored = storedMessage(item.proposal.messageId);
+      if (!stored) return;
       finishLocally(
         item,
         intl.formatMessage(messages.outcomeNotJobMail),
         intl.formatMessage(messages.notJobMail, { company: company(item) }),
         MailX,
-      ),
-    acknowledge: (item) =>
+        mailActions.review(stored, "notJobMail"),
+      );
+    },
+    acknowledge: (item) => {
+      const key = item.change.mailMessageId ?? item.change.eventId;
+      mailLocal.markSeen([key]);
       finishLocally(
         item,
         intl.formatMessage(messages.outcomeSeen),
         intl.formatMessage(messages.seen, { company: company(item) }),
         Check,
-      ),
+        () => mailLocal.unmarkSeen([key]),
+      );
+    },
     undoAutoChange: (item) => {
       if (!item.change.undo.available) return;
       beforeRemove(item);
-      tracker.undoEvent(item.change.eventId);
+      const stored = storedMessage(item.change.mailMessageId);
+      if (stored?.appliedEventId === item.change.eventId) mailActions.undoAutoChange(stored);
+      else tracker.undoEvent(item.change.eventId);
     },
     markDone: (item) => {
       if (item.deadlineKind === "reminder" && item.applicationId) {
@@ -293,6 +340,15 @@ export function useTodayActions({
         tracker.snoozeSuggestion(item.nudge.applicationId, item.nudge.kind, until);
         return;
       }
+      // An email waits on this computer, so Mail leaves it out of To review too.
+      const messageId = item.kind === "review" ? item.proposal.messageId : null;
+      if (messageId !== null) {
+        const state = source.getState();
+        const zone =
+          (state.status === "ready" ? state.data.profile?.timezone : undefined) ??
+          Intl.DateTimeFormat().resolvedOptions().timeZone;
+        mailLocal.snooze(messageId, snoozeInstant(until, new Date(), zone));
+      }
       setLocal((current) => ({
         ...current,
         later: [{ item, until }, ...current.later.filter((entry) => entry.item.id !== item.id)],
@@ -304,7 +360,13 @@ export function useTodayActions({
           company: company(item),
         }),
         glyph: AlarmClock,
-        action: { label: intl.formatMessage(messages.undo), run: () => restore(item.id) },
+        action: {
+          label: intl.formatMessage(messages.undo),
+          run: () => {
+            if (messageId !== null) mailLocal.unsnooze(messageId);
+            restore(item.id);
+          },
+        },
         openAfterUndo: () => reveal(item.id),
       });
     },
@@ -320,6 +382,7 @@ export function useTodayActions({
         return;
       }
       beforeRemove(item);
+      if (item.kind === "review") mailLocal.unsnooze(item.proposal.messageId);
       restore(item.id);
     },
   };

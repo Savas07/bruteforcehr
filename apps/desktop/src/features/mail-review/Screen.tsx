@@ -1,15 +1,24 @@
 /**
  * Mail review (`/mail`, `/mail/review/$messageId`; mail-review.md "Decision — Desktop"): nested
  * folders in the sidebar, the list pane (360–440 px), the reading pane with the review card and
- * the details rail from 1440 px. Decisions are optimistic (M0 has no backend) and every one shows
- * an Undo toast; there is no Confirm all.
+ * the details rail from 1440 px. Every decision shows an Undo toast and is held for its window
+ * before it is written (`data/mail/actions.ts`); there is no Confirm all. "Review later" and
+ * "Mark as seen" are kept on this computer (`data/mail/local.ts`).
  */
-import type { MailCategory } from "@bfhr/core";
+import type { MailCategory, MailMessage } from "@bfhr/core";
 import { useNavigate } from "@tanstack/react-router";
-import { CalendarClock, Mail, MailX } from "lucide-react";
+import { ArrowLeft, CalendarClock, CalendarPlus, Mail, MailX } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { defineMessages, useIntl } from "react-intl";
+import { type ReviewChange, type ReviewOutcome, useHeldDecisions, useMailActions } from "../../data/mail/actions";
+import { useMailData } from "../../data/mail/live";
+import { isSnoozed, mailLocal, useMailLocal } from "../../data/mail/local";
+import { snoozeDateInstant, snoozeInstant } from "../../data/tracker/snooze";
+import { newApplication } from "../../data/tracker/writes";
+import { openMailInbox } from "../../lib/desktop";
 import { destinationMessages } from "../../lib/destinations";
+import { IconButton } from "../../shared/ui/Button";
+import { openMailConnect } from "../mail-connect";
 import { useConnectivity } from "../../shared/connectivity";
 import { useKeyBindings } from "../../shared/keyboard/useKeyBindings";
 import type { ScreenProps } from "../../shared/screen";
@@ -22,14 +31,13 @@ import { MailRowSkeleton, SkeletonBlock, SkeletonRegion, SkeletonText } from "..
 import { SplitView } from "../../shared/ui/SplitView";
 import { StaleStamp } from "../../shared/ui/StaleStamp";
 import { useToast } from "../../shared/ui/Toast";
-import { NEW_APPLICATION, type CorrectionDraft } from "./CorrectionPopover";
+import { correctionMove, NEW_APPLICATION, NEW_APPLICATION_STATUS, type CorrectionDraft } from "./CorrectionPopover";
 import { MailDetails } from "./MailDetails";
 import { CompactFolders, FOLDER_KEYS, MailFolders } from "./MailFolders";
 import { ListEmpty, ReauthCallouts, UpdatesMenu } from "./MailList";
 import { BundleRow, MailRow } from "./MailRow";
 import type { ReviewProposalVM } from "../../shared/model/blocks";
 import type { MailEmptyAction, MailFolderId, MailReviewModel, MailRowVM } from "./model";
-import { mailOutcomes, useMailOutcomes, type ReviewOutcome } from "./outcomes";
 import { ReadingPane } from "./ReadingPane";
 import type { ReviewLaterChoice } from "./ReviewLater";
 
@@ -81,15 +89,13 @@ const messages = defineMessages({
     id: "mail-review.toast.reviewLaterDate",
     defaultMessage: "We'll bring this email back on the day you picked",
   },
-  movedBack: { id: "mail-review.toast.movedBack", defaultMessage: "Moved {application} back to {status}" },
   markedSeen: {
     id: "mail-review.toast.markedSeen",
     defaultMessage: "{count, plural, one {Marked as seen} other {Marked # updates as seen}}",
   },
-  openingOriginal: { id: "mail-review.toast.openingOriginal", defaultMessage: "Opening the original email…" },
-  openingSignIn: {
-    id: "mail-review.toast.openingSignIn",
-    defaultMessage: "Opening the sign-in page in your browser…",
+  openOriginalFailed: {
+    id: "mail-review.toast.openOriginalFailed",
+    defaultMessage: "We couldn't open your inbox. Open it in your browser and search for the subject.",
   },
   reconnectOffline: {
     id: "mail-review.toast.reconnectOffline",
@@ -99,13 +105,16 @@ const messages = defineMessages({
     id: "mail-review.screen.errorDetail",
     defaultMessage: "Emails show up here once they load.",
   },
-  backfillLater: {
-    id: "mail-review.toast.backfillLater",
-    defaultMessage: "Reviewing the inbox scan isn't available in this version yet.",
+  addingInterview: {
+    id: "mail-review.toast.addingInterview",
+    defaultMessage: "Adding the interview to {application}…",
+  },
+  createdFromEmail: {
+    id: "mail-review.createdFromEmail",
+    defaultMessage: "Created from an email",
+    description: "Timeline reason of an application created while correcting an email",
   },
 });
-
-type MessageRow = Exclude<MailRowVM, { kind: "bundle" }>;
 
 const navId = (row: MailRowVM): string => (row.kind === "bundle" ? `bundle:${row.id}` : row.messageId);
 
@@ -136,7 +145,10 @@ export default function MailReviewScreen({ model }: ScreenProps<MailReviewModel>
   const { status: connection } = useConnectivity();
   const offline = connection === "offline";
   const { compact, narrow, wide } = useBreakpoints();
-  const outcomes = useMailOutcomes();
+  const held = useHeldDecisions();
+  const local = useMailLocal();
+  const actions = useMailActions();
+  const mail = useMailData();
   const listRef = useRef<HTMLUListElement>(null);
   /**
    * Where keyboard focus goes after the next render that can satisfy it: a row (after a decision
@@ -160,20 +172,24 @@ export default function MailReviewScreen({ model }: ScreenProps<MailReviewModel>
     });
 
   const folder = data?.folder ?? "review";
+  const now = new Date();
+  /** The stored email behind a row (the actions need the document, not its view-model). */
+  const messageOf = (messageId: string): MailMessage | undefined =>
+    mail.status === "ready" ? mail.data.mailMessages.find((message) => message.id === messageId) : undefined;
+  /** Gone from this folder: decided (To review; Not job mail everywhere) or snoozed (To review). */
   const hidden = (messageId: string): boolean => {
-    const decision = outcomes.reviewed.get(messageId);
-    return decision !== undefined && (decision.outcome === "notJobMail" || folder === "review");
+    const decision = held.get(messageId);
+    if (decision !== undefined && (decision.outcome === "notJobMail" || folder === "review")) return true;
+    return folder === "review" && isSnoozed(local, messageId, now);
   };
   const rows = (data?.rows ?? []).filter((row) => row.kind === "bundle" || !hidden(row.messageId));
   const messageIds = rows.flatMap((row) => (row.kind === "bundle" ? [] : [row.messageId]));
   const selection = data?.selected && !hidden(data.selected.messageId) ? data.selected : null;
-  const decision = selection ? outcomes.reviewed.get(selection.messageId) : undefined;
-  const pending =
-    selection?.mode === "review" && (decision === undefined || decision.outcome === "reviewLater");
+  const pending = selection?.mode === "review" && !held.has(selection.messageId);
   const activeId = activeBundle ?? selection?.messageId ?? null;
 
   const chipFor = (messageId: string): string | null => {
-    const outcome = outcomes.reviewed.get(messageId)?.outcome;
+    const outcome = held.get(messageId)?.outcome;
     if (!data || outcome === undefined) return null;
     if (outcome === "confirmed") return data.copy.reviewedChips.confirmed;
     return outcome === "corrected" ? data.copy.reviewedChips.corrected : null;
@@ -203,8 +219,17 @@ export default function MailReviewScreen({ model }: ScreenProps<MailReviewModel>
   };
 
   const openBundle = (row: Extract<MailRowVM, { kind: "bundle" }>) => {
-    if (row.target === "jobs") void navigate({ to: "/jobs" });
-    else toast.show({ variant: "info", message: intl.formatMessage(messages.backfillLater) });
+    if (row.target === "jobs") {
+      void navigate({ to: "/jobs" });
+      return;
+    }
+    keepFocusIn("review:");
+    setActiveBundle(null);
+    setSearch({ bundle: "backfill", messageId: undefined });
+  };
+  const closeBundle = () => {
+    keepFocusIn("review:");
+    setSearch({ bundle: undefined, messageId: undefined });
   };
 
   const nav = useListNavigation({
@@ -237,37 +262,52 @@ export default function MailReviewScreen({ model }: ScreenProps<MailReviewModel>
     }
   });
 
-  /** Records a decision, moves on to the next email and offers Undo. */
+  /**
+   * Records a decision (`apply` makes it and returns its Undo), moves on to the next email and
+   * offers Undo.
+   */
   const decide = (
     messageId: string,
-    outcome: ReviewOutcome,
-    category: MailCategory,
+    leavesAlways: boolean,
+    apply: () => () => void,
     message: string,
     glyph?: typeof CalendarClock,
   ) => {
     const index = messageIds.indexOf(messageId);
     const next = messageIds[index + 1] ?? messageIds[index - 1] ?? null;
-    const leaves = outcome === "notJobMail" || folder === "review";
+    const leaves = leavesAlways || folder === "review";
     if (leaves && next !== null && listRef.current?.contains(document.activeElement))
       pendingFocus.current = { row: next };
-    mailOutcomes.review(messageId, outcome, category);
+    const undo = apply();
     setCorrectionOpen(false);
     setReviewLaterOpen(false);
     if (leaves) select(next);
     toast.show({
       message,
       ...(glyph && { glyph }),
-      action: { label: intl.formatMessage(messages.undo), run: () => mailOutcomes.reopen(messageId) },
+      action: { label: intl.formatMessage(messages.undo), run: undo },
       openAfterUndo: () => select(messageId),
     });
   };
 
+  /** Holds a review decision on the stored email (`useMailActions().review`). */
+  const review = (
+    messageId: string,
+    outcome: ReviewOutcome,
+    toastMessage: string,
+    change?: ReviewChange,
+    glyph?: typeof CalendarClock,
+  ) => {
+    const stored = messageOf(messageId);
+    if (!stored) return;
+    decide(messageId, outcome === "notJobMail", () => actions.review(stored, outcome, change), toastMessage, glyph);
+  };
+
   const confirm = (messageId: string, proposal: ReviewProposalVM) => {
     const { move, company, category } = proposal;
-    decide(
+    review(
       messageId,
       "confirmed",
-      category.key,
       move
         ? intl.formatMessage(messages.confirmedMove, {
             application: move.applicationLabel,
@@ -279,39 +319,66 @@ export default function MailReviewScreen({ model }: ScreenProps<MailReviewModel>
 
   const notJobMail = () => {
     if (!selection) return;
-    decide(
-      selection.messageId,
-      "notJobMail",
-      selection.proposal.category.key,
-      intl.formatMessage(messages.notJobMailDone),
-      MailX,
-    );
+    review(selection.messageId, "notJobMail", intl.formatMessage(messages.notJobMailDone), undefined, MailX);
   };
 
   const saveCorrection = (draft: CorrectionDraft) => {
     if (!selection || !data) return;
-    const application =
-      draft.applicationId === NEW_APPLICATION
-        ? selection.newApplicationLabel
-        : data.correction.applications.find((candidate) => candidate.id === draft.applicationId)?.label;
-    const status = data.correction.statuses.find((candidate) => candidate.key === draft.status);
+    const stored = messageOf(selection.messageId);
+    if (!stored) return;
+    const creating = draft.applicationId === NEW_APPLICATION;
+    const application = creating
+      ? selection.newApplicationLabel
+      : data.correction.applications.find((candidate) => candidate.id === draft.applicationId)?.label;
+    const move = correctionMove(draft, data.correction, {
+      category: selection.proposal.category.key,
+      suggestedStatus: selection.proposal.move?.to.key ?? null,
+    });
     const category = data.correction.categories.find((candidate) => candidate.key === draft.category);
-    decide(
+    const at = new Date();
+    review(
       selection.messageId,
       "corrected",
-      draft.category,
-      application && status
-        ? intl.formatMessage(messages.correctedMove, { application, status: status.label })
+      application && move
+        ? intl.formatMessage(messages.correctedMove, { application, status: move.label })
         : intl.formatMessage(messages.correctedCategory, { category: category?.label ?? "" }),
+      {
+        category: draft.category,
+        applicationId: creating ? null : draft.applicationId,
+        ...(creating && {
+          newApplication: {
+            application: newApplication(
+              {
+                company: selection.proposal.company.name,
+                role: stored.extracted.role ?? "",
+                status: NEW_APPLICATION_STATUS,
+                source: stored.from.address.slice(stored.from.address.lastIndexOf("@") + 1),
+              },
+              at,
+            ),
+            reason: intl.formatMessage(messages.createdFromEmail),
+          },
+        }),
+      },
     );
   };
 
   const reviewLater = (choice: ReviewLaterChoice) => {
     if (!selection) return;
+    const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const until =
+      "preset" in choice
+        ? snoozeInstant({ preset: choice.preset }, new Date(), zone)
+        : snoozeDateInstant(choice.date, zone);
+    if (until === null) return;
+    const { messageId } = selection;
     decide(
-      selection.messageId,
-      "reviewLater",
-      selection.proposal.category.key,
+      messageId,
+      false,
+      () => {
+        mailLocal.snooze(messageId, until);
+        return () => mailLocal.unsnooze(messageId);
+      },
       "preset" in choice
         ? intl.formatMessage(messages.reviewLaterPreset, { preset: choice.preset })
         : intl.formatMessage(messages.reviewLaterDate),
@@ -328,42 +395,49 @@ export default function MailReviewScreen({ model }: ScreenProps<MailReviewModel>
         folder: undefined,
         category: undefined,
         messageId: undefined,
+        bundle: undefined,
       }),
     });
 
-  const openOriginal = () =>
-    toast.show({ variant: "info", message: intl.formatMessage(messages.openingOriginal) });
+  const openOriginal = () => {
+    const target = selection?.openOriginal;
+    if (!target) return;
+    openMailInbox(target.provider, target.email).catch(() =>
+      toast.show({ variant: "info", message: intl.formatMessage(messages.openOriginalFailed) }),
+    );
+  };
 
   const undoChange = (messageId: string) => {
-    const row = rows.find(
-      (candidate): candidate is MessageRow & { kind: "update" } =>
-        candidate.kind === "update" && candidate.messageId === messageId,
-    );
-    const change = row?.change ?? (selection?.messageId === messageId ? selection.change : null);
-    if (!change) return;
-    mailOutcomes.undoChange(messageId);
+    const stored = messageOf(messageId);
+    if (stored) actions.undoAutoChange(stored);
+  };
+
+  const addInterview = () => {
+    if (!selection) return;
+    const stored = messageOf(selection.messageId);
+    if (!stored) return;
+    actions.addInterview(stored);
     toast.show({
       variant: "info",
-      message: intl.formatMessage(messages.movedBack, {
-        application: `${change.company.name} · ${change.role}`,
-        status: change.from.label,
+      glyph: CalendarPlus,
+      message: intl.formatMessage(messages.addingInterview, {
+        application: selection.details.application?.label ?? selection.proposal.company.name,
       }),
     });
   };
 
   const markSeen = (ids: readonly string[]) => {
     if (ids.length === 0) return;
-    mailOutcomes.markSeen(ids);
+    mailLocal.markSeen(ids);
     toast.show({
       message: intl.formatMessage(messages.markedSeen, { count: ids.length }),
-      action: { label: intl.formatMessage(messages.undo), run: () => mailOutcomes.unmarkSeen(ids) },
+      action: { label: intl.formatMessage(messages.undo), run: () => mailLocal.unmarkSeen(ids) },
       extended: ids.length > 1,
     });
   };
 
   const emptyAction = (target: MailEmptyAction) => {
-    if (target === "connectEmail")
-      toast.show({ variant: "info", message: intl.formatMessage(messages.openingSignIn) });
+    if (target === "connectEmail") openMailConnect();
     else showFolder(target === "showUpdates" ? "updates" : "all");
   };
 
@@ -419,20 +493,24 @@ export default function MailReviewScreen({ model }: ScreenProps<MailReviewModel>
     })),
   ]);
 
-  const decidedCount = outcomes.reviewed.size;
-  const notJobCount = [...outcomes.reviewed.values()].filter(
-    (entry) => entry.outcome === "notJobMail",
-  ).length;
+  // Decided and snoozed emails leave To review at once; Not job mail leaves All job mail too.
+  const pendingIds =
+    mail.status === "ready"
+      ? mail.data.mailMessages.filter((message) => message.reviewState === "pending").map((message) => message.id)
+      : [];
+  const awayCount = pendingIds.filter((id) => held.has(id) || isSnoozed(local, id, now)).length;
+  const notJobCount = [...held.values()].filter((entry) => entry.outcome === "notJobMail").length;
   const folders = (data?.folders ?? []).map((candidate) => ({
     ...candidate,
     count:
       candidate.id === "review"
-        ? candidate.count - decidedCount
+        ? Math.max(0, candidate.count - awayCount)
         : candidate.id === "all"
           ? candidate.count - notJobCount
           : candidate.count,
   }));
   const folderTitle =
+    data?.bundle?.title ??
     data?.categories.find((category) => category.selected)?.label ??
     folders.find((candidate) => candidate.id === folder)?.label ??
     "";
@@ -449,12 +527,19 @@ export default function MailReviewScreen({ model }: ScreenProps<MailReviewModel>
       <ScreenTitle title={title} />
       {data && data.empty?.kind !== "noAccount" && (
         <div className="flex min-h-7 items-center gap-2">
+          {data.bundle && (
+            <IconButton size="sm" icon={ArrowLeft} label={data.bundle.backLabel} onClick={closeBundle} />
+          )}
           <h2 className="text-headline text-fg-primary min-w-0 flex-1 truncate">{folderTitle}</h2>
           {stamp}
           {folder === "updates" && rows.length > 0 && (
             <UpdatesMenu
               onMarkAllSeen={() =>
-                markSeen(messageIds.filter((id) => !outcomes.seen.has(id) && !outcomes.undone.has(id)))
+                markSeen(
+                  rows.flatMap((row) =>
+                    row.kind === "update" && !row.undone && !local.seen.has(row.messageId) ? [row.messageId] : [],
+                  ),
+                )
               }
             />
           )}
@@ -537,8 +622,8 @@ export default function MailReviewScreen({ model }: ScreenProps<MailReviewModel>
               row={row}
               nav={nav}
               chip={chipFor(row.messageId)}
-              undone={outcomes.undone.has(row.messageId)}
-              seen={outcomes.seen.has(row.messageId)}
+              undone={row.kind === "update" && row.undone}
+              seen={local.seen.has(row.messageId)}
               onSelect={() => {
                 select(row.messageId);
                 if (narrow) setDetailOpen(true);
@@ -565,12 +650,10 @@ export default function MailReviewScreen({ model }: ScreenProps<MailReviewModel>
       {data && (
         <ReauthCallouts
           reauth={data.reauth}
-          onReconnect={() =>
-            toast.show({
-              variant: "info",
-              message: intl.formatMessage(offline ? messages.reconnectOffline : messages.openingSignIn),
-            })
-          }
+          onReconnect={(accountId) => {
+            if (offline) toast.show({ variant: "info", message: intl.formatMessage(messages.reconnectOffline) });
+            else openMailConnect({ accountId });
+          }}
         />
       )}
       <div className="border-line-subtle mt-2 min-h-0 flex-1 overflow-y-auto border-t">
@@ -608,8 +691,7 @@ export default function MailReviewScreen({ model }: ScreenProps<MailReviewModel>
         model={data}
         chip={chipFor(selection.messageId) ?? selection.reviewedChip}
         pending={pending}
-        undone={outcomes.undone.has(selection.messageId)}
-        seen={outcomes.seen.has(selection.messageId)}
+        seen={local.seen.has(selection.messageId)}
         offline={offline}
         wide={wide}
         correctionOpen={correctionOpen}
@@ -625,6 +707,7 @@ export default function MailReviewScreen({ model }: ScreenProps<MailReviewModel>
           onUndoChange: () => undoChange(selection.messageId),
           onMarkSeen: () => markSeen([selection.messageId]),
           onOpenApplication: openApplication,
+          onAddInterview: addInterview,
         }}
       />
     );

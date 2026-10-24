@@ -30,8 +30,8 @@ import { EVENING_HOUR, QUIET_HOURS, SHORT_LEAD_MINUTES } from "../../data/tracke
 import { instantOfWallTime, zonedIsoDay, zonedWallTime } from "../../data/tracker/snooze";
 import type { ApplicationPatch, InterviewInput, SuggestionKind } from "../../data/tracker/writes";
 import type { ApplicationSummaryVM, NudgeVM, TimelineEventVM } from "../../shared/model/blocks";
-import { applicationSummaryVM, nudgeVMs, timelineVMs } from "../../shared/model/build-blocks";
-import { calendarDaysFromNow, dayAndTime, shortDate } from "../../shared/model/format";
+import { applicationSummaryVM, MAIL_CATEGORY_MESSAGES, nudgeVMs, timelineVMs } from "../../shared/model/build-blocks";
+import { calendarDaysFromNow, dayAndTime, relativeTime, shortDate } from "../../shared/model/format";
 import type { CompanyVM, ModelContext, ScreenData, StatusVM, TimeVM } from "../../shared/model/types";
 import { companyVM, STATUS_MESSAGES, statusVM } from "../../shared/model/vocabulary";
 
@@ -342,6 +342,19 @@ export interface InterviewVM {
   readonly ics: IcsFileVM;
 }
 
+/** An email linked to the application (Mail › the email). */
+export interface LinkedEmailVM {
+  readonly messageId: string;
+  readonly subject: string;
+  /** Sender name, else the address. */
+  readonly sender: string;
+  /** "Interview invite", "Decision". */
+  readonly category: string;
+  readonly receivedAt: TimeVM;
+  /** "Waiting for review" while pending, "Confirmed" / "Corrected", else null. */
+  readonly state: string | null;
+}
+
 export interface ApplicationDetailVM {
   readonly applicationId: string;
   /** "Brightwave · Frontend Engineer, Editor" (window title). */
@@ -356,6 +369,8 @@ export interface ApplicationDetailVM {
   readonly summary: ApplicationSummaryVM;
   /** Newest first. */
   readonly timeline: readonly TimelineEventVM[];
+  /** Job emails linked to this application, newest first. */
+  readonly emails: readonly LinkedEmailVM[];
   readonly documents: DocumentsVM;
   readonly contacts: readonly ContactVM[];
   readonly addressBook: readonly AddressBookEntryVM[];
@@ -390,8 +405,41 @@ export type ApplicationDetailModel =
 
 type DetailData = Pick<
   ScreenData,
-  "applications" | "applicationEvents" | "interviews" | "contacts" | "cvs" | "coverLetters" | "profile"
+  | "applications"
+  | "applicationEvents"
+  | "interviews"
+  | "contacts"
+  | "cvs"
+  | "coverLetters"
+  | "profile"
+  | "mailMessages"
 >;
+
+const EMAIL_STATES = defineMessages({
+  pending: { id: "application-detail.emails.pending", defaultMessage: "Waiting for your review" },
+  confirmed: { id: "application-detail.emails.confirmed", defaultMessage: "Confirmed" },
+  corrected: { id: "application-detail.emails.corrected", defaultMessage: "Corrected" },
+});
+
+function linkedEmailVMs(application: Application, data: DetailData, ctx: ModelContext): LinkedEmailVM[] {
+  return data.mailMessages
+    .filter((message) => message.applicationId === application.id && message.reviewState !== "dismissed")
+    .toSorted((a, b) => b.receivedAt.getTime() - a.receivedAt.getTime())
+    .map((message) => {
+      const state =
+        message.reviewState === "pending" || message.reviewState === "confirmed" || message.reviewState === "corrected"
+          ? ctx.intl.formatMessage(EMAIL_STATES[message.reviewState])
+          : null;
+      return {
+        messageId: message.id,
+        subject: message.subject,
+        sender: message.from.name ?? message.from.address,
+        category: ctx.intl.formatMessage(MAIL_CATEGORY_MESSAGES[message.category]),
+        receivedAt: relativeTime(message.receivedAt, ctx),
+        state,
+      };
+    });
+}
 
 export function buildApplicationDetailModel(
   data: DetailData,
@@ -428,6 +476,7 @@ export function buildApplicationDetailModel(
       snoozed: snoozedVM(application, data, ctx),
       summary: applicationSummaryVM(application, data, ctx),
       timeline: timelineVMs(application, data, ctx),
+      emails: linkedEmailVMs(application, data, ctx),
       documents: documentsVM(application, data, ctx),
       contacts: linked.toSorted(byName).map((contact) => contactVM(contact, ctx)),
       addressBook: data.contacts

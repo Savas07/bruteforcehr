@@ -11,11 +11,17 @@ import { RouteContainer } from "./components/RouteContainer";
 import { destinations, type DestinationId } from "./lib/destinations";
 import { InterviewReminders } from "./data/tracker/InterviewReminders";
 import { LiveTrackerProvider } from "./data/tracker/live";
+import { LiveMailProvider } from "./data/mail/live";
 import { AddApplicationHost } from "./features/application-add";
+import { MailConnectHost } from "./features/mail-connect";
+import { MailNotificationsHost } from "./features/settings";
+import LiveSettings from "./features/settings/Live";
+import { SETTINGS_START_PANE } from "./lib/settings";
 import LiveApplicationDetail from "./features/application-detail/Live";
 import LiveJobs from "./features/job-detail/Live";
 import LiveCvStudio from "./features/cv-editor/LiveCvStudio";
 import LiveInsights from "./features/insights/LiveInsights";
+import LiveMailReview from "./features/mail-review/Live";
 import LiveToday from "./features/today/Live";
 import LiveTrackerBoard from "./features/tracker-board/Live";
 import { LiveTrackerCalendar, LiveTrackerTable } from "./features/tracker-table/Live";
@@ -40,11 +46,11 @@ export const appRoutes = {
   mail: { path: "/mail", destination: "mail" },
   mailReview: { path: "/mail/review/$messageId", destination: "mail" },
   insights: { path: "/insights", destination: "insights" },
+  /** Settings › a pane (`Mod+,`, the menu, the sidebar row); not a numbered destination. */
+  settings: { path: "/settings/$pane", destination: null },
   /** Design builds only: the screen × state index and the shared-component demo. */
   design: { path: "/design", destination: null },
   designDemo: { path: "/design/demo", destination: null },
-  /** Settings › Data & privacy states until the Settings shell renders the pane. */
-  designDataPrivacy: { path: "/design/data-privacy", destination: null },
 } as const satisfies Record<string, { path: string; destination: DestinationId | null }>;
 
 export type AppRouteId = keyof typeof appRoutes;
@@ -65,25 +71,32 @@ function sectionTitle(id: AppRouteId): ComponentType {
   };
 }
 
-/** The signed-in shell with the app-wide tracker hosts (Mod+N dialog, interview reminders). */
+/** The signed-in shell with the app-wide hosts (Mod+N dialog, interview reminders). */
 function LiveRoot() {
   return (
     <AppShell
       hosts={
         <LiveTrackerProvider>
-          <AddApplicationHost />
-          <InterviewReminders />
+          <LiveMailProvider>
+            <AddApplicationHost />
+            <InterviewReminders />
+            <MailConnectHost />
+            <MailNotificationsHost />
+          </LiveMailProvider>
         </LiveTrackerProvider>
       }
     />
   );
 }
 
+/** A route on the signed-in user's tracker and mail listeners. */
 const live = (View: ComponentType): ComponentType =>
   function LiveRoute() {
     return (
       <LiveTrackerProvider>
-        <View />
+        <LiveMailProvider>
+          <View />
+        </LiveMailProvider>
       </LiveTrackerProvider>
     );
   };
@@ -100,8 +113,8 @@ function LiveTracker() {
 }
 
 /**
- * Production: CVs (M2), Today, Tracker, application detail and Insights (M3) and Jobs (M4) run on
- * live data; other areas show their title until their milestone.
+ * Production: CVs (M2), Today, Tracker, application detail and Insights (M3), Jobs (M4), Mail and
+ * Settings (M5) run on live data; other areas show their title until their milestone.
  */
 export const productionViews: RouteViews = {
   root: LiveRoot,
@@ -117,6 +130,9 @@ export const productionViews: RouteViews = {
     application: live(LiveApplicationDetail),
     jobs: live(LiveJobs),
     job: live(LiveJobs),
+    mail: live(LiveMailReview),
+    mailReview: live(LiveMailReview),
+    settings: live(LiveSettings),
   },
 };
 
@@ -153,9 +169,16 @@ export const router = createRouter({
     route("mail"),
     route("mailReview"),
     route("insights"),
+    createRoute({
+      getParentRoute: () => rootRoute,
+      path: "/settings",
+      component: function SettingsStart() {
+        return <Navigate to="/settings/$pane" params={{ pane: SETTINGS_START_PANE }} replace />;
+      },
+    }),
+    route("settings"),
     route("design"),
     route("designDemo"),
-    route("designDataPrivacy"),
   ]),
   // Hash history: Tauri serves index.html from its asset origin, so routes live in the fragment
   // and never cause a document navigation (the navigation guard in src-tauri stays strict).

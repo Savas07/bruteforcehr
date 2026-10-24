@@ -48,7 +48,17 @@ export const designScreenPaths = {
   "tracker-table": "/tracker?view=table",
   "tracker-calendar": "/tracker?view=calendar",
   "mail-review": "/mail",
+  /** Connect your email (`?connect=` picks the step, src/design/mail-connect.tsx). */
+  "mail-connect": "/settings/mail-accounts?connect=picker",
   insights: "/insights",
+  "settings-mail-accounts": "/settings/mail-accounts",
+  "settings-notifications": "/settings/notifications",
+  "settings-job-sources": "/settings/job-sources",
+  "settings-companies": "/settings/companies",
+  "settings-ai": "/settings/ai",
+  "settings-general": "/settings/general",
+  /** Data & privacy; `?privacy=` forces the export and delete states (src/design/data-privacy.tsx). */
+  "settings-data-privacy": "/settings/data-privacy",
 } as const;
 export type DesignScreenName = keyof typeof designScreenPaths;
 
@@ -219,10 +229,9 @@ export function csvCaptureFileName(
 }
 
 /**
- * Settings › Data & privacy states (`?privacy=<state>`, src/design/data-privacy.tsx), rendered in a
- * stand-in settings column until the Settings shell renders the pane: the export section (idle,
- * working, ready, saved, each failure, offline) and the delete dialog (typing, re-authenticating,
- * deleting, failures, offline).
+ * Settings › Data & privacy states (`?privacy=<state>`, src/design/data-privacy.tsx) in the Settings
+ * shell: the export section (idle, working, ready, saved, each failure, offline) and the delete
+ * dialog (typing, re-authenticating, deleting, failures, offline).
  */
 export const privacyDesignStates = [
   "idle",
@@ -248,8 +257,8 @@ export const privacyDesignStates = [
 ] as const;
 export type PrivacyDesignState = (typeof privacyDesignStates)[number];
 
-/** The design route that renders the pane with a stand-in page heading. */
-export const PRIVACY_DESIGN_PATH = "/design/data-privacy";
+/** The Settings pane the states render in. */
+export const PRIVACY_DESIGN_PATH = "/settings/data-privacy";
 
 /** The hash route of a Data & privacy state; the two offline states also force the connection. */
 export function privacyDesignHash(

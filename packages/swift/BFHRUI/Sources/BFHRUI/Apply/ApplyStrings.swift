@@ -85,6 +85,14 @@ enum ApplyStrings {
     static let copyLetter = LocalizedStringResource.bfhr("apply.files.copyLetter", default: "Copy cover letter text", table: "Apply")
     static let letterCopied = LocalizedStringResource.bfhr("apply.toast.letterCopied", default: "Cover letter copied", table: "Apply")
 
+    /// What a file is, for VoiceOver ("Your CV, PDF").
+    static func fileKind(_ kind: ApplyFile.Kind) -> LocalizedStringResource {
+        switch kind {
+        case .cv: .bfhr("apply.files.kind.cv", default: "Your CV, PDF", table: "Apply")
+        case .coverLetter: .bfhr("apply.files.kind.letter", default: "Your cover letter, PDF", table: "Apply")
+        }
+    }
+
     static func shareFile(_ name: String) -> LocalizedStringResource {
         .bfhr("apply.files.share", default: "Share \(name)", table: "Apply", comment: "%@ = file name.")
     }

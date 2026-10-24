@@ -513,7 +513,9 @@ struct ApplyFileRow: View {
                 .foregroundStyle(BFHRColor.Accent.text)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
+                // The file name is what the form's file picker shows; VoiceOver reads what it is.
                 Text(verbatim: file.fileName).font(.bfhr(.body)).foregroundStyle(BFHRColor.Fg.primary)
+                    .accessibilityLabel(Text(ApplyStrings.fileKind(file.kind)))
                 Text(verbatim: ByteCountFormatter.string(fromByteCount: Int64(file.sizeBytes), countStyle: .file))
                     .font(.bfhr(.footnote)).foregroundStyle(BFHRColor.Fg.secondary)
             }
@@ -524,7 +526,7 @@ struct ApplyFileRow: View {
                         .frame(minWidth: BFHRHitTarget.minimum, minHeight: BFHRHitTarget.minimum)
                 }
                 .buttonStyle(.borderless)
-                .accessibilityLabel(Text(ApplyStrings.shareFile(file.fileName)))
+                .accessibilityLabel(Text(ApplyStrings.shareFile(String(localized: ApplyStrings.fileKind(file.kind)))))
             }
         }
     }

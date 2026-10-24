@@ -65,8 +65,10 @@ export interface NavItem {
   label: string;
 }
 
-/** Header navigation. Only pages that exist are listed; Features joins when that page ships. */
+/** Header navigation. Only pages that exist are listed. */
 export const HEADER_NAV: readonly NavItem[] = [
+  { href: "/features/", label: "Features" },
+  { href: "/guide/", label: "Guide" },
   { href: "/download/", label: "Download" },
   { href: "/changelog/", label: "Changelog" },
   { href: "/support/", label: "Support" },
@@ -77,6 +79,7 @@ export const FOOTER_NAV: readonly { title: string; items: readonly NavItem[] }[]
   {
     title: "Product",
     items: [
+      { href: "/features/", label: "Features" },
       { href: "/download/", label: "Download" },
       { href: "/changelog/", label: "Changelog" },
     ],
@@ -84,6 +87,7 @@ export const FOOTER_NAV: readonly { title: string; items: readonly NavItem[] }[]
   {
     title: "Help",
     items: [
+      { href: "/guide/", label: "User guide" },
       { href: "/support/", label: "Support" },
       { href: "/support/#contact", label: "Report a problem" },
     ],

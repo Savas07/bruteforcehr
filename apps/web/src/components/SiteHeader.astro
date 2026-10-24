@@ -9,7 +9,9 @@ import { HEADER_NAV } from "../site.ts";
 import Wordmark from "./Wordmark.astro";
 
 const current = Astro.url.pathname.replace(/\/?$/, "/");
-const isCurrent = (href: string): boolean => current === href;
+/** `page` on the page itself, `true` inside its section (a User guide topic under Guide). */
+const currentFor = (href: string): "page" | "true" | undefined =>
+  current === href ? "page" : href !== "/" && current.startsWith(href) ? "true" : undefined;
 ---
 
 <header class="sticky top-0 z-(--bfhr-layer-sticky) px-3 pt-3 md:px-6">
@@ -33,7 +35,7 @@ const isCurrent = (href: string): boolean => current === href;
                 <a
                   href={item.href}
                   class="inline-flex min-h-11 items-center rounded-full bg-accent-solid px-5 text-prose font-semibold text-fg-on-accent transition-colors duration-(--bfhr-duration-fast) ease-standard hover:bg-accent-hover active:bg-accent-pressed"
-                  aria-current={isCurrent(item.href) ? "page" : undefined}
+                  aria-current={currentFor(item.href)}
                 >
                   {item.label}
                 </a>
@@ -42,8 +44,8 @@ const isCurrent = (href: string): boolean => current === href;
               <li>
                 <a
                   href={item.href}
-                  class="inline-flex min-h-11 items-center rounded-full px-4 text-prose font-medium text-fg-secondary transition-colors duration-(--bfhr-duration-fast) ease-standard hover:bg-surface-hover hover:text-fg-primary aria-[current=page]:bg-surface-selected aria-[current=page]:text-accent-text"
-                  aria-current={isCurrent(item.href) ? "page" : undefined}
+                  class="inline-flex min-h-11 items-center rounded-full px-4 text-prose font-medium text-fg-secondary transition-colors duration-(--bfhr-duration-fast) ease-standard hover:bg-surface-hover hover:text-fg-primary [&[aria-current]]:bg-surface-selected [&[aria-current]]:text-accent-text"
+                  aria-current={currentFor(item.href)}
                 >
                   {item.label}
                 </a>
@@ -79,8 +81,8 @@ const isCurrent = (href: string): boolean => current === href;
           <li>
             <a
               href={item.href}
-              class="flex min-h-12 items-center rounded-lg px-4 text-headline text-fg-primary transition-colors duration-(--bfhr-duration-fast) ease-standard hover:bg-surface-hover aria-[current=page]:bg-surface-selected aria-[current=page]:text-accent-text"
-              aria-current={isCurrent(item.href) ? "page" : undefined}
+              class="flex min-h-12 items-center rounded-lg px-4 text-headline text-fg-primary transition-colors duration-(--bfhr-duration-fast) ease-standard hover:bg-surface-hover [&[aria-current]]:bg-surface-selected [&[aria-current]]:text-accent-text"
+              aria-current={currentFor(item.href)}
             >
               {item.label}
             </a>

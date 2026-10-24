@@ -71,6 +71,19 @@ final class ScreenCaptureTests: XCTestCase {
             try captureSignIn(states: states, directory: directory, suffix: suffix)
             return
         }
+        if screens == ["share-sheet"] {
+            for state in states {
+                let app = XCUIApplication()
+                app.launchArguments += english + ["-BFHRShareSheet", state]
+                app.launch()
+                XCTAssertTrue(app.descendants(matching: .any)["share.sheet"].waitForExistence(timeout: 20), "share-sheet \(state)")
+                Thread.sleep(forTimeInterval: 1.2)
+                let file = directory.appendingPathComponent("share-sheet-\(state)-\(suffix).png")
+                try XCUIScreen.main.screenshot().pngRepresentation.write(to: file)
+                app.terminate()
+            }
+            return
+        }
 
         for screen in screens {
             for state in states {

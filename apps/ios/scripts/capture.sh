@@ -69,8 +69,10 @@ done
 contains() { local needle="$1"; shift; for item in "$@"; do [[ "$item" == "$needle" ]] && return 0; done; return 1; }
 update_states=(available required)
 sign_in_states=(email invalid offline check resent finishing confirm expired unusable retry)
+share_states=(reading ready ai existing saved logged blocked offline signed-out manual)
 update_gate=false
 sign_in=false
+share_sheet=false
 if contains update-gate ${screens[@]+"${screens[@]}"}; then
   ((${#screens[@]} == 1)) || { echo "capture.sh: capture update-gate on its own" >&2; exit 64; }
   update_gate=true
@@ -81,6 +83,11 @@ if contains sign-in ${screens[@]+"${screens[@]}"}; then
   sign_in=true
   ((${#states[@]} > 0)) || states=("${sign_in_states[@]}")
 fi
+if contains share-sheet ${screens[@]+"${screens[@]}"}; then
+  ((${#screens[@]} == 1)) || { echo "capture.sh: capture share-sheet on its own" >&2; exit 64; }
+  share_sheet=true
+  ((${#states[@]} > 0)) || states=("${share_states[@]}")
+fi
 ((${#states[@]} > 0)) || states=("${all_states[@]}")
 
 for theme in "${themes[@]}"; do
@@ -90,9 +97,9 @@ for size in "${sizes[@]}"; do
   contains "$size" default ax || { echo "capture.sh: size must be default or ax" >&2; exit 64; }
 done
 for screen in ${screens[@]+"${screens[@]}"}; do
-  contains "$screen" "${all_screens[@]}" update-gate sign-in || { echo "capture.sh: unknown screen $screen (${all_screens[*]} update-gate sign-in)" >&2; exit 64; }
+  contains "$screen" "${all_screens[@]}" update-gate sign-in share-sheet || { echo "capture.sh: unknown screen $screen (${all_screens[*]} update-gate sign-in share-sheet)" >&2; exit 64; }
 done
-if $update_gate; then valid_states=("${update_states[@]}"); elif $sign_in; then valid_states=("${sign_in_states[@]}"); else valid_states=("${all_states[@]}"); fi
+if $update_gate; then valid_states=("${update_states[@]}"); elif $sign_in; then valid_states=("${sign_in_states[@]}"); elif $share_sheet; then valid_states=("${share_states[@]}"); else valid_states=("${all_states[@]}"); fi
 for state in "${states[@]}"; do
   contains "$state" "${valid_states[@]}" || { echo "capture.sh: unknown state $state (${valid_states[*]})" >&2; exit 64; }
 done

@@ -1,10 +1,12 @@
 // Writes the Swift conformance inputs derived from @bfhr/core:
 // - conformance/state-machine.json (vectors the BFHRCore tests replay)
 // - conformance/insights.json (Insights metrics vectors)
+// - conformance/job-import.json (`jobImportUrl` responses from recorded pages)
 // - packages/swift/BFHRCore/Sources/BFHRCore/Models.swift (Codable models from the zod schemas)
 // `scripts/conformance.test.ts` fails when the committed files are stale.
 import { writeFile } from "node:fs/promises";
 import { buildInsightsVectors } from "./insights-vectors";
+import { buildJobImportVectors } from "./job-import-vectors";
 import { buildStateMachineVectors } from "./state-machine-vectors";
 import { renderSwiftModels } from "./swift-models";
 
@@ -31,9 +33,13 @@ await writeFile(
   `${lineJson(buildInsightsVectors())}\n`,
 );
 await writeFile(
+  new URL("../conformance/job-import.json", import.meta.url),
+  `${lineJson(buildJobImportVectors())}\n`,
+);
+await writeFile(
   new URL("../../swift/BFHRCore/Sources/BFHRCore/Models.swift", import.meta.url),
   renderSwiftModels(),
 );
 console.log(
-  "core: wrote conformance/state-machine.json, conformance/insights.json and swift/BFHRCore/Sources/BFHRCore/Models.swift",
+  "core: wrote conformance/{state-machine,insights,job-import}.json and swift/BFHRCore/Sources/BFHRCore/Models.swift",
 );

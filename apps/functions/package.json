@@ -16,6 +16,7 @@
     "chromium:local": "tsx scripts/local-chromium.ts",
     "print:local": "tsx scripts/print-local.ts",
     "smoke:ai": "node scripts/smoke-ai.ts",
+    "smoke:job-import": "tsx scripts/live-check-job-import.ts",
     "smoke:jobs": "tsx scripts/smoke-jobs.ts",
     "smoke:mail": "tsx scripts/smoke-mail.ts",
     "smoke:render": "tsx scripts/smoke-render.ts"

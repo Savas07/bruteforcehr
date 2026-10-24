@@ -55,6 +55,7 @@ export function profileView(profile: Profile | null): ProfileView {
   return {
     settings: profile?.settings ?? DEFAULT_PROFILE_SETTINGS,
     hiddenCompanies: profile?.hiddenCompanies ?? [],
+    defaultCvId: profile?.defaultCvId ?? null,
   };
 }
 

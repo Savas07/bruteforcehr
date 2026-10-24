@@ -5,6 +5,7 @@ import "./options";
 export { cvAssist } from "./ai/cv-assist";
 export { cvImport } from "./ai/cv-import";
 export { health } from "./health";
+export { jobImportUrl } from "./jobImport/job-import-url";
 export { jobMatchesRefresh, jobsSearch, savedSearchRunNow } from "./jobs/callables";
 export { savedSearchesRunner } from "./jobs/scheduler";
 export { jobCreatedMatch, watchlistResolve } from "./jobs/triggers";

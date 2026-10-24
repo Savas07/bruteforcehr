@@ -14,6 +14,7 @@ use crate::export_file::{self, ExportError};
 use crate::external_url::{self, ExternalUrlError};
 use crate::job_url::{self, JobUrlError, RateLimiter};
 use crate::mail_inbox::{self, MailProvider};
+use crate::mailto::{self, MailtoError, MailtoLimiter};
 use crate::menu;
 use crate::preferences::UpdateChannel;
 use crate::updater::{self, RestartError, UpdateSnapshot};
@@ -29,6 +30,10 @@ pub enum CommandError {
         message: String,
     },
     OpenFailed {
+        message: String,
+    },
+    /// Recipients, subject or body `open_mailto` can't put into a `mailto:` link.
+    InvalidMailto {
         message: String,
     },
     NoUpdateReady {
@@ -106,12 +111,44 @@ impl From<JobUrlError> for CommandError {
     }
 }
 
+impl From<MailtoError> for CommandError {
+    fn from(error: MailtoError) -> Self {
+        Self::InvalidMailto {
+            message: error.to_string(),
+        }
+    }
+}
+
+/// Opens a validated URL with the system handler (default browser, mail app).
 fn open<R: Runtime>(app: &AppHandle<R>, url: &url::Url) -> Result<(), CommandError> {
+    // E2E builds only: launching the real browser takes focus away from the app window (Windows
+    // then drops the next spec's key presses), so the URL is appended to `opened-urls.txt` in the
+    // export folder for the specs to read instead.
+    #[cfg(feature = "e2e")]
+    if let Some(directory) = std::env::var_os("BFHR_E2E_EXPORT_DIR") {
+        return record_opened_url(&std::path::PathBuf::from(directory), url).map_err(|error| {
+            CommandError::OpenFailed {
+                message: error.to_string(),
+            }
+        });
+    }
     app.opener()
         .open_url(url.as_str(), None::<&str>)
         .map_err(|error| CommandError::OpenFailed {
             message: error.to_string(),
         })
+}
+
+/// One URL per line, appended (E2E builds; see [`open`]).
+#[cfg(feature = "e2e")]
+fn record_opened_url(directory: &std::path::Path, url: &url::Url) -> std::io::Result<()> {
+    use std::io::Write;
+    std::fs::create_dir_all(directory)?;
+    let mut file = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(directory.join("opened-urls.txt"))?;
+    writeln!(file, "{url}")
 }
 
 /// Opens an allowlisted https URL (`external_url::ALLOWED_HOSTS`) in the default browser.
@@ -215,6 +252,26 @@ pub fn open_mail_inbox<R: Runtime>(
     email: &str,
 ) -> Result<(), CommandError> {
     open(&app, &mail_inbox::inbox_url(provider, email))
+}
+
+/// "Open in your mail app" (email apply without a sending account): a new message to `to` with
+/// `subject` and `body` in the default mail app. `mailto::build` checks the addresses and limits;
+/// at most 3 per 10 s.
+#[tauri::command]
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Tauri injects the AppHandle, State and arguments by value"
+)]
+pub fn open_mailto<R: Runtime>(
+    app: AppHandle<R>,
+    limiter: State<'_, MailtoLimiter>,
+    to: Vec<String>,
+    subject: &str,
+    body: &str,
+) -> Result<(), CommandError> {
+    let url = mailto::build(&to, subject, body)?;
+    limiter.0.try_acquire(Instant::now())?;
+    open(&app, &url)
 }
 
 /// The CV's self-contained HTML (`@bfhr/cv-render`) printed to a PDF on A4 or Letter pages,

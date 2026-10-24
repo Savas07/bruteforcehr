@@ -19,44 +19,60 @@ import {
   type Contact,
   type Interview,
   type Job,
+  type JobMatch,
   manualJob,
+  type Profile,
   revert,
+  type SavedSearch,
   transition,
 } from "@bfhr/core";
 
-/** Collections the tracker writes, with their entity types. */
+/** Collections the tracker and the Jobs area write, with their entity types. */
 export interface TrackerEntities {
   readonly applications: Application;
   readonly applicationEvents: ApplicationEvent;
   readonly interviews: Interview;
   readonly contacts: Contact;
   readonly jobs: Job;
+  readonly jobMatches: JobMatch;
+  readonly savedSearches: SavedSearch;
 }
 export type TrackerCollection = keyof TrackerEntities;
 
-/** Collections whose documents a client may update or delete (events are create-only). */
-export type MutableCollection = Exclude<TrackerCollection, "applicationEvents" | "jobs">;
+/** Collections a client creates documents in (matches are computed server-side). */
+export type CreatableCollection = Exclude<TrackerCollection, "jobMatches">;
+/** Collections whose documents a client may update (events are create-only). */
+export type UpdatableCollection = Exclude<TrackerCollection, "applicationEvents">;
+/** Collections whose documents a client may delete. */
+export type DeletableCollection = Exclude<TrackerCollection, "applicationEvents" | "jobs" | "jobMatches">;
+
+/**
+ * The profile fields the Jobs area changes: "Hide all jobs from {company}", "I have this" (a skill
+ * for matching) and the CV matches are scored against.
+ */
+export type ProfilePatch = Partial<Pick<Profile, "hiddenCompanies" | "skills" | "defaultCvId" | "updatedAt">>;
 
 export type TrackerWrite =
   | {
-      [C in TrackerCollection]: {
+      [C in CreatableCollection]: {
         readonly op: "create";
         readonly collection: C;
         readonly entity: TrackerEntities[C];
       };
-    }[TrackerCollection]
+    }[CreatableCollection]
   | {
-      [C in MutableCollection]: {
+      [C in UpdatableCollection]: {
         readonly op: "update";
         readonly collection: C;
         readonly id: string;
         readonly patch: Partial<Omit<TrackerEntities[C], "id">>;
       };
-    }[MutableCollection]
-  | { readonly op: "delete"; readonly collection: MutableCollection; readonly id: string };
+    }[UpdatableCollection]
+  | { readonly op: "delete"; readonly collection: DeletableCollection; readonly id: string }
+  | { readonly op: "updateProfile"; readonly patch: ProfilePatch };
 
 /** A new document id in `collection` (Firestore auto ids; counters in memory). */
-export type NewId = (collection: TrackerCollection) => string;
+export type NewId = (collection: CreatableCollection) => string;
 
 // ─── Applications ──────────────────────────────────────────────────────────────────────────────
 

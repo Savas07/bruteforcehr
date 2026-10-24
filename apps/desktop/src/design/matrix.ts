@@ -31,6 +31,14 @@ export const designScreenPaths = {
   demo: "/design/demo",
   today: "/today",
   "job-detail": "/jobs",
+  /** Filters open over the list (the on-demand search with the filter popovers). */
+  "jobs-search": "/jobs?q=react&filters=1",
+  /** Saved searches: the manage dialog over the list. */
+  "saved-searches": "/jobs?searches=manage",
+  /** Paste a link: the import dialog over the list. */
+  "jobs-import": "/jobs?import=1",
+  /** Apply by email: the composer over a posting that asks for email (design build: src/design/jobs.tsx). */
+  apply: "/jobs/job-fernweh-frontend?apply=1",
   "cv-editor": "/cvs",
   "tracker-board": "/tracker",
   /** An application with an automatic move (Undo), an interview, a contact and a pinned CV. */

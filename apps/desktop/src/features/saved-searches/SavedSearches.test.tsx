@@ -88,6 +88,8 @@ function setup(dataset: FixtureDataset) {
       sendEmail: unused,
       cancelEmail: unused,
       sendEmailNow: unused,
+      tailorCv: unused,
+      draftCoverLetter: unused,
     },
   );
 }

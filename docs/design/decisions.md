@@ -417,6 +417,30 @@ Explicitly **not stored**:
 - **Why:** one toggle answers the question once instead of per place on a small screen; the four currencies cover every target market, and other currencies can be added when a market is; a second text button at the bottom of step 3 would sit next to the Skip that already does the same; the review step would break the ≤ 30 s CV budget.
 - **Affects:** onboarding-signin (iOS Screens 3–4, Finish), settings-account (Job preferences on iPhone).
 
+## Desktop chrome
+
+### D43 · macOS Tab reaches links always, buttons per the system setting
+
+- **Decision:** the macOS window's WKWebView has `tabFocusesLinks` on, so Tab always reaches links (the sidebar sections, Settings, in-page links). Buttons and other controls follow macOS's own Keyboard navigation setting (System Settings › Keyboard), as in every Mac app; the app doesn't override it. Windows (WebView2) tabs to everything.
+- **Why:** without it the sidebar was unreachable by Tab on macOS even with Keyboard navigation on (that setting doesn't cover links in a web view). Forcing buttons into the Tab order would diverge from native Mac apps.
+- **Affects:** sidebar, every desktop screen ([keyboard-pass.md](critiques/desktop/keyboard-pass.md)); `src-tauri/src/window.rs`.
+
+## Apply (M4 desktop)
+
+### D44 · Tailor review offers "Accept all"
+
+- **Options:** (a) no bulk accept (research/apply.md: only "Keep original for the rest", since bulk acceptance can add content unseen); (b) "Accept all" beside "Keep original for the rest".
+- **Decision:** (b), at the owner's request (M4 desktop Apply). "Accept all" accepts every suggestion **without a `[gap]`**; suggestions with a gap stay "Keep original". Every card stays visible with its decision, "Decide again" reverts one, the preview shows the result before saving, and the disclosure ("AI suggestions. Check every change before saving.") stays in the rail header. Nothing is stored until "Save as new version".
+- **Why:** the server already drops any edit whose facts aren't in the CV or the posting (ADR 0010), and the saved result is a separate version for one application, never the CV itself (D45); one click for a reviewed set is what the owner asked for.
+- **Affects:** apply (Tailor review, desktop; iOS when built).
+
+### D45 · Pins before applying are the current choice and can be replaced
+
+- **Options:** (a) pins are write-once from the first write, before and after applying; (b) write-once only from `appliedAt` on (what the rules enforce), replaceable before.
+- **Decision:** (b). A tailored version is pinned on the Saved/Preparing application so the composer, the kit and "Yes, I applied" use it; when the user applies with another CV or adds the PDFs and cover letter, `planRecordApplied` replaces the pre-apply pins with what was actually used. From `appliedAt` on only empty pins are filled (ADR 0002).
+- **Why:** before applying, a pin records intent ("use the tailored version"); keeping the first one would pin a CV the user switched away from, which breaks §4.4.4's "the exact CV used".
+- **Affects:** apply, job-detail ("Yes, I applied"), tracker (pins shown on the detail).
+
 ## Other open questions resolved
 
 | Question                                                   | Decision                                                                                                                                                                                                           | Doc                      |

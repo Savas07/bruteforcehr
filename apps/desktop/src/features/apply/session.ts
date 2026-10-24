@@ -21,6 +21,8 @@ export interface ApplySession {
   readonly sendAt: Date | null;
   /** "I sent it" recorded this application. */
   readonly recordedApplicationId: string | null;
+  /** The kit's PDFs saved to `Downloads/BruteForceHR`, for exactly the PDF set `key`. */
+  readonly kitPaths?: { readonly key: string; readonly cv: string | null; readonly letter: string | null };
 }
 
 export const applySessions = new Map<string, ApplySession>();

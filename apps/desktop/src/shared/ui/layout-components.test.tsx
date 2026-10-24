@@ -146,7 +146,13 @@ describe("DetailSidePanel", () => {
   const panelWidth = () =>
     container.querySelector<HTMLElement>('aside[aria-label="Application details"]')?.style.width;
   const panel = (width?: { min: number; default: number; max: number }) => (
-    <DetailSidePanel open label="Application details" onClose={() => undefined} {...(width && { width })}>
+    <DetailSidePanel
+      open
+      label="Application details"
+      keysGroup="Application panel"
+      onClose={() => undefined}
+      {...(width && { width })}
+    >
       <p>details</p>
     </DetailSidePanel>
   );

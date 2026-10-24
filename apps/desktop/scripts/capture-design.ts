@@ -4,6 +4,7 @@
 //     [--engines webkit,chromium] [--themes light,dark] [--sizes 1280x800,1920x1080] [--scale 1]
 //     [--locale en|tr|de] [--axe] [--update-states ready,notes,…] [--auth-states email,check-email,…]
 //     [--csv-states pick,columns,…] [--privacy-states idle,ready,delete-typed,…]
+//     [--chrome-states palette,shortcuts,rail,…]
 //
 // The `update` target captures the update UI states instead (`updateDesignStates`, over Today, each
 // at its own size: the rail state is 600 px wide) as update-<state>-<theme>-<w>x<h>.png, all audited.
@@ -13,6 +14,10 @@
 // every size as tracker-csv-<state>-<theme>-<w>x<h>.png, audited at the first size.
 // The `data-privacy` target captures Settings › Data & privacy (`privacyDesignStates`: export and
 // delete dialog) at every size as data-privacy-<state>-<theme>-<w>x<h>.png, audited at the first size.
+// The `chrome` target opens the command palette, the shortcuts sheet and the narrow rail with the
+// keyboard (`chromeDesignStates`, each at its own size) as chrome-<state>-<theme>-<w>x<h>.png, all
+// audited. Each of these starts from a fresh page load, and so does the shot after it, so an
+// overlay never leaks into the next capture.
 //
 // --axe also runs axe-core (WCAG 2.1 A + AA tags) on every screen × state × theme in each engine,
 // writes artifacts/a11y/desktop/<screen>-<state>-<theme>-<engine>.json, prints one line per page
@@ -38,6 +43,11 @@ import {
   authDesignStates,
   CAPTURE_LOCALES,
   CAPTURE_PIN,
+  chromeCaptureFileName,
+  chromeCaptureSize,
+  chromeDesignHash,
+  type ChromeDesignState,
+  chromeDesignStates,
   type CaptureLanguage,
   captureFileName,
   csvCaptureFileName,
@@ -92,7 +102,8 @@ Update:  update [--update-states ${updateDesignStates.join(",")}]
 Sign-in: sign-in [--auth-states ${authDesignStates.join(",")}]
 CSV:     tracker-csv [--csv-states ${csvDesignStates.join(",")}]
 Privacy: data-privacy [--privacy-states ${privacyDesignStates.join(",")}]
-Onboarding: onboarding [--onboarding-states ${onboardingDesignStates.join(",")}]`);
+Onboarding: onboarding [--onboarding-states ${onboardingDesignStates.join(",")}]
+Chrome:  chrome [--chrome-states ${chromeDesignStates.join(",")}]`);
   process.exit(2);
 }
 
@@ -123,7 +134,7 @@ for (let index = 0; index < argv.length; index += 1) {
 const runAxe = enabled.has("axe");
 const screenNames = Object.keys(designScreenPaths) as DesignScreenName[];
 if (positional.length === 0)
-  usage("Name at least one screen (or all, update, sign-in, tracker-csv, data-privacy, onboarding).");
+  usage("Name at least one screen (or all, update, sign-in, tracker-csv, data-privacy, onboarding, chrome).");
 /** `update` captures the update UI states (over Today) instead of a screen's five states. */
 const wantsUpdate = positional.includes("update");
 /** `sign-in` captures the signed-out window's states. */
@@ -134,12 +145,15 @@ const wantsCsv = positional.includes("tracker-csv");
 const wantsPrivacy = positional.includes("data-privacy");
 /** `onboarding` captures the first-run wizard's states. */
 const wantsOnboarding = positional.includes("onboarding");
+/** `chrome` captures the palette, the shortcuts sheet and the narrow rail. */
+const wantsChrome = positional.includes("chrome");
 const targets: Readonly<Record<string, true>> = {
   update: true,
   "sign-in": true,
   "tracker-csv": true,
   "data-privacy": true,
   onboarding: true,
+  chrome: true,
 };
 const screens: DesignScreenName[] = positional.includes("all")
   ? screenNames
@@ -163,6 +177,9 @@ const privacyStates = wantsPrivacy
   : [];
 const onboardingStates = wantsOnboarding
   ? pick<OnboardingDesignState>(options["onboarding-states"], onboardingDesignStates, "onboarding state")
+  : [];
+const chromeStates = wantsChrome
+  ? pick<ChromeDesignState>(options["chrome-states"], chromeDesignStates, "chrome state")
   : [];
 const themes = pick<CaptureTheme>(options["themes"], captureThemes, "theme");
 const engineNames = pick<EngineName>(options["engines"], Object.keys(engines) as EngineName[], "engine");
@@ -229,11 +246,45 @@ async function audit(page: Page, name: string): Promise<AuditSummary> {
     needsReview: results.incomplete.reduce((sum, result) => sum + result.nodes.length, 0),
   };
 }
-/** One capture: the route to open, the PNG name and the axe report name (null: no audit). */
+/**
+ * One capture: the route to open, the PNG name, the axe report name (null: no audit) and the
+ * keyboard steps that open an overlay after the route renders (chrome states).
+ */
 interface Shot {
   readonly hash: (platform: string) => string;
   readonly file: (theme: CaptureTheme) => string;
   readonly audit: ((theme: CaptureTheme, engine: EngineName) => string) | null;
+  readonly prepare?: (page: Page, platform: string) => Promise<void>;
+}
+
+/** Opens a chrome state with the keyboard, like a person would (⌘ on macOS, Ctrl on Windows). */
+async function prepareChrome(state: ChromeDesignState, page: Page, platform: string): Promise<void> {
+  const mod = platform === "macos" ? "Meta" : "Control";
+  switch (state) {
+    case "palette":
+    case "palette-filtered":
+    case "palette-empty": {
+      await page.keyboard.press(`${mod}+k`);
+      const input = page.locator("[cmdk-input]");
+      await input.waitFor();
+      if (state === "palette-filtered") await input.pressSequentially("mail");
+      if (state === "palette-empty") await input.pressSequentially("salary");
+      return;
+    }
+    case "shortcuts":
+    case "shortcuts-panel":
+      await page.keyboard.press(`${mod}+/`);
+      await page.locator('[role="dialog"]').last().waitFor();
+      return;
+    case "rail":
+      return;
+    case "rail-focus":
+      // Tab from the document start: "Jump to…", then Today, which shows its tooltip.
+      await page.keyboard.press("Tab");
+      await page.keyboard.press("Tab");
+      await page.getByRole("tooltip").waitFor();
+      return;
+  }
 }
 
 /** Captures sharing one viewport (one browser context). */
@@ -270,20 +321,33 @@ const batches: Batch[] = sizes.map((size, sizeIndex) => ({
     })),
   ],
 }));
-// Update states pick their own size (the rail state needs the narrow window); every one is audited.
-const updateBatches = new Map<string, { size: Batch["size"]; shots: Shot[] }>();
+// Update and chrome states pick their own size (the rail states need the narrow window); every
+// one is audited.
+const ownSizeBatches = new Map<string, { size: Batch["size"]; shots: Shot[] }>();
+function addOwnSize(size: Batch["size"], shot: Shot): void {
+  const key = `${size.width}x${size.height}`;
+  const batch = ownSizeBatches.get(key) ?? { size, shots: [] };
+  ownSizeBatches.set(key, batch);
+  batch.shots.push(shot);
+}
 for (const state of updateStates) {
   const size = updateCaptureSize(state);
-  const key = `${size.width}x${size.height}`;
-  const batch = updateBatches.get(key) ?? { size, shots: [] };
-  updateBatches.set(key, batch);
-  batch.shots.push({
+  addOwnSize(size, {
     hash: (platform) => updateDesignHash(state, routeExtras(platform)),
     file: (theme) => updateCaptureFileName(state, theme, size),
     audit: (theme, engine) => `update-${state}-${theme}-${engine}`,
   });
 }
-batches.push(...updateBatches.values());
+for (const state of chromeStates) {
+  const size = chromeCaptureSize(state);
+  addOwnSize(size, {
+    hash: (platform) => chromeDesignHash(state, routeExtras(platform)),
+    file: (theme) => chromeCaptureFileName(state, theme, size),
+    audit: (theme, engine) => `chrome-${state}-${theme}-${engine}`,
+    prepare: (page, platform) => prepareChrome(state, page, platform),
+  });
+}
+batches.push(...ownSizeBatches.values());
 if (authStates.length > 0)
   batches.push({
     size: captureSizes[0],
@@ -320,16 +384,27 @@ try {
           });
           // The platform is read once at load, so load the app per context with its platform.
           await page.goto(`${baseUrl}${first.hash(engine.platform)}`);
+          // Overlays opened with the keyboard stay open across a hash change, so a prepared shot
+          // and the shot after it start from a fresh page load.
+          let overlayOpen = false;
           for (const shot of shots) {
-            await page.evaluate(
-              ({ attribute, hash }) => {
-                document.documentElement.removeAttribute(attribute);
-                window.location.hash = hash;
-              },
-              { attribute: DESIGN_READY_ATTRIBUTE, hash: shot.hash(engine.platform) },
-            );
+            const hash = shot.hash(engine.platform);
+            if (overlayOpen || (shot.prepare !== undefined && shot !== first)) {
+              await page.goto("about:blank");
+              await page.goto(`${baseUrl}${hash}`);
+            } else {
+              await page.evaluate(
+                ({ attribute, hash }) => {
+                  document.documentElement.removeAttribute(attribute);
+                  window.location.hash = hash;
+                },
+                { attribute: DESIGN_READY_ATTRIBUTE, hash },
+              );
+            }
             await page.waitForSelector(`html[${DESIGN_READY_ATTRIBUTE}="true"]`, { state: "attached" });
             await page.mouse.move(size.width - 1, size.height - 1);
+            await shot.prepare?.(page, engine.platform);
+            overlayOpen = shot.prepare !== undefined;
             const file = path.join(outputDir, shot.file(theme));
             await page.screenshot({ path: file, animations: "disabled", caret: "hide" });
             written.push(path.relative(repoRoot, file));

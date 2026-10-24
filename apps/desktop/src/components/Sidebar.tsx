@@ -160,8 +160,9 @@ export function Sidebar({
           showKeycaps={false}
           onClick={onOpenShortcuts}
         />
-        {/* The sync line (states.md "Desktop: offline and sync status"); hidden until there's data. */}
-        <div className="narrow:hidden">
+        {/* The sync line (states.md "Desktop: offline and sync status"); hidden until there's data.
+            px-2 lines its glyph up with the row icons above. */}
+        <div className="px-2 narrow:hidden">
           <SyncStatus variant="sidebar" />
         </div>
       </div>

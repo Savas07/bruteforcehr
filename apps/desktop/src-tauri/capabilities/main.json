@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "main",
-  "description": "The main window: native-menu, update-status, sign-in-link and mail-connect events, dragging the window by the macOS toolbar rows, setting the window theme (Settings › Appearance), opening allowlisted https links, public https job-posting links, webmail inboxes and a new message in the default mail app (checked mailto links, email apply), the app's own update commands (status, check, restart to update, Stable/Beta channel), sign-in commands (take the checked sign-in link, report the signed-in state to the menu), take the checked mail connect result (bruteforcehr://connected), export commands (print the CV's HTML to a PDF offline, save an exported file such as a CV, an interview .ics, a CSV or the account export ZIP through the native Save dialog) and the notification plugin's permission check, permission request and notify (opt-in interview prep reminders and mail notifications). The updater, deep-link and dialog plugins' commands are not granted; the hidden CV print windows get no capability.",
+  "description": "The main window: native-menu, update-status, sign-in-link and mail-connect events, dragging the window by the macOS toolbar rows, setting the window theme (Settings › Appearance), opening allowlisted https links, public https job-posting links, webmail inboxes and a new message in the default mail app (checked mailto links, email apply), the app's own update commands (status, check, restart to update, Stable/Beta channel), sign-in commands (take the checked sign-in link, report the signed-in state to the menu), take the checked mail connect result (bruteforcehr://connected), export commands (print the CV's HTML to a PDF offline, save an exported file such as a CV, an interview .ics, a CSV or the account export ZIP through the native Save dialog), the application kit's PDFs (save to Downloads/BruteForceHR, open or reveal only files there) and the notification plugin's permission check, permission request and notify (opt-in interview prep reminders and mail notifications). The updater, deep-link and dialog plugins' commands are not granted; the hidden CV print windows get no capability.",
   "windows": ["main"],
   "permissions": [
     "core:event:allow-listen",
@@ -22,6 +22,9 @@
     "allow-open-mailto",
     "allow-print-cv-pdf",
     "allow-save-export",
+    "allow-save-kit-file",
+    "allow-open-kit-file",
+    "allow-reveal-kit-file",
     "notification:allow-is-permission-granted",
     "notification:allow-request-permission",
     "notification:allow-notify"

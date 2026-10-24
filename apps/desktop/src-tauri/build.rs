@@ -16,6 +16,9 @@ fn main() {
             "open_mailto",
             "print_cv_pdf",
             "save_export",
+            "save_kit_file",
+            "open_kit_file",
+            "reveal_kit_file",
         ]))
         // tauri-build would put the Windows application manifest into the app's resources,
         // which only the `bruteforcehr` binary links; the linker embeds it below instead.

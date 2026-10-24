@@ -56,7 +56,7 @@ struct OnboardingModelTests {
         )
         content.basics?.location = ResumeLocation(city: "Berlin", countryCode: "de")
         content.work = [ResumeWork(position: "Product Designer"), ResumeWork(position: "senior product designer"), ResumeWork(position: "UX Designer")]
-        content.skills = [ResumeSkill(name: "Figma", keywords: ["Prototyping", "figma"])]
+        content.skills = [ResumeSkill(name: "Design", keywords: ["Figma", "Prototyping", "figma"]), ResumeSkill(name: "Sketch")]
         content.languages = [ResumeLanguage(language: "Türkçe", fluency: "Ana dil"), ResumeLanguage(language: "English", fluency: "C1"),
                              ResumeLanguage(language: "Deutsch", fluency: "Grundkenntnisse")]
         return content
@@ -169,7 +169,7 @@ struct OnboardingModelTests {
         model.start()
         model.cvRead(Self.cv, cvId: "cv-1", fileName: "cv.pdf", kind: .pdf)
         await settle()
-        #expect(model.cv == .found(fileName: "cv.pdf", kind: .pdf, roles: 3, skills: 2))
+        #expect(model.cv == .found(fileName: "cv.pdf", kind: .pdf, roles: 3, skills: 3))
         #expect(model.draft.fullName == "Deniz Aksoy")
         #expect(model.draft.roles == ["Senior Product Designer", "Product Designer"])
         #expect(model.roleSuggestions == ["UX Designer"])
@@ -180,7 +180,7 @@ struct OnboardingModelTests {
         #expect(!model.showsNameField, "the CV named the user")
         let profile = try #require(recorder.lastProfile)
         #expect(profile.defaultCvId == "cv-1")
-        #expect(profile.skills == ["figma", "prototyping"])
+        #expect(profile.skills == ["figma", "prototyping", "sketch"], "group names with keywords aren't skills")
         #expect(profile.fullName == "Deniz Aksoy")
         // Editing a pre-filled value drops its tag only.
         model.draft.removeRole("Product Designer")

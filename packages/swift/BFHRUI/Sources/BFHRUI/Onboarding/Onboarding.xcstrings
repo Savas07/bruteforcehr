@@ -628,19 +628,111 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "%1$lld Rollen und %2$lld Fähigkeiten gefunden"
+            "value": "%1$@ und %2$@ gefunden"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Found %1$lld roles and %2$lld skills"
+            "value": "Found %1$@ and %2$@"
           }
         },
         "tr": {
           "stringUnit": {
             "state": "translated",
-            "value": "%1$lld pozisyon ve %2$lld beceri bulundu"
+            "value": "%1$@ ve %2$@ bulundu"
+          }
+        }
+      }
+    },
+    "onboarding.cv.found.role": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 Rolle"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 role"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 pozisyon"
+          }
+        }
+      }
+    },
+    "onboarding.cv.found.roles": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Rollen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld roles"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld pozisyon"
+          }
+        }
+      }
+    },
+    "onboarding.cv.found.skill": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 Fähigkeit"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 skill"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 beceri"
+          }
+        }
+      }
+    },
+    "onboarding.cv.found.skills": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Fähigkeiten"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld skills"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld beceri"
           }
         }
       }
@@ -756,6 +848,29 @@
           "stringUnit": {
             "state": "translated",
             "value": "LinkedIn verilerinizi alın"
+          }
+        }
+      }
+    },
+    "onboarding.cv.read": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein Lebenslauf wurde gelesen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Read your CV"
+          }
+        },
+        "tr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Özgeçmişiniz okundu"
           }
         }
       }

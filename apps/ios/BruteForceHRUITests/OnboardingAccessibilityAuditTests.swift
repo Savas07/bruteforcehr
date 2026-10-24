@@ -127,6 +127,14 @@ final class OnboardingAccessibilityAuditTests: XCTestCase {
 
     // MARK: Behavior
 
+    /// A short drag without momentum.
+    @MainActor
+    private func drag(_ app: XCUIApplication) {
+        let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.7))
+        let end = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.4))
+        start.press(forDuration: 0.05, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 0.3)
+    }
+
     /// Start from scratch → Preferences (a typed role, Germany asks about the EU) → Finish names
     /// the role; Back returns; the step label follows.
     @MainActor
@@ -144,12 +152,12 @@ final class OnboardingAccessibilityAuditTests: XCTestCase {
         roleField.tap()
         roleField.typeText("Platform Engineer\n")
         XCTAssertTrue(app.buttons["Remove Platform Engineer"].waitForExistence(timeout: 5), "the role became a removable token")
-        let germany = app.buttons["prefs.market.DE"]
-        for _ in 0..<6 where !germany.isHittable { app.swipeUp() }
+        let germany = app.descendants(matching: .any)["prefs.market.DE"].firstMatch
+        for _ in 0..<10 where !(germany.exists && germany.isHittable) { drag(app) }
         germany.tap()
         XCTAssertTrue(germany.isSelected)
         let question = app.staticTexts["Can you work in the EU / EEA without sponsorship?"]
-        for _ in 0..<6 where !question.exists { app.swipeUp() }
+        for _ in 0..<10 where !(question.exists && question.isHittable) { drag(app) }
         XCTAssertTrue(question.exists, "an EU pick asks about the EU / EEA")
         app.buttons["onboarding.continue"].tap()
 
@@ -160,10 +168,18 @@ final class OnboardingAccessibilityAuditTests: XCTestCase {
         app.buttons["onboarding.back"].tap()
         XCTAssertTrue(app.textFields["prefs.roles.field"].waitForExistence(timeout: 5))
         app.buttons["onboarding.continue"].tap()
-        app.buttons["onboarding.finish"].tap()
-        let finish = app.buttons["onboarding.finish"]
-        let disabled = XCTNSPredicateExpectation(predicate: NSPredicate(format: "isEnabled == false"), object: finish)
-        _ = XCTWaiter().wait(for: [disabled], timeout: 2)
+        XCTAssertTrue(app.buttons["Start searching"].waitForExistence(timeout: 5))
+    }
+
+    /// D40: with no role and no place, Finish offers Back to preferences, which goes back.
+    @MainActor
+    func testNothingToSearchGoesBack() throws {
+        let app = launch(["-BFHROnboarding", "finish-nothing"])
+        XCTAssertTrue(element(app, "onboarding").waitForExistence(timeout: 20))
+        XCTAssertFalse(element(app, "onboarding.finish.summary").exists)
+        XCTAssertTrue(app.buttons["Go to Today"].exists)
+        app.buttons["onboarding.finish.back"].tap()
+        XCTAssertTrue(app.textFields["prefs.roles.field"].waitForExistence(timeout: 5))
     }
 
     /// Settings › Job preferences: the row opens the page; Seniority opens its editor and a chip
@@ -177,7 +193,7 @@ final class OnboardingAccessibilityAuditTests: XCTestCase {
         let seniority = app.buttons["jobPreferences.seniority"]
         XCTAssertTrue(seniority.waitForExistence(timeout: 5))
         seniority.tap()
-        let principal = app.buttons["prefs.seniority.principal"]
+        let principal = app.descendants(matching: .any)["prefs.seniority.principal"].firstMatch
         XCTAssertTrue(principal.waitForExistence(timeout: 5))
         principal.tap()
         XCTAssertTrue(principal.isSelected)

@@ -455,7 +455,9 @@ struct OnboardingFinishStep: View {
                     }
                 }
                 .buttonStyle(.bfhr(primaryAction ? .primary : .secondary, fullWidth: true))
-                .disabled(model.isFinishing)
+                // Busy keeps the button's colors (the disabled style washed the label out); taps are
+                // ignored (`finish` also refuses a second run) and VoiceOver reads "Setting up…".
+                .allowsHitTesting(!model.isFinishing)
                 .accessibilityIdentifier("onboarding.finish")
             }
         }
@@ -470,15 +472,20 @@ struct OnboardingFinishStep: View {
         return model.canSearch ? OnboardingStrings.finishBody : OnboardingStrings.nothingToSearch
     }
 
+    /// Title over value: long values (several places, long role titles) wrap under their title
+    /// instead of squeezing beside it.
     private func summaryRow(_ title: LocalizedStringResource, value: Text) -> some View {
-        LabeledContent {
-            value
-                .foregroundStyle(BFHRColor.Fg.secondary)
-                .multilineTextAlignment(.trailing)
-        } label: {
+        VStack(alignment: .leading, spacing: 2) {
             Text(title)
+                .font(.bfhr(.footnote))
+                .foregroundStyle(BFHRColor.Fg.secondary)
+            value
+                .font(.bfhr(.body))
                 .foregroundStyle(BFHRColor.Fg.primary)
+                .fixedSize(horizontal: false, vertical: true)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .combine)
     }
 
     /// "Germany, Berlin · Remote", or Anywhere.

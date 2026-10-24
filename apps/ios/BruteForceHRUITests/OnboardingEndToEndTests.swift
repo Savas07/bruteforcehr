@@ -21,7 +21,12 @@ final class OnboardingEndToEndTests: XCTestCase {
 
     @MainActor
     private func scroll(to element: XCUIElement, in app: XCUIApplication) {
-        for _ in 0..<8 where !(element.exists && element.isHittable) { app.swipeUp() }
+        // Short drags without momentum, so an element never jumps past the visible area.
+        for _ in 0..<14 where !(element.exists && element.isHittable) {
+            let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.7))
+            let end = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.4))
+            start.press(forDuration: 0.05, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 0.3)
+        }
     }
 
     @MainActor
@@ -32,7 +37,8 @@ final class OnboardingEndToEndTests: XCTestCase {
         let role = "iOS Engineer"
 
         let app = XCUIApplication()
-        app.launchArguments += ["-AppleLanguages", "(en)", "-AppleLocale", "en_GB", "-BFHRImportFile", resume]
+        // Region DE: the salary floor defaults to EUR per year.
+        app.launchArguments += ["-AppleLanguages", "(en)", "-AppleLocale", "en_DE", "-BFHRImportFile", resume]
         app.launch()
         let onboarding = app.descendants(matching: .any)["onboarding"]
         if !onboarding.waitForExistence(timeout: 5) {
@@ -63,24 +69,22 @@ final class OnboardingEndToEndTests: XCTestCase {
         roleField.tap()
         roleField.typeText(role + "\n")
         XCTAssertTrue(app.buttons["Remove \(role)"].waitForExistence(timeout: 5))
-        let remote = app.buttons["prefs.workplace.remote"]
+        let remote = app.descendants(matching: .any)["prefs.workplace.remote"].firstMatch
         scroll(to: remote, in: app)
         if !remote.isSelected { remote.tap() }
-        let netherlands = app.buttons["prefs.market.NL"]
+        let netherlands = app.descendants(matching: .any)["prefs.market.NL"].firstMatch
         scroll(to: netherlands, in: app)
         if !netherlands.isSelected { netherlands.tap() }
         let amount = app.textFields["prefs.salary.amount"]
         scroll(to: amount, in: app)
         amount.tap()
         amount.typeText("65000")
-        let currency = app.buttons["prefs.salary.currency"]
-        if currency.exists, !currency.label.contains("EUR") {
-            currency.tap()
-            app.buttons["EUR"].firstMatch.tap()
-        }
-        let euYes = app.descendants(matching: .any)["prefs.auth.EU"].buttons["Yes"]
+        app.buttons["prefs.salary.done"].tap()
+        XCTAssertFalse(app.keyboards.firstMatch.exists, "Done closes the number pad")
+        let euYes = app.descendants(matching: .any)["prefs.auth.EU"].firstMatch.buttons["Yes"]
         scroll(to: euYes, in: app)
         euYes.tap()
+        XCTAssertTrue(euYes.isSelected, "EU / EEA answered Yes")
         capture("4-preferences-edited")
         app.buttons["onboarding.continue"].tap()
 
@@ -100,7 +104,7 @@ final class OnboardingEndToEndTests: XCTestCase {
         XCTAssertTrue(roles.label.contains(role), roles.label)
         capture("7-settings")
         app.buttons["jobPreferences.seniority"].tap()
-        let principal = app.buttons["prefs.seniority.principal"]
+        let principal = app.descendants(matching: .any)["prefs.seniority.principal"].firstMatch
         XCTAssertTrue(principal.waitForExistence(timeout: 5))
         principal.tap()
         XCTAssertTrue(principal.isSelected)
@@ -110,11 +114,13 @@ final class OnboardingEndToEndTests: XCTestCase {
         XCTAssertTrue(app.buttons["jobPreferences.seniority"].label.contains("Principal"))
         // Give the write a moment to reach the server before the script reads it.
         Thread.sleep(forTimeInterval: 4)
+        app.navigationBars.buttons.element(boundBy: 0).tap()
+        XCTAssertTrue(app.buttons["settings.done"].waitForExistence(timeout: 5))
         app.buttons["settings.done"].tap()
 
         // Relaunch: a finished account goes straight to the tabs.
         app.terminate()
-        app.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_GB"]
+        app.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_DE"]
         app.launch()
         XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 30))
         XCTAssertFalse(onboarding.exists, "onboarding doesn't come back")

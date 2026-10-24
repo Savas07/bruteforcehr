@@ -293,6 +293,8 @@ struct LocationSection: View {
 
 struct SalarySection: View {
     @Binding var draft: JobPreferencesDraft
+    /// The number pad has no Return key: a Done button above it closes it.
+    @FocusState private var editsAmount: Bool
 
     var body: some View {
         Section {
@@ -315,7 +317,9 @@ struct SalarySection: View {
             .modifier(SegmentedUnlessLarge())
             .accessibilityIdentifier("prefs.salary.period")
             if draft.salaryAmount != nil {
-                Button(role: .destructive) { draft.salaryAmount = nil } label: { Text(OnboardingStrings.clearSalary) }
+                // Not destructive: the floor is optional and can be typed again.
+                Button { draft.salaryAmount = nil } label: { Text(OnboardingStrings.clearSalary) }
+                    .foregroundStyle(BFHRColor.Accent.text)
                     .accessibilityIdentifier("prefs.salary.clear")
             }
         } header: {
@@ -332,8 +336,18 @@ struct SalarySection: View {
                 Text(OnboardingStrings.salaryPlaceholder)
             }
             .multilineTextAlignment(.trailing)
+            .focused($editsAmount)
             #if os(iOS)
             .keyboardType(.numberPad)
+            .toolbar {
+                if editsAmount {
+                    ToolbarItemGroup(placement: .keyboard) {
+                        Spacer()
+                        Button { editsAmount = false } label: { Text(OnboardingStrings.done) }
+                            .accessibilityIdentifier("prefs.salary.done")
+                    }
+                }
+            }
             #endif
             .accessibilityIdentifier("prefs.salary.amount")
         } label: {

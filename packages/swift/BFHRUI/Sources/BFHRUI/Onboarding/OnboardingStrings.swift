@@ -30,8 +30,17 @@ enum OnboardingStrings {
     static let scratchDone = LocalizedStringResource.bfhr("onboarding.cv.scratch.done", default: "A blank CV is waiting for you in CV Studio.", table: "Onboarding")
     static let reading = LocalizedStringResource.bfhr("onboarding.cv.reading", default: "Reading your CV…", table: "Onboarding")
     static let readingNote = LocalizedStringResource.bfhr("onboarding.cv.reading.note", default: "You can continue. We'll fill in your preferences when it's done.", table: "Onboarding")
+    /// "Found 1 role and 4 skills" (the catalogs have no plural variants, so each count is its own
+    /// phrase); "Read your CV" when it named neither.
     static func found(roles: Int, skills: Int) -> LocalizedStringResource {
-        .bfhr("onboarding.cv.found", default: "Found \(roles) roles and \(skills) skills", table: "Onboarding", comment: "%1$lld = roles, %2$lld = skills.")
+        guard roles + skills > 0 else { return .bfhr("onboarding.cv.read", default: "Read your CV", table: "Onboarding") }
+        let roleText = String(localized: roles == 1
+            ? .bfhr("onboarding.cv.found.role", default: "1 role", table: "Onboarding")
+            : .bfhr("onboarding.cv.found.roles", default: "\(roles) roles", table: "Onboarding", comment: "%lld = roles (2 or more, or 0)."))
+        let skillText = String(localized: skills == 1
+            ? .bfhr("onboarding.cv.found.skill", default: "1 skill", table: "Onboarding")
+            : .bfhr("onboarding.cv.found.skills", default: "\(skills) skills", table: "Onboarding", comment: "%lld = skills (2 or more, or 0)."))
+        return .bfhr("onboarding.cv.found", default: "Found \(roleText) and \(skillText)", table: "Onboarding", comment: "%1$@ = \"3 roles\", %2$@ = \"14 skills\".")
     }
     static let savedToStudio = LocalizedStringResource.bfhr("onboarding.cv.saved", default: "Saved to CV Studio. You can check every detail there later.", table: "Onboarding")
     static let cancel = LocalizedStringResource.bfhr("onboarding.cv.cancel", default: "Cancel", table: "Onboarding")

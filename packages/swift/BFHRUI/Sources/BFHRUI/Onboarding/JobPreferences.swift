@@ -324,7 +324,9 @@ public struct CVPreferenceHints: Hashable, Sendable {
         }
         var skills: [String] = []
         for skill in content.skills ?? [] {
-            for value in [skill.name].compactMap({ $0 }) + (skill.keywords ?? []) {
+            // A group's name ("Languages", "Frontend") isn't a skill when it lists keywords.
+            let keywords = skill.keywords ?? []
+            for value in keywords.isEmpty ? [skill.name].compactMap({ $0 }) : keywords {
                 let normalized = value.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
                 guard !normalized.isEmpty, normalized.count <= 60, !skills.contains(normalized) else { continue }
                 skills.append(normalized)

@@ -47,3 +47,30 @@ jobs:
           xcodebuild build -project apps/ios/BruteForceHR.xcodeproj -scheme BruteForceHR \
             -configuration Debug -destination 'generic/platform=iOS Simulator' \
             -derivedDataPath "$RUNNER_TEMP/dd" CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO
+
+  # Performance budgets (docs/BRIEF.md §9, docs/runbooks/performance.md): launch to interactive
+  # < 2 s and scroll hitches with 5,000 jobs / 1,000 applications, on the simulator (a proxy for a
+  # recent iPhone). apps/ios/scripts/perf.sh runs PerformanceTests and checks the result bundle.
+  perf:
+    name: Performance budgets (simulator)
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+      - run: corepack enable pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @bfhr/cv-render build
+      - run: apps/ios/scripts/perf.sh -- CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO
+        env:
+          BFHR_DERIVED_DATA: ${{ runner.temp }}/dd
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: ios-perf
+          path: |
+            artifacts/perf/ios.json
+            artifacts/perf/ios-metrics.json
+          if-no-files-found: ignore
+          retention-days: 30

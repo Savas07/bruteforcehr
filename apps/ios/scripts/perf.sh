@@ -5,10 +5,11 @@
 # bundle, writes artifacts/perf/ios.json and fails when a budget is missed.
 #
 #   apps/ios/scripts/perf.sh [--device "iPhone 17 Pro" | --device <udid>] [--budget-scale 1]
-#                            [--only launch|scroll] [--skip-build]
+#                            [--only launch|scroll] [--skip-build] [-- <xcodebuild settings>]
 #
 # Builds into BFHR_DERIVED_DATA (else apps/ios/build/DerivedData). On a machine shared with other
-# worktrees, run it under apps/ios/scripts/with-ios-lock.sh.
+# worktrees, run it under apps/ios/scripts/with-ios-lock.sh. CI adds `-- CODE_SIGNING_ALLOWED=NO`
+# (no signing identity on the runner; the simulator runs unsigned builds).
 set -euo pipefail
 
 ios_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -18,25 +19,31 @@ device="iPhone 17 Pro"
 budget_scale=1
 only=""
 build=true
+settings=()
 while (($# > 0)); do
   case "$1" in
     --device) device="$2"; shift ;;
     --budget-scale) budget_scale="$2"; shift ;;
     --only) only="$2"; shift ;;
     --skip-build) build=false ;;
-    -h | --help) sed -n '2,12p' "$0"; exit 0 ;;
+    --) shift; settings=("$@"); break ;;
+    -h | --help) sed -n '2,13p' "$0"; exit 0 ;;
     *) echo "perf.sh: unknown argument $1" >&2; exit 64 ;;
   esac
   shift
 done
 
-# A UDID, or the first available simulator with that name.
+# A UDID, or the first available simulator with that name (else the first iPhone, with a note).
 udid="$(xcrun simctl list devices available -j | node -e '
   const wanted = process.argv[1];
   const { devices } = JSON.parse(require("node:fs").readFileSync(0, "utf8"));
   const all = Object.values(devices).flat();
-  const match = all.find((d) => d.udid === wanted) ?? all.find((d) => d.name === wanted);
-  if (!match) { console.error(`No available simulator "${wanted}"`); process.exit(1); }
+  let match = all.find((d) => d.udid === wanted) ?? all.find((d) => d.name === wanted);
+  if (!match) {
+    match = all.find((d) => d.name.startsWith("iPhone"));
+    if (match) console.error(`perf.sh: no "${wanted}" simulator, using ${match.name}`);
+  }
+  if (!match) { console.error("perf.sh: no iPhone simulator available"); process.exit(1); }
   console.log(match.udid);
 ' "$device")"
 
@@ -54,7 +61,7 @@ result="$out_dir/ios.xcresult"
 mkdir -p "$out_dir"
 rm -rf "$result"
 xcodebuild_args=(-project "$ios_dir/BruteForceHR.xcodeproj" -scheme BruteForceHR -configuration Debug
-  -destination "platform=iOS Simulator,id=$udid" -derivedDataPath "$derived_data" -quiet)
+  -destination "platform=iOS Simulator,id=$udid" -derivedDataPath "$derived_data" -quiet ${settings[@]+"${settings[@]}"})
 if $build; then xcodebuild build-for-testing "${xcodebuild_args[@]}"; fi
 # Performance tests report their measurements; the budgets are checked below, not by XCTest.
 status=0

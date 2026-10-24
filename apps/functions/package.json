@@ -18,6 +18,7 @@
     "signup:allow": "tsx scripts/signup-allowlist.ts",
     "smoke:account": "tsx scripts/smoke-account.ts",
     "smoke:ai": "node scripts/smoke-ai.ts",
+    "smoke:apply": "tsx scripts/smoke-apply.ts",
     "smoke:job-import": "tsx scripts/live-check-job-import.ts",
     "smoke:jobs": "tsx scripts/smoke-jobs.ts",
     "smoke:mail": "tsx scripts/smoke-mail.ts",

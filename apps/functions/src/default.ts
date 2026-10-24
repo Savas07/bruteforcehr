@@ -4,7 +4,9 @@ import "./options";
 
 export { accountDelete, accountExport } from "./account/functions";
 export { cvAssist } from "./ai/cv-assist";
+export { coverLetterDraft } from "./ai/cover-letter-draft";
 export { cvImport } from "./ai/cv-import";
+export { cvTailor } from "./ai/cv-tailor";
 export { health } from "./health";
 export { jobImportUrl } from "./jobImport/job-import-url";
 export { jobMatchesRefresh, jobsSearch, savedSearchRunNow } from "./jobs/callables";

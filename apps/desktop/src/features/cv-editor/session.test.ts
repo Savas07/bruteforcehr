@@ -87,6 +87,20 @@ describe("editing sessions", () => {
     expect(memory.data().cvRevisions.at(-1)?.content.work?.[0]?.highlights?.[0]).toBe("Second");
   });
 
+  it("doesn't take the editor from before its own write for a remote save", async () => {
+    // useSyncExternalStore re-reads the store with the last rendered editor (still on the old
+    // revision) until the snapshot of our write arrives.
+    const before = editor();
+    store.edit(CV, (draft) => setTextAt(draft, bullet, "Mine"));
+    store.commit(CV);
+    expect(store.view(before).conflict).toBeNull();
+    await settle();
+    const saved = store.view(before);
+    expect(saved.conflict).toBeNull();
+    expect(saved.draft.sections.find((section) => section.key === "work")?.items[0]?.bullets[0]).toBe("Mine");
+    expect(store.view(editor())).toMatchObject({ conflict: null, status: "saved" });
+  });
+
   it("turns a remote save during a session into a conflict; Keep this version wins on top", () => {
     store.edit(CV, (draft) => setTextAt(draft, bullet, "Mine"));
     const theirs = editor().revisionContents[editor().currentRevisionId];

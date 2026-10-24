@@ -1,6 +1,6 @@
 {
   "name": "@bfhr/jobs-connectors",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "private": true,
   "description": "Job source connectors (ATS boards, job APIs, polite scraping) normalized to @bfhr/core jobs (docs/adr/0005-job-sources-scraping.md).",
   "type": "module",

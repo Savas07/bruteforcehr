@@ -32,6 +32,8 @@ public enum DesignOnboardingState: String, CaseIterable, Sendable {
     case finishExisting = "finish-existing"
     /// Step 3 after the server refused the write.
     case finishFailed = "finish-failed"
+    /// Step 3 with no role and no place (D40): Back to preferences or Go to Today.
+    case finishNothing = "finish-nothing"
 
     /// Parses `-BFHROnboarding`; nil when absent or unknown.
     public static func parse(arguments: [String]) -> DesignOnboardingState? {
@@ -77,6 +79,9 @@ public enum DesignOnboardingState: String, CaseIterable, Sendable {
             model.cv = .failed(fileName: "Scan_0042.pdf", error: .unreadable)
         case .preferences:
             model.advance()
+        case .finishNothing:
+            model.advance()
+            model.advance(saving: false)
         case .preferencesCV:
             model.cvRead(Self.content, cvId: nil, fileName: "Deniz Aksoy – CV 2026.pdf", kind: .pdf)
             model.advance()

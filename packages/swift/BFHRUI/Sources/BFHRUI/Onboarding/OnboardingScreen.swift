@@ -414,9 +414,8 @@ struct OnboardingFinishStep: View {
 
     var body: some View {
         List {
-            OnboardingHeader(step: .finish, title: OnboardingStrings.finishTitle,
-                             message: model.hasSavedSearch ? OnboardingStrings.finishExisting : OnboardingStrings.finishBody)
-            if !model.hasSavedSearch {
+            OnboardingHeader(step: .finish, title: OnboardingStrings.finishTitle, message: message)
+            if !model.hasSavedSearch, model.canSearch {
                 Section {
                     summaryRow(OnboardingStrings.lookingFor, value: model.draft.roles.first.map { Text(verbatim: $0) } ?? Text(OnboardingStrings.anyRole))
                     summaryRow(OnboardingStrings.whereHeader, value: Text(verbatim: places))
@@ -437,23 +436,38 @@ struct OnboardingFinishStep: View {
         .bfhrInsetGroupedList()
         .safeAreaInset(edge: .bottom, spacing: 0) {
             OnboardingBottomBar {
+                if !model.hasSavedSearch, !model.canSearch {
+                    // D40: nothing to search for yet.
+                    Button { model.back() } label: { Text(OnboardingStrings.backToPreferences) }
+                        .buttonStyle(.bfhr(.primary, fullWidth: true))
+                        .accessibilityIdentifier("onboarding.finish.back")
+                }
                 Button {
                     Task { await model.finish(createSearch: true) }
                 } label: {
                     if model.isFinishing {
                         HStack(spacing: BFHRSpace.s2) {
-                            ProgressView().tint(BFHRColor.Fg.onAccent)
+                            ProgressView().tint(primaryAction ? BFHRColor.Fg.onAccent : BFHRColor.Accent.text)
                             Text(OnboardingStrings.starting)
                         }
                     } else {
-                        Text(model.hasSavedSearch ? OnboardingStrings.goToToday : OnboardingStrings.start)
+                        Text(primaryAction && !model.hasSavedSearch ? OnboardingStrings.start : OnboardingStrings.goToToday)
                     }
                 }
-                .buttonStyle(.bfhr(.primary, fullWidth: true))
+                .buttonStyle(.bfhr(primaryAction ? .primary : .secondary, fullWidth: true))
                 .disabled(model.isFinishing)
                 .accessibilityIdentifier("onboarding.finish")
             }
         }
+    }
+
+    /// Start searching (or Go to Today with a search already saved) is the primary action unless
+    /// there's nothing to search for.
+    private var primaryAction: Bool { model.hasSavedSearch || model.canSearch }
+
+    private var message: LocalizedStringResource {
+        if model.hasSavedSearch { return OnboardingStrings.finishExisting }
+        return model.canSearch ? OnboardingStrings.finishBody : OnboardingStrings.nothingToSearch
     }
 
     private func summaryRow(_ title: LocalizedStringResource, value: Text) -> some View {

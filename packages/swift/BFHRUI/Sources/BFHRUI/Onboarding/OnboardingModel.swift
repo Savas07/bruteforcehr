@@ -336,6 +336,12 @@ public final class OnboardingModel {
 
     // MARK: Step 3: Finish
 
+    /// D40: a search needs a role or a place; without either, Finish offers Back to preferences
+    /// and Go to Today instead.
+    public var canSearch: Bool {
+        !draft.roles.isEmpty || !draft.locations.isEmpty || draft.remoteWorldwide
+    }
+
     /// The first saved search: the first role (connectors match every word of the query, so roles
     /// aren't joined), the picked countries and workplaces, daily, alerts from Good (65).
     public func firstSearch(at now: Date) -> SavedSearch {
@@ -363,7 +369,7 @@ public final class OnboardingModel {
         isFinishing = true
         saveFailed = false
         let now = clock()
-        let search = createSearch && !hasSavedSearch ? firstSearch(at: now) : nil
+        let search = createSearch && !hasSavedSearch && canSearch ? firstSearch(at: now) : nil
         if let service {
             let saved = await within(serverWait) {
                 try await service.save(profile: before, previous: before, savedSearch: search)

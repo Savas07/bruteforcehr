@@ -32,7 +32,8 @@
 #               dailyLimit, tooLarge, exportError, offline, deleteEmpty, deleteTyped, reauthNeeded,
 #               linkSent, linkExpired, reauthDone, deleting, deleteError, deleteOffline (default: all);
 #               for onboarding: cv, cv-reading, cv-found, cv-error, preferences, preferences-cv,
-#               preferences-filled, finish, finishing, finish-existing, finish-failed (default: all)
+#               preferences-filled, finish, finishing, finish-existing, finish-failed,
+#               finish-nothing (default: all)
 #   --size      default (Large) or ax (largest accessibility size, files end in -ax)
 #               (repeatable; default: default)
 #   --ax        same as --size ax
@@ -101,7 +102,7 @@ sign_in_states=(email invalid offline check resent finishing confirm expired unu
 data_privacy_states=(idle preparing downloading ready saved downloadError tooSoon dailyLimit tooLarge exportError offline
   deleteEmpty deleteTyped reauthNeeded linkSent linkExpired reauthDone deleting deleteError deleteOffline)
 share_states=(reading ready ai existing saved logged blocked offline signed-out manual)
-onboarding_states=(cv cv-reading cv-found cv-error preferences preferences-cv preferences-filled finish finishing finish-existing finish-failed)
+onboarding_states=(cv cv-reading cv-found cv-error preferences preferences-cv preferences-filled finish finishing finish-existing finish-failed finish-nothing)
 update_gate=false
 sign_in=false
 data_privacy=false

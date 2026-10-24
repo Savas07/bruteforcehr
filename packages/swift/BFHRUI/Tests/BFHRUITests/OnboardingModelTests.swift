@@ -271,6 +271,30 @@ struct OnboardingModelTests {
         #expect(model.isCompleted)
     }
 
+    @Test("D40: no role and no place means no saved search; a place alone is enough")
+    func nothingToSearch() async throws {
+        let (model, recorder) = model()
+        model.start()
+        #expect(!model.canSearch)
+        await model.finish(createSearch: true)
+        await settle()
+        #expect(model.isCompleted)
+        #expect(!recorder.calls.contains { if case .save(_, _?) = $0 { true } else { false } })
+
+        let (placeOnly, placeRecorder) = self.model()
+        placeOnly.start()
+        placeOnly.draft.toggle(PreferenceMarket(countryCode: nil), label: "Remote worldwide")
+        #expect(placeOnly.canSearch)
+        await placeOnly.finish(createSearch: true)
+        await settle()
+        guard case .save(false, let search?) = placeRecorder.calls.first(where: { if case .save(_, _?) = $0 { true } else { false } }) else {
+            Issue.record("a place alone creates the search")
+            return
+        }
+        #expect(search.query.isEmpty && search.filters.remoteTypes == [.remote])
+        #expect(search.name == String(localized: OnboardingStrings.defaultSearchName))
+    }
+
     @Test("A refused write keeps the step and says so")
     func refused() async {
         let (model, recorder) = model()

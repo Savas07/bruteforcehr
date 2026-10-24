@@ -145,6 +145,8 @@ enum OnboardingStrings {
     static let start = LocalizedStringResource.bfhr("onboarding.finish.start", default: "Start searching", table: "Onboarding")
     static let goToToday = LocalizedStringResource.bfhr("onboarding.finish.today", default: "Go to Today", table: "Onboarding")
     static let starting = LocalizedStringResource.bfhr("onboarding.finish.starting", default: "Setting up your search…", table: "Onboarding")
+    static let nothingToSearch = LocalizedStringResource.bfhr("onboarding.finish.nothing", default: "Add a role or a place in your preferences, and we'll search for you every day.", table: "Onboarding")
+    static let backToPreferences = LocalizedStringResource.bfhr("onboarding.finish.backToPreferences", default: "Back to preferences", table: "Onboarding")
     static let defaultSearchName = LocalizedStringResource.bfhr("onboarding.finish.defaultName", default: "Jobs for you", table: "Onboarding")
 
     // Settings › Job preferences

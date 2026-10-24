@@ -13,7 +13,7 @@ final class OnboardingAccessibilityAuditTests: XCTestCase {
     private let axSize = ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]
     private let states = [
         "cv", "cv-reading", "cv-found", "cv-error", "preferences", "preferences-cv", "preferences-filled", "finish", "finishing",
-        "finish-existing", "finish-failed",
+        "finish-existing", "finish-failed", "finish-nothing",
     ]
     private let pages = [
         "job-preferences", "job-preferences-roles", "job-preferences-seniority", "job-preferences-location", "job-preferences-salary",

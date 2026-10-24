@@ -198,7 +198,7 @@ function designCallables(
       const cv = data?.cvs.find((candidate) => candidate.id === data.profile?.defaultCvId);
       if (!cv) return;
       await tracker.apply(
-        jobIds.map((id) => ({
+        (jobIds ?? tracker.jobs().map((job) => job.id)).map((id) => ({
           op: "update" as const,
           collection: "jobMatches" as const,
           id,

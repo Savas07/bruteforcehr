@@ -20,6 +20,7 @@ import {
 import { createContext, useContext, useMemo, useSyncExternalStore } from "react";
 import { useTrackerData } from "../../data/tracker/live";
 import type { UpdateChannel } from "../../lib/desktop";
+import { EMPTY_JOB_PREFERENCES, type JobPreferences } from "./job-preferences/model";
 
 /** Settings fields the panes change; `settings.*` keys are written as dotted field paths. */
 export type ProfileSettingsPatch = Partial<
@@ -30,6 +31,9 @@ export interface ProfilePatch {
   readonly aiEnabled?: boolean;
   readonly uiLanguage?: UiLanguage;
   readonly settings?: ProfileSettingsPatch;
+  readonly fullName?: string;
+  /** Settings › Job preferences and onboarding: written as top-level profile fields. */
+  readonly preferences?: Partial<JobPreferences>;
 }
 
 export type ListState<T> =
@@ -106,6 +110,9 @@ export interface SettingsProfile {
   readonly notifyRejections: boolean;
   readonly quietHours: ProfileSettings["quietHours"];
   readonly aiMailTextAllowed: boolean;
+  /** Empty until set (or before the profile exists). */
+  readonly fullName: string;
+  readonly preferences: JobPreferences;
 }
 
 /** Applies `patch` over `profile` (both may be missing). */
@@ -123,6 +130,17 @@ export function settingsProfile(profile: Profile | null, patch: ProfilePatch | n
     notifyRejections: settings.notifyRejections,
     quietHours: settings.quietHours,
     aiMailTextAllowed: settings.aiMailTextAllowed,
+    fullName: patch?.fullName ?? profile?.fullName ?? "",
+    preferences: {
+      targetRoles: profile?.targetRoles ?? EMPTY_JOB_PREFERENCES.targetRoles,
+      seniority: profile?.seniority ?? EMPTY_JOB_PREFERENCES.seniority,
+      locations: profile?.locations ?? EMPTY_JOB_PREFERENCES.locations,
+      remotePreferences: profile?.remotePreferences ?? EMPTY_JOB_PREFERENCES.remotePreferences,
+      salaryFloor: profile?.salaryFloor ?? EMPTY_JOB_PREFERENCES.salaryFloor,
+      workAuthorization: profile?.workAuthorization ?? EMPTY_JOB_PREFERENCES.workAuthorization,
+      languages: profile?.languages ?? EMPTY_JOB_PREFERENCES.languages,
+      ...patch?.preferences,
+    },
   };
 }
 

@@ -52,6 +52,7 @@ export const designScreenPaths = {
   "mail-connect": "/settings/mail-accounts?connect=picker",
   insights: "/insights",
   "settings-mail-accounts": "/settings/mail-accounts",
+  "settings-job-preferences": "/settings/job-preferences",
   "settings-notifications": "/settings/notifications",
   "settings-job-sources": "/settings/job-sources",
   "settings-companies": "/settings/companies",
@@ -227,6 +228,41 @@ export function csvCaptureFileName(
   size: { readonly width: number; readonly height: number },
 ): string {
   return `tracker-csv-${state}-${theme}-${size.width}x${size.height}.png`;
+}
+
+/**
+ * First-run wizard states (`?onboarding=<state>`, src/design/onboarding.tsx), over Today, which
+ * stays hidden until onboarding finishes: each step, the CV step after an import and for a user
+ * who already has CVs, preferences empty / pre-filled from a CV / complete, Finish with and
+ * without something to search for, and the profile that couldn't be created.
+ */
+export const onboardingDesignStates = [
+  "cv",
+  "cv-imported",
+  "cv-existing",
+  "preferences",
+  "preferences-cv",
+  "preferences-filled",
+  "finish",
+  "finish-empty",
+  "setup-failed",
+] as const;
+export type OnboardingDesignState = (typeof onboardingDesignStates)[number];
+
+export function onboardingDesignHash(
+  state: OnboardingDesignState,
+  extra: Readonly<Record<string, string>> = {},
+): string {
+  return designHash("today", "populated", { onboarding: state, ...extra });
+}
+
+/** `onboarding-<state>-<theme>-<w>x<h>.png`. */
+export function onboardingCaptureFileName(
+  state: OnboardingDesignState,
+  theme: CaptureTheme,
+  size: { readonly width: number; readonly height: number },
+): string {
+  return `onboarding-${state}-${theme}-${size.width}x${size.height}.png`;
 }
 
 /**

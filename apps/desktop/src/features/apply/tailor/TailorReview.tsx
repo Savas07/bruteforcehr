@@ -137,7 +137,7 @@ type Phase =
 export interface TailorReviewProps {
   readonly cv: Pick<Cv, "id" | "title" | "language">;
   /** The version to tailor (usually the CV's current one); the edits address it. */
-  readonly revision: CvRevision;
+  readonly revision: Pick<CvRevision, "id" | "content">;
   readonly job: Job;
   readonly match: JobMatch | null;
   readonly application: Application | null;

@@ -37,6 +37,11 @@ const messages = defineMessages({
   personal: { id: "cv-editor.design.personalHeading", defaultMessage: "Photo and date of birth" },
   originalFile: { id: "cv-editor.design.originalFile", defaultMessage: "Original file" },
   checkJob: { id: "cv-editor.check.job", defaultMessage: "Job" },
+  tailor: { id: "cv-editor.check.tailor", defaultMessage: "Tailor for this job" },
+  tailorHint: {
+    id: "cv-editor.check.tailorHint",
+    defaultMessage: "Suggests edits based on the job description. You review each one; the result is saved as a version for this application.",
+  },
   checkAll: { id: "cv-editor.check.all", defaultMessage: "All {count, number}" },
   checkMissing: { id: "cv-editor.check.missing", defaultMessage: "Missing {count, number}" },
   checkCovered: { id: "cv-editor.check.covered", defaultMessage: "Covered {count, number}" },
@@ -190,6 +195,8 @@ function CheckTab({
   coverage,
   onAddSkill,
   onExclude,
+  onTailor,
+  tailorReason,
   atsPanel,
 }: {
   editor: CvEditorVM;
@@ -198,6 +205,10 @@ function CheckTab({
   coverage: CvCoverage | null;
   onAddSkill: (keyword: string) => void;
   onExclude: (keyword: string) => void;
+  /** "Tailor for this job" with the picked job (BRIEF §4.4.1); absent where tailoring isn't offered. */
+  onTailor?: (() => void) | undefined;
+  /** Why tailoring can't start now (unsaved edits, offline). */
+  tailorReason?: string | null;
   /** Readback of the exported PDF (ats/AtsCheckPanel). */
   atsPanel: ReactNode;
 }) {
@@ -233,6 +244,14 @@ function CheckTab({
             ))}
           </select>
         </label>
+        {onTailor && (
+          <div className="flex flex-col gap-1">
+            <Button size="sm" icon={Sparkles} className="self-start" disabledReason={tailorReason ?? null} onClick={onTailor}>
+              {intl.formatMessage(messages.tailor)}
+            </Button>
+            <p className="text-fg-tertiary text-footnote">{intl.formatMessage(messages.tailorHint)}</p>
+          </div>
+        )}
         <div>
           <p className="text-callout">{coverage.fact}</p>
           {/* Neutral bar: a fact, never a grade colour. */}
@@ -584,6 +603,8 @@ export function Inspector({
   coverage,
   jobId,
   onJob,
+  onTailor,
+  tailorReason,
   onTheme,
   onPersonal,
   onAddSkill,
@@ -609,6 +630,8 @@ export function Inspector({
   coverage: CvCoverage | null;
   jobId: string | null;
   onJob: (jobId: string) => void;
+  onTailor?: (() => void) | undefined;
+  tailorReason?: string | null;
   onTheme: (patch: Partial<Pick<CvDraft, "paperSize" | "density">>) => void;
   onPersonal: (patch: Partial<Pick<CvDraft, "showPhoto" | "showDateOfBirth">>) => void;
   onAddSkill: (keyword: string) => void;
@@ -677,6 +700,8 @@ export function Inspector({
               editor={editor}
               jobId={jobId}
               onJob={onJob}
+              onTailor={onTailor}
+              tailorReason={tailorReason ?? null}
               coverage={coverage}
               onAddSkill={onAddSkill}
               onExclude={onExclude}

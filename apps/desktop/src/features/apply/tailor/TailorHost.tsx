@@ -102,3 +102,58 @@ export function TailorHost({
     />
   );
 }
+
+/**
+ * Tailor review in CV Studio (Check tab, a job picked): the CV's saved current version for that
+ * job; the job and its application come from the live data around CV Studio.
+ */
+export function StudioTailorHost({
+  cv,
+  revision,
+  jobId,
+  onClose,
+}: {
+  readonly cv: { readonly id: string; readonly title: string; readonly language: string };
+  readonly revision: Pick<CvRevision, "id" | "content">;
+  readonly jobId: string;
+  readonly onClose: () => void;
+}) {
+  const intl = useIntl();
+  const tracker = useTrackerData();
+  const jobs = useJobsData();
+  if (tracker.status === "error" || jobs.status === "error")
+    return (
+      <PaneError
+        title={intl.formatMessage(messages.failedTitle)}
+        body={intl.formatMessage(messages.failedBody)}
+        onRetry={() => {
+          if (tracker.status === "error") tracker.retry();
+          if (jobs.status === "error") jobs.retry();
+        }}
+      />
+    );
+  if (tracker.status === "loading" || jobs.status === "loading")
+    return (
+      <SkeletonRegion
+        loading
+        label={intl.formatMessage(messages.loading)}
+        skeleton={<SkeletonBlock className="m-6 h-96 flex-1 rounded-lg" />}
+      >
+        {null}
+      </SkeletonRegion>
+    );
+  const job = jobs.data.jobs.find((candidate) => candidate.id === jobId) ?? null;
+  if (!job) return <EmptyState kind="subArea" body={intl.formatMessage(messages.missing)} />;
+  return (
+    <TailorReview
+      cv={cv}
+      revision={revision}
+      job={job}
+      match={jobs.data.jobMatches.find((candidate) => candidate.id === jobId) ?? null}
+      application={tracker.data.applications.find((candidate) => candidate.jobId === jobId) ?? null}
+      aiEnabled={tracker.data.profile?.aiEnabled ?? true}
+      onClose={onClose}
+      onSaved={onClose}
+    />
+  );
+}

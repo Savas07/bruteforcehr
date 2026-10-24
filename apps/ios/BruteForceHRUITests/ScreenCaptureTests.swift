@@ -8,13 +8,20 @@ import XCTest
 ///   the simulator (signed out, the app shows sign-in and the capture is skipped).
 /// - `testCaptureDesignScreens`: design mode (Debug builds), one screenshot per core screen and
 ///   state, launched with `-BFHRScreen`, `-BFHRDesign` and `-BFHRState`; or, for the screen
-///   `update-gate`, the update banner / blocking screen over Today (`-BFHRUpdate`); or, for
-///   `sign-in`, the signed-out screens (`-BFHRSignIn`).
+///   `update-gate`, the update banner / blocking screen over Today (`-BFHRUpdate`); for
+///   `sign-in`, the signed-out screens (`-BFHRSignIn`); for `data-privacy`, Settings › Data &
+///   privacy and Delete account (`-BFHRDataPrivacy`).
+///
+/// `BFHR_CAPTURE_LANGUAGE` (en, tr, de; default en) sets the app's language.
 ///
 /// Deep links go through `XCUIApplication.open`, because `simctl openurl` shows a system
 /// "Open in …?" confirmation over the app.
 final class ScreenCaptureTests: XCTestCase {
-    private let english = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+    private var languageArguments: [String] {
+        let code = ProcessInfo.processInfo.environment["BFHR_CAPTURE_LANGUAGE"].flatMap { $0.isEmpty ? nil : $0 } ?? "en"
+        let locale = ["en": "en_US", "tr": "tr_TR", "de": "de_DE"][code] ?? "en_US"
+        return ["-AppleLanguages", "(\(code))", "-AppleLocale", locale]
+    }
 
     private func output() throws -> (directory: URL, suffix: String) {
         let environment = ProcessInfo.processInfo.environment
@@ -31,7 +38,7 @@ final class ScreenCaptureTests: XCTestCase {
             throw XCTSkip("Design capture run")
         }
         let app = XCUIApplication()
-        app.launchArguments += english
+        app.launchArguments += languageArguments
         app.launch()
         let signIn = app.descendants(matching: .any)["signIn"]
         let shown = XCTNSPredicateExpectation(
@@ -71,11 +78,15 @@ final class ScreenCaptureTests: XCTestCase {
             try captureSignIn(states: states, directory: directory, suffix: suffix)
             return
         }
+        if screens == ["data-privacy"] {
+            try captureDataPrivacy(states: states, directory: directory, suffix: suffix)
+            return
+        }
 
         for screen in screens {
             for state in states {
                 let app = XCUIApplication()
-                app.launchArguments += english + ["-BFHRScreen", screen] + designArguments(for: state)
+                app.launchArguments += languageArguments + ["-BFHRScreen", screen] + designArguments(for: state)
                 app.launch()
                 // The screen's tab is selected, then the screen is showing: its design root
                 // (`design.<screen>`), or a view the screen pushed over that root (the root leaves
@@ -106,7 +117,7 @@ final class ScreenCaptureTests: XCTestCase {
     private func captureUpdateGate(states: [String], directory: URL, suffix: String) throws {
         for state in states {
             let app = XCUIApplication()
-            app.launchArguments += english + ["-BFHRScreen", "today", "-BFHRDesign", "populated", "-BFHRUpdate", state]
+            app.launchArguments += languageArguments + ["-BFHRScreen", "today", "-BFHRDesign", "populated", "-BFHRUpdate", state]
             app.launch()
             let surface = app.descendants(matching: .any)[state == "required" ? "update.required" : "update.banner"]
             XCTAssertTrue(surface.waitForExistence(timeout: 20), "update-gate \(state)")
@@ -123,12 +134,44 @@ final class ScreenCaptureTests: XCTestCase {
     private func captureSignIn(states: [String], directory: URL, suffix: String) throws {
         for state in states {
             let app = XCUIApplication()
-            app.launchArguments += english + ["-BFHRSignIn", state]
+            app.launchArguments += languageArguments + ["-BFHRSignIn", state]
             app.launch()
             XCTAssertTrue(app.descendants(matching: .any)["signIn"].waitForExistence(timeout: 20), "sign-in \(state)")
             Thread.sleep(forTimeInterval: 1.0)
             let file = directory.appendingPathComponent("sign-in-\(state)-\(suffix).png")
             try XCUIScreen.main.screenshot().pngRepresentation.write(to: file)
+            app.terminate()
+        }
+    }
+
+    /// Settings › Data & privacy (`-BFHRDataPrivacy <state>`), saved as
+    /// `data-privacy-<state>-<theme>[-ax][-lang].png`. Delete states show the pushed screen;
+    /// typed states scroll to the confirmation field and buttons.
+    @MainActor
+    private func captureDataPrivacy(states: [String], directory: URL, suffix: String) throws {
+        for state in states {
+            let app = XCUIApplication()
+            app.launchArguments += languageArguments + ["-BFHRDataPrivacy", state]
+            app.launch()
+            let isDelete = state.hasPrefix("delete") || ["reauthNeeded", "linkSent", "linkExpired", "reauthDone", "deleting"].contains(state)
+            let root = app.descendants(matching: .any)[isDelete ? "delete.title" : "dataPrivacy.create"]
+            let ready = app.descendants(matching: .any)[isDelete ? "delete.title" : "dataPrivacy.ready"]
+            let shown = XCTNSPredicateExpectation(
+                predicate: NSPredicate { _, _ in root.exists || ready.exists || app.navigationBars.firstMatch.exists },
+                object: nil
+            )
+            XCTAssertEqual(XCTWaiter().wait(for: [shown], timeout: 20), .completed, "data-privacy \(state)")
+            Thread.sleep(forTimeInterval: 1.2)
+            let file = directory.appendingPathComponent("data-privacy-\(state)-\(suffix).png")
+            try XCUIScreen.main.screenshot().pngRepresentation.write(to: file)
+            if isDelete {
+                // The lower half: re-authentication, the field and the buttons.
+                app.swipeUp()
+                app.swipeUp()
+                Thread.sleep(forTimeInterval: 0.8)
+                let lower = directory.appendingPathComponent("data-privacy-\(state)-\(suffix)-lower.png")
+                try XCUIScreen.main.screenshot().pngRepresentation.write(to: lower)
+            }
             app.terminate()
         }
     }

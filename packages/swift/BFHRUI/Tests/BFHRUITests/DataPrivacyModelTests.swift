@@ -87,9 +87,22 @@ struct DeleteConfirmationTests {
         #expect(!DeleteConfirmation.matches("", word: "", locale: en))
     }
 
-    @Test("The word comes from the catalog in the app's language", arguments: [("en", "DELETE"), ("tr", "SİL"), ("de", "LÖSCHEN")])
-    func localizedWord(language: String, word: String) {
-        #expect(makeModel(FakeAccountDataService(), language: language).confirmWord == word)
+    /// The catalog's word in each language, typed in lower case on that language's keyboard,
+    /// confirms. (`swift test` copies string catalogs uncompiled, so the lookup itself is covered
+    /// by the app's UI tests in Turkish and German.)
+    @Test("Each language's catalog word confirms in any case", arguments: [("en", "DELETE"), ("tr", "SİL"), ("de", "LÖSCHEN")])
+    func catalogWord(language: String, word: String) throws {
+        let url = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("Sources/BFHRUI/Settings/DataPrivacy/DataPrivacy.xcstrings")
+        let json = try JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any]
+        let entry = (json?["strings"] as? [String: Any])?["dataPrivacy.delete.confirm.word"] as? [String: Any]
+        let unit = ((entry?["localizations"] as? [String: Any])?[language] as? [String: Any])?["stringUnit"] as? [String: Any]
+        let value = try #require(unit?["value"] as? String)
+        #expect(value == word)
+        let locale = Locale(identifier: language)
+        #expect(DeleteConfirmation.matches(value.lowercased(with: locale), word: value, locale: locale))
+        #expect(DeleteConfirmation.matches(value.lowercased(), word: value, locale: locale))
     }
 }
 

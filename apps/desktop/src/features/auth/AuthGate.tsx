@@ -48,7 +48,7 @@ function Gate({ children }: { children: ReactNode }) {
     case "loading":
       return <AuthRestoring />;
     case "signed-out":
-      return <SignIn view={state.view} />;
+      return <SignIn view={state.view} notice={state.notice ?? null} />;
     case "signed-in":
       return children;
   }

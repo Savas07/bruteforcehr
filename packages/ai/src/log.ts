@@ -1,4 +1,10 @@
-import type { CvAssistAction, CvAssistLanguage, CvImportSourceKind } from "@bfhr/core";
+import type {
+  CoverLetterTone,
+  CvAssistAction,
+  CvAssistLanguage,
+  CvImportSourceKind,
+  TailorIntensity,
+} from "@bfhr/core";
 
 export type AiOutcome =
   | "ok"
@@ -11,6 +17,9 @@ export type AiOutcome =
   | "no_text"
   | "ai_unavailable"
   | "ai_invalid_output"
+  | "cv_not_found"
+  | "job_not_found"
+  | "template_not_found"
   | "error";
 
 /**
@@ -18,11 +27,16 @@ export type AiOutcome =
  * CV text, file names, emails, model replies or the uid. Grounding results are counts.
  */
 export interface AiLogEvent {
-  task: "cvImport" | "cvAssist" | "matchRationale";
+  task: "cvImport" | "cvAssist" | "matchRationale" | "cvTailor" | "coverLetterDraft";
   outcome: AiOutcome;
   kind?: CvImportSourceKind;
   action?: CvAssistAction;
   targetLanguage?: CvAssistLanguage;
+  /** Tailoring: light or thorough. */
+  intensity?: TailorIntensity;
+  /** Cover letter: tone, and whether a template shaped the draft. */
+  tone?: CoverLetterTone;
+  templated?: boolean;
   model?: string;
   promptVersion?: string;
   latencyMs: number;
@@ -40,6 +54,11 @@ export interface AiLogEvent {
   suggestions?: number;
   rejectedSuggestions?: number;
   placeholdersInserted?: number;
+  /** Tailoring: edits returned / proposals dropped by the grounding and path checks. */
+  edits?: number;
+  droppedEdits?: number;
+  /** Cover letter: sentences dropped by the grounding check. */
+  droppedSentences?: number;
 }
 
 export interface AiLogger {

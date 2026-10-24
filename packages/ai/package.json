@@ -14,7 +14,8 @@
     "eval": "tsx eval/run.ts",
     "eval:fixtures": "tsx eval/build-fixtures.ts",
     "eval:mail": "tsx eval/mail/run.ts",
-    "eval:mail-alerts": "tsx eval/mail/run-alerts.ts"
+    "eval:mail-alerts": "tsx eval/mail/run-alerts.ts",
+    "eval:apply": "tsx eval/apply/run.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.1.0",

@@ -7,6 +7,12 @@
 # step's processes when the step ends.
 #
 #   scripts/with-emulators.sh pnpm test:e2e
+#   BFHR_EMULATORS=auth,firestore,storage,functions scripts/with-emulators.sh pnpm test:e2e
+#
+# With `functions` in BFHR_EMULATORS the Cloud Functions are built first (apps/functions/lib) and
+# run in the Functions emulator on 5001, so Firestore triggers (e2e/specs/mail.e2e.ts:
+# `mailMessageReviewed`) and callables behave as deployed. Secrets stay unset there (the OAuth mail
+# providers answer `provider_not_configured`, as in production today).
 #
 # Uses `firebase` from PATH (CI installs firebase-tools globally first: fetching it through npx
 # inside the start-up wait took too long on Windows), else npx.
@@ -16,7 +22,16 @@ repo_root="$(cd "$(dirname "$0")/../../.." && pwd)"
 log="${RUNNER_TEMP:-${TMPDIR:-/tmp}}/emulators.log"
 if command -v firebase >/dev/null; then cli=(firebase); else cli=(npx --yes firebase-tools@15.34.1); fi
 
-(cd "$repo_root" && exec "${cli[@]}" emulators:start --only auth,firestore,storage --project bruteforcehr) >"$log" 2>&1 &
+only="${BFHR_EMULATORS:-auth,firestore,storage}"
+with_functions=false
+case ",$only," in *,functions,*) with_functions=true ;; esac
+if $with_functions; then
+  (cd "$repo_root" && pnpm --filter @bfhr/functions run build)
+  # Params the emulator would otherwise ask for interactively (functions/src/mail/config.ts).
+  printf 'PUBLIC_BASE_URL=https://bruteforcehr.web.app\n' >"$repo_root/apps/functions/lib/default/.env.local"
+fi
+
+(cd "$repo_root" && exec "${cli[@]}" emulators:start --only "$only" --project bruteforcehr) >"$log" 2>&1 &
 emulator=$!
 stop() {
   # npx starts the CLI as a child; end the whole tree (on Windows the JVMs outlive a plain kill and
@@ -30,7 +45,8 @@ trap stop EXIT
 ready() {
   curl -sf "http://127.0.0.1:9099/" >/dev/null &&
     curl -s -o /dev/null "http://127.0.0.1:8080/" &&
-    curl -s -o /dev/null "http://127.0.0.1:9199/"
+    curl -s -o /dev/null "http://127.0.0.1:9199/" &&
+    { ! $with_functions || grep -q "All emulators ready" "$log"; }
 }
 # Up to 8 minutes: the Windows runner sometimes takes minutes to start the emulators.
 for _ in $(seq 240); do

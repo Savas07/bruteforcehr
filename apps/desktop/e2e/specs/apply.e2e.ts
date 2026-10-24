@@ -33,7 +33,7 @@ const goTo = (hash: string) =>
   }, hash);
 
 /** A visible, enabled button whose text (or accessible name) starts with `label`. */
-async function button(label: string) {
+async function button(label: string, timeout = 30_000) {
   let found: WebdriverIO.Element | undefined;
   await browser.waitUntil(
     async () => {
@@ -46,7 +46,7 @@ async function button(label: string) {
       }
       return false;
     },
-    { timeout: 30_000, timeoutMsg: `no enabled "${label}" button` },
+    { timeout, timeoutMsg: `no enabled "${label}" button` },
   );
   if (!found) throw new Error(`no "${label}" button`);
   return found;
@@ -150,7 +150,8 @@ describe("Apply", () => {
     const manager = await field("Hiring manager");
     await manager.setValue("Ms Weber");
     await (await button("Review email")).click();
-    await (await button("I sent it")).click();
+    // Enabled once the CV and letter PDFs are printed (slow on the hosted macOS runners).
+    await (await button("I sent it", 120_000)).click();
 
     await browser.waitUntil(async () => plain((await application(EMAIL_JOB.company))?.fields["status"]) === "applied", {
       timeout: 30_000,
@@ -195,7 +196,8 @@ describe("Apply", () => {
       timeoutMsg: "the CV PDF wasn't saved to the kit folder",
     });
     // The copied path is the saved PDF's.
-    await browser.waitUntil(async () => (await copied()).some((text) => text.startsWith(kit) && text.endsWith(".pdf")), {
+    // The app's path and Node's may spell the temp folder differently (8.3 names, symlinks).
+    await browser.waitUntil(async () => (await copied()).some((text) => /[\\/]kit[\\/][^\\/]+\.pdf$/u.test(text)), {
       timeout: 10_000,
       timeoutMsg: "Copy path didn't copy the kit file's path",
     });

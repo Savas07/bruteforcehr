@@ -4,14 +4,20 @@ import FirebaseFirestore
 import Foundation
 import Network
 
-/// Today, the Tracker and Jobs on Firestore (M3, M4; docs/adr/0002-data-model.md): snapshot
-/// listeners on `users/{uid}` and its `applications`, `applicationEvents`, `interviews`,
-/// `contacts`, `cvs`, `coverLetters`, `jobs`, `jobMatches`, `savedSearches`, `mailAccounts` and
-/// `renderedFiles` feed one `UserData` to every screen model; their optimistic mutations come
-/// back as `UserDataChanges` and are written as one batch each (`UserDataWriter`). Firestore's
-/// offline persistence is the outbox: offline writes show at once (`hasPendingWrites` →
-/// `SyncGlyph`), survive a relaunch and sync when the device is back online. Screens opened later
-/// (Job detail, Apply) `attach` and get the same data.
+/// Today, the Tracker, Jobs, Mail and Settings on Firestore (M3–M5; docs/adr/0002-data-model.md):
+/// snapshot listeners on `users/{uid}` and its `applications`, `applicationEvents`, `interviews`,
+/// `contacts`, `cvs`, `coverLetters`, `jobs`, `jobMatches`, `savedSearches`, `mailAccounts`,
+/// `mailMessages`, `watchlist` and `renderedFiles`, plus the project-wide `jobSources`, feed one
+/// `UserData` to every screen model; their optimistic mutations come back as `UserDataChanges`
+/// and are written as one batch each (`UserDataWriter`). Firestore's offline persistence is the
+/// outbox: offline writes show at once (`hasPendingWrites` → `SyncGlyph`), survive a relaunch and
+/// sync when the device is back online. Screens opened later (Job detail, Apply) `attach` and get
+/// the same data.
+///
+/// A decision on an email (Confirm, Change, Not job mail, Add interview) is held for the toast's
+/// Undo window before it's written, because the server acts on it at once (ADR 0012) and the rules
+/// don't let a client put an email back to `pending`. Undo inside the window drops the write; going
+/// to the background sends it at once.
 final class FirestoreUserDataStore: UserDataWriter {
     private let uid: String
     private let db: Firestore
@@ -37,7 +43,20 @@ final class FirestoreUserDataStore: UserDataWriter {
     private var jobMatches: [JobMatch] = []
     private var savedSearches: [SavedSearch] = []
     private var mailAccounts: [MailAccount] = []
+    private var mailMessages: [MailMessage] = []
+    private var watchlist: [WatchedCompany] = []
+    private var jobSources: [JobSourceStatus] = []
     private var renderedFiles: [RenderedFile] = []
+    /// Review decisions waiting out the Undo window, by message id.
+    private var heldReviews: [String: HeldReview] = [:]
+
+    private struct HeldReview {
+        let token: UUID
+        let continuation: CheckedContinuation<Bool, Never>
+    }
+
+    /// The longest toast (`BFHRTiming.toastExtended`, 10 s) plus a margin.
+    static let reviewHold: Duration = .milliseconds(10_500)
     private var lastData: UserData?
     private var pending: [String: Set<String>] = [:]
     private var received: Set<String> = []
@@ -110,6 +129,18 @@ final class FirestoreUserDataStore: UserDataWriter {
         listen("renderedFiles") { [weak self] documents in
             self?.renderedFiles = documents.compactMap { try? Self.decode(RenderedFile.self, $0.data(), ids: ["id": $0.documentID]) }
         }
+        listen("mailMessages") { [weak self] documents in
+            self?.mailMessages = documents.compactMap { try? Self.decode(MailMessage.self, $0.data(), ids: ["id": $0.documentID]) }
+        }
+        listen("watchlist") { [weak self] documents in
+            self?.watchlist = documents.compactMap { try? Self.decode(WatchedCompany.self, $0.data(), ids: ["id": $0.documentID]) }
+        }
+        // Project-wide source health (Settings › Job sources), readable by every signed-in user.
+        registrations.listeners.append(db.collection("jobSources").addSnapshotListener { [weak self] snapshot, _ in
+            guard let self, let snapshot else { return }
+            jobSources = snapshot.documents.compactMap { try? Self.decode(JobSourceStatus.self, $0.data(), ids: ["id": $0.documentID]) }
+            push()
+        })
 
         registrations.pathMonitor.pathUpdateHandler = { [weak self] path in
             let online = path.status == .satisfied
@@ -182,7 +213,10 @@ final class FirestoreUserDataStore: UserDataWriter {
             applicationEvents: events,
             interviews: interviews,
             contacts: contacts,
-            mailAccounts: mailAccounts
+            mailAccounts: mailAccounts,
+            mailMessages: mailMessages,
+            watchlist: watchlist,
+            jobSources: jobSources
         )
         lastData = data
         let pendingIDs = pending.values.reduce(into: Set<String>()) { $0.formUnion($1) }
@@ -196,8 +230,22 @@ final class FirestoreUserDataStore: UserDataWriter {
 
     /// One batch: creates are full documents (`schemaVersion` stamped), updates only the fields
     /// that changed (so an older build never drops a field it doesn't know), deletes by id.
-    /// Mail messages and job matches only carry the fields clients may write.
+    /// Mail messages and job matches only carry the fields clients may write. A decision on one
+    /// email, alone in its batch, waits out the Undo window first (`reviewHold`).
     func commit(_ changes: UserDataChanges) async throws {
+        var others = changes
+        others.mailMessages = []
+        let reviews = changes.mailMessages.compactMap { change -> (MailMessage, MailMessage)? in
+            if case .updated(let before, let after) = change { (before, after) } else { nil }
+        }
+        // Undo inside the window: the email is back as it was, so the held decision is dropped.
+        for (_, after) in reviews where !Self.clientReviewStates.contains(after.reviewState) {
+            release(after.id, write: false)
+        }
+        let decisions = reviews.filter { Self.clientReviewStates.contains($0.1.reviewState) }
+        if others.isEmpty, decisions.count == 1, let (_, after) = decisions.first {
+            guard await hold(after.id) else { return }
+        }
         let batch = db.batch()
         for change in changes.applications { try write(change, in: "applications", batch) }
         for event in changes.applicationEvents {
@@ -205,9 +253,11 @@ final class FirestoreUserDataStore: UserDataWriter {
         }
         for change in changes.interviews { try write(change, in: "interviews", batch) }
         for change in changes.contacts { try write(change, in: "contacts", batch) }
-        for case .updated(let before, let after) in changes.mailMessages where Self.clientReviewStates.contains(after.reviewState) {
-            let fields = try Self.changedFields(before, after).filter { Self.mailMessageFields.contains($0.key) }
-            if !fields.isEmpty { batch.updateData(fields, forDocument: user.collection("mailMessages").document(after.id)) }
+        for (_, after) in decisions {
+            // All four review fields, every time (`converters.mailReviewUpdate`).
+            let encoded = try Firestore.Encoder().encode(after)
+            let fields = encoded.filter { Self.mailMessageFields.contains($0.key) }
+            batch.updateData(fields, forDocument: user.collection("mailMessages").document(after.id))
         }
         for case .updated(let before, let after) in changes.jobMatches {
             let fields = try Self.changedFields(before, after).filter { Self.jobMatchFields.contains($0.key) }
@@ -221,7 +271,38 @@ final class FirestoreUserDataStore: UserDataWriter {
         for file in changes.renderedFiles {
             batch.setData(try Self.encode(file, dropping: ["id"]), forDocument: user.collection("renderedFiles").document(file.id))
         }
+        // Settings: notifications, quiet hours and AI on `users/{uid}`; Companies you follow.
+        if case .updated(let before, let after)? = changes.profile {
+            let fields = try Self.profileFields(before, after)
+            if !fields.isEmpty { batch.updateData(fields, forDocument: user) }
+        }
+        for change in changes.watchlist { try write(change, in: "watchlist", batch) }
         try await batch.commit()
+    }
+
+    /// Waits out the Undo window for `messageId`: true to write, false when Undo (or a newer
+    /// decision on the same email) dropped it.
+    private func hold(_ messageId: String) async -> Bool {
+        let token = UUID()
+        return await withCheckedContinuation { continuation in
+            release(messageId, write: false)
+            heldReviews[messageId] = HeldReview(token: token, continuation: continuation)
+            Task { [weak self] in
+                try? await Task.sleep(for: Self.reviewHold)
+                self?.release(messageId, write: true, token: token)
+            }
+        }
+    }
+
+    private func release(_ messageId: String, write: Bool, token: UUID? = nil) {
+        guard let held = heldReviews[messageId], token == nil || held.token == token else { return }
+        heldReviews[messageId] = nil
+        held.continuation.resume(returning: write)
+    }
+
+    /// Sends held decisions now (the app goes to the background, the session ends).
+    func flushHeldReviews() {
+        for id in Array(heldReviews.keys) { release(id, write: true) }
     }
 
     private func write<Document: Encodable & Identifiable>(
@@ -266,6 +347,18 @@ final class FirestoreUserDataStore: UserDataWriter {
         for (key, value) in new where key != "id" {
             if let previous = old[key], (previous as AnyObject).isEqual(value) { continue }
             fields[key] = value
+        }
+        return fields
+    }
+
+    /// `profileUpdate` of the desktop: changed top-level fields, with `settings.*` as dotted paths
+    /// so a setting saved here never overwrites another one saved elsewhere meanwhile.
+    static func profileFields(_ before: Profile, _ after: Profile) throws -> [String: Any] {
+        var fields = try changedFields(before, after)
+        if fields.removeValue(forKey: "settings") != nil {
+            for (key, value) in try changedFields(before.settings, after.settings) {
+                fields["settings.\(key)"] = value
+            }
         }
         return fields
     }

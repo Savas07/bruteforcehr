@@ -35,6 +35,8 @@ public struct AutoChangeItem: Identifiable, Hashable, Sendable {
     public var occurredAt: Date
     /// `allowed`, or why Undo isn't offered ("Can't undo — the status changed since").
     public var undo: RevertCheck
+    /// The interview the email suggests, while it isn't on the calendar yet ("Add interview").
+    public var interviewSuggestion: InterviewSuggestion?
 
     public var canUndo: Bool { undo == .allowed }
 }
@@ -69,11 +71,15 @@ public struct ReviewProposal: Identifiable, Hashable, Sendable {
     public var company: CompanyIdentity?
     public var role: String?
     public var currentStatus: ApplicationStatus?
+    /// The move Confirm leads to (what the server makes: forward or an exit only); for an email
+    /// without an application, the classifier's proposal.
     public var proposedStatus: ApplicationStatus?
     public var reason: ReviewReason
     public var dates: [ExtractedDate]
     public var meetingURLs: [String]
     public var contactName: String?
+    /// An invite's time, place and link; confirming adds it to the calendar (server-created).
+    public var interviewSuggestion: InterviewSuggestion?
 
     /// Confirm is enabled only when every required field is set and the user may make the move.
     public var canConfirm: Bool {
@@ -140,6 +146,8 @@ public struct TimelineEntry: Identifiable, Hashable, Sendable {
     /// Evidence sentence for automatic changes.
     public var reason: String?
     public var mailMessageId: String?
+    /// The stored email of a `mail_received` row (sender, subject, category); nil once deleted.
+    public var email: TimelineEmail?
     public var occurredAt: Date
     /// For status changes: Undo availability.
     public var undo: RevertCheck?
@@ -147,6 +155,13 @@ public struct TimelineEntry: Identifiable, Hashable, Sendable {
     public var isReverted: Bool
 
     public var isAutomatic: Bool { actor != .user }
+}
+
+/// The email behind a timeline row (linked emails on the application timeline).
+public struct TimelineEmail: Hashable, Sendable {
+    public var sender: MailAddress
+    public var subject: String
+    public var category: MailCategory
 }
 
 // MARK: - Builders
@@ -177,7 +192,8 @@ extension UserData {
                     mailMessageId: event.evidence?.mailMessageId,
                     sender: message?.from.address,
                     occurredAt: event.occurredAt,
-                    undo: revertCheck(for: event.id)
+                    undo: revertCheck(for: event.id),
+                    interviewSuggestion: message.flatMap { $0.reviewState == .autoApplied ? Self.pendingInterview($0) : nil }
                 )
             }
             .sorted { $0.occurredAt > $1.occurredAt }
@@ -219,12 +235,19 @@ extension UserData {
             company: companyName.map { CompanyIdentity(name: $0, domain: linked?.companyDomain) },
             role: linked?.role ?? message.extracted.role,
             currentStatus: linked?.status,
-            proposedStatus: message.suggestedStatus,
+            proposedStatus: linked == nil ? message.suggestedStatus : reviewMove(for: message, category: message.category, applicationId: linked?.id),
             reason: reason,
             dates: message.extracted.dates,
             meetingURLs: message.extracted.meetingUrls,
-            contactName: message.extracted.contactName
+            contactName: message.extracted.contactName,
+            interviewSuggestion: Self.pendingInterview(message)
         )
+    }
+
+    /// An invite's suggested interview while it isn't on the calendar yet.
+    static func pendingInterview(_ message: MailMessage) -> InterviewSuggestion? {
+        guard message.category == .interviewInvite, let suggestion = message.interviewSuggestion, suggestion.interviewId == nil else { return nil }
+        return suggestion
     }
 
     /// Follow-up and no-response suggestions at `now`, after the user's answers on the cards
@@ -297,6 +320,9 @@ extension UserData {
                 text: event.text,
                 reason: event.evidence?.reason,
                 mailMessageId: event.evidence?.mailMessageId,
+                email: event.type == .mailReceived ? event.evidence?.mailMessageId.flatMap { mailMessage(id: $0) }.map {
+                    TimelineEmail(sender: $0.from, subject: $0.subject, category: $0.category)
+                } : nil,
                 occurredAt: event.occurredAt,
                 undo: isMove ? revertCheck(for: event.id) : nil,
                 isReverted: reverted.contains(event.id)

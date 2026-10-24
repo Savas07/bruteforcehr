@@ -1,5 +1,6 @@
 import { X } from "lucide-react";
 import { Dialog } from "radix-ui";
+import { useCallback, useId, useRef, useState } from "react";
 import { defineMessages, type MessageDescriptor, useIntl } from "react-intl";
 import { shortcutGroups, shortcutKeys, shortcutMessage, shortcuts } from "../lib/shortcuts";
 import type { KeyBinding } from "../shared/keyboard/keymap";
@@ -28,6 +29,7 @@ const groupMessages: Readonly<Record<string, MessageDescriptor>> = defineMessage
   Tracker: { id: "shell.shortcutGroup.tracker", defaultMessage: "Tracker" },
   CVs: { id: "shell.shortcutGroup.cvs", defaultMessage: "CVs" },
   Mail: { id: "shell.shortcutGroup.mail", defaultMessage: "Mail" },
+  "CV editor": { id: "shell.shortcutGroup.cvEditor", defaultMessage: "CV editor" },
 });
 
 interface Row {
@@ -64,12 +66,33 @@ function useRowGroups(): readonly (readonly [string, readonly Row[]])[] {
 export function ShortcutsSheet({
   open,
   onOpenChange,
+  onCloseAutoFocus,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Where focus goes on close: the sheet has no Radix trigger to return to. */
+  onCloseAutoFocus: (event: Event) => void;
 }) {
   const intl = useIntl();
   const groups = useRowGroups();
+  const idPrefix = useId();
+  const titleId = `${idPrefix}title`;
+  const contentRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement | null>(null);
+  // The list is a tab stop only while it scrolls (a short window, a long list of view keys), so
+  // the keyboard can scroll it (WCAG 2.1.1) without an idle stop when everything fits. Measured
+  // from a callback ref: the portal mounts the content a render after `open` turns true.
+  const [overflowing, setOverflowing] = useState(false);
+  const observeList = useCallback((list: HTMLDivElement | null) => {
+    listRef.current = list;
+    if (!list) return;
+    const observer = new ResizeObserver(() => setOverflowing(list.scrollHeight > list.clientHeight));
+    observer.observe(list);
+    return () => {
+      observer.disconnect();
+      listRef.current = null;
+    };
+  }, []);
   const groupHeading = (group: string): string => {
     const message = groupMessages[group];
     return message ? intl.formatMessage(message) : group;
@@ -78,10 +101,25 @@ export function ShortcutsSheet({
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay className="bg-surface-scrim fixed inset-0 z-(--bfhr-layer-modal)" />
-        <Dialog.Content className="bg-surface-elevated shadow-modal fixed top-1/2 left-1/2 z-(--bfhr-layer-modal) flex max-h-[calc(100vh-48px)] w-[min(480px,calc(100vw-32px))] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-lg">
+        {/* One column up to 800 px wide, then two, so a laptop window shows every group without
+            scrolling (Obvious, Relume). */}
+        <Dialog.Content
+          ref={contentRef}
+          aria-labelledby={titleId}
+          // Focus starts on the list when it scrolls (arrow keys and Page Down work at once), else
+          // on the dialog itself, which reads its title and description; not on Close.
+          onOpenAutoFocus={(event) => {
+            event.preventDefault();
+            const list = listRef.current;
+            if (list && list.scrollHeight > list.clientHeight) list.focus();
+            else contentRef.current?.focus();
+          }}
+          onCloseAutoFocus={onCloseAutoFocus}
+          className="bg-surface-elevated shadow-modal fixed top-1/2 left-1/2 z-(--bfhr-layer-modal) flex max-h-[calc(100vh-48px)] w-[min(480px,calc(100vw-32px))] -translate-x-1/2 -translate-y-1/2 flex-col overflow-hidden rounded-lg focus:outline-none min-[800px]:w-[min(760px,calc(100vw-48px))]"
+        >
           <div className="flex items-start gap-4 px-6 pt-5 pb-3">
             <div className="flex-1">
-              <Dialog.Title className="font-display text-title2">
+              <Dialog.Title id={titleId} className="font-display text-title2">
                 {intl.formatMessage(messages.title)}
               </Dialog.Title>
               <Dialog.Description className="text-fg-secondary mt-1 text-callout">
@@ -95,11 +133,21 @@ export function ShortcutsSheet({
               <X aria-hidden="true" className="size-4" strokeWidth={1.75} />
             </Dialog.Close>
           </div>
-          <div className="overflow-y-auto px-6 pb-6">
-            {groups.map(([group, rows]) => (
-              <section key={group} aria-labelledby={`shortcuts-${group}`} className="mt-3 first:mt-0">
+          <div
+            ref={observeList}
+            // -1 until measured: the open handler may focus it before `overflowing` is set.
+            tabIndex={overflowing ? 0 : -1}
+            {...(overflowing && { role: "region", "aria-labelledby": titleId })}
+            className="overflow-y-auto rounded-md px-6 pt-1 pb-6 -outline-offset-2 min-[800px]:columns-2 min-[800px]:gap-8"
+          >
+            {groups.map(([group, rows], index) => (
+              <section
+                key={group}
+                aria-labelledby={`${idPrefix}group-${index}`}
+                className="mb-3 break-inside-avoid last:mb-0"
+              >
                 <h3
-                  id={`shortcuts-${group}`}
+                  id={`${idPrefix}group-${index}`}
                   className="text-fg-secondary mb-1 text-footnote font-semibold"
                 >
                   {groupHeading(group)}
@@ -108,7 +156,7 @@ export function ShortcutsSheet({
                   {rows.map((row) => (
                     <div key={row.id} className="flex min-h-9 items-center justify-between gap-4 py-1">
                       <dt className="text-callout">{row.label}</dt>
-                      <dd>
+                      <dd className="shrink-0">
                         <Keycaps keys={row.keys} />
                       </dd>
                     </div>

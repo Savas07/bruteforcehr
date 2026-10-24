@@ -10,11 +10,15 @@ import { useKeyBindings } from "../keyboard/useKeyBindings";
 
 const messages = defineMessages({
   lists: { id: "shared.ui.focus.lists", defaultMessage: "Lists", description: "Shortcuts-sheet group name" },
-  next: { id: "shared.ui.focus.next", defaultMessage: "Next item", description: "Shortcut label (J / ↓)" },
+  next: {
+    id: "shared.ui.focus.next",
+    defaultMessage: "Move down the list",
+    description: "Shortcut label (J / ↓): focus moves to the next row",
+  },
   previous: {
     id: "shared.ui.focus.previous",
-    defaultMessage: "Previous item",
-    description: "Shortcut label (K / ↑)",
+    defaultMessage: "Move up the list",
+    description: "Shortcut label (K / ↑): focus moves to the previous row",
   },
   open: {
     id: "shared.ui.focus.open",

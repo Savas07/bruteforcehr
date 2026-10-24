@@ -50,11 +50,13 @@ const messages = defineMessages({
     id: "application-detail.panel.keys.openFull",
     defaultMessage: "Open the application as a full page",
   },
-  keyMove: { id: "application-detail.panel.keys.move", defaultMessage: "Move to… (panel)" },
-  keySnooze: { id: "application-detail.panel.keys.snooze", defaultMessage: "Later (panel suggestion)" },
+  // The sheet's "Application panel" heading says where these keys work, so the labels match the
+  // full page's.
+  keyMove: { id: "application-detail.panel.keys.move", defaultMessage: "Move to…" },
+  keySnooze: { id: "application-detail.panel.keys.snooze", defaultMessage: "Later (snooze the suggestion)" },
   keyDecline: {
     id: "application-detail.panel.keys.decline",
-    defaultMessage: "Not needed / Keep waiting (panel)",
+    defaultMessage: "Not needed / Keep waiting",
   },
 });
 
@@ -89,6 +91,7 @@ export function ApplicationPanel({ applicationId, nav, onSelect, onClose }: Appl
       <DetailSidePanel
         open
         label={intl.formatMessage(messages.label)}
+        keysGroup={intl.formatMessage(messages.group)}
         onClose={onClose}
         {...(nav && {
           nav: {

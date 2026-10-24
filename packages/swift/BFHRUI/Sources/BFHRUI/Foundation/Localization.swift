@@ -179,12 +179,32 @@ public enum Strings {
     public static let noApplicationFound = LocalizedStringResource.bfhr("field.noApplication", default: "No application found")
     public static let noStatusChange = LocalizedStringResource.bfhr("field.noStatusChange", default: "No change")
 
+    // Interview suggested by an invite (ADR 0012)
+    public static let suggestedInterview = LocalizedStringResource.bfhr("interview.suggested", default: "Interview in this email")
+    public static let interviewOnConfirm = LocalizedStringResource.bfhr("interview.onConfirm", default: "Confirming adds it to your interviews.")
+    public static let interviewNeedsApplication = LocalizedStringResource.bfhr("interview.needsApplication", default: "Link an application to add it to your interviews.")
+    public static let interviewNoZone = LocalizedStringResource.bfhr("interview.noZone", default: "The email didn't name a time zone, so this uses yours.")
+    public static let addInterview = LocalizedStringResource.bfhr("action.addInterview", default: "Add interview")
+
+    public static func interviewTheirTime(_ time: String, zone: String) -> LocalizedStringResource {
+        .bfhr("interview.theirTime", default: "\(time) in \(zone)", comment: "The organiser's local time. %1$@ = time, %2$@ = time zone name.")
+    }
+
+    public static func interviewLength(_ minutes: Int) -> LocalizedStringResource {
+        .bfhr("interview.length", default: "\(minutes) min", comment: "%lld = minutes.")
+    }
+
     // Timeline
     public static let timelineCreated = LocalizedStringResource.bfhr("timeline.created", default: "Added to your tracker")
     public static let timelineNote = LocalizedStringResource.bfhr("timeline.note", default: "Note")
     public static let timelineMailReceived = LocalizedStringResource.bfhr("timeline.mailReceived", default: "Email received")
     public static let timelineMailSent = LocalizedStringResource.bfhr("timeline.mailSent", default: "Email sent")
     public static let timelineInterviewScheduled = LocalizedStringResource.bfhr("timeline.interviewScheduled", default: "Interview scheduled")
+    public static let openEmail = LocalizedStringResource.bfhr("action.openEmail", default: "Open email")
+
+    public static func timelineMailFrom(_ sender: String) -> LocalizedStringResource {
+        .bfhr("timeline.mailFrom", default: "Email from \(sender)", comment: "A linked email on the application timeline. %@ = sender name or address.")
+    }
 
     public static func timelineMoved(to status: ApplicationStatus) -> LocalizedStringResource {
         .bfhr("timeline.moved", default: "Moved to \(status.label)")

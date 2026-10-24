@@ -375,19 +375,19 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Deine Korrekturen helfen uns, künftige E-Mails richtig einzuordnen."
+            "value" : "Die Statusänderung folgt der Kategorie. Deine Korrekturen helfen uns, künftige E-Mails zu sortieren."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your corrections help us sort future emails."
+            "value" : "The status change follows the category. Your corrections help us sort future emails."
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Düzeltmeleriniz sonraki e-postaları doğru sıralamamıza yardımcı olur."
+            "value" : "Durum değişikliği kategoriye göre belirlenir. Düzeltmeleriniz gelecekteki e-postaları sınıflandırmamıza yardımcı olur."
           }
         }
       }
@@ -737,6 +737,144 @@
         }
       }
     },
+    "mail.email.bodyRemoved" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Den vollständigen Text haben wir nach Ablauf der Aufbewahrungszeit gelöscht. Die Zusammenfassung bleibt."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We removed the full text when its keep-time ended. The summary stays."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saklama süresi dolunca tam metni sildik. Özet kalır."
+          }
+        }
+      }
+    },
+    "mail.email.interviewAdded" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das Interview aus dieser E-Mail steht bei deinen Interviews."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The interview from this email is in your interviews."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bu e-postadaki mülakat, mülakatlarınızda."
+          }
+        }
+      }
+    },
+    "mail.email.notFiled" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keiner Bewerbung zugeordnet"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not linked to an application"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bir başvuruya bağlı değil"
+          }
+        }
+      }
+    },
+    "mail.email.openApplication" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bewerbung öffnen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open application"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Başvuruyu aç"
+          }
+        }
+      }
+    },
+    "mail.email.state" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wie es zugeordnet wurde"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "How it was filed"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nasıl dosyalandı"
+          }
+        }
+      }
+    },
+    "mail.email.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "E-Mail"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Email"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "E-posta"
+          }
+        }
+      }
+    },
     "mail.error.title" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1032,6 +1170,75 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Alıcı: %@"
+          }
+        }
+      }
+    },
+    "mail.scan.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Neue E-Mails erscheinen hier, sobald wir sie finden."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New emails show up here as we find them."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yeni e-postalar bulundukça burada görünür."
+          }
+        }
+      }
+    },
+    "mail.scan.checked" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Geprüfte E-Mails: %lld"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Emails checked: %lld"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kontrol edilen e-posta: %lld"
+          }
+        }
+      }
+    },
+    "mail.scan.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ wird nach Job-E-Mails durchsucht"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Checking %@ for job emails"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ iş e-postaları için kontrol ediliyor"
           }
         }
       }
@@ -1341,19 +1548,19 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Änderungen, die wir in den letzten 14 Tagen anhand deiner E-Mails gemacht haben. Rückgängig legt die E-Mail zurück in „Zu prüfen“."
+            "value" : "Änderungen aus deinen E-Mails der letzten 14 Tage. Rückgängig setzt die Bewerbung zurück."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Changes we made from your email in the last 14 days. Undo puts the email back in To review."
+            "value" : "Changes we made from your email in the last 14 days. Undo moves the application back."
           }
         },
         "tr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Son 14 günde e-postalarınıza göre yaptığımız değişiklikler. Geri al, e-postayı İncelenecek listesine geri taşır."
+            "value" : "Son 14 günde e-postalarınıza göre yaptığımız değişiklikler. Geri al, başvuruyu önceki durumuna taşır."
           }
         }
       }
@@ -1448,6 +1655,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Onaylandı: %1$@, %2$@ aşamasına taşındı"
+          }
+        }
+      }
+    },
+    "mailReview.toast.interviewAdded" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Interview hinzugefügt: %@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Interview added: %@"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mülakat eklendi: %@"
           }
         }
       }

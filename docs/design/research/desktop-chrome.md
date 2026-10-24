@@ -173,3 +173,46 @@ German uses informal "du", which matches the calm, personal tone. That decision 
 3. **Accent colour:** M0 stays neutral (selection is a grey fill, and the focus ring is the only blue). Should `@bfhr/ui-tokens` follow the OS accent (`systemPreferences.getAccentColor()`) or a brand colour?
 4. **⌘K vs search:** when Jobs gets full-text search (M4), does ⌘K stay global (palette with entity search) while ⌘F searches within a section? Proposal: yes.
 5. **Windows menu access:** with the title bar overlay the menu bar is hidden, so Alt doesn't reveal it. Is the shortcuts sheet plus palette enough, or should a "⋯" app menu button sit in the title bar?
+
+## Addendum: chrome critique (M6, 2026-10-24)
+
+Why: the palette, sidebar and shortcuts sheet had never had their own critique ([STATUS](../../STATUS.md) "Gaps before v1.0"). Since M0 the palette gained Settings and Account groups, the sheet gained every screen's own keys (lists, the tracker views, the application panel), and the sidebar gained Settings, the sync line and the update card. These queries check those additions; the M0 references above still hold.
+
+Queries (same `task_intent` / `output_destination`, `platform: "web"`, `mode: "deep"`): `keyboard shortcuts dialog with shortcuts grouped by context such as list and detail view` (8 examined), `command palette listing navigation, settings pages and account actions like sign out` (6), `collapsed icon-only sidebar navigation rail with tooltip labels` (6).
+
+### Keyboard shortcuts sheet, by context
+
+| App             | mobbin_url                                                                  | What we borrow                                                                                                                                                                  | Why                                                                                                                                     |
+| --------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Obvious         | [d1f418bb](https://mobbin.com/screens/d1f418bb-9d1a-40b6-a7b5-7b294ef64703) | Groups named after where the keys work (Navigation · Threads · Sidebar panels), several columns in one wide dialog, and nouns in the labels ("Previous thread", "Next thread"). | The same J / K can move through a list or switch the record a panel shows; the group heading and the noun make the difference readable. |
+| Relume          | [d6b809da](https://mobbin.com/screens/d6b809da-7f84-4812-be03-d0b61decff90) | Short groups in columns, so the whole sheet fits in a laptop window without scrolling.                                                                                          | Our sheet grew past 20 rows over the tracker; one 480 px column scrolled at 1280 × 800.                                                 |
+| Microsoft Teams | [958c4c1a](https://mobbin.com/screens/958c4c1a-d6f2-4062-b350-910a60c174e4) | Labels that say what moves ("Move focus to message pane").                                                                                                                      | "Move down the list" says what J does in a list better than "Next item".                                                                |
+| Slite           | [2e1cc584](https://mobbin.com/screens/2e1cc584-70e7-4698-b1da-bf1e6239b00f) | "Close current panel or modal · Esc" listed with the panel's other keys.                                                                                                        | Esc for the panel belongs under the panel, not under "Lists".                                                                           |
+
+Rejected: [Webflow](https://mobbin.com/screens/be7bebfe-053c-42e2-a67c-9e79073b0d83) and [Databricks](https://mobbin.com/screens/11bde50c-a35a-479b-b234-f80df7e50cec) (rejected in M0 too: dense walls, keys far from labels), [YouTube](https://mobbin.com/screens/3b64f6b6-f7f8-4f4a-8ffc-a339fec5cd85) (plain-text keys, uppercase headings, "Dismiss" link at the bottom only), [Frame.io](https://mobbin.com/screens/7bf0c9af-dd42-4511-a35e-15e097df461b) (search + category rail: right for 100+ shortcuts, heavy for our ~30).
+
+### Command palette with Settings and Account
+
+| App      | mobbin_url                                                                  | What we borrow                                                                             | Why                                                                                                                                   |
+| -------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
+| Juicebox | [2af813bf](https://mobbin.com/screens/2af813bf-0129-45d1-81ed-069edee76e16) | Account and settings destinations as their own groups, and a footer that teaches the keys. | Confirms Go to · Settings · Help · Account, and the footer hints.                                                                     |
+| Grok     | [4dfa9e19](https://mobbin.com/screens/4dfa9e19-a258-4a37-b2e3-5f11c29af428) | "Sign Out" as a plain palette row in its own group, no confirmation in the palette.        | Our Sign out row (it saves open edits first, then signs out).                                                                         |
+| Devin    | [e37a4e69](https://mobbin.com/screens/e37a4e69-9a61-4f36-803d-edbd89c1229d) | Filtered settings results with their path ("Settings › Review").                           | When a query matches a Settings pane, the group heading carries "Settings"; a breadcrumb is the later step if panes get sub-sections. |
+
+Rejected: [Mistral AI](https://mobbin.com/screens/8450c1c7-7c10-40a3-9af3-c9c234ac4b53) (fourteen "Go to …" rows, every label repeats the verb), [Navattic](https://mobbin.com/screens/c65971cf-c4ea-45e9-99a5-555930cb5d73) and [Base44](https://mobbin.com/screens/675ecfd2-b7fc-4e8d-9078-3eeeaddda7c7) (kept from M0; nothing new for these groups). None of the six shows its empty state; ours keeps the M0 copy and must stay valid for assistive tech (an empty listbox is not).
+
+### Narrow rail
+
+| App       | mobbin_url                                                                  | What we borrow                                          | Why                                                                                     |
+| --------- | --------------------------------------------------------------------------- | ------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| Aboard    | [ccbbb212](https://mobbin.com/screens/ccbbb212-3df3-4547-b922-270067fcad8f) | Icon-only rail with the utilities pinned to the bottom. | Same shape as our rail: sections up top, Settings and Keyboard shortcuts at the bottom. |
+| Canny     | [42ae6a9d](https://mobbin.com/screens/42ae6a9d-80a4-4a48-ad7a-437fd9942a7c) | A tinted selected icon with no other marker.            | Our rail keeps the selected fill from the wide sidebar.                                 |
+| Snowflake | [c98621c6](https://mobbin.com/screens/c98621c6-8419-45f9-95d7-abfb49281c07) | The rail's bottom item opens account and settings.      | Confirms the bottom-pinned Settings in the rail.                                        |
+
+Rejected: [mymind](https://mobbin.com/screens/86b34b7e-7ad8-4289-a8b6-f9a2252a248f) (rotated wordmark, unlabelled icons), [Microsoft Copilot](https://mobbin.com/screens/0c63e9de-5b04-420c-b51d-f88d5ba86680) (icons with no visible name on focus), [Ferndesk](https://mobbin.com/screens/2ef622a8-61a0-41e3-a713-f06c782808bc) (an editor's settings panel, not navigation). Our rail shows the name and the shortcut in a tooltip on hover **and on keyboard focus**, which none of the rejected ones do.
+
+### Decisions
+
+- **Sheet:** two columns from 800 px wide (one below), groups never split across columns. The list is a tab stop, and gets focus on open, only while it scrolls. Focus returns to whatever opened the sheet.
+- **J / K wording:** lists say "Move down the list" / "Move up the list"; the application panel's Esc / J / K join the panel's own keys under "Application panel" ("Close the panel", "Next record", "Previous record"), and the panel's other labels drop their "(panel)" suffix because the heading says it. A key the panel owns (Mod+Enter) isn't listed a second time under the table.
+- **Palette:** with no match, the result listbox leaves the accessibility tree and the empty message is announced from a polite live region. Esc returns focus to where the palette was opened from.

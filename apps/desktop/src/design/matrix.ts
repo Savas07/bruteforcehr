@@ -177,6 +177,51 @@ export function updateCaptureFileName(
 }
 
 /**
+ * Desktop chrome states (the harness's `chrome` target): the command palette (open, filtered, no
+ * match), the shortcuts sheet over Today (its list keys) and over the tracker table with an
+ * application's details panel open (the table's, the list's and the panel's keys together), and
+ * the narrow rail with a keyboard-focused row and its tooltip. They're opened with the keyboard,
+ * like a person would, over a populated screen.
+ */
+export const chromeDesignStates = [
+  "palette",
+  "palette-filtered",
+  "palette-empty",
+  "shortcuts",
+  "shortcuts-panel",
+  "rail",
+  "rail-focus",
+] as const;
+export type ChromeDesignState = (typeof chromeDesignStates)[number];
+
+/** The screen a chrome state opens over (populated). */
+export function chromeDesignHash(
+  state: ChromeDesignState,
+  extra: Readonly<Record<string, string>> = {},
+): string {
+  return state === "shortcuts-panel"
+    ? designHash("tracker-table", "populated", { applicationId: "app-brightwave", ...extra })
+    : designHash("today", "populated", extra);
+}
+
+/** The rail states need the narrow window (< 640 px); the rest use the laptop size. */
+export function chromeCaptureSize(state: ChromeDesignState): {
+  readonly width: number;
+  readonly height: number;
+} {
+  return state.startsWith("rail") ? { width: 600, height: 800 } : captureSizes[0];
+}
+
+/** `chrome-<state>-<theme>-<w>x<h>.png`. */
+export function chromeCaptureFileName(
+  state: ChromeDesignState,
+  theme: CaptureTheme,
+  size: { readonly width: number; readonly height: number },
+): string {
+  return `chrome-${state}-${theme}-${size.width}x${size.height}.png`;
+}
+
+/**
  * Sign-in states (`?auth=<state>`, src/design/auth.tsx): the window while signed out. Without
  * `?auth=` the persona is signed in.
  */

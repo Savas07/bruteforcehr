@@ -69,7 +69,8 @@ panic = "abort"
 strip = true
 
 [lints.rust]
-# Denied, not forbidden: src/cv_pdf/native.rs alone allows it, for the webviews' print APIs (FFI).
+# Denied, not forbidden: src/cv_pdf/native.rs allows it for the webviews' print APIs (FFI), and
+# `tab_to_links` in src/window.rs for one WKWebView preference.
 unsafe_code = "deny"
 
 [lints.clippy]

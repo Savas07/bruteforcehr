@@ -15,6 +15,7 @@ enum ConformanceFile {
     static let stateMachine = packages.appendingPathComponent("core/conformance/state-machine.json")
     static let insights = packages.appendingPathComponent("core/conformance/insights.json")
     static let jobImport = packages.appendingPathComponent("core/conformance/job-import.json")
+    static let mail = packages.appendingPathComponent("core/conformance/mail.json")
     static let apply = packages.appendingPathComponent("core/conformance/apply.json")
     static let populated = packages.appendingPathComponent("fixtures/conformance/populated.json")
     static let empty = packages.appendingPathComponent("fixtures/conformance/empty.json")

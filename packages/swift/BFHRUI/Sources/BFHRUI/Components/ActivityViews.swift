@@ -196,7 +196,8 @@ public struct SnoozeMenu<Label: View>: View {
 }
 
 /// One timeline row (components.md `Timeline`): system rows are one line (icon + sentence +
-/// actor + time); automatic rows add the reason, "View source" and Undo or the "Can't undo" line.
+/// actor + time); automatic rows add the reason, "View source" and Undo or the "Can't undo" line;
+/// a linked email names its sender and subject and opens with "Open email".
 ///
 /// Each text is its own accessibility element, in reading order; the glyph is decorative; View
 /// source and Undo are separate buttons. Neither a combined element nor a container: the
@@ -226,7 +227,9 @@ public struct TimelineRow: View {
                 if showsViewSource || showsUndo {
                     HStack(spacing: BFHRSpace.s2) {
                         if showsViewSource, let onViewSource {
-                            Button(action: onViewSource) { Text(Strings.viewSource) }.buttonStyle(.bfhrPlain)
+                            Button(action: onViewSource) { Text(entry.email != nil ? Strings.openEmail : Strings.viewSource) }
+                                .buttonStyle(.bfhrPlain)
+                                .accessibilityIdentifier("timeline.openEmail")
                         }
                         if showsUndo, let onUndo {
                             Button(action: onUndo) { Text(Strings.undo) }.buttonStyle(.bfhrPlain)
@@ -239,7 +242,9 @@ public struct TimelineRow: View {
         }
     }
 
-    private var showsViewSource: Bool { entry.isAutomatic && entry.mailMessageId != nil && onViewSource != nil }
+    private var showsViewSource: Bool {
+        onViewSource != nil && entry.mailMessageId != nil && (entry.isAutomatic || entry.email != nil)
+    }
     private var showsUndo: Bool { entry.isAutomatic && entry.undo == .allowed && onUndo != nil }
 
     private var description: some View {
@@ -296,7 +301,7 @@ public struct TimelineRow: View {
         case .statusChanged(_, let to): Strings.timelineMoved(to: to)
         case .reverted(let to): Strings.timelineReverted(to: to)
         case .note: Strings.timelineNote
-        case .mailReceived: Strings.timelineMailReceived
+        case .mailReceived: entry.email.map { Strings.timelineMailFrom($0.sender.name ?? $0.sender.address) } ?? Strings.timelineMailReceived
         case .mailSent: Strings.timelineMailSent
         case .interviewScheduled: Strings.timelineInterviewScheduled
         }

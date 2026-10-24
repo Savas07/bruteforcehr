@@ -4,7 +4,12 @@ import Observation
 
 /// The Mail tab (docs/design/research/mail-review.md, "Decision — iOS"): the To review queue,
 /// automatic Updates of the last 14 days and All job mail, filtered by account, plus the review
-/// sheet's editable draft.
+/// sheet's editable draft and the read-only email sheet.
+///
+/// Decisions follow the deployed review trigger (ADR 0012): the client writes only the four review
+/// fields and the server links, records and moves. The data layer holds review writes for the
+/// toast's Undo window, so Undo inside it never reaches the server; after that, a move is undone
+/// from the timeline or Updates (a reverting event).
 @Observable
 public final class MailReviewModel: ScreenModel {
     public var phase: LoadPhase = .loading
@@ -19,6 +24,15 @@ public final class MailReviewModel: ScreenModel {
     public let calendar: Calendar
 
     public private(set) var data: UserData = .empty
+
+    /// Persists every decision (the app's Firestore store); nil in tests and design mode.
+    public weak var writer: (any UserDataWriter)?
+    /// Live data: writes are stamped with the system clock.
+    public var usesSystemClock = false
+    /// Counts writes the server refused; the screen shows a toast when it changes.
+    public private(set) var writeFailures = 0
+
+    var writeTime: Date { usesSystemClock ? .now : now }
 
     // MARK: Accounts
 
@@ -42,6 +56,9 @@ public final class MailReviewModel: ScreenModel {
 
     /// Filtered accounts that need sign-in or failed (non-dismissible Reconnect banner each).
     public var needsAttention: [MailAccountItem] { filteredAccounts.filter(\.needsAttention) }
+
+    /// Filtered accounts still running their first lookback scan (the scanning card).
+    public var scanning: [MailAccountItem] { filteredAccounts.filter(\.isScanning) }
 
     /// Latest sync of the filtered accounts ("Checked 3 min ago").
     public var lastChecked: Date? { filteredAccounts.compactMap(\.lastSyncedAt).max() }
@@ -111,12 +128,6 @@ public final class MailReviewModel: ScreenModel {
     /// Application picker options, by company then role.
     public private(set) var applicationOptions: [ApplicationOption] = []
 
-    /// Status picker for the draft's application: every status, the current one checked, user
-    /// moves the state machine denies disabled with their reason. Empty without an application.
-    public var statusTargets: [MoveTarget] {
-        draft?.applicationId.map { data.moveTargets(for: $0) } ?? []
-    }
-
     /// The draft differs from the email's proposal: Confirm writes a correction.
     public var isDraftEdited: Bool {
         guard let draft, let message = data.mailMessage(id: draft.messageId) else { return false }
@@ -124,11 +135,11 @@ public final class MailReviewModel: ScreenModel {
     }
 
     /// The open email as the review sheet shows it: the proposal with the draft's corrections
-    /// applied (category, application, status), so the sentence, the fields and Confirm's enabled
-    /// state always describe what Confirm will write. A corrected field is the user's, so it's no
-    /// longer hedged.
+    /// applied (category, application, and the move the server makes for them), so the sentence,
+    /// the fields and Confirm's enabled state always describe what Confirm will do. A corrected
+    /// field is the user's, so it's no longer hedged.
     public var draftProposal: ReviewProposal? {
-        guard let draft, var proposal = reviewing else { return nil }
+        guard let draft, var proposal = reviewing, let message = data.mailMessage(id: draft.messageId) else { return nil }
         guard isDraftEdited else { return proposal }
         if let category = draft.category { proposal.category = category }
         let application = draft.applicationId.flatMap { data.application(id: $0) }
@@ -136,9 +147,20 @@ public final class MailReviewModel: ScreenModel {
         proposal.company = application.map { CompanyIdentity(name: $0.company, domain: $0.companyDomain) } ?? proposal.company
         proposal.role = application?.role ?? proposal.role
         proposal.currentStatus = application?.status
-        proposal.proposedStatus = draft.status
+        proposal.proposedStatus = data.reviewMove(for: message, category: draft.category ?? message.category, applicationId: application?.id)
+        if proposal.category != .interviewInvite { proposal.interviewSuggestion = nil }
         proposal.isHedged = false
         return proposal
+    }
+
+    // MARK: Email sheet
+
+    /// The email open in the read-only sheet (All job mail, a timeline row, a link); nil when closed.
+    public var viewingId: String?
+
+    /// The open email with its application and the interview it suggests.
+    public var viewing: MailMessageDetail? {
+        viewingId.flatMap { data.mailMessage(id: $0) }.map(data.messageDetail)
     }
 
     // MARK: Private state
@@ -165,6 +187,46 @@ public final class MailReviewModel: ScreenModel {
         }
         hasLoaded = true
         phase = .loaded
+        // A sheet whose email went away (disconnected account, Not job mail elsewhere) closes.
+        if let messageId = draft?.messageId, data.mailMessage(id: messageId)?.reviewState != .pending { draft = nil }
+        if let viewingId, data.mailMessage(id: viewingId) == nil { self.viewingId = nil }
+    }
+
+    /// Runs a mutation on `data`, recomputes and hands the changed documents to `writer` as one
+    /// batch (see `TrackerBoardModel.mutate`).
+    @discardableResult
+    func mutate<Result>(_ body: (inout UserData) throws -> Result) rethrows -> Result {
+        let before = data
+        let result = try body(&data)
+        let changes = UserDataChanges(from: before, to: data)
+        recompute()
+        if !changes.isEmpty, let writer {
+            Task { [weak self] in
+                do {
+                    try await writer.commit(changes)
+                } catch {
+                    self?.writeFailures += 1
+                }
+            }
+        }
+        return result
+    }
+
+    // MARK: Opening
+
+    /// Opens an email from a link (`bruteforcehr://mail/review/{id}`, a timeline row): the review
+    /// sheet while it waits for review, the read-only email otherwise. False when it's gone.
+    @discardableResult
+    public func open(_ messageId: String) -> Bool {
+        guard let message = data.mailMessage(id: messageId) else { return false }
+        if message.reviewState == .pending, message.category != .jobAlert {
+            viewingId = nil
+            beginReview(messageId)
+        } else {
+            draft = nil
+            viewingId = messageId
+        }
+        return true
     }
 
     // MARK: Review sheet
@@ -191,44 +253,37 @@ public final class MailReviewModel: ScreenModel {
         ReviewDraft(
             messageId: message.id,
             category: message.category == .notJob ? nil : message.category,
-            applicationId: message.applicationId.flatMap { data.application(id: $0) }?.id,
-            status: message.suggestedStatus
+            applicationId: message.applicationId.flatMap { data.application(id: $0) }?.id
         )
     }
 
-    /// Every required field is set and the user may make the move.
+    /// The category and the application are set (the move follows from them).
     public func canConfirm(_ draft: ReviewDraft) -> Bool {
-        guard draft.category != nil, let applicationId = draft.applicationId,
-              let application = data.application(id: applicationId) else { return false }
-        guard let status = draft.status, status != application.status else { return true }
-        return canTransition(from: application.status, to: status, actor: .user).isAllowed
+        draft.category != nil && draft.applicationId.flatMap { data.application(id: $0) } != nil
     }
 
     // MARK: Actions
 
-    /// Confirms the email's proposal, or the sheet's corrected `draft`. Moves the linked
-    /// application when the status differs. Undo reverts the move and puts the email back in
-    /// To review.
+    /// Confirms the email's proposal, or the sheet's corrected `draft`. The server links the email
+    /// and makes the move; Undo (inside the toast's window) puts the email back in To review.
     @discardableResult
     public func confirm(_ messageId: String, draft: ReviewDraft? = nil) throws -> ToastItem {
         guard let previous = data.mailMessage(id: messageId) else {
             throw UserDataError.missingMailMessage(messageId)
         }
-        let event: ApplicationEvent?
+        let decision: ReviewDecision
         if let draft {
-            guard draft.category != nil, draft.applicationId != nil else {
+            guard let category = draft.category, let applicationId = draft.applicationId else {
                 throw MailReviewError.incompleteDraft(messageId: messageId)
             }
-            event = try data.confirmReview(
-                messageId, category: draft.category, applicationId: .some(draft.applicationId),
-                status: .some(draft.status), at: now
-            )
+            decision = .correct(category: category, applicationId: applicationId)
         } else {
             guard previous.applicationId.flatMap({ data.application(id: $0) }) != nil else {
                 throw MailReviewError.incompleteDraft(messageId: messageId)
             }
-            event = try data.confirmReview(messageId, at: now)
+            decision = .confirm
         }
+        let move = try mutate { try $0.review(messageId, decision, at: writeTime) }
         recordWrite(messageId)
         reviewLaterIDs.removeAll { $0 == messageId }
         if self.draft?.messageId == messageId { self.draft = nil }
@@ -236,18 +291,13 @@ public final class MailReviewModel: ScreenModel {
 
         let company = data.mailMessage(id: messageId)?.applicationId
             .flatMap { data.application(id: $0) }?.company ?? previous.extracted.company ?? previous.from.address
-        let message: LocalizedStringResource = if let status = event?.toStatus {
-            MailReviewStrings.confirmedMoved(company, to: status)
+        let message: LocalizedStringResource = if let move {
+            MailReviewStrings.confirmedMoved(company, to: move)
         } else {
             MailReviewStrings.confirmedLinked(company)
         }
-        let eventId = event?.id
         return ToastItem(glyph: ToastGlyph.confirmed, message: message, action: .undo { [weak self] in
-            guard let self else { return }
-            if let eventId {
-                guard (try? data.revertEvent(eventId, at: now)) != nil else { return }
-            }
-            restore(previous)
+            self?.restore(previous)
         })
     }
 
@@ -257,10 +307,11 @@ public final class MailReviewModel: ScreenModel {
         guard let previous = data.mailMessage(id: messageId) else {
             throw UserDataError.missingMailMessage(messageId)
         }
-        try data.setReviewState(messageId, to: .dismissed, at: now)
+        try mutate { try $0.review(messageId, .notJobMail, at: writeTime) }
         recordWrite(messageId)
         reviewLaterIDs.removeAll { $0 == messageId }
         if draft?.messageId == messageId { draft = nil }
+        if viewingId == messageId { viewingId = nil }
         recompute()
         return ToastItem(glyph: ToastGlyph.hidden, message: MailReviewStrings.notJobMail, action: .undo { [weak self] in
             self?.restore(previous)
@@ -276,26 +327,35 @@ public final class MailReviewModel: ScreenModel {
         recompute()
     }
 
-    /// Undo on an Updates row: reverts the automatic move (core marks the email corrected), puts
-    /// the email back in To review and opens its review sheet so the user can say what it was.
-    /// No Undo on this toast (decisions.md D12: an undo is never undone from a toast).
+    /// Undo on an Updates row: reverts the automatic move and marks the email corrected (ADR
+    /// 0002). No Undo on this toast (decisions.md D12: an undo is never undone from a toast).
     @discardableResult
     public func undoUpdate(_ eventId: String) throws -> ToastItem {
         guard let event = data.applicationEvents.first(where: { $0.id == eventId }) else {
             throw UserDataError.missingEvent(eventId)
         }
-        let undo = try data.undoAutoChange(eventId, at: now)
-        let messageId = event.evidence?.mailMessageId.flatMap { data.mailMessage(id: $0)?.id }
-        if let messageId {
-            try data.setReviewState(messageId, to: .pending, at: now)
-        }
-        recordWrite(messageId ?? eventId)
+        let undo = try mutate { try $0.undoAutoChange(eventId, at: writeTime) }
+        recordWrite(event.evidence?.mailMessageId ?? eventId)
         recompute()
-        if let messageId { beginReview(messageId) }
-
         let company = data.application(id: event.applicationId)?.company ?? ""
         let restored = undo.toStatus ?? event.fromStatus ?? .applied
         return ToastItem(glyph: ToastGlyph.restored, message: Strings.moved(company, to: restored))
+    }
+
+    /// "Add interview" on an automatically applied invite: the server puts the suggested interview
+    /// on the calendar. Undo (inside the toast's window) leaves it off.
+    @discardableResult
+    public func addInterview(_ messageId: String) throws -> ToastItem {
+        guard let previous = data.mailMessage(id: messageId), UserData.pendingInterview(previous) != nil,
+              previous.reviewState == .autoApplied else {
+            throw UserDataError.missingMailMessage(messageId)
+        }
+        try mutate { try $0.confirmAutoApplied(messageId, at: writeTime) }
+        recordWrite(messageId)
+        let company = previous.applicationId.flatMap { data.application(id: $0) }?.company ?? previous.extracted.company ?? previous.from.address
+        return ToastItem(glyph: ToastGlyph.confirmed, message: MailReviewStrings.interviewAdded(company), action: .undo { [weak self] in
+            self?.restore(previous)
+        })
     }
 
     /// Overflow "Mark all as seen": clears the Updates list on this device. Never touches To review.
@@ -316,16 +376,18 @@ public final class MailReviewModel: ScreenModel {
         return accountId == selectedAccountId
     }
 
-    /// Puts a message back to the value it had before an action (Undo).
+    /// Puts a message back to the value it had before an action (Undo); the data layer drops the
+    /// held write instead of sending it.
     private func restore(_ message: MailMessage) {
-        guard let index = data.mailMessages.firstIndex(where: { $0.id == message.id }) else { return }
-        data.mailMessages[index] = message
+        mutate { data in
+            guard let index = data.mailMessages.firstIndex(where: { $0.id == message.id }) else { return }
+            data.mailMessages[index] = message
+        }
         recordWrite(message.id)
-        recompute()
     }
 
     private func recompute() {
-        accounts = data.mailAccounts.map(MailAccountItem.init)
+        accounts = data.mailAccounts.filter { $0.status != .disconnected }.map(MailAccountItem.init)
         if let selectedAccountId, !accounts.contains(where: { $0.id == selectedAccountId }) {
             self.selectedAccountId = nil
         }

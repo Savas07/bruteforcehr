@@ -1,28 +1,34 @@
 /**
- * The Jobs list pane (job-feed-search.md "Decision — Desktop" 4–5): "37 jobs · Best match" with
- * the ranking note, rows in Glassdoor anatomy (title, company · place, salary with provenance,
- * band pill, age, saved / status, "3 sources"), and row actions on hover and focus (Save, Not for
- * me, Open original). A hidden row leaves an anchor for the optional reason popover.
+ * The Jobs list pane (job-feed-search.md "Decision — Desktop" 4–5, 7): "37 jobs · Sorted by Best
+ * match ▾" (the sort menu explains the ranking), rows in Glassdoor anatomy (title, company · place,
+ * salary with provenance, band pill, age, saved / status, "3 sources"), and row actions on hover
+ * and focus (Save, Not for me, Open original). A hidden row leaves an anchor for the optional
+ * reason popover. `EmptyResults` is the zero-results pane with one removable chip per filter.
  */
-import { ArrowUpRight, Bookmark, BookmarkCheck, EyeOff, Info, Layers } from "lucide-react";
-import type { RefObject } from "react";
+import { ArrowUpRight, Bookmark, BookmarkCheck, ChevronDown, EyeOff, Layers, Search, X } from "lucide-react";
+import { DropdownMenu } from "radix-ui";
+import { useId, type RefObject } from "react";
 import { defineMessages, useIntl } from "react-intl";
 import { cx } from "../../shared/cx";
-import { IconButton } from "../../shared/ui/Button";
+import { Button, IconButton } from "../../shared/ui/Button";
 import { Monogram } from "../../shared/ui/Company";
 import type { ListNavigation } from "../../shared/ui/focus";
 import { Hint } from "../../shared/ui/Hint";
 import { MatchBandPill } from "../../shared/ui/MatchBand";
+import { MenuContent, MenuRadioGroup, MenuRadioItem, MenuSeparator } from "../../shared/ui/Menu";
 import { RelativeTimeChip } from "../../shared/ui/RelativeTimeChip";
 import { StatusPill } from "../../shared/ui/StatusPill";
 import { SyncGlyph } from "../../shared/ui/SyncGlyph";
 import { DismissReasonPopover } from "./DismissReasons";
-import type { DismissReasonVM, JobDetailCopyVM, JobDetailModel, JobListRowVM } from "./model";
+import type { FilterFacet, RemovableChipVM } from "./filterBarModel";
+import { JOB_SORTS, type JobSort } from "./filters";
+import type { DismissReasonVM, JobDetailCopyVM, JobDetailModel, JobListRowVM, JobsEmptyVM } from "./model";
 
 const messages = defineMessages({
   sortedBy: { id: "job-detail.view.sortedBy", defaultMessage: "Sorted by {sort}" },
   scoring: { id: "job-detail.view.scoring", defaultMessage: "Scoring…" },
   unsave: { id: "job-detail.view.unsave", defaultMessage: "Remove from Saved" },
+  activeFilters: { id: "job-detail.view.activeFilters", defaultMessage: "Active filters" },
 });
 
 /** The row just hidden with Not for me: where the reason popover anchors. */
@@ -198,6 +204,7 @@ export function JobList({
   onToggleSave,
   onNotForMe,
   onOpenOriginal,
+  onSortChange,
   stamp,
 }: {
   model: JobDetailModel;
@@ -214,6 +221,8 @@ export function JobList({
   onToggleSave: (row: JobListRowVM) => void;
   onNotForMe: (row: JobListRowVM) => void;
   onOpenOriginal: (row: JobListRowVM) => void;
+  /** The sort menu's choice; the screen keeps it in the route (`?sort=newest`). */
+  onSortChange: (sort: JobSort) => void;
   stamp: React.ReactNode;
 }) {
   const intl = useIntl();
@@ -250,13 +259,12 @@ export function JobList({
         <span className="tabular-nums">{list.countLabel}</span>
         <span className="flex flex-wrap items-center justify-end gap-x-2 gap-y-0.5 *:whitespace-nowrap">
           {stamp}
-          <Hint label={list.rankingInfo}>
-            <button type="button" className="inline-flex min-h-6 items-center gap-1 rounded-sm">
-              {intl.formatMessage(messages.sortedBy, { sort: list.sortLabel })}
-              <Info aria-hidden="true" className="size-3.5" strokeWidth={1.75} />
-              <span className="sr-only">. {list.rankingInfo}</span>
-            </button>
-          </Hint>
+          <SortMenu
+            label={intl.formatMessage(messages.sortedBy, { sort: list.sortLabel })}
+            note={list.rankingInfo}
+            sort={model.filterBar.sort}
+            onSortChange={onSortChange}
+          />
         </span>
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-6">
@@ -266,4 +274,135 @@ export function JobList({
       </div>
     </div>
   );
+}
+
+/** "Sorted by Best match ▾": the sort choices, then how the ranking works. */
+function SortMenu({
+  label,
+  note,
+  sort,
+  onSortChange,
+}: {
+  label: string;
+  /** "Sorted by match, then newest. Scores are a rough guide…": the trigger's description too. */
+  note: string;
+  sort: JobDetailModel["filterBar"]["sort"];
+  onSortChange: (sort: JobSort) => void;
+}) {
+  const noteId = useId();
+  return (
+    <DropdownMenu.Root>
+      <DropdownMenu.Trigger asChild>
+        <button
+          type="button"
+          data-sort-trigger=""
+          aria-describedby={noteId}
+          className="hover:text-fg-primary inline-flex min-h-6 cursor-default items-center gap-1 rounded-sm"
+        >
+          {label}
+          <ChevronDown aria-hidden="true" className="size-3.5" strokeWidth={1.75} />
+        </button>
+      </DropdownMenu.Trigger>
+      <span id={noteId} hidden>
+        {note}
+      </span>
+      <MenuContent align="end" aria-label={sort.label}>
+        <MenuRadioGroup
+          label={sort.label}
+          value={sort.value}
+          onValueChange={(value) => {
+            const next = JOB_SORTS.find((candidate) => candidate === value);
+            if (next) onSortChange(next);
+          }}
+        >
+          {sort.options.map((option) => (
+            <MenuRadioItem key={option.value} value={option.value}>
+              {option.label}
+            </MenuRadioItem>
+          ))}
+        </MenuRadioGroup>
+        <MenuSeparator />
+        <p className="text-fg-tertiary text-caption1 max-w-60 px-2 pt-1 pb-2">{note}</p>
+      </MenuContent>
+    </DropdownMenu.Root>
+  );
+}
+
+/**
+ * Zero results (job-feed-search.md "Decision — Desktop" 7, Zillow): what hides the jobs, one
+ * removable chip per active filter with the jobs it alone brings back, then Remove all filters /
+ * Clear search and "Search job sites for “react”".
+ */
+export function EmptyResults({
+  empty,
+  searchDisabledReason,
+  onRemoveFacet,
+  onAction,
+  onSearchSites,
+}: {
+  empty: JobsEmptyVM;
+  /** Why "Search job sites" can't run now (offline), or null. */
+  searchDisabledReason: string | null;
+  onRemoveFacet: (facet: FilterFacet) => void;
+  /** Remove all filters (with chips) or Clear search. */
+  onAction: () => void;
+  onSearchSites: () => void;
+}) {
+  const intl = useIntl();
+  return (
+    <div className="flex flex-col items-center gap-4 px-5 pt-10 pb-10 text-center">
+      {/* EmptyState's `noResults` text, with the chips between it and the actions. */}
+      <div className="flex max-w-100 flex-col gap-1">
+        <p className="text-fg-primary text-headline">{empty.title}</p>
+        <p className="text-body text-fg-secondary">{empty.body}</p>
+      </div>
+      {empty.chips.length > 0 && (
+        <ul
+          aria-label={intl.formatMessage(messages.activeFilters)}
+          className="flex max-w-100 flex-wrap justify-center gap-1.5"
+        >
+          {empty.chips.map((chip) => (
+            <li key={chip.facet}>
+              <RemoveChip chip={chip} onRemove={() => onRemoveFacet(chip.facet)} />
+            </li>
+          ))}
+        </ul>
+      )}
+      <div className="flex flex-col items-stretch gap-2">
+        {empty.action && <Button onClick={onAction}>{empty.action}</Button>}
+        {empty.searchAction && (
+          <Button variant="plain" icon={Search} onClick={onSearchSites} disabledReason={searchDisabledReason}>
+            {empty.searchAction}
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** "Work mode: On-site +3 ×": removes one filter; "+3" is explained in a tooltip and the description. */
+function RemoveChip({ chip, onRemove }: { chip: RemovableChipVM; onRemove: () => void }) {
+  const hintId = useId();
+  const button = (
+    <button
+      type="button"
+      aria-label={chip.removeLabel}
+      aria-describedby={chip.count ? hintId : undefined}
+      data-remove-facet={chip.facet}
+      onClick={onRemove}
+      className="bg-accent-subtle text-accent-text text-footnote hover:bg-surface-hover inline-flex h-7 max-w-full cursor-default items-center gap-1 rounded-full ps-3 pe-2 font-medium outline-offset-1 select-none focus-visible:outline-2"
+    >
+      <span className="truncate">{chip.label}</span>
+      {chip.count && (
+        <>
+          <span className="font-normal tabular-nums">{chip.count.label}</span>
+          <span id={hintId} hidden>
+            {chip.count.hint}
+          </span>
+        </>
+      )}
+      <X aria-hidden="true" className="size-3.5 shrink-0" strokeWidth={1.75} />
+    </button>
+  );
+  return chip.count ? <Hint label={chip.count.hint}>{button}</Hint> : button;
 }

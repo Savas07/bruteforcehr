@@ -83,3 +83,39 @@ Tab order at 1920 (Chromium): sidebar → search → sort info → selected row 
 1. **Keep focus on the list through route changes and hides** — keyboard triage is the screen's main loop. (Done.)
 2. **Name list rows with title + company** — duplicate titles are common in job search. (Done.)
 3. **Reachable source links in WebKit** — "Found on" is the trust surface. (Done.)
+
+## Accessibility Audit: Jobs — live feed header, filter bar, sort, zero results (rounds 5–6)
+**Standard:** WCAG 2.1 AA | **Date:** 2026-10-24
+
+Method: `pnpm --filter @bfhr/desktop capture:design job-detail jobs-search --states populated,empty,loading,error,offline --themes light,dark --sizes 1280x800,1920x1080 --axe` (40 axe reports, WebKit + Chromium), a scripted 40-stop Tab walk at 1280 (Chromium) recording each stop's name and outline, and happy-dom tests of the names, descriptions and menu roles (`JobList.test.tsx`, `Screen.test.tsx`). The screen-reader column is built from those names and roles, not from a VoiceOver / NVDA session. Critiques: `r5.md`, `r6.md`.
+
+### Summary
+**Issues found:** 4 | **Critical:** 0 | **Major:** 2 (fixed) | **Minor:** 2 (fixed)
+
+axe after the fixes: 0 critical · 0 serious · 0 moderate · 0 minor in all 20 `job-detail-*` reports. "Needs review" (color-contrast only): the shell sidebar's ⌘ keycap (WebKit, as before) and, in populated / offline, the second row's truncated company line, which axe can't resolve; both use tested pairings.
+
+### Findings
+
+| # | Issue | WCAG Criterion | Severity | Recommendation |
+|---|-------|---------------|----------|----------------|
+| 12 | The sort was a tooltip button; changing it needed the URL. | 2.1.1 Keyboard | 🟡 Major | **Fixed**: "Sorted by Best match ▾" opens a Radix menu (`menu` named "Sort", `menuitemradio` with `aria-checked`); the ranking note is the trigger's `aria-describedby` and visible in the menu. |
+| 13 | Zero-results filters could only be removed all at once, and the removed control left focus on `body`. | 2.4.3 Focus Order / 3.3.3 Error Suggestion | 🟡 Major | **Fixed**: one button per filter, named "Remove filter: Seniority: Intern", described "Shows 3 more jobs" when that applies; after removal focus moves to that facet's pill in the filter bar. |
+| 14 | Search job sites' disabled reason was the field placeholder. | 3.3.2 Labels or Instructions | 🟢 Minor | **Fixed**: "Type a role or skill in the search field first." |
+| 15 | "Select a job… ↑ ↓ to move" instructions shown with an empty list. | 3.3.2 | 🟢 Minor | **Fixed**: no placeholder while the list is empty. |
+
+### Keyboard Navigation
+Tab order at 1280 (Chromium, populated, walked): sidebar → search field → Search job sites → Saved searches… → Add from link → Work mode … Source (8 pills) → (Clear all) → Save search → Sorted by Best match → selected row (one roving stop) → splitter → previous / next → Apply → Save → Not for me → Open original → More → … as before. Every stop draws the 2 px `line.focus` outline. In zero results (DOM order): … Save search → each filter chip → Remove all filters / Clear search → Search job sites for "…".
+
+| Element | Tab Order | Enter/Space | Escape | Arrow Keys |
+|---------|-----------|-------------|--------|------------|
+| Sort trigger | After Save search | Opens the menu | Closes, focus to trigger | ↑ / ↓ within; Enter picks |
+| Filter pill | In bar order; `F` focuses the first | Opens its popover (focus to the first option) | Closes, focus to pill | — |
+| Zero-results chip | In list order | Removes that filter; focus to its pill | — | — |
+
+### Screen Reader
+| Element | Announced As | Issue |
+|---------|-------------|-------|
+| Sort trigger | "Sorted by Best match, menu button" + "Sorted by match, then newest. Scores are a rough guide, not a prediction." | Fixed (#12) |
+| Sort menu | "Sort, menu", "Best match, checked", "Newest, not checked" | — |
+| Chip | "Remove filter: Seniority: Intern, button" + "Shows 3 more jobs" | Fixed (#13) |
+| Chip list | "Active filters, list, 3 items" | — |

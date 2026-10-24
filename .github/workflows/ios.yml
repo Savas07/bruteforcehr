@@ -62,7 +62,12 @@ jobs:
       - run: corepack enable pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @bfhr/cv-render build
-      - run: apps/ios/scripts/perf.sh -- CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO
+      # Optimized like Release and linked as one binary (no debug dylib): design mode needs the
+      # Debug configuration, users run Release builds.
+      - run: >-
+          apps/ios/scripts/perf.sh -- CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO
+          SWIFT_OPTIMIZATION_LEVEL=-O SWIFT_COMPILATION_MODE=wholemodule GCC_OPTIMIZATION_LEVEL=s
+          ENABLE_DEBUG_DYLIB=NO
         env:
           BFHR_DERIVED_DATA: ${{ runner.temp }}/dd
       - uses: actions/upload-artifact@v7

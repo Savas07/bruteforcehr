@@ -60,17 +60,17 @@ To change your answers later, open **Settings › Job preferences**. See [Settin
 
 ## Find your way around
 
-| Destination  | What it's for                                                                       | Mac and Windows | iPhone                     |
-| ------------ | ----------------------------------------------------------------------------------- | --------------- | -------------------------- |
-| **Today**    | What needs you now: the next interview, emails to review, follow-ups and deadlines. | Sidebar         | Tab                        |
-| **Jobs**     | Openings from job sites and companies you follow, ranked by how well they fit.      | Sidebar         | Tab                        |
-| **Tracker**  | Every application from saved to offer.                                              | Sidebar         | Tab                        |
-| **CVs**      | Your CVs and their versions.                                                        | Sidebar         | Tab                        |
-| **Mail**     | Job emails from your connected inboxes, and the ones to review.                     | Sidebar         | Tab                        |
-| **Insights** | How far your applications get and where replies come from.                          | Sidebar         | Tracker, or Today's footer |
-| **Settings** | Preferences, connections, notifications and your data.                              | Sidebar bottom  | Your initials, top right   |
+- **Today**: what needs you now, such as the next interview, emails to review, follow-ups and deadlines.
+- **Jobs**: openings from job sites and the companies you follow, ranked by how well they fit.
+- **Tracker**: every application, from saved to offer.
+- **CVs**: your CVs and their versions.
+- **Mail**: job emails from your connected inboxes, and the ones to review.
+- **Insights**: how far your applications get and where replies come from.
+- **Settings**: preferences, connections, notifications and your data.
 
-On a Mac or Windows PC, **Jump to…** at the top of the sidebar (<kbd>⌘</kbd> <kbd>K</kbd> or <kbd>Ctrl</kbd> <kbd>K</kbd>) opens the command palette: type a few letters of any destination, setting or action. Press <kbd>?</kbd> to see the keyboard shortcuts for the screen you're on, or read them all in [Keyboard shortcuts](/guide/keyboard-shortcuts/).
+On a Mac or Windows PC, all of them are in the sidebar, with Settings at the bottom. On iPhone, Today, Jobs, Tracker, CVs and Mail are tabs; Insights opens from the Tracker or from the bottom of Today, and Settings from your initials at the top right.
+
+On the desktop, **Jump to…** at the top of the sidebar (<kbd>⌘</kbd> <kbd>K</kbd> or <kbd>Ctrl</kbd> <kbd>K</kbd>) opens the command palette: type a few letters of any destination, setting or action. Press <kbd>?</kbd> to see the keyboard shortcuts for the screen you're on, or read them all in [Keyboard shortcuts](/guide/keyboard-shortcuts/).
 
 ## Today
 

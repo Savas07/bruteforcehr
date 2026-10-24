@@ -23,7 +23,8 @@ const currentFor = (href: string): "page" | "true" | undefined =>
       class="flex min-h-11 items-center rounded-full px-2 text-fg-primary"
       aria-current={current === "/" ? "page" : undefined}
     >
-      <Wordmark gradientId="bfhr-wordmark-header" class="h-6 w-auto" />
+      {/* 20 px tall below 360 px, so the logo and Menu fit a 320 px screen (WCAG 1.4.10 reflow). */}
+      <Wordmark gradientId="bfhr-wordmark-header" class="h-5 w-auto min-[22.5rem]:h-6" />
     </a>
 
     <nav aria-label="Main" class="hidden md:block">

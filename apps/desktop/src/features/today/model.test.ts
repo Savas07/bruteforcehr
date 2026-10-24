@@ -381,14 +381,15 @@ describe("buildTodayModel — populated", () => {
 describe("buildTodayModel — empty", () => {
   const model = build(emptyDataset);
 
-  it("offers adding an application on first run, and says email comes later", () => {
+  it("offers adding an application or connecting email on first run", () => {
     expect(model.sections).toEqual([]);
     expect(model.items).toEqual([]);
     expect(model.selectedId).toBeNull();
     expect(model.firstUse).toEqual({
       title: "Add the jobs you've applied to",
-      body: "Today then shows your interviews, follow-ups and reminders. Email invites and replies come in a later update.",
+      body: "Today then shows your interviews, follow-ups and reminders. Connect your email and replies from employers show up here too.",
       actionLabel: "Add application",
+      connectLabel: "Connect email",
     });
     expect(model.caughtUp).toBeNull();
     expect(model.doneToday).toBeNull();

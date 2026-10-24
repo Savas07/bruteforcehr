@@ -28,6 +28,9 @@ import type { ScreenProps } from "../shared/screen";
 import { useDesignReady } from "./DesignScreen";
 import { OFFLINE_PENDING_WRITES } from "./screens";
 import { readDesignParams } from "./search";
+import { createMemoryMailStore, type MemoryMailStore } from "../data/mail/memory";
+import { MailProviders } from "../data/mail/live";
+import { designScanAccount } from "./mail-connect";
 
 const MINUTE_MS = 60_000;
 
@@ -35,10 +38,13 @@ declare global {
   interface Window {
     /** The design tracker store, so capture scripts can inspect or drive it. */
     __bfhrTrackerStore?: MemoryTrackerStore;
+    /** The design mail store (accounts, messages, callables), for capture scripts. */
+    __bfhrMailStore?: MemoryMailStore;
   }
 }
 
 const stores = new Map<FixtureDataset, MemoryTrackerStore>();
+const mailStores = new Map<string, MemoryMailStore>();
 
 /** The design tracker store of `dataset` (one per dataset while the build runs; jobs write through it too). */
 export function designTrackerStore(dataset: FixtureDataset): MemoryTrackerStore {
@@ -46,6 +52,33 @@ export function designTrackerStore(dataset: FixtureDataset): MemoryTrackerStore 
   if (!store) {
     store = createMemoryTrackerStore(dataset, () => FIXTURE_NOW);
     stores.set(dataset, store);
+  }
+  return store;
+}
+
+/**
+ * The dataset's mail: callables answer like the deployed functions (OAuth providers not
+ * configured yet, `?oauth=configured` turns them on) after a short delay so busy states show;
+ * `?scan=` adds an inbox in a lookback scan (src/design/mail-connect.tsx).
+ */
+function mailStoreFor(
+  dataset: FixtureDataset,
+  oauthConfigured: boolean,
+  scan: string | undefined,
+): MemoryMailStore {
+  const key = `${dataset.uid}:${dataset === emptyDataset ? "empty" : "populated"}:${String(oauthConfigured)}:${scan ?? ""}`;
+  let store = mailStores.get(key);
+  if (!store) {
+    const scanned = designScanAccount(scan);
+    store = createMemoryMailStore({
+      uid: dataset.uid,
+      accounts: scanned ? [...dataset.mailAccounts, scanned] : dataset.mailAccounts,
+      messages: dataset.mailMessages,
+      now: () => FIXTURE_NOW,
+      oauthConfigured,
+      latencyMs: 600,
+    });
+    mailStores.set(key, store);
   }
   return store;
 }
@@ -88,15 +121,20 @@ function forcedSource(
   };
 }
 
-/** Provides the design tracker store, the fixture clock and the fixture extras to the route. */
+/**
+ * Provides the design tracker store, the design mail store, the fixture clock and the fixture
+ * extras to the route.
+ */
 export function DesignTrackerProviders({ children }: { readonly children: ReactNode }) {
   const search = readDesignParams(useSearch({ strict: false }));
   const navigate = useNavigate();
   const dataset = search.fixture === "empty" ? emptyDataset : populatedDataset;
   const store = designTrackerStore(dataset);
+  const mailStore = mailStoreFor(dataset, search.rest["oauth"] === "configured", search.rest["scan"]);
   useEffect(() => {
     window.__bfhrTrackerStore = store;
-  }, [store]);
+    window.__bfhrMailStore = mailStore;
+  }, [store, mailStore]);
   const source = useMemo(
     () =>
       forcedSource(
@@ -135,7 +173,11 @@ export function DesignTrackerProviders({ children }: { readonly children: ReactN
     <TrackerRepositoryContext.Provider value={store.repository}>
       <TrackerSourceContext.Provider value={source}>
         <ModelEnvironmentContext.Provider value={environment}>
-          <ModelExtrasContext.Provider value={extras}>{children}</ModelExtrasContext.Provider>
+          <ModelExtrasContext.Provider value={extras}>
+            <MailProviders source={mailStore.source} repository={mailStore.repository}>
+              {children}
+            </MailProviders>
+          </ModelExtrasContext.Provider>
         </ModelEnvironmentContext.Provider>
       </TrackerSourceContext.Provider>
     </TrackerRepositoryContext.Provider>

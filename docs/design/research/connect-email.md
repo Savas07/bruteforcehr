@@ -348,6 +348,39 @@ The OAuth runs in the **system browser** (brief §6.4). The app shows a waiting 
 - **Account detail** (Zoho layout): status rows (Connection: Working · Last check · Lookback · Messages checked · Spam/Junk included), a collapsed "Server details" for IMAP, **Reconnect**, and **Disconnect…**.
 - **Disconnect** opens an AlertDialog with the same copy as iOS. The destructive button is focused last, so `Enter` doesn't disconnect by accident: the default focus is **Keep connected**.
 
+## M5 desktop supplement (connect dialog)
+
+M5 ships the connect flow as one dialog (`features/mail-connect`), opened from Settings › Mail accounts, the Mail empty state and Today. Two patterns weren't covered above: a picker with **eight** providers instead of three cards, and an OAuth provider that the server reports as **not configured yet** (`provider_not_configured`, the state until the Google and Microsoft clients exist).
+
+### Provider picker with many providers (`search_screens` "choose email provider dialog with tiles…", web, deep). Examined 6, kept 4
+
+| App | Screen / flow | mobbin_url | What we borrow | Why |
+|---|---|---|---|---|
+| Bonsai | "Choose a calendar to connect" modal | https://mobbin.com/screens/d6af147e-1724-44bb-9dfa-92ae7cd4cc03 | Two-column tiles inside the modal, the selected tile outlined in the accent | Selection is visible before anything happens, which suits a radio group with a Continue button |
+| AirOps | "Select Provider" modal | https://mobbin.com/screens/8de10216-4974-4560-bcf5-b362c58bbf7e | Two-column list of logo + name rows in a centered dialog | Scales past six providers without a search field |
+| HubSpot | "Choose a network to connect" modal | https://mobbin.com/screens/51adab82-477b-4392-b677-1e7e6388138d | Compact two-column tiles, one short line each | Keeps eight providers in four rows at 1280×800 |
+| Dovetail | "Connect data source" modal | https://mobbin.com/screens/b431e8ce-c71b-406e-bd05-311e36d8bf5c | A quiet tag on the tile ("Beta") rather than hiding the option | Our captions ("Sign in with Google", "App password") say how each one connects |
+
+Rejected: QuickBooks (https://mobbin.com/screens/8d03be83-7796-42ab-b046-a8a8bc382960, a search field is overkill for eight providers) and Mailchimp (https://mobbin.com/screens/3ca31f88-2f66-48bc-ac1e-27aec31835b6, a full page instead of a dialog).
+
+### Integration not available yet (`search_screens` "coming soon notice for an integration that is not available yet, with an alternative option", web, deep). Examined 6, kept 4
+
+| App | Screen / flow | mobbin_url | What we borrow | Why |
+|---|---|---|---|---|
+| Flodesk | "Checkout is coming to you soon" dialog | https://mobbin.com/screens/d36658ba-86b8-4caf-817e-d2aa42e113bf | A neutral dialog state, plain words, no error color | Not available isn't the user's fault |
+| Ditto | Integrations "Coming Soon" section | https://mobbin.com/screens/79726a54-90cf-4c3c-ae1e-dc289ebb6b02 | Says why it's waiting and what happens next | Sets the expectation instead of a dead end |
+| TheyDo | Integrations list with "Coming soon" buttons | https://mobbin.com/screens/f598f6b4-e64e-450e-a1c3-fcf88232b9dd | The unavailable option stays listed next to working ones | People still find it where they expect it |
+| Qatalog | "Add a step" list with "Coming soon!" suffixes | https://mobbin.com/screens/f71ba16e-f3aa-45f8-a6fc-26b3386c43cb | Status lives next to the option, not in a separate page | Short and scannable |
+
+Rejected: Lovable (https://mobbin.com/screens/38216649-f70b-47e7-9e7d-42f636473929) and Linktree (https://mobbin.com/screens/0542639b-c8bf-4033-9f3f-61c505e3908b): both are "request an integration" forms, which we don't need.
+
+### Decision (M5 desktop)
+
+- **One dialog, 760 px**, with a main column and a 248 px side column (stacked below 760 px): picker → OAuth expectation / waiting, or the app-password form → scanning. The side column holds the four promises on the picker and OAuth steps and the provider's three app-password steps on the form (AirOps help-first).
+- **Picker:** an optional email field (domain detection selects the tile), eight tiles in two columns as one radio group (arrow keys move and select, Enter continues), each with name + how it connects: Gmail "Sign in with Google", Outlook "Sign in with Microsoft", iCloud Mail, Yahoo Mail, Yandex Mail, GMX, WEB.DE "App password", Other "IMAP server and app password". Look back 30 / 90 / 180 days with the absolute date. Tiles carry no "Recommended" or "Coming soon" tag: whether sign-in works is only known from the server, and a tag that's wrong after an update is worse than none.
+- **Sign-in not available yet** (`provider_not_configured`): the Flodesk-style neutral state inside the dialog (clock icon, no red): "Gmail sign-in is coming in an update". Gmail offers the working alternative right there, **Use an app password instead**, with Google's two prerequisites (2-Step Verification, then an app password). Outlook says plainly that Microsoft no longer accepts app passwords for Outlook.com, so it waits for the update, and offers **Choose another account**. Reconnecting an existing Gmail or Outlook account shows the same state without the alternative (an app password would add a second account).
+- **Offline** before any call: an info line "Connecting needs an internet connection", the primary stays enabled so the attempt explains itself.
+
 ## Components needed
 
 | Component | iOS | Desktop | Notes |

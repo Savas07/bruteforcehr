@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Keyboard, Search, type LucideIcon } from "lucide-react";
+import { Keyboard, Search, Settings, type LucideIcon } from "lucide-react";
 import { Tooltip } from "radix-ui";
 import type { ReactNode } from "react";
 import { defineMessages, useIntl } from "react-intl";
@@ -9,6 +9,7 @@ import { shortcutById, shortcutKeys, type Shortcut } from "../lib/shortcuts";
 import { Keycaps } from "../shared/ui/Keycaps";
 import { SidebarChildrenOutlet } from "../shared/ui/SidebarChildren";
 import { SyncStatus } from "../shared/ui/SyncStatus";
+import { SETTINGS_START_PANE } from "../lib/settings";
 import { destinationIcons } from "./icons";
 
 const messages = defineMessages({
@@ -23,6 +24,7 @@ const messages = defineMessages({
     description: "Opens the command palette",
   },
   keyboardShortcuts: { id: "shell.sidebar.keyboardShortcuts", defaultMessage: "Keyboard shortcuts" },
+  settings: { id: "shell.sidebar.settings", defaultMessage: "Settings" },
 });
 
 const rowClass =
@@ -140,6 +142,17 @@ export function Sidebar({
 
       <div data-sidebar-footer="" className="shrink-0 px-3 pt-2 pb-3">
         {updateCard}
+        <WithHint label={intl.formatMessage(messages.settings)} shortcut={shortcutById("open-settings")}>
+          <Link
+            to="/settings/$pane"
+            params={{ pane: SETTINGS_START_PANE }}
+            className={`${rowClass} aria-[current=page]:bg-surface-selected aria-[current=page]:font-medium`}
+            {...(pathname.startsWith("/settings") && { "aria-current": "page" as const })}
+          >
+            <Settings aria-hidden="true" className="text-fg-secondary size-4 shrink-0" strokeWidth={1.75} />
+            <span className={labelClass}>{intl.formatMessage(messages.settings)}</span>
+          </Link>
+        </WithHint>
         <ActionRow
           icon={Keyboard}
           label={intl.formatMessage(messages.keyboardShortcuts)}

@@ -13,6 +13,8 @@ import ApplicationDetailScreen from "../features/application-detail/Screen";
 import { buildCvEditorModel } from "../features/cv-editor/model";
 import { buildJobDetailModel } from "../features/job-detail/model";
 import JobDetailScreen from "../features/job-detail/Screen";
+import { buildMailReviewModel } from "../features/mail-review/model";
+import MailReviewScreen from "../features/mail-review/Screen";
 import { buildTodayModel } from "../features/today/model";
 import TodayScreen from "../features/today/Screen";
 import { buildTrackerBoardModel } from "../features/tracker-board/model";
@@ -26,7 +28,8 @@ import { DesignIndex } from "./DesignIndex";
 import { DesignRoot } from "./DesignRoot";
 import { DesignScreen } from "./DesignScreen";
 import { DesignJobsProviders } from "./jobs";
-import { cvEditorScreen, insightsScreen, mailReviewScreen } from "./screens";
+import { cvEditorScreen, insightsScreen } from "./screens";
+import { DesignSettings } from "./settings";
 import { DesignTrackerProviders, DesignTrackerScreen } from "./tracker";
 import { DesignTrackerCalendar, DesignTrackerTable } from "./tracker-views";
 import { TrackerViewsRoute } from "../features/tracker-table/ViewSwitch";
@@ -118,8 +121,13 @@ function ApplicationDetail() {
 function Insights() {
   return <DesignScreen spec={insightsScreen} />;
 }
+/** Mail on the design tracker and mail stores: decisions, Undo and connect behave as in the app. */
 function MailReview() {
-  return <DesignScreen spec={mailReviewScreen} />;
+  return (
+    <DesignTrackerProviders>
+      <DesignTrackerScreen id="mail-review" build={buildMailReviewModel} view={MailReviewScreen} />
+    </DesignTrackerProviders>
+  );
 }
 
 export const designViews: RouteViews = {
@@ -135,6 +143,7 @@ export const designViews: RouteViews = {
     mail: MailReview,
     mailReview: MailReview,
     insights: Insights,
+    settings: DesignSettings,
     design: DesignIndex,
     designDemo: Demo,
   },

@@ -48,7 +48,15 @@ export const designScreenPaths = {
   "tracker-table": "/tracker?view=table",
   "tracker-calendar": "/tracker?view=calendar",
   "mail-review": "/mail",
+  /** Connect your email (`?connect=` picks the step, src/design/mail-connect.tsx). */
+  "mail-connect": "/settings/mail-accounts?connect=picker",
   insights: "/insights",
+  "settings-mail-accounts": "/settings/mail-accounts",
+  "settings-notifications": "/settings/notifications",
+  "settings-job-sources": "/settings/job-sources",
+  "settings-companies": "/settings/companies",
+  "settings-ai": "/settings/ai",
+  "settings-general": "/settings/general",
 } as const;
 export type DesignScreenName = keyof typeof designScreenPaths;
 

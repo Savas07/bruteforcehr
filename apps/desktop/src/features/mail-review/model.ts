@@ -8,6 +8,7 @@
  */
 import {
   ACTIVE_STATUSES,
+  imapPresetById,
   type MailAccount,
   type MailAccountStatus,
   type MailCategory,
@@ -15,6 +16,7 @@ import {
   type MailProvider,
   TERMINAL_STATUSES,
 } from "@bfhr/core";
+import type { MailProvider as WebmailProvider } from "../../lib/desktop";
 import { defineMessages, type IntlShape, type MessageDescriptor } from "react-intl";
 import type {
   ApplicationSummaryVM,
@@ -39,7 +41,9 @@ import {
   shortDate,
 } from "../../shared/model/format";
 import { statusVM } from "../../shared/model/vocabulary";
-import type { CompanyVM, ModelContext, StatusVM, TimeVM, UserData } from "../../shared/model/types";
+import type { CompanyVM, ModelContext, ScreenData, StatusVM, TimeVM } from "../../shared/model/types";
+
+export type { WebmailProvider };
 
 export type MailFolderId = "review" | "updates" | "all";
 
@@ -123,6 +127,8 @@ export interface MailReviewRowVM extends MailRowBase {
 export interface MailUpdateRowVM extends MailRowBase {
   readonly kind: "update";
   readonly change: AutoChangeVM;
+  /** The user already undid this change (a reverting event exists). */
+  readonly undone: boolean;
 }
 
 /** Any other stored job email. */
@@ -183,13 +189,35 @@ export interface MailSelectionVM {
   readonly body: string | null;
   /** "Email text kept until 4 Apr 2027" or "We no longer keep the text of this email." */
   readonly bodyNote: string | null;
-  /** "Open in Gmail" (`O`). */
-  readonly openOriginalLabel: string;
+  /** "Open in Gmail" (`O`); null when we can't open the account's webmail (other IMAP hosts). */
+  readonly openOriginal: { readonly label: string; readonly provider: WebmailProvider; readonly email: string } | null;
+  /** The interview an invite proposes (review-first: nothing is created until the user confirms). */
+  readonly interview: MailInterviewVM | null;
+  /** The automatic change behind an update was undone (a reverting event exists). */
+  readonly undone: boolean;
   /** The linked application's latest events, newest first (Linear Activity). */
   readonly activity: readonly TimelineEventVM[];
   readonly details: MailDetailsVM;
   /** "Create application" target in the correction popover: "Nordlicht Mobility · Frontend Engineer". */
   readonly newApplicationLabel: string;
+}
+
+/** `MailMessage.interviewSuggestion` for the reading pane. */
+export interface MailInterviewVM {
+  /** "Interview with Acme". */
+  readonly title: string;
+  /** "Tue, 5 Nov, 14:00 · 45 min". */
+  readonly when: string;
+  readonly at: TimeVM;
+  /** Location, else the meeting link's host ("zoom.us"); null when the email names neither. */
+  readonly where: string | null;
+  /**
+   * `suggested`: Confirm adds it; `addable`: the status change was automatic and "Add interview"
+   * creates it; `added`: it is in the Tracker.
+   */
+  readonly state: "suggested" | "addable" | "added";
+  /** One line under the details explaining the state. */
+  readonly note: string;
 }
 
 /**
@@ -238,6 +266,8 @@ export interface MailReviewModel {
   readonly folder: MailFolderId;
   /** Category filter of All job mail; null shows every category. */
   readonly category: MailCategory | null;
+  /** The inbox scan's proposals opened from their bundle row (`?bundle=backfill`); null otherwise. */
+  readonly bundle: { readonly id: "backfill"; readonly title: string; readonly backLabel: string } | null;
   readonly rows: readonly MailRowVM[];
   readonly selectedMessageId: string | null;
   readonly selected: MailSelectionVM | null;
@@ -282,9 +312,6 @@ const messages = defineMessages({
     defaultMessage: "Email",
     description: "Name shown for an IMAP inbox without a display name",
   },
-  openGmail: { id: "mail-review.openOriginal.gmail", defaultMessage: "Open in Gmail" },
-  openOutlook: { id: "mail-review.openOriginal.microsoft", defaultMessage: "Open in Outlook" },
-  openMailApp: { id: "mail-review.openOriginal.imap", defaultMessage: "Open in your mail app" },
   healthOk: { id: "mail-review.health.ok", defaultMessage: "Connected" },
   healthReauth: { id: "mail-review.health.reauth", defaultMessage: "Needs reconnecting" },
   healthError: { id: "mail-review.health.error", defaultMessage: "Can't connect" },
@@ -377,7 +404,47 @@ const messages = defineMessages({
     id: "mail-review.noMail.body",
     defaultMessage: "Replies about your applications show up here after we check your inbox.",
   },
+  openIn: {
+    id: "mail-review.openOriginal.provider",
+    defaultMessage: "Open in {provider}",
+    description: "Opens the inbox the email arrived in; {provider} is Gmail, Outlook, iCloud Mail, GMX…",
+  },
+  bundleTitle: {
+    id: "mail-review.bundle.title",
+    defaultMessage: "Inbox scan",
+    description: "Heading of the inbox scan's proposals opened from their bundle row",
+  },
+  bundleBack: { id: "mail-review.bundle.back", defaultMessage: "Back to To review" },
+  interviewTitle: {
+    id: "mail-review.interview.title",
+    defaultMessage: "Interview with {company}",
+  },
+  interviewWhen: {
+    id: "mail-review.interview.when",
+    defaultMessage: "{when}{minutes, select, none {} other { · {minutes} min}}",
+    description: "{when} is a day and time; {minutes} the length in minutes or 'none'",
+  },
+  interviewSuggested: {
+    id: "mail-review.interview.suggested",
+    defaultMessage: "Confirming adds this interview to your Tracker and calendar view. Check the time first.",
+  },
+  interviewAddable: {
+    id: "mail-review.interview.addable",
+    defaultMessage: "We moved the application automatically but didn't add the interview. Add it if the time is right.",
+  },
+  interviewAdded: { id: "mail-review.interview.added", defaultMessage: "Added to your Tracker." },
 });
+
+/** Webmail inboxes the desktop can open (src-tauri/src/mail_inbox.rs) by IMAP preset. */
+const PRESET_WEBMAIL: Readonly<Record<string, WebmailProvider>> = {
+  gmail: "gmail",
+  outlook: "outlook",
+  icloud: "icloud",
+  yahoo: "yahoo",
+  yandex: "yandex",
+  gmx: "gmx",
+  webde: "web-de",
+};
 
 const FOLDER_MESSAGES: Readonly<Record<MailFolderId, MessageDescriptor>> = {
   review: messages.folderReview,
@@ -402,12 +469,6 @@ const CATEGORY_ORDER: readonly Exclude<MailCategory, "not_job">[] = [
 const PROVIDER_LABELS: Readonly<Record<Exclude<MailProvider, "imap">, string>> = {
   gmail: "Gmail",
   microsoft: "Outlook",
-};
-
-const OPEN_ORIGINAL_MESSAGES: Readonly<Record<MailProvider, MessageDescriptor>> = {
-  gmail: messages.openGmail,
-  microsoft: messages.openOutlook,
-  imap: messages.openMailApp,
 };
 
 /** `disconnected` accounts are gone from the user's point of view. */
@@ -452,7 +513,7 @@ function copyVM(intl: IntlShape): MailReviewModel["copy"] {
   };
 }
 
-function correctionVM(data: Pick<UserData, "applications">, intl: IntlShape): MailCorrectionVM {
+function correctionVM(data: Pick<ScreenData, "applications">, intl: IntlShape): MailCorrectionVM {
   const applications = data.applications
     .map((application) => ({
       id: application.id,
@@ -492,9 +553,15 @@ function liveAccount(
 
 function providerLabel(account: MailAccount, intl: IntlShape): string {
   if (account.displayName) return account.displayName;
-  return account.provider === "imap"
-    ? intl.formatMessage(messages.providerEmail)
-    : PROVIDER_LABELS[account.provider];
+  if (account.provider !== "imap") return PROVIDER_LABELS[account.provider];
+  return imapPresetById(account.server?.preset ?? "")?.label ?? intl.formatMessage(messages.providerEmail);
+}
+
+/** The webmail that holds the account's emails, when the desktop can open it. */
+function webmailOf(account: MailAccount): WebmailProvider | null {
+  if (account.provider === "gmail") return "gmail";
+  if (account.provider === "microsoft") return "outlook";
+  return PRESET_WEBMAIL[account.server?.preset ?? ""] ?? null;
 }
 
 /**
@@ -533,8 +600,45 @@ function bodyNote(message: MailMessage, ctx: ModelContext): string | null {
     : null;
 }
 
+/** The invite's suggested interview and what the user can do with it (review-first, ADR 0012). */
+function interviewVM(message: MailMessage, company: string, ctx: ModelContext): MailInterviewVM | null {
+  const suggestion = message.interviewSuggestion;
+  if (suggestion === null) return null;
+  let state: MailInterviewVM["state"];
+  if (suggestion.interviewId !== null) state = "added";
+  else if (message.reviewState === "pending") state = "suggested";
+  else if (message.reviewState === "auto_applied") state = "addable";
+  // Reviewed without an interview (no application linked): the dates in the details remain.
+  else return null;
+  const at = dayAndTime(suggestion.startsAt, ctx);
+  let where = suggestion.location;
+  if (where === null && suggestion.meetingUrl !== null) {
+    try {
+      where = new URL(suggestion.meetingUrl).host;
+    } catch {
+      where = null;
+    }
+  }
+  const notes: Readonly<Record<MailInterviewVM["state"], MessageDescriptor>> = {
+    suggested: messages.interviewSuggested,
+    addable: messages.interviewAddable,
+    added: messages.interviewAdded,
+  };
+  return {
+    title: ctx.intl.formatMessage(messages.interviewTitle, { company }),
+    when: ctx.intl.formatMessage(messages.interviewWhen, {
+      when: at.label,
+      minutes: suggestion.durationMinutes === null ? "none" : String(suggestion.durationMinutes),
+    }),
+    at,
+    where,
+    state,
+    note: ctx.intl.formatMessage(notes[state]),
+  };
+}
+
 export function buildMailReviewModel(
-  data: UserData,
+  data: ScreenData,
   ctx: ModelContext,
   params: Readonly<Record<string, string | undefined>>,
 ): MailReviewModel {
@@ -556,6 +660,8 @@ export function buildMailReviewModel(
     const change = event ? autoChangeVM(event, data, ctx) : null;
     if (event && change) changes.set(message.id, { change, at: event.occurredAt });
   }
+  const isUndone = (message: MailMessage): boolean =>
+    data.applicationEvents.some((event) => event.revertsEventId === message.appliedEventId);
 
   const { intl } = ctx;
   const accountDot = accounts.length > 1;
@@ -594,7 +700,9 @@ export function buildMailReviewModel(
     };
     if (message.reviewState === "pending") return { ...base, kind: "review", ...reviewInfo(message) };
     const change = changes.get(message.id);
-    return change ? { ...base, kind: "update", change: change.change } : { ...base, kind: "plain" };
+    return change
+      ? { ...base, kind: "update", change: change.change, undone: isUndone(message) }
+      : { ...base, kind: "plain" };
   };
 
   // To review: single emails, plus the inbox scan as one bundle (D17).
@@ -631,9 +739,13 @@ export function buildMailReviewModel(
 
   const category = isStoredCategory(params.category) ? params.category : null;
   const folder: MailFolderId = isFolder(params.folder) ? params.folder : category ? "all" : "review";
+  // The inbox scan's proposals, opened from their bundle row; closes itself once none are left.
+  const bundleOpen = folder === "review" && params.bundle === "backfill" && backfill.length > 0;
 
   let rows: MailRowVM[];
-  if (folder === "review") {
+  if (bundleOpen) {
+    rows = backfill.map(rowOf);
+  } else if (folder === "review") {
     rows = [...(backfillRow ? [backfillRow] : []), ...singles.map(rowOf)];
   } else if (folder === "updates") {
     rows = updates.map(rowOf);
@@ -682,6 +794,7 @@ export function buildMailReviewModel(
         candidate.email === contactEmail &&
         (application === undefined || candidate.applicationIds.includes(application.id)),
     );
+    const webmail = account ? webmailOf(account) : null;
     return {
       messageId: message.id,
       mode: row.kind,
@@ -693,7 +806,16 @@ export function buildMailReviewModel(
       reviewedChip: row.reviewedChip,
       body: message.bodyText,
       bodyNote: bodyNote(message, ctx),
-      openOriginalLabel: intl.formatMessage(OPEN_ORIGINAL_MESSAGES[account?.provider ?? "imap"]),
+      openOriginal:
+        account && webmail
+          ? {
+              label: intl.formatMessage(messages.openIn, { provider: providerLabel(account, intl) }),
+              provider: webmail,
+              email: account.address,
+            }
+          : null,
+      interview: interviewVM(message, proposal.company.name, ctx),
+      undone: row.kind === "update" && row.undone,
       activity: application ? timelineVMs(application, data, ctx).slice(0, ACTIVITY_LIMIT) : [],
       details: {
         company: proposal.company,
@@ -768,6 +890,13 @@ export function buildMailReviewModel(
     }),
     folder,
     category: folder === "all" ? category : null,
+    bundle: bundleOpen
+      ? {
+          id: "backfill",
+          title: intl.formatMessage(messages.bundleTitle),
+          backLabel: intl.formatMessage(messages.bundleBack),
+        }
+      : null,
     rows,
     selectedMessageId: selectedMessage?.id ?? null,
     selected: selectedMessage ? selectionVM(selectedMessage) : null,

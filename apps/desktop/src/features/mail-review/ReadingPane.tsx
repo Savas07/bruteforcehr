@@ -16,6 +16,7 @@ import { RelativeTimeChip } from "../../shared/ui/RelativeTimeChip";
 import { ReviewDetailPane } from "../../shared/ui/ReviewDetailPane";
 import { TimelineRow } from "../../shared/ui/TimelineRow";
 import { CorrectionPopover, type CorrectionDraft, NEW_APPLICATION } from "./CorrectionPopover";
+import { InterviewSuggestion } from "./InterviewSuggestion";
 import { MailDetails } from "./MailDetails";
 import { KeyboardHintBar } from "./MailList";
 import { ClassificationBadge } from "./MailRow";
@@ -47,6 +48,8 @@ export interface ReadingPaneHandlers {
   onUndoChange: () => void;
   onMarkSeen: () => void;
   onOpenApplication: (applicationId: string) => void;
+  /** "Add interview" on an automatically applied invite. */
+  onAddInterview: () => void;
 }
 
 /** The current proposal as correction values. */
@@ -57,7 +60,6 @@ function initialDraft(selection: MailSelectionVM): CorrectionDraft {
     applicationId: move
       ? (move.applicationId ?? NEW_APPLICATION)
       : (selection.details.application?.id ?? null),
-    status: move?.to.key ?? null,
   };
 }
 
@@ -97,7 +99,6 @@ export function ReadingPane({
   model,
   chip,
   pending,
-  undone,
   seen,
   offline,
   wide,
@@ -113,7 +114,6 @@ export function ReadingPane({
   chip: string | null;
   /** Still waiting for the user's decision. */
   pending: boolean;
-  undone: boolean;
   seen: boolean;
   offline: boolean;
   /** ≥ 1440 px: details live in the rail instead of the pane. */
@@ -140,6 +140,10 @@ export function ReadingPane({
             onOpenChange={onCorrectionOpenChange}
             options={model.correction}
             initial={initialDraft(selection)}
+            origin={{
+              category: selection.proposal.category.key,
+              suggestedStatus: selection.proposal.move?.to.key ?? null,
+            }}
             newApplicationLabel={selection.newApplicationLabel}
             onSave={handlers.onSaveCorrection}
           />
@@ -159,7 +163,7 @@ export function ReadingPane({
   } else if (selection.mode === "update" && change) {
     top = (
       <>
-        {undone ? (
+        {selection.undone ? (
           <InlineAlert
             tone="info"
             title={intl.formatMessage(messages.movedBack, {
@@ -196,23 +200,34 @@ export function ReadingPane({
                 onChoose={handlers.onReviewLater}
               />
             )}
-            <NeedsConnection explanation={intl.formatMessage(messages.openOriginalOffline)}>
-              {(reason) => (
-                <Button
-                  size="sm"
-                  variant="plain"
-                  icon={ExternalLink}
-                  shortcut="O"
-                  disabledReason={reason}
-                  onClick={handlers.onOpenOriginal}
-                >
-                  {selection.openOriginalLabel}
-                </Button>
-              )}
-            </NeedsConnection>
+            {selection.openOriginal && (
+              <NeedsConnection explanation={intl.formatMessage(messages.openOriginalOffline)}>
+                {(reason) => (
+                  <Button
+                    size="sm"
+                    variant="plain"
+                    icon={ExternalLink}
+                    shortcut="O"
+                    disabledReason={reason}
+                    onClick={handlers.onOpenOriginal}
+                  >
+                    {selection.openOriginal?.label}
+                  </Button>
+                )}
+              </NeedsConnection>
+            )}
           </div>
 
           {top}
+
+          {selection.interview && (
+            <InterviewSuggestion
+              interview={selection.interview}
+              offline={offline}
+              onAdd={handlers.onAddInterview}
+            />
+          )}
+
 
           <section aria-labelledby={emailHeadingId} className="flex flex-col gap-2">
             <h2 id={emailHeadingId} className="text-footnote text-fg-secondary font-medium">

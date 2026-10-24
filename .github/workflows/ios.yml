@@ -64,6 +64,7 @@ jobs:
           - JobDetailAccessibilityAuditTests
           - JobsAccessibilityAuditTests
           - MailReviewAccessibilityAuditTests
+          - OnboardingAccessibilityAuditTests
           - SettingsMailAccessibilityAuditTests
           - ShareSheetAccessibilityAuditTests
           - SignInAccessibilityAuditTests

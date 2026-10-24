@@ -56,7 +56,16 @@ for (const test of tests) {
         /launch/iu.test(`${metric.identifier ?? ""} ${metric.displayName}`) &&
         metric.unitOfMeasurement === "s";
       const hitch = /hitch time ratio/iu.test(metric.displayName);
-      const limit = launch ? LAUNCH_BUDGET_S * scale : hitch ? HITCH_BUDGET_MS_PER_S * scale : null;
+      // The baselines (`testLaunchBaseline…`) are reported, not gated.
+      const budgeted =
+        test.testIdentifier.includes("testLaunchToInteractive") || test.testIdentifier.includes("testScroll");
+      const limit = !budgeted
+        ? null
+        : launch
+          ? LAUNCH_BUDGET_S * scale
+          : hitch
+            ? HITCH_BUDGET_MS_PER_S * scale
+            : null;
       const value = median(metric.measurements);
       checks.push({
         test: test.testIdentifier,

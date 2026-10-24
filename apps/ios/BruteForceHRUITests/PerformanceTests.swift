@@ -32,6 +32,27 @@ final class PerformanceTests: XCTestCase {
         XCTAssertTrue(app.descendants(matching: .any)["design.today"].waitForExistence(timeout: 20))
     }
 
+    /// Not a budget: the same measurement of the signed-out launch (the sign-in screen, no fixture
+    /// data), to tell the app's own start-up from what the signed-in Today adds.
+    @MainActor
+    func testLaunchBaselineSignedOut() {
+        let app = XCUIApplication()
+        app.launchArguments += english
+        measure(metrics: [XCTApplicationLaunchMetric(waitUntilResponsive: true)], options: options) {
+            app.launch()
+        }
+    }
+
+    /// Not a budget: the same measurement of a system app (Settings), the floor this simulator
+    /// and runner put under any app's launch.
+    @MainActor
+    func testLaunchBaselineSystemApp() {
+        let app = XCUIApplication(bundleIdentifier: "com.apple.Preferences")
+        measure(metrics: [XCTApplicationLaunchMetric(waitUntilResponsive: true)], options: options) {
+            app.launch()
+        }
+    }
+
     @MainActor
     func testScrollJobsFeed() {
         let app = launch("jobs", ready: "jobs.feed")

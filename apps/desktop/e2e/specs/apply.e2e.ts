@@ -32,30 +32,81 @@ const goTo = (hash: string) =>
     location.hash = value;
   }, hash);
 
-/** A visible, enabled button whose text (or accessible name) starts with `label`. */
-async function button(label: string, timeout = 30_000) {
-  let found: WebdriverIO.Element | undefined;
-  await browser.waitUntil(
-    async () => {
-      for (const candidate of await $("main").$$("button")) {
-        const name = (await candidate.getAttribute("aria-label")) ?? (await candidate.getText()).trim();
-        if (name.startsWith(label) && (await candidate.isDisplayed()) && (await candidate.getAttribute("aria-disabled")) !== "true") {
-          found = candidate;
+/**
+ * Clicks the visible, enabled button whose accessible name (aria-label, else its text) starts with
+ * `label`. Each attempt finds it in one in-page query and tags that node, then WebDriver clicks
+ * exactly it; a node replaced in between (a re-render) fails only that attempt. Scanning every
+ * button with WebDriver calls instead (three round trips each) failed whenever any button in the
+ * window was re-rendered during the scan: the element went stale and every poll threw.
+ */
+async function clickButton(label: string, timeout = 30_000): Promise<void> {
+  await browser
+    .waitUntil(
+      async () => {
+        const tag = await browser.execute((wanted: string) => {
+          for (const node of document.querySelectorAll<HTMLButtonElement>(
+            "main button, [role=dialog] button",
+          )) {
+            const name = (node.getAttribute("aria-label") ?? node.innerText).trim();
+            if (!name.startsWith(wanted) || node.getAttribute("aria-disabled") === "true") continue;
+            if (node.getClientRects().length === 0) continue;
+            const id = `pick-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+            node.setAttribute("data-e2e-pick", id);
+            return id;
+          }
+          return null;
+        }, label);
+        if (tag === null) return false;
+        try {
+          await $(`[data-e2e-pick="${tag}"]`).click();
           return true;
+        } catch {
+          // Replaced before the click landed: find it again.
+          return false;
         }
-      }
-      return false;
-    },
-    { timeout, timeoutMsg: `no enabled "${label}" button` },
-  ).catch(async (error: unknown) => {
-    // Say why: the panel's one-line blocker (or PDF status) and the buttons it shows.
-    const status = await browser.execute(() =>
-      [...document.querySelectorAll("main [role=status], main [role=alert], main footer")].map((node) => node.textContent).join(" | "),
-    );
-    throw new Error(`${String(error)} — panel says: ${status}`);
+      },
+      { timeout, timeoutMsg: `no enabled "${label}" button` },
+    )
+    .catch(async (error: unknown) => {
+      // Say why: the panel's one-line blocker (or PDF status) and the buttons it shows.
+      const status = await browser.execute(() =>
+        [...document.querySelectorAll("main [role=status], main [role=alert], main footer")]
+          .map((node) => node.textContent)
+          .join(" | "),
+      );
+      throw new Error(`${String(error)} — panel says: ${status}`);
+    });
+}
+
+/** Counts buttons removed from the DOM per accessible name (CI evidence for re-render churn). */
+async function watchRemovedButtons(): Promise<void> {
+  await browser.execute(() => {
+    const removed = new Map<string, number>();
+    const name = (node: Element) =>
+      (node.getAttribute("aria-label") ?? node.textContent ?? "").trim().slice(0, 50);
+    new MutationObserver((records) => {
+      for (const record of records)
+        for (const node of record.removedNodes) {
+          if (!(node instanceof Element)) continue;
+          for (const removedButton of [
+            ...(node.matches("button") ? [node] : []),
+            ...node.querySelectorAll("button"),
+          ])
+            removed.set(name(removedButton), (removed.get(name(removedButton)) ?? 0) + 1);
+        }
+    }).observe(document.body, { subtree: true, childList: true });
+    Object.assign(window, { __bfhrRemovedButtons: removed });
   });
-  if (!found) throw new Error(`no "${label}" button`);
-  return found;
+}
+
+async function reportRemovedButtons(test: string): Promise<void> {
+  const removed = await browser.execute(() => {
+    const counts = Reflect.get(window, "__bfhrRemovedButtons") as Map<string, number> | undefined;
+    const top = [...(counts ?? [])].toSorted((a, b) => b[1] - a[1]).slice(0, 8);
+    counts?.clear();
+    return top;
+  });
+  console.log(`apply.e2e removed buttons during "${test}": ${JSON.stringify(removed)}`);
 }
 
 async function field(label: string) {
@@ -88,23 +139,36 @@ describe("Apply", function () {
     const now = new Date();
     await writeDoc(`users/${uid}/cvs/${CV_ID}/revisions/${REV_ID}`, seedRevision(now));
     await writeDoc(`users/${uid}/cvs/${CV_ID}`, seedCv(`E2E Apply CV ${RUN}`, REV_ID, now));
-    await writeDoc(`users/${uid}/jobs/${EMAIL_JOB.id}`, seedJob(EMAIL_JOB, { url: null, email: `jobs-${RUN}@example.com` }, now));
-    await writeDoc(`users/${uid}/jobs/${SITE_JOB.id}`, seedJob(SITE_JOB, { url: `https://boards.greenhouse.io/e2e/jobs/${RUN}`, email: null }, now));
+    await writeDoc(
+      `users/${uid}/jobs/${EMAIL_JOB.id}`,
+      seedJob(EMAIL_JOB, { url: null, email: `jobs-${RUN}@example.com` }, now),
+    );
+    await writeDoc(
+      `users/${uid}/jobs/${SITE_JOB.id}`,
+      seedJob(SITE_JOB, { url: `https://boards.greenhouse.io/e2e/jobs/${RUN}`, email: null }, now),
+    );
     // The feed lists jobs through their matches ("the server scored them").
-    for (const entry of [EMAIL_JOB, SITE_JOB]) await writeDoc(`users/${uid}/jobMatches/${entry.id}`, seedMatch(now));
+    for (const entry of [EMAIL_JOB, SITE_JOB])
+      await writeDoc(`users/${uid}/jobMatches/${entry.id}`, seedMatch(now));
     await writeDoc(`users/${uid}/answers/${ANSWER_ID}`, seedAnswer(`Three months (${RUN})`, now));
     await goTo("#/jobs");
     // The feed has the seeded jobs before the spec opens their Apply panels.
     await $(`[data-nav-id="${EMAIL_JOB.id}"]`).waitForDisplayed({ timeout: 30_000 });
     await goTo("#/jobs");
     await useRecordedCallables();
+    await watchRemovedButtons();
+  });
+
+  afterEach(async function () {
+    await reportRemovedButtons(this.currentTest?.title ?? "");
   });
 
   after(async () => {
     if (uid === "") return;
     for (const company of [EMAIL_JOB.company, SITE_JOB.company]) {
       for (const found of await findDocs("applications", "company", company)) {
-        for (const event of await findDocs("applicationEvents", "applicationId", docId(found))) await deleteDoc(event.name);
+        for (const event of await findDocs("applicationEvents", "applicationId", docId(found)))
+          await deleteDoc(event.name);
         await deleteDoc(found.name);
       }
     }
@@ -122,15 +186,15 @@ describe("Apply", function () {
     await openApply(EMAIL_JOB.id);
     const cv = await field("CV");
     await cv.selectByAttribute("value", CV_ID);
-    await (await button("Tailor for this job")).click();
-    await (await button("Suggest edits")).click();
+    await clickButton("Tailor for this job");
+    await clickButton("Suggest edits");
     await $("h3=3 suggested edits").waitForDisplayed({ timeout: 20_000 });
     // One decision per card (the rail's "Accept all" would match "Accept" too).
     await $('article[data-card-id="e1"]').$("button*=Accept").click();
     await $('article[data-card-id="e2"]').$("button*=Keep original").click();
     await $('article[data-card-id="e3"]').$("button*=Accept").click();
     await $("p*=2 accepted · 1 kept as it was").waitForDisplayed({ timeout: 10_000 });
-    await (await button("Save as new version")).click();
+    await clickButton("Save as new version");
 
     let tailored: FirestoreDoc | undefined;
     await browser.waitUntil(
@@ -142,10 +206,15 @@ describe("Apply", function () {
     );
     expect(plain(tailored?.fields["jobId"])).toBe(EMAIL_JOB.id);
     expect(plain(tailored?.fields["basedOnRevisionId"])).toBe(REV_ID);
-    await browser.waitUntil(async () => plain((await application(EMAIL_JOB.company))?.fields["cvRevisionId"]) === docId(tailored as FirestoreDoc), {
-      timeout: 20_000,
-      timeoutMsg: "the tailored version isn't pinned on the application",
-    });
+    await browser.waitUntil(
+      async () =>
+        plain((await application(EMAIL_JOB.company))?.fields["cvRevisionId"]) ===
+        docId(tailored as FirestoreDoc),
+      {
+        timeout: 20_000,
+        timeoutMsg: "the tailored version isn't pinned on the application",
+      },
+    );
     // The CV itself still points at its own version.
     expect(plain((await getDoc(`users/${uid}/cvs/${CV_ID}`)).fields["currentRevisionId"])).toBe(REV_ID);
   });
@@ -153,18 +222,21 @@ describe("Apply", function () {
   it("drafts the cover letter with AI, fills the field and records the application with it pinned", async () => {
     await $("h2*=Apply to").waitForDisplayed({ timeout: 15_000 });
     await (await $("label*=Attach a cover letter")).click();
-    await (await button("Draft with AI")).click();
+    await clickButton("Draft with AI");
     await $("p*=Drafted from your CV and this job").waitForDisplayed({ timeout: 15_000 });
     const manager = await field("Hiring manager");
     await manager.setValue("Ms Weber");
-    await (await button("Review email")).click();
+    await clickButton("Review email");
     // Enabled once the CV and letter PDFs are printed (slow on the hosted macOS runners).
-    await (await button("I sent it", 240_000)).click();
+    await clickButton("I sent it", 240_000);
 
-    await browser.waitUntil(async () => plain((await application(EMAIL_JOB.company))?.fields["status"]) === "applied", {
-      timeout: 30_000,
-      timeoutMsg: "I sent it didn't reach the emulator",
-    });
+    await browser.waitUntil(
+      async () => plain((await application(EMAIL_JOB.company))?.fields["status"]) === "applied",
+      {
+        timeout: 30_000,
+        timeoutMsg: "I sent it didn't reach the emulator",
+      },
+    );
     const applied = await application(EMAIL_JOB.company);
     const tailored = (await revisions()).find((revision) => plain(revision.fields["source"]) === "ai_tailor");
     expect(plain(applied?.fields["cvRevisionId"])).toBe(docId(tailored as FirestoreDoc));
@@ -188,15 +260,16 @@ describe("Apply", function () {
         value: { writeText: (text: string) => Promise.resolve(void copied.push(text)) },
       });
     });
-    const copied = () => browser.execute(() => (Reflect.get(window, "__bfhrCopied") as string[] | undefined) ?? []);
-    await (await button("Copy Notice period")).click();
+    const copied = () =>
+      browser.execute(() => (Reflect.get(window, "__bfhrCopied") as string[] | undefined) ?? []);
+    await clickButton("Copy Notice period");
     // The toast's message is a span (`*=` alone matches links only).
     await $("span=Notice period copied").waitForDisplayed({ timeout: 10_000 });
     expect(await copied()).toEqual([`Three months (${RUN})`]);
     const cv = await field("CV");
     await cv.selectByAttribute("value", CV_ID);
     // Enabled once the CV's PDF is printed.
-    await (await button("Copy path", 240_000)).click();
+    await clickButton("Copy path", 240_000);
     const dir = process.env["BFHR_E2E_EXPORT_DIR"];
     if (!dir) throw new Error("BFHR_E2E_EXPORT_DIR is not set (desktop.yml sets it)");
     const kit = path.join(dir, "kit");
@@ -206,9 +279,12 @@ describe("Apply", function () {
     });
     // The copied path is the saved PDF's.
     // The app's path and Node's may spell the temp folder differently (8.3 names, symlinks).
-    await browser.waitUntil(async () => (await copied()).some((text) => /[\\/]kit[\\/][^\\/]+\.pdf$/u.test(text)), {
-      timeout: 10_000,
-      timeoutMsg: "Copy path didn't copy the kit file's path",
-    });
+    await browser.waitUntil(
+      async () => (await copied()).some((text) => /[\\/]kit[\\/][^\\/]+\.pdf$/u.test(text)),
+      {
+        timeout: 10_000,
+        timeoutMsg: "Copy path didn't copy the kit file's path",
+      },
+    );
   });
 });

@@ -17,6 +17,8 @@
     "capture": "wdio run e2e/wdio.capture.conf.ts",
     "capture:app:design": "wdio run e2e/wdio.capture-design.conf.ts",
     "capture:design": "node scripts/capture-design.ts",
+    "perf:cold-start": "wdio run e2e/wdio.perf.conf.ts && node scripts/perf-cold-start.ts",
+    "perf:scroll": "node scripts/perf-scroll.ts",
     "tauri": "tauri",
     "lint": "eslint .",
     "test": "vitest run && node scripts/i18n.ts check",

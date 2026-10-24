@@ -12,6 +12,8 @@ mod mail_inbox;
 mod mailto;
 mod menu;
 mod navigation;
+#[cfg(feature = "e2e")]
+mod perf;
 mod preferences;
 mod updater;
 mod window;
@@ -19,6 +21,9 @@ mod window;
 use tauri_plugin_deep_link::DeepLinkExt;
 
 fn main() {
+    // Test builds: the cold-start marks count from here (src/perf.rs).
+    #[cfg(feature = "e2e")]
+    perf::start();
     let builder = tauri::Builder::default()
         // First, so a second launch (Windows: a `bruteforcehr://` link starts one with the link as
         // its argument) hands its link to this instance's deep-link handler and quits.
@@ -75,7 +80,10 @@ fn main() {
             commands::open_mail_inbox,
             commands::open_mailto,
             commands::print_cv_pdf,
-            commands::save_export
+            commands::save_export,
+            // Test builds only: granted by the `e2e` capability (tauri.e2e.conf.json).
+            #[cfg(feature = "e2e")]
+            perf::perf_mark
         ])
         .menu(menu::build)
         .on_menu_event(|app, event| menu::handle_event(app, &event))

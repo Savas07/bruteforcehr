@@ -9,9 +9,13 @@
 export const designStates = ["populated", "empty", "loading", "error", "offline"] as const;
 export type DesignState = (typeof designStates)[number];
 
-/** Route search params: `fixture` picks the dataset, `state` forces a load or connection state. */
+/**
+ * Route search params: `fixture` picks the dataset, `state` forces a load or connection state.
+ * `scaled` is the performance budget's volume (5,000 jobs, 1,000 applications; scripts/perf-scroll.ts),
+ * not a capture state.
+ */
 export interface DesignSearch {
-  readonly fixture: "populated" | "empty";
+  readonly fixture: "populated" | "empty" | "scaled";
   readonly state: "ready" | "loading" | "error" | "offline";
 }
 

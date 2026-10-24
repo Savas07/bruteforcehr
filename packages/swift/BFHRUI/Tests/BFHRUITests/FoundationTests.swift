@@ -32,18 +32,27 @@ struct FoundationTests {
         #expect(!MatchBandBar.fillsWithAccent(.stretch))
     }
 
-    @Test("Both fixture datasets decode into UserData", arguments: FixtureDataset.allCases)
+    @Test("Every fixture dataset decodes into UserData", arguments: FixtureDataset.allCases)
     func fixturesDecode(dataset: FixtureDataset) throws {
         let document = try FixtureStore.document(dataset)
         let data = UserData(document)
         #expect(data.profile?.id == document.profile.id)
         #expect(data.applications.count == document.applications.count)
-        if dataset == .populated {
+        switch dataset {
+        case .populated:
             #expect(!data.applications.isEmpty)
             #expect(data.application(id: "app-kervan")?.company == "Kervan Teknoloji")
             #expect(data.events(forApplication: "app-kervan").map(\.occurredAt) == data.events(forApplication: "app-kervan").map(\.occurredAt).sorted())
-        } else {
+        case .empty:
             #expect(data.applications.isEmpty && data.jobs.isEmpty && data.mailMessages.isEmpty)
+        case .scaled:
+            // The performance budget's volume, with unique ids and every copy linked to its own.
+            #expect(data.jobs.count == 5_000 && document.jobMatches.count == 5_000)
+            #expect(data.applications.count == 1_000)
+            #expect(Set(data.jobs.map(\.id)).count == 5_000)
+            #expect(Set(data.applications.map(\.id)).count == 1_000)
+            #expect(data.application(id: "app-kervan-x3")?.company == "Kervan Teknoloji")
+            #expect(data.events(forApplication: "app-kervan-x3").count == data.events(forApplication: "app-kervan").count)
         }
     }
 

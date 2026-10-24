@@ -1,4 +1,4 @@
-import { emptyDataset, FIXTURE_NOW, populatedDataset } from "@bfhr/fixtures";
+import { FIXTURE_NOW } from "@bfhr/fixtures";
 import { timing } from "@bfhr/ui-tokens";
 import { useNavigate, useParams, useSearch } from "@tanstack/react-router";
 import { useEffect, useMemo, type ComponentType } from "react";
@@ -10,6 +10,7 @@ import { destinationMessages, type DestinationId } from "../lib/destinations";
 import type { ScreenId, ScreenProps } from "../shared/screen";
 import { ScreenTitle } from "../shared/ui/ScreenTitle";
 import { DESIGN_READY_ATTRIBUTE } from "./matrix";
+import { designDataset } from "./datasets";
 import { readDesignParams } from "./search";
 
 /** How the design build feeds one core screen. */
@@ -107,7 +108,7 @@ export function DesignScreen<Model>({
   );
 
   const model = useMemo((): Loadable<Model> => {
-    const data = search.fixture === "empty" ? emptyDataset : populatedDataset;
+    const data = designDataset(search.fixture);
     switch (search.state) {
       case "loading":
         return { status: "loading" };

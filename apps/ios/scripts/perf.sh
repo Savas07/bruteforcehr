@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+# Performance budgets on the iOS Simulator (docs/BRIEF.md §9, docs/runbooks/performance.md): runs
+# BruteForceHRUITests/PerformanceTests (launch to interactive; scrolling with 5,000 jobs and 1,000
+# applications), then apps/ios/scripts/perf-report.ts reads the measurements from the result
+# bundle, writes artifacts/perf/ios.json and fails when a budget is missed.
+#
+#   apps/ios/scripts/perf.sh [--device "iPhone 17 Pro" | --device <udid>] [--budget-scale 1]
+#                            [--only launch|scroll] [--skip-build]
+#
+# Builds into BFHR_DERIVED_DATA (else apps/ios/build/DerivedData). On a machine shared with other
+# worktrees, run it under apps/ios/scripts/with-ios-lock.sh.
+set -euo pipefail
+
+ios_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+repo_root="$(cd "$ios_dir/../.." && pwd)"
+derived_data="${BFHR_DERIVED_DATA:-$ios_dir/build/DerivedData}"
+device="iPhone 17 Pro"
+budget_scale=1
+only=""
+build=true
+while (($# > 0)); do
+  case "$1" in
+    --device) device="$2"; shift ;;
+    --budget-scale) budget_scale="$2"; shift ;;
+    --only) only="$2"; shift ;;
+    --skip-build) build=false ;;
+    -h | --help) sed -n '2,12p' "$0"; exit 0 ;;
+    *) echo "perf.sh: unknown argument $1" >&2; exit 64 ;;
+  esac
+  shift
+done
+
+# A UDID, or the first available simulator with that name.
+udid="$(xcrun simctl list devices available -j | node -e '
+  const wanted = process.argv[1];
+  const { devices } = JSON.parse(require("node:fs").readFileSync(0, "utf8"));
+  const all = Object.values(devices).flat();
+  const match = all.find((d) => d.udid === wanted) ?? all.find((d) => d.name === wanted);
+  if (!match) { console.error(`No available simulator "${wanted}"`); process.exit(1); }
+  console.log(match.udid);
+' "$device")"
+
+case "$only" in
+  "") tests=(-only-testing:BruteForceHRUITests/PerformanceTests) ;;
+  launch) tests=(-only-testing:BruteForceHRUITests/PerformanceTests/testLaunchToInteractive) ;;
+  scroll)
+    tests=(-only-testing:BruteForceHRUITests/PerformanceTests/testScrollJobsFeed
+      -only-testing:BruteForceHRUITests/PerformanceTests/testScrollTrackerBoard) ;;
+  *) echo "perf.sh: --only launch or scroll" >&2; exit 64 ;;
+esac
+
+out_dir="$repo_root/artifacts/perf"
+result="$out_dir/ios.xcresult"
+mkdir -p "$out_dir"
+rm -rf "$result"
+xcodebuild_args=(-project "$ios_dir/BruteForceHR.xcodeproj" -scheme BruteForceHR -configuration Debug
+  -destination "platform=iOS Simulator,id=$udid" -derivedDataPath "$derived_data" -quiet)
+if $build; then xcodebuild build-for-testing "${xcodebuild_args[@]}"; fi
+# Performance tests report their measurements; the budgets are checked below, not by XCTest.
+status=0
+xcodebuild test-without-building "${xcodebuild_args[@]}" -resultBundlePath "$result" "${tests[@]}" || status=$?
+
+xcrun xcresulttool get test-results metrics --path "$result" --compact >"$out_dir/ios-metrics.json"
+node "$ios_dir/scripts/perf-report.ts" "$out_dir/ios-metrics.json" "$out_dir/ios.json" "$budget_scale"
+exit "$status"

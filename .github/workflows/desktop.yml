@@ -171,6 +171,29 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
+      # Performance budgets (docs/BRIEF.md §9, docs/runbooks/performance.md). Cold start: a session
+      # spec signs in and seeds data, then the test build is launched 5 times (after a warm-up) and
+      # timed until Today is interactive; the median must stay under 2.5 s.
+      - name: Cold-start budget
+        if: success() || failure()
+        run: scripts/with-emulators.sh pnpm perf:cold-start --runs 5
+      # Scrolling: 5,000 jobs and 1,000 applications in the design build, in the engine of each
+      # platform's webview (WebKit ≈ WKWebView on macOS, Chromium ≈ WebView2 on Windows).
+      - name: Scrolling budget
+        if: success() || failure()
+        run: |
+          engine=chromium
+          if [ "$RUNNER_OS" = macOS ]; then engine=webkit; fi
+          pnpm exec playwright install "$engine"
+          pnpm perf:scroll --engines "$engine"
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: desktop-perf-${{ matrix.os }}
+          path: artifacts/perf/
+          if-no-files-found: ignore
+          retention-days: 30
+
   # On demand (`gh workflow run desktop.yml -f design_capture=true [-f update_states=all …]`): the
   # design build (fixtures, forced states) in the real macOS and Windows apps, for the final
   # critique rounds.

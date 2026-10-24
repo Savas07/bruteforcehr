@@ -6,7 +6,7 @@
  * (a link containing `blocked` fails like a login wall), and an email send is sent after the undo
  * window.
  */
-import { emptyDataset, FIXTURE_NOW, type FixtureDataset, populatedDataset } from "@bfhr/fixtures";
+import { FIXTURE_NOW, type FixtureDataset } from "@bfhr/fixtures";
 import {
   type EmailSend,
   type JobImportUrlResponse,
@@ -22,6 +22,7 @@ import { JobsProviders } from "../data/jobs/live";
 import { createMemoryJobsStore, type MemoryJobsCallables, type MemoryJobsStore } from "../data/jobs/memory";
 import type { MemoryTrackerStore } from "../data/tracker/memory";
 import { newApplication, planCreateApplications } from "../data/tracker/writes";
+import { designDataset } from "./datasets";
 import { readDesignParams } from "./search";
 import { designTrackerStore } from "./tracker";
 
@@ -358,7 +359,7 @@ function jobsStoreFor(dataset: FixtureDataset): MemoryJobsStore {
 /** The design Jobs store of the route's dataset; goes inside `DesignTrackerProviders`. */
 export function DesignJobsProviders({ children }: { readonly children: ReactNode }) {
   const search = readDesignParams(useSearch({ strict: false }));
-  const dataset = search.fixture === "empty" ? emptyDataset : populatedDataset;
+  const dataset = designDataset(search.fixture);
   const store = jobsStoreFor(dataset);
   const base = useMemo(
     () => ({

@@ -18,7 +18,7 @@ import {
 } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
-import { useEffect, useMemo, useRef, type KeyboardEvent, type MouseEvent } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, type KeyboardEvent, type MouseEvent } from "react";
 import { defineMessages, useIntl } from "react-intl";
 import { cx } from "../../shared/cx";
 import { Monogram } from "../../shared/ui/Company";
@@ -256,34 +256,34 @@ export function DataTable({
     );
   }, [focusedIndex, rows, virtualizer]);
 
-  const moveFocus = (delta: number) => {
-    const next = rows[Math.min(rows.length - 1, Math.max(0, tabStop + delta))];
-    if (!next) return;
-    pendingFocus.current = true;
-    onFocusedChange(next.applicationId);
-  };
-
-  const onRowKeyDown = (event: KeyboardEvent<HTMLElement>) => {
-    if (event.altKey || event.metaKey || event.ctrlKey) return;
-    const page = Math.max(
-      1,
-      Math.floor((scrollRef.current?.clientHeight ?? ROW_HEIGHT * 10) / ROW_HEIGHT) - 1,
-    );
-    const steps: Readonly<Record<string, number>> = {
-      ArrowDown: 1,
-      j: 1,
-      ArrowUp: -1,
-      k: -1,
-      PageDown: page,
-      PageUp: -page,
-      Home: -rows.length,
-      End: rows.length,
-    };
-    const step = steps[event.key];
-    if (step === undefined) return;
-    event.preventDefault();
-    moveFocus(step);
-  };
+  // Stable while only the scroll position changes, so the memoized rows don't re-render.
+  const onRowKeyDown = useCallback(
+    (event: KeyboardEvent<HTMLElement>) => {
+      if (event.altKey || event.metaKey || event.ctrlKey) return;
+      const page = Math.max(
+        1,
+        Math.floor((scrollRef.current?.clientHeight ?? ROW_HEIGHT * 10) / ROW_HEIGHT) - 1,
+      );
+      const steps: Readonly<Record<string, number>> = {
+        ArrowDown: 1,
+        j: 1,
+        ArrowUp: -1,
+        k: -1,
+        PageDown: page,
+        PageUp: -page,
+        Home: -rows.length,
+        End: rows.length,
+      };
+      const step = steps[event.key];
+      if (step === undefined) return;
+      event.preventDefault();
+      const next = rows[Math.min(rows.length - 1, Math.max(0, tabStop + step))];
+      if (!next) return;
+      pendingFocus.current = true;
+      onFocusedChange(next.applicationId);
+    },
+    [rows, tabStop, onFocusedChange],
+  );
 
   const allSelected = rows.length > 0 && rows.every((row) => selected.has(row.applicationId));
   const someSelected = !allSelected && rows.some((row) => selected.has(row.applicationId));
@@ -355,50 +355,23 @@ export function DataTable({
           {items.map((item) => {
             const row = rows[item.index];
             if (!row) return null;
-            const isSelected = selected.has(row.applicationId);
-            const isOpen = row.applicationId === openId;
-            const rowBg = isOpen
-              ? "bg-surface-selected"
-              : isSelected
-                ? "bg-accent-subtle"
-                : "bg-surface-base";
             return (
-              <tr
+              <TableRow
                 key={row.applicationId}
-                aria-rowindex={item.index + 2}
-                data-row-id={row.applicationId}
-                className={cx("group", rowBg)}
-                style={{ height: ROW_HEIGHT }}
-                onClick={(event: MouseEvent) => {
-                  if (event.target === event.currentTarget) onOpen(row.applicationId);
-                }}
-              >
-                <td className={cx(bodyCell, stickyStart, rowBg, "ps-4")} style={{ left: 0 }}>
-                  <Checkbox
-                    checked={isSelected}
-                    label={intl.formatMessage(messages.selectRow, {
-                      company: row.company.name,
-                      role: row.role,
-                    })}
-                    onChange={(range) => onToggleSelected(row.applicationId, range)}
-                  />
-                </td>
-                {headers.map((column) => (
-                  <BodyCell
-                    key={column.id}
-                    id={column.id as TableColumnId}
-                    row={row}
-                    rowBg={rowBg}
-                    tabbable={item.index === tabStop}
-                    onOpen={onOpen}
-                    onFocusRow={onFocusedChange}
-                    onKeyDown={onRowKeyDown}
-                    onMove={onMove}
-                    statusMenuOpen={statusMenuId === row.applicationId}
-                    onStatusMenuChange={onStatusMenuChange}
-                  />
-                ))}
-              </tr>
+                row={row}
+                rowIndex={item.index + 2}
+                headers={headers}
+                isSelected={selected.has(row.applicationId)}
+                isOpen={row.applicationId === openId}
+                tabbable={item.index === tabStop}
+                statusMenuOpen={statusMenuId === row.applicationId}
+                onToggleSelected={onToggleSelected}
+                onOpen={onOpen}
+                onFocusRow={onFocusedChange}
+                onKeyDown={onRowKeyDown}
+                onMove={onMove}
+                onStatusMenuChange={onStatusMenuChange}
+              />
             );
           })}
           {after > 0 && <tr aria-hidden="true" style={{ height: after }} />}
@@ -412,6 +385,81 @@ const headCell =
   "border-line-subtle h-9 border-b px-3 text-start align-middle text-footnote font-medium whitespace-nowrap";
 const bodyCell = "border-line-subtle h-10 truncate border-b px-3 align-middle";
 const stickyStart = "sticky z-[1]";
+
+/**
+ * One application. Memoized: while the table scrolls its props stay the same, so only rows that
+ * come into view render (docs/runbooks/performance.md).
+ */
+const TableRow = memo(function TableRow({
+  row,
+  rowIndex,
+  headers,
+  isSelected,
+  isOpen,
+  tabbable,
+  statusMenuOpen,
+  onToggleSelected,
+  onOpen,
+  onFocusRow,
+  onKeyDown,
+  onMove,
+  onStatusMenuChange,
+}: {
+  row: TableRowVM;
+  /** `aria-rowindex`: 1-based, the header row is 1. */
+  rowIndex: number;
+  headers: DataTableProps["headers"];
+  isSelected: boolean;
+  isOpen: boolean;
+  tabbable: boolean;
+  statusMenuOpen: boolean;
+  onToggleSelected: DataTableProps["onToggleSelected"];
+  onOpen: (applicationId: string) => void;
+  onFocusRow: (applicationId: string) => void;
+  onKeyDown: (event: KeyboardEvent<HTMLElement>) => void;
+  onMove: (applicationId: string, to: ApplicationStatus) => void;
+  onStatusMenuChange: (applicationId: string | null) => void;
+}) {
+  const intl = useIntl();
+  const rowBg = isOpen ? "bg-surface-selected" : isSelected ? "bg-accent-subtle" : "bg-surface-base";
+  return (
+    <tr
+      aria-rowindex={rowIndex}
+      data-row-id={row.applicationId}
+      className={cx("group", rowBg)}
+      style={{ height: ROW_HEIGHT }}
+      onClick={(event: MouseEvent) => {
+        if (event.target === event.currentTarget) onOpen(row.applicationId);
+      }}
+    >
+      <td className={cx(bodyCell, stickyStart, rowBg, "ps-4")} style={{ left: 0 }}>
+        <Checkbox
+          checked={isSelected}
+          label={intl.formatMessage(messages.selectRow, {
+            company: row.company.name,
+            role: row.role,
+          })}
+          onChange={(range) => onToggleSelected(row.applicationId, range)}
+        />
+      </td>
+      {headers.map((column) => (
+        <BodyCell
+          key={column.id}
+          id={column.id as TableColumnId}
+          row={row}
+          rowBg={rowBg}
+          tabbable={tabbable}
+          onOpen={onOpen}
+          onFocusRow={onFocusRow}
+          onKeyDown={onKeyDown}
+          onMove={onMove}
+          statusMenuOpen={statusMenuOpen}
+          onStatusMenuChange={onStatusMenuChange}
+        />
+      ))}
+    </tr>
+  );
+});
 
 function BodyCell({
   id,

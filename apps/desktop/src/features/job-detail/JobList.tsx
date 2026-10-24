@@ -4,10 +4,16 @@
  * salary with provenance, band pill, age, saved / status, "3 sources"), and row actions on hover
  * and focus (Save, Not for me, Open original). A hidden row leaves an anchor for the optional
  * reason popover. `EmptyResults` is the zero-results pane with one removable chip per filter.
+ *
+ * The rows are virtualized (thousands of jobs scroll at 60 fps, docs/runbooks/performance.md):
+ * only those in and near the viewport are in the DOM, plus the selected row and the hidden row's
+ * anchor, so keyboard focus and the reason popover always have their element. Each row states its
+ * position in the whole list (`aria-posinset` / `aria-setsize`).
  */
+import { defaultRangeExtractor, type Range, useVirtualizer } from "@tanstack/react-virtual";
 import { ArrowUpRight, Bookmark, BookmarkCheck, ChevronDown, EyeOff, Layers, Search, X } from "lucide-react";
 import { DropdownMenu } from "radix-ui";
-import { useId, type RefObject } from "react";
+import { memo, useId, useRef, type RefObject } from "react";
 import { defineMessages, useIntl } from "react-intl";
 import { cx } from "../../shared/cx";
 import { Button, IconButton } from "../../shared/ui/Button";
@@ -38,12 +44,26 @@ export interface HiddenPlaceholder {
   readonly index: number;
 }
 
-function Row({
+/** A row's height before it is measured (two-line title, company, salary, pills). */
+const ROW_ESTIMATE = 104;
+/** `gap-0.5` between rows. */
+const ROW_GAP = 2;
+
+/**
+ * One job. Memoized with stable props (the handlers take the row), so scrolling renders only the
+ * rows that come into view.
+ */
+const Row = memo(function Row({
   row,
   saved,
   selected,
   copy,
   nav,
+  index,
+  position,
+  setSize,
+  start,
+  measure,
   onSelect,
   onToggleSave,
   onNotForMe,
@@ -54,10 +74,18 @@ function Row({
   selected: boolean;
   copy: JobDetailCopyVM;
   nav: ListNavigation;
-  onSelect: () => void;
-  onToggleSave: () => void;
-  onNotForMe: () => void;
-  onOpenOriginal: () => void;
+  /** The virtualizer's index (the hidden row's anchor counts). */
+  index: number;
+  /** 1-based position among the rows, and their count. */
+  position: number;
+  setSize: number;
+  /** Offset from the top of the list (px). */
+  start: number;
+  measure: (element: HTMLElement | null) => void;
+  onSelect: (jobId: string) => void;
+  onToggleSave: (row: JobListRowVM) => void;
+  onNotForMe: (row: JobListRowVM) => void;
+  onOpenOriginal: (row: JobListRowVM) => void;
 }) {
   const intl = useIntl();
   const titleId = `job-row-${row.jobId}`;
@@ -65,12 +93,17 @@ function Row({
   return (
     <li
       {...nav.itemProps(row.jobId)}
+      ref={measure}
+      data-index={index}
+      aria-posinset={position}
+      aria-setsize={setSize}
       aria-labelledby={`${titleId} ${companyId}`}
-      onClick={onSelect}
+      onClick={() => onSelect(row.jobId)}
+      style={{ transform: `translateY(${start}px)` }}
       // Grid: the age / saved column sits beside the title and company only, so the salary line
       // and the pills use the full width (one line at the 340 px list of a 1280 px window).
       className={cx(
-        "group relative grid cursor-default grid-cols-[auto_minmax(0,1fr)_auto] gap-x-3 rounded-md px-3 py-3 outline-offset-[-2px] focus-visible:outline-2",
+        "group absolute inset-x-0 top-0 grid cursor-default grid-cols-[auto_minmax(0,1fr)_auto] gap-x-3 rounded-md px-3 py-3 outline-offset-[-2px] focus-visible:outline-2",
         selected ? "bg-surface-selected" : "hover:bg-surface-hover",
       )}
     >
@@ -135,7 +168,7 @@ function Row({
           pressed={saved}
           onClick={(event) => {
             event.stopPropagation();
-            onToggleSave();
+            onToggleSave(row);
           }}
         />
         <IconButton
@@ -146,7 +179,7 @@ function Row({
           shortcut="D"
           onClick={(event) => {
             event.stopPropagation();
-            onNotForMe();
+            onNotForMe(row);
           }}
         />
         <IconButton
@@ -157,21 +190,27 @@ function Row({
           shortcut="O"
           onClick={(event) => {
             event.stopPropagation();
-            onOpenOriginal();
+            onOpenOriginal(row);
           }}
         />
       </div>
     </li>
   );
-}
+});
 
 /** Zero-height anchor where the hidden row was, for the reason popover. */
 function HiddenAnchor({
+  index,
+  start,
+  measure,
   reasons,
   reasonsOpen,
   onReasonsOpenChange,
   onSaveReasons,
 }: {
+  index: number;
+  start: number;
+  measure: (element: HTMLElement | null) => void;
   reasons: readonly DismissReasonVM[];
   reasonsOpen: boolean;
   onReasonsOpenChange: (open: boolean) => void;
@@ -184,10 +223,21 @@ function HiddenAnchor({
       onOpenChange={onReasonsOpenChange}
       onSave={onSaveReasons}
     >
-      <li aria-hidden="true" className="h-0" />
+      <li
+        ref={measure}
+        data-index={index}
+        aria-hidden="true"
+        className="absolute inset-x-0 top-0 h-0"
+        style={{ transform: `translateY(${start}px)` }}
+      />
     </DismissReasonPopover>
   );
 }
+
+/** The list's entries: the rows, with the hidden row's anchor where it was. */
+type Entry =
+  | { readonly kind: "row"; readonly row: JobListRowVM; readonly position: number }
+  | { readonly kind: "hidden"; readonly jobId: string };
 
 export function JobList({
   model,
@@ -227,32 +277,36 @@ export function JobList({
 }) {
   const intl = useIntl();
   const { copy, list } = model;
-  const items = rows.map((row) => (
-    <Row
-      key={row.jobId}
-      row={row}
-      saved={savedOf(row)}
-      selected={row.jobId === selectedId}
-      copy={copy}
-      nav={nav}
-      onSelect={() => onSelect(row.jobId)}
-      onToggleSave={() => onToggleSave(row)}
-      onNotForMe={() => onNotForMe(row)}
-      onOpenOriginal={() => onOpenOriginal(row)}
-    />
-  ));
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const entries: Entry[] = rows.map((row, index) => ({ kind: "row", row, position: index + 1 }));
   if (placeholder)
-    items.splice(
-      Math.min(placeholder.index, items.length),
-      0,
-      <HiddenAnchor
-        key={`hidden-${placeholder.jobId}`}
-        reasons={model.dismissReasons}
-        reasonsOpen={reasonsOpen}
-        onReasonsOpenChange={onReasonsOpenChange}
-        onSaveReasons={onSaveReasons}
-      />,
-    );
+    entries.splice(Math.min(placeholder.index, entries.length), 0, {
+      kind: "hidden",
+      jobId: placeholder.jobId,
+    });
+  // Always rendered, wherever the list is scrolled: the selected row (it holds keyboard focus) and
+  // the hidden row's anchor (the reason popover's).
+  const pinned = [
+    entries.findIndex((entry) => entry.kind === "row" && entry.row.jobId === selectedId),
+    entries.findIndex((entry) => entry.kind === "hidden"),
+  ].filter((index) => index >= 0);
+  const virtualizer = useVirtualizer({
+    count: entries.length,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: (index) => (entries[index]?.kind === "hidden" ? 0 : ROW_ESTIMATE),
+    getItemKey: (index) => {
+      const entry = entries[index];
+      return entry === undefined ? index : entry.kind === "row" ? entry.row.jobId : `hidden-${entry.jobId}`;
+    },
+    gap: ROW_GAP,
+    overscan: 6,
+    rangeExtractor: (range: Range) => {
+      const indexes = defaultRangeExtractor(range);
+      const extra = pinned.filter((index) => !indexes.includes(index));
+      return extra.length === 0 ? indexes : [...indexes, ...extra].toSorted((a, b) => a - b);
+    },
+  });
+
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="text-fg-secondary text-footnote flex min-h-9 shrink-0 flex-wrap items-center justify-between gap-x-3 gap-y-0.5 px-5 py-2 *:whitespace-nowrap">
@@ -267,9 +321,47 @@ export function JobList({
           />
         </span>
       </div>
-      <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-6">
-        <ul ref={listRef} aria-label={list.countLabel} className="flex flex-col gap-0.5">
-          {items}
+      <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto px-2 pb-6">
+        <ul
+          ref={listRef}
+          aria-label={list.countLabel}
+          className="relative"
+          style={{ height: virtualizer.getTotalSize() }}
+        >
+          {virtualizer.getVirtualItems().map((item) => {
+            const entry = entries[item.index];
+            if (!entry) return null;
+            return entry.kind === "hidden" ? (
+              <HiddenAnchor
+                key={item.key}
+                index={item.index}
+                start={item.start}
+                measure={virtualizer.measureElement}
+                reasons={model.dismissReasons}
+                reasonsOpen={reasonsOpen}
+                onReasonsOpenChange={onReasonsOpenChange}
+                onSaveReasons={onSaveReasons}
+              />
+            ) : (
+              <Row
+                key={item.key}
+                row={entry.row}
+                saved={savedOf(entry.row)}
+                selected={entry.row.jobId === selectedId}
+                copy={copy}
+                nav={nav}
+                index={item.index}
+                position={entry.position}
+                setSize={rows.length}
+                start={item.start}
+                measure={virtualizer.measureElement}
+                onSelect={onSelect}
+                onToggleSave={onToggleSave}
+                onNotForMe={onNotForMe}
+                onOpenOriginal={onOpenOriginal}
+              />
+            );
+          })}
         </ul>
       </div>
     </div>

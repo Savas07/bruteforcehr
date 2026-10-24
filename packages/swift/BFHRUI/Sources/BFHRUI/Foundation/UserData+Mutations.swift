@@ -91,43 +91,58 @@ extension UserData {
         cvs[index].updatedAt = date ?? now
     }
 
-    /// Confirms (or corrects) a review-queue email: writes the review fields and, when the
-    /// proposed status differs from the application's, moves the application as the user with the
-    /// email as evidence. Passing a different category, application or status marks the email
-    /// `corrected` instead of `confirmed`. Returns the status event, if one was written.
+    /// Writes a decision on an email in the review queue. Clients write only the four review
+    /// fields; the server's `mailMessageReviewed` trigger links the email, records it on the
+    /// timeline, makes the move and creates a suggested interview (ADR 0012), so the local copy
+    /// changes only the email and the snapshot brings the rest. Returns the move the server will
+    /// make (nil: the email is filed without one).
     @discardableResult
-    public mutating func confirmReview(
-        _ messageId: String,
-        category: MailCategory? = nil,
-        applicationId: String?? = nil,
-        status: ApplicationStatus?? = nil,
-        at date: Date
-    ) throws -> ApplicationEvent? {
+    public mutating func review(_ messageId: String, _ decision: ReviewDecision, at date: Date) throws -> ApplicationStatus? {
         guard let index = mailMessages.firstIndex(where: { $0.id == messageId }) else {
             throw UserDataError.missingMailMessage(messageId)
         }
         var message = mailMessages[index]
-        let corrected = (category.map { $0 != message.category } ?? false)
-            || (applicationId.map { $0 != message.applicationId } ?? false)
-            || (status.map { $0 != message.suggestedStatus } ?? false)
-        if let category { message.category = category }
-        if let applicationId { message.applicationId = applicationId }
-        if let status { message.suggestedStatus = status }
-
-        var event: ApplicationEvent?
-        if let target = message.suggestedStatus, let linkedId = message.applicationId,
-           let application = application(id: linkedId), application.status != target {
-            event = try moveApplication(
-                linkedId, to: target, actor: .user, at: date,
-                evidence: EventEvidence(mailMessageId: message.id, reason: message.subject)
-            )
-            message.appliedEventId = event?.id
+        let move: ApplicationStatus?
+        switch decision {
+        case .confirm:
+            move = reviewMove(for: message, category: message.category, applicationId: message.applicationId)
+            message.reviewState = .confirmed
+        case .correct(let category, let applicationId):
+            move = reviewMove(for: message, category: category, applicationId: applicationId)
+            let changed = category != message.category || applicationId != message.applicationId
+            message.category = category
+            message.applicationId = applicationId
+            message.reviewState = changed ? .corrected : .confirmed
+        case .notJobMail:
+            move = nil
+            message.category = .notJob
+            message.applicationId = nil
+            message.reviewState = .corrected
         }
-        message.reviewState = corrected ? .corrected : .confirmed
         message.reviewedAt = date
         message.updatedAt = date
         mailMessages[index] = message
-        return event
+        return move
+    }
+
+    /// The move the review trigger makes for `message` filed under `category` and `applicationId`
+    /// (`reviewMoveTarget`): nil without an application or when the move isn't forward or an exit.
+    public func reviewMove(for message: MailMessage, category: MailCategory, applicationId: String?) -> ApplicationStatus? {
+        guard let application = applicationId.flatMap({ self.application(id: $0) }) else { return nil }
+        return reviewMoveTarget(
+            category: category,
+            previousCategory: message.category,
+            suggestedStatus: message.suggestedStatus,
+            applicationStatus: application.status
+        )
+    }
+
+    /// "Looks right" / "Add interview" on an automatically applied email: `auto_applied` →
+    /// `confirmed`. The status change stays; for an invite the server creates the interview it
+    /// suggests (ADR 0012).
+    public mutating func confirmAutoApplied(_ messageId: String, at date: Date) throws {
+        guard mailMessages.first(where: { $0.id == messageId })?.reviewState == .autoApplied else { return }
+        try setReviewState(messageId, to: .confirmed, at: date)
     }
 
     /// Undoes an automatic status change and marks its email `corrected` (decisions.md D11).
@@ -150,4 +165,14 @@ extension UserData {
         applications[index].updatedAt = result.applicationPatch.statusChangedAt
         return event
     }
+}
+
+/// A decision on an email in the review queue (`UserData.review`).
+public enum ReviewDecision: Hashable, Sendable {
+    /// The proposal as is.
+    case confirm
+    /// Change…: another category and/or application (the same values confirm).
+    case correct(category: MailCategory, applicationId: String?)
+    /// "Not job mail": the server deletes the email and keeps the correction as a labeled example.
+    case notJobMail
 }

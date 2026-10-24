@@ -19,6 +19,10 @@ public struct UserData: Hashable, Sendable {
     public var contacts: [Contact]
     public var mailAccounts: [MailAccount]
     public var mailMessages: [MailMessage]
+    /// "Companies you follow" (`users/{uid}/watchlist`).
+    public var watchlist: [WatchedCompany]
+    /// Project-wide job source health (`jobSources`, client read-only).
+    public var jobSources: [JobSourceStatus]
 
     public init(
         profile: Profile? = nil,
@@ -34,7 +38,9 @@ public struct UserData: Hashable, Sendable {
         interviews: [Interview] = [],
         contacts: [Contact] = [],
         mailAccounts: [MailAccount] = [],
-        mailMessages: [MailMessage] = []
+        mailMessages: [MailMessage] = [],
+        watchlist: [WatchedCompany] = [],
+        jobSources: [JobSourceStatus] = []
     ) {
         self.profile = profile
         self.cvs = cvs
@@ -50,6 +56,8 @@ public struct UserData: Hashable, Sendable {
         self.contacts = contacts
         self.mailAccounts = mailAccounts
         self.mailMessages = mailMessages
+        self.watchlist = watchlist
+        self.jobSources = jobSources
     }
 
     public static let empty = UserData()

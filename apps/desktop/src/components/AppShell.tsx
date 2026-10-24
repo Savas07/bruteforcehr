@@ -1,5 +1,5 @@
 import { Outlet, useNavigate } from "@tanstack/react-router";
-import { type ReactNode, useCallback, useEffect, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { defineMessages, useIntl } from "react-intl";
 import { chrome, onMenuCommand } from "../lib/desktop";
 import { destinations, type DestinationId } from "../lib/destinations";
@@ -29,6 +29,22 @@ const messages = defineMessages({
     defaultMessage: "Couldn’t save your changes, so you’re still signed in. Try again in a moment.",
   },
 });
+
+/**
+ * Focuses the new section's heading once it has rendered: a section's code loads on its first
+ * visit (src/router.tsx), so after navigating it may take a few frames.
+ */
+async function focusRouteTitle(): Promise<void> {
+  for (let frame = 0; frame < 60; frame++) {
+    const title = document.getElementById(ROUTE_TITLE_ID);
+    if (title) {
+      title.focus({ preventScroll: true });
+      return;
+    }
+    // `Promise.withResolvers` needs Safari 17.4; the app supports macOS 13 (Safari 16).
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+  }
+}
 
 /**
  * The signed-in app; signed out, the sign-in screen (src/features/auth); signed in before
@@ -70,10 +86,29 @@ function Shell({ hosts }: { readonly hosts: ReactNode }) {
     });
   }, [signOut, toast, intl]);
 
-  /**
-   * Keyboard-driven navigation moves focus to the new section's heading, once it has rendered: a
-   * section's code loads on its first visit (src/router.tsx), up to a second after navigating.
-   */
+  // The palette and the sheet have no Radix trigger (keys, the native menu, the sidebar and each
+  // other open them), so Radix would drop focus on <body> when they close. Focus goes back to
+  // whatever had it before the first of them opened.
+  const opener = useRef<HTMLElement | null>(null);
+  const rememberOpener = useCallback(() => {
+    const active = document.activeElement;
+    // Opened from the other overlay: keep the first opener.
+    if (active instanceof HTMLElement && active.closest('[role="dialog"]')) return;
+    opener.current = active instanceof HTMLElement && active !== document.body ? active : null;
+  }, []);
+  const returnFocus = useCallback((event: Event) => {
+    event.preventDefault();
+    if (opener.current?.isConnected) opener.current.focus();
+  }, []);
+
+  const openSettings = useCallback(
+    async (pane: string) => {
+      await navigate({ to: "/settings/$pane", params: { pane } });
+      await focusRouteTitle();
+    },
+    [navigate],
+  );
+  /** Keyboard-driven navigation moves focus to the new section's heading. */
   const goTo = useCallback(
     async (id: DestinationId) => {
       const destination = destinations.find((candidate) => candidate.id === id);
@@ -81,23 +116,16 @@ function Shell({ hosts }: { readonly hosts: ReactNode }) {
       setPaletteOpen(false);
       setShortcutsOpen(false);
       await navigate({ to: destination.path });
-      for (let frame = 0; frame < 60; frame++) {
-        const title = document.getElementById(ROUTE_TITLE_ID);
-        if (title) {
-          title.focus({ preventScroll: true });
-          return;
-        }
-        // `Promise.withResolvers` needs Safari 17.4; the app supports macOS 13 (Safari 16).
-        await new Promise((resolve) => requestAnimationFrame(resolve));
-      }
+      await focusRouteTitle();
     },
     [navigate],
   );
 
   const openShortcuts = useCallback(() => {
+    rememberOpener();
     setPaletteOpen(false);
     setShortcutsOpen(true);
-  }, []);
+  }, [rememberOpener]);
 
   const runCommand = useCallback(
     (command: MenuCommand) => {
@@ -108,6 +136,7 @@ function Shell({ hosts }: { readonly hosts: ReactNode }) {
           void goTo(command.destination);
           break;
         case "open-palette":
+          rememberOpener();
           setShortcutsOpen(false);
           setPaletteOpen((open) => !open);
           break;
@@ -122,14 +151,14 @@ function Shell({ hosts }: { readonly hosts: ReactNode }) {
         case "open-settings":
           setPaletteOpen(false);
           setShortcutsOpen(false);
-          void navigate({ to: "/settings/$pane", params: { pane: SETTINGS_START_PANE } });
+          void openSettings(SETTINGS_START_PANE);
           break;
         case "sign-out":
           requestSignOut();
           break;
       }
     },
-    [goTo, openShortcuts, checkNow, requestSignOut, blocking, navigate],
+    [goTo, openShortcuts, checkNow, requestSignOut, blocking, openSettings, rememberOpener],
   );
 
   // Native menu clicks (src-tauri/src/menu.rs).
@@ -185,7 +214,10 @@ function Shell({ hosts }: { readonly hosts: ReactNode }) {
     <div className="text-fg-primary flex h-full flex-col">
       <div className="flex min-h-0 flex-1">
         <Sidebar
-          onOpenPalette={() => setPaletteOpen(true)}
+          onOpenPalette={() => {
+            rememberOpener();
+            setPaletteOpen(true);
+          }}
           onOpenShortcuts={openShortcuts}
           updateCard={<UpdateCard controller={updates} />}
         />
@@ -211,10 +243,11 @@ function Shell({ hosts }: { readonly hosts: ReactNode }) {
         onNavigate={(id) => void goTo(id)}
         onOpenShortcuts={openShortcuts}
         onCheckForUpdates={checkNow}
-        onOpenSettings={(pane) => void navigate({ to: "/settings/$pane", params: { pane } })}
+        onOpenSettings={(pane) => void openSettings(pane)}
         onSignOut={requestSignOut}
+        onCloseAutoFocus={returnFocus}
       />
-      <ShortcutsSheet open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
+      <ShortcutsSheet open={shortcutsOpen} onOpenChange={setShortcutsOpen} onCloseAutoFocus={returnFocus} />
       <CheckForUpdatesDialog controller={updates} />
       <ReleaseNotesDialog controller={updates} />
       <UpdateRequired controller={updates} />

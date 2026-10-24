@@ -60,6 +60,8 @@ import { cvLanguage } from "@bfhr/cv-render";
 import { renderCv } from "./render";
 import { buildSuggestionVMs, fillPlaceholders, hasUnfilledPlaceholders, type CvSuggestionInput } from "./suggestions";
 import { useWindowQuery } from "./useWindowWidth";
+import { JobsRepositoryContext } from "../../data/jobs/repository";
+import { StudioTailorHost } from "../apply/tailor/TailorHost";
 
 /** Names this CV in "Save your changes before restarting?" (also used by src/design/updates.tsx). */
 export const unsavedLabelMessage = defineMessage({
@@ -140,6 +142,11 @@ const messages = defineMessages({
     defaultMessage: "No better wording this time. Your text stays as it is.",
   },
   export: { id: "cv-editor.toolbar.export", defaultMessage: "Export" },
+  tailorSaveFirst: {
+    id: "cv-editor.check.tailorSaveFirst",
+    defaultMessage: "Wait until your edits are saved; tailoring starts from the saved version.",
+  },
+  tailorOffline: { id: "cv-editor.check.tailorOffline", defaultMessage: "Tailoring needs an internet connection." },
 });
 type Fills = Readonly<Record<string, Readonly<Record<string, string>>>>;
 
@@ -296,6 +303,11 @@ function Workspace({
           ? "failed"
           : null;
   const [jobId, setJobId] = useState(editor.check.defaultJobId);
+  /** "Tailor for this job" from the Check tab: the review takes the editor and preview's place. */
+  const [tailorJobId, setTailorJobId] = useState<string | null>(null);
+  // Tailoring writes through the Jobs repository, present where CV Studio runs on the Jobs data.
+  const canTailor = useContext(JobsRepositoryContext) !== null;
+  const savedContent = editor.revisionContents[editor.currentRevisionId];
   const [excluded, setExcluded] = useState<ReadonlySet<string>>(new Set());
 
   // Focus requests land after the next render (expanded sections and items exist by then).
@@ -795,6 +807,15 @@ function Workspace({
         }}
       />
       <div ref={editorRef} className="relative flex min-h-0 min-w-0 flex-1">
+        {tailorJobId !== null && savedContent ? (
+          <StudioTailorHost
+            cv={{ id: editor.cvId, title: editor.title, language: editor.language.tag }}
+            revision={{ id: editor.currentRevisionId, content: savedContent }}
+            jobId={tailorJobId}
+            onClose={() => setTailorJobId(null)}
+          />
+        ) : (
+        <>
         {editorVisible && (
           <div className={cx("flex min-h-0 min-w-[420px] flex-col", previewVisible ? "flex-[1_1_0] max-w-180" : "flex-1")}>
             <EditorPane
@@ -834,6 +855,15 @@ function Workspace({
             fills={fills}
             coverage={coverage}
             jobId={jobId}
+            {...(canTailor && savedContent && jobId !== null && {
+              onTailor: () => setTailorJobId(jobId),
+              tailorReason:
+                saveState !== null
+                  ? intl.formatMessage(messages.tailorSaveFirst)
+                  : offline
+                    ? intl.formatMessage(messages.tailorOffline)
+                    : null,
+            })}
             onJob={(next) => {
               setJobId(next);
               setExcluded(new Set());
@@ -890,6 +920,8 @@ function Workspace({
               />
             }
           />
+        )}
+        </>
         )}
       </div>
       {exportOpen && (

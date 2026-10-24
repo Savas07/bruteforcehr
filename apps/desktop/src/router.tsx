@@ -21,7 +21,7 @@ import { TrackerViewsRoute } from "./features/tracker-table/ViewSwitch";
 
 // Every section but Today (the start screen) loads on first visit, so a cold start parses only
 // what Today needs: the CV Studio alone brings cv-render, pdf.js and docx (docs/runbooks/performance.md).
-// `preloadSections` fetches them all shortly after launch, so first visits don't wait either.
+// `usePreloadSections` fetches them all shortly after launch, so first visits don't wait either.
 const loadSettings = () => import("./features/settings/Live");
 const loadApplicationDetail = () => import("./features/application-detail/Live");
 const loadJobs = () => import("./features/job-detail/Live");
@@ -162,8 +162,8 @@ export const productionViews: RouteViews = {
     ...(Object.fromEntries(
       Object.keys(appRoutes).map((id) => [id, sectionTitle(id as AppRouteId)]),
     ) as Record<AppRouteId, ComponentType>),
-    cvs: LiveCvStudio,
-    cv: LiveCvStudio,
+    cvs: live(LiveCvStudio),
+    cv: live(LiveCvStudio),
     insights: LiveInsights,
     today: live(LiveToday),
     tracker: live(LiveTracker),

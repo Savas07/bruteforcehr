@@ -7,6 +7,7 @@ mod cv_pdf;
 mod export_file;
 mod external_url;
 mod job_url;
+mod kit_file;
 mod mail_connect;
 mod mail_inbox;
 mod mailto;
@@ -81,6 +82,9 @@ fn main() {
             commands::open_mailto,
             commands::print_cv_pdf,
             commands::save_export,
+            commands::save_kit_file,
+            commands::open_kit_file,
+            commands::reveal_kit_file,
             // Test builds only: granted by the `e2e` capability (tauri.e2e.conf.json).
             #[cfg(feature = "e2e")]
             perf::perf_mark

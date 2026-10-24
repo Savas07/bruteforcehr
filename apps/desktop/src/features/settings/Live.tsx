@@ -4,6 +4,7 @@
  */
 import { useParams } from "@tanstack/react-router";
 import { useMemo } from "react";
+import { LiveJobsProvider } from "../../data/jobs/live";
 import { currentUid } from "../auth/firebaseAuth";
 import { firestoreSettingsStore } from "./firestore";
 import SettingsScreen from "./Screen";
@@ -16,7 +17,10 @@ export default function LiveSettings() {
   if (store === null) return null;
   return (
     <SettingsStoreContext.Provider value={store}>
-      <SettingsScreen pane={pane ?? ""} />
+      {/* The answers library lives with the Jobs data (the kit reads it there too). */}
+      <LiveJobsProvider>
+        <SettingsScreen pane={pane ?? ""} />
+      </LiveJobsProvider>
     </SettingsStoreContext.Provider>
   );
 }

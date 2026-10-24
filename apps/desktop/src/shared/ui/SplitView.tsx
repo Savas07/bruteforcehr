@@ -34,7 +34,7 @@ const messages = defineMessages({
   },
   closePanel: {
     id: "shared.ui.splitView.closePanel",
-    defaultMessage: "Close the details panel",
+    defaultMessage: "Close the panel",
     description: "Shortcut label (Esc)",
   },
   nextRecord: { id: "shared.ui.splitView.nextRecord", defaultMessage: "Next record" },
@@ -259,6 +259,7 @@ export type DetailPanelNav = {
 export function DetailSidePanel({
   open,
   label,
+  keysGroup: group,
   onClose,
   nav,
   actions,
@@ -268,6 +269,12 @@ export function DetailSidePanel({
   open: boolean;
   /** Accessible name and visible heading context, e.g. "Application details". */
   label: string;
+  /**
+   * Shortcuts-sheet group of the panel's Esc / J / K, the same as the panel content's own keys
+   * ("Application panel"), so J / K ("Next record": the panel shows another record) sit under the
+   * panel's heading, apart from the list's J / K ("Move down the list").
+   */
+  keysGroup: string;
   onClose: () => void;
   nav?: DetailPanelNav;
   /** Extra header actions (pop-out, open full page). */
@@ -288,7 +295,6 @@ export function DetailSidePanel({
   useFocusOnMount(panelRef, open);
   useReturnFocus(open);
   const intl = useIntl();
-  const group = intl.formatMessage(LIST_GROUP);
   const inPanel = (event: KeyboardEvent) =>
     event.target instanceof Node && panelRef.current?.contains(event.target) === true;
   useKeyBindings([

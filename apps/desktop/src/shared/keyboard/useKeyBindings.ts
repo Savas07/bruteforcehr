@@ -9,7 +9,7 @@ import { keymap, type KeyBinding } from "./keymap";
  * ```tsx
  * useKeyBindings([
  *   { id: "today.confirm", keys: "C", label: "Confirm review item", group: "Today", run: confirm },
- *   { id: "list.next", keys: ["J", "ArrowDown"], label: "Next item", group: "Lists", run: next },
+ *   { id: "list.next", keys: ["J", "ArrowDown"], label: "Move down the list", group: "Lists", run: next },
  * ]);
  * ```
  */

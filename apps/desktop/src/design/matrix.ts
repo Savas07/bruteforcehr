@@ -43,6 +43,16 @@ export const designScreenPaths = {
   "jobs-import": "/jobs?import=1",
   /** Apply by email: the composer over a posting that asks for email (design build: src/design/jobs.tsx). */
   apply: "/jobs/job-fernweh-frontend?apply=1",
+  /** Tailor for this job: the review, partly decided (src/features/apply/designState.ts). */
+  "tailor-review": "/jobs/job-fernweh-frontend?apply=1&tailor=cv-de&tailor-step=review",
+  /** The composer with an AI-drafted cover letter, an unresolved field and an extra attachment. */
+  "cover-letter": "/jobs/job-fernweh-frontend?apply=1&letter=ai",
+  /** "From your files…" over the composer. */
+  "attachment-picker": "/jobs/job-fernweh-frontend?apply=1&letter=ai&attach=files",
+  /** External apply: the kit beside a posting on a company site, with "Did you submit?". */
+  "apply-kit": "/jobs/job-northstar-frontend?apply=1",
+  /** Settings › Application answers with an answer open. */
+  "answers-settings": "/settings/answers?answer=answer-auth-eu",
   "cv-editor": "/cvs",
   "tracker-board": "/tracker",
   /** An application with an automatic move (Undo), an interview, a contact and a pinned CV. */
@@ -168,6 +178,51 @@ export function updateCaptureFileName(
   size: { readonly width: number; readonly height: number },
 ): string {
   return `update-${state}-${theme}-${size.width}x${size.height}.png`;
+}
+
+/**
+ * Desktop chrome states (the harness's `chrome` target): the command palette (open, filtered, no
+ * match), the shortcuts sheet over Today (its list keys) and over the tracker table with an
+ * application's details panel open (the table's, the list's and the panel's keys together), and
+ * the narrow rail with a keyboard-focused row and its tooltip. They're opened with the keyboard,
+ * like a person would, over a populated screen.
+ */
+export const chromeDesignStates = [
+  "palette",
+  "palette-filtered",
+  "palette-empty",
+  "shortcuts",
+  "shortcuts-panel",
+  "rail",
+  "rail-focus",
+] as const;
+export type ChromeDesignState = (typeof chromeDesignStates)[number];
+
+/** The screen a chrome state opens over (populated). */
+export function chromeDesignHash(
+  state: ChromeDesignState,
+  extra: Readonly<Record<string, string>> = {},
+): string {
+  return state === "shortcuts-panel"
+    ? designHash("tracker-table", "populated", { applicationId: "app-brightwave", ...extra })
+    : designHash("today", "populated", extra);
+}
+
+/** The rail states need the narrow window (< 640 px); the rest use the laptop size. */
+export function chromeCaptureSize(state: ChromeDesignState): {
+  readonly width: number;
+  readonly height: number;
+} {
+  return state.startsWith("rail") ? { width: 600, height: 800 } : captureSizes[0];
+}
+
+/** `chrome-<state>-<theme>-<w>x<h>.png`. */
+export function chromeCaptureFileName(
+  state: ChromeDesignState,
+  theme: CaptureTheme,
+  size: { readonly width: number; readonly height: number },
+): string {
+  return `chrome-${state}-${theme}-${size.width}x${size.height}.png`;
 }
 
 /**

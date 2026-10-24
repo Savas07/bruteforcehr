@@ -71,6 +71,8 @@ function render({ connectivity = ONLINE, initialUrl }: { connectivity?: Connecti
     sendEmail: () => Promise.reject(new Error("unused")),
     cancelEmail: () => Promise.reject(new Error("unused")),
     sendEmailNow: () => Promise.reject(new Error("unused")),
+    tailorCv: () => Promise.reject(new Error("unused")),
+    draftCoverLetter: () => Promise.reject(new Error("unused")),
   };
   const jobs = createMemoryJobsStore(
     tracker,

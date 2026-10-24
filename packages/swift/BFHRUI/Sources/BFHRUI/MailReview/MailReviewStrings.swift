@@ -27,6 +27,10 @@ enum MailReviewStrings {
         table: "MailReview",
         comment: "Toast after Not job mail (decisions.md D19). The email leaves every Mail list."
     )
+
+    static func interviewAdded(_ company: String) -> LocalizedStringResource {
+        .bfhr("mailReview.toast.interviewAdded", default: "Interview added: \(company)", table: "MailReview", comment: "Toast after Add interview on an invite. %@ = company.")
+    }
 }
 
 /// Strings the Mail tab's views show (table "MailReview"). Copy: mail-review.md and states.md
@@ -80,6 +84,23 @@ enum MailViewStrings {
     static let queueEmptyTitle = LocalizedStringResource.bfhr("mail.queueEmpty.title", default: "Nothing to review", table: "MailReview")
     static let queueEmptyBody = LocalizedStringResource.bfhr("mail.queueEmpty.body", default: "When we're not sure what an email means, we'll ask you here.", table: "MailReview")
     static let seeRecentUpdates = LocalizedStringResource.bfhr("mail.queueEmpty.action", default: "See recent updates", table: "MailReview")
+
+    // Inbox check of a newly connected account
+    static func scanTitle(_ address: String) -> LocalizedStringResource {
+        .bfhr("mail.scan.title", default: "Checking \(address) for job emails", table: "MailReview", comment: "%@ = address.")
+    }
+    static func scanChecked(_ count: Int) -> LocalizedStringResource {
+        .bfhr("mail.scan.checked", default: "Emails checked: \(count)", table: "MailReview", comment: "%lld = count.")
+    }
+    static let scanBody = LocalizedStringResource.bfhr("mail.scan.body", default: "New emails show up here as we find them.", table: "MailReview")
+
+    // Read-only email sheet
+    static let emailTitle = LocalizedStringResource.bfhr("mail.email.title", default: "Email", table: "MailReview")
+    static let notFiled = LocalizedStringResource.bfhr("mail.email.notFiled", default: "Not linked to an application", table: "MailReview")
+    static let reviewStateLabel = LocalizedStringResource.bfhr("mail.email.state", default: "How it was filed", table: "MailReview")
+    static let openApplication = LocalizedStringResource.bfhr("mail.email.openApplication", default: "Open application", table: "MailReview")
+    static let interviewOnCalendar = LocalizedStringResource.bfhr("mail.email.interviewAdded", default: "The interview from this email is in your interviews.", table: "MailReview")
+    static let bodyRemoved = LocalizedStringResource.bfhr("mail.email.bodyRemoved", default: "We removed the full text when its keep-time ended. The summary stays.", table: "MailReview")
     static let review = LocalizedStringResource.bfhr("mail.action.review", default: "Review…", table: "MailReview", comment: "Opens the review sheet.")
     static let reviewLater = LocalizedStringResource.bfhr("mail.action.reviewLater", default: "Review later", table: "MailReview")
 
@@ -89,7 +110,7 @@ enum MailViewStrings {
 
     // Updates
     static let updatesHeader = LocalizedStringResource.bfhr("mail.updates.header", default: "Changed automatically", table: "MailReview")
-    static let updatesFooter = LocalizedStringResource.bfhr("mail.updates.footer", default: "Changes we made from your email in the last 14 days. Undo puts the email back in To review.", table: "MailReview")
+    static let updatesFooter = LocalizedStringResource.bfhr("mail.updates.footer", default: "Changes we made from your email in the last 14 days. Undo moves the application back.", table: "MailReview")
     static let updatesEmpty = LocalizedStringResource.bfhr("mail.updates.empty", default: "No automatic changes in the last 14 days.", table: "MailReview")
     static let markAllSeen = LocalizedStringResource.bfhr("mail.updates.markAllSeen", default: "Mark all as seen", table: "MailReview")
     static let more = LocalizedStringResource.bfhr("mail.toolbar.more", default: "More", table: "MailReview")
@@ -133,7 +154,7 @@ enum MailViewStrings {
     // Review sheet + Change…
     static let sheetTitle = LocalizedStringResource.bfhr("mail.sheet.title", default: "Review email", table: "MailReview")
     static let changeTitle = LocalizedStringResource.bfhr("mail.change.title", default: "Change", table: "MailReview")
-    static let changeFooter = LocalizedStringResource.bfhr("mail.change.footer", default: "Your corrections help us sort future emails.", table: "MailReview")
+    static let changeFooter = LocalizedStringResource.bfhr("mail.change.footer", default: "The status change follows the category. Your corrections help us sort future emails.", table: "MailReview")
     static let selectCategory = LocalizedStringResource.bfhr("mail.change.selectCategory", default: "Select a category", table: "MailReview")
     static let selectApplication = LocalizedStringResource.bfhr("mail.change.selectApplication", default: "Link to application…", table: "MailReview")
     static let statusNeedsApplication = LocalizedStringResource.bfhr("mail.change.statusNeedsApplication", default: "Link an application first to change its status.", table: "MailReview")

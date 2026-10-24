@@ -129,7 +129,7 @@ pub fn create_main<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
         None
     };
 
-    WebviewWindowBuilder::from_config(app, &window_config(chrome.material))?
+    let builder = WebviewWindowBuilder::from_config(app, &window_config(chrome.material))?
         .initialization_script(chrome_script(&chrome))
         .on_navigation(move |url| {
             let allowed = navigation::is_allowed(url, dev_url.as_ref());
@@ -144,9 +144,34 @@ pub fn create_main<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
         // and the macOS Window menu.
         .on_document_title_changed(|window, title| {
             let _ = window.set_title(&title);
-        })
-        .build()?;
+        });
+    #[cfg(target_os = "macos")]
+    tab_to_links(&builder.build()?)?;
+    #[cfg(not(target_os = "macos"))]
+    builder.build()?;
     Ok(())
+}
+
+/// `WKWebView`'s Tab skips links unless Safari's "Press Tab to highlight each item" is on, which
+/// left the sidebar's sections, Settings and every in-page link out of the keyboard's reach on
+/// macOS (docs/design/critiques/desktop/keyboard-pass.md, decisions.md D43). Buttons and other
+/// controls follow the system's "Keyboard navigation" setting, like every Mac app. `WebView2`
+/// always tabs to links.
+#[cfg(target_os = "macos")]
+#[allow(unsafe_code)] // One WebKit preference over FFI (Cargo.toml `[lints.rust]`).
+fn tab_to_links<R: Runtime>(window: &tauri::WebviewWindow<R>) -> tauri::Result<()> {
+    window.with_webview(|webview| {
+        // SAFETY: `inner()` is this window's live WKWebView (wry's `webview` field, a `WKWebView`
+        // subclass); `with_webview` runs this closure on the main thread while the window exists.
+        // `configuration().preferences()` is the page's live WKPreferences (shared, not copied),
+        // and `setTabFocusesLinks:` exists on every supported macOS.
+        unsafe {
+            (*webview.inner().cast::<objc2_web_kit::WKWebView>())
+                .configuration()
+                .preferences()
+                .setTabFocusesLinks(true);
+        }
+    })
 }
 
 #[cfg(test)]

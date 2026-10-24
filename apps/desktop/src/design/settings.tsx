@@ -20,6 +20,7 @@ import {
 import { DesignAccountData } from "./data-privacy";
 import { useDesignReady } from "./DesignScreen";
 import { readDesignParams } from "./search";
+import { DesignJobsProviders } from "./jobs";
 import { DesignTrackerProviders } from "./tracker";
 
 const HOUR_MS = 3_600_000;
@@ -210,7 +211,9 @@ function DesignSettingsScreen() {
 export function DesignSettings() {
   return (
     <DesignTrackerProviders>
-      <DesignSettingsScreen />
+      <DesignJobsProviders>
+        <DesignSettingsScreen />
+      </DesignJobsProviders>
     </DesignTrackerProviders>
   );
 }

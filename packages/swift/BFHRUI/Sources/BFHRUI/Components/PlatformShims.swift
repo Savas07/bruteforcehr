@@ -31,6 +31,42 @@ extension View {
         self
         #endif
     }
+
+    /// An email address field: email keyboard and content type, no capitals, no autocorrection.
+    public func bfhrEmailInput() -> some View {
+        #if os(iOS)
+        textContentType(.emailAddress).keyboardType(.emailAddress).textInputAutocapitalization(.never).autocorrectionDisabled()
+        #else
+        autocorrectionDisabled()
+        #endif
+    }
+
+    /// A literal value (password, host name, user name): no capitals, no autocorrection.
+    public func bfhrLiteralInput() -> some View {
+        #if os(iOS)
+        textInputAutocapitalization(.never).autocorrectionDisabled()
+        #else
+        autocorrectionDisabled()
+        #endif
+    }
+
+    /// A whole number (a port): the number pad.
+    public func bfhrPortInput() -> some View {
+        #if os(iOS)
+        keyboardType(.numberPad)
+        #else
+        self
+        #endif
+    }
+
+    /// A web address: URL keyboard and content type, no capitals, no autocorrection.
+    public func bfhrWebAddressInput() -> some View {
+        #if os(iOS)
+        textContentType(.URL).keyboardType(.URL).textInputAutocapitalization(.never).autocorrectionDisabled()
+        #else
+        autocorrectionDisabled()
+        #endif
+    }
 }
 
 extension ToolbarItemPlacement {

@@ -203,11 +203,12 @@ function Row({
     );
   }
 
+  const itemProps = nav.itemProps(row.cvId);
   return (
     <ContextMenu.Root>
       <ContextMenu.Trigger asChild>
         <li
-          {...nav.itemProps(row.cvId)}
+          {...itemProps}
           data-cv-row={row.cvId}
           aria-label={iconsOnly ? name : undefined}
           onClick={() => actions.onSelect(row.cvId)}
@@ -231,7 +232,9 @@ function Row({
                 <IconButton
                   size="sm"
                   icon={MoreHorizontal}
-                  tabIndex={-1}
+                  // The active row's menu is its next tab stop: on macOS no key opens the
+                  // context menu, so this is the keyboard's way to Duplicate, Variant, Archive.
+                  tabIndex={itemProps.tabIndex}
                   label={intl.formatMessage(messages.actions, { title: row.title })}
                   className="opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 group-aria-[current=true]:opacity-100"
                   onClick={(event) => event.stopPropagation()}

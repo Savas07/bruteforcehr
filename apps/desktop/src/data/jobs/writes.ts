@@ -12,6 +12,7 @@ import {
   type Application,
   type ApplicationStatus,
   type Channel,
+  type CvRevision,
   type DismissReason,
   type Job,
   type JobMatch,
@@ -228,7 +229,11 @@ export interface ApplyRecord {
   readonly coverLetterFileId?: string | null;
 }
 
-/** Pins only where the application has none yet (they are write-once, firestore.rules `pinKept`). */
+/**
+ * The pins `record` sets. Before `appliedAt` they are only what the user chose so far (a tailored
+ * CV, say) and are replaced; from `appliedAt` on they are write-once (firestore.rules `pinKept`),
+ * so only empty ones are filled.
+ */
 function pinPatch(record: ApplyRecord, application: Application | null): Partial<Application> {
   const patch: Partial<Application> = {};
   const pins = [
@@ -238,9 +243,54 @@ function pinPatch(record: ApplyRecord, application: Application | null): Partial
     ["coverLetterId", record.coverLetterId ?? null],
     ["coverLetterFileId", record.coverLetterFileId ?? null],
   ] as const;
+  const open = (application?.appliedAt ?? null) === null;
   for (const [field, value] of pins)
-    if (value !== null && (application?.[field] ?? null) === null) patch[field] = value;
+    if (value !== null && (open || (application?.[field] ?? null) === null)) patch[field] = value;
   return patch;
+}
+
+/** "Save as new version" in the tailoring review: the revision, pinned on the job's application. */
+export interface TailoredRevisionRecord {
+  readonly job: Job;
+  readonly match: JobMatch | null;
+  readonly application: Application | null;
+  /** `source: "ai_tailor"`, `jobId` = the job, `basedOnRevisionId` = the revision the edits came from. */
+  readonly revision: CvRevision;
+}
+
+/**
+ * The tailored revision (create-only, not the CV's current one: the CV itself stays as it was) and
+ * its pin on the job's application, in one batch. Without an application the job is saved first
+ * (D02), with the pin. Once applied, the application's pins are write-once, so only the revision is
+ * written.
+ */
+export function planSaveTailoredRevision(
+  record: TailoredRevisionRecord,
+  at: Date,
+  newId: NewId,
+): { writes: TrackerWrite[]; applicationId: string } {
+  const { job, application, revision } = record;
+  const create: TrackerWrite = { op: "createCvRevision", revision };
+  const pins = { cvId: revision.cvId, cvRevisionId: revision.id };
+  if (application) {
+    if (application.appliedAt !== null) return { writes: [create], applicationId: application.id };
+    return {
+      writes: [
+        create,
+        { op: "update", collection: "applications", id: application.id, patch: { ...pins, updatedAt: at } },
+      ],
+      applicationId: application.id,
+    };
+  }
+  const plan = planCreateApplications([{ application: { ...savedApplication(job, at), ...pins } }], at, newId);
+  return {
+    writes: [
+      create,
+      ...plan.writes,
+      ...(record.match ? [matchState(job.id, "saved", [], at)] : []),
+    ],
+    applicationId: plan.applicationIds[0] ?? "",
+  };
 }
 
 const APPLIED: ApplicationStatus = "applied";

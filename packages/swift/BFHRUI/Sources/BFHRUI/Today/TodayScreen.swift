@@ -21,6 +21,8 @@ public struct TodayScreen: View {
     @State private var showsPrep = false
     @State private var reviewDetent: PresentationDetent = .large
     @State private var errorCount = 0
+    @State private var connecting = false
+    @Environment(\.bfhrMailConnect) private var mailConnect
     private let showsSettingsButton: Bool
 
     /// `showsSettingsButton` false when the host puts its own account menu in the toolbar (the
@@ -95,6 +97,7 @@ public struct TodayScreen: View {
             }
             .presentationDetents([.large])
         }
+        .bfhrMailConnectSheet(isPresented: $connecting)
     }
 
     // MARK: Content
@@ -109,11 +112,29 @@ public struct TodayScreen: View {
                         title: TodayStrings.connectTitle,
                         message: TodayStrings.connectBody,
                         actionTitle: TodayStrings.connectAction,
-                        action: { openURL(TodayLink.mail) },
+                        action: { if mailConnect != nil { connecting = true } else { openURL(TodayLink.mail) } },
                         onDismiss: model.dismissConnectMailCard
                     )
                     .listRowInsets(EdgeInsets())
                     .listRowBackground(Color.clear)
+                }
+            }
+            ForEach(model.scanningAccounts) { account in
+                Section {
+                    HStack(alignment: .firstTextBaseline, spacing: BFHRSpace.s3) {
+                        ProgressView()
+                            .accessibilityHidden(true)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(bfhrPlain: TodayStrings.scanTitle(account.address))
+                                .font(.bfhr(.subheadline, emphasized: true))
+                            Text(TodayStrings.scanBody)
+                                .font(.bfhr(.footnote))
+                                .foregroundStyle(BFHRColor.Fg.secondary)
+                        }
+                        .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .accessibilityElement(children: .combine)
+                    .accessibilityIdentifier("today.scanning")
                 }
             }
             if model.isCaughtUp {
@@ -368,9 +389,13 @@ public struct TodayScreen: View {
 
     private func autoChangeActions(_ item: AutoChangeItem) -> [RowAction] {
         [
-            RowAction(TodayStrings.looksRight, systemImage: "checkmark", edge: .leading) {
-                if let toast = model.acknowledge(item.id) { show(toast) }
-            },
+            item.interviewSuggestion != nil
+                ? RowAction(Strings.addInterview, systemImage: "calendar.badge.plus", edge: .leading) {
+                    if let toast = model.acknowledge(item.id) { show(toast) }
+                }
+                : RowAction(TodayStrings.looksRight, systemImage: "checkmark", edge: .leading) {
+                    if let toast = model.acknowledge(item.id) { show(toast) }
+                },
             openApplicationAction(item.applicationId),
         ]
     }

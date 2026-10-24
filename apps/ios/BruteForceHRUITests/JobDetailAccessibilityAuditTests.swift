@@ -70,11 +70,15 @@ final class JobDetailAccessibilityAuditTests: XCTestCase {
         }
         let edge: CGFloat = 24
         let content = CGRect(x: window.minX, y: top + edge, width: window.width, height: max(0, bottom - top - 2 * edge))
-        do {
-            try runAudit(app, context, content: content, ax: ax, scrolled: scrolled)
-        } catch let error as NSError where error.code == -56 {
-            // "Audit failed to complete in time" on long AX pages: retry once.
-            try runAudit(app, context, content: content, ax: ax, scrolled: scrolled)
+        // "Audit failed to complete in time" (-56) happens on long AX pages when the simulator is
+        // busy: retry up to twice after letting it settle.
+        for attempt in 0..<3 {
+            do {
+                try runAudit(app, context, content: content, ax: ax, scrolled: scrolled)
+                return
+            } catch let error as NSError where error.code == -56 && attempt < 2 {
+                Thread.sleep(forTimeInterval: 2)
+            }
         }
     }
 

@@ -121,11 +121,12 @@ public struct ReviewSheet: View {
                     ReasonLine(proposal.reason)
                     if proposal.isHedged { ConfidenceTag() }
                 }
-                evidence
-                fields
+                // The time decides most invites, so it comes before the email (research M5 §3).
                 if let suggestion = proposal.interviewSuggestion {
                     InterviewSuggestionCard(suggestion, footnote: proposal.applicationId != nil ? Strings.interviewOnConfirm : Strings.interviewNeedsApplication)
                 }
+                evidence
+                fields
                 Button(action: onNotJobMail) { Text(Strings.notJobMail) }
                     .buttonStyle(.bfhrPlain)
                     .frame(maxWidth: .infinity)

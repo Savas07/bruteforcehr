@@ -20,14 +20,7 @@ struct MailEmailSheet: View {
                     message
                     filing
                     if let suggestion = detail.interviewSuggestion {
-                        VStack(alignment: .leading, spacing: BFHRSpace.s3) {
-                            InterviewSuggestionCard(suggestion, footnote: nil)
-                            Button(action: onAddInterview) {
-                                Label { Text(Strings.addInterview) } icon: { Image(systemName: "calendar.badge.plus") }
-                            }
-                            .buttonStyle(.bfhr(.primary, fullWidth: true))
-                            .accessibilityIdentifier("mail.email.addInterview")
-                        }
+                        InterviewSuggestionCard(suggestion, footnote: nil)
                     } else if detail.interviewId != nil {
                         Label { Text(MailViewStrings.interviewOnCalendar) } icon: { Image(systemName: "calendar") }
                             .font(.bfhr(.subheadline))
@@ -40,6 +33,19 @@ struct MailEmailSheet: View {
                     }
                 }
                 .padding(BFHRSpace.s4)
+            }
+            // Add interview stays in reach at the medium detent, like the review sheet's actions.
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                if detail.interviewSuggestion != nil {
+                    Button(action: onAddInterview) {
+                        Label { Text(Strings.addInterview) } icon: { Image(systemName: "calendar.badge.plus") }
+                    }
+                    .buttonStyle(.bfhr(.primary, fullWidth: true))
+                    .accessibilityIdentifier("mail.email.addInterview")
+                    .padding(.horizontal, BFHRSpace.s4)
+                    .padding(.vertical, BFHRSpace.s3)
+                    .background(.bar)
+                }
             }
             .navigationTitle(Text(MailViewStrings.emailTitle))
             .bfhrInlineTitle()

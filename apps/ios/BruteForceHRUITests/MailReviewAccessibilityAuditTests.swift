@@ -40,6 +40,20 @@ final class MailReviewAccessibilityAuditTests: XCTestCase {
         try runAudit(app)
     }
 
+    /// M5: the review sheet with a suggested interview, the email sheet with Add interview,
+    /// Updates with Add interview and the scanning card, default and largest size.
+    @MainActor
+    func testLivePanes() throws {
+        for pane in ["review", "email", "add-interview", "scanning"] {
+            for size in [nil, "UICTContentSizeCategoryAccessibilityXXXL"] {
+                let app = launch(dataset: "populated", contentSize: size, extra: ["-BFHRMailPane", pane])
+                print("AUDIT pane \(pane) \(size ?? "default")")
+                try runAudit(app, atAccessibilitySize: size != nil)
+                app.terminate()
+            }
+        }
+    }
+
     /// Not an audit: saves the screens behind interactions (the scrolled queue, the review sheet,
     /// Change…, Updates, All job mail) at the default and the largest text size for the design
     /// critique. Runs only with `TEST_RUNNER_BFHR_MAIL_SHOTS=<dir>`.
@@ -79,6 +93,57 @@ final class MailReviewAccessibilityAuditTests: XCTestCase {
         }
     }
 
+    /// Not an audit: the M5 live-mail states behind a scroll or a sheet (review sheet with the
+    /// suggested interview at the large detent, the email sheet with Add interview, Updates with
+    /// Add interview, the scanning card, the application timeline's linked email) for the
+    /// critique. Runs only with `TEST_RUNNER_BFHR_MAIL_SHOTS=<dir>`.
+    @MainActor
+    func testCaptureLiveScreens() throws {
+        guard let directory = ProcessInfo.processInfo.environment["BFHR_MAIL_SHOTS"] else {
+            throw XCTSkip("Critique screenshots only")
+        }
+        let theme = ProcessInfo.processInfo.environment["BFHR_MAIL_SHOTS_SUFFIX"] ?? ""
+        for ax in [false, true] {
+            let size = ax ? "UICTContentSizeCategoryAccessibilityXXXL" : nil
+            func shot(_ name: String) throws {
+                Thread.sleep(forTimeInterval: 1.0)
+                let file = URL(fileURLWithPath: directory).appendingPathComponent("live-\(name)\(theme)\(ax ? "-ax" : "").png")
+                try XCUIScreen.main.screenshot().pngRepresentation.write(to: file)
+            }
+            let review = launch(dataset: "populated", contentSize: size, extra: ["-BFHRMailPane", "review"])
+            review.swipeUp()
+            try shot("review-large")
+            review.swipeUp()
+            try shot("review-large-scrolled")
+            review.terminate()
+
+            let email = launch(dataset: "populated", contentSize: size, extra: ["-BFHRMailPane", "email"])
+            try shot("email")
+            email.swipeUp()
+            try shot("email-large")
+            email.terminate()
+
+            let updates = launch(dataset: "populated", contentSize: size, extra: ["-BFHRMailPane", "add-interview"])
+            updates.swipeUp()
+            try shot("updates-add-interview")
+            updates.terminate()
+
+            let scanning = launch(dataset: "populated", contentSize: size, extra: ["-BFHRMailPane", "scanning"])
+            try shot("scanning")
+            scanning.terminate()
+
+            let timeline = XCUIApplication()
+            timeline.launchArguments += ["-AppleLanguages", "(en)", "-AppleLocale", "en_US", "-BFHRScreen", "tracker-board", "-BFHRTrackerPane", "detail"]
+            if let size { timeline.launchArguments += ["-UIPreferredContentSizeCategoryName", size] }
+            timeline.launch()
+            let email2 = timeline.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS[c] %@", "Email from")).firstMatch
+            var swipes = 0
+            while !(email2.exists && email2.isHittable), swipes < 12 { timeline.swipeUp(); swipes += 1 }
+            try shot("timeline-email")
+            timeline.terminate()
+        }
+    }
+
     @MainActor
     private func audit(dataset: String, contentSize: String?) throws {
         let app = launch(dataset: dataset, contentSize: contentSize)
@@ -115,9 +180,9 @@ final class MailReviewAccessibilityAuditTests: XCTestCase {
     }
 
     @MainActor
-    private func launch(dataset: String, contentSize: String?) -> XCUIApplication {
+    private func launch(dataset: String, contentSize: String?, extra: [String] = []) -> XCUIApplication {
         let app = XCUIApplication()
-        app.launchArguments += ["-AppleLanguages", "(en)", "-AppleLocale", "en_US", "-BFHRScreen", "mail-review", "-BFHRDesign", dataset]
+        app.launchArguments += ["-AppleLanguages", "(en)", "-AppleLocale", "en_US", "-BFHRScreen", "mail-review", "-BFHRDesign", dataset] + extra
         if let contentSize {
             app.launchArguments += ["-UIPreferredContentSizeCategoryName", contentSize]
         }

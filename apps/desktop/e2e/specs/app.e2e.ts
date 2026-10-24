@@ -116,23 +116,15 @@ describe("BruteForceHR desktop", () => {
     await expect(sheet).not.toBeExisting();
   });
 
-  it("reaches the sidebar sections with Tab and gives focus back when an overlay closes", async () => {
-    /** What has focus, as "TAG text", so a failure says where focus went. */
-    const focused = () =>
-      browser.execute(() => {
-        const element = document.activeElement;
-        return `${element?.tagName ?? "none"} ${element?.textContent?.trim().replace(/\s+/gu, " ").slice(0, 30) ?? ""}`;
-      });
-    // WKWebView skips links on Tab unless the shell turns `tabFocusesLinks` on (src-tauri/src/window.rs).
-    const jumpTo = $('nav[aria-label="Sections"] button');
-    await jumpTo.waitForDisplayed();
-    await browser.execute(() => {
-      document.querySelector<HTMLElement>('nav[aria-label="Sections"] button')?.focus();
-    });
-    await expect(jumpTo).toBeFocused();
-    await browser.keys(Key.Tab);
-    expect(await focused()).toBe("A Today");
+  it("gives focus back to the opener when the palette or the shortcuts sheet closes", async () => {
+    // The embedded WebDriver's key presses are DOM events, so Tab doesn't move focus here (that's
+    // the browser's default action for a trusted key); the Tab walk is in keyboard-pass.md.
     const today = $('nav[aria-label="Sections"] a[href$="/today"]');
+    await today.waitForDisplayed();
+    await browser.execute(() => {
+      document.querySelector<HTMLElement>('nav[aria-label="Sections"] a[href$="/today"]')?.focus();
+    });
+    await expect(today).toBeFocused();
     // Neither overlay has a trigger; closing one returns focus to where it was opened from.
     for (const key of ["k", "/"]) {
       await pressShortcut(key);

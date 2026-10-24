@@ -5,7 +5,7 @@ import {
   createRouter,
   Navigate,
 } from "@tanstack/react-router";
-import { createContext, useContext, type ComponentType } from "react";
+import { createContext, lazy, Suspense, useContext, useEffect, type ComponentType } from "react";
 import { AppShell } from "./components/AppShell";
 import { RouteContainer } from "./components/RouteContainer";
 import { destinations, type DestinationId } from "./lib/destinations";
@@ -15,17 +15,56 @@ import { LiveMailProvider } from "./data/mail/live";
 import { AddApplicationHost } from "./features/application-add";
 import { MailConnectHost } from "./features/mail-connect";
 import { MailNotificationsHost } from "./features/settings";
-import LiveSettings from "./features/settings/Live";
 import { SETTINGS_START_PANE } from "./lib/settings";
-import LiveApplicationDetail from "./features/application-detail/Live";
-import LiveJobs from "./features/job-detail/Live";
-import LiveCvStudio from "./features/cv-editor/LiveCvStudio";
-import LiveInsights from "./features/insights/LiveInsights";
-import LiveMailReview from "./features/mail-review/Live";
 import LiveToday from "./features/today/Live";
-import LiveTrackerBoard from "./features/tracker-board/Live";
-import { LiveTrackerCalendar, LiveTrackerTable } from "./features/tracker-table/Live";
 import { TrackerViewsRoute } from "./features/tracker-table/ViewSwitch";
+
+// Every section but Today (the start screen) loads on first visit, so a cold start parses only
+// what Today needs: the CV Studio alone brings cv-render, pdf.js and docx (docs/runbooks/performance.md).
+// `preloadSections` fetches them all shortly after launch, so first visits don't wait either.
+const loadSettings = () => import("./features/settings/Live");
+const loadApplicationDetail = () => import("./features/application-detail/Live");
+const loadJobs = () => import("./features/job-detail/Live");
+const loadCvStudio = () => import("./features/cv-editor/LiveCvStudio");
+const loadInsights = () => import("./features/insights/LiveInsights");
+const loadMailReview = () => import("./features/mail-review/Live");
+const loadTrackerBoard = () => import("./features/tracker-board/Live");
+const loadTrackerTable = () => import("./features/tracker-table/Live");
+const LiveSettings = lazy(loadSettings);
+const LiveApplicationDetail = lazy(loadApplicationDetail);
+const LiveJobs = lazy(loadJobs);
+const LiveCvStudio = lazy(loadCvStudio);
+const LiveInsights = lazy(loadInsights);
+const LiveMailReview = lazy(loadMailReview);
+const LiveTrackerBoard = lazy(loadTrackerBoard);
+const LiveTrackerTable = lazy(() =>
+  loadTrackerTable().then((module) => ({ default: module.LiveTrackerTable })),
+);
+const LiveTrackerCalendar = lazy(() =>
+  loadTrackerTable().then((module) => ({ default: module.LiveTrackerCalendar })),
+);
+
+/** How long after the shell mounts the other sections start loading (after Today's own work). */
+const PRELOAD_DELAY_MS = 3_000;
+
+function usePreloadSections(): void {
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      for (const load of [
+        loadSettings,
+        loadApplicationDetail,
+        loadJobs,
+        loadCvStudio,
+        loadInsights,
+        loadMailReview,
+        loadTrackerBoard,
+        loadTrackerTable,
+      ])
+        void load();
+    }, PRELOAD_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, []);
+}
 
 const startPath = destinations[0].path;
 
@@ -73,6 +112,7 @@ function sectionTitle(id: AppRouteId): ComponentType {
 
 /** The signed-in shell with the app-wide hosts (Mod+N dialog, interview reminders). */
 function LiveRoot() {
+  usePreloadSections();
   return (
     <AppShell
       hosts={
@@ -152,7 +192,12 @@ const route = <Id extends AppRouteId>(id: Id) =>
     path: appRoutes[id].path,
     component: function RouteView() {
       const View: ComponentType = useContext(RouteViewsContext).routes[id];
-      return <View />;
+      // A section's chunk is fetched from the app's own assets in milliseconds: nothing to show.
+      return (
+        <Suspense fallback={null}>
+          <View />
+        </Suspense>
+      );
     },
   });
 

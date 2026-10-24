@@ -97,10 +97,11 @@ describe("BruteForceHR desktop", () => {
       "Open command palette",
       "Show keyboard shortcuts",
       "Open settings",
+      // Registered by the toast host (src/shared/ui/Toast.tsx): Mod+Z undoes the latest change. It
+      // mounts with sign-in, before the onboarding gate lets the shell (and its hosts) in.
+      "Undo the last change",
       // Registered by the Log an application host (src/features/application-add).
       "New application",
-      // Registered by the toast host (src/shared/ui/Toast.tsx): Mod+Z undoes the latest change.
-      "Undo the last change",
     ]);
     expect(labels).toContain("Snooze");
     const modifier = isMac ? "⌘" : "Ctrl";

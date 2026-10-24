@@ -9,17 +9,15 @@ layout: ../../layouts/GuideLayout.astro
 
 ## Job preferences
 
-What you're looking for. Matching uses it to explain how well each job fits, and your first saved search starts from it.
+What you're looking for. Matching uses it to explain how well each job fits, and your first saved search starts from it. Everything is optional.
 
-- **Your name** (on Mac and Windows; on iPhone your name comes from your CV)
-- **Roles**: the job titles you want.
-- **Seniority**
-- **Where**: the places you'd work in, and whether you want remote, hybrid or on-site work.
-- **Salary floor**: the lowest pay you'd accept, with its currency and whether it's per year, month, day or hour.
-- **Work authorization**: the countries (or the EU) where you may work, and on what basis.
-- **Languages**, each with your level, from A1 to native.
-
-None of it is required. Matches use your changes from the next search on.
+- **Your name**, which goes on your CVs and emails (on Mac and Windows; on iPhone it comes from your CV).
+- **Roles**: up to 5 job titles you'd apply for, with suggestions from your CV.
+- **Seniority**: the level you're aiming for.
+- **Where**: remote, hybrid or on-site, and up to 10 places (a country, and a city if you like). Mark a place **I'd move here** if you'd relocate. Without any places, jobs aren't filtered by location; remote jobs limited to certain countries count when you list one of them.
+- **Salary floor**: an amount, currency and period (per year, month, day or hour). It's private and only used to sort out roles that clearly pay less.
+- **Work authorization**: for each place, whether you can work there without visa sponsorship.
+- **Languages** you can work in, each with your level, from A1 to Native.
 
 ## Mail accounts
 

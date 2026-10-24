@@ -27,8 +27,10 @@ interface Spotlight {
   label: string;
   title: string;
   points: readonly { lead: string; text: string }[];
-  /** The first shot leads; the rest follow under it (CV Studio stacks them instead). */
+  /** Desktop screens: the first leads, the rest follow under it (CV Studio stacks them instead). */
   shots: readonly Shot[];
+  /** iPhone screens, side by side under the desktop ones. */
+  phones: readonly Shot[];
   guide: string;
 }
 
@@ -58,7 +60,10 @@ const spotlights: Spotlight[] = [
     shots: [
       { screen: "macJobs", caption: "Every requirement, with the line from the posting it came from." },
       { screen: "macSavedSearches", caption: "Saved searches with their schedule and alerts." },
-      { screen: "windowsJobsImport", caption: "Add a job from a link." },
+    ],
+    phones: [
+      { screen: "iphoneJobs", caption: "Your matches, ranked by fit." },
+      { screen: "iphoneShareSheet", caption: "Save a job from Safari's share sheet." },
     ],
     guide: "/guide/jobs/",
   },
@@ -88,6 +93,7 @@ const spotlights: Spotlight[] = [
       { screen: "macCvEditor", caption: "A base CV and its German version, with a live A4 preview." },
       { screen: "windowsCvEditor", caption: "Suggestions to review, one by one." },
     ],
+    phones: [{ screen: "iphoneCvEditor", caption: "Edit and preview on the go." }],
     guide: "/guide/cv-studio/",
   },
   {
@@ -113,6 +119,7 @@ const spotlights: Spotlight[] = [
       },
     ],
     shots: [{ screen: "macApply", caption: "Apply by email, written in the language of the posting." }],
+    phones: [{ screen: "iphoneApply", caption: "Pick the CV, a cover letter and how to send." }],
     guide: "/guide/apply/",
   },
   {
@@ -142,6 +149,7 @@ const spotlights: Spotlight[] = [
       { screen: "macApplicationDetail", caption: "One application: stages, timeline, interview and reminder." },
       { screen: "windowsTrackerCalendar", caption: "Interviews, deadlines and follow-ups by month." },
     ],
+    phones: [{ screen: "iphoneTracker", caption: "Your pipeline, stage by stage." }],
     guide: "/guide/tracker/",
   },
   {
@@ -170,6 +178,7 @@ const spotlights: Spotlight[] = [
       { screen: "macMailReview", caption: "An email to review, with what it means for the application." },
       { screen: "macMailConnect", caption: "Connect an inbox, and see what's read." },
     ],
+    phones: [{ screen: "iphoneMailReview", caption: "Emails to review, with what each one means." }],
     guide: "/guide/mail/",
   },
   {
@@ -191,6 +200,7 @@ const spotlights: Spotlight[] = [
       },
     ],
     shots: [{ screen: "macInsights", caption: "Key numbers and the funnel for the last 90 days." }],
+    phones: [{ screen: "iphoneInsights", caption: "Key numbers and the funnel for the last 12 weeks." }],
     guide: "/guide/insights/",
   },
 ];
@@ -326,6 +336,30 @@ const chip =
                         widths={[480, 800, 1280]}
                         sizes="(min-width: 1280px) 650px, 92vw"
                         class="h-auto w-full rounded-lg border border-line-subtle shadow-raised"
+                      />
+                      <figcaption class="mt-3 text-subheadline text-fg-secondary">
+                        <span class="font-semibold text-fg-primary">{screens[shot.screen].device}.</span> {shot.caption}
+                      </figcaption>
+                    </figure>
+                  ))}
+                </div>
+              )}
+              {spotlight.phones.length > 0 && (
+                <div
+                  class:list={[
+                    "mt-10 grid gap-x-6 gap-y-8",
+                    spotlight.phones.length > 1 ? "max-w-xl grid-cols-2" : "max-w-[11rem] md:max-w-[16rem]",
+                  ]}
+                >
+                  {spotlight.phones.map((shot) => (
+                    <figure>
+                      <ThemedScreenshot
+                        light={screens[shot.screen].light}
+                        dark={screens[shot.screen].dark}
+                        alt={screens[shot.screen].alt}
+                        widths={[320, 640]}
+                        sizes="(min-width: 768px) 256px, 42vw"
+                        class="h-auto w-full rounded-[1.75rem] border border-line-subtle shadow-raised"
                       />
                       <figcaption class="mt-3 text-subheadline text-fg-secondary">
                         <span class="font-semibold text-fg-primary">{screens[shot.screen].device}.</span> {shot.caption}

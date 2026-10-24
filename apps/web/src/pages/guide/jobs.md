@@ -17,7 +17,7 @@ The same job found on several sites is shown once, with every source listed unde
 - Type in **Search** to filter the jobs you already have by title, company, place or skill.
 - To look for new jobs, type a role or skill and choose **Search job sites**. New jobs show up in the list as they're found.
 - Narrow the list with the filters: **Work mode**, **Location**, **Seniority**, **Salary**, **Posted**, **Match**, **Visa sponsorship** and **Source**. On iPhone, they're under **Filters**.
-- The lists at the top (on iPhone, the chips) switch between **All jobs**, **Saved**, each saved search and, on Mac and Windows, **Hidden jobs**.
+- The lists at the top switch between **All jobs** (on iPhone, **All matches**), **Saved** and each saved search. On Mac and Windows, **Hidden jobs** is in the same list; on iPhone, it's at the bottom of **Saved searches**.
 
 ## How a job fits you
 

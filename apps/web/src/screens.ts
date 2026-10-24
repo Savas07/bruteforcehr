@@ -5,6 +5,20 @@
  * in the light and dark variant. Alt text describes what each capture shows.
  */
 import type { ImageMetadata } from "astro";
+import iphoneApplyDark from "./assets/screens/iphone-apply-dark.webp";
+import iphoneApplyLight from "./assets/screens/iphone-apply-light.webp";
+import iphoneCvEditorDark from "./assets/screens/iphone-cv-editor-dark.webp";
+import iphoneCvEditorLight from "./assets/screens/iphone-cv-editor-light.webp";
+import iphoneInsightsDark from "./assets/screens/iphone-insights-dark.webp";
+import iphoneInsightsLight from "./assets/screens/iphone-insights-light.webp";
+import iphoneJobsDark from "./assets/screens/iphone-jobs-dark.webp";
+import iphoneJobsLight from "./assets/screens/iphone-jobs-light.webp";
+import iphoneMailReviewDark from "./assets/screens/iphone-mail-review-dark.webp";
+import iphoneMailReviewLight from "./assets/screens/iphone-mail-review-light.webp";
+import iphoneShareSheetDark from "./assets/screens/iphone-share-sheet-dark.webp";
+import iphoneShareSheetLight from "./assets/screens/iphone-share-sheet-light.webp";
+import iphoneTrackerDark from "./assets/screens/iphone-tracker-dark.webp";
+import iphoneTrackerLight from "./assets/screens/iphone-tracker-light.webp";
 import macApplicationDetailDark from "./assets/screens/mac-application-detail-dark.webp";
 import macApplicationDetailLight from "./assets/screens/mac-application-detail-light.webp";
 import macApplyDark from "./assets/screens/mac-apply-dark.webp";
@@ -27,8 +41,6 @@ import macTodayDark from "./assets/screens/mac-today-dark.webp";
 import macTodayLight from "./assets/screens/mac-today-light.webp";
 import windowsCvEditorDark from "./assets/screens/windows-cv-editor-dark.webp";
 import windowsCvEditorLight from "./assets/screens/windows-cv-editor-light.webp";
-import windowsJobsImportDark from "./assets/screens/windows-jobs-import-dark.webp";
-import windowsJobsImportLight from "./assets/screens/windows-jobs-import-light.webp";
 import windowsSettingsJobSourcesDark from "./assets/screens/windows-settings-job-sources-dark.webp";
 import windowsSettingsJobSourcesLight from "./assets/screens/windows-settings-job-sources-light.webp";
 import windowsTrackerCalendarDark from "./assets/screens/windows-tracker-calendar-dark.webp";
@@ -61,12 +73,6 @@ export const screens = {
     light: macSavedSearchesLight,
     dark: macSavedSearchesDark,
     alt: "Saved searches on Mac: three searches with their filters and alert schedule; the selected one checks daily for “frontend engineer OR product engineer” in Germany and the Netherlands with visa sponsorship.",
-  },
-  windowsJobsImport: {
-    device: "Windows",
-    light: windowsJobsImportLight,
-    dark: windowsJobsImportDark,
-    alt: "Add a job from a link on Windows: a field for the link to a posting, with the note that company career pages, job boards and LinkedIn postings all work.",
   },
   macCvEditor: {
     device: "Mac",
@@ -133,6 +139,48 @@ export const screens = {
     light: macSettingsDataPrivacyLight,
     dark: macSettingsDataPrivacyDark,
     alt: "Settings › Data & privacy on Mac: Export everything as a ZIP file, with what's included and what isn't, and Delete account.",
+  },
+  iphoneJobs: {
+    device: "iPhone",
+    light: iphoneJobsLight,
+    dark: iphoneJobsDark,
+    alt: "Jobs on iPhone: the search field, the All matches, Saved and saved-search lists, filters, and 37 jobs with salary and “Strong match”.",
+  },
+  iphoneShareSheet: {
+    device: "iPhone",
+    light: iphoneShareSheetLight,
+    dark: iphoneShareSheetDark,
+    alt: "Save job on iPhone, opened from the share sheet: the role, company and location read from a jobs.ashbyhq.com page, with Save and “Save and log as applied”.",
+  },
+  iphoneCvEditor: {
+    device: "iPhone",
+    light: iphoneCvEditorLight,
+    dark: iphoneCvEditorDark,
+    alt: "A CV on iPhone: the Edit and Preview switch above the header, summary and experience of the English base CV.",
+  },
+  iphoneApply: {
+    device: "iPhone",
+    light: iphoneApplyLight,
+    dark: iphoneApplyDark,
+    alt: "Apply on iPhone: choosing the CV (the English base CV is a strong match), an optional cover letter, and whether to send via the company site, a job board or a recruiter's email address.",
+  },
+  iphoneTracker: {
+    device: "iPhone",
+    light: iphoneTrackerLight,
+    dark: iphoneTrackerDark,
+    alt: "Tracker on iPhone: the pipeline with Active, Closed and All, a chip per stage, and applications grouped under Saved and Preparing.",
+  },
+  iphoneMailReview: {
+    device: "iPhone",
+    light: iphoneMailReviewLight,
+    dark: iphoneMailReviewDark,
+    alt: "Mail on iPhone: three emails to review, a note to reconnect one account, and what BruteForceHR thinks each email means, such as a recruiter reaching out.",
+  },
+  iphoneInsights: {
+    device: "iPhone",
+    light: iphoneInsightsLight,
+    dark: iphoneInsightsDark,
+    alt: "Insights on iPhone: 20 applications in 12 weeks, a 60% response rate, 7 interviews, 7 days to a first response, and how far applications get.",
   },
 } as const satisfies Record<string, Screen>;
 

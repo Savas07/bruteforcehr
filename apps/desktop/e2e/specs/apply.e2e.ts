@@ -47,7 +47,13 @@ async function button(label: string, timeout = 30_000) {
       return false;
     },
     { timeout, timeoutMsg: `no enabled "${label}" button` },
-  );
+  ).catch(async (error: unknown) => {
+    // Say why: the panel's one-line blocker (or PDF status) and the buttons it shows.
+    const status = await browser.execute(() =>
+      [...document.querySelectorAll("main [role=status], main [role=alert], main footer")].map((node) => node.textContent).join(" | "),
+    );
+    throw new Error(`${String(error)} — panel says: ${status}`);
+  });
   if (!found) throw new Error(`no "${label}" button`);
   return found;
 }

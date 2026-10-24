@@ -273,7 +273,7 @@ final class FirestoreUserDataStore: UserDataWriter {
         }
         // Settings: notifications, quiet hours and AI on `users/{uid}`; Companies you follow.
         if case .updated(let before, let after)? = changes.profile {
-            let fields = try Self.changedFields(before, after)
+            let fields = try Self.profileFields(before, after)
             if !fields.isEmpty { batch.updateData(fields, forDocument: user) }
         }
         for change in changes.watchlist { try write(change, in: "watchlist", batch) }
@@ -347,6 +347,18 @@ final class FirestoreUserDataStore: UserDataWriter {
         for (key, value) in new where key != "id" {
             if let previous = old[key], (previous as AnyObject).isEqual(value) { continue }
             fields[key] = value
+        }
+        return fields
+    }
+
+    /// `profileUpdate` of the desktop: changed top-level fields, with `settings.*` as dotted paths
+    /// so a setting saved here never overwrites another one saved elsewhere meanwhile.
+    static func profileFields(_ before: Profile, _ after: Profile) throws -> [String: Any] {
+        var fields = try changedFields(before, after)
+        if fields.removeValue(forKey: "settings") != nil {
+            for (key, value) in try changedFields(before.settings, after.settings) {
+                fields["settings.\(key)"] = value
+            }
         }
         return fields
     }

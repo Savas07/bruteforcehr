@@ -44,7 +44,7 @@ struct JobsTabRoot: View {
             if let account {
                 ToolbarItem(placement: .topBarTrailing) {
                     AccountMenu(account) {
-                        AvatarMonogram(initials: account.email.first.map { String($0).uppercased() } ?? "")
+                        AvatarMonogram(initials: account.email.first.map { String($0).uppercased() } ?? "", needsAttention: live.settings.mailNeedsAttention)
                     }
                 }
             }

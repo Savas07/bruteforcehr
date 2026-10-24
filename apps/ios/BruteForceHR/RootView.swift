@@ -119,6 +119,7 @@ struct RootView: View {
             }
             .environment(toasts)
             .environment(\.bfhrMailConnect, mailConnect)
+            .environment(\.bfhrReload) { live.reload() }
             .environment(\.bfhrAccount, signIn.signedInEmail.map { email in
                 AccountContext(email: email) { try signIn.signOut() }
             })

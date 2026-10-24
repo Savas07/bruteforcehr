@@ -45,6 +45,7 @@ public struct SettingsScreen<DataPrivacy: View>: View {
     @Environment(\.openURL) private var openURL
     @Environment(\.locale) private var locale
     @AppStorage(AppAppearance.storageKey) private var appearance: AppAppearance = .system
+    @Environment(\.bfhrReload) private var reload
 
     public init(model: SettingsModel, path: Binding<[SettingsRoute]>, @ViewBuilder dataPrivacy: @escaping () -> DataPrivacy) {
         self.model = model
@@ -56,6 +57,14 @@ public struct SettingsScreen<DataPrivacy: View>: View {
         NavigationStack(path: $path) {
             List {
                 ConnectionBannerSection(model.connection)
+                if case .failed = model.phase {
+                    Section {
+                        InlineAlert(.warning, title: SettingsStrings.loadFailed, actionTitle: Strings.tryAgain, action: { reload?() })
+                            .listRowInsets(EdgeInsets())
+                            .listRowBackground(Color.clear)
+                            .accessibilityIdentifier("settings.loadFailed")
+                    }
+                }
                 if let account {
                     Section {
                         VStack(alignment: .leading, spacing: 2) {
@@ -72,22 +81,26 @@ public struct SettingsScreen<DataPrivacy: View>: View {
                 Section {
                     NavigationLink(value: SettingsRoute.mailAccounts) {
                         SettingsRow(SettingsStrings.mailAccounts, glyph: "envelope", tile: BFHRTone.info.solid) {
-                            mailValue
+                            loaded { mailValue }
                         }
                     }
                     .accessibilityIdentifier("settings.mailAccounts")
                     NavigationLink(value: SettingsRoute.jobSources) {
                         // Source trouble is ours to fix, not the user's: a count, never an alert.
                         SettingsRow(SettingsStrings.jobSources, glyph: "antenna.radiowaves.left.and.right", tile: BFHRTone.success.solid) {
-                            if !model.workingSources.isEmpty {
-                                Text(SettingsStrings.workingCount(model.workingSources.count))
+                            loaded {
+                                if !model.workingSources.isEmpty {
+                                    Text(SettingsStrings.workingCount(model.workingSources.count))
+                                }
                             }
                         }
                     }
                     .accessibilityIdentifier("settings.jobSources")
                     NavigationLink(value: SettingsRoute.companies) {
                         SettingsRow(SettingsStrings.companies, glyph: "building.2", tile: BFHRColor.Accent.solid) {
-                            if !model.companies.isEmpty { Text(SettingsStrings.companyCount(model.companies.count)) }
+                            loaded {
+                                if !model.companies.isEmpty { Text(SettingsStrings.companyCount(model.companies.count)) }
+                            }
                         }
                     }
                     .accessibilityIdentifier("settings.companies")
@@ -97,20 +110,22 @@ public struct SettingsScreen<DataPrivacy: View>: View {
                 Section {
                     NavigationLink(value: SettingsRoute.notifications) {
                         SettingsRow(SettingsStrings.notifications, glyph: "bell.badge", tile: BFHRTone.warning.solid) {
-                            if model.permission == .denied {
-                                Text(SettingsStrings.offInSystem)
-                            } else if let quiet = model.quietHours {
-                                Image(systemName: "moon")
-                                    .accessibilityHidden(true)
-                                Text(verbatim: "\(quiet.start)–\(quiet.end)")
-                                    .accessibilityLabel(Text(SettingsStrings.quietValue(quiet.start, quiet.end)))
+                            loaded {
+                                if model.permission == .denied {
+                                    Text(SettingsStrings.offInSystem)
+                                } else if let quiet = model.quietHours {
+                                    Image(systemName: "moon")
+                                        .accessibilityHidden(true)
+                                    Text(verbatim: "\(quiet.start)–\(quiet.end)")
+                                        .accessibilityLabel(Text(SettingsStrings.quietValue(quiet.start, quiet.end)))
+                                }
                             }
                         }
                     }
                     .accessibilityIdentifier("settings.notifications")
                     NavigationLink(value: SettingsRoute.ai) {
                         SettingsRow(SettingsStrings.ai, glyph: "sparkles", tile: BFHRColor.Accent.solid) {
-                            Text(model.aiEnabled ? SettingsStrings.on : SettingsStrings.off)
+                            loaded { Text(model.aiEnabled ? SettingsStrings.on : SettingsStrings.off) }
                         }
                     }
                     .accessibilityIdentifier("settings.ai")
@@ -189,6 +204,15 @@ public struct SettingsScreen<DataPrivacy: View>: View {
         .accessibilityIdentifier("settings")
         .onChange(of: model.writeFailures) { _, _ in
             toasts?.show(ToastItem(glyph: ToastGlyph.info, message: SettingsStrings.saveFailed))
+        }
+    }
+
+    /// A value that needs the user's data: a placeholder while it loads, nothing when it failed.
+    @ViewBuilder private func loaded(@ViewBuilder _ value: () -> some View) -> some View {
+        switch model.phase {
+        case .loaded: value()
+        case .loading: Text(verbatim: "0 connected").redacted(reason: .placeholder).accessibilityHidden(true)
+        case .failed: EmptyView()
         }
     }
 

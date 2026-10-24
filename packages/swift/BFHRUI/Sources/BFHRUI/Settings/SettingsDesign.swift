@@ -59,7 +59,7 @@ extension DesignScenario {
         case .loading:
             model.phase = .loading
         case .error:
-            model.load(data)
+            model.phase = .failed(LoadFailure(.network, details: "Design scenario (-BFHRState error)"))
         case .offline:
             model.load(data)
             model.connection = .offline(lastSyncedAt: now.addingTimeInterval(-18 * 60))

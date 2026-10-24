@@ -2301,6 +2301,29 @@
         }
       }
     },
+    "settings.loadFailed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wir konnten deine Einstellungen nicht laden. Deine Änderungen werden trotzdem gespeichert."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We couldn't load your settings. Changes you make still save."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ayarlarınızı yükleyemedik. Yaptığınız değişiklikler yine de kaydedilir."
+          }
+        }
+      }
+    },
     "settings.mailAccounts" : {
       "extractionState" : "manual",
       "localizations" : {

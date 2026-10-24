@@ -32,6 +32,7 @@ enum SettingsStrings {
     static let needsAttention = LocalizedStringResource.bfhr("settings.value.needsAttention", default: "Needs attention", table: "Settings")
     static let needsAttentionShort = LocalizedStringResource.bfhr("settings.value.needsAttentionShort", default: "Check", table: "Settings", comment: "Short form of Needs attention when the row has no room.")
     static let noneConnected = LocalizedStringResource.bfhr("settings.value.noneConnected", default: "None yet", table: "Settings")
+    static let loadFailed = LocalizedStringResource.bfhr("settings.loadFailed", default: "We couldn't load your settings. Changes you make still save.", table: "Settings")
     static let saveFailed = LocalizedStringResource.bfhr("settings.saveFailed", default: "That setting didn't save. Try again.", table: "Settings")
 
     static func connectedCount(_ count: Int) -> LocalizedStringResource {

@@ -85,6 +85,7 @@ describe("userDataRoots", () => {
       "serverOnly/jobQuota/users/u1",
       "serverOnly/jobImport/users/u1",
       "serverOnly/mail/users/u1",
+      "serverOnly/accountExport/users/u1",
     ]);
     expect(userStoragePrefix("u1")).toBe("users/u1/");
   });
@@ -95,6 +96,7 @@ describe("userDataRoots", () => {
       serverOnlyPaths.aiUsageDay("u1", "2026-10-24"),
       serverOnlyPaths.jobAlert("u1", "j1"),
       serverOnlyPaths.jobQuotaDay("u1", "2026-10-24"),
+      serverOnlyPaths.accountExportDay("u1", "2026-10-24"),
       serverOnlyPaths.jobImportPage("u1", "abc123"),
     ]) {
       expect(
@@ -121,5 +123,10 @@ describe("userDataRoots", () => {
 
   it("rejects ids that would escape the tree", () => {
     expect(() => userDataRoots("a/b")).toThrow(TypeError);
+  });
+
+  it("keeps account exports under the Storage prefix that account deletion covers", () => {
+    expect(storagePaths.accountExport("u1", "e1").startsWith(userStoragePrefix("u1"))).toBe(true);
+    expect(storagePaths.accountExport("u1", "e1").startsWith(storagePaths.accountExports("u1"))).toBe(true);
   });
 });

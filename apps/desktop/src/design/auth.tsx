@@ -3,7 +3,8 @@
  * instead of Firebase. The same state machine runs on a scripted backend, so the harness clicks
  * through real transitions: sending succeeds after a moment, a link signs the persona in, and
  * Sign out returns to the email step. The clock is pinned to `FIXTURE_NOW`, so countdowns
- * capture the same everywhere. Without `?auth=` the persona is signed in.
+ * capture the same everywhere. Without `?auth=` the persona is signed in, optionally with a
+ * re-authentication in progress (`reauth`, forced by Settings › Data & privacy design states).
  */
 import { FIXTURE_NOW, populatedDataset } from "@bfhr/fixtures";
 import { type ReactNode, useState } from "react";
@@ -12,6 +13,8 @@ import {
   type AuthBackend,
   AuthContext,
   type AuthState,
+  REAUTH_IDLE,
+  type ReauthView,
   type SignInView,
   useAuthMachine,
 } from "../features/auth/session";
@@ -82,6 +85,8 @@ const views: Readonly<Record<AuthDesignState, SignInView>> = {
   "link-offline": linkError("offline", true),
   "link-unavailable": linkError("unavailable", true),
   "link-disabled": linkError("disabled"),
+  /** Right after Settings › Delete account: the email step with the one-time notice. */
+  "account-deleted": email(""),
 };
 
 function isAuthState(value: string | undefined): value is AuthDesignState {
@@ -119,9 +124,17 @@ function scriptedBackend(): AuthBackend {
   };
 }
 
-function ForcedAuth({ initial, children }: { initial: AuthState; children: ReactNode }) {
+function ForcedAuth({
+  initial,
+  reauth,
+  children,
+}: {
+  initial: AuthState;
+  reauth: ReauthView;
+  children: ReactNode;
+}) {
   const [backend] = useState(scriptedBackend);
-  const value = useAuthMachine(backend, initial);
+  const value = useAuthMachine(backend, initial, reauth);
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
@@ -131,14 +144,25 @@ function SignInReady({ state }: { state: string }) {
   return null;
 }
 
-export function DesignAuth({ state, children }: { state: string | undefined; children: ReactNode }) {
+export function DesignAuth({
+  state,
+  reauth = REAUTH_IDLE,
+  children,
+}: {
+  state: string | undefined;
+  /** Signed in only: the re-authentication to start in. */
+  reauth?: ReauthView;
+  children: ReactNode;
+}) {
   const forced = isAuthState(state);
   const initial: AuthState = forced
-    ? { status: "signed-out", view: views[state] }
+    ? state === "account-deleted"
+      ? { status: "signed-out", view: views[state], notice: "account-deleted" }
+      : { status: "signed-out", view: views[state] }
     : { status: "signed-in", email: WORK_EMAIL };
   return (
     // A new forced state starts a fresh machine.
-    <ForcedAuth key={state ?? "signed-in"} initial={initial}>
+    <ForcedAuth key={`${state ?? "signed-in"}:${reauth.step}`} initial={initial} reauth={reauth}>
       {forced && <SignInReady state={state} />}
       {children}
     </ForcedAuth>

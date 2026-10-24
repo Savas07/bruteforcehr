@@ -43,6 +43,8 @@ export const appRoutes = {
   /** Design builds only: the screen × state index and the shared-component demo. */
   design: { path: "/design", destination: null },
   designDemo: { path: "/design/demo", destination: null },
+  /** Settings › Data & privacy states until the Settings shell renders the pane. */
+  designDataPrivacy: { path: "/design/data-privacy", destination: null },
 } as const satisfies Record<string, { path: string; destination: DestinationId | null }>;
 
 export type AppRouteId = keyof typeof appRoutes;
@@ -153,6 +155,7 @@ export const router = createRouter({
     route("insights"),
     route("design"),
     route("designDemo"),
+    route("designDataPrivacy"),
   ]),
   // Hash history: Tauri serves index.html from its asset origin, so routes live in the fragment
   // and never cause a document navigation (the navigation guard in src-tauri stays strict).

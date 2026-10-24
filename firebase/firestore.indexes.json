@@ -242,6 +242,12 @@
       "indexes": []
     },
     {
+      "collectionGroup": "accountExportDays",
+      "fieldPath": "expireAt",
+      "ttl": true,
+      "indexes": []
+    },
+    {
       "collectionGroup": "mailOutbox",
       "fieldPath": "expireAt",
       "ttl": true,

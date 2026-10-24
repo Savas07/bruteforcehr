@@ -388,3 +388,21 @@ Layout rules from length expansion: destructive and confirm buttons never have a
 5. **Beta → Stable switch.** Should switching back to Stable downgrade immediately or wait for the next stable release that's newer than the installed beta? electron-updater has an `allowDowngrade` option tied to channel changes. That needs confirming against current electron-updater docs before implementation. *Recommendation:* wait (no downgrade), which matches the copy above.
 6. **Quiet hours exceptions.** Should interview invites be able to bypass quiet hours ("Let interview invites through")? This isn't in §4.9. *Recommendation:* no; the catch-up summary covers it.
 7. **Scraped web sources (kickoff, M4).** They'll need per-site enable switches and a rate-limit note under Job sources. Defer the design to M4.
+
+## M5 addendum: type-to-confirm and re-authentication (2026-10-24)
+
+Added for the M5 build of Export everything and Delete account. Two `search_screens` queries (`mode: deep`, same `task_intent`, `output_destination: code`): web "delete account confirmation dialog with type to confirm text field" (6 examined, 4 kept) and iOS "delete account screen explaining what will be deleted with confirm field" (6 examined, 3 kept).
+
+| App | Platform | `mobbin_url` | What we borrow | Why |
+|---|---|---|---|---|
+| Resend | web | https://mobbin.com/screens/778f011b-60b4-4584-b317-1e2353024e0c | A short word to type, shown as a code-styled token inside the label ("Type DELETE to confirm"), the field directly under it. | One short word is quick to type in EN/TR/DE; a long phrase (Render's "sudo delete my account") is friction without extra safety. |
+| Render | web | https://mobbin.com/screens/48cfcd64-811a-4f14-805e-9b4a9d23ed16 | The destructive button stays visibly disabled until the field matches. | Already the research rule; confirmed as the common pattern. |
+| Luma AI | web | https://mobbin.com/screens/9a7f8905-9a1b-4d45-9431-773be0f39829 | Cancel before Delete, neutral dialog body. | Matches "Keep my account" first with initial focus. |
+| Dub | web | https://mobbin.com/screens/1ce11968-5600-4a1b-bd5b-1a43dc2162ae | The warning sentence names what goes ("all your workspaces, and all your short links"). | Supports the itemized list over a vague "all your data". |
+| Canva | ios | https://mobbin.com/screens/48a410e2-8d53-4002-a4e9-0c1fa5c5047e | Verification by something sent to the signed-in email, named in the step ("the code we just sent to samlee…"), with the bulleted "will be deleted" list above. | Our re-authentication sends a sign-in link to the signed-in address and names it. |
+| Comet | ios | https://mobbin.com/screens/47827ffb-f715-49c3-8972-d8981d9d6d8b | A pushed "Delete account" screen: bullet list of what happens, then a typed confirmation, then the destructive button at the bottom. | The iOS layout: explanation, field, action on one scrolling screen. |
+| On | ios | https://mobbin.com/screens/a836a2e9-bac8-4c07-8d31-e23b75ed65fb | Plain bullets and an "irreversible" sentence without alarm colors; the button disabled until confirmed. | Calm tone; no red wall. |
+
+Rejected: mymind (https://mobbin.com/screens/96f2b4ce-400f-4670-b466-ed86efb39e57) "DANGER ZONE" heading and "If you are 100% sure"; Skiff (https://mobbin.com/screens/d6ef8f3b-a6aa-48bf-b970-340e64f19d58) typed affirmation plus two acknowledgment checkboxes; Pocket (https://mobbin.com/screens/f1ead1e0-bb34-404e-bf1b-c6b6517be73a) and Nike Run Club (https://mobbin.com/screens/2ef0940e-0ba1-49ae-b398-05e098454853) a single checkbox (too easy to tick by reflex for a hard delete); Polarsteps (https://mobbin.com/screens/7774303f-665d-43be-ad24-b77dc08a1536) "Is this goodbye?" and a reason survey.
+
+Decision (both platforms): type the localized word (DELETE / SİL / LÖSCHEN; case-insensitive, Turkish dotted/dotless i equivalent), and require a sign-in less than 5 minutes old, re-authenticating in place with the normal sign-in link sent to the signed-in address. Export ZIPs stay downloadable for 7 days (privacy policy), and the page says a new export replaces the old one.

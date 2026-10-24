@@ -113,7 +113,8 @@ export function openJobUrl(url: string): Promise<void> {
  * the canonical Firebase action URL, or `invalid` when the deep link failed the checks.
  * Mirrors `AuthLinkDelivery` there.
  */
-export type AuthLinkDelivery = { readonly kind: "link"; readonly link: string } | { readonly kind: "invalid" };
+export type AuthLinkDelivery =
+  { readonly kind: "link"; readonly link: string } | { readonly kind: "invalid" };
 
 /** Event emitted by src-tauri/src/auth_link.rs when a sign-in link arrives; call `takeAuthLink`. */
 const AUTH_LINK_EVENT = "auth-link";

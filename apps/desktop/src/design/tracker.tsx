@@ -61,7 +61,11 @@ export function designTrackerStore(dataset: FixtureDataset): MemoryTrackerStore 
  * configured yet, `?oauth=configured` turns them on) after a short delay so busy states show;
  * `?scan=` adds an inbox in a lookback scan (src/design/mail-connect.tsx).
  */
-function mailStoreFor(dataset: FixtureDataset, oauthConfigured: boolean, scan: string | undefined): MemoryMailStore {
+function mailStoreFor(
+  dataset: FixtureDataset,
+  oauthConfigured: boolean,
+  scan: string | undefined,
+): MemoryMailStore {
   const key = `${dataset.uid}:${dataset === emptyDataset ? "empty" : "populated"}:${String(oauthConfigured)}:${scan ?? ""}`;
   let store = mailStores.get(key);
   if (!store) {

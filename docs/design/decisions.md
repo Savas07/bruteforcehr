@@ -216,6 +216,12 @@ Shorthand: **Mod** = ⌘ on macOS, Ctrl on Windows. "Research" = `docs/design/re
 - **Decision:** never ask at launch. Ask in context the first time the user turns on a saved-search alert, or after the first successful import ("Get notified when an employer replies?"), whichever comes first.
 - **Affects:** connect-email OQ10, job-feed-search, settings-account.
 
+### D39 · No notification center screen on iPhone
+
+- **Decision:** there's no in-app notification center (bell) screen. Mail › **Updates** is the history of automatic changes, and push notifications deep-link to the review sheet or the Updates row; their only action is **Open**. Recorded 2026-10-24 from the mail-review research decision so the BRIEF §5.3 "notification center" row in STATUS.md can point at an id.
+- **Why:** a second list of the same events would compete with Updates, and confirming from a notification without seeing the evidence breaks the trust principle (mail-review.md "Notification center").
+- **Affects:** mail-review, STATUS.md (iOS Notification center row is N/A).
+
 ### D26 · Scope items deferred (not in the brief)
 
 - **Decision:** these stay out of v1. Revisit after the mail fixture set exists (M5).
@@ -377,6 +383,12 @@ Explicitly **not stored**:
 - **Decision:** (b) in M3. "I followed up" appends a user `mail_sent` event; its toast reads "Follow-up noted · {company}" with no Undo, on desktop and iPhone.
 - **Why:** `applicationEvents` are append-only and `revertsEventId` is reserved for user `status_changed` events (ADR 0002, `ApplicationEventSchema`): a reverting `mail_sent` would be refused by the schema on every shipped client, so older builds would drop the retraction and keep counting the follow-up. Allowing it is a contract change (schema rule + BFHRCore + rules tests) for a low-stakes action: a mistaken tap only moves the next follow-up suggestion by `followUpAfterDays`, and the user can still answer "Not needed" or snooze it. Revisit with M5, when follow-ups sent from the app write the same event.
 - **Affects:** today-home, tracker (application detail suggestion card), states (toast without Undo).
+
+### D38 · No Table view on iPhone
+
+- **Decision:** the Tracker's Table view is desktop-only. On iPhone the title menu switches **Pipeline · Calendar** (D34); filtering and search on the Pipeline list cover what the table does. Recorded 2026-10-24 from the tracker research decision (tracker.md, iOS IA) so the STATUS.md row can point at an id.
+- **Why:** a spreadsheet table on a phone truncates its columns (tracker.md, rejected for iOS), and the Pipeline list already lists every application with its status and dates.
+- **Affects:** tracker, STATUS.md (iOS Tracker table row is N/A).
 
 ## Other open questions resolved
 

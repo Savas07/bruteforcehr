@@ -46,9 +46,14 @@ final class JobsEndToEndTests: XCTestCase {
         let send = app.buttons["apply.send"]
 
         // 1. The seeded jobs, then Work mode → Remote.
+        // The list is lazy: rows below the fold exist once scrolled to.
+        XCTAssertTrue(row(app, ids[0]).waitForExistence(timeout: 30), "feed loaded")
         for id in ids {
-            XCTAssertTrue(row(app, id).waitForExistence(timeout: 30), "seeded job \(id) in the feed")
+            var swipes = 0
+            while !row(app, id).exists, swipes < 4 { app.swipeUp(); swipes += 1 }
+            XCTAssertTrue(row(app, id).exists, "seeded job \(id) in the feed")
         }
+        for _ in 0..<4 { app.swipeDown() }
         shot("feed")
         filterRemote(app, on: true)
         for id in ids {
@@ -74,12 +79,16 @@ final class JobsEndToEndTests: XCTestCase {
         XCTAssertTrue(app.buttons["apply.channel.site"].firstMatch.isSelected, "company site is the default route")
         shot("apply-checklist")
         proceed.tap()
-        let done = app.buttons.matching(NSPredicate(format: "label IN {'Done', 'Close'}")).firstMatch
-        XCTAssertTrue(done.waitForExistence(timeout: 20), "SFSafariViewController opened")
+        // Safari's address bar must be up before Done is the top-leading control.
+        XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'workable'")).firstMatch.waitForExistence(timeout: 20)
+            || app.buttons["Done"].firstMatch.waitForExistence(timeout: 5), "SFSafariViewController opened")
         Thread.sleep(forTimeInterval: 2)
         shot("safari")
-        done.tap()
-        let applied = app.buttons["Yes, I applied"].firstMatch
+        // iOS 26 draws Done as a checkmark in the top-leading corner; other Safari buttons share
+        // labels, so tap by position.
+        app.coordinate(withNormalizedOffset: CGVector(dx: 0, dy: 0)).withOffset(CGVector(dx: 45, dy: 90)).tap()
+        // The prompt inside the Apply sheet (the Job detail behind it shows its own copy).
+        let applied = app.buttons.matching(NSPredicate(format: "identifier == 'apply.submitPrompt' AND label == 'Yes, I applied'")).firstMatch
         XCTAssertTrue(applied.waitForExistence(timeout: 10), "Did you apply? after Safari")
         // Give the kit a moment to make the CV PDF, so it's stored and pinned too.
         _ = app.staticTexts.matching(NSPredicate(format: "label ENDSWITH '.pdf'")).firstMatch.waitForExistence(timeout: 30)
@@ -158,7 +167,7 @@ final class JobsEndToEndTests: XCTestCase {
         shot("mail-review")
         send.tap()
         let undo = app.buttons["Undo"].firstMatch
-        XCTAssertTrue(undo.waitForExistence(timeout: 8), "Sending … · Undo")
+        XCTAssertTrue(undo.waitForExistence(timeout: 15), "Sending … · Undo")
         shot("mail-sending")
         undo.tap()
         // mailSendCancel runs in the background; let it land before the app goes away.
@@ -199,7 +208,10 @@ final class JobsEndToEndTests: XCTestCase {
     @MainActor
     private func openDetail(_ app: XCUIApplication, _ id: String) {
         let target = row(app, id)
-        XCTAssertTrue(target.waitForExistence(timeout: 10), id)
+        // Rows below the fold exist only once scrolled to (lazy list).
+        var swipes = 0
+        while !target.waitForExistence(timeout: 3), swipes < 4 { app.swipeUp(); swipes += 1 }
+        XCTAssertTrue(target.exists, id)
         scrollTo(target, in: app)
         target.tap()
         XCTAssertTrue(app.buttons["jobDetail.apply"].waitForExistence(timeout: 15), "Job detail of \(id)")

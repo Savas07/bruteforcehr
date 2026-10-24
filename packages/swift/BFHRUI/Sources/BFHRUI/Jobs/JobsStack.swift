@@ -15,6 +15,9 @@ public struct JobsStack<Toolbar: ToolbarContent>: View {
     private let toolbar: () -> Toolbar
     @Environment(ToastCenter.self) private var toasts: ToastCenter?
     @Environment(\.openURL) private var openURL
+    /// The open Apply sheet's model: made once per opening, so the sheet keeps its step and
+    /// choices while the stack re-renders (Safari's return, data updates).
+    @State private var openApply = ApplyModelSlot()
 
     public init(
         feed: JobsFeedModel,
@@ -40,8 +43,8 @@ public struct JobsStack<Toolbar: ToolbarContent>: View {
         stack
             .environment(\.bfhrApply) { jobId in applying = jobId }
             .environment(\.bfhrAddFromLink, addFromLink)
-            .sheet(item: applyRequest) { request in
-                ApplySheet(model: applyModel(request.jobId))
+            .sheet(item: applyRequest, onDismiss: { openApply.model = nil }) { request in
+                ApplySheet(model: openApply.model(for: request.jobId, make: applyModel))
             }
             .sheet(item: $importing, content: importSheet)
     }
@@ -89,4 +92,16 @@ extension JobImportModel: Identifiable {
 private struct ApplyRequest: Identifiable {
     let jobId: String
     var id: String { jobId }
+}
+
+/// Holds the Apply sheet's model across view updates.
+final class ApplyModelSlot {
+    var model: ApplyModel?
+
+    func model(for jobId: String, make: (String) -> ApplyModel) -> ApplyModel {
+        if let model, model.jobId == jobId { return model }
+        let made = make(jobId)
+        model = made
+        return made
+    }
 }

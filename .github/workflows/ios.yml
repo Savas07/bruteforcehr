@@ -58,6 +58,7 @@ jobs:
       fail-fast: false
       matrix:
         suite:
+          - ApplyAIAccessibilityAuditTests
           - CVEditorAccessibilityAuditTests
           - DataPrivacyAccessibilityAuditTests
           - InsightsAccessibilityAuditTests

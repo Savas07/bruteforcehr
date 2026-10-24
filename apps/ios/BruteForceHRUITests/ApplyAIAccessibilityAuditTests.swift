@@ -196,11 +196,25 @@ final class ApplyAIAccessibilityAuditTests: XCTestCase {
     func testAuditAttachmentPicker() throws {
         let app = apply("attach", ready: "apply.attach.sheet")
         try auditSheet(app, "attachment picker", bar: nil, pages: 2)
-        app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'apply.attach.file.'")).firstMatch.tap()
+        app.terminate()
+        // A fresh sheet at its medium detent, the first saved file in view.
+        let again = apply("attach", ready: "apply.attach.sheet")
+        try selectAndAdd(again)
+    }
+
+    @MainActor
+    private func selectAndAdd(_ app: XCUIApplication) throws {
+        let file = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'apply.attach.file.'")).firstMatch
+        XCTAssertTrue(file.waitForExistence(timeout: 5), "a saved file")
+        file.tap()
         XCTAssertTrue(app.buttons["apply.attach.addSelected"].waitForExistence(timeout: 5), "tray")
         try auditSheet(app, "attachment picker tray", bar: app.buttons["apply.attach.addSelected"], pages: 0)
         app.buttons["apply.attach.addSelected"].tap()
-        XCTAssertTrue(app.descendants(matching: .any)["apply.attach.total"].firstMatch.waitForExistence(timeout: 5))
+        XCTAssertTrue(app.descendants(matching: .any)["apply.attach.sheet"].firstMatch.waitForNonExistence(timeout: 5), "picker closed")
+        // The attachments section sits low in the email form (a lazy list): scroll to it.
+        let added = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'apply.attach.remove.'")).firstMatch
+        scrollTo(added, in: app)
+        XCTAssertTrue(added.exists, "the saved file is attached")
     }
 
     @MainActor

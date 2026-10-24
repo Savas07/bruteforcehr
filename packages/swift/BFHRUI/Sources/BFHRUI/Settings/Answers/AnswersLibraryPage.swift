@@ -165,8 +165,12 @@ struct AnswerEditorSheet: View {
                             .font(.bfhr(.footnote))
                             .foregroundStyle(BFHRColor.Fg.secondary)
                             .accessibilityHidden(true)
-                        TextField(text: $draft.label) { Text(AnswersStrings.label) }
+                        TextField(text: $draft.label, axis: .vertical) { Text(AnswersStrings.label) }
+                            .accessibilityLabel(Text(AnswersStrings.label))
                             .accessibilityIdentifier("answers.editor.label")
+                            .onChange(of: draft.label) { _, text in
+                                if text.contains(where: \.isNewline) { draft.label = text.filter { !$0.isNewline } }
+                            }
                     }
                 } footer: {
                     Text(AnswersStrings.labelFooter).foregroundStyle(BFHRColor.Fg.secondary)
@@ -197,9 +201,12 @@ struct AnswerEditorSheet: View {
                             .font(.bfhr(.footnote))
                             .foregroundStyle(BFHRColor.Fg.secondary)
                             .accessibilityHidden(true)
-                        TextField(text: $draft.countries) { Text(AnswersStrings.countriesPrompt) }
+                        TextField(text: $draft.countries, axis: .vertical) { Text(AnswersStrings.countriesPrompt) }
                             .accessibilityLabel(Text(AnswersStrings.countries))
                             .accessibilityIdentifier("answers.editor.countries")
+                            .onChange(of: draft.countries) { _, text in
+                                if text.contains(where: \.isNewline) { draft.countries = text.filter { !$0.isNewline } }
+                            }
                             #if os(iOS)
                             .textInputAutocapitalization(.characters)
                             .autocorrectionDisabled()

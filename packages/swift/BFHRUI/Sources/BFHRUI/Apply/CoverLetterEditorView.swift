@@ -219,8 +219,8 @@ struct CoverLetterEditorPage: View {
                         .accessibilityHidden(true)
                     TextField(text: Binding(
                         get: { model.typedValues[field] ?? "" },
-                        set: { model.typedValues[field] = $0 }
-                    )) { Text(ApplyStrings.fieldName(field)) }
+                        set: { model.typedValues[field] = $0.filter { !$0.isNewline } }
+                    ), axis: .vertical) { Text(ApplyStrings.fieldName(field)) }
                     .focused($focusedField, equals: field)
                     .accessibilityIdentifier("apply.letter.field.\(field.rawValue)")
                 }

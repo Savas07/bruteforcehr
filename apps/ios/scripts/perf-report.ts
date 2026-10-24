@@ -1,6 +1,7 @@
 // Reads `xcresulttool get test-results metrics` output of PerformanceTests (apps/ios/scripts/perf.sh)
 // and checks the iOS budgets (docs/runbooks/performance.md):
-//   - launch to interactive: median app launch duration < 2 s;
+//   - launch to interactive: median of the app's own launch-to-interactive time < 2 s (XCTest's
+//     launch duration, which adds the simulator's launch overhead, and the baselines are reported);
 //   - scrolling: median scroll hitch time ratio < 5 ms per s (Apple's "good"; at 60 Hz that is
 //     under one dropped frame per 3 s of scrolling), for the dragging and the deceleration phase.
 // Both limits are multiplied by the third argument (CI slack). Writes the summary JSON.
@@ -52,20 +53,11 @@ const checks: Check[] = [];
 for (const test of tests) {
   for (const run of test.testRuns) {
     for (const metric of run.metrics) {
-      const launch =
-        /launch/iu.test(`${metric.identifier ?? ""} ${metric.displayName}`) &&
-        metric.unitOfMeasurement === "s";
+      // The app's own mark (PerformanceTests' InAppLaunchMetric); XCTest's launch durations and
+      // the scroll durations are reported, not gated.
+      const launch = metric.identifier === "com.savas07.bruteforcehr.launch-to-interactive";
       const hitch = /hitch time ratio/iu.test(metric.displayName);
-      // The baselines (`testLaunchBaseline…`) are reported, not gated.
-      const budgeted =
-        test.testIdentifier.includes("testLaunchToInteractive") || test.testIdentifier.includes("testScroll");
-      const limit = !budgeted
-        ? null
-        : launch
-          ? LAUNCH_BUDGET_S * scale
-          : hitch
-            ? HITCH_BUDGET_MS_PER_S * scale
-            : null;
+      const limit = launch ? LAUNCH_BUDGET_S * scale : hitch ? HITCH_BUDGET_MS_PER_S * scale : null;
       const value = median(metric.measurements);
       checks.push({
         test: test.testIdentifier,

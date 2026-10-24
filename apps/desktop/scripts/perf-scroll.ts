@@ -25,8 +25,8 @@
 // interval, i.e. fewer than 5 % of frames dropped, and no long task exceeds 50 ms. The page first
 // stands still for 2 s to measure the refresh interval and its jitter (idle p95). Where the page
 // refreshes slower than 60 Hz (macOS Low Power Mode holds WebKit at 30 Hz), p95 frame work
-// ≤ 16.7 ms replaces the frame-time check. `--budget-scale` multiplies the limits (CI slack,
-// docs/runbooks/performance.md). Writes artifacts/perf/desktop-scroll.json and exits non-zero
+// ≤ 16.7 ms replaces the frame-time check. `--budget-scale` multiplies the 50 ms long-task limit
+// only (CI slack, docs/runbooks/performance.md). Writes artifacts/perf/desktop-scroll.json and exits non-zero
 // when a surface misses the budget. Runs on Node 22 type stripping.
 import { execFileSync } from "node:child_process";
 import { existsSync } from "node:fs";
@@ -199,6 +199,8 @@ interface SurfaceResult {
   readonly refreshMs: number;
   /** p95 of the idle frames: how much the machine's own frame timing varies with nothing to do. */
   readonly idleP95Ms: number;
+  /** The longest idle frame: a stall of the machine itself (CI virtual machines), not the page. */
+  readonly idleMaxMs: number;
   readonly frames: number;
   readonly frameTime: { readonly p50: number; readonly p95: number; readonly max: number };
   readonly frameWork: { readonly p50: number; readonly p95: number; readonly max: number };
@@ -233,8 +235,9 @@ async function measure(page: Page, engine: EngineName, surface: SurfaceName): Pr
   // (the idle p95 shows how much on this machine), or two or more when a frame was dropped.
   // Counted in whole intervals, p95 must be one interval: fewer than 5 % of frames dropped.
   const intervals = frames.map((frame) => Math.max(1, Math.round(frame / refresh)));
+  // `--budget-scale` lifts the long-task limit only: dropped frames stay under 5 % everywhere.
   const pass =
-    (throttled ? workP95 <= FRAME_MS * budgetScale : percentile(intervals, 95) <= budgetScale) &&
+    (throttled ? workP95 <= FRAME_MS : percentile(intervals, 95) <= 1) &&
     blocking.every((duration) => duration <= LONG_TASK_MS * budgetScale);
   return {
     engine,
@@ -243,6 +246,7 @@ async function measure(page: Page, engine: EngineName, surface: SurfaceName): Pr
     range: first.range,
     refreshMs: round(refresh),
     idleP95Ms: round(idleP95),
+    idleMaxMs: round(Math.max(...idle)),
     frames: frames.length,
     frameTime: { p50: round(percentile(frames, 50)), p95: round(frameP95), max: round(Math.max(...frames)) },
     frameWork: { p50: round(percentile(work, 50)), p95: round(workP95), max: round(Math.max(...work)) },
@@ -315,7 +319,7 @@ try {
         console.log(
           `${result.pass ? "PASS" : "FAIL"} ${engineName.padEnd(8)} ${surface.padEnd(5)} ` +
             `frame time p50 ${frameTime.p50} / p95 ${frameTime.p95} / max ${frameTime.max} ms ` +
-            `(refresh ${result.refreshMs} ms, idle p95 ${result.idleP95Ms} ms, ${result.dropped}/${result.frames} dropped) · ` +
+            `(refresh ${result.refreshMs} ms, idle p95 ${result.idleP95Ms} / max ${result.idleMaxMs} ms, ${result.dropped}/${result.frames} dropped) · ` +
             `frame work p50 ${frameWork.p50} / p95 ${frameWork.p95} / max ${frameWork.max} ms · ` +
             `${result.longTasks} long tasks (${result.longTaskSource}, longest ${result.longestTask} ms) · ` +
             `${result.container} ${result.range} px`,

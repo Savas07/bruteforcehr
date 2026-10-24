@@ -173,19 +173,27 @@ jobs:
 
       # Performance budgets (docs/BRIEF.md §9, docs/runbooks/performance.md). Cold start: a session
       # spec signs in and seeds data, then the test build is launched 5 times (after a warm-up) and
-      # timed until Today is interactive; the median must stay under 2.5 s.
+      # timed until Today is interactive; the median must stay under 2.5 s. The macOS runner (a
+      # virtual machine without a GPU) gets the runbook's CI slack factor: the same build's median
+      # varied 2.39–3.48 s between runs there, and the webview alone takes ~1.5 s to start.
       - name: Cold-start budget
         if: success() || failure()
-        run: scripts/with-emulators.sh pnpm perf:cold-start --runs 5
+        run: |
+          scale=1
+          if [ "$RUNNER_OS" = macOS ]; then scale=1.5; fi
+          scripts/with-emulators.sh pnpm perf:cold-start --runs 5 --budget-scale "$scale"
       # Scrolling: 5,000 jobs and 1,000 applications in the design build, in the engine of each
-      # platform's webview (WebKit ≈ WKWebView on macOS, Chromium ≈ WebView2 on Windows).
+      # platform's webview (WebKit ≈ WKWebView on macOS, Chromium ≈ WebView2 on Windows). On the
+      # macOS runner the slack factor only lifts the long-task limit (to 100 ms): its idle page
+      # already shows stalls (runbook); frames must still drop under 5 % of the time.
       - name: Scrolling budget
         if: success() || failure()
         run: |
           engine=chromium
-          if [ "$RUNNER_OS" = macOS ]; then engine=webkit; fi
+          scale=1
+          if [ "$RUNNER_OS" = macOS ]; then engine=webkit; scale=2; fi
           pnpm exec playwright install "$engine"
-          pnpm perf:scroll --engines "$engine"
+          pnpm perf:scroll --engines "$engine" --budget-scale "$scale"
       - uses: actions/upload-artifact@v7
         if: always()
         with:

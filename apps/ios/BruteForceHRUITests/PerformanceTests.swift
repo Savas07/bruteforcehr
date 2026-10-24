@@ -4,15 +4,17 @@ import XCTest
 /// `apps/ios/scripts/perf.sh`, which reads the measurements from the result bundle and enforces
 /// the budgets (XCTest baselines are per machine, so they can't gate CI):
 ///
-/// - launch to interactive < 2 s: `XCTApplicationLaunchMetric(waitUntilResponsive:)` on a
-///   signed-in design launch (fixture data, Today), 5 measured launches;
+/// - launch to interactive < 2 s on a signed-in design launch (fixture data, Today), 5 launches:
+///   the app's own time from process start until Today is on screen and the main thread is free
+///   (`InAppLaunchMetric`, the budget), next to `XCTApplicationLaunchMetric(waitUntilResponsive:)`,
+///   which adds the simulator's launch overhead (reported, with two baselines that show it);
 /// - 60 fps scrolling with 5,000 jobs and 1,000 applications (`-BFHRDesign scaled`):
 ///   `XCTOSSignpostMetric.scrollingAndDecelerationMetric` while flicking the Jobs feed and the
-///   Tracker board; the budget is the hitch time ratio.
+///   Tracker board; the budget is the hitch time ratio, which only devices record.
 ///
 /// The simulator stands in for a recent iPhone: it runs the app on the Mac's CPU and GPU, so the
-/// numbers are a proxy (see the runbook), and design mode exists only in Debug builds (unoptimized
-/// Swift), which makes them conservative.
+/// numbers are a proxy (see the runbook). Design mode exists only in the Debug configuration;
+/// perf.sh builds it optimized like Release.
 final class PerformanceTests: XCTestCase {
     private let english = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
 
@@ -25,9 +27,12 @@ final class PerformanceTests: XCTestCase {
     @MainActor
     func testLaunchToInteractive() {
         let app = XCUIApplication()
-        app.launchArguments += english + ["-BFHRDesign", "populated", "-BFHRScreen", "today"]
-        measure(metrics: [XCTApplicationLaunchMetric(waitUntilResponsive: true)], options: options) {
+        app.launchArguments += english + ["-BFHRDesign", "populated", "-BFHRScreen", "today", "-BFHRPerf", "YES"]
+        let inApp = InAppLaunchMetric()
+        measure(metrics: [XCTApplicationLaunchMetric(waitUntilResponsive: true), inApp], options: options) {
             app.launch()
+            let mark = app.descendants(matching: .any)["perf.launchToInteractive"]
+            if mark.waitForExistence(timeout: 30) { inApp.milliseconds = Double(mark.label) }
         }
         XCTAssertTrue(app.descendants(matching: .any)["design.today"].waitForExistence(timeout: 20))
     }
@@ -86,5 +91,35 @@ final class PerformanceTests: XCTestCase {
             element.swipeUp(velocity: .fast)
             element.swipeDown(velocity: .fast)
         }
+    }
+}
+
+/// Launch to interactive as the app measures it (`perf.launchToInteractive`, DesignMode.swift),
+/// reported with the other metrics so perf.sh reads it from the result bundle.
+private final class InAppLaunchMetric: NSObject, XCTMetric, @unchecked Sendable {
+    /// Set by the measured block from the app's mark.
+    var milliseconds: Double?
+
+    func copy(with zone: NSZone? = nil) -> Any { self }
+
+    func willBeginMeasuring() { milliseconds = nil }
+
+    func didStopMeasuring() {}
+
+    func reportMeasurements(
+        from startTime: XCTPerformanceMeasurementTimestamp,
+        to endTime: XCTPerformanceMeasurementTimestamp
+    ) throws -> [XCTPerformanceMeasurement] {
+        guard let milliseconds else {
+            throw NSError(domain: "PerformanceTests", code: 1, userInfo: [NSLocalizedDescriptionKey: "The app showed no launch mark"])
+        }
+        return [
+            XCTPerformanceMeasurement(
+                identifier: "com.savas07.bruteforcehr.launch-to-interactive",
+                displayName: "Launch to interactive (in app)",
+                doubleValue: milliseconds / 1000,
+                unitSymbol: "s"
+            ),
+        ]
     }
 }

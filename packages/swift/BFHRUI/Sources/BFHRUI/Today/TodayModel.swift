@@ -175,6 +175,11 @@ public final class TodayModel: ScreenModel {
         data.mailAccounts.contains { $0.status == .needsReauth || $0.status == .error }
     }
 
+    /// Newly connected inboxes still being checked (the compact scanning card).
+    public var scanningAccounts: [MailAccountItem] {
+        data.mailAccounts.map(MailAccountItem.init).filter(\.isScanning)
+    }
+
     /// No mail account yet: show the dismissible "Connect your email" card (once email is
     /// available, M5).
     public var showsConnectMailCard: Bool { mailAvailable && !hasMailAccount && !dismissed.contains(Self.connectCardID) }
@@ -322,57 +327,55 @@ public final class TodayModel: ScreenModel {
 
     // MARK: Actions
 
-    /// Confirms a review item as proposed. Undo reverts the status move and puts the email back.
+    /// Confirms a review item as proposed: the server links the email and makes the move. Undo
+    /// (inside the toast's window, before the write leaves the device) puts the email back.
     public func confirm(_ proposalId: String) throws -> ToastItem {
-        guard let proposal = toReview.first(where: { $0.id == proposalId }) else { throw UserDataError.missingMailMessage(proposalId) }
-        let before = data.mailMessage(id: proposalId)
-        let event = try mutate { try $0.confirmReview(proposalId, at: writeTime) }
+        guard let proposal = toReview.first(where: { $0.id == proposalId }), let before = data.mailMessage(id: proposalId) else {
+            throw UserDataError.missingMailMessage(proposalId)
+        }
+        guard proposal.canConfirm else { throw UserDataError.missingApplication(proposalId) }
+        let move = try mutate { try $0.review(proposalId, .confirm, at: writeTime) }
         recordWrite(proposalId)
         markDone(proposalId, company: proposal.company, summary: proposal.subject)
         recompute()
         let company = proposal.company?.name ?? proposal.sender.name ?? proposal.sender.address
-        let message: LocalizedStringResource = if let event, let to = event.toStatus {
-            .bfhr("today.toast.confirmedMove", default: "Confirmed: \(company) moved to \(to.label)", table: "Today")
+        let message: LocalizedStringResource = if let move {
+            .bfhr("today.toast.confirmedMove", default: "Confirmed: \(company) moved to \(move.label)", table: "Today")
         } else {
             .bfhr("today.toast.confirmed", default: "Confirmed: \(company)", table: "Today")
         }
         return ToastItem(glyph: ToastGlyph.confirmed, message: message, action: .undo { [weak self] in
-            guard let self else { return }
-            if let event { try? self.data.revertEvent(event.id, at: self.now) }
-            if let before, let index = self.data.mailMessages.firstIndex(where: { $0.id == before.id }) {
-                self.data.mailMessages[index] = before
-            }
-            self.undoDone(proposalId)
+            self?.restore(before)
+            self?.undoDone(proposalId)
         })
     }
 
-    /// Acknowledges an automatic change ("Looks right"): the row leaves To review. Undo puts it back.
+    /// Acknowledges an automatic change ("Looks right"): the row leaves To review. For an invite
+    /// that suggests an interview, this is "Add interview" (the server creates it). Undo (inside
+    /// the toast's window) puts the row back.
     public func acknowledge(_ autoChangeId: String) -> ToastItem? {
         guard let item = autoChanges.first(where: { $0.id == autoChangeId }) else { return nil }
         let before = item.mailMessageId.flatMap { data.mailMessage(id: $0) }
-        if let messageId = item.mailMessageId { _ = try? mutate { try $0.setReviewState(messageId, to: .confirmed, at: writeTime) } }
+        if let messageId = item.mailMessageId { _ = try? mutate { try $0.confirmAutoApplied(messageId, at: writeTime) } }
         recordWrite(autoChangeId)
         markDone(autoChangeId, company: item.company, summary: item.role)
         recompute()
-        return ToastItem(
-            glyph: ToastGlyph.confirmed,
-            message: .bfhr("today.toast.acknowledged", default: "\(item.company.name) · marked as seen", table: "Today"),
-            action: .undo { [weak self] in
-                guard let self else { return }
-                if let before, let index = self.data.mailMessages.firstIndex(where: { $0.id == before.id }) {
-                    self.data.mailMessages[index] = before
-                }
-                self.undoDone(autoChangeId)
-            }
-        )
+        let message: LocalizedStringResource = item.interviewSuggestion != nil
+            ? .bfhr("today.toast.interviewAdded", default: "Interview added: \(item.company.name)", table: "Today")
+            : .bfhr("today.toast.acknowledged", default: "\(item.company.name) · marked as seen", table: "Today")
+        return ToastItem(glyph: ToastGlyph.confirmed, message: message, action: .undo { [weak self] in
+            if let before { self?.restore(before) }
+            self?.undoDone(autoChangeId)
+        })
     }
 
-    /// "Not job mail" on a review item: the email leaves the job-mail list. Undo puts it back.
+    /// "Not job mail" on a review item: the server forgets the email. Undo (inside the toast's
+    /// window) puts it back.
     public func notJobMail(_ proposalId: String) throws -> ToastItem {
         guard let proposal = toReview.first(where: { $0.id == proposalId }), let before = data.mailMessage(id: proposalId) else {
             throw UserDataError.missingMailMessage(proposalId)
         }
-        try mutate { try $0.setReviewState(proposalId, to: .dismissed, at: writeTime) }
+        try mutate { try $0.review(proposalId, .notJobMail, at: writeTime) }
         recordWrite(proposalId)
         markDone(proposalId, company: proposal.company, summary: proposal.subject)
         recompute()
@@ -381,11 +384,19 @@ public final class TodayModel: ScreenModel {
             glyph: ToastGlyph.hidden,
             message: .bfhr("today.toast.notJobMail", default: "\(company) · not job mail", table: "Today"),
             action: .undo { [weak self] in
-                guard let self, let index = self.data.mailMessages.firstIndex(where: { $0.id == before.id }) else { return }
-                self.data.mailMessages[index] = before
-                self.undoDone(proposalId)
+                self?.restore(before)
+                self?.undoDone(proposalId)
             }
         )
+    }
+
+    /// Puts an email back as it was before an action (Undo); the data layer drops the held write.
+    private func restore(_ message: MailMessage) {
+        mutate { data in
+            guard let index = data.mailMessages.firstIndex(where: { $0.id == message.id }) else { return }
+            data.mailMessages[index] = message
+        }
+        recompute()
     }
 
     /// "Snooze all" on the older follow-up suggestions. Undo brings them all back.

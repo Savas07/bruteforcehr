@@ -1131,6 +1131,52 @@
         }
       }
     },
+    "today.scan.body" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das kann ein paar Minuten dauern. Neue E-Mails erscheinen in Mail, sobald wir sie finden."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This can take a few minutes. New emails show up in Mail as we find them."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bu birkaç dakika sürebilir. Yeni e-postalar bulundukça E-posta'da görünür."
+          }
+        }
+      }
+    },
+    "today.scan.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ wird nach Job-E-Mails durchsucht"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Checking %@ for job emails"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ iş e-postaları için kontrol ediliyor"
+          }
+        }
+      }
+    },
     "today.section.deadlines" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1472,6 +1518,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Akışınızdan gizlendi"
+          }
+        }
+      }
+    },
+    "today.toast.interviewAdded" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Interview hinzugefügt: %@"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Interview added: %@"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mülakat eklendi: %@"
           }
         }
       }

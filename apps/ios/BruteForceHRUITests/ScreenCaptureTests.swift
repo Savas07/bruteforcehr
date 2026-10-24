@@ -112,10 +112,15 @@ final class ScreenCaptureTests: XCTestCase {
                 let root = app.descendants(matching: .any)["design.\(screen)"]
                 let back = app.navigationBars.buttons["BackButton"]
                 let sheet = app.descendants(matching: .any).matching(
-                    NSPredicate(format: "identifier IN %@", ["apply.sheet", "import.sheet"])
+                    NSPredicate(format: "identifier IN %@", [
+                        "apply.sheet", "import.sheet", "settings",
+                        "connect.providers", "connect.oauth", "connect.appPassword", "connect.scan",
+                    ])
                 ).firstMatch
+                // Settings and Connect email open as sheets over their tab: wait for the sheet.
+                let opensSheet = ["settings", "mail-connect"].contains(screen)
                 let shown = XCTNSPredicateExpectation(
-                    predicate: NSPredicate { _, _ in root.exists || back.exists || sheet.exists },
+                    predicate: NSPredicate { _, _ in opensSheet ? sheet.exists : root.exists || back.exists || sheet.exists },
                     object: nil
                 )
                 XCTAssertEqual(XCTWaiter().wait(for: [shown], timeout: 20), .completed, "\(screen) \(state)")
@@ -210,7 +215,7 @@ final class ScreenCaptureTests: XCTestCase {
         case "jobs", "job-detail", "saved-searches", "apply": "Jobs"
         case "cv-editor": "CVs"
         case "tracker-board", "insights": "Tracker"
-        case "mail-review": "Mail"
+        case "mail-review", "mail-connect": "Mail"
         default: "Today"
         }
     }

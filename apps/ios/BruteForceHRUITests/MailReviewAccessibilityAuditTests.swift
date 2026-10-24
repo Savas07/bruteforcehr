@@ -40,6 +40,20 @@ final class MailReviewAccessibilityAuditTests: XCTestCase {
         try runAudit(app)
     }
 
+    /// M5: the review sheet with a suggested interview, the email sheet with Add interview,
+    /// Updates with Add interview and the scanning card, default and largest size.
+    @MainActor
+    func testLivePanes() throws {
+        for pane in ["review", "email", "add-interview", "scanning"] {
+            for size in [nil, "UICTContentSizeCategoryAccessibilityXXXL"] {
+                let app = launch(dataset: "populated", contentSize: size, extra: ["-BFHRMailPane", pane])
+                print("AUDIT pane \(pane) \(size ?? "default")")
+                try runAudit(app, atAccessibilitySize: size != nil, wrapped: pane == "email" ? emailHeaderLines : [])
+                app.terminate()
+            }
+        }
+    }
+
     /// Not an audit: saves the screens behind interactions (the scrolled queue, the review sheet,
     /// Change…, Updates, All job mail) at the default and the largest text size for the design
     /// critique. Runs only with `TEST_RUNNER_BFHR_MAIL_SHOTS=<dir>`.
@@ -79,45 +93,118 @@ final class MailReviewAccessibilityAuditTests: XCTestCase {
         }
     }
 
+    /// Not an audit: the M5 live-mail states behind a scroll or a sheet (review sheet with the
+    /// suggested interview at the large detent, the email sheet with Add interview, Updates with
+    /// Add interview, the scanning card, the application timeline's linked email) for the
+    /// critique. Runs only with `TEST_RUNNER_BFHR_MAIL_SHOTS=<dir>`.
+    @MainActor
+    func testCaptureLiveScreens() throws {
+        guard let directory = ProcessInfo.processInfo.environment["BFHR_MAIL_SHOTS"] else {
+            throw XCTSkip("Critique screenshots only")
+        }
+        let theme = ProcessInfo.processInfo.environment["BFHR_MAIL_SHOTS_SUFFIX"] ?? ""
+        for ax in [false, true] {
+            let size = ax ? "UICTContentSizeCategoryAccessibilityXXXL" : nil
+            func shot(_ name: String) throws {
+                Thread.sleep(forTimeInterval: 1.0)
+                let file = URL(fileURLWithPath: directory).appendingPathComponent("live-\(name)\(theme)\(ax ? "-ax" : "").png")
+                try XCUIScreen.main.screenshot().pngRepresentation.write(to: file)
+            }
+            let review = launch(dataset: "populated", contentSize: size, extra: ["-BFHRMailPane", "review"])
+            review.swipeUp()
+            try shot("review-large")
+            review.swipeUp()
+            try shot("review-large-scrolled")
+            review.terminate()
+
+            let email = launch(dataset: "populated", contentSize: size, extra: ["-BFHRMailPane", "email"])
+            try shot("email")
+            email.swipeUp()
+            try shot("email-large")
+            email.terminate()
+
+            let updates = launch(dataset: "populated", contentSize: size, extra: ["-BFHRMailPane", "add-interview"])
+            updates.swipeUp()
+            try shot("updates-add-interview")
+            updates.terminate()
+
+            let scanning = launch(dataset: "populated", contentSize: size, extra: ["-BFHRMailPane", "scanning"])
+            try shot("scanning")
+            scanning.terminate()
+
+            let timeline = XCUIApplication()
+            timeline.launchArguments += ["-AppleLanguages", "(en)", "-AppleLocale", "en_US", "-BFHRScreen", "tracker-board", "-BFHRTrackerPane", "detail"]
+            if let size { timeline.launchArguments += ["-UIPreferredContentSizeCategoryName", size] }
+            timeline.launch()
+            let email2 = timeline.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS[c] %@", "Email from")).firstMatch
+            var swipes = 0
+            while !(email2.exists && email2.isHittable), swipes < 12 { timeline.swipeUp(); swipes += 1 }
+            try shot("timeline-email")
+            timeline.terminate()
+        }
+    }
+
     @MainActor
     private func audit(dataset: String, contentSize: String?) throws {
         let app = launch(dataset: dataset, contentSize: contentSize)
         try runAudit(app, atAccessibilitySize: contentSize != nil)
     }
 
-    /// Runs the full audit. Every issue fails the test except these known false positives, each
-    /// logged (docs/design/critiques/ios/mail-review/accessibility.md):
-    /// - Dynamic Type / text clipping at the default size: SwiftUI text-style fonts (`Font.bfhr`)
-    ///   are reported as fixed, yet scale; the same screens are audited at the largest
-    ///   accessibility size, where clipping is checked against the real layout and passes.
-    /// - Contrast of content under the floating tab bar's scroll-edge blur, and of system glass
-    ///   toolbar buttons: the audit samples the blurred backdrop, not the resting background.
-    /// - Element detection on an element without a label: the sheet's rounded corner over the
-    ///   dimmed tab root (no text in it).
+    /// The email sheet's header lines at AX5: the audit reports them clipped though they wrap in
+    /// full (mail-live-shots/live-email-large-ax.png; mail-review-live/accessibility.md), as the
+    /// Tracker audit's `verifiedWrappedLabels`.
+    private let emailHeaderLines: Set<String> = [
+        "Marcus Reid", "2 days ago, 10:30 AM", "marcus@brightwave.io → deniz.aksoy@example.com",
+    ]
+
+    /// Runs Xcode's audit with the exemptions of JobsAccessibilityAuditTests (docs/design/critiques/
+    /// ios/job-detail/accessibility.md), each logged as `AUDIT ignored (…)`:
+    /// - issues with no element (the audit can't say what they refer to);
+    /// - system chrome (tab bar, status bar, navigation bar and its glass toolbar buttons);
+    /// - disabled controls (WCAG 1.4.3 exempts them);
+    /// - Dynamic Type / text clipping at the default size (text styles scale; the AX runs check);
+    /// - text a caller verified by screenshot to wrap in full at AX5 (`wrapped`);
+    /// - elements not fully inside the content area: below the navigation bar, above the tab bar or
+    ///   a sheet's sticky bottom bar (`sheet.bar`, capped at AX1 on purpose), minus the 24 pt
+    ///   scroll-edge fade. The audit reads contrast and clipping from a screenshot, and iOS 26
+    ///   blurs content under the bars.
     @MainActor
-    private func runAudit(_ app: XCUIApplication, atAccessibilitySize: Bool = false) throws {
-        let tabBar = app.tabBars.firstMatch
-        let bottomEdge = tabBar.exists ? tabBar.frame.minY - 72 : .greatestFiniteMagnitude
+    private func runAudit(_ app: XCUIApplication, atAccessibilitySize: Bool = false, wrapped: Set<String> = []) throws {
+        Thread.sleep(forTimeInterval: 0.5)
+        let window = app.windows.firstMatch.frame
+        let top = app.navigationBars.allElementsBoundByIndex.map(\.frame.maxY).max() ?? window.minY
+        var bottom = window.maxY
+        let bar = app.descendants(matching: .any)["sheet.bar"].firstMatch
+        if bar.exists {
+            bottom = bar.frame.minY - 8
+        } else if app.tabBars.firstMatch.exists {
+            bottom = app.tabBars.firstMatch.frame.minY
+        }
+        let edge: CGFloat = 24
+        let content = CGRect(x: window.minX, y: top + edge, width: window.width, height: max(0, bottom - top - 2 * edge))
         try app.performAccessibilityAudit { issue in
-            let element = issue.element
-            let summary = "\(issue.auditType.rawValue) | \(issue.compactDescription) | \(element.map { "\($0.elementType.rawValue) '\($0.label)' \($0.frame)" } ?? "no element")"
-            let ignored: Bool = switch issue.auditType {
-            case .dynamicType, .textClipped: !atAccessibilitySize
-            case .contrast:
-                (element.map { $0.frame.maxY > bottomEdge } ?? false)
-                    || element?.elementType == .button && app.navigationBars.buttons[element?.label ?? ""].exists
-            case .elementDetection: element?.label.isEmpty ?? true
-            default: false
+            func ignore(_ reason: String) -> Bool {
+                print("AUDIT ignored (\(reason)): \(issue.compactDescription) — \(issue.element.map { "'\($0.label)' \($0.frame)" } ?? "no element")")
+                return true
             }
-            print("AUDIT \(ignored ? "ignored" : "FAILED") \(summary)")
-            return ignored
+            guard let element = issue.element, element.exists else { return ignore("no element") }
+            if [.tabBar, .statusBar, .navigationBar].contains(element.elementType) { return ignore("system chrome") }
+            if element.elementType == .button, app.navigationBars.buttons[element.label].exists { return ignore("system chrome") }
+            if !element.isEnabled { return ignore("disabled control") }
+            if !atAccessibilitySize, [.dynamicType, .textClipped].contains(issue.auditType) { return ignore("default-size Dynamic Type, AX run checks it") }
+            if !content.contains(element.frame) { return ignore("under bars / off screen") }
+            if atAccessibilitySize, [.dynamicType, .textClipped].contains(issue.auditType), wrapped.contains(element.label.replacingOccurrences(of: "\u{202F}", with: " ")) {
+                return ignore("verified wrapped in full by screenshot")
+            }
+            print("AUDIT FAILED \(issue.auditType.rawValue) | \(issue.compactDescription) | \(element.elementType.rawValue) '\(element.label)' \(element.frame)")
+            return false
         }
     }
 
     @MainActor
-    private func launch(dataset: String, contentSize: String?) -> XCUIApplication {
+    private func launch(dataset: String, contentSize: String?, extra: [String] = []) -> XCUIApplication {
         let app = XCUIApplication()
-        app.launchArguments += ["-AppleLanguages", "(en)", "-AppleLocale", "en_US", "-BFHRScreen", "mail-review", "-BFHRDesign", dataset]
+        app.launchArguments += ["-AppleLanguages", "(en)", "-AppleLocale", "en_US", "-BFHRScreen", "mail-review", "-BFHRDesign", dataset] + extra
         if let contentSize {
             app.launchArguments += ["-UIPreferredContentSizeCategoryName", contentSize]
         }

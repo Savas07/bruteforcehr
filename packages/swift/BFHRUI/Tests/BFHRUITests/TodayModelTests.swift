@@ -79,22 +79,34 @@ struct TodayModelTests {
         #expect((model.followUps + model.olderFollowUps).map(\.id) == ids)
     }
 
-    @Test("Confirm moves the application; Undo restores status and the pending email")
+    @Test("Confirm files the email (the server moves the application); Undo puts it back")
     func confirmAndUndo() throws {
         let (model, _) = try Self.populated()
+        let before = model.data.mailMessage(id: "mail-nordlicht-invite")
         let toast = try model.confirm("mail-nordlicht-invite")
-        #expect(model.data.application(id: "app-nordlicht")?.status == .screening)
+        #expect(model.data.mailMessage(id: "mail-nordlicht-invite")?.reviewState == .confirmed)
+        #expect(model.data.application(id: "app-nordlicht")?.status == .acknowledged)
         #expect(!model.toReview.contains { $0.id == "mail-nordlicht-invite" })
         #expect(model.done.first?.id == "mail-nordlicht-invite")
         #expect(String(localized: toast.message) == "Confirmed: Nordlicht Mobility moved to Screening")
         toast.action?.perform()
-        #expect(model.data.application(id: "app-nordlicht")?.status == .acknowledged)
-        #expect(model.data.mailMessage(id: "mail-nordlicht-invite")?.reviewState == .pending)
+        #expect(model.data.mailMessage(id: "mail-nordlicht-invite") == before)
         #expect(model.toReview.contains { $0.id == "mail-nordlicht-invite" })
         #expect(model.done.isEmpty)
-        // Events are append-only: the move and its undo both stay.
-        let events = model.data.events(forApplication: "app-nordlicht").filter { $0.type == .statusChanged }
-        #expect(events.last?.revertsEventId != nil)
+    }
+
+    @Test("Add interview on an automatically applied invite confirms the email")
+    func addInterview() throws {
+        let (model, _) = try Self.populated()
+        var data = model.data
+        let index = try #require(data.mailMessages.firstIndex { $0.id == "mail-brightwave-invite" })
+        data.mailMessages[index].interviewSuggestion?.interviewId = nil
+        model.load(data)
+        let item = try #require(model.autoChanges.first { $0.id == "evt-brightwave-interviewing" })
+        #expect(item.interviewSuggestion != nil)
+        let toast = try #require(model.acknowledge(item.id))
+        #expect(String(localized: toast.message) == "Interview added: Brightwave")
+        #expect(model.data.mailMessage(id: "mail-brightwave-invite")?.reviewState == .confirmed)
     }
 
     @Test("Undoing an automatic change reverts it and marks the email corrected")
@@ -117,7 +129,8 @@ struct TodayModelTests {
         #expect(model.done.isEmpty)
 
         let notJobMail = try model.notJobMail("mail-sail-outreach")
-        #expect(model.data.mailMessage(id: "mail-sail-outreach")?.reviewState == .dismissed)
+        #expect(model.data.mailMessage(id: "mail-sail-outreach")?.reviewState == .corrected)
+        #expect(model.data.mailMessage(id: "mail-sail-outreach")?.category == .notJob)
         #expect(!model.toReview.contains { $0.id == "mail-sail-outreach" })
         notJobMail.action?.perform()
         #expect(model.data.mailMessage(id: "mail-sail-outreach")?.reviewState == .pending)

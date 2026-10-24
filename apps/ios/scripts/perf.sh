@@ -60,13 +60,12 @@ out_dir="$repo_root/artifacts/perf"
 result="$out_dir/ios.xcresult"
 mkdir -p "$out_dir"
 rm -rf "$result"
-# Design mode (fixture data behind launch arguments) exists only in the Debug configuration, but
-# users run Release builds: optimize the Debug build like Release and link it as one binary (no
-# separate debug dylib), so the measurements are of shipping-speed code. These settings rebuild
-# everything, so give perf.sh its own DerivedData (CI does).
-release_like=(SWIFT_OPTIMIZATION_LEVEL=-O SWIFT_COMPILATION_MODE=wholemodule GCC_OPTIMIZATION_LEVEL=s ENABLE_DEBUG_DYLIB=NO)
+# The Debug configuration: design mode (fixture data behind launch arguments) exists only there.
+# Building it optimized like Release changed nothing measurable on CI (median launch 6.4 s
+# optimized in run 40121422587 vs 4.9 s Debug in 40114592698, both inside the runner's spread), so
+# perf.sh builds plain Debug and shares DerivedData with the other iOS builds.
 xcodebuild_args=(-project "$ios_dir/BruteForceHR.xcodeproj" -scheme BruteForceHR -configuration Debug
-  -destination "platform=iOS Simulator,id=$udid" -derivedDataPath "$derived_data" -quiet "${release_like[@]}"
+  -destination "platform=iOS Simulator,id=$udid" -derivedDataPath "$derived_data" -quiet
   ${settings[@]+"${settings[@]}"})
 if $build; then xcodebuild build-for-testing "${xcodebuild_args[@]}"; fi
 # Performance tests report their measurements; the budgets are checked below, not by XCTest.

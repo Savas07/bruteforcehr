@@ -13,8 +13,8 @@ import XCTest
 ///   Tracker board; the budget is the hitch time ratio, which only devices record.
 ///
 /// The simulator stands in for a recent iPhone: it runs the app on the Mac's CPU and GPU, so the
-/// numbers are a proxy (see the runbook). Design mode exists only in the Debug configuration;
-/// perf.sh builds it optimized like Release.
+/// numbers are a proxy (see the runbook). Design mode exists only in the Debug configuration, so
+/// that is what runs.
 final class PerformanceTests: XCTestCase {
     private let english = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
 
@@ -32,7 +32,9 @@ final class PerformanceTests: XCTestCase {
         measure(metrics: [XCTApplicationLaunchMetric(waitUntilResponsive: true), inApp], options: options) {
             app.launch()
             let mark = app.descendants(matching: .any)["perf.launchToInteractive"]
-            if mark.waitForExistence(timeout: 30) { inApp.milliseconds = Double(mark.label) }
+            if mark.waitForExistence(timeout: 30), let milliseconds = Double(mark.label) {
+                inApp.record(milliseconds: milliseconds)
+            }
         }
         XCTAssertTrue(app.descendants(matching: .any)["design.today"].waitForExistence(timeout: 20))
     }
@@ -97,12 +99,16 @@ final class PerformanceTests: XCTestCase {
 /// Launch to interactive as the app measures it (`perf.launchToInteractive`, DesignMode.swift),
 /// reported with the other metrics so perf.sh reads it from the result bundle.
 private final class InAppLaunchMetric: NSObject, XCTMetric, @unchecked Sendable {
-    /// Set by the measured block from the app's mark.
-    var milliseconds: Double?
+    /// One value per measured launch, in order. XCTest may ask for the measurements only after
+    /// the last iteration, so each report takes the oldest.
+    private var pending: [Double] = []
+
+    /// Records the launch the measured block just read from the app's mark.
+    func record(milliseconds: Double) { pending.append(milliseconds) }
 
     func copy(with zone: NSZone? = nil) -> Any { self }
 
-    func willBeginMeasuring() { milliseconds = nil }
+    func willBeginMeasuring() {}
 
     func didStopMeasuring() {}
 
@@ -110,14 +116,14 @@ private final class InAppLaunchMetric: NSObject, XCTMetric, @unchecked Sendable 
         from startTime: XCTPerformanceMeasurementTimestamp,
         to endTime: XCTPerformanceMeasurementTimestamp
     ) throws -> [XCTPerformanceMeasurement] {
-        guard let milliseconds else {
+        guard !pending.isEmpty else {
             throw NSError(domain: "PerformanceTests", code: 1, userInfo: [NSLocalizedDescriptionKey: "The app showed no launch mark"])
         }
         return [
             XCTPerformanceMeasurement(
                 identifier: "com.savas07.bruteforcehr.launch-to-interactive",
                 displayName: "Launch to interactive (in app)",
-                doubleValue: milliseconds / 1000,
+                doubleValue: pending.removeFirst() / 1000,
                 unitSymbol: "s"
             ),
         ]

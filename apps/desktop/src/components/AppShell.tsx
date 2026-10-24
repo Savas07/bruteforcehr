@@ -70,7 +70,10 @@ function Shell({ hosts }: { readonly hosts: ReactNode }) {
     });
   }, [signOut, toast, intl]);
 
-  /** Keyboard-driven navigation moves focus to the new section's heading. */
+  /**
+   * Keyboard-driven navigation moves focus to the new section's heading, once it has rendered: a
+   * section's code loads on its first visit (src/router.tsx), up to a second after navigating.
+   */
   const goTo = useCallback(
     async (id: DestinationId) => {
       const destination = destinations.find((candidate) => candidate.id === id);
@@ -78,7 +81,15 @@ function Shell({ hosts }: { readonly hosts: ReactNode }) {
       setPaletteOpen(false);
       setShortcutsOpen(false);
       await navigate({ to: destination.path });
-      document.getElementById(ROUTE_TITLE_ID)?.focus({ preventScroll: true });
+      for (let frame = 0; frame < 60; frame++) {
+        const title = document.getElementById(ROUTE_TITLE_ID);
+        if (title) {
+          title.focus({ preventScroll: true });
+          return;
+        }
+        // `Promise.withResolvers` needs Safari 17.4; the app supports macOS 13 (Safari 16).
+        await new Promise((resolve) => requestAnimationFrame(resolve));
+      }
     },
     [navigate],
   );

@@ -79,7 +79,7 @@ final class SettingsMailAccessibilityAuditTests: XCTestCase {
         let window = app.windows.firstMatch.frame
         let top = app.navigationBars.allElementsBoundByIndex.map(\.frame.maxY).max() ?? window.minY
         var bottom = window.maxY
-        let bar = app.descendants(matching: .any)["sheet.bar"]
+        let bar = app.descendants(matching: .any)["sheet.bar"].firstMatch
         if bar.exists {
             bottom = bar.frame.minY - 8
         } else if app.tabBars.firstMatch.exists {

@@ -11,10 +11,12 @@ import { RouteContainer } from "./components/RouteContainer";
 import { destinations, type DestinationId } from "./lib/destinations";
 import { InterviewReminders } from "./data/tracker/InterviewReminders";
 import { LiveTrackerProvider } from "./data/tracker/live";
+import { LiveMailProvider } from "./data/mail/live";
 import { AddApplicationHost } from "./features/application-add";
 import LiveApplicationDetail from "./features/application-detail/Live";
 import LiveCvStudio from "./features/cv-editor/LiveCvStudio";
 import LiveInsights from "./features/insights/LiveInsights";
+import LiveMailReview from "./features/mail-review/Live";
 import LiveToday from "./features/today/Live";
 import LiveTrackerBoard from "./features/tracker-board/Live";
 import { LiveTrackerCalendar, LiveTrackerTable } from "./features/tracker-table/Live";
@@ -62,25 +64,30 @@ function sectionTitle(id: AppRouteId): ComponentType {
   };
 }
 
-/** The signed-in shell with the app-wide tracker hosts (Mod+N dialog, interview reminders). */
+/** The signed-in shell with the app-wide hosts (Mod+N dialog, interview reminders). */
 function LiveRoot() {
   return (
     <AppShell
       hosts={
         <LiveTrackerProvider>
-          <AddApplicationHost />
-          <InterviewReminders />
+          <LiveMailProvider>
+            <AddApplicationHost />
+            <InterviewReminders />
+          </LiveMailProvider>
         </LiveTrackerProvider>
       }
     />
   );
 }
 
+/** A route on the signed-in user's tracker and mail listeners. */
 const live = (View: ComponentType): ComponentType =>
   function LiveRoute() {
     return (
       <LiveTrackerProvider>
-        <View />
+        <LiveMailProvider>
+          <View />
+        </LiveMailProvider>
       </LiveTrackerProvider>
     );
   };
@@ -93,8 +100,8 @@ function LiveTracker() {
 }
 
 /**
- * Production: CVs (M2), Today, Tracker, application detail and Insights (M3) run on live data;
- * other areas show their title until their milestone.
+ * Production: CVs (M2), Today, Tracker, application detail and Insights (M3) and Mail (M5) run on
+ * live data; other areas show their title until their milestone.
  */
 export const productionViews: RouteViews = {
   root: LiveRoot,
@@ -108,6 +115,8 @@ export const productionViews: RouteViews = {
     today: live(LiveToday),
     tracker: live(LiveTracker),
     application: live(LiveApplicationDetail),
+    mail: live(LiveMailReview),
+    mailReview: live(LiveMailReview),
   },
 };
 

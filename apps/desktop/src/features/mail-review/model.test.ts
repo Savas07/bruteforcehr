@@ -196,7 +196,7 @@ describe("buildMailReviewModel — reading pane", () => {
     const selected = build({ messageId: "mail-tannenbaum-info" }).selected;
     expect(selected?.body).toContain("Könnten Sie uns Ihre Gehaltsvorstellung");
     expect(selected?.bodyNote).toBeNull();
-    expect(selected?.openOriginalLabel).toBe("Open in Gmail");
+    expect(selected?.openOriginal).toMatchObject({ label: "Open in Gmail", provider: "gmail" });
     expect(selected?.confirmHint).toBe("Confirm: move to Acknowledged");
     expect(selected?.activity.map((event) => event.title)).toEqual([
       "Moved to Applied",

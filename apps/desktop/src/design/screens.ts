@@ -6,7 +6,6 @@
 import { buildCvEditorModel, type CvEditorModel } from "../features/cv-editor/model";
 import { buildJobDetailModel, type JobDetailModel } from "../features/job-detail/model";
 import { buildInsightsModel, type InsightsModel } from "../features/insights/model";
-import { buildMailReviewModel, type MailReviewModel } from "../features/mail-review/model";
 import { buildTodayModel, type TodayModel } from "../features/today/model";
 import type { DesignScreenSpec } from "./DesignScreen";
 
@@ -51,16 +50,6 @@ export const cvEditorScreen: DesignScreenSpec<CvEditorModel> = {
     const editor = buildCvEditorModel(data, ctx, {}).editor;
     return editor ? [editor.cvId, editor.currentRevisionId] : [];
   },
-};
-
-export const mailReviewScreen: DesignScreenSpec<MailReviewModel> = {
-  id: "mail-review",
-  destination: "mail",
-  build: buildMailReviewModel,
-  offlinePending: (data, ctx) =>
-    buildMailReviewModel(data, ctx, {})
-      .rows.flatMap((row) => (row.kind === "review" ? [row.messageId] : []))
-      .slice(0, OFFLINE_PENDING_WRITES),
 };
 
 export const insightsScreen: DesignScreenSpec<InsightsModel> = {

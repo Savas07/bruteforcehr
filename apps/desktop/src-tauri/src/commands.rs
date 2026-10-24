@@ -13,6 +13,7 @@ use crate::cv_pdf::{self, Paper, PrintError};
 use crate::export_file::{self, ExportError};
 use crate::external_url::{self, ExternalUrlError};
 use crate::job_url::{self, JobUrlError, RateLimiter};
+use crate::mail_connect::{MailConnectResult, PendingMailConnect};
 use crate::mail_inbox::{self, MailProvider};
 use crate::menu;
 use crate::preferences::UpdateChannel;
@@ -189,6 +190,17 @@ pub fn set_update_channel<R: Runtime>(
     reason = "Tauri injects the State by value"
 )]
 pub fn take_auth_link(pending: State<'_, PendingAuthLink>) -> Option<AuthLinkDelivery> {
+    pending.take()
+}
+
+/// The newest mail connect result (`bruteforcehr://connected?…`), checked by
+/// `mail_connect::parse`, once: the UI calls this while it waits and on every `mail-connect` event.
+#[tauri::command]
+#[expect(
+    clippy::needless_pass_by_value,
+    reason = "Tauri injects the State by value"
+)]
+pub fn take_mail_connect(pending: State<'_, PendingMailConnect>) -> Option<MailConnectResult> {
     pending.take()
 }
 

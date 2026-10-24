@@ -10,6 +10,7 @@ fn main() {
             "restart_to_update",
             "set_update_channel",
             "take_auth_link",
+            "take_mail_connect",
             "set_signed_in",
             "open_mail_inbox",
             "print_cv_pdf",

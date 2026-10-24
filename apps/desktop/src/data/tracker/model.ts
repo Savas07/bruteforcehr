@@ -50,6 +50,21 @@ export const NO_EXTRAS: ModelExtras = {
 
 export const ModelExtrasContext = createContext<ModelExtras>(NO_EXTRAS);
 
+/**
+ * Load state and local writes of the extras when they come from listeners (the Jobs area's,
+ * src/data/jobs/live.tsx); fixtures and the empty default are ready and clean.
+ */
+export type ModelExtrasStatus =
+  | { readonly status: "loading" }
+  | { readonly status: "error"; readonly retry: () => void }
+  | { readonly status: "ready"; readonly pendingWrites: ReadonlySet<string>; readonly fromCache: boolean };
+
+export const ModelExtrasStatusContext = createContext<ModelExtrasStatus>({
+  status: "ready",
+  pendingWrites: new Set(),
+  fromCache: false,
+});
+
 export type ModelBuilder<Model> = (
   data: ScreenData,
   ctx: ModelContext,
@@ -63,18 +78,24 @@ export function useTrackerModel<Model>(
   const state = useTrackerData();
   const environment = useContext(ModelEnvironmentContext);
   const extras = useContext(ModelExtrasContext);
+  const extrasStatus = useContext(ModelExtrasStatusContext);
   const intl = useIntl();
   // Params objects are fresh every render: key the memo on their content.
   const paramsKey = JSON.stringify(params);
   return useMemo((): Loadable<Model> => {
     if (state.status !== "ready") return state;
+    if (extrasStatus.status !== "ready") return extrasStatus;
     const { data } = state;
+    const pendingWrites =
+      extrasStatus.pendingWrites.size === 0
+        ? data.pendingWrites
+        : new Set([...data.pendingWrites, ...extrasStatus.pendingWrites]);
     const ctx: ModelContext = {
       now: environment.now(),
       locale: intl.locale,
       intl,
       timeZone: environment.timeZone ?? displayTimeZone(data.profile),
-      pendingWrites: data.pendingWrites,
+      pendingWrites,
     };
     const screenData: ScreenData = {
       ...extras,
@@ -89,9 +110,9 @@ export function useTrackerModel<Model>(
     return {
       status: "ready",
       data: build(screenData, ctx, JSON.parse(paramsKey) as Readonly<Record<string, string | undefined>>),
-      fromCache: data.fromCache,
+      fromCache: data.fromCache || extrasStatus.fromCache,
       updatedAt: relativeTime(data.syncedAt, ctx),
       updatedClock: clockTime(data.syncedAt, ctx),
     };
-  }, [state, environment, extras, intl, build, paramsKey]);
+  }, [state, extrasStatus, environment, extras, intl, build, paramsKey]);
 }

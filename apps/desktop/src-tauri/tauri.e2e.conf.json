@@ -13,13 +13,14 @@
         "main",
         {
           "identifier": "e2e",
-          "description": "Test builds only (cargo feature `e2e`): WebdriverIO execute/log bridge, plus window theme, size and webview zoom for screenshots.",
+          "description": "Test builds only (cargo feature `e2e`): WebdriverIO execute/log bridge, plus window theme, size and webview zoom for screenshots, and the cold-start mark (src/perf.rs).",
           "windows": ["main"],
           "permissions": [
             "wdio:default",
             "core:window:allow-set-theme",
             "core:window:allow-set-size",
-            "core:webview:allow-set-webview-zoom"
+            "core:webview:allow-set-webview-zoom",
+            "allow-perf-mark"
           ]
         }
       ]

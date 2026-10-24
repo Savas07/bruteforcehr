@@ -92,7 +92,7 @@ extension DesignScenario {
     public func applyModel(jobId: String, step: DesignApplyStep? = DesignApplyStep.launch) -> ApplyModel {
         let model = ApplyModel(jobId: jobId, now: now)
         switch dataset {
-        case .populated:
+        case .populated, .scaled:
             apply(to: model)
         case .empty:
             // No CV yet: the populated job with the empty account's profile.

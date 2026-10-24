@@ -4,6 +4,7 @@
   "private": true,
   "description": "One CV renderer: JSON Resume + meta + template + theme → self-contained, ATS-safe HTML (desktop, iOS via JavaScriptCore, server Chromium), DOCX and JSON export.",
   "type": "module",
+  "sideEffects": false,
   "exports": {
     ".": "./src/index.ts",
     "./iife": "./dist/cv-render.iife.js"

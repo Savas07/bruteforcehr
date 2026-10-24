@@ -31,6 +31,22 @@ const messages = defineMessages({
 });
 
 /**
+ * Focuses the new section's heading once it has rendered: a section's code loads on its first
+ * visit (src/router.tsx), so after navigating it may take a few frames.
+ */
+async function focusRouteTitle(): Promise<void> {
+  for (let frame = 0; frame < 60; frame++) {
+    const title = document.getElementById(ROUTE_TITLE_ID);
+    if (title) {
+      title.focus({ preventScroll: true });
+      return;
+    }
+    // `Promise.withResolvers` needs Safari 17.4; the app supports macOS 13 (Safari 16).
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+  }
+}
+
+/**
  * The signed-in app; signed out, the sign-in screen (src/features/auth); signed in before
  * onboarding finished, the first-run wizard (src/features/onboarding). `hosts` are app-wide
  * pieces that need the signed-in shell (toasts, keymap) but no route: the Log an application
@@ -88,7 +104,7 @@ function Shell({ hosts }: { readonly hosts: ReactNode }) {
   const openSettings = useCallback(
     async (pane: string) => {
       await navigate({ to: "/settings/$pane", params: { pane } });
-      document.getElementById(ROUTE_TITLE_ID)?.focus({ preventScroll: true });
+      await focusRouteTitle();
     },
     [navigate],
   );
@@ -100,7 +116,7 @@ function Shell({ hosts }: { readonly hosts: ReactNode }) {
       setPaletteOpen(false);
       setShortcutsOpen(false);
       await navigate({ to: destination.path });
-      document.getElementById(ROUTE_TITLE_ID)?.focus({ preventScroll: true });
+      await focusRouteTitle();
     },
     [navigate],
   );

@@ -7,7 +7,7 @@
  * forces loading, error or offline (cache 25 minutes old, `OFFLINE_PENDING_WRITES` applications
  * waiting to sync); the clock is the fixture clock and `?tz=` pins the zone.
  */
-import { emptyDataset, FIXTURE_NOW, type FixtureDataset, populatedDataset } from "@bfhr/fixtures";
+import { emptyDataset, FIXTURE_NOW, type FixtureDataset } from "@bfhr/fixtures";
 import { useNavigate, useParams, useSearch } from "@tanstack/react-router";
 import { type ComponentType, type ReactNode, useEffect, useMemo, useSyncExternalStore } from "react";
 import { TrackerSourceContext } from "../data/tracker/live";
@@ -27,6 +27,7 @@ import {
 import type { ScreenProps } from "../shared/screen";
 import { useDesignReady } from "./DesignScreen";
 import { OFFLINE_PENDING_WRITES } from "./screens";
+import { designDataset } from "./datasets";
 import { readDesignParams } from "./search";
 import { createMemoryMailStore, type MemoryMailStore } from "../data/mail/memory";
 import { MailProviders } from "../data/mail/live";
@@ -128,7 +129,7 @@ function forcedSource(
 export function DesignTrackerProviders({ children }: { readonly children: ReactNode }) {
   const search = readDesignParams(useSearch({ strict: false }));
   const navigate = useNavigate();
-  const dataset = search.fixture === "empty" ? emptyDataset : populatedDataset;
+  const dataset = designDataset(search.fixture);
   const store = designTrackerStore(dataset);
   const mailStore = mailStoreFor(dataset, search.rest["oauth"] === "configured", search.rest["scan"]);
   useEffect(() => {

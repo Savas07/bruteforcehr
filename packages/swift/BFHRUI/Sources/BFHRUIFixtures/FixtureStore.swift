@@ -3,12 +3,15 @@ import BFHRCore
 import Foundation
 
 /// The fixture datasets exported by `pnpm --filter @bfhr/fixtures conformance`
-/// (`packages/fixtures/conformance/<name>.json`).
+/// (`packages/fixtures/conformance/<name>.json`), and the performance budget's scaled one.
 public enum FixtureDataset: String, CaseIterable, Sendable {
     /// A realistic mid-search account: 25 applications, 40 jobs, 12 emails, 2 CVs.
     case populated
     /// A signed-in user who finished onboarding and has nothing else yet.
     case empty
+    /// `populated` grown to 5,000 jobs and 1,000 applications (docs/runbooks/performance.md),
+    /// built in memory like `scaledDataset()` in @bfhr/fixtures; not exported.
+    case scaled
 }
 
 /// One exported dataset: everything under `users/{uid}` plus the public app configs. `now` is the
@@ -24,12 +27,12 @@ public struct FixtureDocument: Decodable, Sendable {
     public let cvRevisions: [CvRevision]
     public let renderedFiles: [RenderedFile]
     public let coverLetters: [CoverLetter]
-    public let jobs: [Job]
-    public let jobMatches: [JobMatch]
+    public internal(set) var jobs: [Job]
+    public internal(set) var jobMatches: [JobMatch]
     public let savedSearches: [SavedSearch]
-    public let applications: [Application]
-    public let applicationEvents: [ApplicationEvent]
-    public let interviews: [Interview]
+    public internal(set) var applications: [Application]
+    public internal(set) var applicationEvents: [ApplicationEvent]
+    public internal(set) var interviews: [Interview]
     public let contacts: [Contact]
     public let mailAccounts: [MailAccount]
     public let mailMessages: [MailMessage]
@@ -74,11 +77,16 @@ public enum FixtureStore {
         return FileManager.default.fileExists(atPath: checkout.path) ? checkout : nil
     }
 
-    /// Decodes `dataset` once per process.
+    /// Decodes `dataset` once per process (`scaled`: grows the populated one).
     public static func document(_ dataset: FixtureDataset) throws -> FixtureDocument {
         if let cached = cache[dataset] { return cached }
-        guard let url = url(for: dataset) else { throw FixtureError.notFound(dataset) }
-        let document = try decode(contentsOf: url)
+        let document: FixtureDocument
+        if dataset == .scaled {
+            document = try self.document(.populated).scaled(jobs: 5_000, applications: 1_000)
+        } else {
+            guard let url = url(for: dataset) else { throw FixtureError.notFound(dataset) }
+            document = try decode(contentsOf: url)
+        }
         cache[dataset] = document
         return document
     }

@@ -2,7 +2,7 @@
  * The design build's route views (`RouteViewsContext`, src/router.tsx). Loaded by main.tsx only
  * when `__BFHR_DESIGN__` is true, so production bundles never contain it or @bfhr/fixtures.
  */
-import { emptyDataset, FIXTURE_NOW, populatedDataset } from "@bfhr/fixtures";
+import { FIXTURE_NOW } from "@bfhr/fixtures";
 import { useSearch } from "@tanstack/react-router";
 import { useEffect, useMemo, useSyncExternalStore } from "react";
 import { CvBackendContext } from "../features/cv-editor/backend";
@@ -22,6 +22,7 @@ import TrackerBoardScreen from "../features/tracker-board/Screen";
 import { CvSuggestionSeedContext } from "../features/cv-editor/suggestionSeed";
 import type { ModelContext } from "../shared/model/types";
 import type { RouteViews } from "../router";
+import { designDataset } from "./datasets";
 import { readDesignParams } from "./search";
 import { Demo } from "./Demo";
 import { DesignIndex } from "./DesignIndex";
@@ -66,7 +67,7 @@ declare global {
  */
 function CvEditor() {
   const search = readDesignParams(useSearch({ strict: false }));
-  const dataset = search.fixture === "empty" ? emptyDataset : populatedDataset;
+  const dataset = designDataset(search.fixture);
   const store = useMemo(() => createMemoryCvStore(dataset.uid, dataset, () => FIXTURE_NOW), [dataset]);
   const version = useSyncExternalStore(store.subscribe, () => store.data());
   useEffect(() => {

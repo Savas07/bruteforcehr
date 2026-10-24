@@ -35,7 +35,13 @@ async function call(name: string, idToken: string, data: unknown): Promise<Calla
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${idToken}` },
     body: JSON.stringify({ data }),
   });
-  return (await response.json()) as CallableReply;
+  const text = await response.text();
+  try {
+    return JSON.parse(text) as CallableReply;
+  } catch {
+    // Not a callable reply (e.g. an HTML error page from the front end).
+    return { error: { status: `HTTP ${response.status}`, message: text.slice(0, 300) } };
+  }
 }
 
 const show = (label: string, value: unknown): void =>
@@ -85,6 +91,7 @@ try {
   // 1. cvTailor: thorough edits, every one applied like the client does.
   const tailored = await call("cvTailor", idToken, { ...ids, locale: "en", intensity: "thorough" });
   show("cvTailor (thorough, en)", tailored);
+  if (tailored.result === undefined) throw new Error("cvTailor failed");
   const response = CvTailorResponseSchema.parse(tailored.result);
   const applied = applyTailorEdits(
     revision.content,

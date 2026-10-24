@@ -62,6 +62,17 @@ const application = async (company: string) => (await findDocs("applications", "
 /** The seeded CV's revisions (`listRevisions` takes a REST document name). */
 const revisions = () => listRevisions(`/documents/users/${uid}/cvs/${CV_ID}`);
 
+/**
+ * Selects the job's row (on narrow windows that also opens the detail) and presses A, as a user
+ * would: the email composer, or the kit beside the posting's site (E2E builds record the URL).
+ */
+async function openApply(jobId: string): Promise<void> {
+  await goTo("#/jobs");
+  await $(`[data-nav-id="${jobId}"]`).click();
+  await $(`[id="job-title-${jobId}"]`).waitForDisplayed({ timeout: 15_000 });
+  await browser.keys("a");
+}
+
 describe("Apply", () => {
   before(async () => {
     await ensureSignedIn(testEmail("apply"));
@@ -100,7 +111,7 @@ describe("Apply", () => {
   });
 
   it("tailors: accepting 2 of 3 edits saves an ai_tailor revision pinned on the application", async () => {
-    await goTo(`#/jobs/${EMAIL_JOB.id}?apply=1`);
+    await openApply(EMAIL_JOB.id);
     const cv = await field("CV");
     await cv.selectByAttribute("value", CV_ID);
     await (await button("Tailor for this job")).click();
@@ -156,7 +167,7 @@ describe("Apply", () => {
   });
 
   it("copies answers and the CV's path from the application kit", async () => {
-    await goTo(`#/jobs/${SITE_JOB.id}?apply=1`);
+    await openApply(SITE_JOB.id);
     await $("h2=Your application kit").waitForDisplayed({ timeout: 15_000 });
     await (await button("Copy Notice period")).click();
     await $("*=Notice period copied").waitForDisplayed({ timeout: 10_000 });

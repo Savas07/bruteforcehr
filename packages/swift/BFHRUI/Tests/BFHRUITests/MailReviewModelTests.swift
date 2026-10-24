@@ -13,6 +13,19 @@ struct MailReviewModelTests {
         return model
     }
 
+    /// The populated data with Brightwave's interview not on the calendar yet (an automatically
+    /// applied invite whose interview waits for "Add interview").
+    private func modelWithPendingInterview() throws -> MailReviewModel {
+        let document = try FixtureStore.document(.populated)
+        var data = UserData(document)
+        let index = try #require(data.mailMessages.firstIndex { $0.id == "mail-brightwave-invite" })
+        data.mailMessages[index].interviewSuggestion?.interviewId = nil
+        data.interviews.removeAll { $0.id == "int-brightwave-1" }
+        let model = MailReviewModel(now: document.now, calendar: Self.utc)
+        model.load(data)
+        return model
+    }
+
     private static let utc: Calendar = {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(identifier: "UTC")!
@@ -294,7 +307,8 @@ struct MailReviewModelTests {
 
     @Test("Add interview on an automatically applied invite confirms it; Undo leaves it")
     func addInterview() throws {
-        let model = try model()
+        #expect(try model().updates.allSatisfy { $0.interviewSuggestion == nil }) // already on the calendar
+        let model = try modelWithPendingInterview()
         let update = try #require(model.updates.first { $0.id == "evt-brightwave-interviewing" })
         #expect(update.interviewSuggestion != nil)
         #expect(model.updates.filter { $0.interviewSuggestion != nil }.count == 1)
@@ -310,7 +324,7 @@ struct MailReviewModelTests {
 
     @Test("Opening an email: the review sheet while pending, the read-only email otherwise")
     func openEmail() throws {
-        let model = try model()
+        let model = try modelWithPendingInterview()
         #expect(model.open("mail-nordlicht-invite"))
         #expect(model.draft?.messageId == "mail-nordlicht-invite" && model.viewingId == nil)
         #expect(model.open("mail-brightwave-invite"))

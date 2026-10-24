@@ -57,8 +57,8 @@ public enum DesignDataPrivacyState: String, CaseIterable, Sendable {
     static let address = "deniz.aksoy@example.com"
     static let export = AccountExport(
         exportId: "design",
-        storagePath: "users/design/exports/design.zip",
-        fileName: "bruteforcehr-export-2026-10-22.zip",
+        storagePath: "users/design/exports/design.bfhr-export.zip",
+        fileName: "BruteForceHR-export-2026-10-22.zip",
         sizeBytes: 14_200_000,
         documentCount: 412,
         fileCount: 9,

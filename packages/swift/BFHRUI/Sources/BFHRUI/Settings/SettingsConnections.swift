@@ -91,9 +91,10 @@ struct MailAccountsPage: View {
                 .disabled(model.connection.isOffline)
                 .accessibilityIdentifier("settings.addMailAccount")
             } header: {
-                if !model.mailAccounts.isEmpty { Text(SettingsStrings.accountsHeader) }
+                if !model.mailAccounts.isEmpty { Text(SettingsStrings.accountsHeader).foregroundStyle(BFHRColor.Fg.secondary) }
             } footer: {
                 Text(model.connection.isOffline ? SettingsStrings.needsConnection : SettingsStrings.accountsFooter)
+                    .foregroundStyle(BFHRColor.Fg.secondary)
             }
         }
         .bfhrInsetGroupedList()
@@ -147,12 +148,12 @@ struct MailAccountPage: View {
             }
             Section {
                 LabeledContent { MailAccountStatusLine(account: account, now: model.now) } label: { Text(SettingsStrings.status) }
-                LabeledContent { Text(verbatim: account.providerLabel) } label: { Text(SettingsStrings.provider) }
-                LabeledContent { Text(SettingsStrings.foldersValue) } label: { Text(SettingsStrings.folders) }
-                LabeledContent { Text(verbatim: "\(model.storedEmails(account.id))") } label: { Text(SettingsStrings.storedEmails) }
-                LabeledContent { Text(account.canSend ? SettingsStrings.sendingOn : SettingsStrings.sendingOff) } label: { Text(SettingsStrings.sending) }
+                detail(SettingsStrings.provider) { Text(verbatim: account.providerLabel) }
+                detail(SettingsStrings.folders) { Text(SettingsStrings.foldersValue) }
+                detail(SettingsStrings.storedEmails) { Text(verbatim: "\(model.storedEmails(account.id))") }
+                detail(SettingsStrings.sending) { Text(account.canSend ? SettingsStrings.sendingOn : SettingsStrings.sendingOff) }
                 if let backfill = account.backfill {
-                    LabeledContent { Text(SettingsStrings.lookbackValue(backfill.lookbackDays)) } label: { Text(SettingsStrings.pastEmails) }
+                    detail(SettingsStrings.pastEmails) { Text(SettingsStrings.lookbackValue(backfill.lookbackDays)) }
                 }
             }
             // While the account needs the user, Reconnect is the only useful action.
@@ -173,18 +174,20 @@ struct MailAccountPage: View {
                 Button { reconnecting = true } label: { Text(SettingsStrings.reconnect) }
             } footer: {
                 Text(model.connection.isOffline ? SettingsStrings.needsConnection : SettingsStrings.checkAgainFooter)
+                    .foregroundStyle(BFHRColor.Fg.secondary)
             }
             .disabled(working || model.connection.isOffline)
             }
             if let server = account.server {
                 Section {
-                    LabeledContent { Text(verbatim: "\(server.imap.host):\(server.imap.port)") } label: { Text(verbatim: "IMAP") }
+                    detail(MailConnectStrings.incoming) { Text(verbatim: "\(server.imap.host):\(server.imap.port)") }
                     if let smtp = server.smtp {
-                        LabeledContent { Text(verbatim: "\(smtp.host):\(smtp.port)") } label: { Text(verbatim: "SMTP") }
+                        detail(MailConnectStrings.outgoing) { Text(verbatim: "\(smtp.host):\(smtp.port)") }
                     }
-                    LabeledContent { Text(verbatim: server.username) } label: { Text(MailConnectStrings.username) }
+                    detail(MailConnectStrings.username) { Text(verbatim: server.username) }
                 } header: {
                     Text(SettingsStrings.serverDetails)
+                        .foregroundStyle(BFHRColor.Fg.secondary)
                 }
             }
             Section {
@@ -195,10 +198,11 @@ struct MailAccountPage: View {
         }
         .bfhrInsetGroupedList()
         .bfhrMailConnectSheet(isPresented: $reconnecting, reconnecting: account)
-        .confirmationDialog(
+        // An alert, not an action sheet: iOS 26 draws confirmation dialogs as popovers without
+        // their cancel button, and "Keep connected" must stay visible as the safe choice.
+        .alert(
             Text(SettingsStrings.disconnectTitle(account.address)),
-            isPresented: $confirmingDisconnect,
-            titleVisibility: .visible
+            isPresented: $confirmingDisconnect
         ) {
             Button(role: .destructive) {
                 working = true
@@ -216,6 +220,16 @@ struct MailAccountPage: View {
         } message: {
             Text(SettingsStrings.disconnectBody(model.storedEmails(account.id)))
         }
+    }
+
+    /// A label + secondary value, read as one element ("Incoming server (IMAP), imap.mail.me.com:993").
+    private func detail(_ label: LocalizedStringResource, @ViewBuilder value: () -> some View) -> some View {
+        LabeledContent {
+            value().foregroundStyle(BFHRColor.Fg.secondary)
+        } label: {
+            Text(label)
+        }
+        .accessibilityElement(children: .combine)
     }
 
     private func run(_ action: @escaping () async -> ToastItem) {
@@ -250,7 +264,9 @@ struct JobSourcesPage: View {
             Section {
                 NavigationLink(value: SettingsRoute.companies) {
                     LabeledContent {
-                        if !model.companies.isEmpty { Text(SettingsStrings.companyCount(model.companies.count)) }
+                        if !model.companies.isEmpty {
+                            Text(SettingsStrings.companyCount(model.companies.count)).foregroundStyle(BFHRColor.Fg.secondary)
+                        }
                     } label: {
                         Text(SettingsStrings.companies)
                     }
@@ -260,6 +276,7 @@ struct JobSourcesPage: View {
                     Text(SettingsStrings.sourcesCompaniesFooter)
                     Text(SettingsStrings.sourcesFooter)
                 }
+                .foregroundStyle(BFHRColor.Fg.secondary)
             }
         }
         .bfhrInsetGroupedList()
@@ -276,7 +293,7 @@ struct JobSourcesPage: View {
                     JobSourceRow(source: source, now: model.now)
                 }
             } header: {
-                Text(title)
+                Text(title).foregroundStyle(BFHRColor.Fg.secondary)
             }
         }
     }
@@ -367,6 +384,7 @@ struct CompaniesPage: View {
                 .accessibilityIdentifier("settings.companies.add")
             } footer: {
                 Text(SettingsStrings.companiesFooter)
+                    .foregroundStyle(BFHRColor.Fg.secondary)
             }
         }
         .bfhrInsetGroupedList()
@@ -455,7 +473,7 @@ private struct FollowCompanySheet: View {
                             Label { Text(SettingsStrings.invalidURL) } icon: { Image(systemName: "exclamationmark.triangle") }
                                 .foregroundStyle(BFHRTone.warning.text)
                         }
-                        Text(SettingsStrings.careersURLFooter)
+                        Text(SettingsStrings.careersURLFooter).foregroundStyle(BFHRColor.Fg.secondary)
                     }
                 }
             }

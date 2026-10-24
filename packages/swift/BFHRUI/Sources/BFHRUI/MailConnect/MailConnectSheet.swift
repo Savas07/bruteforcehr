@@ -98,6 +98,7 @@ private struct ProviderList: View {
                         .textCase(nil)
                         .fixedSize(horizontal: false, vertical: true)
                     Text(MailConnectStrings.signInSection)
+                        .foregroundStyle(BFHRColor.Fg.secondary)
                 }
             }
             Section {
@@ -115,6 +116,7 @@ private struct ProviderList: View {
                 .accessibilityIdentifier("connect.provider.other")
             } header: {
                 Text(MailConnectStrings.appPasswordSection)
+                    .foregroundStyle(BFHRColor.Fg.secondary)
             } footer: {
                 Label { Text(MailConnectStrings.trust) } icon: { Image(systemName: "lock.shield") }
                     .font(.bfhr(.footnote))
@@ -232,6 +234,7 @@ private struct OAuthPermissionView: View {
                 LookbackPicker(days: $model.lookbackDays, start: model.lookbackStart)
             } header: {
                 Text(MailConnectStrings.promiseLookbackTitle)
+                    .foregroundStyle(BFHRColor.Fg.secondary)
             }
             if model.oauthState != .notConfigured {
                 Section {
@@ -287,7 +290,10 @@ private struct OAuthPermissionView: View {
         }
         .padding(.horizontal, BFHRSpace.s4)
         .padding(.vertical, BFHRSpace.s3)
-        .background(.bar)
+        // Opaque, capped at AX1 like every sticky bar (Large Content Viewer covers larger sizes).
+        .background(BFHRColor.groupedBackground)
+        .dynamicTypeSize(...DynamicTypeSize.accessibility1)
+        .accessibilityIdentifier("sheet.bar")
     }
 }
 
@@ -368,7 +374,7 @@ private struct AppPasswordForm: View {
                 }
                 .accessibilityIdentifier("connect.serverSettings")
             } footer: {
-                if model.showsServerSettings { Text(MailConnectStrings.outgoingOptional) }
+                if model.showsServerSettings { Text(MailConnectStrings.outgoingOptional).foregroundStyle(BFHRColor.Fg.secondary) }
             }
             Section {
                 Button {
@@ -384,6 +390,7 @@ private struct AppPasswordForm: View {
                 .accessibilityIdentifier("connect.submit")
             } footer: {
                 Label { Text(MailConnectStrings.imapTrust) } icon: { Image(systemName: "lock") }
+                    .foregroundStyle(BFHRColor.Fg.secondary)
                     .padding(.top, BFHRSpace.s2)
             }
         }
@@ -428,14 +435,17 @@ private struct AppPasswordForm: View {
                     .accessibilityIdentifier("connect.password")
                 Button { showsPassword.toggle() } label: {
                     Image(systemName: showsPassword ? "eye.slash" : "eye")
-                        .frame(minWidth: BFHRHitTarget.minimum, minHeight: BFHRHitTarget.minimum)
+                        .frame(width: BFHRHitTarget.minimum, height: BFHRHitTarget.minimum)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+                .frame(width: BFHRHitTarget.minimum, height: BFHRHitTarget.minimum)
                 .foregroundStyle(BFHRColor.Fg.secondary)
                 .accessibilityLabel(Text(showsPassword ? MailConnectStrings.hidePassword : MailConnectStrings.showPassword))
             }
         } header: {
             Text(MailConnectStrings.yourAccount)
+                .foregroundStyle(BFHRColor.Fg.secondary)
         } footer: {
             // Errors of the password (or without a field) replace the caption.
             if let message = formError, model.errorField == .password || model.errorField == nil {
@@ -473,6 +483,7 @@ private struct AppPasswordForm: View {
                 }
             } header: {
                 Text(MailConnectStrings.helpHeader)
+                    .foregroundStyle(BFHRColor.Fg.secondary)
             }
         } else {
             Section {
@@ -580,10 +591,15 @@ private struct ScanProgressView: View {
         List {
             Section {
                 if let account = model.connectedAccount {
-                    Label { Text(bfhrPlain: MailConnectStrings.connectedTo(account.address)) } icon: {
-                        Image(systemName: "checkmark.circle.fill").foregroundStyle(BFHRTone.success.text)
+                    HStack(alignment: .firstTextBaseline, spacing: BFHRSpace.s2) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundStyle(BFHRTone.success.text)
+                            .accessibilityHidden(true)
+                        Text(bfhrPlain: MailConnectStrings.connectedTo(account.address))
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                     .font(.bfhr(.headline))
+                    .accessibilityElement(children: .combine)
                     .accessibilityIdentifier("connect.scan.connected")
                 } else {
                     HStack(spacing: BFHRSpace.s3) {
@@ -635,6 +651,7 @@ private struct ScanProgressView: View {
                     resultRow(MailConnectStrings.resultPending, backfill.pendingReview)
                 } footer: {
                     Text(MailConnectStrings.resultFooter)
+                        .foregroundStyle(BFHRColor.Fg.secondary)
                 }
                 .accessibilityIdentifier("connect.scan.result")
             }
@@ -658,6 +675,7 @@ private struct ScanProgressView: View {
                 ScanStageRow(title: MailConnectStrings.stagePreparing, state: stageState(.preparing, backfill), detail: nil)
             } footer: {
                 Text(MailConnectStrings.leave)
+                    .foregroundStyle(BFHRColor.Fg.secondary)
             }
             .accessibilityIdentifier("connect.scan.progress")
         }
@@ -665,7 +683,7 @@ private struct ScanProgressView: View {
 
     private func resultRow(_ label: LocalizedStringResource, _ count: Int) -> some View {
         LabeledContent {
-            Text(count, format: .number).monospacedDigit()
+            Text(count, format: .number).monospacedDigit().foregroundStyle(BFHRColor.Fg.secondary)
         } label: {
             Text(label)
         }
@@ -702,7 +720,10 @@ private struct ScanProgressView: View {
         }
         .padding(.horizontal, BFHRSpace.s4)
         .padding(.vertical, BFHRSpace.s3)
-        .background(.bar)
+        // Opaque, capped at AX1 like every sticky bar (Large Content Viewer covers larger sizes).
+        .background(BFHRColor.groupedBackground)
+        .dynamicTypeSize(...DynamicTypeSize.accessibility1)
+        .accessibilityIdentifier("sheet.bar")
     }
 }
 

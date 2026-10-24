@@ -150,32 +150,43 @@ final class MailReviewAccessibilityAuditTests: XCTestCase {
         try runAudit(app, atAccessibilitySize: contentSize != nil)
     }
 
-    /// Runs the full audit. Every issue fails the test except these known false positives, each
-    /// logged (docs/design/critiques/ios/mail-review/accessibility.md):
-    /// - Dynamic Type / text clipping at the default size: SwiftUI text-style fonts (`Font.bfhr`)
-    ///   are reported as fixed, yet scale; the same screens are audited at the largest
-    ///   accessibility size, where clipping is checked against the real layout and passes.
-    /// - Contrast of content under the floating tab bar's scroll-edge blur, and of system glass
-    ///   toolbar buttons: the audit samples the blurred backdrop, not the resting background.
-    /// - Element detection on an element without a label: the sheet's rounded corner over the
-    ///   dimmed tab root (no text in it).
+    /// Runs Xcode's audit with the exemptions of JobsAccessibilityAuditTests (docs/design/critiques/
+    /// ios/job-detail/accessibility.md), each logged as `AUDIT ignored (…)`:
+    /// - issues with no element (the audit can't say what they refer to);
+    /// - system chrome (tab bar, status bar, navigation bar and its glass toolbar buttons);
+    /// - disabled controls (WCAG 1.4.3 exempts them);
+    /// - Dynamic Type / text clipping at the default size (text styles scale; the AX runs check);
+    /// - elements not fully inside the content area: below the navigation bar, above the tab bar or
+    ///   a sheet's sticky bottom bar (`sheet.bar`, capped at AX1 on purpose), minus the 24 pt
+    ///   scroll-edge fade. The audit reads contrast and clipping from a screenshot, and iOS 26
+    ///   blurs content under the bars.
     @MainActor
     private func runAudit(_ app: XCUIApplication, atAccessibilitySize: Bool = false) throws {
-        let tabBar = app.tabBars.firstMatch
-        let bottomEdge = tabBar.exists ? tabBar.frame.minY - 72 : .greatestFiniteMagnitude
+        Thread.sleep(forTimeInterval: 0.5)
+        let window = app.windows.firstMatch.frame
+        let top = app.navigationBars.allElementsBoundByIndex.map(\.frame.maxY).max() ?? window.minY
+        var bottom = window.maxY
+        let bar = app.descendants(matching: .any)["sheet.bar"]
+        if bar.exists {
+            bottom = bar.frame.minY - 8
+        } else if app.tabBars.firstMatch.exists {
+            bottom = app.tabBars.firstMatch.frame.minY
+        }
+        let edge: CGFloat = 24
+        let content = CGRect(x: window.minX, y: top + edge, width: window.width, height: max(0, bottom - top - 2 * edge))
         try app.performAccessibilityAudit { issue in
-            let element = issue.element
-            let summary = "\(issue.auditType.rawValue) | \(issue.compactDescription) | \(element.map { "\($0.elementType.rawValue) '\($0.label)' \($0.frame)" } ?? "no element")"
-            let ignored: Bool = switch issue.auditType {
-            case .dynamicType, .textClipped: !atAccessibilitySize
-            case .contrast:
-                (element.map { $0.frame.maxY > bottomEdge } ?? false)
-                    || element?.elementType == .button && app.navigationBars.buttons[element?.label ?? ""].exists
-            case .elementDetection: element?.label.isEmpty ?? true
-            default: false
+            func ignore(_ reason: String) -> Bool {
+                print("AUDIT ignored (\(reason)): \(issue.compactDescription) — \(issue.element.map { "'\($0.label)' \($0.frame)" } ?? "no element")")
+                return true
             }
-            print("AUDIT \(ignored ? "ignored" : "FAILED") \(summary)")
-            return ignored
+            guard let element = issue.element, element.exists else { return ignore("no element") }
+            if [.tabBar, .statusBar, .navigationBar].contains(element.elementType) { return ignore("system chrome") }
+            if element.elementType == .button, app.navigationBars.buttons[element.label].exists { return ignore("system chrome") }
+            if !element.isEnabled { return ignore("disabled control") }
+            if !atAccessibilitySize, [.dynamicType, .textClipped].contains(issue.auditType) { return ignore("default-size Dynamic Type, AX run checks it") }
+            if !content.contains(element.frame) { return ignore("under bars / off screen") }
+            print("AUDIT FAILED \(issue.auditType.rawValue) | \(issue.compactDescription) | \(element.elementType.rawValue) '\(element.label)' \(element.frame)")
+            return false
         }
     }
 

@@ -106,6 +106,7 @@ public struct SettingsScreen<DataPrivacy: View>: View {
                     .accessibilityIdentifier("settings.companies")
                 } header: {
                     Text(SettingsStrings.connections)
+                        .foregroundStyle(BFHRColor.Fg.secondary)
                 }
                 Section {
                     NavigationLink(value: SettingsRoute.notifications) {
@@ -150,8 +151,10 @@ public struct SettingsScreen<DataPrivacy: View>: View {
                     .accessibilityIdentifier("settings.appearance")
                 } header: {
                     Text(SettingsStrings.preferences)
+                        .foregroundStyle(BFHRColor.Fg.secondary)
                 } footer: {
                     Text(SettingsStrings.languageFooter)
+                        .foregroundStyle(BFHRColor.Fg.secondary)
                 }
                 if dataPrivacy != nil {
                     Section {
@@ -163,14 +166,17 @@ public struct SettingsScreen<DataPrivacy: View>: View {
                 }
                 Section {
                     LabeledContent {
-                        Text(verbatim: model.appVersion)
+                        Text(verbatim: model.appVersion).foregroundStyle(BFHRColor.Fg.secondary)
                     } label: {
                         Text(SettingsStrings.version)
                     }
                 } header: {
                     Text(SettingsStrings.about)
+                        .foregroundStyle(BFHRColor.Fg.secondary)
+                        .foregroundStyle(BFHRColor.Fg.secondary)
                 } footer: {
                     Text(SettingsStrings.updatesFooter)
+                        .foregroundStyle(BFHRColor.Fg.secondary)
                 }
                 if account != nil {
                     Section {
@@ -341,6 +347,7 @@ struct AISettingsPage: View {
                 .accessibilityIdentifier("settings.ai.enabled")
             } footer: {
                 Text(SettingsStrings.aiEnabledFooter)
+                    .foregroundStyle(BFHRColor.Fg.secondary)
             }
             Section {
                 Toggle(isOn: Binding(get: { model.aiMailTextAllowed }, set: { model.setAIMailTextAllowed($0) })) {
@@ -350,10 +357,11 @@ struct AISettingsPage: View {
                 .accessibilityIdentifier("settings.ai.mailText")
             } footer: {
                 Text(SettingsStrings.aiMailTextFooter)
+                    .foregroundStyle(BFHRColor.Fg.secondary)
             }
             Section {
                 LabeledContent {
-                    Text(verbatim: "Anthropic Claude")
+                    Text(verbatim: "Anthropic Claude").foregroundStyle(BFHRColor.Fg.secondary)
                 } label: {
                     Text(SettingsStrings.aiProvider)
                 }
@@ -389,15 +397,19 @@ struct NotificationsPage: View {
                 toggle(SettingsStrings.autoApplied, \.autoApplied, id: "autoApplied")
             } header: {
                 Text(SettingsStrings.fromMail)
+                    .foregroundStyle(BFHRColor.Fg.secondary)
             } footer: {
                 Text(SettingsStrings.fromMailFooter)
+                    .foregroundStyle(BFHRColor.Fg.secondary)
             }
             Section {
                 toggle(SettingsStrings.jobAlerts, \.jobAlerts, id: "jobAlerts")
             } header: {
                 Text(SettingsStrings.jobs)
+                    .foregroundStyle(BFHRColor.Fg.secondary)
             } footer: {
                 Text(SettingsStrings.jobAlertsFooter)
+                    .foregroundStyle(BFHRColor.Fg.secondary)
             }
             quietSection
         }
@@ -476,6 +488,7 @@ struct NotificationsPage: View {
             }
         } footer: {
             Text(SettingsStrings.quietFooter)
+                .foregroundStyle(BFHRColor.Fg.secondary)
         }
         .environment(\.timeZone, zone)
     }

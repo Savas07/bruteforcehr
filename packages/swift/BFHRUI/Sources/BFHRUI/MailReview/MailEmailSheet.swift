@@ -44,7 +44,9 @@ struct MailEmailSheet: View {
                     .accessibilityIdentifier("mail.email.addInterview")
                     .padding(.horizontal, BFHRSpace.s4)
                     .padding(.vertical, BFHRSpace.s3)
-                    .background(.bar)
+                    .background(BFHRColor.Surface.base)
+                    .dynamicTypeSize(...DynamicTypeSize.accessibility1)
+                    .accessibilityIdentifier("sheet.bar")
                 }
             }
             .navigationTitle(Text(MailViewStrings.emailTitle))
@@ -60,16 +62,14 @@ struct MailEmailSheet: View {
 
     private var message: some View {
         VStack(alignment: .leading, spacing: BFHRSpace.s2) {
-            ChipFlow(spacing: BFHRSpace.s2) {
-                Text(verbatim: detail.sender.name ?? detail.sender.address)
-                    .font(.bfhr(.subheadline, emphasized: true))
-                    .foregroundStyle(BFHRColor.Fg.primary)
-                    .fixedSize(horizontal: false, vertical: true)
-                RelativeTimeText(detail.receivedAt, style: .dayAndTime)
-                    .font(.bfhr(.caption1))
-                    .foregroundStyle(BFHRColor.Fg.tertiary)
-                    .fixedSize()
-            }
+            Text(verbatim: detail.sender.name ?? detail.sender.address)
+                .font(.bfhr(.subheadline, emphasized: true))
+                .foregroundStyle(BFHRColor.Fg.primary)
+                .fixedSize(horizontal: false, vertical: true)
+            RelativeTimeText(detail.receivedAt, style: .dayAndTime)
+                .font(.bfhr(.caption1))
+                .foregroundStyle(BFHRColor.Fg.secondary)
+                .fixedSize(horizontal: false, vertical: true)
             Text(verbatim: detail.sender.address + (detail.accountAddress.map { " → \($0)" } ?? ""))
                 .font(.bfhr(.footnote))
                 .foregroundStyle(BFHRColor.Fg.secondary)

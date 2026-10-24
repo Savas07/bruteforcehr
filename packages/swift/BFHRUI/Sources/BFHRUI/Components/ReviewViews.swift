@@ -157,6 +157,10 @@ public struct ReviewSheet: View {
         .padding(.horizontal, BFHRSpace.s4)
         .padding(.vertical, BFHRSpace.s3)
         .background(.bar)
+        // Sticky bars stop growing at AX1 (Large Content Viewer covers larger sizes), so the
+        // sheet keeps room for the email at the largest text sizes.
+        .dynamicTypeSize(...DynamicTypeSize.accessibility1)
+        .accessibilityIdentifier("sheet.bar")
     }
 
     private var senderName: some View {

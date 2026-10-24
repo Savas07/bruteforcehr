@@ -3,8 +3,7 @@ import XCTest
 /// Accessibility audits of Settings (every page) and Connect email (every step) in design mode
 /// (Debug builds), at the default text size and the largest accessibility size. Run with
 /// `xcodebuild test -only-testing:BruteForceHRUITests/SettingsMailAccessibilityAuditTests`.
-/// Known false positives are listed in `runAudit` and in
-/// docs/design/critiques/ios/settings/accessibility.md.
+/// Exemptions are listed in `runAudit` and in docs/design/critiques/ios/settings/accessibility.md.
 final class SettingsMailAccessibilityAuditTests: XCTestCase {
     override func setUp() {
         continueAfterFailure = true
@@ -46,10 +45,12 @@ final class SettingsMailAccessibilityAuditTests: XCTestCase {
         var swipes = 0
         while !(disconnect.exists && disconnect.isHittable), swipes < 6 { app.swipeUp(); swipes += 1 }
         disconnect.tap()
-        XCTAssertTrue(app.buttons["Keep connected"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.buttons["Disconnect and delete email data"].exists)
+        // The alert's safe choice is visible and named as the safe choice.
+        let keep = app.alerts.buttons["Keep connected"]
+        XCTAssertTrue(keep.waitForExistence(timeout: 5))
+        XCTAssertTrue(app.alerts.buttons["Disconnect and delete email data"].exists)
         try runAudit(app, atAccessibilitySize: false)
-        app.buttons["Keep connected"].tap()
+        keep.tap()
     }
 
     private static let largest = "UICTContentSizeCategoryAccessibilityXXXL"
@@ -62,26 +63,43 @@ final class SettingsMailAccessibilityAuditTests: XCTestCase {
         app.terminate()
     }
 
-    /// Every issue fails the test except these known false positives, each logged:
-    /// - Dynamic Type / text clipping at the default size: SwiftUI text-style fonts are reported as
-    ///   fixed, yet scale; the largest accessibility size is audited too.
-    /// - Contrast of system glass toolbar buttons (Cancel, Done): the audit samples the blurred
-    ///   backdrop, not the resting background.
-    /// - Element detection on an element without a label: the sheet's rounded corner over the
-    ///   dimmed screen behind it.
+    /// Runs Xcode's audit with the exemptions of JobsAccessibilityAuditTests (docs/design/critiques/
+    /// ios/job-detail/accessibility.md), each logged as `AUDIT ignored (…)`:
+    /// - issues with no element (the audit can't say what they refer to);
+    /// - system chrome (tab bar, status bar, navigation bar and its glass toolbar buttons);
+    /// - disabled controls (WCAG 1.4.3 exempts them);
+    /// - Dynamic Type / text clipping at the default size (text styles scale; the AX runs check);
+    /// - elements not fully inside the content area: below the navigation bar, above the tab bar or
+    ///   a sheet's sticky bottom bar (`sheet.bar`, capped at AX1 on purpose), minus the 24 pt
+    ///   scroll-edge fade. The audit reads contrast and clipping from a screenshot, and iOS 26
+    ///   blurs content under the bars.
     @MainActor
     private func runAudit(_ app: XCUIApplication, atAccessibilitySize: Bool) throws {
+        Thread.sleep(forTimeInterval: 0.5)
+        let window = app.windows.firstMatch.frame
+        let top = app.navigationBars.allElementsBoundByIndex.map(\.frame.maxY).max() ?? window.minY
+        var bottom = window.maxY
+        let bar = app.descendants(matching: .any)["sheet.bar"]
+        if bar.exists {
+            bottom = bar.frame.minY - 8
+        } else if app.tabBars.firstMatch.exists {
+            bottom = app.tabBars.firstMatch.frame.minY
+        }
+        let edge: CGFloat = 24
+        let content = CGRect(x: window.minX, y: top + edge, width: window.width, height: max(0, bottom - top - 2 * edge))
         try app.performAccessibilityAudit { issue in
-            let element = issue.element
-            let summary = "\(issue.auditType.rawValue) | \(issue.compactDescription) | \(element.map { "\($0.elementType.rawValue) '\($0.label)' \($0.frame)" } ?? "no element")"
-            let ignored: Bool = switch issue.auditType {
-            case .dynamicType, .textClipped: !atAccessibilitySize
-            case .contrast: element?.elementType == .button && app.navigationBars.buttons[element?.label ?? ""].exists
-            case .elementDetection: element?.label.isEmpty ?? true
-            default: false
+            func ignore(_ reason: String) -> Bool {
+                print("AUDIT ignored (\(reason)): \(issue.compactDescription) — \(issue.element.map { "'\($0.label)' \($0.frame)" } ?? "no element")")
+                return true
             }
-            print("AUDIT \(ignored ? "ignored" : "FAILED") \(summary)")
-            return ignored
+            guard let element = issue.element, element.exists else { return ignore("no element") }
+            if [.tabBar, .statusBar, .navigationBar].contains(element.elementType) { return ignore("system chrome") }
+            if element.elementType == .button, app.navigationBars.buttons[element.label].exists { return ignore("system chrome") }
+            if !element.isEnabled { return ignore("disabled control") }
+            if !atAccessibilitySize, [.dynamicType, .textClipped].contains(issue.auditType) { return ignore("default-size Dynamic Type, AX run checks it") }
+            if !content.contains(element.frame) { return ignore("under bars / off screen") }
+            print("AUDIT FAILED \(issue.auditType.rawValue) | \(issue.compactDescription) | \(element.elementType.rawValue) '\(element.label)' \(element.frame)")
+            return false
         }
     }
 

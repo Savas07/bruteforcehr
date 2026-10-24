@@ -75,8 +75,11 @@ export function DesignRoot() {
             <AppShell
               hosts={
                 <DesignTrackerProviders>
-                  <AddApplicationHost />
-                  <MailConnectHost />
+                  {/* The route opens these dialogs (`?add=1`, `?connect=<state>`); keyed on the
+                      param, they close when the next capture's route drops it and restart on
+                      another step, so a dialog never leaks into the next screen in one run. */}
+                  <AddApplicationHost key={`add:${params.rest["add"] ?? ""}`} />
+                  <MailConnectHost key={`connect:${params.rest["connect"] ?? ""}`} />
                   <DesignMailConnectState />
                 </DesignTrackerProviders>
               }

@@ -48,29 +48,26 @@ jobs:
             -configuration Debug -destination 'generic/platform=iOS Simulator' \
             -derivedDataPath "$RUNNER_TEMP/dd" CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO
 
-  # The XCUITest accessibility audits, one runner per suite (parallel). They run the design-mode
-  # app (fixtures, no network), so they need no secrets. Live end-to-end suites (*EndToEndTests)
-  # need a test account and stay local (apps/ios/scripts/*-live-check.sh).
+  # The XCUITest accessibility audits on CI runners, in 3 shards (each builds once, then runs its
+  # suites). macOS runners are limited to 5 concurrent jobs per account, so one runner per suite
+  # queued for hours across PRs. They run the design-mode app (fixtures, no network), so they need
+  # no secrets. Live end-to-end suites (*EndToEndTests) need a test account and stay local
+  # (apps/ios/scripts/*-live-check.sh). New audit suites go into the lightest shard.
   ui-audits:
-    name: UI audit (${{ matrix.suite }})
+    name: UI audits (${{ matrix.shard }})
     runs-on: macos-26
     strategy:
       fail-fast: false
       matrix:
-        suite:
-          - ApplyAIAccessibilityAuditTests
-          - CVEditorAccessibilityAuditTests
-          - DataPrivacyAccessibilityAuditTests
-          - InsightsAccessibilityAuditTests
-          - JobDetailAccessibilityAuditTests
-          - JobsAccessibilityAuditTests
-          - MailReviewAccessibilityAuditTests
-          - SettingsMailAccessibilityAuditTests
-          - ShareSheetAccessibilityAuditTests
-          - SignInAccessibilityAuditTests
-          - TodayAccessibilityAuditTests
-          - TrackerBoardAccessibilityAuditTests
-          - UpdateGateAccessibilityAuditTests
+        include:
+          - shard: tracker-jobs
+            suites: TodayAccessibilityAuditTests TrackerBoardAccessibilityAuditTests JobsAccessibilityAuditTests JobDetailAccessibilityAuditTests
+          - shard: cv-mail-insights
+            suites: CVEditorAccessibilityAuditTests InsightsAccessibilityAuditTests MailReviewAccessibilityAuditTests SettingsMailAccessibilityAuditTests
+          - shard: account-share
+            suites: DataPrivacyAccessibilityAuditTests ShareSheetAccessibilityAuditTests SignInAccessibilityAuditTests UpdateGateAccessibilityAuditTests
+          - shard: apply
+            suites: ApplyAIAccessibilityAuditTests
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -79,16 +76,19 @@ jobs:
       - run: corepack enable pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @bfhr/cv-render build
-      - name: Test ${{ matrix.suite }} (iPhone 17 Pro simulator, unsigned)
+      - name: Test ${{ matrix.shard }} (iPhone 17 Pro simulator, unsigned)
+        env:
+          SUITES: ${{ matrix.suites }}
         run: |
+          only=()
+          for suite in $SUITES; do only+=("-only-testing:BruteForceHRUITests/$suite"); done
           xcodebuild test -project apps/ios/BruteForceHR.xcodeproj -scheme BruteForceHR \
             -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
-            -derivedDataPath "$RUNNER_TEMP/dd" -resultBundlePath "$RUNNER_TEMP/${{ matrix.suite }}.xcresult" \
-            -only-testing:"BruteForceHRUITests/${{ matrix.suite }}" \
-            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO -quiet
+            -derivedDataPath "$RUNNER_TEMP/dd" -resultBundlePath "$RUNNER_TEMP/ui-audits.xcresult" \
+            "${only[@]}" CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO -quiet
       - uses: actions/upload-artifact@v7
         if: failure()
         with:
-          name: ui-audit-${{ matrix.suite }}
-          path: ${{ runner.temp }}/${{ matrix.suite }}.xcresult
+          name: ui-audits-${{ matrix.shard }}
+          path: ${{ runner.temp }}/ui-audits.xcresult
           retention-days: 14

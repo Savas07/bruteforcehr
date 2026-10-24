@@ -61,6 +61,11 @@ const messages = defineMessages({
   back: { id: "onboarding.back", defaultMessage: "Back" },
   signOut: { id: "onboarding.signOut", defaultMessage: "Sign out" },
   skip: { id: "onboarding.skip", defaultMessage: "Skip for now" },
+  skipSearch: {
+    id: "onboarding.finish.skipSearch",
+    defaultMessage: "Finish without a search",
+    description: "Finish step: completes setup without creating the saved search",
+  },
   continue: { id: "onboarding.continue", defaultMessage: "Continue" },
   cvTitle: { id: "onboarding.cv.title", defaultMessage: "Add your CV" },
   cvBody: {
@@ -164,11 +169,14 @@ export function OnboardingWizard({
     }),
     [email, intl.locale],
   );
-  // The profile document, created once per mount; every write waits for it.
-  const [setup, setSetup] = useState<{ ready: Promise<void>; failed: boolean }>(() => ({
-    ready: store.ensureProfile(seed),
-    failed: false,
-  }));
+  // The profile document, created once per mount; every write waits for it. The failure is
+  // handled by the effect below (a StrictMode re-run discards one attempt, hence the no-op catch).
+  const startSetup = () => {
+    const ready = store.ensureProfile(seed);
+    ready.catch(() => undefined);
+    return { ready, failed: false };
+  };
+  const [setup, setSetup] = useState<{ ready: Promise<void>; failed: boolean }>(startSetup);
   useEffect(() => {
     let current = true;
     setup.ready.catch((error: unknown) => {
@@ -179,7 +187,7 @@ export function OnboardingWizard({
       current = false;
     };
   }, [setup.ready]);
-  const retrySetup = () => setSetup({ ready: store.ensureProfile(seed), failed: false });
+  const retrySetup = () => setSetup(startSetup());
 
   const [draft, setDraft] = useState<JobPreferencesDraft>(() =>
     draftFromProfile(profile ?? { ...EMPTY_JOB_PREFERENCES, fullName: seed.fullName }, intl.locale),
@@ -387,6 +395,8 @@ export function OnboardingWizard({
   }
 
   // ⌘↩ / Ctrl+Enter = primary (or Skip when there is none); ⌘[ / Alt+← = Back.
+  // 560 px column; the preferences form needs 200 px labels + 360 px controls side by side.
+  const columnWidth = step === "preferences" ? "max-w-166" : "max-w-140";
   const primaryRun = primary?.run ?? skip;
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -439,7 +449,7 @@ export function OnboardingWizard({
         </div>
       </header>
       <main className="min-h-0 flex-1 overflow-y-auto">
-        <div className="mx-auto flex w-full max-w-140 flex-col gap-6 px-8 pt-6 pb-10">
+        <div className={cx("mx-auto flex w-full flex-col gap-6 px-8 pt-6 pb-10", columnWidth)}>
           {setup.failed && (
             <InlineAlert
               tone="error"
@@ -461,14 +471,14 @@ export function OnboardingWizard({
         </div>
       </main>
       <footer className="border-line-subtle bg-surface-canvas shrink-0 border-t">
-        <div className="mx-auto flex w-full max-w-140 items-center justify-end gap-2 px-8 py-3">
+        <div className={cx("mx-auto flex w-full items-center justify-end gap-2 px-8 py-3", columnWidth)}>
           {skip && (
             <Button
               variant={primary ? "plain" : "secondary"}
               onClick={skip}
               {...(primary ? {} : { shortcut: "Mod+Enter" })}
             >
-              {intl.formatMessage(messages.skip)}
+              {intl.formatMessage(step === "finish" ? messages.skipSearch : messages.skip)}
             </Button>
           )}
           {primary && (

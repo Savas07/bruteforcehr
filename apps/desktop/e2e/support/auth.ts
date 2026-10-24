@@ -105,7 +105,7 @@ const headingText = () => browser.execute(() => document.querySelector("h1")?.te
 const SKIP_BY_STEP: Readonly<Record<string, readonly string[]>> = {
   "Add your CV": ["Skip for now", "Continue"],
   "What are you looking for?": ["Skip for now"],
-  "Start your first search": ["Go to Today", "Skip for now"],
+  "Start your first search": ["Go to Today", "Finish without a search"],
 };
 
 /**

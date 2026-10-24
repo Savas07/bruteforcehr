@@ -12,6 +12,7 @@
     "typecheck": "astro check"
   },
   "dependencies": {
+    "@bfhr/jobs-connectors": "workspace:*",
     "@bfhr/ui-tokens": "workspace:*",
     "@tailwindcss/vite": "^4.3.3",
     "astro": "7.4.1",

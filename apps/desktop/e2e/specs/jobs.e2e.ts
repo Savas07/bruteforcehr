@@ -10,7 +10,7 @@ import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { $, browser, expect } from "@wdio/globals";
 import { firebaseConfig } from "../../src/lib/firebase.ts";
-import { ensureSignedIn, testEmail } from "../support/auth";
+import { ensureSignedIn, signedInUid, testEmail } from "../support/auth";
 import { docId, findDocs, type FirestoreDoc, getDoc, plain } from "../support/firestore";
 
 const RUN = process.pid;
@@ -48,31 +48,6 @@ async function remove(name: string): Promise<void> {
     : name;
   const response = await fetch(`${BASE}/${path}`, { method: "DELETE", headers: OWNER });
   if (!response.ok && response.status !== 404) throw new Error(`DELETE ${path}: ${response.status}`);
-}
-
-/**
- * The uid of whoever is signed in (a restored session may belong to another spec's account):
- * Firebase Auth persists the user in the webview's IndexedDB (`firebaseLocalStorageDb`).
- */
-async function signedInUid(): Promise<string> {
-  const uid = await browser.executeAsync((done: (uid: string | null) => void) => {
-    const open = indexedDB.open("firebaseLocalStorageDb");
-    open.onerror = () => done(null);
-    open.onsuccess = () => {
-      const request = open.result
-        .transaction("firebaseLocalStorage", "readonly")
-        .objectStore("firebaseLocalStorage")
-        .getAll();
-      request.onerror = () => done(null);
-      request.onsuccess = () => {
-        const entries = request.result as { fbase_key?: string; value?: { uid?: string } }[];
-        const user = entries.find((entry) => entry.fbase_key?.startsWith("firebase:authUser:"));
-        done(user?.value?.uid ?? null);
-      };
-    };
-  });
-  if (!uid) throw new Error("no signed-in user in the app");
-  return uid;
 }
 
 function job(id: string, company: string, title: string, score: number) {

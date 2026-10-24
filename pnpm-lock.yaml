@@ -427,6 +427,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@bfhr/jobs-connectors':
+        specifier: workspace:*
+        version: link:../../packages/jobs-connectors
       '@bfhr/ui-tokens':
         specifier: workspace:*
         version: link:../../packages/ui-tokens

@@ -14,6 +14,7 @@ import { OFFLINE_PENDING_WRITES } from "./screens";
 import { readDesignParams } from "./search";
 import { DesignAuth } from "./auth";
 import { privacyDesignReauth } from "./data-privacy";
+import { DesignOnboarding } from "./onboarding";
 import { DesignMailConnectState } from "./mail-connect";
 import { DesignTrackerProviders } from "./tracker";
 import { DesignUpdates } from "./updates";
@@ -70,15 +71,17 @@ export function DesignRoot() {
           state={params.rest["auth"]}
           reauth={privacyDesignReauth(params.rest["privacy"], populatedDataset.profile.email.toLowerCase())}
         >
-          <AppShell
-            hosts={
-              <DesignTrackerProviders>
-                <AddApplicationHost />
-                <MailConnectHost />
-                <DesignMailConnectState />
-              </DesignTrackerProviders>
-            }
-          />
+          <DesignOnboarding state={params.rest["onboarding"]}>
+            <AppShell
+              hosts={
+                <DesignTrackerProviders>
+                  <AddApplicationHost />
+                  <MailConnectHost />
+                  <DesignMailConnectState />
+                </DesignTrackerProviders>
+              }
+            />
+          </DesignOnboarding>
         </DesignAuth>
       </DesignUpdates>
     </ConnectivityContext.Provider>

@@ -287,7 +287,7 @@ export function createFirestoreJobsRepository(uid: string): JobsRepository {
     async refreshMatches(jobIds) {
       await call(
         "jobMatchesRefresh",
-        { jobIds: [...jobIds] },
+        jobIds === undefined ? {} : { jobIds: [...jobIds] },
         JobMatchesRefreshResponseSchema,
         SEARCH_TIMEOUT_MS,
       );

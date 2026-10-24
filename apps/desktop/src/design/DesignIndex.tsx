@@ -28,6 +28,10 @@ const screenTitles: Readonly<Record<DesignScreenName, MessageDescriptor>> = defi
     id: "design.index.screen.settingsMail",
     defaultMessage: "Settings › Mail accounts",
   },
+  "settings-job-preferences": {
+    id: "design.index.screen.settingsJobPreferences",
+    defaultMessage: "Settings › Job preferences",
+  },
   "settings-notifications": {
     id: "design.index.screen.settingsNotifications",
     defaultMessage: "Settings › Notifications",

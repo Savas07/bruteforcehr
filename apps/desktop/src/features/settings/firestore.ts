@@ -101,6 +101,8 @@ export function profileUpdate(patch: ProfilePatch, now: Date): Record<string, un
   const data: Record<string, unknown> = converters.profile.toFirestoreUpdate({
     ...(patch.aiEnabled !== undefined && { aiEnabled: patch.aiEnabled }),
     ...(patch.uiLanguage !== undefined && { uiLanguage: patch.uiLanguage }),
+    ...(patch.fullName !== undefined && { fullName: patch.fullName }),
+    ...patch.preferences,
     updatedAt: now,
   });
   for (const [key, value] of Object.entries(patch.settings ?? {})) {

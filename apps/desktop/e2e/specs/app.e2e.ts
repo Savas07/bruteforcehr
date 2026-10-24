@@ -116,6 +116,26 @@ describe("BruteForceHR desktop", () => {
     await expect(sheet).not.toBeExisting();
   });
 
+  it("gives focus back to the opener when the palette or the shortcuts sheet closes", async () => {
+    // The embedded WebDriver's key presses are DOM events, so Tab doesn't move focus here (that's
+    // the browser's default action for a trusted key); the Tab walk is in keyboard-pass.md.
+    const today = $('nav[aria-label="Sections"] a[href$="/today"]');
+    await today.waitForDisplayed();
+    await browser.execute(() => {
+      document.querySelector<HTMLElement>('nav[aria-label="Sections"] a[href$="/today"]')?.focus();
+    });
+    await expect(today).toBeFocused();
+    // Neither overlay has a trigger; closing one returns focus to where it was opened from.
+    for (const key of ["k", "/"]) {
+      await pressShortcut(key);
+      const overlay = $('[role="dialog"]');
+      await expect(overlay).toBeDisplayed();
+      await browser.keys(Key.Escape);
+      await expect(overlay).not.toBeExisting();
+      await expect(today).toBeFocused();
+    }
+  });
+
   it("enforces the Content-Security-Policy", async () => {
     const result = await browser.execute(async () => {
       const script = document.createElement("script");

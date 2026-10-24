@@ -100,6 +100,10 @@ function mountCv(host: HTMLElement, html: string): { root: ShadowRoot; css: stri
   sheet.replaceSync(shadowCss(css));
   root.adoptedStyleSheets = [sheet];
   root.innerHTML = `<div class="cv-root" lang="${lang}">${body}</div>`;
+  // The CV's own links (email, website, profiles) are part of the picture, not controls: as tab
+  // stops they added up to seven unlabelled stops with no focus ring inside the scaled page. The
+  // preview itself stays one stop (the scrollable canvas); screen readers still read the links.
+  for (const link of root.querySelectorAll<HTMLElement>("a[href]")) link.tabIndex = -1;
   return { root, css };
 }
 

@@ -250,7 +250,9 @@ function EmailField({
         aria-describedby={error ? errorId : undefined}
         onChange={(event) => onChange(event.target.value)}
         className={cx(
-          "bg-surface-base text-fg-primary placeholder:text-fg-secondary h-10 rounded-md border px-3 text-body outline-none",
+          // No `outline-none`: in Tailwind 4 it sets the outline style to none, which also hid the
+          // focus-visible outline below (the field only changed its 1 px border colour).
+          "bg-surface-base text-fg-primary placeholder:text-fg-secondary h-10 rounded-md border px-3 text-body",
           error
             ? "border-danger-solid focus-visible:outline-danger-solid"
             : "border-line-control focus-visible:border-line-focus focus-visible:outline-line-focus",

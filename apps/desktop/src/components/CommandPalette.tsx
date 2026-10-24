@@ -1,4 +1,4 @@
-import { Command } from "cmdk";
+import { Command, useCommandState } from "cmdk";
 import { Keyboard, LogOut, RefreshCw, Search } from "lucide-react";
 import { Dialog } from "radix-ui";
 import { useRef, type ReactNode } from "react";
@@ -68,6 +68,25 @@ function FooterHint({ keys, children }: { keys: readonly string[]; children: Rea
   );
 }
 
+/**
+ * The result list. With no match the listbox leaves the accessibility tree (an empty listbox is
+ * invalid, axe aria-required-children) and the empty message, in a polite live region next to it,
+ * is announced instead.
+ */
+function PaletteResults({ empty, children }: { empty: string; children: ReactNode }) {
+  const nothing = useCommandState((state) => state.filtered.count === 0);
+  return (
+    <>
+      <div aria-live="polite">
+        {nothing && <p className="text-fg-secondary px-6 py-8 text-center text-callout">{empty}</p>}
+      </div>
+      <Command.List hidden={nothing} className="max-h-[min(360px,50vh)] overflow-y-auto p-2">
+        {children}
+      </Command.List>
+    </>
+  );
+}
+
 export function CommandPalette({
   open,
   onOpenChange,
@@ -76,6 +95,7 @@ export function CommandPalette({
   onCheckForUpdates,
   onOpenSettings,
   onSignOut,
+  onCloseAutoFocus,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -85,6 +105,8 @@ export function CommandPalette({
   /** Opens Settings on a pane (`settingsPanes` id). */
   onOpenSettings: (pane: string) => void;
   onSignOut: () => void;
+  /** Where focus goes when the palette closes without a command: it has no Radix trigger. */
+  onCloseAutoFocus: (event: Event) => void;
 }) {
   // After choosing a command, focus moves to its target instead of back to the opener.
   const intl = useIntl();
@@ -106,6 +128,7 @@ export function CommandPalette({
           }}
           onCloseAutoFocus={(event) => {
             if (handledCommand.current) event.preventDefault();
+            else onCloseAutoFocus(event);
           }}
           className="bg-surface-elevated shadow-modal fixed top-[14vh] left-1/2 z-(--bfhr-layer-palette) w-[min(560px,calc(100vw-32px))] -translate-x-1/2 overflow-hidden rounded-lg"
         >
@@ -118,12 +141,11 @@ export function CommandPalette({
                 className="placeholder:text-fg-secondary h-12 flex-1 bg-transparent text-body outline-none"
               />
             </div>
-            <Command.List className="max-h-[min(360px,50vh)] overflow-y-auto p-2">
-              <Command.Empty className="text-fg-secondary px-2.5 py-6 text-center text-callout">
-                {intl.formatMessage(messages.empty, {
-                  example: intl.formatMessage(destinationMessages.jobs),
-                })}
-              </Command.Empty>
+            <PaletteResults
+              empty={intl.formatMessage(messages.empty, {
+                example: intl.formatMessage(destinationMessages.jobs),
+              })}
+            >
               <Command.Group heading={intl.formatMessage(messages.goTo)} className={groupClass}>
                 {destinations.map((destination) => {
                   const Icon = destinationIcons[destination.id];
@@ -202,7 +224,7 @@ export function CommandPalette({
                   <span className="flex-1 truncate">{intl.formatMessage(messages.signOut)}</span>
                 </Command.Item>
               </Command.Group>
-            </Command.List>
+            </PaletteResults>
             {/* Visual hint only: the combobox keys are announced by the listbox semantics. */}
             <div
               aria-hidden="true"

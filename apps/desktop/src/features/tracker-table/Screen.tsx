@@ -341,8 +341,9 @@ function ReadyTable({
       keys: "Mod+Enter",
       label: intl.formatMessage(messages.keyOpenPage),
       group,
-      // With the panel open, ApplicationPanel owns Mod+Enter.
+      // With the panel open, ApplicationPanel owns Mod+Enter (and lists it in the sheet).
       enabled: focused !== null && openId === null,
+      hidden: openId !== null,
       run: () => {
         const applicationId = focused?.applicationId;
         if (applicationId)

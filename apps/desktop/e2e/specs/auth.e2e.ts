@@ -9,6 +9,7 @@ import {
   ensureSignedIn,
   ensureSignedOut,
   expectHeading,
+  expectSignedIn,
   finishPageLink,
   latestSignInCode,
   openThroughOs,
@@ -71,7 +72,8 @@ describe("Sign-in", () => {
 
     await field.setValue(email);
     await $('button[type="submit"]').click();
-    await expectHeading("Today", 20_000);
+    // A new account: onboarding first (skipped here, e2e/specs/onboarding.e2e.ts covers it).
+    await expectSignedIn();
   });
 
   it("signs out from the command palette and back in with a link", async () => {

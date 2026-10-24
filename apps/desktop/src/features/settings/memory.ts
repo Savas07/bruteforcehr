@@ -80,6 +80,7 @@ export function createMemorySettingsStore(options: MemorySettingsOptions): Memor
         ...overlay,
         ...patch,
         settings: { ...overlay?.settings, ...patch.settings },
+        preferences: { ...overlay?.preferences, ...patch.preferences },
       };
       for (const listener of overlayListeners) listener();
       return settle();

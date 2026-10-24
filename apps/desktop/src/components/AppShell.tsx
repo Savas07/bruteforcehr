@@ -7,6 +7,7 @@ import { SETTINGS_START_PANE } from "../lib/settings";
 import { shortcutForKey, shortcutMessage, shortcuts, type MenuCommand } from "../lib/shortcuts";
 import { AuthGate } from "../features/auth/AuthGate";
 import { useAuth } from "../features/auth/session";
+import { OnboardingGate } from "../features/onboarding/OnboardingGate";
 import { keymap } from "../shared/keyboard/keymap";
 import { useKeyBindings } from "../shared/keyboard/useKeyBindings";
 import { ConnectionBanner } from "../shared/ui/ConnectionBanner";
@@ -30,7 +31,8 @@ const messages = defineMessages({
 });
 
 /**
- * The signed-in app; signed out, the sign-in screen (src/features/auth). `hosts` are app-wide
+ * The signed-in app; signed out, the sign-in screen (src/features/auth); signed in before
+ * onboarding finished, the first-run wizard (src/features/onboarding). `hosts` are app-wide
  * pieces that need the signed-in shell (toasts, keymap) but no route: the Log an application
  * dialog and the interview reminder scheduler (src/router.tsx, src/design/DesignRoot.tsx).
  */
@@ -39,7 +41,9 @@ export function AppShell({ hosts }: { readonly hosts?: ReactNode }) {
     <UpdatesProvider>
       <AuthGate>
         <ToastProvider>
-          <Shell hosts={hosts} />
+          <OnboardingGate>
+            <Shell hosts={hosts} />
+          </OnboardingGate>
         </ToastProvider>
       </AuthGate>
     </UpdatesProvider>

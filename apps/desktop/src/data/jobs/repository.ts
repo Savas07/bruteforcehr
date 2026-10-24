@@ -94,8 +94,11 @@ export interface JobsRepository {
   setProfileSkill(skill: string, added: boolean, current: readonly string[]): PendingWrite;
   /** "Change" on the match's CV basis: the CV matches are scored against (`profile.defaultCvId`). */
   setMatchingCv(cvId: string | null): PendingWrite;
-  /** `jobMatchesRefresh`: re-scores these jobs against the current profile and CV. */
-  refreshMatches(jobIds: readonly string[]): Promise<void>;
+  /**
+   * `jobMatchesRefresh`: re-scores these jobs against the current profile and CV; without ids,
+   * the jobs nearest the profile (after onboarding or a preferences change).
+   */
+  refreshMatches(jobIds?: readonly string[]): Promise<void>;
   createSavedSearch(input: SavedSearchInput): PendingWrite<{ readonly savedSearchId: string }>;
   /** Edits a saved search; enabling it or changing its schedule runs it on the runner's next pass. */
   updateSavedSearch(savedSearch: SavedSearch, patch: SavedSearchPatch): PendingWrite;

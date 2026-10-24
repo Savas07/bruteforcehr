@@ -424,8 +424,15 @@ private struct AppPasswordForm: View {
 
     private var accountSection: some View {
         Section {
-            TextField(text: $model.address, prompt: Text(verbatim: "name@example.com")) {
+            // Wraps at large text sizes instead of clipping the address; Return moves on.
+            TextField(text: $model.address, prompt: Text(verbatim: "name@example.com"), axis: .vertical) {
                 Text(MailConnectStrings.address)
+            }
+            .lineLimit(1...3)
+            .onChange(of: model.address) { _, address in
+                guard address.contains(where: \.isNewline) else { return }
+                model.address = address.filter { !$0.isNewline }
+                focus = .password
             }
             .bfhrEmailInput()
             .focused($focus, equals: .address)
@@ -552,6 +559,9 @@ private struct EndpointFields: View {
                 Text(MailConnectStrings.host)
             }
             .lineLimit(1...3)
+            .onChange(of: endpoint.host) { _, host in
+                if host.contains(where: \.isNewline) { endpoint.host = host.filter { !$0.isNewline } }
+            }
             .bfhrLiteralInput()
             .accessibilityLabel(Text(MailConnectStrings.host))
             .accessibilityIdentifier("connect.\(identifier).host")

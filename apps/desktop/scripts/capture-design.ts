@@ -57,6 +57,10 @@ import {
   privacyDesignHash,
   type PrivacyDesignState,
   privacyDesignStates,
+  onboardingCaptureFileName,
+  onboardingDesignHash,
+  type OnboardingDesignState,
+  onboardingDesignStates,
   updateCaptureFileName,
   updateCaptureSize,
   updateDesignHash,
@@ -87,7 +91,8 @@ States:  ${designStates.join(", ")}
 Update:  update [--update-states ${updateDesignStates.join(",")}]
 Sign-in: sign-in [--auth-states ${authDesignStates.join(",")}]
 CSV:     tracker-csv [--csv-states ${csvDesignStates.join(",")}]
-Privacy: data-privacy [--privacy-states ${privacyDesignStates.join(",")}]`);
+Privacy: data-privacy [--privacy-states ${privacyDesignStates.join(",")}]
+Onboarding: onboarding [--onboarding-states ${onboardingDesignStates.join(",")}]`);
   process.exit(2);
 }
 
@@ -117,7 +122,8 @@ for (let index = 0; index < argv.length; index += 1) {
 }
 const runAxe = enabled.has("axe");
 const screenNames = Object.keys(designScreenPaths) as DesignScreenName[];
-if (positional.length === 0) usage("Name at least one screen (or all, update, sign-in, tracker-csv, data-privacy).");
+if (positional.length === 0)
+  usage("Name at least one screen (or all, update, sign-in, tracker-csv, data-privacy, onboarding).");
 /** `update` captures the update UI states (over Today) instead of a screen's five states. */
 const wantsUpdate = positional.includes("update");
 /** `sign-in` captures the signed-out window's states. */
@@ -126,12 +132,19 @@ const wantsSignIn = positional.includes("sign-in");
 const wantsCsv = positional.includes("tracker-csv");
 /** `data-privacy` captures Settings › Data & privacy. */
 const wantsPrivacy = positional.includes("data-privacy");
+/** `onboarding` captures the first-run wizard's states. */
+const wantsOnboarding = positional.includes("onboarding");
+const targets: Readonly<Record<string, true>> = {
+  update: true,
+  "sign-in": true,
+  "tracker-csv": true,
+  "data-privacy": true,
+  onboarding: true,
+};
 const screens: DesignScreenName[] = positional.includes("all")
   ? screenNames
   : positional
-      .filter(
-        (name) => name !== "update" && name !== "sign-in" && name !== "tracker-csv" && name !== "data-privacy",
-      )
+      .filter((name) => !targets[name])
       .map((name) =>
         screenNames.includes(name as DesignScreenName)
           ? (name as DesignScreenName)
@@ -147,6 +160,9 @@ const authStates = wantsSignIn
 const csvStates = wantsCsv ? pick<CsvDesignState>(options["csv-states"], csvDesignStates, "CSV state") : [];
 const privacyStates = wantsPrivacy
   ? pick<PrivacyDesignState>(options["privacy-states"], privacyDesignStates, "data & privacy state")
+  : [];
+const onboardingStates = wantsOnboarding
+  ? pick<OnboardingDesignState>(options["onboarding-states"], onboardingDesignStates, "onboarding state")
   : [];
 const themes = pick<CaptureTheme>(options["themes"], captureThemes, "theme");
 const engineNames = pick<EngineName>(options["engines"], Object.keys(engines) as EngineName[], "engine");
@@ -246,6 +262,11 @@ const batches: Batch[] = sizes.map((size, sizeIndex) => ({
       hash: (platform) => privacyDesignHash(state, routeExtras(platform)),
       file: (theme) => privacyCaptureFileName(state, theme, size),
       audit: sizeIndex === 0 ? (theme, engine) => `data-privacy-${state}-${theme}-${engine}` : null,
+    })),
+    ...onboardingStates.map((state): Shot => ({
+      hash: (platform) => onboardingDesignHash(state, routeExtras(platform)),
+      file: (theme) => onboardingCaptureFileName(state, theme, size),
+      audit: sizeIndex === 0 ? (theme, engine) => `onboarding-${state}-${theme}-${engine}` : null,
     })),
   ],
 }));

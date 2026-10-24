@@ -87,14 +87,8 @@ export class RestClient {
     return (await response.json()) as T;
   }
 
-  /** Request without `Authorization` (pre-authenticated URLs such as Graph upload sessions). */
-  async unauthenticated(url: string, request: RestRequest): Promise<Response> {
-    return this.#check(await this.#send(url, request, null), request);
-  }
-
-  async #send(url: string, request: RestRequest, token: string | null): Promise<Response> {
-    const headers: Record<string, string> = { ...request.headers };
-    if (token !== null) headers.Authorization = `Bearer ${token}`;
+  async #send(url: string, request: RestRequest, token: string): Promise<Response> {
+    const headers: Record<string, string> = { ...request.headers, Authorization: `Bearer ${token}` };
     try {
       return await this.#fetch(url, {
         method: request.method ?? "GET",

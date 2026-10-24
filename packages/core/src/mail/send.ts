@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { IdSchema, TimestampSchema } from "../common";
+import type { MailProvider } from "../enums";
 import { MailAddressSchema } from "./schemas";
 
 /**
@@ -8,8 +9,21 @@ import { MailAddressSchema } from "./schemas";
  * and `mailSendNow` skips the rest of it. Progress and result live on `applications/{id}.emailSend`.
  */
 export const MAIL_SEND_UNDO_SECONDS = 10;
-/** Provider limits leave room for MIME/base64 overhead (Gmail 25 MB, Graph 150 MB via upload sessions). */
+/** Gmail and IMAP accounts: provider limits (Gmail 25 MB) leave room for MIME/base64 overhead. */
 export const MAIL_SEND_MAX_ATTACHMENT_BYTES = 18 * 1024 * 1024;
+/**
+ * Microsoft accounts send with one Graph `sendMail` (or `reply`) request that carries the
+ * attachments base64-encoded, and Graph caps a request at about 4 MB. The server refuses a larger
+ * request before calling Graph (`attachments_too_large`, `details.limitBytes`).
+ */
+export const MAIL_SEND_MICROSOFT_MAX_REQUEST_BYTES = 4_000_000;
+/** Attachments a Microsoft account can send: base64 grows them by a third, the rest is the message. */
+export const MAIL_SEND_MICROSOFT_MAX_ATTACHMENT_BYTES = 2_900_000;
+
+/** Total attachment size an account of `provider` can send; clients check it before sending. */
+export function mailSendMaxAttachmentBytes(provider: MailProvider): number {
+  return provider === "microsoft" ? MAIL_SEND_MICROSOFT_MAX_ATTACHMENT_BYTES : MAIL_SEND_MAX_ATTACHMENT_BYTES;
+}
 export const MAIL_SEND_MAX_ATTACHMENTS = 5;
 /** Storage prefix for files the user attaches from their device (`users/{uid}/mail-attachments/{fileId}`). */
 export const MAIL_ATTACHMENT_STORAGE_DIR = "mail-attachments";
@@ -104,7 +118,10 @@ export type MailSendCancelResponse = z.infer<typeof MailSendCancelResponseSchema
 export const MailSendNowResponseSchema = z.object({ state: z.enum(["sent", "failed"]) });
 export type MailSendNowResponse = z.infer<typeof MailSendNowResponseSchema>;
 
-/** `details.reason` of mail send errors (client copy keys). */
+/**
+ * `details.reason` of mail send errors (client copy keys). `attachments_too_large` also carries
+ * `details.limitBytes`: the attachment total this account can send with this message.
+ */
 export const MAIL_SEND_ERROR_REASONS = [
   "email_unverified",
   "account_not_found",

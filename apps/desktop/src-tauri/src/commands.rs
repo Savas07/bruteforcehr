@@ -298,17 +298,18 @@ pub async fn print_cv_pdf<R: Runtime>(
     Ok(Response::new(pdf))
 }
 
-/// Saves an exported CV through the native Save dialog (`src/export_file.rs`). The file's bytes are
-/// the raw request body; the suggested file name (percent-encoded) and the kind (`pdf`, `docx`,
-/// `json`) are the `bfhr-file-name` and `bfhr-export-kind` headers. Returns the saved path, or
-/// null when the dialog is cancelled.
+/// Saves an exported file (a CV, an interview `.ics`, a CSV, the account export ZIP) through the
+/// native Save dialog (`src/export_file.rs`). The file's bytes are the raw request body; the
+/// suggested file name (percent-encoded) and the kind (`pdf`, `docx`, `json`, `ics`, `csv`, `zip`)
+/// are the `bfhr-file-name` and `bfhr-export-kind` headers. Returns the saved path, or null when
+/// the dialog is cancelled.
 #[tauri::command]
 pub async fn save_export<R: Runtime>(
     window: WebviewWindow<R>,
     request: Request<'_>,
 ) -> Result<Option<String>, CommandError> {
-    let bytes = export_file::body_bytes(request.body())?;
     let kind = export_file::kind_from_headers(request.headers())?;
+    let bytes = export_file::body_bytes(request.body(), kind)?;
     let file_name = export_file::file_name_from_headers(request.headers(), kind)?;
     let path = export_file::save(&window, &bytes, &file_name, kind).await?;
     Ok(path.map(|path| path.to_string_lossy().into_owned()))

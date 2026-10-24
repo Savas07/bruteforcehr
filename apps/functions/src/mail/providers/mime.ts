@@ -5,13 +5,17 @@ import type { OutgoingMail } from "./types";
 
 const formatAddress = ({ name, address }: MailAddress) => ({ name: name ?? "", address });
 
+/** A fresh RFC 822 Message-ID on the sender's domain; providers store it for reply tracking. */
+export function newMessageId(fromAddress: string): string {
+  return `<${randomUUID()}@${fromAddress.slice(fromAddress.lastIndexOf("@") + 1)}>`;
+}
+
 /**
  * RFC 822 source of an outgoing message (Gmail API raw send, SMTP + IMAP APPEND to Sent).
  * The Message-ID is generated here, so every provider path can store it for reply tracking.
  */
 export async function composeMime(message: OutgoingMail): Promise<{ raw: Buffer; messageId: string }> {
-  const domain = message.from.address.slice(message.from.address.lastIndexOf("@") + 1);
-  const messageId = `<${randomUUID()}@${domain}>`;
+  const messageId = newMessageId(message.from.address);
   const references = message.replyTo
     ? [...message.replyTo.references, message.replyTo.rfc822MessageId].filter(
         (id): id is string => id !== null,

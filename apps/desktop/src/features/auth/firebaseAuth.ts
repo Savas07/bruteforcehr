@@ -41,6 +41,17 @@ export function currentUid(): string | null {
   return firebaseAuth().currentUser?.uid ?? null;
 }
 
+/**
+ * The signed-in session's `auth_time` claim in seconds: when the user last signed in with a link
+ * (Settings › Delete account needs a recent one). Rejects when signed out.
+ */
+export async function authTimeSeconds(): Promise<number> {
+  const user = firebaseAuth().currentUser;
+  if (!user) throw new Error("Not signed in");
+  const { authTime } = await user.getIdTokenResult();
+  return Date.parse(authTime) / 1000;
+}
+
 /** `language` localizes Firebase's sign-in email (its template has EN, TR and DE). */
 export function createFirebaseAuthBackend(language: UiLanguage): AuthBackend {
   const instance = firebaseAuth();

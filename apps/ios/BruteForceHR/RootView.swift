@@ -18,16 +18,24 @@ struct RootView: View {
     @State private var authListener: AuthStateDidChangeListenerHandle?
     /// Today and the Tracker on Firestore for the signed-in user (M3), shared by both tabs.
     @State private var live: LiveUserData?
+    /// Settings › Data & privacy for the signed-in user (M5): kept for the session so an export
+    /// and a pending re-authentication survive leaving the page; the Settings shell shows it with
+    /// `DataPrivacyView(model:)`.
+    @State private var dataPrivacy: DataPrivacyModel?
     @State private var notifications = NotificationRouter.shared
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         Group {
-            if showsApp {
-                tabs
+            #if DEBUG
+            if let state = DesignDataPrivacyState.launch {
+                DesignDataPrivacyScreen(state, languageCode: FirebaseEmailLinkService.languageCode)
             } else {
-                SignInScreen(model: signIn)
+                content
             }
+            #else
+            content
+            #endif
         }
         .tint(BFHRColor.tint)
         .environment(toasts)
@@ -62,6 +70,14 @@ struct RootView: View {
         }
     }
 
+    @ViewBuilder private var content: some View {
+        if showsApp {
+            tabs
+        } else {
+            SignInScreen(model: signIn)
+        }
+    }
+
     private var tabs: some View {
         TabView(selection: $selection) {
             ForEach(AppTab.allCases) { tab in
@@ -85,10 +101,15 @@ struct RootView: View {
         })
     }
 
-    /// Sign-in links go to the sign-in flow; other `bruteforcehr://` links select their tab.
+    /// Sign-in links go to the sign-in flow, or, while signed in, to a waiting re-authentication
+    /// (Delete account); other `bruteforcehr://` links select their tab.
     private func open(_ url: URL) {
         if SignInModel.handles(url) {
-            Task { await signIn.open(url) }
+            if signIn.isSignedIn, let dataPrivacy, dataPrivacy.acceptsReauthLink {
+                Task { await dataPrivacy.openReauthLink(url) }
+            } else {
+                Task { await signIn.open(url) }
+            }
         } else if AppTab(deepLink: url) != nil {
             navigate(to: url)
         }
@@ -110,21 +131,26 @@ struct RootView: View {
 
     private func syncSession() {
         #if DEBUG
-        if DesignScenario.launch != nil || DesignUpdateState.launch != nil || DesignSignInState.launch != nil { return }
+        if DesignScenario.launch != nil || DesignUpdateState.launch != nil || DesignSignInState.launch != nil
+            || DesignDataPrivacyState.launch != nil { return }
         #endif
-        let uid = signIn.isSignedIn ? Auth.auth().currentUser?.uid : nil
-        guard let uid else {
+        let user = signIn.isSignedIn ? Auth.auth().currentUser : nil
+        guard let user else {
             if live != nil {
                 NotificationReminderScheduler.removeAll()
                 PushRegistrar.shared.signedOut()
             }
             live = nil
+            dataPrivacy = nil
             return
         }
-        guard live?.uid != uid else { return }
-        let session = LiveUserData(uid: uid)
+        if dataPrivacy == nil, let email = user.email {
+            dataPrivacy = FirebaseAccountDataService.makeModel(signIn: signIn, email: email)
+        }
+        guard live?.uid != user.uid else { return }
+        let session = LiveUserData(uid: user.uid)
         live = session
-        PushRegistrar.shared.signedIn(uid: uid)
+        PushRegistrar.shared.signedIn(uid: user.uid)
         Task { await session.refreshNotifications() }
     }
 
@@ -148,7 +174,7 @@ struct RootView: View {
     /// Design states never talk to Firebase Auth.
     private static var usesFirebaseAuth: Bool {
         #if DEBUG
-        return DesignSignInState.launch == nil
+        return DesignSignInState.launch == nil && DesignDataPrivacyState.launch == nil
         #else
         return true
         #endif
@@ -166,6 +192,7 @@ struct RootView: View {
     private static var readsAppConfig: Bool {
         #if DEBUG
         return DesignScenario.launch == nil && DesignUpdateState.launch == nil && DesignSignInState.launch == nil
+            && DesignDataPrivacyState.launch == nil
         #else
         return true
         #endif

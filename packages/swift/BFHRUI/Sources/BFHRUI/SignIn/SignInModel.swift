@@ -121,6 +121,12 @@ public final class SignInModel {
         case other
     }
 
+    /// A calm note on the email step after leaving the app on purpose (not an error).
+    public nonisolated enum Notice: Equatable, Sendable {
+        /// The account was deleted (Settings › Data & privacy › Delete account).
+        case accountDeleted
+    }
+
     /// Time between two links to the same address.
     public static let resendCooldown: TimeInterval = 60
 
@@ -136,6 +142,8 @@ public final class SignInModel {
     /// The signed-in account's address; nil while signed out.
     public private(set) var signedInEmail: String?
     public internal(set) var sentAt: Date?
+    /// Shown once on the email step; cleared by the next send or by closing it.
+    public internal(set) var notice: Notice?
 
     private let service: EmailLinkAuthService
     private let store: SignInStore
@@ -201,6 +209,27 @@ public final class SignInModel {
         sendError = nil
     }
 
+    /// After `accountDelete` succeeded: the Auth user is gone, so this signs out locally, forgets
+    /// the address (nothing to sign back into) and shows the deletion notice on the email step.
+    public func accountDeleted() {
+        try? service.signOut()
+        store.pendingEmail = nil
+        store.sentAt = nil
+        store.lastEmail = nil
+        signedInEmail = nil
+        sentAt = nil
+        didResend = false
+        fieldError = nil
+        sendError = nil
+        emailDraft = ""
+        step = .enterEmail
+        notice = .accountDeleted
+    }
+
+    public func dismissNotice() {
+        notice = nil
+    }
+
     private func didSignIn(_ email: String) {
         store.pendingEmail = nil
         store.sentAt = nil
@@ -209,6 +238,7 @@ public final class SignInModel {
         didResend = false
         fieldError = nil
         sendError = nil
+        notice = nil
         step = .enterEmail
         emailDraft = email
     }
@@ -223,6 +253,7 @@ public final class SignInModel {
             return
         }
         emailDraft = email
+        notice = nil
         if await send(to: email) {
             step = .checkEmail(address: email)
             didResend = false

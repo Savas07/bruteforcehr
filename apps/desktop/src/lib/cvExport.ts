@@ -10,9 +10,16 @@ export type PaperSize = "a4" | "letter";
 
 /**
  * What `saveExportFile` saves; picks the Save dialog's file-type filter and the extension: CVs
- * (`pdf`, `docx`, `json`), interviews as iCalendar (`ics`), applications as a spreadsheet (`csv`).
+ * (`pdf`, `docx`, `json`), interviews as iCalendar (`ics`), applications as a spreadsheet (`csv`),
+ * and Settings › Data & privacy's "Export everything" ZIP (`zip`).
  */
-export type ExportKind = "pdf" | "docx" | "json" | "ics" | "csv";
+export type ExportKind = "pdf" | "docx" | "json" | "ics" | "csv" | "zip";
+
+/**
+ * Largest `zip` `save_export` accepts (`MAX_ACCOUNT_EXPORT_BYTES` in src-tauri/src/export_file.rs):
+ * `accountExport` refuses data over 300 MiB, and the ZIP adds a little to that. Other kinds: 64 MiB.
+ */
+export const MAX_ACCOUNT_EXPORT_BYTES = 320 * 1024 * 1024;
 
 /** The formats a CV exports to. */
 export type CvExportKind = Extract<ExportKind, "pdf" | "docx" | "json">;

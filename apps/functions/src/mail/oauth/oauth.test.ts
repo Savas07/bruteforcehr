@@ -204,14 +204,25 @@ describe("microsoftOAuth", () => {
       response_mode: "query",
       scope:
         "openid email profile offline_access https://graph.microsoft.com/Mail.Read https://graph.microsoft.com/User.Read " +
-        "https://graph.microsoft.com/Mail.ReadWrite https://graph.microsoft.com/Mail.Send",
+        "https://graph.microsoft.com/Mail.Send",
       state: "state-1",
       prompt: "select_account",
       code_challenge: "challenge-1",
       code_challenge_method: "S256",
       login_hint: "ada@contoso.com",
     });
-    expect(microsoft.scopesFor("read")).not.toContain("https://graph.microsoft.com/Mail.Send");
+    // Exactly what the privacy policy lists: reading asks Mail.Read, User.Read, offline_access and
+    // OpenID; sending adds Mail.Send and nothing else (no Mail.ReadWrite).
+    const read = [
+      "openid",
+      "email",
+      "profile",
+      "offline_access",
+      "https://graph.microsoft.com/Mail.Read",
+      "https://graph.microsoft.com/User.Read",
+    ];
+    expect(microsoft.scopesFor("read")).toEqual(read);
+    expect(microsoft.scopesFor("send")).toEqual([...read, "https://graph.microsoft.com/Mail.Send"]);
     expect(microsoft.readScope).toBe("https://graph.microsoft.com/Mail.Read");
     expect(microsoft.sendScope).toBe("https://graph.microsoft.com/Mail.Send");
   });

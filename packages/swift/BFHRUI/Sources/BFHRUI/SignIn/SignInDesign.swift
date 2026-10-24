@@ -28,6 +28,8 @@ public enum DesignSignInState: String, CaseIterable, Sendable {
     case unusable
     /// The link is fine but the connection failed.
     case retry
+    /// The welcome screen right after Delete account: the one-time deletion notice.
+    case deleted
 
     /// Parses `-BFHRSignIn`; nil when absent or unknown.
     public static func parse(arguments: [String]) -> DesignSignInState? {
@@ -75,6 +77,8 @@ public enum DesignSignInState: String, CaseIterable, Sendable {
             model.step = .linkFailed(.unusable)
         case .retry:
             model.step = .linkFailed(.retryable(offline: true, email: Self.address, actionLink: Self.link))
+        case .deleted:
+            model.accountDeleted()
         }
         return model
     }

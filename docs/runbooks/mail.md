@@ -36,9 +36,10 @@ Google OAuth clients for Google APIs can only be created in the Cloud Console (g
 ### Microsoft (Entra app)
 
 1. Entra admin center → App registrations → New: name BruteForceHR, **Accounts in any organizational directory and personal Microsoft accounts**, redirect **Web** `https://bruteforcehr.web.app/connect/microsoft/callback`.
-2. API permissions (Microsoft Graph, delegated): `openid`, `email`, `profile`, `offline_access`, `User.Read`, `Mail.Read`, `Mail.ReadWrite`, `Mail.Send`.
+2. API permissions (Microsoft Graph, delegated): `openid`, `email`, `profile`, `offline_access`, `User.Read`, `Mail.Read`, `Mail.Send`. Nothing else: these are exactly what the privacy policy lists (reading asks for `Mail.Read`, `User.Read`, `offline_access` and OpenID; `Mail.Send` is requested separately the first time the user sends). Don't add `Mail.ReadWrite`; sending doesn't use drafts.
 3. Certificates & secrets → New client secret (24 months; put the expiry in the calendar).
 4. `firebase functions:secrets:set MICROSOFT_OAUTH_CLIENT` with `{"clientId":"<Application (client) ID>","clientSecret":"<value>"}`; redeploy as above.
+5. Check: connect, then send a test email apply with a CV to yourself. Expect exactly one copy in Sent Items, and in the received message's headers a `Message-ID` equal to `applications/{id}.emailSend.rfc822MessageId` (we set it through an extended property; if Exchange replaced it, replies can still link by conversation only for follow-ups: report it). Send a follow-up and expect it in the same conversation. Attachments over about 2.9 MB in total are refused before sending (`attachments_too_large`, see Operations).
 
 ### Live IMAP check (no account could be created without the owner)
 
@@ -56,6 +57,7 @@ Free providers require phone or CAPTCHA verification to create a mailbox, so no 
 - **Account stuck in `syncing`:** a crashed run holds the lease up to 9 minutes; the next poll continues.
 - **`needs_reauth`:** the user reconnects (IMAP: new app password through `mailConnectImap` with `accountId`; OAuth: `mailConnectStart`).
 - **Re-run a lookback scan:** `mailBackfillStart({ accountId, lookbackDays })`.
+- **`attachments_too_large` from a Microsoft account:** expected above about 2.9 MB of attachments. Graph's `sendMail`/`reply` carries the files base64-encoded in one request capped at about 4 MB (`MAIL_SEND_MICROSOFT_MAX_REQUEST_BYTES`), and we don't use upload sessions because they need `Mail.ReadWrite`. `details.limitBytes` tells the client how much fits next to that message. The dispatch refuses the same way (`emailSend.error.code` `attachments_too_large`) if a file grew after scheduling.
 - **Eval:** `ANTHROPIC_API_KEY=$(gcloud secrets versions access latest --secret ANTHROPIC_API_KEY --project bruteforcehr) pnpm --filter @bfhr/ai eval:mail` (≈ $0.05); commit `eval/mail/recordings/*.json` and `report.md`.
 - **Desktop E2E:** `apps/desktop/e2e/specs/mail.e2e.ts` runs the built app against the Auth, Firestore, Storage **and Functions** emulators (`BFHR_EMULATORS=auth,firestore,storage,functions scripts/with-emulators.sh pnpm test:e2e`, which builds `apps/functions` first and writes `lib/default/.env.local` with `PUBLIC_BASE_URL`): it seeds an inbox, an Applied application and a pending invite, confirms in Mail, waits for `mailMessageReviewed` to move the application to Interviewing, then undoes the move from the application's timeline. Secrets are unset in the emulator, so `mailConnectStart` answers `provider_not_configured` there too.
 - **Emulator tests:** `pnpm --filter @bfhr/functions test:emulator` runs `src/mail/emulator/*.emulator.test.ts` (lookback scan and incremental sync against imapkit, email apply through smtp-server with a Storage attachment, the review and retention triggers, the OAuth callback with a fake provider) on the Firestore and Storage emulators. They need Java, so they run in CI (job `rules`); the default `test` excludes them.

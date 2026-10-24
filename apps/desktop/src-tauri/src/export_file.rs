@@ -1,5 +1,5 @@
 //! Saving an exported file (CV as PDF, DOCX or JSON Resume; interviews as an iCalendar file;
-//! applications as CSV): the native Save dialog, then the file.
+//! applications as CSV; the account's "Export everything" ZIP): the native Save dialog, then the file.
 //!
 //! The bytes arrive as the raw IPC request body; the suggested file name and the kind arrive as
 //! headers (src/lib/cvExport.ts). In E2E builds, `BFHR_E2E_EXPORT_DIR` replaces the dialog.
@@ -18,11 +18,15 @@ use tokio::sync::oneshot;
 
 /// The suggested file name, percent-encoded (`encodeURIComponent`).
 pub const FILE_NAME_HEADER: &str = "bfhr-file-name";
-/// `pdf`, `docx`, `json`, `ics` or `csv`.
+/// `pdf`, `docx`, `json`, `ics`, `csv` or `zip`.
 pub const KIND_HEADER: &str = "bfhr-export-kind";
 
 /// Upper bound for an exported file; CVs are well below 1 MB.
 pub const MAX_EXPORT_BYTES: usize = 64 * 1024 * 1024;
+
+/// Upper bound for the account export ZIP: `accountExport` refuses data over 300 MiB
+/// (`ACCOUNT_EXPORT_LIMITS.maxBytes` in @bfhr/core), plus room for the archive's own overhead.
+pub const MAX_ACCOUNT_EXPORT_BYTES: usize = 320 * 1024 * 1024;
 
 /// File names most file systems accept (NTFS, APFS: 255).
 const MAX_FILE_NAME_BYTES: usize = 255;
@@ -42,6 +46,8 @@ pub enum ExportKind {
     Ics,
     /// Applications as a spreadsheet (Tracker table export).
     Csv,
+    /// Settings › Data & privacy "Export everything" (JSON files + CV files).
+    Zip,
 }
 
 impl ExportKind {
@@ -52,6 +58,7 @@ impl ExportKind {
             "json" => Some(Self::Json),
             "ics" => Some(Self::Ics),
             "csv" => Some(Self::Csv),
+            "zip" => Some(Self::Zip),
             _ => None,
         }
     }
@@ -63,6 +70,15 @@ impl ExportKind {
             Self::Json => "json",
             Self::Ics => "ics",
             Self::Csv => "csv",
+            Self::Zip => "zip",
+        }
+    }
+
+    /// Largest file of this kind [`body_bytes`] accepts.
+    pub fn max_bytes(self) -> usize {
+        match self {
+            Self::Zip => MAX_ACCOUNT_EXPORT_BYTES,
+            _ => MAX_EXPORT_BYTES,
         }
     }
 
@@ -74,6 +90,7 @@ impl ExportKind {
             Self::Json => "JSON Resume",
             Self::Ics => "iCalendar",
             Self::Csv => "CSV",
+            Self::Zip => "ZIP",
         }
     }
 }
@@ -84,9 +101,9 @@ pub enum ExportError {
     NotBytes,
     /// The file is empty.
     Empty,
-    /// The file is larger than [`MAX_EXPORT_BYTES`].
-    TooLarge { bytes: usize },
-    /// The kind header is missing or not `pdf`, `docx`, `json`, `ics` or `csv`.
+    /// The file is larger than its kind's [`ExportKind::max_bytes`].
+    TooLarge { bytes: usize, max: usize },
+    /// The kind header is missing or not `pdf`, `docx`, `json`, `ics`, `csv` or `zip`.
     InvalidKind,
     /// The suggested file name is missing or not a plain file name with the kind's extension.
     InvalidFileName(&'static str),
@@ -101,11 +118,12 @@ impl fmt::Display for ExportError {
         match self {
             Self::NotBytes => f.write_str("the request body must be the file's bytes"),
             Self::Empty => f.write_str("the file is empty"),
-            Self::TooLarge { bytes } => write!(
-                f,
-                "the file is {bytes} bytes; at most {MAX_EXPORT_BYTES} are accepted"
-            ),
-            Self::InvalidKind => f.write_str("the export kind must be pdf, docx, json, ics or csv"),
+            Self::TooLarge { bytes, max } => {
+                write!(f, "the file is {bytes} bytes; at most {max} are accepted")
+            }
+            Self::InvalidKind => {
+                f.write_str("the export kind must be pdf, docx, json, ics, csv or zip")
+            }
             Self::InvalidFileName(reason) => write!(f, "the file name {reason}"),
             Self::Dialog(message) => write!(f, "the Save dialog failed: {message}"),
             Self::Write(error) => write!(f, "the file could not be written: {error}"),
@@ -178,9 +196,9 @@ pub fn validate_file_name(name: &str, kind: ExportKind) -> Result<(), ExportErro
     Ok(())
 }
 
-/// The file's bytes from the request body, checked for size. They arrive raw, or (when the IPC
-/// custom protocol is unavailable and Tauri falls back to `postMessage`) as a JSON array.
-pub fn body_bytes(body: &InvokeBody) -> Result<Cow<'_, [u8]>, ExportError> {
+/// The file's bytes from the request body, checked for the kind's size. They arrive raw, or (when
+/// the IPC custom protocol is unavailable and Tauri falls back to `postMessage`) as a JSON array.
+pub fn body_bytes(body: &InvokeBody, kind: ExportKind) -> Result<Cow<'_, [u8]>, ExportError> {
     let bytes = match body {
         InvokeBody::Raw(bytes) => Cow::Borrowed(bytes.as_slice()),
         InvokeBody::Json(value) => {
@@ -190,8 +208,11 @@ pub fn body_bytes(body: &InvokeBody) -> Result<Cow<'_, [u8]>, ExportError> {
     if bytes.is_empty() {
         return Err(ExportError::Empty);
     }
-    if bytes.len() > MAX_EXPORT_BYTES {
-        return Err(ExportError::TooLarge { bytes: bytes.len() });
+    if bytes.len() > kind.max_bytes() {
+        return Err(ExportError::TooLarge {
+            bytes: bytes.len(),
+            max: kind.max_bytes(),
+        });
     }
     Ok(bytes)
 }
@@ -243,8 +264,9 @@ pub async fn save<R: Runtime>(
 #[cfg(test)]
 mod tests {
     use super::{
-        ExportError, ExportKind, FILE_NAME_HEADER, KIND_HEADER, MAX_EXPORT_BYTES, body_bytes,
-        file_name_from_headers, kind_from_headers, validate_file_name,
+        ExportError, ExportKind, FILE_NAME_HEADER, KIND_HEADER, MAX_ACCOUNT_EXPORT_BYTES,
+        MAX_EXPORT_BYTES, body_bytes, file_name_from_headers, kind_from_headers,
+        validate_file_name,
     };
     use serde_json::json;
     use tauri::http::{HeaderMap, HeaderValue};
@@ -265,6 +287,7 @@ mod tests {
             ("json", ExportKind::Json),
             ("ics", ExportKind::Ics),
             ("csv", ExportKind::Csv),
+            ("zip", ExportKind::Zip),
         ] {
             assert_eq!(kind.extension(), name);
             assert_eq!(
@@ -322,6 +345,7 @@ mod tests {
             ("Ada-Lovelace-CV.json", ExportKind::Json),
             ("Interview-Acme-Round 2.ics", ExportKind::Ics),
             ("BruteForceHR-applications-2026-10-23.csv", ExportKind::Csv),
+            ("bruteforcehr-export-2026-10-24.zip", ExportKind::Zip),
             ("Console.pdf", ExportKind::Pdf),
         ] {
             assert!(validate_file_name(name, kind).is_ok(), "{name}");
@@ -332,6 +356,7 @@ mod tests {
             ("cv.docx", ExportKind::Pdf),
             ("cv.pdf", ExportKind::Json),
             ("interview.csv", ExportKind::Ics),
+            ("export.pdf", ExportKind::Zip),
             ("../cv.pdf", ExportKind::Pdf),
             ("dir/cv.pdf", ExportKind::Pdf),
             ("dir\\cv.pdf", ExportKind::Pdf),
@@ -355,15 +380,31 @@ mod tests {
     #[test]
     fn bodies_are_non_empty_bounded_bytes() {
         let raw = InvokeBody::Raw(b"%PDF-1.7".to_vec());
-        assert_eq!(body_bytes(&raw).unwrap().as_ref(), b"%PDF-1.7");
+        assert_eq!(
+            body_bytes(&raw, ExportKind::Pdf).unwrap().as_ref(),
+            b"%PDF-1.7"
+        );
         let json = InvokeBody::Json(json!([37, 80, 68, 70]));
-        assert_eq!(body_bytes(&json).unwrap().as_ref(), b"%PDF");
+        assert_eq!(
+            body_bytes(&json, ExportKind::Pdf).unwrap().as_ref(),
+            b"%PDF"
+        );
         assert!(matches!(
-            body_bytes(&InvokeBody::Raw(Vec::new())),
+            body_bytes(&InvokeBody::Raw(Vec::new()), ExportKind::Pdf),
             Err(ExportError::Empty)
         ));
+        let over_default = InvokeBody::Raw(vec![0; MAX_EXPORT_BYTES + 1]);
         assert!(matches!(
-            body_bytes(&InvokeBody::Raw(vec![0; MAX_EXPORT_BYTES + 1])),
+            body_bytes(&over_default, ExportKind::Pdf),
+            Err(ExportError::TooLarge { .. })
+        ));
+        // The account export ZIP may be larger than other exports, up to its own cap.
+        assert!(body_bytes(&over_default, ExportKind::Zip).is_ok());
+        assert!(matches!(
+            body_bytes(
+                &InvokeBody::Raw(vec![0; MAX_ACCOUNT_EXPORT_BYTES + 1]),
+                ExportKind::Zip
+            ),
             Err(ExportError::TooLarge { .. })
         ));
         for value in [
@@ -373,7 +414,7 @@ mod tests {
             json!(null),
         ] {
             assert!(matches!(
-                body_bytes(&InvokeBody::Json(value)),
+                body_bytes(&InvokeBody::Json(value), ExportKind::Pdf),
                 Err(ExportError::NotBytes)
             ));
         }

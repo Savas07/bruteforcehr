@@ -7,6 +7,7 @@ mod cv_pdf;
 mod export_file;
 mod external_url;
 mod job_url;
+mod mail_connect;
 mod mail_inbox;
 mod mailto;
 mod menu;
@@ -25,7 +26,8 @@ fn main() {
             auth_link::focus_main(app);
         }))
         // `bruteforcehr://` (plugins.deep-link in tauri.conf.json). Used from Rust only: links reach
-        // the UI after `auth_link` has checked them; none of the plugin's JS commands are granted.
+        // the UI after `auth_link` / `mail_connect` have checked them; none of the plugin's JS
+        // commands are granted.
         .plugin(tauri_plugin_deep_link::init())
         .plugin(
             // Used from Rust only (commands::open_external, open_job_url, open_mailto); its JS commands are not granted, and it
@@ -54,6 +56,7 @@ fn main() {
         .manage(mailto::MailtoLimiter::default())
         .manage(updater::Updates::default())
         .manage(auth_link::PendingAuthLink::default())
+        .manage(mail_connect::PendingMailConnect::default())
         // CV pages for the hidden print windows (src/cv_pdf.rs).
         .manage(cv_pdf::PrintJobs::default())
         .register_uri_scheme_protocol(cv_pdf::SCHEME, |context, request| {
@@ -67,6 +70,7 @@ fn main() {
             commands::restart_to_update,
             commands::set_update_channel,
             commands::take_auth_link,
+            commands::take_mail_connect,
             commands::set_signed_in,
             commands::open_mail_inbox,
             commands::open_mailto,
@@ -81,11 +85,15 @@ fn main() {
             #[cfg(all(windows, any(debug_assertions, feature = "e2e")))]
             app.deep_link().register_all()?;
             let handle = app.handle().clone();
-            app.deep_link()
-                .on_open_url(move |event| auth_link::handle_urls(&handle, &event.urls()));
+            app.deep_link().on_open_url(move |event| {
+                let urls = event.urls();
+                auth_link::handle_urls(&handle, &urls);
+                mail_connect::handle_urls(&handle, &urls);
+            });
             // A link that launched the app (Windows: the first instance's argument).
             if let Some(urls) = app.deep_link().get_current()? {
                 auth_link::handle_urls(app.handle(), &urls);
+                mail_connect::handle_urls(app.handle(), &urls);
             }
             window::create_main(app.handle())?;
             updater::start_background_checks(app.handle());

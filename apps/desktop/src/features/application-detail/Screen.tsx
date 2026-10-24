@@ -32,6 +32,7 @@ import type { ApplicationDetailModel, ApplicationDetailVM, NextActionVM } from "
 import { NotesSection } from "./Notes";
 import { RemindersSection } from "./Reminders";
 import { answerSuggestion, SnoozedLine, SuggestionCard } from "./Suggestion";
+import { EmailsSection } from "./Emails";
 import { TimelineSection } from "./Timeline";
 import { type DetailActions, useDetailActions, usePostingUrl } from "./useDetailActions";
 
@@ -340,6 +341,7 @@ function ReadyDetail({
             onEditingChange={setInterviewEditing}
             actions={actions}
           />
+          <EmailsSection emails={detail.emails} />
           <RemindersSection
             detail={detail}
             editing={reminderEditing}

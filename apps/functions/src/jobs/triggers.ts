@@ -15,11 +15,11 @@ import { onDocumentCreated, onDocumentWritten } from "firebase-functions/v2/fire
 import { ANTHROPIC_API_KEY } from "../ai/common";
 import { adminConverters } from "../converters";
 import { projectId } from "./callables";
-import { profileEmbeddingText, VertexEmbedder } from "./embeddings";
+import { VertexEmbedder } from "./embeddings";
 import { matchJobs } from "./matcher";
 import { loadMatchingContext } from "./profile-context";
 import { UserQuota } from "./quota";
-import { matcherAi } from "./run";
+import { matcherAi, profileVector } from "./run";
 import { SourceState, storageFeedCache } from "./source-state";
 import { JobStore } from "./store";
 
@@ -54,16 +54,13 @@ export const jobCreatedMatch = onDocumentCreated(
     const store = new JobStore(db, uid, embedder);
     const context = await loadMatchingContext(db, uid);
     const [stored] = await store.ensureEmbeddings(await store.load([job.id]));
-    const [vector] = await embedder.embed(
-      [profileEmbeddingText(context.profile, context.cv)],
-      "RETRIEVAL_QUERY",
-    );
     if (stored === undefined) return;
+    const vector = await profileVector(embedder, context);
     await matchJobs([stored], {
       db,
       uid,
       context,
-      profileVector: vector ?? null,
+      profileVector: vector,
       ai: matcherAi({ uid, quota: new UserQuota(db, uid, now), aiAvailable: true, context, now }),
       now,
     });

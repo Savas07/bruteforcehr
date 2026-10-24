@@ -17,7 +17,17 @@ const screenTitles: Readonly<Record<DesignScreenName, MessageDescriptor>> = defi
   "tracker-table": { id: "design.index.screen.trackerTable", defaultMessage: "Tracker table" },
   "tracker-calendar": { id: "design.index.screen.trackerCalendar", defaultMessage: "Tracker calendar" },
   "mail-review": { id: "design.index.screen.mailReview", defaultMessage: "Mail review" },
+  "mail-connect": { id: "design.index.screen.mailConnect", defaultMessage: "Connect your email" },
   insights: { id: "design.index.screen.insights", defaultMessage: "Insights" },
+  "settings-mail-accounts": { id: "design.index.screen.settingsMail", defaultMessage: "Settings › Mail accounts" },
+  "settings-notifications": {
+    id: "design.index.screen.settingsNotifications",
+    defaultMessage: "Settings › Notifications",
+  },
+  "settings-job-sources": { id: "design.index.screen.settingsSources", defaultMessage: "Settings › Job sources" },
+  "settings-companies": { id: "design.index.screen.settingsCompanies", defaultMessage: "Settings › Companies" },
+  "settings-ai": { id: "design.index.screen.settingsAi", defaultMessage: "Settings › AI" },
+  "settings-general": { id: "design.index.screen.settingsGeneral", defaultMessage: "Settings › General" },
 });
 
 const messages = defineMessages({

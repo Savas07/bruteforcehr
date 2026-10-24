@@ -8,16 +8,16 @@ import {
   SavedSearchRunNowRequestSchema,
 } from "@bfhr/core";
 import { getFirestore } from "firebase-admin/firestore";
-import { HttpsError, onCall } from "firebase-functions/v2/https";
+import { onCall } from "firebase-functions/v2/https";
 import { ANTHROPIC_API_KEY } from "../ai/common";
 import { ReasonedHttpsError, verifiedUid } from "../callable";
 import { adminConverters } from "../converters";
 import { JOB_SOURCE_SECRETS } from "../secrets";
-import { profileEmbeddingText, VertexEmbedder } from "./embeddings";
+import { VertexEmbedder } from "./embeddings";
 import { matchJobs } from "./matcher";
 import { loadMatchingContext } from "./profile-context";
 import { type RunKind, UserQuota } from "./quota";
-import { matcherAi, runSearch } from "./run";
+import { matcherAi, profileVector, runSearch } from "./run";
 import { JobStore } from "./store";
 
 export class JobsCallableError extends ReasonedHttpsError<JobsErrorReason> {}
@@ -154,15 +154,14 @@ export const jobMatchesRefresh = onCall(
     const embedder = new VertexEmbedder(projectId());
     const store = new JobStore(db, uid, embedder);
     const context = await loadMatchingContext(db, uid);
-    const [vector] = await embedder.embed(
-      [profileEmbeddingText(context.profile, context.cv)],
-      "RETRIEVAL_QUERY",
-    );
-    if (vector === undefined) throw new HttpsError("internal", "Something went wrong. Please try again.");
+    const vector = await profileVector(embedder, context);
+    // Without a profile vector (empty profile, or Vertex unavailable) re-score the newest jobs.
     const jobs =
-      parsed.data.jobIds === undefined
-        ? await store.nearest(vector, REFRESH_NEIGHBOURS)
-        : await store.ensureEmbeddings(await store.load(parsed.data.jobIds));
+      parsed.data.jobIds !== undefined
+        ? await store.ensureEmbeddings(await store.load(parsed.data.jobIds))
+        : vector === null
+          ? await store.newest(REFRESH_NEIGHBOURS)
+          : await store.nearest(vector, REFRESH_NEIGHBOURS);
     const outcomes = await matchJobs(jobs, {
       db,
       uid,

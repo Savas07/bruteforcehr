@@ -22,7 +22,8 @@ export function classifyMailError(error: unknown, { online }: { readonly online:
   const details = errorField(error, "details");
   const rawReason = errorField(details, "reason");
   const rawField = errorField(details, "field");
-  const field = rawField === "password" || rawField === "imapHost" || rawField === "smtpHost" ? rawField : null;
+  const field =
+    rawField === "password" || rawField === "imapHost" || rawField === "smtpHost" ? rawField : null;
   const reason = MAIL_CONNECT_ERROR_REASONS.find((known) => known === rawReason);
   if (reason !== undefined) return { kind: reason, field };
   const rawCode = errorField(error, "code");

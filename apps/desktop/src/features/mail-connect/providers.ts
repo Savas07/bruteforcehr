@@ -35,10 +35,16 @@ export function choiceName(choice: ProviderChoice, intl: IntlShape): string {
 }
 
 /** The sign-in provider's company, as in "Continue to Google". */
-export const OAUTH_COMPANY: Readonly<Record<OAuthMailProvider, string>> = { google: "Google", microsoft: "Microsoft" };
+export const OAUTH_COMPANY: Readonly<Record<OAuthMailProvider, string>> = {
+  google: "Google",
+  microsoft: "Microsoft",
+};
 
 /** The provider's mail product, as in "Connect Gmail". */
-export const OAUTH_PRODUCT: Readonly<Record<OAuthMailProvider, string>> = { google: "Gmail", microsoft: "Outlook" };
+export const OAUTH_PRODUCT: Readonly<Record<OAuthMailProvider, string>> = {
+  google: "Gmail",
+  microsoft: "Outlook",
+};
 
 export const CHOICE_CAPTIONS: Readonly<Record<ProviderChoice, MessageDescriptor>> = defineMessages({
   gmail: {
@@ -56,10 +62,26 @@ export const CHOICE_CAPTIONS: Readonly<Record<ProviderChoice, MessageDescriptor>
     defaultMessage: "App-specific password",
     description: "How the iCloud Mail tile connects (Apple's term)",
   },
-  yahoo: { id: "mail-connect.caption.yahoo", defaultMessage: "App password", description: "How the tile connects" },
-  yandex: { id: "mail-connect.caption.yandex", defaultMessage: "App password", description: "How the tile connects" },
-  gmx: { id: "mail-connect.caption.gmx", defaultMessage: "App password", description: "How the tile connects" },
-  webde: { id: "mail-connect.caption.webde", defaultMessage: "App password", description: "How the tile connects" },
+  yahoo: {
+    id: "mail-connect.caption.yahoo",
+    defaultMessage: "App password",
+    description: "How the tile connects",
+  },
+  yandex: {
+    id: "mail-connect.caption.yandex",
+    defaultMessage: "App password",
+    description: "How the tile connects",
+  },
+  gmx: {
+    id: "mail-connect.caption.gmx",
+    defaultMessage: "App password",
+    description: "How the tile connects",
+  },
+  webde: {
+    id: "mail-connect.caption.webde",
+    defaultMessage: "App password",
+    description: "How the tile connects",
+  },
   other: {
     id: "mail-connect.caption.other",
     defaultMessage: "Server settings and a password",
@@ -72,7 +94,8 @@ export function mailProviderName(account: MailAccount, intl: IntlShape): string 
   if (account.provider === "gmail") return BRAND_NAMES.gmail;
   if (account.provider === "microsoft") return BRAND_NAMES.outlook;
   const presetId = account.server?.preset;
-  if (presetId !== undefined && presetId in BRAND_NAMES) return BRAND_NAMES[presetId as keyof typeof BRAND_NAMES];
+  if (presetId !== undefined && presetId in BRAND_NAMES)
+    return BRAND_NAMES[presetId as keyof typeof BRAND_NAMES];
   const preset = presetId === undefined ? undefined : imapPresetById(presetId);
   return preset?.label ?? intl.formatMessage(messages.generic);
 }

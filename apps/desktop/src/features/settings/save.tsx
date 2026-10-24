@@ -11,7 +11,10 @@ import { Button } from "../../shared/ui/Button";
 
 const messages = defineMessages({
   saved: { id: "settings.save.saved", defaultMessage: "Saved" },
-  queued: { id: "settings.save.queued", defaultMessage: "Saved on this computer. It syncs when you're back online." },
+  queued: {
+    id: "settings.save.queued",
+    defaultMessage: "Saved on this computer. It syncs when you're back online.",
+  },
   failed: { id: "settings.save.failed", defaultMessage: "Couldn't save." },
   retry: { id: "settings.save.retry", defaultMessage: "Try again" },
 });
@@ -56,8 +59,9 @@ export function useSaver(): Saver {
     );
   };
 
+  // The live region stays mounted (announcements need it) and is empty, so flat, while idle.
   const status = (
-    <span aria-live="polite" className="text-footnote text-fg-secondary inline-flex min-h-6 items-center gap-1.5">
+    <span aria-live="polite" className="text-footnote text-fg-secondary inline-flex items-center gap-1.5">
       {state === "saved" && (
         <>
           <Check aria-hidden="true" className="text-success-text size-3.5" strokeWidth={2} />

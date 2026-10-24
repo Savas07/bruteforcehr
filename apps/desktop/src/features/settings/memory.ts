@@ -5,11 +5,7 @@
  * only the client fields). `latencyMs` delays every settle so busy states show; `fail` makes the
  * next writes reject (the "Couldn't save" state).
  */
-import {
-  type JobSourceStatus,
-  WATCHLIST_PENDING_FIELDS,
-  type WatchedCompany,
-} from "@bfhr/core";
+import { type JobSourceStatus, WATCHLIST_PENDING_FIELDS, type WatchedCompany } from "@bfhr/core";
 import type { UpdateChannel } from "../../lib/desktop";
 import type { ListSource, ListState, ProfilePatch, SettingsStore } from "./store";
 

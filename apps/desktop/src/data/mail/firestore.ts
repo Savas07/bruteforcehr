@@ -122,7 +122,11 @@ class FirestoreMailSource implements MailSource {
       });
     };
 
-    const listen = <T>(path: string, decode: (snapshot: DocumentSnapshot) => T, set: (list: ListSnapshot<T>) => void) =>
+    const listen = <T>(
+      path: string,
+      decode: (snapshot: DocumentSnapshot) => T,
+      set: (list: ListSnapshot<T>) => void,
+    ) =>
       onSnapshot(
         collection(db, path),
         { includeMetadataChanges: true },
@@ -196,7 +200,11 @@ export function createFirestoreMailRepository(uid: string): MailRepository {
       return MailConnectStartResponseSchema.parse(data);
     },
     async connectImap(request: MailConnectImapRequest) {
-      const data = await call("mailConnectImap", MailConnectImapRequestSchema.parse(request), CONNECT_TIMEOUT_MS);
+      const data = await call(
+        "mailConnectImap",
+        MailConnectImapRequestSchema.parse(request),
+        CONNECT_TIMEOUT_MS,
+      );
       return MailConnectImapResponseSchema.parse(data);
     },
     async disconnect(accountId) {

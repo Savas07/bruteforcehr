@@ -41,7 +41,8 @@ function actionsOf(): MailActions {
 
 function stored(id: string): MailMessage {
   const state = mail.source.getState();
-  const found = state.status === "ready" ? state.data.mailMessages.find((message) => message.id === id) : undefined;
+  const found =
+    state.status === "ready" ? state.data.mailMessages.find((message) => message.id === id) : undefined;
   if (!found) throw new Error(`no message ${id}`);
   return found;
 }

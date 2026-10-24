@@ -26,7 +26,11 @@ export function EmailsSection({ emails }: { emails: readonly LinkedEmailVM[] }) 
               params={{ messageId: email.messageId }}
               className="hover:bg-surface-hover -mx-2 flex gap-2.5 rounded-md px-2 py-1.5"
             >
-              <Mail aria-hidden="true" className="text-fg-secondary mt-0.5 size-4 shrink-0" strokeWidth={1.75} />
+              <Mail
+                aria-hidden="true"
+                className="text-fg-secondary mt-0.5 size-4 shrink-0"
+                strokeWidth={1.75}
+              />
               <span className="flex min-w-0 flex-1 flex-col">
                 <span className="text-callout text-fg-primary truncate">{email.subject}</span>
                 <span className="text-footnote text-fg-secondary flex flex-wrap gap-x-1.5">

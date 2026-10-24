@@ -29,8 +29,11 @@ function read(): DevicePreferences {
     const parsed = JSON.parse(raw) as Partial<Record<keyof DevicePreferences, unknown>>;
     return {
       language:
-        parsed.language === "en" || parsed.language === "tr" || parsed.language === "de" ? parsed.language : "system",
-      appearance: parsed.appearance === "light" || parsed.appearance === "dark" ? parsed.appearance : "system",
+        parsed.language === "en" || parsed.language === "tr" || parsed.language === "de"
+          ? parsed.language
+          : "system",
+      appearance:
+        parsed.appearance === "light" || parsed.appearance === "dark" ? parsed.appearance : "system",
       mailNotifications: parsed.mailNotifications === true,
     };
   } catch {
@@ -66,7 +69,10 @@ export function useDevicePreferences(): DevicePreferences {
 }
 
 /** The UI language: the device choice, else the OS locale (English fallback). */
-export function appLocaleFor(language: LanguagePreference, osTags: readonly (string | null | undefined)[]): AppLocale {
+export function appLocaleFor(
+  language: LanguagePreference,
+  osTags: readonly (string | null | undefined)[],
+): AppLocale {
   if (language === "system") return resolveAppLocale(osTags);
   // Keep the OS region when it speaks the chosen language ("de-AT"), else the language's default.
   const os = resolveAppLocale(osTags);
@@ -81,5 +87,8 @@ export function applyAppearance(appearance: AppearancePreference): void {
   const root = document.documentElement;
   if (appearance === "system") delete root.dataset["theme"];
   else root.dataset["theme"] = appearance;
-  if (isTauri()) void getCurrentWindow().setTheme(appearance === "system" ? null : appearance).catch(() => undefined);
+  if (isTauri())
+    void getCurrentWindow()
+      .setTheme(appearance === "system" ? null : appearance)
+      .catch(() => undefined);
 }

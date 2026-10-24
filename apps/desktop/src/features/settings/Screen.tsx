@@ -6,7 +6,7 @@
  */
 import { useNavigate, useRouter } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
-import { type KeyboardEvent, useRef } from "react";
+import { type KeyboardEvent, useEffect, useRef } from "react";
 import { defineMessages, useIntl } from "react-intl";
 import { useKeyBindings } from "../../shared/keyboard/useKeyBindings";
 import { cx } from "../../shared/cx";
@@ -20,6 +20,23 @@ const messages = defineMessages({
   back: { id: "settings.back", defaultMessage: "Back" },
   leave: { id: "settings.leave", defaultMessage: "Leave Settings" },
 });
+
+/**
+ * The pane whose nav link takes focus once it is current (arrow keys in the nav). Module state:
+ * the route may remount the screen when its `$pane` param changes.
+ */
+let pendingNavFocus: string | null = null;
+
+function focusNavLinkLater(paneId: string): void {
+  pendingNavFocus = paneId;
+}
+
+/** Whether `paneId`'s nav link should take focus now (once). */
+function takeNavFocus(paneId: string | undefined): boolean {
+  if (paneId === undefined || pendingNavFocus !== paneId) return false;
+  pendingNavFocus = null;
+  return true;
+}
 
 export default function SettingsScreen({ pane }: { readonly pane: string }) {
   const intl = useIntl();
@@ -44,6 +61,12 @@ export default function SettingsScreen({ pane }: { readonly pane: string }) {
     },
   ]);
 
+  const activeId = active?.id;
+  useEffect(() => {
+    if (!takeNavFocus(activeId)) return;
+    nav.current?.querySelector<HTMLElement>(`[data-pane="${activeId}"]`)?.focus();
+  }, [activeId]);
+
   if (active === undefined) return null;
   const { Pane } = active;
   const title = intl.formatMessage(active.label);
@@ -54,17 +77,22 @@ export default function SettingsScreen({ pane }: { readonly pane: string }) {
     event.preventDefault();
     const next = settingsPanes[(index + step + settingsPanes.length) % settingsPanes.length];
     if (!next) return;
+    focusNavLinkLater(next.id);
     go(next.id);
-    requestAnimationFrame(() => nav.current?.querySelector<HTMLElement>(`[data-pane="${next.id}"]`)?.focus());
   };
 
   return (
     <div className="flex min-h-0 flex-1">
-      <nav aria-label={intl.formatMessage(messages.nav)} className="border-line-subtle flex w-55 shrink-0 flex-col gap-3 border-r px-3 pt-5">
+      <nav
+        aria-label={intl.formatMessage(messages.nav)}
+        className="border-line-subtle flex w-55 shrink-0 flex-col gap-3 border-r px-3 pt-5"
+      >
         <Button size="sm" variant="plain" icon={ArrowLeft} className="self-start" onClick={leave}>
           {intl.formatMessage(messages.back)}
         </Button>
-        <p className="text-footnote text-fg-secondary px-2 font-medium">{intl.formatMessage(messages.title)}</p>
+        <p className="text-footnote text-fg-secondary px-2 font-medium">
+          {intl.formatMessage(messages.title)}
+        </p>
         <ul ref={nav} className="flex flex-col gap-0.5">
           {settingsPanes.map((entry, index) => {
             const Icon = entry.icon;

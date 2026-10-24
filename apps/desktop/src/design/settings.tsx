@@ -11,7 +11,12 @@ import { useParams, useSearch } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { createMemorySettingsStore, type MemorySettingsStore } from "../features/settings/memory";
 import SettingsScreen from "../features/settings/Screen";
-import { type ListSource, type ListState, type SettingsStore, SettingsStoreContext } from "../features/settings/store";
+import {
+  type ListSource,
+  type ListState,
+  type SettingsStore,
+  SettingsStoreContext,
+} from "../features/settings/store";
 import { useDesignReady } from "./DesignScreen";
 import { readDesignParams } from "./search";
 import { DesignTrackerProviders } from "./tracker";
@@ -35,24 +40,76 @@ const source = (
 
 /** Source health as Deniz sees it mid-search. */
 export const DESIGN_JOB_SOURCES: readonly JobSourceStatus[] = [
-  source({ id: "remotive", label: "Remotive", kind: "keyless", state: "ok", reason: null, lastResultCount: 64,
-    attribution: { label: "Remotive", url: "https://remotive.com/", minSize: null } }),
-  source({ id: "arbeitnow", label: "Arbeitnow", kind: "keyless", state: "ok", reason: null, lastResultCount: 38,
-    attribution: { label: "Arbeitnow", url: "https://www.arbeitnow.com/", minSize: null } }),
-  source({ id: "greenhouse", label: "Greenhouse boards", kind: "keyless", state: "degraded", reason: "rate_limited",
-    lastResultCount: 12, attribution: { label: "Greenhouse", url: "https://www.greenhouse.com/", minSize: null } }),
-  source({ id: "adzuna", label: "Adzuna", kind: "keyed", state: "ok", reason: null, lastResultCount: 120,
-    attribution: { label: "Adzuna", url: "https://www.adzuna.com/", minSize: { width: 116, height: 23 } } }),
-  source({ id: "jooble", label: "Jooble", kind: "keyed", state: "ok", reason: null, lastResultCount: 25,
-    quota: { used: 312, limit: 500 }, attribution: { label: "Jooble", url: "https://jooble.org/", minSize: null } }),
-  source({ id: "reed", label: "Reed", kind: "keyed", state: "skipped", reason: "no_key", lastRunAt: null,
-    attribution: { label: "Reed", url: "https://www.reed.co.uk/", minSize: null } }),
-  source({ id: "kariyer", label: "Kariyer.net", kind: "scrape", state: "failing", reason: "blocked",
-    lastSuccessAt: ago(50), lastResultCount: null,
-    attribution: { label: "Kariyer.net", url: "https://www.kariyer.net/", minSize: null } }),
+  source({
+    id: "remotive",
+    label: "Remotive",
+    kind: "keyless",
+    state: "ok",
+    reason: null,
+    lastResultCount: 64,
+    attribution: { label: "Remotive", url: "https://remotive.com/", minSize: null },
+  }),
+  source({
+    id: "arbeitnow",
+    label: "Arbeitnow",
+    kind: "keyless",
+    state: "ok",
+    reason: null,
+    lastResultCount: 38,
+    attribution: { label: "Arbeitnow", url: "https://www.arbeitnow.com/", minSize: null },
+  }),
+  source({
+    id: "greenhouse",
+    label: "Greenhouse boards",
+    kind: "keyless",
+    state: "degraded",
+    reason: "rate_limited",
+    lastResultCount: 12,
+    attribution: { label: "Greenhouse", url: "https://www.greenhouse.com/", minSize: null },
+  }),
+  source({
+    id: "adzuna",
+    label: "Adzuna",
+    kind: "keyed",
+    state: "ok",
+    reason: null,
+    lastResultCount: 120,
+    attribution: { label: "Adzuna", url: "https://www.adzuna.com/", minSize: { width: 116, height: 23 } },
+  }),
+  source({
+    id: "jooble",
+    label: "Jooble",
+    kind: "keyed",
+    state: "ok",
+    reason: null,
+    lastResultCount: 25,
+    quota: { used: 312, limit: 500 },
+    attribution: { label: "Jooble", url: "https://jooble.org/", minSize: null },
+  }),
+  source({
+    id: "reed",
+    label: "Reed",
+    kind: "keyed",
+    state: "skipped",
+    reason: "no_key",
+    lastRunAt: null,
+    attribution: { label: "Reed", url: "https://www.reed.co.uk/", minSize: null },
+  }),
+  source({
+    id: "kariyer",
+    label: "Kariyer.net",
+    kind: "scrape",
+    state: "failing",
+    reason: "blocked",
+    lastSuccessAt: ago(50),
+    lastResultCount: null,
+    attribution: { label: "Kariyer.net", url: "https://www.kariyer.net/", minSize: null },
+  }),
 ];
 
-const company = (fields: Pick<WatchedCompany, "id" | "name" | "careersUrl" | "status"> & Partial<WatchedCompany>): WatchedCompany => ({
+const company = (
+  fields: Pick<WatchedCompany, "id" | "name" | "careersUrl" | "status"> & Partial<WatchedCompany>,
+): WatchedCompany => ({
   enabled: true,
   ats: null,
   boardToken: null,
@@ -66,21 +123,49 @@ const company = (fields: Pick<WatchedCompany, "id" | "name" | "careersUrl" | "st
 });
 
 export const DESIGN_WATCHLIST: readonly WatchedCompany[] = [
-  company({ id: "watch-brightwave", name: "Brightwave", careersUrl: "https://jobs.lever.co/brightwave", status: "ok",
-    ats: "lever", boardToken: "brightwave", openJobs: 7, lastFetchedAt: ago(3) }),
-  company({ id: "watch-nordlicht", name: "Nordlicht Mobility", careersUrl: "https://jobs.ashbyhq.com/nordlicht",
-    status: "ok", ats: "ashby", boardToken: "nordlicht", openJobs: 0, lastFetchedAt: ago(3) }),
-  company({ id: "watch-kumsal", name: "Kumsal Yazılım", careersUrl: "https://kumsal.example/kariyer", status: "not_found",
-    lastError: "No supported job board or job postings on this page.", lastFetchedAt: ago(3) }),
-  company({ id: "watch-tannenbaum", name: "Tannenbaum Software", careersUrl: "https://tannenbaum.jobs.personio.de/",
-    status: "pending", enabled: false }),
+  company({
+    id: "watch-brightwave",
+    name: "Brightwave",
+    careersUrl: "https://jobs.lever.co/brightwave",
+    status: "ok",
+    ats: "lever",
+    boardToken: "brightwave",
+    openJobs: 7,
+    lastFetchedAt: ago(3),
+  }),
+  company({
+    id: "watch-nordlicht",
+    name: "Nordlicht Mobility",
+    careersUrl: "https://jobs.ashbyhq.com/nordlicht",
+    status: "ok",
+    ats: "ashby",
+    boardToken: "nordlicht",
+    openJobs: 0,
+    lastFetchedAt: ago(3),
+  }),
+  company({
+    id: "watch-kumsal",
+    name: "Kumsal Yazılım",
+    careersUrl: "https://kumsal.example/kariyer",
+    status: "not_found",
+    lastError: "No supported job board or job postings on this page.",
+    lastFetchedAt: ago(3),
+  }),
+  company({
+    id: "watch-tannenbaum",
+    name: "Tannenbaum Software",
+    careersUrl: "https://tannenbaum.jobs.personio.de/",
+    status: "pending",
+    enabled: false,
+  }),
 ];
 
 const stores = new Map<string, MemorySettingsStore>();
 
 function forced<T>(list: ListSource<T>, state: string): ListSource<T> {
   if (state !== "loading" && state !== "error") return list;
-  const fixed: ListState<T> = state === "loading" ? { status: "loading" } : { status: "error", retry: () => undefined };
+  const fixed: ListState<T> =
+    state === "loading" ? { status: "loading" } : { status: "error", retry: () => undefined };
   return { subscribe: list.subscribe, getState: () => fixed };
 }
 

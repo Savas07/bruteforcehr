@@ -19,7 +19,8 @@ const messages = defineMessages({
   interviewTitle: { id: "settings.notify.interview.title", defaultMessage: "Interview invite" },
   interviewBody: {
     id: "settings.notify.interview.body",
-    defaultMessage: "{company, select, none {You have a new interview invite.} other {{company} invited you to an interview.}}",
+    defaultMessage:
+      "{company, select, none {You have a new interview invite.} other {{company} invited you to an interview.}}",
   },
   offerTitle: { id: "settings.notify.offer.title", defaultMessage: "Offer" },
   offerBody: {
@@ -29,7 +30,8 @@ const messages = defineMessages({
   assessmentTitle: { id: "settings.notify.assessment.title", defaultMessage: "Assessment" },
   assessmentBody: {
     id: "settings.notify.assessment.body",
-    defaultMessage: "{company, select, none {You have a new assessment.} other {{company} sent you an assessment.}}",
+    defaultMessage:
+      "{company, select, none {You have a new assessment.} other {{company} sent you an assessment.}}",
   },
   decisionTitle: { id: "settings.notify.decision.title", defaultMessage: "Decision" },
   decisionBody: {
@@ -40,11 +42,14 @@ const messages = defineMessages({
   updateTitle: { id: "settings.notify.update.title", defaultMessage: "Application updated" },
   updateBody: {
     id: "settings.notify.update.body",
-    defaultMessage: "{company, select, none {Moved to {status} automatically} other {Moved to {status} — from an email by {company}}}",
+    defaultMessage:
+      "{company, select, none {Moved to {status} automatically} other {Moved to {status} — from an email by {company}}}",
   },
 });
 
-const COPY: Readonly<Record<MailNotificationKind, { readonly title: MessageDescriptor; readonly body: MessageDescriptor }>> = {
+const COPY: Readonly<
+  Record<MailNotificationKind, { readonly title: MessageDescriptor; readonly body: MessageDescriptor }>
+> = {
   interview: { title: messages.interviewTitle, body: messages.interviewBody },
   offer: { title: messages.offerTitle, body: messages.offerBody },
   assessment: { title: messages.assessmentTitle, body: messages.assessmentBody },

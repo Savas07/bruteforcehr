@@ -13,14 +13,16 @@ const messages = defineMessages({
   title: { id: "settings.ai.title", defaultMessage: "Anthropic Claude" },
   description: {
     id: "settings.ai.description",
-    defaultMessage: "AI runs on our server with Anthropic Claude, and only for the features you turn on here.",
+    defaultMessage:
+      "AI runs on our server with Anthropic Claude, and only for the features you turn on here.",
   },
   on: { id: "settings.ai.on", defaultMessage: "On" },
   off: { id: "settings.ai.off", defaultMessage: "Off" },
   master: { id: "settings.ai.master", defaultMessage: "Use AI features" },
   masterHelp: {
     id: "settings.ai.masterHelp",
-    defaultMessage: "Reading imported CVs, suggesting CV wording, and explaining job matches. Off: you do these yourself.",
+    defaultMessage:
+      "Reading imported CVs, suggesting CV wording, and explaining job matches. Off: you do these yourself.",
   },
   mailText: { id: "settings.ai.mailText", defaultMessage: "Allow sending email text to AI" },
   mailTextHelpOn: {

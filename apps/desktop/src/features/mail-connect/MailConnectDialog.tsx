@@ -21,7 +21,6 @@ import {
   LoaderCircle,
   Lock,
   Search,
-  ShieldCheck,
   Sparkles,
   Unplug,
   X,
@@ -80,7 +79,9 @@ const STILL_WAITING_MS = 10 * 60_000;
 const controlClass =
   "bg-surface-base border-line-control text-callout text-fg-primary placeholder:text-fg-tertiary w-full min-w-0 rounded-md border px-2 aria-invalid:border-danger-solid disabled:opacity-60";
 const fieldClass = `${controlClass} h-8`;
-const bold = { b: (chunks: ReactNode[]) => <strong className="text-fg-primary font-medium">{chunks}</strong> };
+const bold = {
+  b: (chunks: ReactNode[]) => <strong className="text-fg-primary font-medium">{chunks}</strong>,
+};
 const optionalTag = {
   optional: (chunks: ReactNode[]) => <span className="text-fg-tertiary font-normal">{chunks}</span>,
 };
@@ -143,14 +144,21 @@ function Promises({ days }: { days: LookbackDays }) {
     [Unplug, intl.formatMessage(messages.promiseDisconnect, bold)],
   ];
   return (
-    <section className="bg-surface-sunken flex flex-col gap-3 rounded-lg p-4" aria-labelledby="mail-connect-promises">
+    <section
+      className="bg-surface-sunken flex flex-col gap-3 rounded-lg p-4"
+      aria-labelledby="mail-connect-promises"
+    >
       <h3 id="mail-connect-promises" className="text-footnote text-fg-secondary font-medium">
         {intl.formatMessage(messages.promisesTitle)}
       </h3>
       <ul className="flex flex-col gap-3">
         {items.map(([Icon, text], index) => (
           <li key={index} className="text-footnote text-fg-secondary flex gap-2">
-            <Icon aria-hidden="true" className="text-fg-secondary mt-0.5 size-4 shrink-0" strokeWidth={1.75} />
+            <Icon
+              aria-hidden="true"
+              className="text-fg-secondary mt-0.5 size-4 shrink-0"
+              strokeWidth={1.75}
+            />
             <span>{text}</span>
           </li>
         ))}
@@ -165,7 +173,10 @@ function HelpCard({ choice }: { choice: ImapChoice }) {
   const url = presetOf(choice)?.appPasswordUrl ?? null;
   const [openFailed, setOpenFailed] = useState(false);
   return (
-    <section className="bg-surface-sunken flex flex-col gap-3 rounded-lg p-4" aria-labelledby="mail-connect-help">
+    <section
+      className="bg-surface-sunken flex flex-col gap-3 rounded-lg p-4"
+      aria-labelledby="mail-connect-help"
+    >
       <h3 id="mail-connect-help" className="text-footnote text-fg-secondary font-medium">
         {intl.formatMessage(messages.helpTitle)}
       </h3>
@@ -300,8 +311,12 @@ function Picker({
                     : "border-line-subtle hover:bg-surface-hover",
                 )}
               >
-                <span className="text-callout text-fg-primary font-medium">{choiceName(candidate, intl)}</span>
-                <span className="text-footnote text-fg-secondary">{intl.formatMessage(CHOICE_CAPTIONS[candidate])}</span>
+                <span className="text-callout text-fg-primary font-medium">
+                  {choiceName(candidate, intl)}
+                </span>
+                <span className="text-footnote text-fg-secondary">
+                  {intl.formatMessage(CHOICE_CAPTIONS[candidate])}
+                </span>
               </button>
             );
           })}
@@ -452,12 +467,18 @@ function OAuthStep({
       <div role="status" className="flex gap-3">
         <Clock aria-hidden="true" className="text-fg-secondary mt-0.5 size-5 shrink-0" strokeWidth={1.75} />
         <div className="flex flex-col gap-2">
-          <p className="text-headline text-fg-primary">{intl.formatMessage(messages.unavailableTitle, { product })}</p>
+          <p className="text-headline text-fg-primary">
+            {intl.formatMessage(messages.unavailableTitle, { product })}
+          </p>
           <p className="text-callout text-fg-secondary">
-            {intl.formatMessage(provider === "google" ? messages.unavailableGmail : messages.unavailableOutlook)}
+            {intl.formatMessage(
+              provider === "google" ? messages.unavailableGmail : messages.unavailableOutlook,
+            )}
           </p>
           {reconnect && (
-            <p className="text-callout text-fg-secondary">{intl.formatMessage(messages.unavailableReconnect)}</p>
+            <p className="text-callout text-fg-secondary">
+              {intl.formatMessage(messages.unavailableReconnect)}
+            </p>
           )}
         </div>
       </div>
@@ -483,7 +504,10 @@ function OAuthStep({
         <p className="text-headline text-fg-primary">{intl.formatMessage(messages.waitTitle)}</p>
         <p className="text-callout text-fg-secondary">{intl.formatMessage(messages.waitBody, { company })}</p>
         <p role="status" className="text-callout text-fg-primary flex items-center gap-2">
-          <LoaderCircle aria-hidden="true" className="size-4 shrink-0 animate-spin motion-reduce:animate-none" />
+          <LoaderCircle
+            aria-hidden="true"
+            className="size-4 shrink-0 animate-spin motion-reduce:animate-none"
+          />
           {intl.formatMessage(messages.waitStatus, { company })}
         </p>
         {still && <InlineAlert tone="info" title={intl.formatMessage(messages.waitStill)} />}
@@ -492,9 +516,6 @@ function OAuthStep({
     );
     actions = (
       <>
-        <Button variant="plain" onClick={() => onPhase({ step: "intro" })}>
-          {intl.formatMessage(messages.cancel)}
-        </Button>
         <Button
           onClick={() => {
             // An expired nonce is refused: start over instead of reopening a dead link.
@@ -527,7 +548,9 @@ function OAuthStep({
         {returnReason === "cancelled" && (
           <InlineAlert tone="info" title={intl.formatMessage(RETURN_MESSAGES.cancelled)} />
         )}
-        {failure && <InlineAlert tone="error" fromAction title={intl.formatMessage(failureMessage(failure))} />}
+        {failure && (
+          <InlineAlert tone="error" fromAction title={intl.formatMessage(failureMessage(failure))} />
+        )}
         {intro}
       </>
     );
@@ -549,14 +572,20 @@ function OAuthStep({
 
   return (
     <div className="flex flex-col gap-4">
-      <p className="text-title3 font-display text-fg-primary">{intl.formatMessage(messages.oauthTitle, { product })}</p>
       {content}
       <div className="flex flex-wrap gap-2">{actions}</div>
     </div>
   );
 }
 
-const FIELD_ORDER: readonly DraftField[] = ["address", "password", "imapHost", "imapPort", "smtpHost", "smtpPort"];
+const FIELD_ORDER: readonly DraftField[] = [
+  "address",
+  "password",
+  "imapHost",
+  "imapPort",
+  "smtpHost",
+  "smtpPort",
+];
 
 function ImapForm({
   choice,
@@ -585,10 +614,12 @@ function ImapForm({
     (field) => problems[field] !== undefined,
   );
   const [serversOpen, setServersOpen] = useState(choice === "other");
-  const serversShown = serversOpen || serverProblem || failure?.field === "imapHost" || failure?.field === "smtpHost";
+  const serversShown =
+    serversOpen || serverProblem || failure?.field === "imapHost" || failure?.field === "smtpHost";
   const refs = useRef<Partial<Record<DraftField, HTMLInputElement | null>>>({});
 
-  const serverFailure = failure !== null && failure.field !== "password" ? intl.formatMessage(failureMessage(failure)) : null;
+  const serverFailure =
+    failure !== null && failure.field !== "password" ? intl.formatMessage(failureMessage(failure)) : null;
   const errorOf = (field: DraftField): string | null => {
     const problem = problems[field];
     if (problem === "missing") return intl.formatMessage(messages.missing);
@@ -682,10 +713,8 @@ function ImapForm({
     onSubmit();
   };
 
-  const name = choiceName(choice, intl);
   return (
     <form id="mail-connect-imap" noValidate onSubmit={submit} className="flex flex-col gap-4">
-      <p className="text-title3 font-display text-fg-primary">{intl.formatMessage(messages.imapTitle, { provider: name })}</p>
       {invalid.length > 1 && (
         <p role="alert" className="text-danger-text text-footnote flex items-center gap-1.5">
           {intl.formatMessage(messages.errorSummary, { count: invalid.length })}
@@ -738,17 +767,17 @@ function ImapForm({
         >
           <ChevronDown
             aria-hidden="true"
-            className={cx("size-4 shrink-0 transition-transform motion-reduce:transition-none", !serversShown && "-rotate-90")}
+            className={cx(
+              "size-4 shrink-0 transition-transform motion-reduce:transition-none",
+              !serversShown && "-rotate-90",
+            )}
             strokeWidth={1.75}
           />
           {intl.formatMessage(messages.serverDetails)}
         </button>
         {serversShown && (
           <div id={fieldId("servers")} className="flex flex-col gap-4 px-3 pb-3">
-            <Field
-              id={fieldId("username")}
-              label={intl.formatMessage(messages.username, optionalTag)}
-            >
+            <Field id={fieldId("username")} label={intl.formatMessage(messages.username, optionalTag)}>
               <input
                 id={fieldId("username")}
                 type="text"
@@ -772,7 +801,16 @@ function ImapForm({
   );
 }
 
-export function MailConnectDialog({ request, onClose }: { request: MailConnectRequest; onClose: () => void }) {
+export function MailConnectDialog({
+  request,
+  onClose,
+  onCloseAutoFocus,
+}: {
+  request: MailConnectRequest;
+  onClose: () => void;
+  /** Where focus goes after the dialog closes (the host returns it to the opener). */
+  onCloseAutoFocus?: (event: Event) => void;
+}) {
   const intl = useIntl();
   const repository = useMailRepository();
   const mail = useMailData();
@@ -787,7 +825,8 @@ export function MailConnectDialog({ request, onClose }: { request: MailConnectRe
   const [view, setView] = useState<ConnectView>(() => {
     if (request.initial) return request.initial.view;
     if (reconnecting === null) return { kind: "picker" };
-    if (reconnecting.provider === "gmail") return { kind: "oauth", provider: "google", phase: { step: "intro" } };
+    if (reconnecting.provider === "gmail")
+      return { kind: "oauth", provider: "google", phase: { step: "intro" } };
     if (reconnecting.provider === "microsoft")
       return { kind: "oauth", provider: "microsoft", phase: { step: "intro" } };
     const preset = reconnecting.server?.preset ?? "other";
@@ -838,7 +877,11 @@ export function MailConnectDialog({ request, onClose }: { request: MailConnectRe
         imapRequest(draft, view.choice, lookback, reconnecting?.id ?? null),
       );
       setDraft((current) => ({ ...current, password: "" }));
-      setView({ kind: "scanning", accountId: response.accountId, smtpWarning: response.smtpWarning !== null });
+      setView({
+        kind: "scanning",
+        accountId: response.accountId,
+        smtpWarning: response.smtpWarning !== null,
+      });
     } catch (error) {
       const classified = classifyMailError(error, { online: !offline });
       if (classified.kind === "oauth_required")
@@ -859,9 +902,40 @@ export function MailConnectDialog({ request, onClose }: { request: MailConnectRe
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const title = reconnecting
-    ? intl.formatMessage(messages.titleReconnect, { address: reconnecting.address })
-    : intl.formatMessage(messages.title);
+  // Each step starts at its first empty field (or its first control): never on Close.
+  const contentRef = useRef<HTMLDivElement>(null);
+  const focusStep = () => {
+    const content = contentRef.current;
+    if (!content) return;
+    const fields = [...content.querySelectorAll<HTMLInputElement>("[data-step] input:not([disabled])")];
+    const target =
+      fields.find((input) => input.value === "") ??
+      fields[0] ??
+      content.querySelector<HTMLElement>('[data-step] [role="radio"][aria-checked="true"]') ??
+      content.querySelector<HTMLElement>("[data-step] button, [data-footer] button");
+    target?.focus();
+  };
+  const stepKey = view.kind === "oauth" ? `oauth:${view.phase.step}` : view.kind;
+  const firstStep = useRef(true);
+  useEffect(() => {
+    if (firstStep.current) {
+      firstStep.current = false;
+      return;
+    }
+    focusStep();
+  }, [stepKey]);
+
+  // One heading per step: the dialog's title names what this step connects.
+  const scanned =
+    view.kind === "scanning" ? (accounts.find((candidate) => candidate.id === view.accountId) ?? null) : null;
+  let title: string;
+  if (reconnecting) title = intl.formatMessage(messages.titleReconnect, { address: reconnecting.address });
+  else if (view.kind === "oauth")
+    title = intl.formatMessage(messages.oauthTitle, { product: OAUTH_PRODUCT[view.provider] });
+  else if (view.kind === "imap")
+    title = intl.formatMessage(messages.imapTitle, { provider: choiceName(view.choice, intl) });
+  else if (scanned) title = intl.formatMessage(messages.connectedTitle, { address: scanned.address });
+  else title = intl.formatMessage(messages.title);
 
   let body: ReactNode;
   let side: ReactNode = <Promises days={lookback} />;
@@ -940,12 +1014,21 @@ export function MailConnectDialog({ request, onClose }: { request: MailConnectRe
     footer = (
       <>
         {!reconnecting && (
-          <Button variant="plain" icon={ArrowLeft} disabledReason={busy ? intl.formatMessage(messages.testing) : null} onClick={() => setView({ kind: "picker" })}>
+          <Button
+            variant="plain"
+            icon={ArrowLeft}
+            disabledReason={busy ? intl.formatMessage(messages.testing) : null}
+            onClick={() => setView({ kind: "picker" })}
+          >
             {intl.formatMessage(messages.back)}
           </Button>
         )}
         <span className="flex-1" />
-        <Button variant="plain" disabledReason={busy ? intl.formatMessage(messages.testing) : null} onClick={onClose}>
+        <Button
+          variant="plain"
+          disabledReason={busy ? intl.formatMessage(messages.testing) : null}
+          onClick={onClose}
+        >
           {intl.formatMessage(messages.cancel)}
         </Button>
         <Button
@@ -970,18 +1053,16 @@ export function MailConnectDialog({ request, onClose }: { request: MailConnectRe
     );
     body = account ? (
       <div className="flex flex-col gap-4">
-        <p className="text-headline text-fg-primary flex items-center gap-2">
-          <ShieldCheck aria-hidden="true" className="text-success-text size-5 shrink-0" strokeWidth={1.75} />
-          {intl.formatMessage(messages.connectedTitle, { address: account.address })}
-        </p>
         {view.smtpWarning && <InlineAlert tone="warning" title={intl.formatMessage(messages.readingOnly)} />}
         {account.backfill ? <ScanProgress account={account} variant="full" onReview={onClose} /> : starting}
       </div>
     ) : (
       starting
     );
+    // "Review in Mail" is the step's one filled button once the scan found emails to review.
+    const reviewOffered = account?.backfill?.state === "done" && account.backfill.pendingReview > 0;
     footer = (
-      <Button variant="primary" onClick={onClose}>
+      <Button variant={reviewOffered ? "secondary" : "primary"} onClick={onClose}>
         {intl.formatMessage(messages.done)}
       </Button>
     );
@@ -997,7 +1078,13 @@ export function MailConnectDialog({ request, onClose }: { request: MailConnectRe
       <Dialog.Portal>
         <Dialog.Overlay className="bg-surface-scrim fixed inset-0 z-(--bfhr-layer-modal)" />
         <Dialog.Content
+          ref={contentRef}
           aria-describedby={undefined}
+          onOpenAutoFocus={(event) => {
+            event.preventDefault();
+            focusStep();
+          }}
+          {...(onCloseAutoFocus && { onCloseAutoFocus })}
           className="bg-surface-elevated shadow-modal fixed top-1/2 left-1/2 z-(--bfhr-layer-modal) flex max-h-[calc(100vh-48px)] w-[min(760px,calc(100vw-32px))] -translate-x-1/2 -translate-y-1/2 flex-col rounded-lg outline-none"
         >
           <div className="flex items-start gap-3 px-5 pt-5 pb-3">
@@ -1015,12 +1102,17 @@ export function MailConnectDialog({ request, onClose }: { request: MailConnectRe
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-4">
             <div className="flex flex-col gap-5 min-[720px]:flex-row">
-              <div className="flex min-w-0 flex-1 flex-col gap-4">{body}</div>
+              <div data-step="" className="flex min-w-0 flex-1 flex-col gap-4">
+                {body}
+              </div>
               {side && <aside className="flex w-full shrink-0 flex-col gap-3 min-[720px]:w-62">{side}</aside>}
             </div>
           </div>
           {footer && (
-            <div className="border-line-subtle flex flex-wrap items-center justify-end gap-2 border-t px-5 py-3">
+            <div
+              data-footer=""
+              className="border-line-subtle flex flex-wrap items-center justify-end gap-2 border-t px-5 py-3"
+            >
               {footer}
             </div>
           )}

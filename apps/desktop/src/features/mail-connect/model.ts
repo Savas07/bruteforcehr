@@ -17,7 +17,16 @@ import {
 } from "@bfhr/core";
 
 /** The picker's tiles, in order. */
-export const PROVIDER_CHOICES = ["gmail", "outlook", "icloud", "yahoo", "yandex", "gmx", "webde", "other"] as const;
+export const PROVIDER_CHOICES = [
+  "gmail",
+  "outlook",
+  "icloud",
+  "yahoo",
+  "yandex",
+  "gmx",
+  "webde",
+  "other",
+] as const;
 export type ProviderChoice = (typeof PROVIDER_CHOICES)[number];
 
 /** Choices the app-password form serves (Gmail too, as the alternative to Google sign-in). */
@@ -96,7 +105,14 @@ export interface ImapDraft {
 }
 
 export type DraftField = "address" | "password" | "imapHost" | "imapPort" | "smtpHost" | "smtpPort";
-export const DRAFT_FIELDS: readonly DraftField[] = ["address", "password", "imapHost", "imapPort", "smtpHost", "smtpPort"];
+export const DRAFT_FIELDS: readonly DraftField[] = [
+  "address",
+  "password",
+  "imapHost",
+  "imapPort",
+  "smtpHost",
+  "smtpPort",
+];
 
 /** The form's start: the preset's servers, Other's 993 / 587 defaults, or Reconnect's saved settings. */
 export function initialDraft(choice: ImapChoice, address: string, account: MailAccount | null): ImapDraft {
@@ -128,7 +144,10 @@ function validPort(value: string): boolean {
 }
 
 /** What's wrong before anything is sent: `missing` or `invalid`, per field. */
-export function draftProblems(draft: ImapDraft, choice: ImapChoice): Partial<Record<DraftField, "missing" | "invalid">> {
+export function draftProblems(
+  draft: ImapDraft,
+  choice: ImapChoice,
+): Partial<Record<DraftField, "missing" | "invalid">> {
   const problems: Partial<Record<DraftField, "missing" | "invalid">> = {};
   const address = draft.address.trim();
   if (address === "") problems.address = "missing";
@@ -171,7 +190,8 @@ export function imapRequest(
   const address = draft.address.trim();
   const username = draft.username.trim();
   const imap = endpoint(draft.imapHost, draft.imapPort, draft.imapSecurity);
-  const smtp = draft.smtpHost.trim() === "" ? null : endpoint(draft.smtpHost, draft.smtpPort, draft.smtpSecurity);
+  const smtp =
+    draft.smtpHost.trim() === "" ? null : endpoint(draft.smtpHost, draft.smtpPort, draft.smtpSecurity);
   return {
     address,
     password: draft.password.trim(),

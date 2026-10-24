@@ -75,7 +75,9 @@ export function SettingsRow({
               {title}
             </label>
           )}
-          {helper !== undefined && <p className="text-footnote text-fg-secondary mt-0.5 max-w-140">{helper}</p>}
+          {helper !== undefined && (
+            <p className="text-footnote text-fg-secondary mt-0.5 max-w-140">{helper}</p>
+          )}
         </div>
         {control !== undefined && <div className="flex shrink-0 items-center gap-2">{control}</div>}
       </div>

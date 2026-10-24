@@ -11,7 +11,15 @@ import {
   WATCHLIST_PENDING_FIELDS,
   type WatchedCompany,
 } from "@bfhr/core";
-import { collection, deleteDoc, doc, type FirestoreError, onSnapshot, setDoc, updateDoc } from "firebase/firestore";
+import {
+  collection,
+  deleteDoc,
+  doc,
+  type FirestoreError,
+  onSnapshot,
+  setDoc,
+  updateDoc,
+} from "firebase/firestore";
 import { converters } from "../../data/converters";
 import { setUpdateChannel } from "../../lib/desktop";
 import { firestore } from "../../lib/firebaseServices";
@@ -133,7 +141,10 @@ export function firestoreSettingsStore(uid: string): SettingsStore {
       return setDoc(companyRef(id), converters.watchedCompany.toFirestore(company));
     },
     updateCompany: (companyId, patch) =>
-      updateDoc(companyRef(companyId), converters.watchedCompany.toFirestoreUpdate({ ...patch, updatedAt: new Date() })),
+      updateDoc(
+        companyRef(companyId),
+        converters.watchedCompany.toFirestoreUpdate({ ...patch, updatedAt: new Date() }),
+      ),
     removeCompany: (companyId) => deleteDoc(companyRef(companyId)),
     restoreCompany(company) {
       const restored: WatchedCompany = {

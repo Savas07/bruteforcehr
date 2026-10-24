@@ -18,7 +18,11 @@ describe("choiceForAddress", () => {
 describe("the app-password form", () => {
   it("starts from the preset's servers and leaves them out of the request", () => {
     const draft = { ...initialDraft("icloud", "deniz@icloud.com", null), password: "abcd-efgh-ijkl-mnop" };
-    expect(draft).toMatchObject({ imapHost: "imap.mail.me.com", imapPort: "993", smtpHost: "smtp.mail.me.com" });
+    expect(draft).toMatchObject({
+      imapHost: "imap.mail.me.com",
+      imapPort: "993",
+      smtpHost: "smtp.mail.me.com",
+    });
     expect(draftProblems(draft, "icloud")).toEqual({});
     expect(imapRequest(draft, "icloud", 90, null)).toEqual({
       address: "deniz@icloud.com",
@@ -48,7 +52,12 @@ describe("the app-password form", () => {
   });
 
   it("names every field to fix before anything is sent", () => {
-    const draft = { ...initialDraft("other", "", null), imapPort: "99999", smtpHost: "smtp example", smtpPort: "x" };
+    const draft = {
+      ...initialDraft("other", "", null),
+      imapPort: "99999",
+      smtpHost: "smtp example",
+      smtpPort: "x",
+    };
     expect(draftProblems(draft, "other")).toEqual({
       address: "missing",
       password: "missing",
@@ -62,10 +71,16 @@ describe("the app-password form", () => {
 
 describe("classifyMailError", () => {
   it("reads the reason and the field to mark", () => {
-    const error = { code: "functions/permission-denied", details: { reason: "auth_failed", field: "password" } };
+    const error = {
+      code: "functions/permission-denied",
+      details: { reason: "auth_failed", field: "password" },
+    };
     expect(classifyMailError(error, { online: true })).toEqual({ kind: "auth_failed", field: "password" });
     expect(
-      classifyMailError({ code: "functions/failed-precondition", details: { reason: "provider_not_configured" } }, { online: true }),
+      classifyMailError(
+        { code: "functions/failed-precondition", details: { reason: "provider_not_configured" } },
+        { online: true },
+      ),
     ).toEqual({ kind: "provider_not_configured", field: null });
   });
 

@@ -115,7 +115,9 @@ function click(name: string) {
 }
 
 function field(label: string): HTMLInputElement {
-  const found = [...dialog().querySelectorAll("label")].find((candidate) => candidate.textContent.startsWith(label));
+  const found = [...dialog().querySelectorAll("label")].find((candidate) =>
+    candidate.textContent.startsWith(label),
+  );
   const input = found ? document.getElementById(found.htmlFor) : null;
   if (!(input instanceof HTMLInputElement)) throw new Error(`no field ${label}`);
   return input;
@@ -149,7 +151,9 @@ describe("Connect your email", () => {
     expect(dialog().textContent).toContain("Connect your email");
     type(field("Email address"), "deniz@icloud.com");
     // Domain detection selected the iCloud tile.
-    expect(dialog().querySelector('[role="radio"][aria-checked="true"]')?.textContent).toContain("iCloud Mail");
+    expect(dialog().querySelector('[role="radio"][aria-checked="true"]')?.textContent).toContain(
+      "iCloud Mail",
+    );
     click("Continue");
     expect(dialog().textContent).toContain("Create an app password");
     type(field("App password"), "abcd-efgh-ijkl-mnop");
@@ -193,9 +197,17 @@ describe("Connect your email", () => {
     click("Continue");
     click("Continue to Google");
     await settle();
-    expect(desktop.opened).toEqual(["https://bruteforcehr.web.app/connect/google?nonce=memory-nonce-0000000000"]);
+    expect(desktop.opened).toEqual([
+      "https://bruteforcehr.web.app/connect/google?nonce=memory-nonce-0000000000",
+    ]);
     expect(dialog().textContent).toContain("Finish in your browser");
-    desktop.pending = { nonce: "another-nonce-000000", provider: "google", intent: "read", ok: false, reason: "failed" };
+    desktop.pending = {
+      nonce: "another-nonce-000000",
+      provider: "google",
+      intent: "read",
+      ok: false,
+      reason: "failed",
+    };
     await act(async () => desktop.listener?.());
     expect(dialog().textContent).toContain("Finish in your browser");
     desktop.pending = {

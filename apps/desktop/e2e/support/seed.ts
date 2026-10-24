@@ -35,6 +35,15 @@ export async function writeDoc(path: string, data: Record<string, unknown>): Pro
   if (!response.ok) throw new Error(`PATCH ${path}: ${response.status} ${await response.text()}`);
 }
 
+/** Deletes the document at `path` (below `documents/`, or a full REST name); missing is fine. */
+export async function deleteDoc(path: string): Promise<void> {
+  const relative = path.includes("/documents/")
+    ? path.slice(path.indexOf("/documents/") + "/documents/".length)
+    : path;
+  const response = await fetch(`${BASE}/${relative}`, { method: "DELETE", headers: OWNER });
+  if (!response.ok && response.status !== 404) throw new Error(`DELETE ${relative}: ${response.status}`);
+}
+
 /**
  * The uid of whoever is signed in: Firebase Auth persists the user in the webview's IndexedDB
  * (`firebaseLocalStorageDb`).

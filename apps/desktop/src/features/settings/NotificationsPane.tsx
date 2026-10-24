@@ -5,10 +5,7 @@
  * (`settings.quietHours`), and "Show notifications on this computer" (this device only, while the
  * app runs). The same categories decide the phone's pushes.
  */
-import {
-  DEFAULT_NOTIFICATION_PREFERENCES,
-  type NotificationPreferences,
-} from "@bfhr/core";
+import { DEFAULT_NOTIFICATION_PREFERENCES, type NotificationPreferences } from "@bfhr/core";
 import { Moon } from "lucide-react";
 import { useEffect, useId, useState } from "react";
 import { defineMessages, type MessageDescriptor, useIntl } from "react-intl";
@@ -32,11 +29,17 @@ const messages = defineMessages({
   on: { id: "settings.switch.on", defaultMessage: "On" },
   off: { id: "settings.switch.off", defaultMessage: "Off" },
   interviews: { id: "settings.notifications.interviews", defaultMessage: "Interview invites" },
-  interviewsHelp: { id: "settings.notifications.interviewsHelp", defaultMessage: "When an employer invites you to talk." },
+  interviewsHelp: {
+    id: "settings.notifications.interviewsHelp",
+    defaultMessage: "When an employer invites you to talk.",
+  },
   offers: { id: "settings.notifications.offers", defaultMessage: "Offers" },
   offersHelp: { id: "settings.notifications.offersHelp", defaultMessage: "When an offer arrives." },
   assessments: { id: "settings.notifications.assessments", defaultMessage: "Assessments" },
-  assessmentsHelp: { id: "settings.notifications.assessmentsHelp", defaultMessage: "Tests and take-home tasks with a deadline." },
+  assessmentsHelp: {
+    id: "settings.notifications.assessmentsHelp",
+    defaultMessage: "Tests and take-home tasks with a deadline.",
+  },
   decisions: { id: "settings.notifications.decisions", defaultMessage: "Decisions" },
   decisionsHelp: {
     id: "settings.notifications.decisionsHelp",
@@ -65,14 +68,18 @@ const messages = defineMessages({
     defaultMessage: "Quiet every day from {start} to {end} ({zone}).",
   },
   deviceTitle: { id: "settings.notifications.deviceTitle", defaultMessage: "This computer" },
-  deviceSwitch: { id: "settings.notifications.deviceSwitch", defaultMessage: "Show notifications on this computer" },
+  deviceSwitch: {
+    id: "settings.notifications.deviceSwitch",
+    defaultMessage: "Show notifications on this computer",
+  },
   deviceHelp: {
     id: "settings.notifications.deviceHelp",
     defaultMessage: "For new job emails, while BruteForceHR is open. Uses the categories above.",
   },
   deviceDenied: {
     id: "settings.notifications.deviceDenied",
-    defaultMessage: "Notifications are turned off for BruteForceHR in your system settings. Allow them there, then turn this on.",
+    defaultMessage:
+      "Notifications are turned off for BruteForceHR in your system settings. Allow them there, then turn this on.",
   },
   deviceUnsupported: {
     id: "settings.notifications.deviceUnsupported",
@@ -164,7 +171,12 @@ export function NotificationsPane({ profile }: { profile: SettingsProfile }) {
         settings:
           key === "notifyRejections"
             ? { notifyRejections: value }
-            : { notifications: { ...(profile.notifications ?? DEFAULT_NOTIFICATION_PREFERENCES), [key]: value } },
+            : {
+                notifications: {
+                  ...(profile.notifications ?? DEFAULT_NOTIFICATION_PREFERENCES),
+                  [key]: value,
+                },
+              },
       }),
     );
 
@@ -252,7 +264,9 @@ export function NotificationsPane({ profile }: { profile: SettingsProfile }) {
                   setQuiet({ ...quietHours, start }),
                 )}
                 <span>{intl.formatMessage(messages.quietTo)}</span>
-                {select(quietHours.end, intl.formatMessage(messages.quietTo), (end) => setQuiet({ ...quietHours, end }))}
+                {select(quietHours.end, intl.formatMessage(messages.quietTo), (end) =>
+                  setQuiet({ ...quietHours, end }),
+                )}
               </div>
               <p className="text-footnote text-fg-secondary">
                 {intl.formatMessage(messages.quietSummary, {

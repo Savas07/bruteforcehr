@@ -38,7 +38,11 @@ const messages = defineMessages({
     defaultMessage: "Starting soon",
     description: "Caption of the first stage while the scan waits in the queue",
   },
-  stageDone: { id: "mail-connect.scan.stageDone", defaultMessage: "Done", description: "Screen-reader state of a stage" },
+  stageDone: {
+    id: "mail-connect.scan.stageDone",
+    defaultMessage: "Done",
+    description: "Screen-reader state of a stage",
+  },
   stageCurrent: {
     id: "mail-connect.scan.stageCurrent",
     defaultMessage: "In progress",
@@ -54,7 +58,11 @@ const messages = defineMessages({
     defaultMessage: "Stopped",
     description: "Screen-reader state of the stage where a failed scan stopped",
   },
-  stages: { id: "mail-connect.scan.stages", defaultMessage: "Scan steps", description: "Accessible name of the checklist" },
+  stages: {
+    id: "mail-connect.scan.stages",
+    defaultMessage: "Scan steps",
+    description: "Accessible name of the checklist",
+  },
   progress: {
     id: "mail-connect.scan.progress",
     defaultMessage: "Inbox scan",
@@ -142,7 +150,10 @@ function checkedText(backfill: MailBackfill, intl: IntlShape): string {
 /** The summary headline: applications (and invites), invites alone, or none found. */
 function foundText(backfill: MailBackfill, intl: IntlShape): string {
   if (backfill.applications > 0)
-    return intl.formatMessage(messages.found, { apps: backfill.applications, invites: backfill.interviewInvites });
+    return intl.formatMessage(messages.found, {
+      apps: backfill.applications,
+      invites: backfill.interviewInvites,
+    });
   if (backfill.interviewInvites > 0)
     return intl.formatMessage(messages.foundInvites, { invites: backfill.interviewInvites });
   return intl.formatMessage(messages.foundNone, { days: backfill.lookbackDays });
@@ -271,9 +282,14 @@ export function ScanProgress({
         {running && (
           <>
             <p className="text-fg-secondary text-footnote flex min-w-0 items-center gap-1.5 tabular-nums">
-              <LoaderCircle aria-hidden="true" className="text-accent-text size-3.5 shrink-0 motion-safe:animate-spin" />
+              <LoaderCircle
+                aria-hidden="true"
+                className="text-accent-text size-3.5 shrink-0 motion-safe:animate-spin"
+              />
               <span className="min-w-0">
-                {intl.formatMessage(STAGE_LABELS[backfill.state === "queued" ? "scanning" : backfill.stage], { days })}
+                {intl.formatMessage(STAGE_LABELS[backfill.state === "queued" ? "scanning" : backfill.stage], {
+                  days,
+                })}
                 {" · "}
                 {checkedText(backfill, intl)}
               </span>
@@ -381,8 +397,6 @@ export function ScanProgress({
             <div className="flex flex-col gap-2">
               <ProgressBar backfill={backfill} compact={false} />
               <p className="text-fg-secondary text-footnote tabular-nums">
-                {checkedText(backfill, intl)}
-                {" · "}
                 {intl.formatMessage(messages.appsSoFar, { count: backfill.applications })}
               </p>
               <p className="text-fg-secondary text-callout">{intl.formatMessage(messages.leave)}</p>

@@ -129,7 +129,9 @@ export function useMailActions(): MailActions {
     const event = state.data.applicationEvents.find((candidate) => candidate.id === eventId);
     const application = state.data.applications.find((candidate) => candidate.id === event?.applicationId);
     if (!event || !application) return false;
-    const events = state.data.applicationEvents.filter((candidate) => candidate.applicationId === application.id);
+    const events = state.data.applicationEvents.filter(
+      (candidate) => candidate.applicationId === application.id,
+    );
     return canRevert({ application, event, events }).allowed;
   };
 
@@ -165,12 +167,15 @@ export function useMailActions(): MailActions {
           clearTimeout(entry.timer);
           held.delete(message.id);
           publish();
-          if (createdId !== null) void trackerRepository.deleteApplications([createdId]).done.catch(() => undefined);
+          if (createdId !== null)
+            void trackerRepository.deleteApplications([createdId]).done.catch(() => undefined);
           return;
         }
         // Already written: undo what the server did with it.
         const current =
-          mail.status === "ready" ? mail.data.mailMessages.find((candidate) => candidate.id === message.id) : undefined;
+          mail.status === "ready"
+            ? mail.data.mailMessages.find((candidate) => candidate.id === message.id)
+            : undefined;
         if (current?.appliedEventId) tracker.undoEvent(current.appliedEventId);
         else toast.show({ variant: "info", message: intl.formatMessage(messages.alreadySaved) });
       };

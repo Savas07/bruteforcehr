@@ -110,7 +110,10 @@ export interface SettingsProfile {
 
 /** Applies `patch` over `profile` (both may be missing). */
 export function settingsProfile(profile: Profile | null, patch: ProfilePatch | null): SettingsProfile {
-  const settings: ProfileSettings = { ...(profile?.settings ?? DEFAULT_PROFILE_SETTINGS), ...patch?.settings };
+  const settings: ProfileSettings = {
+    ...(profile?.settings ?? DEFAULT_PROFILE_SETTINGS),
+    ...patch?.settings,
+  };
   return {
     exists: profile !== null,
     aiEnabled: patch?.aiEnabled ?? profile?.aiEnabled ?? DEFAULT_AI_ENABLED,

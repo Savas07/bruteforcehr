@@ -5,12 +5,7 @@
  * would make are not simulated. Callables answer like the deployed functions: OAuth providers are
  * not configured yet (`provider_not_configured`), an app password `wrong` is refused.
  */
-import type {
-  MailAccount,
-  MailConnectErrorReason,
-  MailConnectImapRequest,
-  MailMessage,
-} from "@bfhr/core";
+import type { MailAccount, MailConnectErrorReason, MailConnectImapRequest, MailMessage } from "@bfhr/core";
 import { IMAP_PRESETS, MailConnectImapRequestSchema } from "@bfhr/core";
 import type { LiveMailState, MailRepository, MailReviewDecision, MailSource } from "./repository";
 
@@ -126,7 +121,11 @@ export function createMemoryMailStore(options: MemoryMailOptions): MemoryMailSto
     };
     accounts = [...accounts.filter((candidate) => candidate.id !== id), account];
     changed();
-    return { accountId: id, canSend: smtp !== null, smtpWarning: smtp === null ? ("smtp_not_configured" as const) : null };
+    return {
+      accountId: id,
+      canSend: smtp !== null,
+      smtpWarning: smtp === null ? ("smtp_not_configured" as const) : null,
+    };
   };
 
   const repository: MailRepository = {

@@ -41,13 +41,19 @@ const messages = defineMessages({
   upToDate: { id: "settings.general.upToDate", defaultMessage: "Up to date" },
   downloading: { id: "settings.general.downloading", defaultMessage: "Downloading {version}…" },
   ready: { id: "settings.general.ready", defaultMessage: "{version} is ready to install" },
-  failed: { id: "settings.general.failed", defaultMessage: "The last update check didn't work. Try again later." },
+  failed: {
+    id: "settings.general.failed",
+    defaultMessage: "The last update check didn't work. Try again later.",
+  },
   check: { id: "settings.general.check", defaultMessage: "Check for updates" },
   restart: { id: "settings.general.restart", defaultMessage: "Restart to update" },
   channel: { id: "settings.general.channel", defaultMessage: "Update channel" },
   channelStable: { id: "settings.general.channelStable", defaultMessage: "Stable" },
   channelBeta: { id: "settings.general.channelBeta", defaultMessage: "Beta" },
-  channelHelpStable: { id: "settings.general.channelHelpStable", defaultMessage: "Tested versions. Recommended." },
+  channelHelpStable: {
+    id: "settings.general.channelHelpStable",
+    defaultMessage: "Tested versions. Recommended.",
+  },
   channelHelpBeta: {
     id: "settings.general.channelHelpBeta",
     defaultMessage: "Get new versions first. They might have rough edges. Please report what you find.",
@@ -85,20 +91,30 @@ export function GeneralPane() {
     channelSaver.save(() => store.setUpdateChannel(next));
   };
 
-  let statusIcon = <CircleCheck aria-hidden="true" className="text-success-text size-4 shrink-0" strokeWidth={1.75} />;
+  let statusIcon = (
+    <CircleCheck aria-hidden="true" className="text-success-text size-4 shrink-0" strokeWidth={1.75} />
+  );
   let statusText = intl.formatMessage(messages.idle);
   if (status.state === "checking") {
-    statusIcon = <LoaderCircle aria-hidden="true" className="size-4 shrink-0 animate-spin motion-reduce:animate-none" />;
+    statusIcon = (
+      <LoaderCircle aria-hidden="true" className="size-4 shrink-0 animate-spin motion-reduce:animate-none" />
+    );
     statusText = intl.formatMessage(messages.checking);
   } else if (status.state === "up-to-date") statusText = intl.formatMessage(messages.upToDate);
   else if (status.state === "downloading") {
-    statusIcon = <LoaderCircle aria-hidden="true" className="size-4 shrink-0 animate-spin motion-reduce:animate-none" />;
+    statusIcon = (
+      <LoaderCircle aria-hidden="true" className="size-4 shrink-0 animate-spin motion-reduce:animate-none" />
+    );
     statusText = intl.formatMessage(messages.downloading, { version: status.version });
   } else if (status.state === "ready") {
-    statusIcon = <CircleArrowUp aria-hidden="true" className="text-accent-text size-4 shrink-0" strokeWidth={1.75} />;
+    statusIcon = (
+      <CircleArrowUp aria-hidden="true" className="text-accent-text size-4 shrink-0" strokeWidth={1.75} />
+    );
     statusText = intl.formatMessage(messages.ready, { version: status.version });
   } else if (status.state === "failed") {
-    statusIcon = <CircleAlert aria-hidden="true" className="text-warning-text size-4 shrink-0" strokeWidth={1.75} />;
+    statusIcon = (
+      <CircleAlert aria-hidden="true" className="text-warning-text size-4 shrink-0" strokeWidth={1.75} />
+    );
     statusText = intl.formatMessage(messages.failed);
   }
 
@@ -145,7 +161,9 @@ export function GeneralPane() {
       <SettingsSection title={intl.formatMessage(messages.updatesTitle)} actions={channelSaver.status}>
         <div className="border-line-subtle flex flex-wrap items-center gap-3 rounded-lg border p-4">
           <div className="flex min-w-60 flex-1 flex-col gap-1">
-            <p className="text-body text-fg-primary">{intl.formatMessage(messages.version, { version: chrome.version })}</p>
+            <p className="text-body text-fg-primary">
+              {intl.formatMessage(messages.version, { version: chrome.version })}
+            </p>
             <p role="status" className="text-footnote text-fg-secondary flex items-center gap-1.5">
               {statusIcon}
               {statusText}

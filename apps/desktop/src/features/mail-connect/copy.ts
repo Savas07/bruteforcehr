@@ -20,7 +20,10 @@ export const messages = defineMessages({
   continue: { id: "mail-connect.continue", defaultMessage: "Continue" },
   done: { id: "mail-connect.done", defaultMessage: "Done" },
   // Picker
-  addressLabel: { id: "mail-connect.picker.address", defaultMessage: "Email address <optional>(optional)</optional>" },
+  addressLabel: {
+    id: "mail-connect.picker.address",
+    defaultMessage: "Email address <optional>(optional)</optional>",
+  },
   addressHint: {
     id: "mail-connect.picker.addressHint",
     defaultMessage: "We pick your provider from it.",
@@ -109,7 +112,10 @@ export const messages = defineMessages({
     id: "mail-connect.unavailable.reconnect",
     defaultMessage: "Until then we keep the emails we already found, and nothing else changes.",
   },
-  useAppPassword: { id: "mail-connect.unavailable.useAppPassword", defaultMessage: "Use an app password instead" },
+  useAppPassword: {
+    id: "mail-connect.unavailable.useAppPassword",
+    defaultMessage: "Use an app password instead",
+  },
   chooseAnother: { id: "mail-connect.unavailable.chooseAnother", defaultMessage: "Choose another account" },
   // IMAP form
   imapTitle: { id: "mail-connect.imap.title", defaultMessage: "Connect {provider}" },
@@ -137,7 +143,10 @@ export const messages = defineMessages({
   showPassword: { id: "mail-connect.imap.showPassword", defaultMessage: "Show password" },
   hidePassword: { id: "mail-connect.imap.hidePassword", defaultMessage: "Hide password" },
   serverDetails: { id: "mail-connect.imap.serverDetails", defaultMessage: "Server settings" },
-  username: { id: "mail-connect.imap.username", defaultMessage: "User name <optional>(if not your address)</optional>" },
+  username: {
+    id: "mail-connect.imap.username",
+    defaultMessage: "User name <optional>(if not your address)</optional>",
+  },
   imapServer: { id: "mail-connect.imap.imapServer", defaultMessage: "Incoming (IMAP)" },
   smtpServer: { id: "mail-connect.imap.smtpServer", defaultMessage: "Outgoing (SMTP)" },
   smtpOptional: {
@@ -161,8 +170,14 @@ export const messages = defineMessages({
     defaultMessage: "{count, plural, one {One field needs a look} other {# fields need a look}}",
   },
   missing: { id: "mail-connect.imap.missing", defaultMessage: "Enter this to connect." },
-  invalidAddress: { id: "mail-connect.imap.invalidAddress", defaultMessage: "Enter a full email address, like name@example.com." },
-  invalidHost: { id: "mail-connect.imap.invalidHost", defaultMessage: "Enter a server name, like imap.example.com." },
+  invalidAddress: {
+    id: "mail-connect.imap.invalidAddress",
+    defaultMessage: "Enter a full email address, like name@example.com.",
+  },
+  invalidHost: {
+    id: "mail-connect.imap.invalidHost",
+    defaultMessage: "Enter a server name, like imap.example.com.",
+  },
   invalidPort: { id: "mail-connect.imap.invalidPort", defaultMessage: "Enter a port between 1 and 65535." },
   // Scanning
   connectedTitle: { id: "mail-connect.scan.connected", defaultMessage: "Connected to {address}" },
@@ -178,43 +193,82 @@ export const messages = defineMessages({
 export const HELP_STEPS: Readonly<Record<Exclude<ImapChoice, "other">, readonly MessageDescriptor[]>> = {
   gmail: Object.values(
     defineMessages({
-      one: { id: "mail-connect.help.gmail.1", defaultMessage: "Turn on 2-Step Verification in your Google Account." },
-      two: { id: "mail-connect.help.gmail.2", defaultMessage: "Open App passwords and create one named BruteForceHR." },
+      one: {
+        id: "mail-connect.help.gmail.1",
+        defaultMessage: "Turn on 2-Step Verification in your Google Account.",
+      },
+      two: {
+        id: "mail-connect.help.gmail.2",
+        defaultMessage: "Open App passwords and create one named BruteForceHR.",
+      },
       three: { id: "mail-connect.help.gmail.3", defaultMessage: "Paste the 16-letter password below." },
     }),
   ),
   icloud: Object.values(
     defineMessages({
-      one: { id: "mail-connect.help.icloud.1", defaultMessage: "Sign in at account.apple.com and open Sign-In and Security." },
-      two: { id: "mail-connect.help.icloud.2", defaultMessage: "Choose App-Specific Passwords and create one named BruteForceHR." },
-      three: { id: "mail-connect.help.icloud.3", defaultMessage: "Paste it below. It looks like xxxx-xxxx-xxxx-xxxx." },
+      one: {
+        id: "mail-connect.help.icloud.1",
+        defaultMessage: "Sign in at account.apple.com and open Sign-In and Security.",
+      },
+      two: {
+        id: "mail-connect.help.icloud.2",
+        defaultMessage: "Choose App-Specific Passwords and create one named BruteForceHR.",
+      },
+      three: {
+        id: "mail-connect.help.icloud.3",
+        defaultMessage: "Paste it below. It looks like xxxx-xxxx-xxxx-xxxx.",
+      },
     }),
   ),
   yahoo: Object.values(
     defineMessages({
-      one: { id: "mail-connect.help.yahoo.1", defaultMessage: "Open Account security in your Yahoo account." },
-      two: { id: "mail-connect.help.yahoo.2", defaultMessage: "Choose Generate app password and name it BruteForceHR." },
+      one: {
+        id: "mail-connect.help.yahoo.1",
+        defaultMessage: "Open Account security in your Yahoo account.",
+      },
+      two: {
+        id: "mail-connect.help.yahoo.2",
+        defaultMessage: "Choose Generate app password and name it BruteForceHR.",
+      },
       three: { id: "mail-connect.help.yahoo.3", defaultMessage: "Paste the password below." },
     }),
   ),
   yandex: Object.values(
     defineMessages({
-      one: { id: "mail-connect.help.yandex.1", defaultMessage: "In Yandex Mail settings, allow access from mail clients (IMAP)." },
-      two: { id: "mail-connect.help.yandex.2", defaultMessage: "In Yandex ID › Security, create an app password for Mail." },
+      one: {
+        id: "mail-connect.help.yandex.1",
+        defaultMessage: "In Yandex Mail settings, allow access from mail clients (IMAP).",
+      },
+      two: {
+        id: "mail-connect.help.yandex.2",
+        defaultMessage: "In Yandex ID › Security, create an app password for Mail.",
+      },
       three: { id: "mail-connect.help.yandex.3", defaultMessage: "Paste the password below." },
     }),
   ),
   gmx: Object.values(
     defineMessages({
-      one: { id: "mail-connect.help.gmx.1", defaultMessage: "In GMX settings, open POP3 & IMAP and turn on access for other programs." },
-      two: { id: "mail-connect.help.gmx.2", defaultMessage: "If you use two-factor sign-in, create an app password under Security." },
+      one: {
+        id: "mail-connect.help.gmx.1",
+        defaultMessage: "In GMX settings, open POP3 & IMAP and turn on access for other programs.",
+      },
+      two: {
+        id: "mail-connect.help.gmx.2",
+        defaultMessage: "If you use two-factor sign-in, create an app password under Security.",
+      },
       three: { id: "mail-connect.help.gmx.3", defaultMessage: "Enter that password below." },
     }),
   ),
   webde: Object.values(
     defineMessages({
-      one: { id: "mail-connect.help.webde.1", defaultMessage: "In WEB.DE settings, open POP3 & IMAP and turn on access for other programs." },
-      two: { id: "mail-connect.help.webde.2", defaultMessage: "If you use two-factor sign-in, create an app password under Security." },
+      one: {
+        id: "mail-connect.help.webde.1",
+        defaultMessage: "In WEB.DE settings, open POP3 & IMAP and turn on access for other programs.",
+      },
+      two: {
+        id: "mail-connect.help.webde.2",
+        defaultMessage: "If you use two-factor sign-in, create an app password under Security.",
+      },
       three: { id: "mail-connect.help.webde.3", defaultMessage: "Enter that password below." },
     }),
   ),
@@ -228,7 +282,8 @@ const failureMessages = defineMessages({
   },
   imap_disabled: {
     id: "mail-connect.error.imapDisabled",
-    defaultMessage: "IMAP access is turned off for this account. Turn it on in your provider's settings, then try again.",
+    defaultMessage:
+      "IMAP access is turned off for this account. Turn it on in your provider's settings, then try again.",
   },
   host_unreachable: {
     id: "mail-connect.error.hostUnreachable",
@@ -236,7 +291,8 @@ const failureMessages = defineMessages({
   },
   tls_failed: {
     id: "mail-connect.error.tlsFailed",
-    defaultMessage: "The server's security certificate couldn't be verified. Check the security setting or ask your provider.",
+    defaultMessage:
+      "The server's security certificate couldn't be verified. Check the security setting or ask your provider.",
   },
   email_unverified: {
     id: "mail-connect.error.emailUnverified",
@@ -252,7 +308,8 @@ const failureMessages = defineMessages({
   },
   offline: {
     id: "mail-connect.error.offline",
-    defaultMessage: "Connecting needs an internet connection. Nothing was saved. Try again when you're back online.",
+    defaultMessage:
+      "Connecting needs an internet connection. Nothing was saved. Try again when you're back online.",
   },
   failed: {
     id: "mail-connect.error.failed",

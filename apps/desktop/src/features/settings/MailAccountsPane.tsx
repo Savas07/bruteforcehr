@@ -5,7 +5,17 @@
  * Check now, Scan again and Disconnect… (AlertDialog, Keep connected focused) in the overflow.
  */
 import type { MailAccount } from "@bfhr/core";
-import { CircleAlert, CircleCheck, Info, LoaderCircle, Mail, MoreHorizontal, Plus, RefreshCw, ScanSearch, Unplug } from "lucide-react";
+import {
+  CircleAlert,
+  CircleCheck,
+  LoaderCircle,
+  Mail,
+  MoreHorizontal,
+  Plus,
+  RefreshCw,
+  ScanSearch,
+  Unplug,
+} from "lucide-react";
 import { AlertDialog, DropdownMenu } from "radix-ui";
 import { useContext, useId, useState } from "react";
 import { defineMessages, useIntl } from "react-intl";
@@ -34,13 +44,20 @@ const messages = defineMessages({
   emptyTitle: { id: "settings.mail.emptyTitle", defaultMessage: "No inbox connected" },
   emptyBody: {
     id: "settings.mail.emptyBody",
-    defaultMessage: "Connect your email and we'll find replies about your applications, then ask before changing anything.",
+    defaultMessage:
+      "Connect your email and we'll find replies about your applications, then ask before changing anything.",
   },
   loading: { id: "settings.mail.loading", defaultMessage: "Loading your inboxes" },
   errorTitle: { id: "settings.mail.errorTitle", defaultMessage: "We couldn't load your inboxes" },
-  errorBody: { id: "settings.mail.errorBody", defaultMessage: "Your connections are fine. Try again in a moment." },
+  errorBody: {
+    id: "settings.mail.errorBody",
+    defaultMessage: "Your connections are fine. Try again in a moment.",
+  },
   statusOk: { id: "settings.mail.status.ok", defaultMessage: "Up to date · checked {time}" },
-  statusNeverChecked: { id: "settings.mail.status.neverChecked", defaultMessage: "Connected · first check soon" },
+  statusNeverChecked: {
+    id: "settings.mail.status.neverChecked",
+    defaultMessage: "Connected · first check soon",
+  },
   statusSyncing: { id: "settings.mail.status.syncing", defaultMessage: "Checking for new mail…" },
   statusReauth: { id: "settings.mail.status.reauth", defaultMessage: "Needs reconnecting" },
   statusError: { id: "settings.mail.status.error", defaultMessage: "Can't connect right now" },
@@ -50,7 +67,8 @@ const messages = defineMessages({
   },
   errorBodyAccount: {
     id: "settings.mail.errorBodyAccount",
-    defaultMessage: "We'll keep trying every few minutes. If it continues, reconnect with a new app password.",
+    defaultMessage:
+      "We'll keep trying every few minutes. If it continues, reconnect with a new app password.",
   },
   canSend: { id: "settings.mail.canSend", defaultMessage: "Can send applications" },
   readingOnly: { id: "settings.mail.readingOnly", defaultMessage: "Reading only" },
@@ -69,7 +87,10 @@ const messages = defineMessages({
   checking: { id: "settings.mail.checking", defaultMessage: "Checking {address} now" },
   scanAgain: { id: "settings.mail.scanAgain", defaultMessage: "Scan again" },
   scanDays: { id: "settings.mail.scanDays", defaultMessage: "The last {days} days" },
-  scanStarted: { id: "settings.mail.scanStarted", defaultMessage: "Scanning the last {days} days of {address}" },
+  scanStarted: {
+    id: "settings.mail.scanStarted",
+    defaultMessage: "Scanning the last {days} days of {address}",
+  },
   actionFailed: {
     id: "settings.mail.actionFailed",
     defaultMessage: "That didn't go through. Check your connection and try again.",
@@ -82,11 +103,15 @@ const messages = defineMessages({
       "We'll stop checking this inbox, remove our access at {provider}, and delete {count, plural, =0 {the job emails we stored from it} one {the # job email we stored from it} other {the # job emails we stored from it}}. Your applications and their history stay.",
   },
   keepConnected: { id: "settings.mail.keepConnected", defaultMessage: "Keep connected" },
-  disconnectConfirm: { id: "settings.mail.disconnectConfirm", defaultMessage: "Disconnect and delete email data" },
+  disconnectConfirm: {
+    id: "settings.mail.disconnectConfirm",
+    defaultMessage: "Disconnect and delete email data",
+  },
   disconnecting: { id: "settings.mail.disconnecting", defaultMessage: "Disconnecting…" },
   disconnected: {
     id: "settings.mail.disconnected",
-    defaultMessage: "{address} disconnected. {count, plural, =0 {No emails were stored.} one {# email deleted.} other {# emails deleted.}}",
+    defaultMessage:
+      "{address} disconnected. {count, plural, =0 {No emails were stored.} one {# email deleted.} other {# emails deleted.}}",
   },
   needsConnection: { id: "settings.mail.needsConnection", defaultMessage: "Needs an internet connection" },
 });
@@ -136,7 +161,10 @@ function AccountCard({ account, stored }: { account: MailAccount; stored: number
       setConfirming(false);
       toast.show({
         variant: "info",
-        message: intl.formatMessage(messages.disconnected, { address: account.address, count: deletedMessages }),
+        message: intl.formatMessage(messages.disconnected, {
+          address: account.address,
+          count: deletedMessages,
+        }),
       });
     } catch {
       toast.show({ variant: "info", message: intl.formatMessage(messages.actionFailed) });
@@ -148,18 +176,27 @@ function AccountCard({ account, stored }: { account: MailAccount; stored: number
   let statusIcon;
   let statusText: string;
   if (health === "reauth") {
-    statusIcon = <CircleAlert aria-hidden="true" className="text-warning-text size-4 shrink-0" strokeWidth={1.75} />;
+    statusIcon = (
+      <CircleAlert aria-hidden="true" className="text-warning-text size-4 shrink-0" strokeWidth={1.75} />
+    );
     statusText = intl.formatMessage(messages.statusReauth);
   } else if (health === "error") {
-    statusIcon = <CircleAlert aria-hidden="true" className="text-warning-text size-4 shrink-0" strokeWidth={1.75} />;
+    statusIcon = (
+      <CircleAlert aria-hidden="true" className="text-warning-text size-4 shrink-0" strokeWidth={1.75} />
+    );
     statusText = intl.formatMessage(messages.statusError);
   } else if (health === "syncing") {
     statusIcon = (
-      <LoaderCircle aria-hidden="true" className="text-fg-secondary size-4 shrink-0 animate-spin motion-reduce:animate-none" />
+      <LoaderCircle
+        aria-hidden="true"
+        className="text-fg-secondary size-4 shrink-0 animate-spin motion-reduce:animate-none"
+      />
     );
     statusText = intl.formatMessage(messages.statusSyncing);
   } else {
-    statusIcon = <CircleCheck aria-hidden="true" className="text-success-text size-4 shrink-0" strokeWidth={1.75} />;
+    statusIcon = (
+      <CircleCheck aria-hidden="true" className="text-success-text size-4 shrink-0" strokeWidth={1.75} />
+    );
     statusText = account.lastSyncedAt
       ? intl.formatMessage(messages.statusOk, { time: relativeTime(account.lastSyncedAt, ctx).label })
       : intl.formatMessage(messages.statusNeverChecked);
@@ -183,20 +220,34 @@ function AccountCard({ account, stored }: { account: MailAccount; stored: number
         </div>
         <div className="flex shrink-0 items-center gap-1">
           {needsAction && (
-            <Button size="sm" variant="primary" disabledReason={offlineReason} onClick={() => openMailConnect({ accountId: account.id })}>
+            <Button
+              size="sm"
+              variant="primary"
+              disabledReason={offlineReason}
+              onClick={() => openMailConnect({ accountId: account.id })}
+            >
               {intl.formatMessage(messages.reconnect)}
             </Button>
           )}
           <DropdownMenu.Root>
             <DropdownMenu.Trigger asChild>
-              <IconButton icon={MoreHorizontal} label={intl.formatMessage(messages.more, { address: account.address })} />
+              <IconButton
+                icon={MoreHorizontal}
+                label={intl.formatMessage(messages.more, { address: account.address })}
+              />
             </DropdownMenu.Trigger>
-            <MenuContent align="end" aria-label={intl.formatMessage(messages.more, { address: account.address })}>
+            <MenuContent
+              align="end"
+              aria-label={intl.formatMessage(messages.more, { address: account.address })}
+            >
               <MenuItem
                 icon={RefreshCw}
                 disabledReason={offlineReason}
                 onSelect={() =>
-                  run(() => repository.syncNow(account.id), intl.formatMessage(messages.checking, { address: account.address }))
+                  run(
+                    () => repository.syncNow(account.id),
+                    intl.formatMessage(messages.checking, { address: account.address }),
+                  )
                 }
               >
                 {intl.formatMessage(messages.checkNow)}
@@ -219,12 +270,21 @@ function AccountCard({ account, stored }: { account: MailAccount; stored: number
                 ))}
               </MenuSub>
               {!needsAction && (
-                <MenuItem icon={RefreshCw} disabledReason={offlineReason} onSelect={() => openMailConnect({ accountId: account.id })}>
+                <MenuItem
+                  icon={RefreshCw}
+                  disabledReason={offlineReason}
+                  onSelect={() => openMailConnect({ accountId: account.id })}
+                >
                   {intl.formatMessage(messages.reconnect)}
                 </MenuItem>
               )}
               <MenuSeparator />
-              <MenuItem icon={Unplug} destructive disabledReason={offlineReason} onSelect={() => setConfirming(true)}>
+              <MenuItem
+                icon={Unplug}
+                destructive
+                disabledReason={offlineReason}
+                onSelect={() => setConfirming(true)}
+              >
                 {intl.formatMessage(messages.disconnect)}
               </MenuItem>
             </MenuContent>
@@ -237,16 +297,19 @@ function AccountCard({ account, stored }: { account: MailAccount; stored: number
           {account.lastError?.message}
         </InlineAlert>
       )}
-      {account.backfill && (account.backfill.state === "queued" || account.backfill.state === "running" || account.backfill.state === "failed") && (
-        <ScanProgress account={account} variant="compact" />
-      )}
-      <p className="text-footnote text-fg-secondary flex gap-1.5">
-        <Info aria-hidden="true" className="mt-0.5 size-3.5 shrink-0" strokeWidth={1.75} />
-        {intl.formatMessage(messages.spamIncluded)}
-      </p>
+      {account.backfill &&
+        (account.backfill.state === "queued" ||
+          account.backfill.state === "running" ||
+          account.backfill.state === "failed") && <ScanProgress account={account} variant="compact" />}
       {account.server && (
         <div>
-          <Button size="sm" variant="plain" aria-expanded={detailsOpen} aria-controls={detailsId} onClick={() => setDetailsOpen((open) => !open)}>
+          <Button
+            size="sm"
+            variant="plain"
+            aria-expanded={detailsOpen}
+            aria-controls={detailsId}
+            onClick={() => setDetailsOpen((open) => !open)}
+          >
             {intl.formatMessage(messages.serverDetails)}
           </Button>
           {detailsOpen && (
@@ -357,7 +420,7 @@ export function MailAccountsPane() {
   return (
     <SettingsSection
       title={intl.formatMessage(messages.title)}
-      description={intl.formatMessage(messages.description)}
+      description={`${intl.formatMessage(messages.description)} ${intl.formatMessage(messages.spamIncluded)}`}
       {...(mail.status === "ready" &&
         mail.data.mailAccounts.some((account) => account.status !== "disconnected") && { actions: add })}
     >

@@ -30,6 +30,7 @@ import { OFFLINE_PENDING_WRITES } from "./screens";
 import { readDesignParams } from "./search";
 import { createMemoryMailStore, type MemoryMailStore } from "../data/mail/memory";
 import { MailProviders } from "../data/mail/live";
+import { designScanAccount } from "./mail-connect";
 
 const MINUTE_MS = 60_000;
 
@@ -43,7 +44,7 @@ declare global {
 }
 
 const stores = new Map<FixtureDataset, MemoryTrackerStore>();
-const mailStores = new Map<FixtureDataset, MemoryMailStore>();
+const mailStores = new Map<string, MemoryMailStore>();
 
 function storeFor(dataset: FixtureDataset): MemoryTrackerStore {
   let store = stores.get(dataset);
@@ -56,20 +57,23 @@ function storeFor(dataset: FixtureDataset): MemoryTrackerStore {
 
 /**
  * The dataset's mail: callables answer like the deployed functions (OAuth providers not
- * configured yet, `?oauth=configured` turns them on) after a short delay so busy states show.
+ * configured yet, `?oauth=configured` turns them on) after a short delay so busy states show;
+ * `?scan=` adds an inbox in a lookback scan (src/design/mail-connect.tsx).
  */
-function mailStoreFor(dataset: FixtureDataset, oauthConfigured: boolean): MemoryMailStore {
-  let store = mailStores.get(dataset);
+function mailStoreFor(dataset: FixtureDataset, oauthConfigured: boolean, scan: string | undefined): MemoryMailStore {
+  const key = `${dataset.uid}:${dataset === emptyDataset ? "empty" : "populated"}:${String(oauthConfigured)}:${scan ?? ""}`;
+  let store = mailStores.get(key);
   if (!store) {
+    const scanned = designScanAccount(scan);
     store = createMemoryMailStore({
       uid: dataset.uid,
-      accounts: dataset.mailAccounts,
+      accounts: scanned ? [...dataset.mailAccounts, scanned] : dataset.mailAccounts,
       messages: dataset.mailMessages,
       now: () => FIXTURE_NOW,
       oauthConfigured,
       latencyMs: 600,
     });
-    mailStores.set(dataset, store);
+    mailStores.set(key, store);
   }
   return store;
 }
@@ -121,7 +125,7 @@ export function DesignTrackerProviders({ children }: { readonly children: ReactN
   const navigate = useNavigate();
   const dataset = search.fixture === "empty" ? emptyDataset : populatedDataset;
   const store = storeFor(dataset);
-  const mailStore = mailStoreFor(dataset, search.rest["oauth"] === "configured");
+  const mailStore = mailStoreFor(dataset, search.rest["oauth"] === "configured", search.rest["scan"]);
   useEffect(() => {
     window.__bfhrTrackerStore = store;
     window.__bfhrMailStore = mailStore;

@@ -5,7 +5,16 @@
  * the server resolves the board.
  */
 import type { WatchedCompany } from "@bfhr/core";
-import { Building2, CircleAlert, CircleCheck, LoaderCircle, MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
+import {
+  Building2,
+  CircleAlert,
+  CircleCheck,
+  LoaderCircle,
+  MoreHorizontal,
+  Pencil,
+  Plus,
+  Trash2,
+} from "lucide-react";
 import { DropdownMenu } from "radix-ui";
 import { type FormEvent, useContext, useId, useState } from "react";
 import { defineMessages, useIntl } from "react-intl";
@@ -44,14 +53,21 @@ const messages = defineMessages({
   pending: { id: "settings.companies.pending", defaultMessage: "Looking for open jobs…" },
   ok: {
     id: "settings.companies.ok",
-    defaultMessage: "{count, plural, =0 {No open jobs} one {# open job} other {# open jobs}} · checked {time}",
+    defaultMessage:
+      "{count, plural, =0 {No open jobs} one {# open job} other {# open jobs}} · checked {time}",
   },
-  okNoTime: { id: "settings.companies.okNoTime", defaultMessage: "{count, plural, =0 {No open jobs} one {# open job} other {# open jobs}}" },
+  okNoTime: {
+    id: "settings.companies.okNoTime",
+    defaultMessage: "{count, plural, =0 {No open jobs} one {# open job} other {# open jobs}}",
+  },
   notFound: {
     id: "settings.companies.notFound",
     defaultMessage: "We couldn't find job listings on this page. Try the page that lists the jobs.",
   },
-  error: { id: "settings.companies.error", defaultMessage: "The page didn't answer. We'll try again with the next search." },
+  error: {
+    id: "settings.companies.error",
+    defaultMessage: "The page didn't answer. We'll try again with the next search.",
+  },
   paused: { id: "settings.companies.paused", defaultMessage: "Paused" },
   following: { id: "settings.companies.following", defaultMessage: "Following" },
   more: { id: "settings.companies.more", defaultMessage: "More actions for {company}" },
@@ -59,14 +75,23 @@ const messages = defineMessages({
   remove: { id: "settings.companies.remove", defaultMessage: "Stop following" },
   removed: { id: "settings.companies.removed", defaultMessage: "Stopped following {company}" },
   undo: { id: "settings.companies.undo", defaultMessage: "Undo" },
-  emptyTitle: { id: "settings.companies.emptyTitle", defaultMessage: "Follow the companies you'd love to work for" },
+  emptyTitle: {
+    id: "settings.companies.emptyTitle",
+    defaultMessage: "Follow the companies you'd love to work for",
+  },
   emptyBody: {
     id: "settings.companies.emptyBody",
     defaultMessage: "Add a careers page and new openings show up in Jobs without searching.",
   },
   loading: { id: "settings.companies.loading", defaultMessage: "Loading the companies you follow" },
-  errorTitle: { id: "settings.companies.errorTitle", defaultMessage: "We couldn't load the companies you follow" },
-  errorBody: { id: "settings.companies.errorBody", defaultMessage: "Nothing was lost. Try again in a moment." },
+  errorTitle: {
+    id: "settings.companies.errorTitle",
+    defaultMessage: "We couldn't load the companies you follow",
+  },
+  errorBody: {
+    id: "settings.companies.errorBody",
+    defaultMessage: "Nothing was lost. Try again in a moment.",
+  },
 });
 
 const controlClass =
@@ -102,7 +127,9 @@ function CompanyForm({
   const [attempted, setAttempted] = useState(false);
   const nameError = attempted && name.trim() === "" ? intl.formatMessage(messages.nameMissing) : null;
   const duplicate = existing.some(
-    (company) => company.careersUrl.toLowerCase() === url.trim().toLowerCase() && company.careersUrl !== initial.careersUrl,
+    (company) =>
+      company.careersUrl.toLowerCase() === url.trim().toLowerCase() &&
+      company.careersUrl !== initial.careersUrl,
   );
   const urlError =
     attempted && !validUrl(url)
@@ -117,7 +144,11 @@ function CompanyForm({
     onSubmit({ name: name.trim(), careersUrl: url.trim() });
   };
   return (
-    <form noValidate onSubmit={submit} className="border-line-subtle grid grid-cols-1 gap-3 rounded-lg border p-4 min-[640px]:grid-cols-[1fr_2fr]">
+    <form
+      noValidate
+      onSubmit={submit}
+      className="border-line-subtle grid grid-cols-1 gap-3 rounded-lg border p-4 min-[640px]:grid-cols-[1fr_2fr]"
+    >
       <div className="flex min-w-0 flex-col gap-1">
         <label htmlFor={`${id}-name`} className="text-footnote text-fg-secondary font-medium">
           {intl.formatMessage(messages.name)}
@@ -152,7 +183,10 @@ function CompanyForm({
           aria-describedby={`${id}-url-message`}
           className={controlClass}
         />
-        <p id={`${id}-url-message`} className={urlError ? "text-danger-text text-footnote" : "text-fg-tertiary text-footnote"}>
+        <p
+          id={`${id}-url-message`}
+          className={urlError ? "text-danger-text text-footnote" : "text-fg-tertiary text-footnote"}
+        >
           {urlError ?? intl.formatMessage(messages.urlHint)}
         </p>
       </div>
@@ -201,7 +235,10 @@ function CompanyRow({ company, all }: { company: WatchedCompany; all: readonly W
   if (company.status === "pending")
     status = (
       <>
-        <LoaderCircle aria-hidden="true" className="size-3.5 shrink-0 animate-spin motion-reduce:animate-none" />
+        <LoaderCircle
+          aria-hidden="true"
+          className="size-3.5 shrink-0 animate-spin motion-reduce:animate-none"
+        />
         {intl.formatMessage(messages.pending)}
       </>
     );
@@ -229,7 +266,10 @@ function CompanyRow({ company, all }: { company: WatchedCompany; all: readonly W
     toast.show({
       message: intl.formatMessage(messages.removed, { company: company.name }),
       glyph: Trash2,
-      action: { label: intl.formatMessage(messages.undo), run: () => void store.restoreCompany(company).catch(() => undefined) },
+      action: {
+        label: intl.formatMessage(messages.undo),
+        run: () => void store.restoreCompany(company).catch(() => undefined),
+      },
     });
   };
   return (
@@ -253,7 +293,10 @@ function CompanyRow({ company, all }: { company: WatchedCompany; all: readonly W
         />
         <DropdownMenu.Root>
           <DropdownMenu.Trigger asChild>
-            <IconButton icon={MoreHorizontal} label={intl.formatMessage(messages.more, { company: company.name })} />
+            <IconButton
+              icon={MoreHorizontal}
+              label={intl.formatMessage(messages.more, { company: company.name })}
+            />
           </DropdownMenu.Trigger>
           <MenuContent align="end" aria-label={intl.formatMessage(messages.more, { company: company.name })}>
             <MenuItem icon={Pencil} onSelect={() => setEditing(true)}>
@@ -283,12 +326,22 @@ export function CompaniesPane() {
   let body;
   if (state.status === "loading")
     body = (
-      <SkeletonRegion loading label={intl.formatMessage(messages.loading)} skeleton={<SkeletonBlock className="h-24 w-full rounded-lg" />}>
+      <SkeletonRegion
+        loading
+        label={intl.formatMessage(messages.loading)}
+        skeleton={<SkeletonBlock className="h-24 w-full rounded-lg" />}
+      >
         {null}
       </SkeletonRegion>
     );
   else if (state.status === "error")
-    body = <PaneError title={intl.formatMessage(messages.errorTitle)} body={intl.formatMessage(messages.errorBody)} onRetry={state.retry} />;
+    body = (
+      <PaneError
+        title={intl.formatMessage(messages.errorTitle)}
+        body={intl.formatMessage(messages.errorBody)}
+        onRetry={state.retry}
+      />
+    );
   else {
     const companies = state.items.toSorted((a, b) => a.name.localeCompare(b.name, intl.locale));
     body = (

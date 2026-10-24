@@ -1,3 +1,4 @@
+// @vitest-environment happy-dom
 import { DEFAULT_NOTIFICATION_PREFERENCES, type MailMessage } from "@bfhr/core";
 import { FIXTURE_NOW, populatedDataset } from "@bfhr/fixtures";
 import { describe, expect, it } from "vitest";
@@ -28,7 +29,9 @@ describe("mailNotificationDecision", () => {
       notify: true,
       kind: "interview",
     });
-    expect(mailNotificationDecision(message({ category: "offer" }), rules, FIXTURE_NOW)).toMatchObject({ kind: "offer" });
+    expect(mailNotificationDecision(message({ category: "offer" }), rules, FIXTURE_NOW)).toMatchObject({
+      kind: "offer",
+    });
     expect(mailNotificationDecision(message({ category: "assessment" }), rules, FIXTURE_NOW)).toMatchObject({
       kind: "assessment",
     });
@@ -39,8 +42,13 @@ describe("mailNotificationDecision", () => {
 
   it("notifies other categories only when their change was applied automatically", () => {
     const received = message({ category: "application_received" });
-    expect(mailNotificationDecision(received, rules, FIXTURE_NOW)).toEqual({ notify: false, reason: "notJobNews" });
-    expect(mailNotificationDecision({ ...received, reviewState: "auto_applied" }, rules, FIXTURE_NOW)).toMatchObject({
+    expect(mailNotificationDecision(received, rules, FIXTURE_NOW)).toEqual({
+      notify: false,
+      reason: "notJobNews",
+    });
+    expect(
+      mailNotificationDecision({ ...received, reviewState: "auto_applied" }, rules, FIXTURE_NOW),
+    ).toMatchObject({
       kind: "statusUpdate",
     });
   });
@@ -51,7 +59,11 @@ describe("mailNotificationDecision", () => {
   });
 
   it("follows the category toggles and the decisions switch", () => {
-    const muted = { ...rules, notifications: { ...DEFAULT_NOTIFICATION_PREFERENCES, offers: false }, notifyRejections: false };
+    const muted = {
+      ...rules,
+      notifications: { ...DEFAULT_NOTIFICATION_PREFERENCES, offers: false },
+      notifyRejections: false,
+    };
     expect(mailNotificationDecision(message({ category: "offer" }), muted, FIXTURE_NOW)).toEqual({
       notify: false,
       reason: "muted",
@@ -60,16 +72,18 @@ describe("mailNotificationDecision", () => {
       notify: false,
       reason: "muted",
     });
-    expect(mailNotificationDecision(message({ category: "interview_invite" }), muted, FIXTURE_NOW).notify).toBe(true);
+    expect(
+      mailNotificationDecision(message({ category: "interview_invite" }), muted, FIXTURE_NOW).notify,
+    ).toBe(true);
   });
 
   it("stays quiet during quiet hours in the profile's zone", () => {
     // 23:30 in Istanbul (UTC+3).
     const night = new Date("2026-10-22T20:30:00Z");
     const quiet = { ...rules, quietHours: { start: "22:00", end: "08:00" } };
-    expect(
-      mailNotificationDecision(message({ category: "offer", receivedAt: night }), quiet, night),
-    ).toEqual({ notify: false, reason: "quiet" });
+    expect(mailNotificationDecision(message({ category: "offer", receivedAt: night }), quiet, night)).toEqual(
+      { notify: false, reason: "quiet" },
+    );
   });
 });
 

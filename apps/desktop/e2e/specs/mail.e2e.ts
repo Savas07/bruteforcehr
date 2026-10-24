@@ -12,7 +12,7 @@ import { $, browser, expect } from "@wdio/globals";
 import { osName, repoRoot, saveScreenshot, setTheme } from "../capture/helpers";
 import { ensureSignedIn, testEmail } from "../support/auth";
 import { findDocs, getDoc, plain } from "../support/firestore";
-import { signedInUid, writeDoc } from "../support/seed";
+import { deleteDoc, signedInUid, writeDoc } from "../support/seed";
 
 const RUN = process.pid;
 const COMPANY = `Mailwave ${RUN}`;
@@ -167,6 +167,15 @@ describe("Mail review", () => {
       createdAt: now,
       updatedAt: now,
     });
+  });
+
+  // Later specs may run in the same session (a restored sign-in): leave nothing of ours behind.
+  after(async () => {
+    const events = await findDocs("applicationEvents", "applicationId", APPLICATION_ID);
+    await Promise.all(events.map((event) => deleteDoc(event.name)));
+    await deleteDoc(applicationPath());
+    await deleteDoc(messagePath());
+    await deleteDoc(`users/${uid}/mailAccounts/${ACCOUNT_ID}`);
   });
 
   it("confirms the invite: the server moves the application to Interviewing", async () => {

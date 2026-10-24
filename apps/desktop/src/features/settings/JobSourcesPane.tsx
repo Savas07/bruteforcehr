@@ -40,19 +40,45 @@ const messages = defineMessages({
   open: { id: "settings.sources.open", defaultMessage: "Visit {source}" },
   loading: { id: "settings.sources.loading", defaultMessage: "Loading job sources" },
   errorTitle: { id: "settings.sources.errorTitle", defaultMessage: "We couldn't load the job sources" },
-  errorBody: { id: "settings.sources.errorBody", defaultMessage: "Jobs keeps working. Try again in a moment." },
-  empty: { id: "settings.sources.empty", defaultMessage: "Sources show up here after the first job search runs." },
-  reason_no_key: { id: "settings.sources.reason.noKey", defaultMessage: "No API key is set up for this source yet." },
-  reason_quota_exhausted: { id: "settings.sources.reason.quota", defaultMessage: "Its request quota is used up." },
-  reason_rate_limited: { id: "settings.sources.reason.rateLimited", defaultMessage: "It asked us to slow down; we'll retry later." },
+  errorBody: {
+    id: "settings.sources.errorBody",
+    defaultMessage: "Jobs keeps working. Try again in a moment.",
+  },
+  empty: {
+    id: "settings.sources.empty",
+    defaultMessage: "Sources show up here after the first job search runs.",
+  },
+  reason_no_key: {
+    id: "settings.sources.reason.noKey",
+    defaultMessage: "No API key is set up for this source yet.",
+  },
+  reason_quota_exhausted: {
+    id: "settings.sources.reason.quota",
+    defaultMessage: "Its request quota is used up.",
+  },
+  reason_rate_limited: {
+    id: "settings.sources.reason.rateLimited",
+    defaultMessage: "It asked us to slow down; we'll retry later.",
+  },
   reason_blocked: { id: "settings.sources.reason.blocked", defaultMessage: "It refused automated access." },
   reason_unavailable: { id: "settings.sources.reason.unavailable", defaultMessage: "It didn't respond." },
-  reason_invalid_response: { id: "settings.sources.reason.invalid", defaultMessage: "It sent data we couldn't read." },
-  reason_disabled: { id: "settings.sources.reason.disabled", defaultMessage: "Turned off by the app's owner." },
+  reason_invalid_response: {
+    id: "settings.sources.reason.invalid",
+    defaultMessage: "It sent data we couldn't read.",
+  },
+  reason_disabled: {
+    id: "settings.sources.reason.disabled",
+    defaultMessage: "Turned off by the app's owner.",
+  },
 });
 
 const KIND_ORDER: readonly JobSourceKind[] = ["keyless", "keyed", "scrape"];
-const STATE_ICONS = { ok: CircleCheck, degraded: CircleAlert, failing: CircleAlert, skipped: CircleMinus } as const;
+const STATE_ICONS = {
+  ok: CircleCheck,
+  degraded: CircleAlert,
+  failing: CircleAlert,
+  skipped: CircleMinus,
+} as const;
 const STATE_TONES = {
   ok: "text-success-text",
   degraded: "text-warning-text",
@@ -76,17 +102,28 @@ function SourceRow({ source }: { source: JobSourceStatus }) {
       : source.lastRunAt === null
         ? intl.formatMessage(messages.never)
         : null,
-    source.lastResultCount !== null ? intl.formatMessage(messages.results, { count: source.lastResultCount }) : null,
-    source.quota ? intl.formatMessage(messages.quota, { used: source.quota.used, limit: source.quota.limit }) : null,
+    source.lastResultCount !== null
+      ? intl.formatMessage(messages.results, { count: source.lastResultCount })
+      : null,
+    source.quota
+      ? intl.formatMessage(messages.quota, { used: source.quota.used, limit: source.quota.limit })
+      : null,
   ].filter((fact): fact is string => fact !== null);
   const reason = source.reason ? (messages[`reason_${source.reason}`] as MessageDescriptor) : null;
   return (
     <li className="flex flex-wrap items-start gap-3 py-3">
-      <Icon aria-hidden="true" className={`mt-0.5 size-4 shrink-0 ${STATE_TONES[source.state]}`} strokeWidth={1.75} />
+      <Icon
+        aria-hidden="true"
+        className={`mt-0.5 size-4 shrink-0 ${STATE_TONES[source.state]}`}
+        strokeWidth={1.75}
+      />
       <div className="flex min-w-60 flex-1 flex-col gap-0.5">
         <p className="text-body text-fg-primary">
           {source.label}
-          <span className="text-fg-secondary text-footnote"> · {intl.formatMessage(messages[source.state])}</span>
+          <span className="text-fg-secondary text-footnote">
+            {" "}
+            · {intl.formatMessage(messages[source.state])}
+          </span>
         </p>
         {reason && <p className="text-footnote text-fg-secondary">{intl.formatMessage(reason)}</p>}
         {facts.length > 0 && <p className="text-footnote text-fg-tertiary">{facts.join(" · ")}</p>}
@@ -111,20 +148,30 @@ export function JobSourcesPane() {
   if (state.status === "loading")
     return (
       <SettingsSection title={intl.formatMessage(messages.keyless)}>
-        <SkeletonRegion loading label={intl.formatMessage(messages.loading)} skeleton={<SkeletonBlock className="h-40 w-full rounded-lg" />}>
+        <SkeletonRegion
+          loading
+          label={intl.formatMessage(messages.loading)}
+          skeleton={<SkeletonBlock className="h-40 w-full rounded-lg" />}
+        >
           {null}
         </SkeletonRegion>
       </SettingsSection>
     );
   if (state.status === "error")
     return (
-      <PaneError title={intl.formatMessage(messages.errorTitle)} body={intl.formatMessage(messages.errorBody)} onRetry={state.retry} />
+      <PaneError
+        title={intl.formatMessage(messages.errorTitle)}
+        body={intl.formatMessage(messages.errorBody)}
+        onRetry={state.retry}
+      />
     );
   if (state.items.length === 0)
     return <EmptyState kind="caughtUp" glyph={CircleDashed} body={intl.formatMessage(messages.empty)} />;
   return (
     <>
-      <p className="text-callout text-fg-secondary max-w-160 pt-2">{intl.formatMessage(messages.description)}</p>
+      <p className="text-callout text-fg-secondary max-w-160 pt-2">
+        {intl.formatMessage(messages.description)}
+      </p>
       {KIND_ORDER.map((kind) => {
         const sources = state.items
           .filter((source) => source.kind === kind)

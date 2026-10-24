@@ -67,7 +67,11 @@ function clockMinutes(clock: string): number {
 }
 
 /** Whether `now` falls in quiet hours (start inclusive, end exclusive; start > end spans midnight). */
-export function inQuietHours(now: Date, quietHours: ProfileSettings["quietHours"], timeZone: string): boolean {
+export function inQuietHours(
+  now: Date,
+  quietHours: ProfileSettings["quietHours"],
+  timeZone: string,
+): boolean {
   if (quietHours === null) return false;
   const start = clockMinutes(quietHours.start);
   const end = clockMinutes(quietHours.end);
@@ -87,7 +91,8 @@ export function mailNotificationDecision(
 ): MailNotificationDecision {
   const kind = kindOf(message);
   if (kind === null) return { notify: false, reason: "notJobNews" };
-  if (now.getTime() - message.receivedAt.getTime() > MAIL_NOTIFY_MAX_AGE_MS) return { notify: false, reason: "old" };
+  if (now.getTime() - message.receivedAt.getTime() > MAIL_NOTIFY_MAX_AGE_MS)
+    return { notify: false, reason: "old" };
   if (!enabled(kind, rules)) return { notify: false, reason: "muted" };
   if (inQuietHours(now, rules.quietHours, rules.timeZone)) return { notify: false, reason: "quiet" };
   return { notify: true, kind };

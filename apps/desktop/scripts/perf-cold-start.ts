@@ -37,8 +37,8 @@ if (!Number.isInteger(runs) || runs < 1 || !(budgetScale >= 1))
 interface Launch {
   /** Spawn → mark, measured here. */
   readonly ms: number;
-  /** main() → mark, measured by the app. */
-  readonly inAppMs: number;
+  /** main() → each mark the app printed on the way (window-created, script-start, shell, …). */
+  readonly marks: Readonly<Record<string, number>>;
 }
 
 /** One launch: spawn, wait for the mark, then for the app to quit. */
@@ -58,8 +58,10 @@ async function launch(): Promise<Launch> {
   child.stdout.on("data", (chunk: string) => {
     const now = performance.now();
     buffered += chunk;
-    const match = new RegExp(`^bfhr-perf ${MARK} (\\d+)$`, "mu").exec(buffered);
-    if (match) marked.resolve({ ms: Math.round(now - started), inAppMs: Number(match[1]) });
+    const marks = Object.fromEntries(
+      [...buffered.matchAll(/^bfhr-perf ([a-z-]+) (\d+)$/gmu)].map((match) => [match[1], Number(match[2])]),
+    );
+    if (marks[MARK] !== undefined) marked.resolve({ ms: Math.round(now - started), marks });
   });
   child.stderr.setEncoding("utf8");
   child.stderr.on("data", (chunk: string) => output.push(chunk));
@@ -98,7 +100,8 @@ for (let run = 0; run <= runs; run++) {
     continue;
   }
   launches.push(result);
-  console.log(`  run ${run}: ${result.ms} ms (in-app ${result.inAppMs} ms)`);
+  const steps = Object.entries(result.marks).map(([label, ms]) => `${label} ${ms}`);
+  console.log(`  run ${run}: ${result.ms} ms (in-app: ${steps.join(", ")} ms)`);
 }
 const median = launches.map((item) => item.ms).toSorted((a, b) => a - b)[Math.floor(runs / 2)] ?? 0;
 const limit = BUDGET_MS * budgetScale;
@@ -114,7 +117,7 @@ await writeFile(
       budgetScale,
       medianMs: median,
       runsMs: launches.map((item) => item.ms),
-      inAppMs: launches.map((item) => item.inAppMs),
+      marks: launches.map((item) => item.marks),
       binary: path.basename(appBinaryPath),
       platform: `${process.platform}-${process.arch}`,
       pass,

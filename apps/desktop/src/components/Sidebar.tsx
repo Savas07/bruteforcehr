@@ -1,9 +1,10 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { Keyboard, Search, Settings, type LucideIcon } from "lucide-react";
 import { Tooltip } from "radix-ui";
-import type { ReactNode } from "react";
+import { type ReactNode, useEffect } from "react";
 import { defineMessages, useIntl } from "react-intl";
 import { chrome } from "../lib/desktop";
+import { markPerf } from "../lib/perf";
 import { destinationMessages, destinations } from "../lib/destinations";
 import { shortcutById, shortcutKeys, type Shortcut } from "../lib/shortcuts";
 import { Keycaps } from "../shared/ui/Keycaps";
@@ -91,6 +92,8 @@ export function Sidebar({
   const intl = useIntl();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
   const isMac = chrome.platform === "macos";
+  // Test builds: the cold-start breakdown (src/lib/perf.ts); the sidebar exists only signed in.
+  useEffect(() => markPerf("shell"), []);
   return (
     <nav
       aria-label={intl.formatMessage(messages.sections)}

@@ -18,7 +18,16 @@ import {
 } from "@tanstack/react-table";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
-import { memo, useCallback, useEffect, useMemo, useRef, type KeyboardEvent, type MouseEvent } from "react";
+import {
+  type CSSProperties,
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  type KeyboardEvent,
+  type MouseEvent,
+} from "react";
 import { defineMessages, useIntl } from "react-intl";
 import { cx } from "../../shared/cx";
 import { Monogram } from "../../shared/ui/Company";
@@ -288,27 +297,29 @@ export function DataTable({
   const allSelected = rows.length > 0 && rows.every((row) => selected.has(row.applicationId));
   const someSelected = !allSelected && rows.some((row) => selected.has(row.applicationId));
   const items = virtualizer.getVirtualItems();
-  const before = items[0]?.start ?? 0;
-  const after = virtualizer.getTotalSize() - (items.at(-1)?.end ?? 0);
   const width = SELECT_WIDTH + headers.reduce((sum, column) => sum + WIDTH[column.id as TableColumnId], 0);
 
+  // Rows are positioned (`translateY`) inside a body as tall as all of them, so rows entering and
+  // leaving the window move nothing else: with spacer rows, every scrolled frame re-laid out the
+  // whole table, which held WebKit under 60 fps (docs/runbooks/performance.md). The elements keep
+  // their table roles explicitly, since `display: flex` / `grid` can drop the implicit ones.
   return (
     <div ref={scrollRef} className="min-h-0 flex-1 overflow-auto" data-testid="tracker-table-scroll">
       <table
+        role="table"
         aria-label={intl.formatMessage(messages.table)}
         aria-rowcount={rows.length + 1}
-        className="text-callout table-fixed border-separate border-spacing-0"
+        className="text-callout grid"
         style={{ width, minWidth: "100%" }}
       >
-        <colgroup>
-          <col style={{ width: SELECT_WIDTH }} />
-          {headers.map((column) => (
-            <col key={column.id} style={{ width: WIDTH[column.id as TableColumnId] }} />
-          ))}
-        </colgroup>
-        <thead className="bg-surface-base sticky top-0 z-(--bfhr-layer-sticky)">
-          <tr aria-rowindex={1}>
-            <th scope="col" className={cx(headCell, stickyStart, "bg-surface-base ps-4")} style={{ left: 0 }}>
+        <thead role="rowgroup" className="bg-surface-base sticky top-0 z-(--bfhr-layer-sticky) grid">
+          <tr role="row" aria-rowindex={1} className="flex">
+            <th
+              role="columnheader"
+              scope="col"
+              className={cx(headCell, stickyStart, "bg-surface-base ps-4")}
+              style={columnStyle(SELECT_WIDTH, 0)}
+            >
               <Checkbox
                 checked={allSelected}
                 mixed={someSelected}
@@ -324,10 +335,11 @@ export function DataTable({
               return (
                 <th
                   key={id}
+                  role="columnheader"
                   scope="col"
                   aria-sort={sortedDir === "asc" ? "ascending" : sortedDir === "desc" ? "descending" : "none"}
                   className={cx(headCell, id === "company" && cx(stickyStart, "bg-surface-base"))}
-                  style={id === "company" ? { left: SELECT_WIDTH } : undefined}
+                  style={columnStyle(WIDTH[id], id === "company" ? SELECT_WIDTH : undefined)}
                 >
                   <button
                     type="button"
@@ -350,8 +362,13 @@ export function DataTable({
             })}
           </tr>
         </thead>
-        <tbody>
-          {before > 0 && <tr aria-hidden="true" style={{ height: before }} />}
+        {/* Its own compositing layer: WebKit scrolls it without repainting the visible rows (frame
+            work p50 14 → 8 ms in Playwright WebKit). */}
+        <tbody
+          role="rowgroup"
+          className="relative grid will-change-transform"
+          style={{ height: virtualizer.getTotalSize() }}
+        >
           {items.map((item) => {
             const row = rows[item.index];
             if (!row) return null;
@@ -360,6 +377,7 @@ export function DataTable({
                 key={row.applicationId}
                 row={row}
                 rowIndex={item.index + 2}
+                start={item.start}
                 headers={headers}
                 isSelected={selected.has(row.applicationId)}
                 isOpen={row.applicationId === openId}
@@ -374,16 +392,23 @@ export function DataTable({
               />
             );
           })}
-          {after > 0 && <tr aria-hidden="true" style={{ height: after }} />}
         </tbody>
       </table>
     </div>
   );
 }
 
+/**
+ * A column's share of a row: its width, growing in proportion when the table is wider than the
+ * columns (what `table-layout: fixed` did), and its offset when it sticks to the start.
+ */
+function columnStyle(width: number, left?: number): CSSProperties {
+  return { flex: `${width} 0 ${width}px`, ...(left === undefined ? {} : { left }) };
+}
+
 const headCell =
-  "border-line-subtle h-9 border-b px-3 text-start align-middle text-footnote font-medium whitespace-nowrap";
-const bodyCell = "border-line-subtle h-10 truncate border-b px-3 align-middle";
+  "border-line-subtle flex h-9 min-w-0 items-center border-b px-3 text-start text-footnote font-medium whitespace-nowrap";
+const bodyCell = "border-line-subtle flex h-10 min-w-0 items-center border-b px-3";
 const stickyStart = "sticky z-[1]";
 
 /**
@@ -393,6 +418,7 @@ const stickyStart = "sticky z-[1]";
 const TableRow = memo(function TableRow({
   row,
   rowIndex,
+  start,
   headers,
   isSelected,
   isOpen,
@@ -408,6 +434,8 @@ const TableRow = memo(function TableRow({
   row: TableRowVM;
   /** `aria-rowindex`: 1-based, the header row is 1. */
   rowIndex: number;
+  /** Offset from the top of the body (px). */
+  start: number;
   headers: DataTableProps["headers"];
   isSelected: boolean;
   isOpen: boolean;
@@ -424,15 +452,20 @@ const TableRow = memo(function TableRow({
   const rowBg = isOpen ? "bg-surface-selected" : isSelected ? "bg-accent-subtle" : "bg-surface-base";
   return (
     <tr
+      role="row"
       aria-rowindex={rowIndex}
       data-row-id={row.applicationId}
-      className={cx("group", rowBg)}
-      style={{ height: ROW_HEIGHT }}
+      className={cx("group absolute inset-x-0 top-0 flex", rowBg)}
+      style={{ height: ROW_HEIGHT, transform: `translateY(${start}px)` }}
       onClick={(event: MouseEvent) => {
         if (event.target === event.currentTarget) onOpen(row.applicationId);
       }}
     >
-      <td className={cx(bodyCell, stickyStart, rowBg, "ps-4")} style={{ left: 0 }}>
+      <td
+        role="cell"
+        className={cx(bodyCell, stickyStart, rowBg, "ps-4")}
+        style={columnStyle(SELECT_WIDTH, 0)}
+      >
         <Checkbox
           checked={isSelected}
           label={intl.formatMessage(messages.selectRow, {
@@ -485,6 +518,7 @@ function BodyCell({
   onStatusMenuChange: (applicationId: string | null) => void;
 }) {
   const intl = useIntl();
+  const style = columnStyle(WIDTH[id]);
   const none = (
     <>
       <span aria-hidden="true" className="text-fg-tertiary">
@@ -494,14 +528,14 @@ function BodyCell({
     </>
   );
   const plain = (value: string | null) => (
-    <td className={cx(bodyCell, "text-fg-secondary")} title={value ?? undefined}>
-      {value ?? none}
+    <td role="cell" className={cx(bodyCell, "text-fg-secondary")} style={style} title={value ?? undefined}>
+      <span className="truncate">{value ?? none}</span>
     </td>
   );
   const dateCell = (value: TableDateVM | null) => (
-    <td className={cx(bodyCell, "text-fg-secondary tabular-nums")}>
+    <td role="cell" className={cx(bodyCell, "text-fg-secondary tabular-nums")} style={style}>
       {value ? (
-        <time dateTime={value.iso} title={value.absolute}>
+        <time dateTime={value.iso} title={value.absolute} className="truncate">
           {value.label}
         </time>
       ) : (
@@ -513,7 +547,11 @@ function BodyCell({
   switch (id) {
     case "company":
       return (
-        <td className={cx(bodyCell, stickyStart, rowBg, "font-medium")} style={{ left: SELECT_WIDTH }}>
+        <td
+          role="cell"
+          className={cx(bodyCell, stickyStart, rowBg, "font-medium")}
+          style={columnStyle(WIDTH.company, SELECT_WIDTH)}
+        >
           <button
             type="button"
             data-open-id={row.applicationId}
@@ -534,13 +572,13 @@ function BodyCell({
       );
     case "role":
       return (
-        <td className={bodyCell} title={row.role}>
-          {row.role}
+        <td role="cell" className={bodyCell} style={style} title={row.role}>
+          <span className="truncate">{row.role}</span>
         </td>
       );
     case "status":
       return (
-        <td className={bodyCell}>
+        <td role="cell" className={bodyCell} style={style}>
           <InteractiveStatusPill
             status={row.status}
             size="sm"
@@ -556,7 +594,7 @@ function BodyCell({
       return dateCell(row.lastActivity);
     case "nextAction":
       return (
-        <td className={bodyCell} title={row.nextAction?.label}>
+        <td role="cell" className={bodyCell} style={style} title={row.nextAction?.label}>
           {row.nextAction ? (
             <span className="flex min-w-0 items-baseline gap-2">
               <span className="min-w-0 truncate">{row.nextAction.label}</span>

@@ -28,16 +28,12 @@ const shift = (date: Date | null, ms: number) => (date === null ? null : new Dat
 function copyJob(job: Job, copy: number): Job {
   if (copy === 0) return job;
   const age = copy * HOUR_MS;
-  const sources = job.sources.map((source) => {
-    const url = new URL(source.url);
-    url.searchParams.set("copy", String(copy));
-    return {
-      ...source,
-      sourceId: source.sourceId === null ? null : `${source.sourceId}-x${copy}`,
-      url: url.toString(),
-      postedAt: shift(source.postedAt, age),
-    };
-  });
+  const sources = job.sources.map((source) => ({
+    ...source,
+    sourceId: source.sourceId === null ? null : `${source.sourceId}-x${copy}`,
+    url: `${source.url}${source.url.includes("?") ? "&" : "?"}copy=${copy}`,
+    postedAt: shift(source.postedAt, age),
+  }));
   return {
     ...job,
     id: copyId(job.id, copy),

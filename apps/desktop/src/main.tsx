@@ -9,7 +9,11 @@ import { RawIntlProvider } from "react-intl";
 import { createAppIntl } from "./i18n/intl";
 import { chrome } from "./lib/desktop";
 import { appLocaleFor, applyAppearance, devicePreferences, useDevicePreferences } from "./lib/preferences";
+import { markPerf } from "./lib/perf";
 import { productionViews, router, RouteViewsContext } from "./router";
+
+// Test builds: the cold-start breakdown (src/lib/perf.ts); the bundle has loaded.
+markPerf("script-start");
 
 // Test builds (`--mode e2e` / `design-e2e`) load the WebdriverIO bridge; production builds drop this.
 if (__BFHR_E2E__) void import("@wdio/tauri-plugin");

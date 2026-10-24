@@ -104,6 +104,9 @@ fn main() {
                 mail_connect::handle_urls(app.handle(), &urls);
             }
             window::create_main(app.handle())?;
+            // Test builds: the cold-start breakdown (scripts/perf-cold-start.ts).
+            #[cfg(feature = "e2e")]
+            perf::note("window-created");
             updater::start_background_checks(app.handle());
             Ok(())
         })

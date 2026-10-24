@@ -20,11 +20,14 @@
 //     overlaps it with the compositor, so there it overstates the cost;
 //   - long tasks: Chromium's PerformanceObserver `longtask`; WebKit has no long-task API, so a
 //     frame whose work exceeds 50 ms stands in for one there.
-// A surface passes when its p95 frame time is ≤ 16.7 ms plus 0.5 ms of timer jitter (a dropped
-// frame doubles the delta) and no long task exceeds 50 ms. Where the page refreshes slower than
-// 60 Hz, p95 frame work ≤ 16.7 ms replaces the frame-time check. `--budget-scale` multiplies the
-// limits (CI slack, docs/runbooks/performance.md). Writes artifacts/perf/desktop-scroll.json and
-// exits non-zero when a surface misses the budget. Runs on Node 22 type stripping.
+// A surface passes when, counted in display refresh intervals (a frame delta of 16–18 ms at 60 Hz
+// is one interval with timestamp jitter, a dropped frame makes two), its p95 frame time is one
+// interval, i.e. fewer than 5 % of frames dropped, and no long task exceeds 50 ms. The page first
+// stands still for 2 s to measure the refresh interval and its jitter (idle p95). Where the page
+// refreshes slower than 60 Hz (macOS Low Power Mode holds WebKit at 30 Hz), p95 frame work
+// ≤ 16.7 ms replaces the frame-time check. `--budget-scale` multiplies the limits (CI slack,
+// docs/runbooks/performance.md). Writes artifacts/perf/desktop-scroll.json and exits non-zero
+// when a surface misses the budget. Runs on Node 22 type stripping.
 import { execFileSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
@@ -80,8 +83,8 @@ const reuseBuild = process.argv.includes("--reuse-build");
 if (!(runs >= 1) || !(budgetScale >= 1)) throw new Error("--runs and --budget-scale must be ≥ 1");
 
 interface PassResult {
-  /** The page's requestAnimationFrame interval before scrolling (ms). */
-  readonly idle: number;
+  /** requestAnimationFrame deltas on the same page before scrolling (ms): the machine's cadence. */
+  readonly idle: number[];
   /** requestAnimationFrame deltas while scrolling (ms). */
   readonly frames: number[];
   /** Frame work (ms), see the file comment. */
@@ -117,14 +120,14 @@ async function scrollPass({ speed, legLimitMs }: { speed: number; legLimitMs: nu
     scroller.getAttribute("aria-label") ?? scroller.dataset["testid"] ?? scroller.tagName.toLowerCase();
 
   scroller.scrollTop = 0;
-  const idleFrames: number[] = [];
+  // Two seconds without scrolling: the machine's own frame cadence and jitter.
+  const idle: number[] = [];
   let last = await nextFrame();
-  for (let index = 0; index < 30; index++) {
+  for (let index = 0; index < 120; index++) {
     const now = await nextFrame();
-    idleFrames.push(now - last);
+    idle.push(now - last);
     last = now;
   }
-  const idle = idleFrames.toSorted((a, b) => a - b)[15] ?? 0;
 
   let longTasks: number[] | null = null;
   let observer: PerformanceObserver | null = null;
@@ -194,6 +197,8 @@ interface SurfaceResult {
   readonly range: number;
   /** The idle requestAnimationFrame interval: 16.7 at 60 Hz, 33.3 when the OS throttles to 30 Hz. */
   readonly refreshMs: number;
+  /** p95 of the idle frames: how much the machine's own frame timing varies with nothing to do. */
+  readonly idleP95Ms: number;
   readonly frames: number;
   readonly frameTime: { readonly p50: number; readonly p95: number; readonly max: number };
   readonly frameWork: { readonly p50: number; readonly p95: number; readonly max: number };
@@ -214,10 +219,9 @@ async function measure(page: Page, engine: EngineName, surface: SurfaceName): Pr
   if (!first) throw new Error("no runs");
   const frames = passes.flatMap((pass) => pass.frames);
   const work = passes.flatMap((pass) => pass.work);
-  const refresh = percentile(
-    passes.map((pass) => pass.idle),
-    50,
-  );
+  const idle = passes.flatMap((pass) => pass.idle);
+  const refresh = percentile(idle, 50);
+  const idleP95 = percentile(idle, 95);
   const hasLongTasks = first.longTasks !== null;
   const blocking = hasLongTasks
     ? passes.flatMap((pass) => pass.longTasks ?? [])
@@ -225,8 +229,12 @@ async function measure(page: Page, engine: EngineName, surface: SurfaceName): Pr
   const frameP95 = percentile(frames, 95);
   const workP95 = percentile(work, 95);
   const throttled = refresh > FRAME_MS + JITTER_MS;
+  // Frames are shown on display refreshes: a delta is one interval give or take timestamp jitter
+  // (the idle p95 shows how much on this machine), or two or more when a frame was dropped.
+  // Counted in whole intervals, p95 must be one interval: fewer than 5 % of frames dropped.
+  const intervals = frames.map((frame) => Math.max(1, Math.round(frame / refresh)));
   const pass =
-    (throttled ? workP95 <= FRAME_MS * budgetScale : frameP95 <= FRAME_MS * budgetScale + JITTER_MS) &&
+    (throttled ? workP95 <= FRAME_MS * budgetScale : percentile(intervals, 95) <= budgetScale) &&
     blocking.every((duration) => duration <= LONG_TASK_MS * budgetScale);
   return {
     engine,
@@ -234,6 +242,7 @@ async function measure(page: Page, engine: EngineName, surface: SurfaceName): Pr
     container: first.label,
     range: first.range,
     refreshMs: round(refresh),
+    idleP95Ms: round(idleP95),
     frames: frames.length,
     frameTime: { p50: round(percentile(frames, 50)), p95: round(frameP95), max: round(Math.max(...frames)) },
     frameWork: { p50: round(percentile(work, 50)), p95: round(workP95), max: round(Math.max(...work)) },
@@ -306,7 +315,7 @@ try {
         console.log(
           `${result.pass ? "PASS" : "FAIL"} ${engineName.padEnd(8)} ${surface.padEnd(5)} ` +
             `frame time p50 ${frameTime.p50} / p95 ${frameTime.p95} / max ${frameTime.max} ms ` +
-            `(refresh ${result.refreshMs} ms, ${result.dropped}/${result.frames} dropped) · ` +
+            `(refresh ${result.refreshMs} ms, idle p95 ${result.idleP95Ms} ms, ${result.dropped}/${result.frames} dropped) · ` +
             `frame work p50 ${frameWork.p50} / p95 ${frameWork.p95} / max ${frameWork.max} ms · ` +
             `${result.longTasks} long tasks (${result.longTaskSource}, longest ${result.longestTask} ms) · ` +
             `${result.container} ${result.range} px`,

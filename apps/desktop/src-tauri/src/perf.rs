@@ -25,6 +25,15 @@ fn valid_label(label: &str) -> bool {
             .all(|byte| byte.is_ascii_lowercase() || byte == b'-')
 }
 
+/// Prints `bfhr-perf <label> <ms since main()>` (the launching script reads stdout).
+pub fn note(label: &str) {
+    let elapsed = STARTED.elapsed().as_millis();
+    let mut stdout = std::io::stdout().lock();
+    // The launching script may have stopped reading; the mark is best effort.
+    let _ = writeln!(stdout, "bfhr-perf {label} {elapsed}");
+    let _ = stdout.flush();
+}
+
 #[tauri::command]
 #[expect(
     clippy::needless_pass_by_value,
@@ -34,11 +43,7 @@ pub fn perf_mark<R: Runtime>(app: AppHandle<R>, label: &str) {
     if !valid_label(label) {
         return;
     }
-    let elapsed = STARTED.elapsed().as_millis();
-    let mut stdout = std::io::stdout().lock();
-    // The launching script may have stopped reading; the mark is best effort.
-    let _ = writeln!(stdout, "bfhr-perf {label} {elapsed}");
-    let _ = stdout.flush();
+    note(label);
     if std::env::var("BFHR_PERF_EXIT_ON").is_ok_and(|exit_on| exit_on == label) {
         app.exit(0);
     }

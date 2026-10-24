@@ -122,9 +122,11 @@ struct JobPreferenceSectionPage: View {
             ConnectionBannerSection(model.connection)
             if draft != nil {
                 JobPreferenceSectionView(section: section, draft: Binding(get: { draft ?? JobPreferencesDraft() }, set: { draft = $0 }))
+                    .environment(\.bfhrPreferenceHeaderTitle, false)
             }
         }
         .bfhrInsetGroupedList()
+        .scrollDismissesKeyboard(.immediately)
         .navigationTitle(Text(JobPreferencesPage.rowTitle(section)))
         .bfhrInlineTitle()
         .accessibilityIdentifier("jobPreferences.page.\(section.rawValue)")

@@ -147,15 +147,19 @@ struct OnboardingCVStep: View {
             case .reading(let fileName, let kind):
                 attached(fileName: fileName, kind: kind) {
                     HStack(spacing: BFHRSpace.s2) {
-                        ProgressView().controlSize(.small)
+                        // The text says it; the spinner is decoration for VoiceOver.
+                        ProgressView().controlSize(.small).accessibilityHidden(true)
                         Text(OnboardingStrings.reading)
                     }
                     Text(OnboardingStrings.readingNote)
                 } trailing: {
-                    Button { model.resetCV() } label: { Text(OnboardingStrings.cancel) }
+                    Button { model.resetCV() } label: {
+                        Text(OnboardingStrings.cancel)
+                            .frame(minWidth: BFHRHitTarget.minimum, minHeight: BFHRHitTarget.minimum)
+                            .contentShape(Rectangle())
+                    }
                         .buttonStyle(.plain)
                         .foregroundStyle(BFHRColor.Accent.text)
-                        .frame(minHeight: BFHRHitTarget.minimum)
                         .accessibilityIdentifier("onboarding.cv.cancel")
                 }
             case .found(let fileName, let kind, let roles, let skills):
@@ -176,6 +180,7 @@ struct OnboardingCVStep: View {
                         Button { model.resetCV() } label: {
                             Image(systemName: "trash")
                                 .frame(minWidth: BFHRHitTarget.minimum, minHeight: BFHRHitTarget.minimum)
+                                .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
                         .foregroundStyle(BFHRColor.Fg.secondary)
@@ -234,10 +239,14 @@ struct OnboardingCVStep: View {
                 VStack(alignment: .leading, spacing: 0) {
                     OptionRow(glyph: "person.crop.rectangle", title: OnboardingStrings.linkedIn, caption: OnboardingStrings.linkedInCaption) { picker = .linkedIn }
                         .accessibilityIdentifier("onboarding.cv.linkedin")
-                    Button { showsHowTo = true } label: { Text(OnboardingStrings.howToGetIt).font(.bfhr(.footnote)) }
+                    Button { showsHowTo = true } label: {
+                        Text(OnboardingStrings.howToGetIt)
+                            .font(.bfhr(.footnote))
+                            .frame(minHeight: BFHRHitTarget.minimum)
+                            .contentShape(Rectangle())
+                    }
                         .buttonStyle(.plain)
                         .foregroundStyle(BFHRColor.Accent.text)
-                        .frame(minHeight: BFHRHitTarget.minimum)
                         .padding(.leading, OptionRow.textInset)
                         .accessibilityIdentifier("onboarding.cv.howTo")
                 }
@@ -273,8 +282,10 @@ struct OnboardingCVStep: View {
                 Text(verbatim: fileName)
                     .font(.bfhr(.body, emphasized: true))
                     .foregroundStyle(BFHRColor.Fg.primary)
-                    .lineLimit(2)
+                    .lineLimit(3)
                     .truncationMode(.middle)
+                    // "Scan_0042.pdf" reads as words, not "underscore".
+                    .accessibilityLabel(Text(verbatim: Self.spokenFileName(fileName)))
                 VStack(alignment: .leading, spacing: BFHRSpace.s1) {
                     status()
                 }
@@ -287,6 +298,10 @@ struct OnboardingCVStep: View {
         }
         .padding(.vertical, BFHRSpace.s1)
         .accessibilityIdentifier("onboarding.cv.file")
+    }
+
+    static func spokenFileName(_ name: String) -> String {
+        name.replacingOccurrences(of: "_", with: " ").replacingOccurrences(of: "-", with: " ")
     }
 
     static func badge(_ kind: CVImportFileKind) -> String {
@@ -395,7 +410,8 @@ struct OnboardingPreferencesStep: View {
             }
         }
         .bfhrInsetGroupedList()
-        .scrollDismissesKeyboard(.interactively)
+        // A long form: scrolling puts the keyboard away so the chips under it can be tapped.
+        .scrollDismissesKeyboard(.immediately)
         .safeAreaInset(edge: .bottom, spacing: 0) {
             OnboardingBottomBar {
                 Button { model.advance() } label: { Text(OnboardingStrings.next) }

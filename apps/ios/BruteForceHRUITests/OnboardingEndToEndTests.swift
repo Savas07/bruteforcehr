@@ -20,16 +20,6 @@ final class OnboardingEndToEndTests: XCTestCase {
     }
 
     @MainActor
-    private func scroll(to element: XCUIElement, in app: XCUIApplication) {
-        // Short drags without momentum, so an element never jumps past the visible area.
-        for _ in 0..<14 where !(element.exists && element.isHittable) {
-            let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.7))
-            let end = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.4))
-            start.press(forDuration: 0.05, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 0.3)
-        }
-    }
-
-    @MainActor
     func testOnboardingOnLiveData() throws {
         let link = try XCTUnwrap(URL(string: try environment("BFHR_E2E_LINK")))
         let email = try environment("BFHR_E2E_EMAIL")
@@ -70,19 +60,21 @@ final class OnboardingEndToEndTests: XCTestCase {
         roleField.typeText(role + "\n")
         XCTAssertTrue(app.buttons["Remove \(role)"].waitForExistence(timeout: 5))
         let remote = app.descendants(matching: .any)["prefs.workplace.remote"].firstMatch
-        scroll(to: remote, in: app)
-        if !remote.isSelected { remote.tap() }
+        app.scrollUntilVisible(remote)
+        if !remote.isOn { remote.tap() }
+        XCTAssertTrue(remote.isOn)
         let netherlands = app.descendants(matching: .any)["prefs.market.NL"].firstMatch
-        scroll(to: netherlands, in: app)
-        if !netherlands.isSelected { netherlands.tap() }
+        app.scrollUntilVisible(netherlands)
+        if !netherlands.isOn { netherlands.tap() }
+        XCTAssertTrue(netherlands.isOn)
         let amount = app.textFields["prefs.salary.amount"]
-        scroll(to: amount, in: app)
+        app.scrollUntilVisible(amount)
         amount.tap()
         amount.typeText("65000")
         app.buttons["prefs.salary.done"].tap()
         XCTAssertFalse(app.keyboards.firstMatch.exists, "Done closes the number pad")
         let euYes = app.descendants(matching: .any)["prefs.auth.EU"].firstMatch.buttons["Yes"]
-        scroll(to: euYes, in: app)
+        app.scrollUntilVisible(euYes)
         euYes.tap()
         XCTAssertTrue(euYes.isSelected, "EU / EEA answered Yes")
         capture("4-preferences-edited")
@@ -107,7 +99,7 @@ final class OnboardingEndToEndTests: XCTestCase {
         let principal = app.descendants(matching: .any)["prefs.seniority.principal"].firstMatch
         XCTAssertTrue(principal.waitForExistence(timeout: 5))
         principal.tap()
-        XCTAssertTrue(principal.isSelected)
+        XCTAssertTrue(principal.isOn)
         capture("8-seniority")
         app.navigationBars.buttons.element(boundBy: 0).tap()
         XCTAssertTrue(app.buttons["jobPreferences.seniority"].waitForExistence(timeout: 5))

@@ -43,9 +43,14 @@ final class OnboardingAccessibilityAuditTests: XCTestCase {
     }
 
     @MainActor
-    private func audit(_ app: XCUIApplication, _ context: String, language: String, scrolled: Bool) throws {
+    private func audit(_ app: XCUIApplication, _ context: String, language: String, scrolled: Bool, ax: Bool) throws {
         Thread.sleep(forTimeInterval: 0.8)
         let keyboard = app.keyboards.firstMatch
+        // The sticky bottom bar (Continue / Start searching) on its material.
+        let bottomBar = app.descendants(matching: .any).matching(
+            NSPredicate(format: "identifier IN %@", ["onboarding.continue", "onboarding.finish"])
+        ).firstMatch
+        let barTop = bottomBar.exists ? bottomBar.frame.minY - 12 : .greatestFiniteMagnitude
         try app.performAccessibilityAudit { issue in
             guard let element = issue.element else {
                 XCTContext.runActivity(named: "IGNORED (no element) \(context): \(issue.compactDescription)") { _ in }
@@ -55,6 +60,26 @@ final class OnboardingAccessibilityAuditTests: XCTestCase {
             if keyboard.exists, keyboard.frame.intersects(element.frame) { return true }
             if !app.frame.contains(element.frame) {
                 XCTContext.runActivity(named: "IGNORED (partly off screen) \(context): \(issue.compactDescription) — \(element.label)") { _ in }
+                return true
+            }
+            // Same policy as TrackerBoardAccessibilityAuditTests / ShareSheetAccessibilityAuditTests:
+            // the system navigation bar's items are capped by iOS by design; a Dynamic Type report
+            // or a clipping prediction at the default size is measured by the AX5 run of the state.
+            if app.navigationBars.allElementsBoundByIndex.contains(where: { $0.exists && $0.frame.contains(element.frame) }) {
+                XCTContext.runActivity(named: "IGNORED (system navigation bar item) \(context): \(element.label)") { _ in }
+                return true
+            }
+            if issue.auditType == .dynamicType, !ax {
+                XCTContext.runActivity(named: "IGNORED (default size; AX run covers scaling) \(context): \(element.label)") { _ in }
+                return true
+            }
+            if issue.auditType == .textClipped, !ax, issue.detailedDescription.contains("larger Dynamic Type") {
+                XCTContext.runActivity(named: "IGNORED (prediction; AX run measures it) \(context): \(element.label)") { _ in }
+                return true
+            }
+            // Content scrolled under the bottom bar's material: contrast is measured against the blur.
+            if issue.auditType == .contrast, element.frame.maxY > barTop {
+                XCTContext.runActivity(named: "IGNORED (under the bottom bar) \(context): \(element.label)") { _ in }
                 return true
             }
             if scrolled, [.contrast, .dynamicType, .textClipped].contains(issue.auditType) {
@@ -76,12 +101,12 @@ final class OnboardingAccessibilityAuditTests: XCTestCase {
     @MainActor
     private func auditScreen(_ app: XCUIApplication, root: String, context: String, language code: String, ax: Bool) throws {
         XCTAssertTrue(element(app, root).waitForExistence(timeout: 20), context)
-        try audit(app, context, language: code, scrolled: false)
+        try audit(app, context, language: code, scrolled: false, ax: ax)
         for page in 1...(ax ? 6 : 3) {
             let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.75))
             let end = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.25))
             start.press(forDuration: 0.05, thenDragTo: end, withVelocity: .default, thenHoldForDuration: 0.6)
-            try audit(app, "\(context) page \(page)", language: code, scrolled: true)
+            try audit(app, "\(context) page \(page)", language: code, scrolled: true, ax: ax)
         }
         app.terminate()
     }
@@ -127,14 +152,6 @@ final class OnboardingAccessibilityAuditTests: XCTestCase {
 
     // MARK: Behavior
 
-    /// A short drag without momentum.
-    @MainActor
-    private func drag(_ app: XCUIApplication) {
-        let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.7))
-        let end = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.4))
-        start.press(forDuration: 0.05, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 0.3)
-    }
-
     /// Start from scratch → Preferences (a typed role, Germany asks about the EU) → Finish names
     /// the role; Back returns; the step label follows.
     @MainActor
@@ -153,18 +170,20 @@ final class OnboardingAccessibilityAuditTests: XCTestCase {
         roleField.typeText("Platform Engineer\n")
         XCTAssertTrue(app.buttons["Remove Platform Engineer"].waitForExistence(timeout: 5), "the role became a removable token")
         let germany = app.descendants(matching: .any)["prefs.market.DE"].firstMatch
-        for _ in 0..<10 where !(germany.exists && germany.isHittable) { drag(app) }
+        app.scrollUntilVisible(germany)
         germany.tap()
-        XCTAssertTrue(germany.isSelected)
+        XCTAssertTrue(germany.isOn, germany.debugDescription)
         let question = app.staticTexts["Can you work in the EU / EEA without sponsorship?"]
-        for _ in 0..<10 where !(question.exists && question.isHittable) { drag(app) }
+        app.scrollUntilVisible(question)
         XCTAssertTrue(question.exists, "an EU pick asks about the EU / EEA")
         app.buttons["onboarding.continue"].tap()
 
         XCTAssertTrue(element(app, "onboarding.finish.summary").waitForExistence(timeout: 5))
         XCTAssertEqual(app.staticTexts["onboarding.stepLabel"].label, "Step 3 of 3")
-        XCTAssertTrue(app.staticTexts["Platform Engineer"].exists, "Finish names the first role")
-        XCTAssertTrue(app.staticTexts["Germany"].exists)
+        // Summary rows read as one element each ("Looking for, Platform Engineer").
+        let labelled = { (text: String) in app.descendants(matching: .any).matching(NSPredicate(format: "label CONTAINS %@", text)).firstMatch }
+        XCTAssertTrue(labelled("Platform Engineer").exists, "Finish names the first role")
+        XCTAssertTrue(labelled("Germany").exists)
         app.buttons["onboarding.back"].tap()
         XCTAssertTrue(app.textFields["prefs.roles.field"].waitForExistence(timeout: 5))
         app.buttons["onboarding.continue"].tap()
@@ -196,7 +215,7 @@ final class OnboardingAccessibilityAuditTests: XCTestCase {
         let principal = app.descendants(matching: .any)["prefs.seniority.principal"].firstMatch
         XCTAssertTrue(principal.waitForExistence(timeout: 5))
         principal.tap()
-        XCTAssertTrue(principal.isSelected)
+        XCTAssertTrue(principal.isOn)
         app.navigationBars.buttons.element(boundBy: 0).tap()
         XCTAssertTrue(seniority.waitForExistence(timeout: 5))
         XCTAssertTrue(seniority.label.contains("Principal"), seniority.label)

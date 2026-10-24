@@ -49,16 +49,24 @@ struct JobPreferenceSectionView: View {
     }
 }
 
+extension EnvironmentValues {
+    /// False on a Settings section page, whose navigation title already names the section.
+    @Entry var bfhrPreferenceHeaderTitle = true
+}
+
 /// A section header with an optional "From CV" tag.
 private struct PreferenceHeader: View {
     let title: LocalizedStringResource
     var fromCV = false
     var trailing: LocalizedStringResource?
+    @Environment(\.bfhrPreferenceHeaderTitle) private var showsTitle
 
     var body: some View {
         ChipFlow {
-            Text(title)
-                .foregroundStyle(BFHRColor.Fg.secondary)
+            if showsTitle {
+                Text(title)
+                    .foregroundStyle(BFHRColor.Fg.secondary)
+            }
             if fromCV { SourceTag(.cv).textCase(nil) }
             if let trailing {
                 Text(trailing)
@@ -295,6 +303,7 @@ struct SalarySection: View {
     @Binding var draft: JobPreferencesDraft
     /// The number pad has no Return key: a Done button above it closes it.
     @FocusState private var editsAmount: Bool
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         Section {
@@ -308,14 +317,22 @@ struct SalarySection: View {
             }
             .pickerStyle(.menu)
             .accessibilityIdentifier("prefs.salary.currency")
-            Picker(selection: $draft.salaryPeriod) {
-                Text(OnboardingStrings.perMonth).tag(SalaryPeriod.month)
-                Text(OnboardingStrings.perYear).tag(SalaryPeriod.year)
-            } label: {
-                Text(OnboardingStrings.period)
+            // The label is our own text: a menu picker's system label didn't scale at AX sizes.
+            VStack(alignment: .leading, spacing: BFHRSpace.s1) {
+                if dynamicTypeSize.isAccessibilitySize {
+                    Text(OnboardingStrings.period)
+                        .foregroundStyle(BFHRColor.Fg.primary)
+                }
+                Picker(selection: $draft.salaryPeriod) {
+                    Text(OnboardingStrings.perMonth).tag(SalaryPeriod.month)
+                    Text(OnboardingStrings.perYear).tag(SalaryPeriod.year)
+                } label: {
+                    Text(OnboardingStrings.period)
+                }
+                .labelsHidden()
+                .modifier(SegmentedUnlessLarge())
+                .accessibilityIdentifier("prefs.salary.period")
             }
-            .modifier(SegmentedUnlessLarge())
-            .accessibilityIdentifier("prefs.salary.period")
             if draft.salaryAmount != nil {
                 // Not destructive: the floor is optional and can be typed again.
                 Button { draft.salaryAmount = nil } label: { Text(OnboardingStrings.clearSalary) }

@@ -465,4 +465,275 @@
       border-radius: var(--bfhr-radius-md);
     }
   }
+
+  /* User guide navigation: topics (sticky column from 1280 px), "On this page", previous / next. */
+  .guide-nav-link {
+    display: flex;
+    min-height: calc(var(--spacing) * 11);
+    align-items: center;
+    padding-block: calc(var(--spacing) * 1);
+    color: var(--bfhr-color-fg-primary);
+    font-size: var(--bfhr-text-prose-size);
+    line-height: var(--bfhr-text-prose-line-height);
+    text-decoration-line: underline;
+    text-decoration-color: transparent;
+    text-underline-offset: 0.2em;
+    transition: text-decoration-color var(--bfhr-duration-fast) var(--bfhr-easing-standard);
+
+    &:hover {
+      text-decoration-color: currentColor;
+    }
+
+    &[aria-current="page"] {
+      color: var(--bfhr-color-accent-text);
+      font-weight: 600;
+    }
+  }
+
+  .guide-nav-section {
+    color: var(--bfhr-color-fg-secondary);
+    font-size: var(--bfhr-text-body-size);
+    line-height: var(--bfhr-text-body-line-height);
+  }
+
+  .guide-pager {
+    display: flex;
+    min-height: calc(var(--spacing) * 11);
+    flex-direction: column;
+    gap: calc(var(--spacing) * 1);
+    padding: calc(var(--spacing) * 4) calc(var(--spacing) * 5);
+    border: var(--bfhr-border-thin) solid var(--bfhr-color-line-subtle);
+    border-radius: var(--bfhr-radius-lg);
+    transition: background-color var(--bfhr-duration-fast) var(--bfhr-easing-standard);
+
+    &:hover {
+      background-color: var(--bfhr-color-surface-hover);
+    }
+  }
+
+  /* User guide article: plain sections (no legal numbering), steps, notes, tables and keycaps. */
+  .guide-prose {
+    max-width: 68ch;
+    font-size: var(--bfhr-text-prose-size);
+    line-height: var(--bfhr-text-prose-line-height);
+    color: var(--bfhr-color-fg-primary);
+
+    & > * + * {
+      margin-top: calc(var(--spacing) * 4);
+    }
+
+    & > :first-child {
+      margin-top: 0;
+    }
+
+    & h2 {
+      margin-top: calc(var(--spacing) * 12);
+      padding-top: calc(var(--spacing) * 8);
+      border-top: var(--bfhr-border-thin) solid var(--bfhr-color-line-subtle);
+      font-family: var(--bfhr-font-display);
+      font-size: var(--bfhr-text-title1-size);
+      line-height: var(--bfhr-text-title1-line-height);
+      font-weight: var(--bfhr-text-title1-weight);
+    }
+
+    & > h2:first-child {
+      padding-top: 0;
+      border-top: 0;
+    }
+
+    & h3 {
+      margin-top: calc(var(--spacing) * 8);
+      font-size: var(--bfhr-text-title2-size);
+      line-height: var(--bfhr-text-title2-line-height);
+      font-weight: var(--bfhr-text-title2-weight);
+    }
+
+    & h2 + *,
+    & h3 + * {
+      margin-top: calc(var(--spacing) * 3);
+    }
+
+    & a {
+      color: var(--bfhr-color-fg-link);
+      text-decoration-line: underline;
+      text-decoration-thickness: 1px;
+      text-underline-offset: 0.2em;
+
+      &:hover {
+        text-decoration-thickness: 2px;
+      }
+    }
+
+    & ul,
+    & ol {
+      padding-inline-start: 1.5rem;
+    }
+
+    & ul {
+      list-style: disc;
+    }
+
+    & ol {
+      list-style: decimal;
+    }
+
+    & li + li {
+      margin-top: calc(var(--spacing) * 2);
+    }
+
+    & li > ul,
+    & li > ol {
+      margin-top: calc(var(--spacing) * 2);
+    }
+
+    & li::marker {
+      color: var(--bfhr-color-fg-tertiary);
+    }
+
+    & strong {
+      font-weight: 600;
+    }
+
+    & code {
+      padding: 0.1em 0.35em;
+      border-radius: var(--bfhr-radius-xs);
+      background-color: var(--bfhr-color-surface-sunken);
+      font-family: var(--bfhr-font-mono);
+      font-size: 0.875em;
+      overflow-wrap: anywhere;
+    }
+
+    & table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: var(--bfhr-text-body-size);
+      line-height: var(--bfhr-text-body-line-height);
+    }
+
+    & th,
+    & td {
+      padding: calc(var(--spacing) * 3) calc(var(--spacing) * 3) calc(var(--spacing) * 3) 0;
+      border-bottom: var(--bfhr-border-thin) solid var(--bfhr-color-line-subtle);
+      text-align: start;
+      vertical-align: top;
+    }
+
+    & th {
+      color: var(--bfhr-color-fg-secondary);
+      font-weight: 600;
+    }
+  }
+
+  /* A tip or caution inside a guide article (`<div class="guide-note">` in the Markdown). */
+  .guide-note {
+    padding: calc(var(--spacing) * 4) calc(var(--spacing) * 5);
+    border-radius: var(--bfhr-radius-lg);
+    background-color: var(--bfhr-color-surface-selected);
+
+    & > * + * {
+      margin-top: calc(var(--spacing) * 2);
+    }
+  }
+
+  /*
+   * Features › CV Studio: screenshots stacked like cards (Berd). One grid cell holds every card; the
+   * front card sits lower left, the ones behind it upper right. Below 768 px only the front shows.
+   */
+  .feature-stack {
+    display: grid;
+
+    & > * {
+      grid-area: 1 / 1;
+    }
+
+    @media (width >= 48rem) {
+      & > .feature-stack-back {
+        margin-left: 20%;
+        align-self: start;
+      }
+
+      & > .feature-stack-front {
+        z-index: 1;
+        margin-top: 16%;
+        margin-right: 14%;
+      }
+    }
+  }
+
+  /* User guide overview card: the title link covers the whole card; the card shows its focus ring. */
+  .guide-card {
+    transition: background-color var(--bfhr-duration-fast) var(--bfhr-easing-standard);
+
+    &:hover {
+      background-color: var(--bfhr-color-surface-hover);
+    }
+
+    &:has(.guide-card-link:focus-visible) {
+      outline: var(--bfhr-border-thick) solid var(--bfhr-color-line-focus);
+      outline-offset: 2px;
+    }
+  }
+
+  .guide-card-link {
+    display: inline-flex;
+    min-height: calc(var(--spacing) * 11);
+    align-items: center;
+
+    &::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+    }
+
+    &:focus-visible {
+      outline: none;
+    }
+  }
+
+  /* Keyboard shortcuts: one table per screen; row headers are the actions. */
+  .shortcut-table {
+    & table {
+      margin-top: calc(var(--spacing) * 3);
+    }
+
+    & th[scope="row"] {
+      color: var(--bfhr-color-fg-primary);
+      font-weight: 400;
+    }
+
+    & thead th:not(:first-child) {
+      width: 30%;
+    }
+  }
+
+  .shortcut-keys > span {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: calc(var(--spacing) * 1);
+  }
+
+  .shortcut-or {
+    color: var(--bfhr-color-fg-tertiary);
+  }
+
+  /* Keycaps, drawn like the app's shortcuts sheet (`Keycaps`): ⌘ ⇧ D / Ctrl Shift D. */
+  kbd {
+    display: inline-flex;
+    min-width: 1.6em;
+    height: 1.6em;
+    align-items: center;
+    justify-content: center;
+    padding-inline: 0.35em;
+    border: var(--bfhr-border-thin) solid var(--bfhr-color-line-subtle);
+    border-radius: var(--bfhr-radius-xs);
+    background-color: var(--bfhr-color-surface-sunken);
+    color: var(--bfhr-color-fg-primary);
+    font-family: var(--bfhr-font-sans);
+    font-size: 0.8125em;
+    font-weight: 500;
+    line-height: 1;
+    white-space: nowrap;
+  }
 }

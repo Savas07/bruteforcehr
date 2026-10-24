@@ -1,0 +1,91 @@
+---
+/**
+ * Keyboard shortcuts (User guide): generated from the desktop app at build time
+ * (`src/guide/shortcuts.ts`): the shortcut registry for Navigation and General, the screens'
+ * key bindings for the rest. Mac and Windows keys side by side, as each platform draws them.
+ */
+import GuideLayout from "../../layouts/GuideLayout.astro";
+import { globalShortcutTables, keystrokes, screenShortcutTables, type ShortcutTable } from "../../guide/shortcuts.ts";
+
+const sections: { id: string; title: string; intro?: string; tables: readonly ShortcutTable[] }[] = [
+  {
+    id: "everywhere",
+    title: "Everywhere",
+    intro: "These work on every screen. The numbers follow the order of the sidebar.",
+    tables: globalShortcutTables,
+  },
+  {
+    id: "by-screen",
+    title: "By screen",
+    intro:
+      "Single keys work when you're not typing in a field. A key listed for a screen works while that screen or panel is open.",
+    tables: screenShortcutTables,
+  },
+];
+const headings = sections.map((section) => ({ depth: 2, slug: section.id, text: section.title }));
+---
+
+<GuideLayout headings={headings}>
+  <p>
+    Press <kbd>?</kbd> in the Mac or Windows app to see the shortcuts for the screen you're on. <kbd>⌘</kbd> is the
+    Command key on a Mac; on Windows the same shortcuts use <kbd>Ctrl</kbd>. The iPhone app has no keyboard shortcuts.
+  </p>
+  {
+    sections.map((section) => (
+      <>
+        <h2 id={section.id}>{section.title}</h2>
+        {section.intro && <p>{section.intro}</p>}
+        {section.tables.map((table) => (
+          <section aria-labelledby={`keys-${table.id}`} class="shortcut-table">
+            <h3 id={`keys-${table.id}`}>{table.title}</h3>
+            {table.guide && (
+              <p class="text-subheadline">
+                <a href={table.guide}>
+                  How {table.title} works<span class="sr-only"> in the User guide</span>
+                </a>
+              </p>
+            )}
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">Action</th>
+                  <th scope="col">Mac</th>
+                  <th scope="col">Windows</th>
+                </tr>
+              </thead>
+              <tbody>
+                {table.rows.map((row) => (
+                  <tr>
+                    <th scope="row">{row.label}</th>
+                    {(["macos", "windows"] as const).map((platform) => (
+                      <td>
+                        {keystrokes(row.keys, platform).map((stroke, index) => (
+                          <>
+                            {index > 0 && <span class="shortcut-or"> or </span>}
+                            <span class="shortcut-keys">
+                              <span class="sr-only">{stroke.spoken}</span>
+                              <span aria-hidden="true">
+                                {stroke.steps.map((step, stepIndex) => (
+                                  <>
+                                    {stepIndex > 0 && <span class="shortcut-or"> then </span>}
+                                    {step.map((cap) => (
+                                      <kbd>{cap}</kbd>
+                                    ))}
+                                  </>
+                                ))}
+                              </span>
+                            </span>
+                          </>
+                        ))}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </section>
+        ))}
+      </>
+    ))
+  }
+</GuideLayout>

@@ -194,7 +194,10 @@ function DesignSettingsScreen() {
     }),
     [base, search.state],
   );
-  useDesignReady(`settings:${pane ?? ""}:${search.fixture}:${search.state}`, false);
+  useDesignReady(
+    `settings:${pane ?? ""}:${search.fixture}:${search.state}:${search.rest["privacy"] ?? ""}`,
+    false,
+  );
   return (
     <SettingsStoreContext.Provider value={store}>
       <DesignAccountData>

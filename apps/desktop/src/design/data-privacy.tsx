@@ -8,7 +8,7 @@
 import { FIXTURE_NOW } from "@bfhr/fixtures";
 import type { AccountExportResponse } from "@bfhr/core";
 import { useSearch } from "@tanstack/react-router";
-import { type ReactNode, useMemo } from "react";
+import { Fragment, type ReactNode, useMemo } from "react";
 import { useIntl } from "react-intl";
 import { REAUTH_IDLE, type ReauthView } from "../features/auth/session";
 import type { AccountDataBackend } from "../features/settings/data-privacy/backend";
@@ -144,5 +144,10 @@ export function DesignAccountData({ children }: { children: ReactNode }) {
     };
   }, [state, word]);
 
-  return <AccountDataContext.Provider value={environment}>{children}</AccountDataContext.Provider>;
+  return (
+    <AccountDataContext.Provider value={environment}>
+      {/* A new state remounts the pane (export flow, open dialog). */}
+      <Fragment key={state}>{children}</Fragment>
+    </AccountDataContext.Provider>
+  );
 }

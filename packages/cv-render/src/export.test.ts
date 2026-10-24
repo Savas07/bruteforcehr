@@ -33,6 +33,13 @@ describe("exportFileName", () => {
     ).toBe("Anna-Maria-O-Neil-CV-etc.pdf");
   });
 
+  it("names cover letters with the letter's word in its language", () => {
+    const base = { firstName: "Deniz", lastName: "Aksoy", company: "Fernweh Reisen", ext: "pdf", document: "coverLetter" } as const;
+    expect(exportFileName(base)).toBe("Deniz-Aksoy-Cover-letter-Fernweh-Reisen.pdf");
+    expect(exportFileName({ ...base, locale: "de" })).toBe("Deniz-Aksoy-Anschreiben-Fernweh-Reisen.pdf");
+    expect(exportFileName({ ...base, locale: "tr" })).toBe("Deniz-Aksoy-On-yazi-Fernweh-Reisen.pdf");
+  });
+
   it("splits basics.name on the last word", () => {
     expect(splitName("Deniz Aksoy")).toEqual({ firstName: "Deniz", lastName: "Aksoy" });
     expect(splitName("Anna Maria von Berg")).toEqual({ firstName: "Anna Maria von", lastName: "Berg" });

@@ -11,7 +11,9 @@ import type {
   CvRevision,
   Interview,
   Job,
+  JobMatch,
   Profile,
+  SavedSearch,
 } from "@bfhr/core";
 import type {
   LiveTrackerState,
@@ -51,6 +53,8 @@ export interface MemoryTrackerSeed {
   readonly cvs: readonly Cv[];
   readonly cvRevisions: readonly CvRevision[];
   readonly jobs: readonly Job[];
+  readonly jobMatches?: readonly JobMatch[];
+  readonly savedSearches?: readonly SavedSearch[];
 }
 
 export interface MemoryTrackerStore {
@@ -60,6 +64,14 @@ export interface MemoryTrackerStore {
   readonly log: readonly TrackerWrite[];
   /** The jobs, including manual ones created for links. */
   jobs(): readonly Job[];
+  jobMatches(): readonly JobMatch[];
+  savedSearches(): readonly SavedSearch[];
+  /** Applies a plan like a committed batch (the memory jobs repository writes through it). */
+  apply(writes: readonly TrackerWrite[]): Promise<void>;
+  readonly newId: NewId;
+  readonly clock: () => Date;
+  /** Subscribes to every change of the store (tracker and jobs tables). */
+  subscribe(listener: () => void): () => void;
 }
 
 type Tables = { -readonly [C in keyof TrackerEntities]: TrackerEntities[C][] };
@@ -71,7 +83,10 @@ export function createMemoryTrackerStore(seed: MemoryTrackerSeed, clock: () => D
     interviews: [...seed.interviews],
     contacts: [...seed.contacts],
     jobs: [...seed.jobs],
+    jobMatches: [...(seed.jobMatches ?? [])],
+    savedSearches: [...(seed.savedSearches ?? [])],
   };
+  let profile = seed.profile;
   const log: TrackerWrite[] = [];
   const listeners = new Set<() => void>();
   let counter = 0;
@@ -79,7 +94,7 @@ export function createMemoryTrackerStore(seed: MemoryTrackerSeed, clock: () => D
 
   const snapshot = (): LiveTrackerState => {
     const data: TrackerData = {
-      profile: seed.profile,
+      profile,
       applications: [...tables.applications],
       applicationEvents: [...tables.applicationEvents],
       interviews: [...tables.interviews],
@@ -96,6 +111,11 @@ export function createMemoryTrackerStore(seed: MemoryTrackerSeed, clock: () => D
   const apply = (writes: readonly TrackerWrite[]): Promise<void> => {
     for (const write of writes) {
       log.push(write);
+      if (write.op === "updateProfile") {
+        if (profile === null) return Promise.reject(new Error("The profile does not exist"));
+        profile = { ...profile, ...write.patch };
+        continue;
+      }
       const table = tables[write.collection] as { id: string }[];
       switch (write.op) {
         case "create":
@@ -201,16 +221,21 @@ export function createMemoryTrackerStore(seed: MemoryTrackerSeed, clock: () => D
     },
   };
 
+  const subscribe = (listener: () => void) => {
+    listeners.add(listener);
+    return () => listeners.delete(listener);
+  };
+
   return {
-    source: {
-      subscribe(listener) {
-        listeners.add(listener);
-        return () => listeners.delete(listener);
-      },
-      getState: () => state,
-    },
+    source: { subscribe, getState: () => state },
     repository,
     log,
     jobs: () => tables.jobs,
+    jobMatches: () => tables.jobMatches,
+    savedSearches: () => tables.savedSearches,
+    apply,
+    newId,
+    clock,
+    subscribe,
   };
 }

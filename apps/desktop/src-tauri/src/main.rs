@@ -8,6 +8,7 @@ mod export_file;
 mod external_url;
 mod job_url;
 mod mail_inbox;
+mod mailto;
 mod menu;
 mod navigation;
 mod preferences;
@@ -27,7 +28,7 @@ fn main() {
         // the UI after `auth_link` has checked them; none of the plugin's JS commands are granted.
         .plugin(tauri_plugin_deep_link::init())
         .plugin(
-            // Used from Rust only (commands::open_external, open_job_url); its JS commands are not granted, and it
+            // Used from Rust only (commands::open_external, open_job_url, open_mailto); its JS commands are not granted, and it
             // must not install its click handler that routes <a> clicks to the system browser.
             tauri_plugin_opener::Builder::new()
                 .open_js_links_on_click(false)
@@ -50,6 +51,7 @@ fn main() {
 
     builder
         .manage(job_url::RateLimiter::for_job_urls())
+        .manage(mailto::MailtoLimiter::default())
         .manage(updater::Updates::default())
         .manage(auth_link::PendingAuthLink::default())
         // CV pages for the hidden print windows (src/cv_pdf.rs).
@@ -67,6 +69,7 @@ fn main() {
             commands::take_auth_link,
             commands::set_signed_in,
             commands::open_mail_inbox,
+            commands::open_mailto,
             commands::print_cv_pdf,
             commands::save_export
         ])

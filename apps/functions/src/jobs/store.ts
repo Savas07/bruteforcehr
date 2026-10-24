@@ -171,6 +171,22 @@ export class JobStore {
     });
   }
 
+  /** The most recently created jobs (fallback when there is no profile vector to search with). */
+  async newest(limit: number): Promise<StoredJob[]> {
+    const snapshot = await this.db
+      .collection(firestorePaths.jobs(this.uid))
+      .orderBy("createdAt", "desc")
+      .limit(limit)
+      .get();
+    return snapshot.docs.flatMap((doc) => {
+      try {
+        return [{ job: adminConverters.job.fromSnapshot(doc), embedding: readVector(doc) }];
+      } catch {
+        return [];
+      }
+    });
+  }
+
   /** Nearest jobs to a query vector (Firestore vector search, flat index, DOT_PRODUCT; ADR 0002). */
   async nearest(vector: readonly number[], limit: number): Promise<StoredJob[]> {
     const snapshot = await this.db

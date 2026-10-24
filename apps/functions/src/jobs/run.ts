@@ -83,13 +83,15 @@ async function watchedBoards(db: Firestore, uid: string): Promise<WatchedBoard[]
   });
 }
 
-/** Unit profile/CV embedding for matching; null (logged) when the embedder fails. */
+/**
+ * Unit profile/CV embedding for matching; null when there is nothing to embed yet (no target
+ * roles, skills or CV: Vertex rejects empty text) or (logged) when the embedder fails.
+ */
 export async function profileVector(embedder: Embedder, context: MatchingContext): Promise<number[] | null> {
+  const text = profileEmbeddingText(context.profile, context.cv);
+  if (text === "") return null;
   try {
-    const [vector] = await embedder.embed(
-      [profileEmbeddingText(context.profile, context.cv)],
-      "RETRIEVAL_QUERY",
-    );
+    const [vector] = await embedder.embed([text], "RETRIEVAL_QUERY");
     return vector ?? null;
   } catch (error) {
     logger.warn("profile_embedding_failed", { name: error instanceof Error ? error.name : typeof error });

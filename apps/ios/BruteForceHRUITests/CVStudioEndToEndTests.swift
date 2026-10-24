@@ -36,6 +36,7 @@ final class CVStudioEndToEndTests: XCTestCase {
 
     @MainActor
     private func openCVsTab(_ app: XCUIApplication) {
+        app.skipOnboardingIfShown()
         let tab = app.tabBars.buttons["CVs"]
         XCTAssertTrue(tab.waitForExistence(timeout: 30), "signed in")
         tab.tap()

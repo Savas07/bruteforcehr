@@ -117,7 +117,8 @@ final class DataPrivacyAccessibilityAuditTests: XCTestCase {
         XCTAssertTrue(element(app, "delete").waitForExistence(timeout: 20))
         let submit = app.buttons["delete.submit"]
         let field = app.textFields["delete.confirmField"]
-        for _ in 0..<3 where !field.isHittable { app.swipeUp() }
+        // The list builds rows lazily: scroll until the buttons under the field exist.
+        for _ in 0..<5 where !(submit.exists && submit.isHittable) { app.swipeUp() }
         XCTAssertFalse(submit.isEnabled, "Delete everything is disabled before typing")
         field.tap()
         // Return only closes the keyboard; it never deletes.

@@ -50,10 +50,10 @@ export interface UserData {
 }
 
 /**
- * What tracker and Today view-models read from the profile. The app passes the defaults until the
- * profile document exists (`profileView` in src/data/tracker/live.ts).
+ * What tracker, Today and Jobs view-models read from the profile. The app passes the defaults
+ * until the profile document exists (`profileView` in src/data/tracker/live.ts).
  */
-export type ProfileView = Pick<Profile, "settings" | "hiddenCompanies">;
+export type ProfileView = Pick<Profile, "settings" | "hiddenCompanies" | "defaultCvId">;
 
 /**
  * What tracker, detail and Today builders take: the user's data with the profile reduced to

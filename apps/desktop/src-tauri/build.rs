@@ -13,6 +13,7 @@ fn main() {
             "take_mail_connect",
             "set_signed_in",
             "open_mail_inbox",
+            "open_mailto",
             "print_cv_pdf",
             "save_export",
         ]))

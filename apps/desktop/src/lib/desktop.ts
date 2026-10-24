@@ -2,8 +2,8 @@
  * The UI's surface to the Tauri backend (src-tauri), with the CV export commands in
  * ./cvExport.ts. Capabilities grant exactly these calls: listening for menu commands,
  * update-status, sign-in-link and mail-connect events, `open_external`, `open_job_url`,
- * `open_mail_inbox`, the update commands (src-tauri/src/updater.rs), the sign-in commands
- * (src-tauri/src/auth_link.rs), `take_mail_connect` (src-tauri/src/mail_connect.rs) and
+ * `open_mail_inbox`, `open_mailto`, the update commands (src-tauri/src/updater.rs), the sign-in
+ * commands (src-tauri/src/auth_link.rs), `take_mail_connect` (src-tauri/src/mail_connect.rs) and
  * `print_cv_pdf` / `save_export` (cvExport.ts).
  */
 import { invoke, isTauri } from "@tauri-apps/api/core";
@@ -180,6 +180,35 @@ export type MailProvider = "gmail" | "outlook" | "icloud" | "yahoo" | "proton" |
 export function openMailInbox(provider: MailProvider, email: string): Promise<void> {
   if (!inShell) return Promise.resolve();
   return invoke("open_mail_inbox", { provider, email });
+}
+
+/** A new message for the default mail app (email apply without a sending account). */
+export interface MailtoMessage {
+  /** Plain `local@domain.tld` addresses, 1–10. */
+  readonly to: readonly string[];
+  /** One line, at most 998 characters. */
+  readonly subject: string;
+  /** Plain text, at most 8 000 characters (`MAX_BODY_LENGTH` in src-tauri/src/mailto.rs); line breaks are kept. */
+  readonly body: string;
+}
+
+/**
+ * Opens a new message in the default mail app. The backend (`open_mailto`,
+ * src-tauri/src/mailto.rs) checks the addresses and limits, builds the `mailto:` link itself and
+ * opens at most 3 per 10 s. It rejects with `{ kind: "invalid-mailto" | "rate-limited" |
+ * "open-failed", message }`. Design builds in a plain browser navigate to the link instead.
+ */
+export function openMailto(message: MailtoMessage): Promise<void> {
+  if (!inShell) {
+    const query = [
+      message.subject === "" ? null : `subject=${encodeURIComponent(message.subject)}`,
+      message.body === "" ? null : `body=${encodeURIComponent(message.body.replace(/\r?\n/gu, "\r\n"))}`,
+    ].filter((part) => part !== null);
+    const to = message.to.map((address) => encodeURIComponent(address).replace("%40", "@")).join(",");
+    window.location.href = `mailto:${to}${query.length > 0 ? `?${query.join("&")}` : ""}`;
+    return Promise.resolve();
+  }
+  return invoke("open_mailto", { to: message.to, subject: message.subject, body: message.body });
 }
 
 /** Which release manifest the updater reads; Stable unless the user opts into Beta in Settings. */

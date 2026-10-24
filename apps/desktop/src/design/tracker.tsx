@@ -46,7 +46,8 @@ declare global {
 const stores = new Map<FixtureDataset, MemoryTrackerStore>();
 const mailStores = new Map<string, MemoryMailStore>();
 
-function storeFor(dataset: FixtureDataset): MemoryTrackerStore {
+/** The design tracker store of `dataset` (one per dataset while the build runs; jobs write through it too). */
+export function designTrackerStore(dataset: FixtureDataset): MemoryTrackerStore {
   let store = stores.get(dataset);
   if (!store) {
     store = createMemoryTrackerStore(dataset, () => FIXTURE_NOW);
@@ -124,7 +125,7 @@ export function DesignTrackerProviders({ children }: { readonly children: ReactN
   const search = readDesignParams(useSearch({ strict: false }));
   const navigate = useNavigate();
   const dataset = search.fixture === "empty" ? emptyDataset : populatedDataset;
-  const store = storeFor(dataset);
+  const store = designTrackerStore(dataset);
   const mailStore = mailStoreFor(dataset, search.rest["oauth"] === "configured", search.rest["scan"]);
   useEffect(() => {
     window.__bfhrTrackerStore = store;

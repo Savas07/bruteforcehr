@@ -82,7 +82,11 @@ function Requirement({ item, copy }: { item: RequirementVM; copy: JobDetailCopyV
   const Icon = statusIcon[item.status];
   return (
     <li className="flex gap-2">
-      <Icon aria-hidden="true" className={cx("mt-0.5 size-4 shrink-0", statusTone[item.status])} strokeWidth={1.75} />
+      <Icon
+        aria-hidden="true"
+        className={cx("mt-0.5 size-4 shrink-0", statusTone[item.status])}
+        strokeWidth={1.75}
+      />
       <div className="min-w-0">
         <p className="text-callout">
           {/* Status for screen readers, unless the item's text already says it. */}
@@ -126,9 +130,7 @@ function Factor({
       />
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
-          <p className={cx("text-callout min-w-0 flex-1", resolved && "text-fg-secondary")}>
-            {factor.text}
-          </p>
+          <p className={cx("text-callout min-w-0 flex-1", resolved && "text-fg-secondary")}>{factor.text}</p>
           <span className="text-fg-tertiary text-footnote shrink-0 whitespace-nowrap">
             {factor.impactLabel}
             {factor.ai && ` · ${copy.aiFactor}`}
@@ -137,7 +139,10 @@ function Factor({
         {factor.evidence && <Evidence evidence={factor.evidence} />}
         {factor.correctable &&
           (resolved ? (
-            <p className="text-fg-secondary text-footnote mt-2 flex flex-wrap items-center gap-2" role="status">
+            <p
+              className="text-fg-secondary text-footnote mt-2 flex flex-wrap items-center gap-2"
+              role="status"
+            >
               {intl.formatMessage(messages.haveThisDone)}
               <Button size="sm" variant="plain" onClick={onUndoHaveThis}>
                 {intl.formatMessage(messages.undo)}
@@ -192,7 +197,10 @@ export function MatchSection({
   const explainerId = useId();
 
   const frame = (children: React.ReactNode) => (
-    <section aria-labelledby={headingId} className="border-line-subtle flex flex-col gap-4 rounded-lg border p-5">
+    <section
+      aria-labelledby={headingId}
+      className="border-line-subtle flex flex-col gap-4 rounded-lg border p-5"
+    >
       <h3 id={headingId} className="text-fg-secondary text-subheadline font-medium">
         {intl.formatMessage(messages.heading)}
       </h3>
@@ -210,7 +218,11 @@ export function MatchSection({
           <DropdownMenu.Trigger asChild>
             <Button size="sm" variant="plain" disabledReason={reason}>
               {copy.changeCv}
-              <ChevronDown aria-hidden="true" className="ml-0.5 inline size-3.5 align-[-2px]" strokeWidth={1.75} />
+              <ChevronDown
+                aria-hidden="true"
+                className="ml-0.5 inline size-3.5 align-[-2px]"
+                strokeWidth={1.75}
+              />
             </Button>
           </DropdownMenu.Trigger>
           <MenuContent aria-label={intl.formatMessage(messages.cvMenu)}>
@@ -298,7 +310,9 @@ export function MatchSection({
             <dl className="flex flex-col gap-2">
               {match.skills.matched.length > 0 && (
                 <div className="flex flex-wrap items-center gap-1.5">
-                  <dt className="text-fg-secondary text-footnote mr-1">{intl.formatMessage(messages.inCv)}</dt>
+                  <dt className="text-fg-secondary text-footnote mr-1">
+                    {intl.formatMessage(messages.inCv)}
+                  </dt>
                   {match.skills.matched.map((skill) => (
                     <dd
                       key={skill}
@@ -312,7 +326,9 @@ export function MatchSection({
               )}
               {match.skills.unmatched.length > 0 && (
                 <div className="flex flex-wrap items-center gap-1.5">
-                  <dt className="text-fg-secondary text-footnote mr-1">{intl.formatMessage(messages.notInCv)}</dt>
+                  <dt className="text-fg-secondary text-footnote mr-1">
+                    {intl.formatMessage(messages.notInCv)}
+                  </dt>
                   {match.skills.unmatched.map((skill) => (
                     <dd
                       key={skill}
@@ -399,7 +415,11 @@ export function MatchSection({
         >
           {copy.explainerLink}
         </Button>
-        <p id={explainerId} hidden={!explainerOpen} className="text-fg-secondary text-footnote mt-1 max-w-150">
+        <p
+          id={explainerId}
+          hidden={!explainerOpen}
+          className="text-fg-secondary text-footnote mt-1 max-w-150"
+        >
           {copy.explainer}
         </p>
       </div>

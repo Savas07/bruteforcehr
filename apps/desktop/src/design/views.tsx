@@ -11,6 +11,8 @@ import { createMemoryCvStore, type MemoryCvStore } from "../features/cv-editor/m
 import { buildApplicationDetailModel } from "../features/application-detail/model";
 import ApplicationDetailScreen from "../features/application-detail/Screen";
 import { buildCvEditorModel } from "../features/cv-editor/model";
+import { buildJobDetailModel } from "../features/job-detail/model";
+import JobDetailScreen from "../features/job-detail/Screen";
 import { buildMailReviewModel } from "../features/mail-review/model";
 import MailReviewScreen from "../features/mail-review/Screen";
 import { buildTodayModel } from "../features/today/model";
@@ -25,7 +27,8 @@ import { Demo } from "./Demo";
 import { DesignIndex } from "./DesignIndex";
 import { DesignRoot } from "./DesignRoot";
 import { DesignScreen } from "./DesignScreen";
-import { cvEditorScreen, insightsScreen, jobDetailScreen } from "./screens";
+import { DesignJobsProviders } from "./jobs";
+import { cvEditorScreen, insightsScreen } from "./screens";
 import { DesignSettings } from "./settings";
 import { DesignTrackerProviders, DesignTrackerScreen } from "./tracker";
 import { DesignTrackerCalendar, DesignTrackerTable } from "./tracker-views";
@@ -39,8 +42,15 @@ function Today() {
     </DesignTrackerProviders>
   );
 }
+/** Jobs run on the design Jobs store over the tracker store (src/design/jobs.tsx). */
 function JobDetail() {
-  return <DesignScreen spec={jobDetailScreen} />;
+  return (
+    <DesignTrackerProviders>
+      <DesignJobsProviders>
+        <DesignTrackerScreen id="job-detail" build={buildJobDetailModel} view={JobDetailScreen} />
+      </DesignJobsProviders>
+    </DesignTrackerProviders>
+  );
 }
 
 declare global {

@@ -48,13 +48,16 @@ fi
 (cd "$repo_root" && exec "${cli[@]}" emulators:start --only "$only" --project bruteforcehr) >"$log" 2>&1 &
 emulator=$!
 stop() {
-  # npx starts the CLI as a child; end the whole tree (on Windows the JVMs outlive a plain kill and
-  # keep the ports, so the next step couldn't start the emulators).
-  if command -v taskkill >/dev/null; then taskkill //F //T //PID "$emulator" >/dev/null 2>&1 || true; fi
+  # npx starts the CLI as a child; end the whole tree at once (on Windows the JVMs outlive a plain
+  # kill and keep the ports). taskkill needs the Windows pid, not Git Bash's: given the latter, a
+  # surviving CLI shut its emulators down later, i.e. the next step's on the same ports.
+  if command -v taskkill >/dev/null; then
+    winpid="$(cat "/proc/$emulator/winpid" 2>/dev/null || echo "$emulator")"
+    taskkill //F //T //PID "$winpid" >/dev/null 2>&1 || true
+  fi
   pkill -P "$emulator" 2>/dev/null || true
   kill "$emulator" 2>/dev/null || true
-  # The next step's emulators need the ports (the Functions emulator's workers take a few
-  # seconds to exit on Windows).
+  wait "$emulator" 2>/dev/null || true
   wait_for_free_ports
 }
 trap stop EXIT
@@ -77,4 +80,9 @@ for _ in $(seq 240); do
 done
 ready || { cat "$log"; echo "The emulators didn't start" >&2; exit 1; }
 
-"$@"
+"$@" || {
+  status=$?
+  echo "--- emulators.log (last 40 lines) ---" >&2
+  tail -n 40 "$log" >&2
+  exit "$status"
+}

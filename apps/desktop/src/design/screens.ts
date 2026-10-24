@@ -4,7 +4,6 @@
  * (DesignScreen.tsx), so screen agents never edit this file.
  */
 import { buildCvEditorModel, type CvEditorModel } from "../features/cv-editor/model";
-import { buildJobDetailModel, type JobDetailModel } from "../features/job-detail/model";
 import { buildInsightsModel, type InsightsModel } from "../features/insights/model";
 import { buildTodayModel, type TodayModel } from "../features/today/model";
 import type { DesignScreenSpec } from "./DesignScreen";
@@ -28,16 +27,6 @@ export const todayScreen: DesignScreenSpec<TodayModel> = {
     buildTodayModel(data, ctx, {})
       .items.filter((item) => TODAY_PENDING_KINDS[item.kind])
       .map((item) => item.id.split(":")[1] ?? item.id)
-      .slice(0, OFFLINE_PENDING_WRITES),
-};
-
-export const jobDetailScreen: DesignScreenSpec<JobDetailModel> = {
-  id: "job-detail",
-  destination: "jobs",
-  build: buildJobDetailModel,
-  offlinePending: (data, ctx) =>
-    buildJobDetailModel(data, ctx, {})
-      .list.rows.map((row) => row.jobId)
       .slice(0, OFFLINE_PENDING_WRITES),
 };
 

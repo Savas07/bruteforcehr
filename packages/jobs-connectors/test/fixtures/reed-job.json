@@ -1,0 +1,23 @@
+{
+  "employerId": 612344,
+  "employerName": "Hays Technology",
+  "jobId": 55012345,
+  "jobTitle": "Senior Backend Engineer - TypeScript",
+  "locationName": "Manchester",
+  "minimumSalary": 65000.0,
+  "maximumSalary": 80000.0,
+  "yearlyMinimumSalary": 65000.0,
+  "yearlyMaximumSalary": 80000.0,
+  "currency": "GBP",
+  "salaryType": "per annum",
+  "salary": "£65,000 - £80,000 per annum",
+  "datePosted": "21/10/2026",
+  "expirationDate": "05/12/2026",
+  "externalUrl": "https://careers.example-fintech.co.uk/jobs/1042",
+  "jobUrl": "https://www.reed.co.uk/jobs/senior-backend-engineer-typescript/55012345",
+  "partTime": false,
+  "fullTime": true,
+  "contractType": "Permanent",
+  "jobDescription": "<p><strong>Senior Backend Engineer - TypeScript</strong></p><p>Our client, a fast-growing fintech in Manchester, is looking for a Senior Backend Engineer to join a hybrid team (2 days in office).</p><ul><li>TypeScript and Node.js services on AWS</li><li>PostgreSQL, Kafka</li><li>Mentoring two engineers</li></ul><p>Salary £65,000 - £80,000 plus 10% bonus.</p>",
+  "applicationCount": 14
+}

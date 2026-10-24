@@ -1,0 +1,109 @@
+{
+  "page": 0,
+  "page_count": 20727,
+  "items_per_page": 20,
+  "took": 12,
+  "timed_out": false,
+  "total": 414534,
+  "results": [
+    {
+      "contents": "<p>We are looking for a talented  <strong>ADMINISTRATIVE ASSOCIATE III - GENERAL MANAGEMENT</strong>  to join our team, specializing in  <strong>GENERAL MANAGEMENT</strong>  for  <strong>CUMMINS COMERCIALIZADORA</strong>  in  <strong>SAN LUIS POTOSÍ</strong> .<br><br><strong>In this role, you will make an impact in the following ways:</strong><br><br><ul><li>Provide administrative and operational support to executive-level leaders, ensuring effective management of calendars, meetings, travel arrangements, and strategic activities.</li><li>Coordinate meetings, videoconferences, and executive events across a multinational and multicultural environment, managing multiple time zones and stakeholders.</li><li>Prepare, consolidate, and monitor reports, metrics, executive presentations, and communication materials to support business decision-making.</li><li>Collect, validate, and manage information within reports, databases, spreadsheets, and corporate systems, ensuring data accuracy and integrity.</li><li>Respond to and follow up on internal and external customer requests, providing timely support and directing inquiries as appropriate.</li><li>Coordinate administrative processes related to travel, vendors, payments, and services while ensuring compliance with established procedures.</li><li>Maintain departmental documentation, records, policies, and procedures.</li><li>Handle confidential information with a high degree of professionalism, integrity, and discretion.</li><li>Suppor",
+      "name": "Administrative Associate - Level III - General Management (Assistant)",
+      "type": "external",
+      "publication_date": "2026-10-03T21:35:54Z",
+      "short_name": "administrative-associate-level-iii-general-management-assistant",
+      "model_type": "jobs",
+      "id": 22230319,
+      "locations": [
+        {
+          "name": "San Luis Potosí, Mexico"
+        }
+      ],
+      "categories": [],
+      "levels": [
+        {
+          "name": "Mid Level",
+          "short_name": "mid"
+        }
+      ],
+      "tags": [],
+      "refs": {
+        "landing_page": "https://www.themuse.com/jobs/cummins/administrative-associate-level-iii-general-management-assistant"
+      },
+      "company": {
+        "id": 12055,
+        "short_name": "cummins",
+        "name": "Cummins"
+      }
+    },
+    {
+      "contents": "<p><b>Position Summary...</b><br><br><b>What you'll do...</b><br><br>Job Description<br><br><b><em>Immigration sponsorship is not available in this role</em></b><br><br>What you'll do...<br><br>As a part of Walmart Global Tech, you'll build industry defining reusable customer and partner facing services and products to lead differentiated experiences and revenue. You will be in the unique position to be of service to both our customers (1P as well as 3P) and our associates as a member of this organization supporting all segments of Walmart. If you are the type of person who feels a personal stake in everything that you work on, has a love for data, enjoys solving complex problems, has a passion for privacy, knows how to foster strong relationships and build trust, and works for the success of the entire team.<br><br><b>About Team:</b><br>Our team works closely with our US stores and eCommerce business to better serve customers by empowering team members, stores, and merchants with technological innovation. From groceries and entertainment to sporting goods and crafts, Walmart U.S. offers an extensive selection that our customers value, whether they shop online at Walmart.com, through one of our mobile apps, or in-store. Focus areas include customers, stores and employees, in-store service, merchant tools, merchant data science, and search and personalization.<br><br><b>What you'll do:</b><br><br><ul><li>Design, build, and maintain high performant APIs and softwareservices for",
+      "name": "Senior, Software Engineer (Backend)",
+      "type": "external",
+      "publication_date": "2025-08-30T20:24:46Z",
+      "short_name": "senior-software-engineer-backend-5ff764",
+      "model_type": "jobs",
+      "id": 20078984,
+      "locations": [
+        {
+          "name": "Cupertino, CA"
+        }
+      ],
+      "categories": [
+        {
+          "name": "Software Engineering"
+        }
+      ],
+      "levels": [
+        {
+          "name": "Senior Level",
+          "short_name": "senior"
+        }
+      ],
+      "tags": [],
+      "refs": {
+        "landing_page": "https://www.themuse.com/jobs/walmart/senior-software-engineer-backend-5ff764"
+      },
+      "company": {
+        "id": 12010,
+        "short_name": "walmart",
+        "name": "Walmart"
+      }
+    },
+    {
+      "contents": "<p><b>Position Summary...</b><br><br>Want to make a lot of people's day? Our Member Frontline Cashier Associates are the heart of our front end. You play a major role in how our members feel in the club and when they leave. You might be the first, last, and sometimes only associate that our members interact with. That's why it's so important to smile, greet, and thank each and every one. We are looking for friendly faces to run registers and support our members through the self-checkout experience! The pace can be really fast, especially in the evenings, on weekends, and during a holiday season. There are times when you have to juggle several tasks in a short amount of time while helping members: scanning items, processing payments, and maintaining a clean area-you get the idea! It's hard work, but our cashiers find it rewarding, especially since they're a part of a large team with a common goal: happy, satisfied members. <br><br>You will sweep us off our feet if:<br>•  You thrive in fast-paced environments<br>•  You're a multi-tasker at heart<br>•  You keep member satisfaction as your top priority<br>•  You can stand for long periods of time while assisting members quickly and accurately<br>•  You're a problem solver who tackles obstacles head-on to ensure each task is completed with excellence<br><br>You will make an impact by:<br>•  Maintaining a positive attitude by smiling, greeting and thanking members <br>•  Providing exceptional customer service to members across the ",
+      "name": "Retail Customer Service Associate",
+      "type": "external",
+      "publication_date": "2025-08-13T04:16:33Z",
+      "short_name": "retail-customer-service-associate-bc1668",
+      "model_type": "jobs",
+      "id": 18943203,
+      "locations": [
+        {
+          "name": "Omaha, NE"
+        }
+      ],
+      "categories": [
+        {
+          "name": "Customer Service"
+        }
+      ],
+      "levels": [
+        {
+          "name": "Mid Level",
+          "short_name": "mid"
+        }
+      ],
+      "tags": [],
+      "refs": {
+        "landing_page": "https://www.themuse.com/jobs/walmart/retail-customer-service-associate-bc1668"
+      },
+      "company": {
+        "id": 12010,
+        "short_name": "walmart",
+        "name": "Walmart"
+      }
+    }
+  ],
+  "aggregations": {}
+}

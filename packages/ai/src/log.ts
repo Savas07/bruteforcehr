@@ -18,7 +18,7 @@ export type AiOutcome =
  * CV text, file names, emails, model replies or the uid. Grounding results are counts.
  */
 export interface AiLogEvent {
-  task: "cvImport" | "cvAssist";
+  task: "cvImport" | "cvAssist" | "matchRationale";
   outcome: AiOutcome;
   kind?: CvImportSourceKind;
   action?: CvAssistAction;

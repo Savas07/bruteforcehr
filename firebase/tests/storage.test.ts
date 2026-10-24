@@ -169,3 +169,50 @@ describe("users/{uid}/cv-photos: opt-in CV photo, JPEG/PNG/HEIC up to 5 MiB", ()
     await assertFails(unverified("alice").ref(photo("unverified")).put(bytes(1024), jpeg).then());
   });
 });
+
+describe("users/{uid}/mail-attachments: email apply files up to 18 MiB", () => {
+  const file = (name: string) => `users/alice/mail-attachments/${name}`;
+
+  it.each([PDF, DOCX, "application/msword", "application/rtf", "text/plain", "image/png", "image/jpeg"])(
+    "accepts %s",
+    async (contentType) => {
+      await assertSucceeds(
+        client("alice")
+          .ref(file(contentType.replace(/\W/g, "_")))
+          .put(bytes(1024), { contentType })
+          .then(),
+      );
+    },
+  );
+
+  it.each(["text/html", "application/zip", "image/svg+xml", "application/x-msdownload"])(
+    "rejects %s",
+    async (contentType) => {
+      await assertFails(
+        client("alice")
+          .ref(file(contentType.replace(/\W/g, "_")))
+          .put(bytes(1024), { contentType })
+          .then(),
+      );
+    },
+  );
+
+  it("enforces the size limit, owner-only access and lets the owner delete", async () => {
+    await assertSucceeds(
+      client("alice")
+        .ref(file("max"))
+        .put(bytes(18 * MiB), { contentType: PDF })
+        .then(),
+    );
+    await assertFails(
+      client("alice")
+        .ref(file("too-big"))
+        .put(bytes(18 * MiB + 1), { contentType: PDF })
+        .then(),
+    );
+    await assertFails(client("bob").ref(file("bob")).put(bytes(16), { contentType: PDF }).then());
+    await assertFails(client("bob").ref(file("max")).getDownloadURL());
+    await assertFails(client("bob").ref(file("max")).delete());
+    await assertSucceeds(client("alice").ref(file("max")).delete());
+  });
+});

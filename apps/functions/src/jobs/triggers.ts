@@ -1,0 +1,161 @@
+import { firestorePaths } from "@bfhr/api";
+import { detectAtsBoard, initialMatchState, type WatchedCompany } from "@bfhr/core";
+import {
+  BOARD_CONNECTORS,
+  employerDomain,
+  HttpClient,
+  type Listing,
+  type RobotsRecord,
+  SourceError,
+  userAgent,
+} from "@bfhr/jobs-connectors";
+import { getFirestore } from "firebase-admin/firestore";
+import { logger } from "firebase-functions/v2";
+import { onDocumentCreated, onDocumentWritten } from "firebase-functions/v2/firestore";
+import { ANTHROPIC_API_KEY } from "../ai/common";
+import { adminConverters } from "../converters";
+import { projectId } from "./callables";
+import { profileEmbeddingText, VertexEmbedder } from "./embeddings";
+import { matchJobs } from "./matcher";
+import { loadMatchingContext } from "./profile-context";
+import { UserQuota } from "./quota";
+import { matcherAi } from "./run";
+import { SourceState, storageFeedCache } from "./source-state";
+import { JobStore } from "./store";
+
+/**
+ * A job the client created (URL import, "Log an application" link) gets its embedding and a
+ * match, starting as `saved` (`initialMatchState`). Server-ingested jobs are matched inline by
+ * the search run, so this returns early for them.
+ */
+export const jobCreatedMatch = onDocumentCreated(
+  {
+    document: "users/{uid}/jobs/{jobId}",
+    secrets: [ANTHROPIC_API_KEY],
+    timeoutSeconds: 120,
+    memory: "512MiB",
+  },
+  async (event) => {
+    const snapshot = event.data;
+    if (snapshot === undefined) return;
+    let job;
+    try {
+      job = adminConverters.job.fromSnapshot(snapshot);
+    } catch {
+      logger.warn("job_unparsable");
+      return;
+    }
+    if (initialMatchState(job) !== "saved") return;
+    const db = getFirestore();
+    const uid = event.params.uid;
+    if ((await db.doc(firestorePaths.jobMatch(uid, job.id)).get()).exists) return;
+    const now = new Date();
+    const embedder = new VertexEmbedder(projectId());
+    const store = new JobStore(db, uid, embedder);
+    const context = await loadMatchingContext(db, uid);
+    const [stored] = await store.ensureEmbeddings(await store.load([job.id]));
+    const [vector] = await embedder.embed(
+      [profileEmbeddingText(context.profile, context.cv)],
+      "RETRIEVAL_QUERY",
+    );
+    if (stored === undefined) return;
+    await matchJobs([stored], {
+      db,
+      uid,
+      context,
+      profileVector: vector ?? null,
+      ai: matcherAi({ uid, quota: new UserQuota(db, uid, now), aiAvailable: true, context, now }),
+      now,
+    });
+  },
+);
+
+/** Fixed, content-free messages for `WatchedCompany.lastError`. */
+const WATCHLIST_ERRORS = {
+  not_found: "We couldn't find job postings at this address.",
+  error: "The job board didn't answer. We'll try again on the next run.",
+} as const;
+
+/** Server fields of a watchlist entry after reading its board. */
+export function resolvedFields(input: {
+  careersUrl: string;
+  outcome: { listings: readonly Listing[] } | { error: unknown };
+  now: Date;
+}): Pick<
+  WatchedCompany,
+  "ats" | "boardToken" | "companyDomain" | "status" | "lastError" | "openJobs" | "lastFetchedAt"
+> {
+  const board = detectAtsBoard(input.careersUrl);
+  const ats = board?.ats ?? "web";
+  const boardToken = board?.boardToken ?? input.careersUrl;
+  const base = { ats, boardToken, lastFetchedAt: input.now };
+  if ("error" in input.outcome) {
+    const missing =
+      input.outcome.error instanceof SourceError && input.outcome.error.reason === "invalid_response";
+    return {
+      ...base,
+      companyDomain: employerDomain(input.careersUrl),
+      status: missing ? "not_found" : "error",
+      lastError: missing ? WATCHLIST_ERRORS.not_found : WATCHLIST_ERRORS.error,
+      openJobs: null,
+    };
+  }
+  const listings = input.outcome.listings;
+  const domain =
+    listings.find((listing) => listing.companyDomain)?.companyDomain ?? employerDomain(input.careersUrl);
+  return {
+    ...base,
+    companyDomain: domain ?? null,
+    status: listings.length === 0 && ats === "web" ? "not_found" : "ok",
+    lastError: listings.length === 0 && ats === "web" ? WATCHLIST_ERRORS.not_found : null,
+    openJobs: listings.length,
+  };
+}
+
+/**
+ * Resolves a followed company when it is added or its careers URL changes: detects the ATS,
+ * reads the board once and records status + open postings. Postings themselves are ingested by
+ * saved-search runs (filtered by each search's query), not here.
+ */
+export const watchlistResolve = onDocumentWritten(
+  { document: "users/{uid}/watchlist/{companyId}", timeoutSeconds: 120 },
+  async (event) => {
+    const after = event.data?.after;
+    if (after === undefined || !after.exists) return;
+    const before = event.data?.before;
+    const careersUrl: unknown = after.get("careersUrl");
+    if (typeof careersUrl !== "string") return;
+    const changed = before === undefined || !before.exists || before.get("careersUrl") !== careersUrl;
+    if (!changed && after.get("status") !== "pending") return;
+
+    const now = new Date();
+    const board = detectAtsBoard(careersUrl);
+    const connector = BOARD_CONNECTORS.find((candidate) => candidate.ats === (board?.ats ?? "web"));
+    const robots: RobotsRecord[] = [];
+    const http = new HttpClient({
+      userAgent: userAgent(__BFHR_VERSION__),
+      onRobots: (record) => robots.push(record),
+    });
+    let outcome: { listings: Listing[] } | { error: unknown };
+    try {
+      if (connector === undefined) throw new SourceError("invalid_response", "no connector");
+      outcome = {
+        listings: await connector.list(board ?? { boardToken: careersUrl, region: "us" }, {
+          http,
+          cache: storageFeedCache(),
+          // Board connectors are keyless.
+          secrets: {},
+          now,
+        }),
+      };
+    } catch (error) {
+      outcome = { error };
+    }
+    const db = getFirestore();
+    await new SourceState(db, now).recordRobots(robots);
+    const fields = resolvedFields({ careersUrl, outcome, now });
+    // Server fields only; the client's name/enabled edits in between are kept.
+    await after.ref.update(adminConverters.watchedCompany.toFirestoreUpdate({ ...fields, updatedAt: now }));
+    logger.info("watchlist_resolved", { ats: fields.ats, status: fields.status, openJobs: fields.openJobs });
+  },
+);

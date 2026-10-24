@@ -1,0 +1,32 @@
+{
+  "data": [
+    {
+      "slug": "gtm-founders-associate-intern-vertical-ai-startup-berlin-55527",
+      "company_name": "MeisterPfad",
+      "title": "GTM - Founder's Associate Intern (m/w/d), Vertical AI Startup",
+      "description": "<p><strong>Praktikum als Founder's Associate (m/w/d) mit Option auf Übernahme</strong></p><p>Wir bauen das KI-native ERP-System für Sanitär-, Heizungs- und Klimabetriebe (SHK). Unsere Pre-Seed-Runde ist abgeschlossen. Seit dem Go-Live haben wir 10 Kunden für uns gewonnen. Für die nächste Wachstumsphase suchen wir eine Person für die Rolle des Founder's Associate.</p><p>Du arbeitest eng mit dem Gründerteam und übernimmst von Beginn an echte Verantwortung in einer Rolle, die du selbst mitgestaltest.</p><h2>Aufgaben</h2><ul><li><p>Du baust KI-Agenten für repetitive Aufgaben. Du identifizierst wiederkehrende Abläufe bei unseren Kunden und automatisierst sie, damit Zeit für das Wesentliche frei wird.</p></li><li><p>Du entwickelst unser Launch- und Go-Live-Playbook und etablierst es als Standard für jeden neuen Kunden. Dazu gehören die Einrichtung des Google-Business-Accounts, das IT-Setup und das Onboarding auf unser KI-Betriebssystem. Dein Ziel ist ein Prozess, der jeden Kunden zuverlässig, schnell und in gleichbleibender Qualität live bringt.</p></li><li><p>Du verantwortest die P&L deiner Kunden und entwickelst sie weiter. Du verstehst das Geschäftsmodell deiner Kunden im Detail, identifizierst die relevanten Wachstumshebel und setzt sie konsequent um.</p></li><li><p>Du integrierst dich tief in die jeweilige Branche. Wir bauen kein generisches SaaS, sondern verzahnen uns eng mit den Abläufen unserer Kunden. Dieselbe Tiefe erwarten wir in deinem Verständnis der Kunden.</p></li></",
+      "remote": false,
+      "url": "https://www.arbeitnow.com/jobs/companies/meisterpfad/gtm-founders-associate-intern-vertical-ai-startup-berlin-55527",
+      "tags": ["Business Development"],
+      "job_types": ["Praktikum", "internship", "hilfstätigkeit / student"],
+      "location": "Berlin",
+      "created_at": 1792764066
+    }
+  ],
+  "links": {
+    "first": "https://www.arbeitnow.com/api/job-board-api?page=1",
+    "last": null,
+    "prev": "https://www.arbeitnow.com/api/job-board-api?page=2",
+    "next": "https://www.arbeitnow.com/api/job-board-api?page=4"
+  },
+  "meta": {
+    "current_page": 3,
+    "current_page_url": "https://www.arbeitnow.com/api/job-board-api?page=3",
+    "from": 201,
+    "path": "https://www.arbeitnow.com/api/job-board-api",
+    "per_page": 1,
+    "to": 1,
+    "terms": "This is a free public API for jobs, please do not abuse. I would appreciate linking back to the site. By using the API, you agree to the terms of service present on Arbeitnow.com",
+    "info": "Jobs are updated every hour and order by the `created_at` timestamp. Use `?page=` to paginate. Read more information here: https://www.arbeitnow.com/blog/job-board-api"
+  }
+}

@@ -57,9 +57,13 @@ service cloud.firestore {
           || request.resource.data.get(field, null) == resource.data.get(field, null);
       }
 
+      // `emailSend` (decisions.md F6) is written only by the mail functions: clients create it as
+      // null (or leave it out) and never change it.
       match /applications/{applicationId} {
-        allow read, create, delete: if isOwner(uid);
+        allow read, delete: if isOwner(uid);
+        allow create: if isOwner(uid) && request.resource.data.get('emailSend', null) == null;
         allow update: if isOwner(uid)
+          && request.resource.data.get('emailSend', null) == resource.data.get('emailSend', null)
           && (resource.data.get('appliedAt', null) == null
             || (request.resource.data.get('appliedAt', null) != null
               && pinKept('cvRevisionId')
@@ -90,6 +94,22 @@ service cloud.firestore {
         allow create: if isOwner(uid) && request.resource.data.actor == 'user';
       }
 
+      // "Companies you follow". Clients create entries pending resolution and change only the
+      // fields they own (WATCHLIST_CLIENT_FIELDS); the server writes the detected board and status.
+      match /watchlist/{companyId} {
+        allow read, delete: if isOwner(uid);
+        allow create: if isOwner(uid)
+          && request.resource.data.status == 'pending'
+          && request.resource.data.get('ats', null) == null
+          && request.resource.data.get('boardToken', null) == null
+          && request.resource.data.get('companyDomain', null) == null
+          && request.resource.data.get('lastError', null) == null
+          && request.resource.data.get('openJobs', null) == null
+          && request.resource.data.get('lastFetchedAt', null) == null;
+        allow update: if isOwner(uid)
+          && changedKeys().hasOnly(['name', 'careersUrl', 'enabled', 'updatedAt']);
+      }
+
       // Mail connection status; credentials live under serverOnly/**.
       match /mailAccounts/{accountId} {
         allow read: if isOwner(uid);
@@ -109,6 +129,12 @@ service cloud.firestore {
     // Per-platform client config (minimum version, feature flags). Server-written.
     match /appConfig/{platform} {
       allow read: if true;
+    }
+
+    // Job source health (Settings › Job sources): project-wide, server-written, readable by every
+    // signed-in user. Holds only enums, counts and fixed messages (sourceErrorMessage).
+    match /jobSources/{sourceId} {
+      allow read: if request.auth != null && request.auth.token.email_verified == true;
     }
 
     // Encrypted mail tokens and other server state: no client access. No rule matches

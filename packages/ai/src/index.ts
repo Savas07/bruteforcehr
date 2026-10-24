@@ -42,9 +42,18 @@ export {
   type GroundingIssue,
 } from "./grounding/grounding";
 export type { AiLogEvent, AiLogger, AiOutcome } from "./log";
+export {
+  explainMatch,
+  MATCH_RATIONALE_EFFORT,
+  MATCH_RATIONALE_MODEL,
+  type MatchRationaleDependencies,
+  type MatchRationaleInput,
+  type MatchRationaleResult,
+} from "./match-rationale";
 export { costMicroUsd, MODELS, type ModelId, type TokenUsage } from "./models";
 export { CV_ASSIST_PROMPT_VERSION } from "./prompts/cv-assist";
 export { CV_IMPORT_PROMPT_VERSION } from "./prompts/cv-import";
+export { MATCH_RATIONALE_PROMPT_VERSION } from "./prompts/match-rationale";
 export {
   AiProviderError,
   type AiProvider,
@@ -52,3 +61,14 @@ export {
   type Effort,
   type StructuredRequest,
 } from "./provider";
+export {
+  analyzeMail,
+  groundExtraction,
+  MAIL_CLASSIFY_EFFORT,
+  MAIL_CLASSIFY_MODEL,
+  toInstant,
+  type AnalyzeMailAi,
+  type AnalyzeMailInput,
+  type MailAnalysis,
+} from "./mail-classify";
+export { MAIL_CLASSIFY_PROMPT_VERSION } from "./prompts/mail-classify";

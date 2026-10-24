@@ -1,0 +1,56 @@
+{
+  "data": [
+    {
+      "slug": "systemadministrator-microsoft-365-windows-server-emstek-257734",
+      "company_name": "Deeken.Technology GmbH",
+      "title": "Systemadministrator (m/w/d) – Microsoft 365 & Windows Server",
+      "description": "<h2>Dein Einstieg bei Deeken Technology</h2><p>Du willst IT nicht nur betreiben, sondern Verantwortung übernehmen - für Systeme und für die Menschen, die damit arbeiten? Dann bist du bei uns richtig.</p><p>Deeken Technology ist ein etabliertes IT-Systemhaus aus dem Oldenburger Münsterland - seit über 10 Jahren am Markt, mit einem motivierten und engagierten Team. Wir betreuen mittelständische Unternehmen ganzheitlich: IT-Infrastruktur, IT-Sicherheit, Digitalisierung und Telekommunikation. Dabei verkaufen wir keine Einmal-Lösungen, sondern sind langfristiger IT-Partner unserer Kunden - wir kennen ihre Systeme, ihre Abläufe und ihre Ansprechpartner.</p><p>Für unser Team in unseren neuen Büros im ecopark Emstek suchen wir zum nächstmöglichen Zeitpunkt einen Systemadministrator (m/w/d) mit Schwerpunkt Microsoft - unbefristet, in Vollzeit mit 39 Stunden und hybrid.</p><h2>Deine Aufgaben</h2><p>Bei uns ist jeder Spezialist in seinem Fachgebiet - niemand muss alles können. Dein Schwerpunkt sind die Microsoft-Umgebungen unserer Kunden, vom Serverraum bis in die Cloud.</p><p>- Du installierst, aktualisierst und betreust Domänencontroller sowie File- und Anwendungsserver - On-Premise und in Cloud-Umgebungen.</p><p>- Du administrierst Microsoft 365, insbesondere Exchange Online, Entra ID und Intune.</p><p>- Du richtest Clients ein und erstellst dafür die passenden Intune-Richtlinien und Bereitstellungspläne.</p><p>- Du installierst Fachanwendungen unserer Kunden wie ERP- oder Dokumenten",
+      "remote": false,
+      "url": "https://www.arbeitnow.com/jobs/companies/deekentechnology-gmbh/systemadministrator-microsoft-365-windows-server-emstek-257734",
+      "tags": ["System and Network Administration"],
+      "job_types": ["Unbefristeter arbeitsvertrag", "berufserfahren"],
+      "location": "Emstek",
+      "created_at": 1792789242
+    },
+    {
+      "slug": "graphic-designer-puchheim-347117",
+      "company_name": "HOPn UG",
+      "title": "Graphic Designer",
+      "description": "<h2>About HOPn UG</h2><p>Headquartered in Puchheim, Germany, HOPn UG develops smart, scalable solutions across AI automation, software development, digital education, event management, and business consulting. Founded in 2023, our innovation company connects technology, education, and entrepreneurship to empower universities, startups, and enterprises.</p><h2>Your first months as a Graphic Designer</h2><p>During your 20-hour-per-week, 3-month remote internship, you will take ownership of visual communication projects across our digital services and educational offerings. You will design engaging graphics, support our branding initiatives, and create visual assets that translate complex technological concepts into clear, compelling media for our global audience.</p><h2>What you bring to the role</h2><ul><li><p>A portfolio demonstrating skill in graphic design and visual communication</p></li><li><p>An eye for detail, typography, layout, and modern design principles</p></li><li><p>Familiarity with industry-standard design tools</p></li><li><p>The ability to work independently in a fully remote, international environment</p></li></ul><h2>Your first months at HOPn UG</h2><p>You will have shipped visual assets across multiple digital channels, collaborated directly with our international team on real client and internal projects, and deepened your practical design experience within an innovation-focused company. We encourage you to apply even if you do not meet every single requir",
+      "remote": true,
+      "url": "https://www.arbeitnow.com/jobs/companies/hopn-ug/graphic-designer-puchheim-347117",
+      "tags": ["Remote", "Graphic Arts and Communication Design"],
+      "job_types": ["Internship", "internship", "professional / experienced"],
+      "location": "Puchheim",
+      "created_at": 1792783843
+    },
+    {
+      "slug": "senior-data-scientist-trust-safety-amsterdam-417890",
+      "company_name": "Vinteden",
+      "title": "Senior Data Scientist, Trust & Safety",
+      "description": "&lt;div class=&quot;content-intro&quot;&gt;&lt;h2&gt;&lt;strong&gt;Brief info about Vinted&amp;nbsp;&lt;/strong&gt;&lt;/h2&gt;\n&lt;p data-renderer-start-pos=&quot;1&quot;&gt;&lt;span data-sheets-root=&quot;1&quot;&gt;Our mission is to make second-hand the first choice, and we&#39;re looking for people who want to help us get there. Every day, we work together to help our members buy and sell pre-loved clothing and lifestyle items, giving each piece a second life – or even a third. &lt;br&gt;The Vinted Group is made up of three business units that support this mission:&lt;br&gt;&lt;br&gt;&lt;strong&gt;&lt;a href=&quot;https://careers.vinted.com/marketplace&quot; target=&quot;_blank&quot;&gt;Vinted Marketplace&lt;/a&gt;&lt;/strong&gt; is Europe’s leading platform for second-hand fashion and a go-to destination for all kinds of pre-loved items, with a growing range of categories. Our platform connects millions of members across 20+ markets, helping great items find a new life.&lt;br&gt;&lt;br&gt;&lt;a href=&quot;https://careers.vinted.com/vintedgo&quot; target=&quot;_blank&quot;&gt;&lt;strong&gt;Vinted Go&lt;/strong&gt;&lt;/a&gt; enhances the shipping experience with a vast network of over 500,000 pick-up and drop-off points, partnering with more than 60 carriers across Europe, with added services like item verification for peace of mind on high-value pieces.&lt;br&gt;&lt;br&gt;&lt;a href=&quot;https://careers.vinted.com/vintedpay&quot; target=&quot;_blank&quot;&gt;&lt;strong&gt",
+      "remote": false,
+      "url": "https://www.arbeitnow.nl/jobs/companies/vinteden/senior-data-scientist-trust-safety-amsterdam-417890",
+      "tags": ["Data Science & Analytics"],
+      "job_types": [],
+      "location": "Amsterdam",
+      "created_at": 1792756513
+    }
+  ],
+  "links": {
+    "first": "https://www.arbeitnow.com/api/job-board-api?page=1",
+    "last": null,
+    "prev": null,
+    "next": "https://www.arbeitnow.com/api/job-board-api?page=2"
+  },
+  "meta": {
+    "current_page": 1,
+    "current_page_url": "https://www.arbeitnow.com/api/job-board-api?page=1",
+    "from": 1,
+    "path": "https://www.arbeitnow.com/api/job-board-api",
+    "per_page": 3,
+    "to": 3,
+    "terms": "This is a free public API for jobs, please do not abuse. I would appreciate linking back to the site. By using the API, you agree to the terms of service present on Arbeitnow.com",
+    "info": "Jobs are updated every hour and order by the `created_at` timestamp. Use `?page=` to paginate. Read more information here: https://www.arbeitnow.com/blog/job-board-api"
+  }
+}

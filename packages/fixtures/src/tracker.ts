@@ -180,6 +180,7 @@ function buildApplication(spec: ApplicationSpec): { application: Application; ev
       followUpDismissedAt: null,
       ghostedSnoozedUntil: null,
       ghostedDismissedAt: null,
+      emailSend: null,
       createdAt: spec.created,
       updatedAt: lastEvent,
     },

@@ -17,6 +17,13 @@ const ENTITIES: readonly (readonly [z.ZodType, string])[] = [
   [core.JobSchema, "`users/{uid}/jobs/{jobId}` (the server-only `embedding` field is not modelled)."],
   [core.JobMatchSchema, "`users/{uid}/jobMatches/{jobId}`."],
   [core.SavedSearchSchema, "`users/{uid}/savedSearches/{id}`."],
+  [core.WatchedCompanySchema, '`users/{uid}/watchlist/{id}` ("Companies you follow").'],
+  [core.JobSourceStatusSchema, "`jobSources/{sourceId}` (source health; client read-only)."],
+  [core.JobsSearchRequestSchema, "Request of the `jobsSearch` callable."],
+  [core.JobsSearchResponseSchema, "Response of the `jobsSearch` and `savedSearchRunNow` callables."],
+  [core.SavedSearchRunNowRequestSchema, "Request of the `savedSearchRunNow` callable."],
+  [core.JobMatchesRefreshRequestSchema, "Request of the `jobMatchesRefresh` callable."],
+  [core.JobMatchesRefreshResponseSchema, "Response of the `jobMatchesRefresh` callable."],
   [core.ApplicationSchema, "`users/{uid}/applications/{id}`."],
   [core.ApplicationEventSchema, "`users/{uid}/applicationEvents/{id}` (append-only)."],
   [core.InterviewSchema, "`users/{uid}/interviews/{id}`."],
@@ -36,11 +43,17 @@ const INLINE_NAMES: Readonly<Record<string, string>> = {
   "ProfileSettings.quietHours": "QuietHours",
   "Cv.importedFrom": "CvImportedFile",
   "MailAccount.lastError": "MailAccountError",
+  "MailBackfill.error": "MailBackfillError",
+  "EmailSend.error": "EmailSendError",
   "MailExtraction.dates": "ExtractedDate",
   "JobMatch.skills": "MatchSkills",
   "SavedSearchFilters.salaryMin": "SalaryMinimum",
   "MatchEvidence.from": "MatchEvidenceOrigin",
   "MatchFactor.source": "MatchFactorSource",
+  "JobSourceAttribution.minSize": "AttributionMinSize",
+  "JobSourceStatus.quota": "JobSourceQuota",
+  "JobsSearchResponse.counts": "JobsSearchCounts",
+  "SourceRunReport.status": "SourceRunStatus",
 };
 
 /** Swift keywords an enum case name could collide with (escaped with backticks). */
@@ -121,6 +134,14 @@ class Renderer {
   }
 
   private field(parent: string, name: string, schema: z.ZodType): Field {
+    // Expand fields (ADR 0002): `.nullable().default(null)` decodes a missing key as nil in Swift.
+    // A non-null default can't be expressed by the synthesized Decodable, so it is rejected.
+    if (schema instanceof z.ZodDefault) {
+      const inner = schema.unwrap() as z.ZodType;
+      if (!(inner instanceof z.ZodNullable))
+        throw new Error(`${parent}.${name}: Swift supports only .nullable().default(null) expand fields`);
+      return this.field(parent, name, inner);
+    }
     if (schema instanceof z.ZodNullable)
       return { name, kind: "nullable", type: this.type(parent, name, schema.unwrap() as z.ZodType) };
     if (schema instanceof z.ZodOptional)

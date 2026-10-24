@@ -10,6 +10,7 @@ import {
 } from "./common";
 import { ApplicationStatusSchema, ChannelSchema, EventActorSchema, MailProviderSchema } from "./enums";
 import { JobSourceIdSchema } from "./job";
+import { EmailSendSchema } from "./mail/send";
 
 export const ApplicationPrioritySchema = z.enum(["low", "normal", "high"]);
 export type ApplicationPriority = z.infer<typeof ApplicationPrioritySchema>;
@@ -68,6 +69,11 @@ export const ApplicationSchema = z.object({
   ghostedSnoozedUntil: TimestampSchema.nullable(),
   /** "Keep waiting": asked again only after another `ghostedAfterDays` of silence. */
   ghostedDismissedAt: TimestampSchema.nullable(),
+  /**
+   * Email apply in flight or done (decisions.md F6): server-written, clients create it as null and
+   * never change it. Added in M4: older documents read it as null.
+   */
+  emailSend: EmailSendSchema.nullable(),
   createdAt: TimestampSchema,
   updatedAt: TimestampSchema,
 });
@@ -79,6 +85,7 @@ export const APPLICATION_READ_DEFAULTS = {
   followUpDismissedAt: null,
   ghostedSnoozedUntil: null,
   ghostedDismissedAt: null,
+  emailSend: null,
 } as const satisfies Partial<Application>;
 
 export const ApplicationEventTypeSchema = z.enum([

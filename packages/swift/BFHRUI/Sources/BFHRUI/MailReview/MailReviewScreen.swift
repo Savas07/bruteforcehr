@@ -89,7 +89,8 @@ public struct MailReviewScreen: View {
                 MailEmailSheet(detail: detail, onAddInterview: { run { try model.addInterview(detail.id) } }, onNotJobMail: {
                     run { try model.markNotJobMail(detail.id) }
                 }, onClose: { model.viewingId = nil })
-                .presentationDetents([.medium, .large])
+                // At accessibility sizes the half sheet would show little more than the sender.
+                .presentationDetents(dynamicTypeSize.isAccessibilitySize ? [.large] : [.medium, .large])
                 .presentationDragIndicator(.visible)
                 .presentationBackground(BFHRColor.Surface.base)
             }

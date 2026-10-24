@@ -107,7 +107,8 @@ flowchart TB
      - Mail: To review (n), Updates, All job mail, Categories (collapsible), Accounts (one row per address, health dot).
   3. Pinned at the bottom: the update card (M1), Keyboard shortcuts (Mod+/), Settings (Mod+,).
   4. Footer: the sync line (`SyncStatus`, states.md).
-- **Settings** replaces the content area (nav 220 px, content max 720 px). Esc or "← Back" returns.
+- **Settings** replaces the content area (nav 220 px, content max 720 px). Esc or "← Back" returns. Shipped panes (M6): Mail accounts · Job preferences · Notifications · Job sources · Companies you follow · AI · General · Data & privacy.
+- **First run** (onboarding-signin.md, D40): after sign-in, while `users/{uid}` is missing or has no `onboardingCompletedAt`, the window is the onboarding wizard instead of the shell (no sidebar): stepper **CV · Preferences · Finish**, every step skippable, the current step resumes after a restart. Finish lands on Today with the "You're set up" toast (**Open settings** → `/settings/job-preferences`).
 - **Panes:** list pane (340–440 px) | detail pane (min 480 px). Below 980 px the detail is pushed with a back button. The Apply panel docks on the right (400–640 px, default 480).
 
 ```mermaid

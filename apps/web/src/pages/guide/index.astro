@@ -1,0 +1,67 @@
+---
+/**
+ * User guide overview (website.md › User guide): every topic as a card with its sections, in reading
+ * order (Notion's help index, Discord's grouped article lists). Sections come from each topic's
+ * own headings, so the overview can't drift from the pages.
+ */
+import type { MarkdownHeading } from "astro";
+import SiteLayout from "../../layouts/SiteLayout.astro";
+import { GUIDE_PAGES } from "../../guide/pages.ts";
+import { globalShortcutTables, screenShortcutTables } from "../../guide/shortcuts.ts";
+
+const topics = import.meta.glob<{ getHeadings: () => MarkdownHeading[] }>("./*.md", { eager: true });
+const sectionsOf = (href: string): string[] => {
+  const slug = href.split("/").at(-2);
+  const topic = topics[`./${slug}.md`];
+  if (topic) return topic.getHeadings().filter((heading) => heading.depth === 2).map((heading) => heading.text);
+  // The shortcuts page is generated: its sections are the tables.
+  return href === "/guide/keyboard-shortcuts/"
+    ? [...globalShortcutTables, ...screenShortcutTables].slice(0, 6).map((table) => table.title)
+    : [];
+};
+---
+
+<SiteLayout
+  title="User guide"
+  description="How to use BruteForceHR on Mac, Windows and iPhone: install, sign in, find jobs, write CVs, apply, track applications and connect your email."
+>
+  <div class="mx-auto max-w-6xl px-5 pt-10 md:px-6 md:pt-16">
+    <header class="max-w-3xl">
+      <h1 class="font-display text-display text-fg-primary">User guide</h1>
+      <p class="mt-4 text-lead text-fg-secondary">
+        How BruteForceHR works on Mac, Windows and iPhone, from installing it to your first offer. New here? Start with{" "}
+        <a class="prose-link" href="/guide/getting-started/">Getting started</a>.
+      </p>
+    </header>
+
+    <ol class="mt-12 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      {
+        GUIDE_PAGES.map((page) => {
+          const sections = sectionsOf(page.href);
+          return (
+            <li class="guide-card relative flex flex-col rounded-xl border border-line-subtle bg-surface-base p-5 md:p-6">
+              <h2 class="text-title2 text-fg-primary">
+                <a href={page.href} class="guide-card-link">
+                  {page.title}
+                </a>
+              </h2>
+              <p class="mt-2 text-prose text-fg-secondary">{page.description}</p>
+              {sections.length > 0 && (
+                <ul class="mt-4 space-y-1 border-t border-line-subtle pt-4 text-subheadline text-fg-secondary">
+                  {sections.map((section) => (
+                    <li>{section}</li>
+                  ))}
+                </ul>
+              )}
+            </li>
+          );
+        })
+      }
+    </ol>
+
+    <p class="mt-12 max-w-3xl text-prose text-fg-secondary">
+      The guide is in English. The apps themselves are in English, Turkish and German. Something missing?
+      <a class="prose-link" href="/support/">Ask on the Support page</a>.
+    </p>
+  </div>
+</SiteLayout>

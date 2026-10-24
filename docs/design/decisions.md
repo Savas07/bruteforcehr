@@ -216,6 +216,12 @@ Shorthand: **Mod** = ⌘ on macOS, Ctrl on Windows. "Research" = `docs/design/re
 - **Decision:** never ask at launch. Ask in context the first time the user turns on a saved-search alert, or after the first successful import ("Get notified when an employer replies?"), whichever comes first.
 - **Affects:** connect-email OQ10, job-feed-search, settings-account.
 
+### D39 · No notification center screen on iPhone
+
+- **Decision:** there's no in-app notification center (bell) screen. Mail › **Updates** is the history of automatic changes, and push notifications deep-link to the review sheet or the Updates row; their only action is **Open**. Recorded 2026-10-24 from the mail-review research decision so the BRIEF §5.3 "notification center" row in STATUS.md can point at an id.
+- **Why:** a second list of the same events would compete with Updates, and confirming from a notification without seeing the evidence breaks the trust principle (mail-review.md "Notification center").
+- **Affects:** mail-review, STATUS.md (iOS Notification center row is N/A).
+
 ### D26 · Scope items deferred (not in the brief)
 
 - **Decision:** these stay out of v1. Revisit after the mail fixture set exists (M5).
@@ -377,6 +383,33 @@ Explicitly **not stored**:
 - **Decision:** (b) in M3. "I followed up" appends a user `mail_sent` event; its toast reads "Follow-up noted · {company}" with no Undo, on desktop and iPhone.
 - **Why:** `applicationEvents` are append-only and `revertsEventId` is reserved for user `status_changed` events (ADR 0002, `ApplicationEventSchema`): a reverting `mail_sent` would be refused by the schema on every shipped client, so older builds would drop the retraction and keep counting the follow-up. Allowing it is a contract change (schema rule + BFHRCore + rules tests) for a low-stakes action: a mistaken tap only moves the next follow-up suggestion by `followUpAfterDays`, and the user can still answer "Not needed" or snooze it. Revisit with M5, when follow-ups sent from the app write the same event.
 - **Affects:** today-home, tracker (application detail suggestion card), states (toast without Undo).
+
+### D38 · No Table view on iPhone
+
+- **Decision:** the Tracker's Table view is desktop-only. On iPhone the title menu switches **Pipeline · Calendar** (D34); filtering and search on the Pipeline list cover what the table does. Recorded 2026-10-24 from the tracker research decision (tracker.md, iOS IA) so the STATUS.md row can point at an id.
+- **Why:** a spreadsheet table on a phone truncates its columns (tracker.md, rejected for iOS), and the Pipeline list already lists every application with its status and dates.
+- **Affects:** tracker, STATUS.md (iOS Tracker table row is N/A).
+
+## Onboarding
+
+### D40 · Onboarding step 3 is Finish (first saved search), not Mail
+
+- **Options:** (a) step 3 = Connect mail (onboarding-signin.md flow); (b) step 3 = Finish: create the first saved search from the roles + places, refresh matches, land on Today.
+- **Decision:** (b) on desktop and iPhone (M6 onboarding contract, 2026-10-24). The saved search uses the **first role** as its query (connectors require every query word, so roles are never OR-joined), the places' countries and the workplace types as filters, no seniority filter (matching scores it), daily, alerts for Good and above (score 65), `nextRunAt` = now; it is skipped when the user already has a saved search. Without a role or a place there is nothing to search for: the step offers "Back to preferences" and "Go to Today". Every step can be skipped; skipping all still sets `onboardingCompletedAt` (no re-prompt). Preferences are edited later in Settings › Job preferences. Mail is connected from Settings › Mail accounts or the Today card.
+- **Why:** matching and Today need preferences and a running search to show anything on day one; mail connect needs OAuth apps that are not switched on yet (Entra registration pending) and has its own flow (connect-email.md).
+- **Affects:** onboarding-signin (Desktop wizard, iOS flow), job-feed-search (first saved search), settings-account.
+
+### D41 · Preference values follow the profile schema
+
+- **Decision:** the research's preference controls map onto `ProfileSchema` as it is: **seniority is one value** (chips act as a single choice, choosing it again clears it), not "up to 2"; **work authorization** asks Yes / No / Not sure per country (one "EU / EEA" question for EU/EEA countries): Yes keeps a stored citizen or permanent-resident status and otherwise stores `work_permit`, No stores `needs_sponsorship`, Not sure stores no entry; **languages** use the CEFR levels (Native, C2–A1) instead of Native · Fluent · Professional · Basic; places carry country, optional city and "I'd move here" (`relocation`); "Remote worldwide" is the Remote workplace with no places, not a place. Desktop and iPhone write identical values.
+- **Why:** changing the schema would touch matching, BFHRCore and the conformance vectors for a label difference; the stored values keep their meaning for matching (`needs_sponsorship` vs any other status, FLUENT = native–B2).
+- **Affects:** onboarding-signin (Preferences), settings-account (Job preferences).
+
+### D42 · Desktop CV step uses option rows, not an inline drop zone
+
+- **Decision:** onboarding step 1 on desktop shows two option rows, **Import a CV file** (opens the CV Studio import dialog: upload → `cvImport` → review) and **Start from scratch**, plus the AI disclosure; after an import or a new CV the rows give way to a status card ("Imported from {file}", what it suggests for the next step). The research's 560 × 200 drop zone and first-page thumbnail card are not built.
+- **Why:** the import dialog already has the drop zone, the parse progress and the review step with its error recovery; a second drop zone would duplicate that flow and its states. The review step is part of the import, so the thumbnail adds nothing the review doesn't show.
+- **Affects:** onboarding-signin (Step 1/3 CV desktop), cv-editor (import).
 
 ## Other open questions resolved
 

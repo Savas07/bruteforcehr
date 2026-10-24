@@ -197,6 +197,8 @@ Global: Tailwind default breakpoints (base = 375, `md` = 768, `xl` = 1280 → 14
 
 **Features.** Spotlights alternate copy/media (Apple b53be87c captions with bold lead-ins; Berd stacked cards for CV variants; Intercom list + preview for Tracker statuses and Mail intelligence). 1440: Intercom-style list left / preview right; 768 and 375: each sub-feature becomes its own stacked block (title, caption, media). Capability grid (Beside, saved) at the end with "Coming in a later release" badges for features behind future milestones. The Cloudstudio physics tags (saved) become one optional moment: job-source chips (Remotive, Arbeitnow, Greenhouse, …) that settle into place once on scroll; static chip cloud with reduced motion.
 
+_As built (M6, 2026-10-24):_ six spotlights (Jobs, CV Studio, Apply, Tracker, Mail, Insights), each a bold-lead list beside real screenshots. The Intercom list + preview became a **sticky list left / all screenshots right** at ≥ 1280 instead of a JavaScript tab switch, so every screenshot stays visible and nothing depends on scripts. Every capability shipped by v1.0, so the capability grid carries no "Coming later" badges; it became the Linear-style qualities grid ("Works offline", "Keyboard first", "Light and dark" …). The source chips are generated from the connector registry (`@bfhr/jobs-connectors`), static (no physics, no scroll animation), with a key icon on keyed sources. A jump-chip row (Support's topic chips) sits under the title.
+
 **Download.** Built at deploy time from the latest GitHub Release in `Savas07/bruteforcehr-releases`.
 - Top: version + release date + "Release notes" link; detected primary button with build note (Linear).
 - Asset table (Linear rows + Norma anatomy): platform icon, name ("macOS (Apple silicon)", "Windows 10/11 (x64)"), file type + size, Download button, and a **SHA-256** with a Copy button (truncated with full value in the copy payload and a `<details>` reveal). 1440: table with columns; 768: Craft-style "Desktop" and "iPhone" cards side by side; 375: stacked rows, checksum on its own line in mono, wrap-anywhere.
@@ -211,6 +213,30 @@ Global: Tailwind default breakpoints (base = 375, `md` = 768, `xl` = 1280 → 14
 **Support.** Contact first, then answers (monday.com). Primary card: email support with Copy button (Fluz) and expected reply window; secondary cards: report a bug (GitHub issue on the releases repo, if approved), release notes. Below: grouped FAQ (New Yorker "Jump to a section" + KÖPPEN group headings, Notion accordion rows using `<details>`), groups: Installing, Signing in, Mail accounts, Your data. 1440: FAQ in Frontify split (group title left, questions right); 768 / 375: single column.
 
 **Footer** (Framer + Dovetail + Samara). 1440: logo + one-line description, columns Product (Features, Download, Changelog), Help (Support, Privacy, Terms), language switcher; bottom bar © year + "Made for job seekers". 768: 3 columns; 375: stacked groups, legal links always visible.
+
+## User guide (M6 addendum)
+
+Research date: 2026-10-24, same `task_intent` and `output_destination`. BRIEF M6 adds a **user guide**; like the legal pages it is **English only** (decision U3).
+
+| Matrix entry | Query | Examined | Kept |
+|---|---|---|---|
+| guide article + navigation | "help center documentation article page with sidebar navigation" | 8 | 5 |
+| shortcuts reference | "keyboard shortcuts reference list" | 6 | 3 |
+
+| App | Section | `mobbin_url` | What we borrow | Why |
+|---|---|---|---|---|
+| Steep | Help center with grouped left nav + "On this page" | https://mobbin.com/sites/sections/b8a96a18-f6d3-427c-a319-4c0eae8702c1 | Topic list in a left column, the page's sections listed separately, plain article column. | Same shape as our legal layout (sticky column ≥ 1280), so the site keeps one long-read pattern. |
+| Attio | Help article with nested nav tree | https://mobbin.com/sites/sections/3c0a888f-8e8c-4028-b0d9-14eb3eb57fea | Current topic's sections nested under it in the left nav; breadcrumb above a big title and one-line lead. | One column for both "where am I in the guide" and "where am I on this page"; frees the right side for a readable 68ch article. |
+| Intercom | Article with title, lead and right TOC | https://mobbin.com/sites/sections/2f2f9a99-af04-46fa-aee8-8909d5446d95 | Breadcrumb ("All collections › …"), title + one-sentence lead, short sections with bold lead-ins. | Readable at 375 with the TOC as an inline box under the title. |
+| Mailchimp | "In this article" list + copy-link | https://mobbin.com/sites/sections/3b5aace6-9689-4a9c-8a5f-56410a25c7ed | "Before you start / steps / troubleshooting" order inside an article. | Each guide page ends with what can go wrong; Troubleshooting collects the rest. |
+| Notion | Help home with topic cards | https://mobbin.com/sites/sections/f507e39c-a2a4-4d77-9221-c1437120e91c | Overview of topic cards, each listing what's inside. | The `/guide/` overview: one card per topic with its sections, in reading order. |
+| Discord | Help category index, two columns | https://mobbin.com/sites/sections/6c56bd23-8b45-43be-9877-957510f4128c | Grouped article lists under category titles. | Card contents (section names) on the overview. |
+| Height | "Command-K" + "macOS & Windows apps" cards | https://mobbin.com/sites/sections/4e5c5305-92d0-4c89-a570-b6eaae3dbdcb | Keyboard-first promoted as a quality card that links onward. | Features page "Keyboard first" card → Keyboard shortcuts guide page. |
+| Linear | Command menu with shortcut hints | https://mobbin.com/sites/sections/4600d041-2634-4e63-b635-b9f48c9f3ec0 | Keycaps beside the action label. | Shortcut tables: action, then Mac keys, then Windows keys. |
+
+Rejected: ReadMe (https://mobbin.com/sites/sections/614eea9b-f552-4201-acd0-971719210520, AI assistant panel and product chrome; we have no search or chat backend), Airtable (https://mobbin.com/sites/sections/ea730105-20dc-4895-812a-d938edeb18db, dense blue chrome and a filter tree for hundreds of articles), Discord developer portal (https://mobbin.com/sites/sections/2e0a873d-1006-487b-84d2-740a5cf78c29, dark low-contrast sidebar), Craft (https://mobbin.com/sites/sections/d0584891-bcc6-480e-9dea-0c3ec1693cd5, search-first help home; a static site has no search index and 11 topics don't need one), Perplexity (https://mobbin.com/sites/sections/30314e51-cae2-4049-8cab-46bdd7a0e5c1, decorative giant keycaps), Giga (https://mobbin.com/sites/sections/d0ccec20-d603-498c-b107-92398f684cb8, dark CLI reference).
+
+**Decision — User guide.** `/guide/` overview (Notion cards, sections from each page's headings) and one page per topic: Getting started, Jobs, CV Studio, Apply, Tracker, Mail, Insights, Settings, Data & privacy, Troubleshooting, Keyboard shortcuts. Topic page: breadcrumb, title, one-sentence lead (Intercom), a real screenshot where it helps, then the article (≤ 68ch, plain `h2` sections, numbered steps, tip boxes), previous / next topics and a Support link. 1440: sticky left column with the topics and the current topic's sections nested under it (Steep + Attio); 768 / 375: "On this page" box under the title (two columns at 768), topics reachable from the breadcrumb and previous / next. Pages are Markdown with one `GuideLayout`; titles and descriptions come from one list (`src/guide/pages.ts`). Keyboard shortcuts are **generated at build time** from the desktop app (registry + every screen's key bindings), Mac and Windows keys side by side (Linear), with spoken key names for screen readers. Copy follows the app's own labels exactly (bold), platform differences inline ("on iPhone, …"), and never mentions features that don't ship.
 
 ## Components needed
 

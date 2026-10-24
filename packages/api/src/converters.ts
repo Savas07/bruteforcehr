@@ -1,4 +1,6 @@
 import {
+  type Answer,
+  AnswerSchema,
   type AppConfig,
   AppConfigSchema,
   APPLICATION_READ_DEFAULTS,
@@ -201,6 +203,7 @@ export interface Converters {
   readonly cvRevision: EntityConverter<CvRevision, "id" | "cvId">;
   readonly renderedFile: EntityConverter<RenderedFile, "id">;
   readonly coverLetter: EntityConverter<CoverLetter, "id">;
+  readonly answer: EntityConverter<Answer, "id">;
   readonly job: EntityConverter<Job, "id">;
   readonly jobMatch: EntityConverter<JobMatch, "id">;
   readonly savedSearch: EntityConverter<SavedSearch, "id">;
@@ -251,6 +254,7 @@ export function createConverters<TTimestamp>(adapter: TimestampAdapter<TTimestam
       CoverLetterSchema,
       ["id"],
     ),
+    answer: createEntityConverter<TTimestamp, Answer, "id">(adapter, "answer", AnswerSchema, ["id"]),
     job: createEntityConverter<TTimestamp, Job, "id">(adapter, "job", JobSchema, ["id"]),
     jobMatch: createEntityConverter<TTimestamp, JobMatch, "id">(adapter, "jobMatch", JobMatchSchema, ["id"]),
     savedSearch: createEntityConverter<TTimestamp, SavedSearch, "id">(

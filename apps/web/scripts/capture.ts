@@ -94,7 +94,9 @@ try {
             await promise;
           }
           window.scrollTo(0, 0);
-          await Promise.all([...document.images].map((image) => image.decode().catch(() => undefined)));
+          // Hidden lazy images (e.g. a breakpoint's extra screenshot) never load, so their decode() never settles.
+          const shown = [...document.images].filter((image) => image.checkVisibility());
+          await Promise.all(shown.map((image) => image.decode().catch(() => undefined)));
         });
         const file = path.join(outDir, `${routeSlug(route)}-${theme}-${viewport.width}.png`);
         await page.screenshot({ path: file, fullPage: true, animations: "disabled" });

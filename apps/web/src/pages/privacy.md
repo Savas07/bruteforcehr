@@ -142,7 +142,7 @@ In particular, data from your Gmail account:
 
 </div>
 
-Some features use Anthropic's Claude models through Anthropic's API. Only our servers talk to Anthropic; the apps never hold an AI key. You can turn AI features off in Settings › AI & sending.
+Some features use Anthropic's Claude models through Anthropic's API. Only our servers talk to Anthropic; the apps never hold an AI key. You can turn AI features off in Settings › AI.
 
 AI is used to:
 
@@ -160,7 +160,7 @@ Only the text a task needs is sent: for example the sender, subject and relevant
 
 </div>
 
-To find jobs, our servers search public job APIs and job boards (Remotive, Arbeitnow, Greenhouse, Lever, Ashby, SmartRecruiters, Workable, Recruitee, Adzuna, Jooble, USAJOBS and Reed) and read public job pages that you share or ask to watch. These requests contain your search terms (keywords, locations and filters) and come from our servers, not your device. They don't include your name, email address or CV.
+To find jobs, our servers search public job APIs and job boards (Remotive, Arbeitnow, Remote OK, Himalayas, The Muse, Bundesagentur für Arbeit, Kariyer.net, Greenhouse, Lever, Ashby, SmartRecruiters, Workable, Recruitee, Personio, Adzuna, Jooble, USAJOBS and Reed) and read public job pages that you share or ask to watch. These requests contain your search terms (keywords, locations and filters) and come from our servers, not your device. They don't include your name, email address or CV.
 
 When you share a job link from another app, the link is sent to our servers so they can read the job. Results are stored in your account with their source. When you open a job or apply on another website, that website's own privacy policy applies.
 
@@ -175,7 +175,7 @@ When you share a job link from another app, the link is sent to our servers so t
 <dl class="service-list">
 <div>
 <dt>Google Cloud</dt>
-<dd>Firebase: Firestore, Cloud Storage, Cloud Functions, Cloud Tasks and Secret Manager. Stores and processes your data.</dd>
+<dd>Firebase: Firestore, Cloud Storage, Cloud Functions, Cloud Tasks, Secret Manager and Cloud Messaging (notifications); Vertex AI turns job descriptions and your target roles, skills and CV summary into numbers used to rank job matches. Stores and processes your data.</dd>
 <dd><span>Receives:</span> everything described in <a href="#what-we-collect">What we collect</a>.</dd>
 <dd><span>Where:</span> Belgium (europe-west1).</dd>
 </div>
@@ -252,7 +252,7 @@ We don't keep separate backups of your data, so deleted data can't be restored.
 - **Download your data:** Settings › Data & privacy › Export everything creates a ZIP file with all your data as JSON, plus your files.
 - **Correct your data:** edit it anywhere in the app.
 - **Disconnect an email account:** Settings › Mail accounts (see [Disconnecting](#disconnecting)).
-- **Turn off AI or email text for AI:** Settings › AI & sending.
+- **Turn off AI or email text for AI:** Settings › AI.
 - **Turn off notifications:** Settings › Notifications, or your device's settings.
 - **Delete your account:** Settings › Data & privacy › Delete account. After you confirm by signing in again with a link from your email, we revoke our access to your connected Google accounts and delete the access tokens for all your connected email accounts (see [Disconnecting](#disconnecting)), delete all your data and files, and delete your sign-in account. This is permanent.
 

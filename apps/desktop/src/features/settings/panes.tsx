@@ -5,6 +5,7 @@
 import {
   Bell,
   Building2,
+  Compass,
   Mail,
   Radar,
   Settings2,
@@ -20,6 +21,7 @@ import { AiPane } from "./AiPane";
 import { DataPrivacyPane, dataPrivacyPaneLabel } from "./data-privacy";
 import { CompaniesPane } from "./CompaniesPane";
 import { GeneralPane } from "./GeneralPane";
+import { JobPreferencesPane } from "./job-preferences/JobPreferencesPane";
 import { JobSourcesPane } from "./JobSourcesPane";
 import { MailAccountsPane } from "./MailAccountsPane";
 import { NotificationsPane } from "./NotificationsPane";
@@ -34,6 +36,7 @@ export interface SettingsPaneEntry {
 
 const labels = defineMessages({
   mailAccounts: { id: "settings.pane.mailAccounts", defaultMessage: "Mail accounts" },
+  jobPreferences: { id: "settings.pane.jobPreferences", defaultMessage: "Job preferences" },
   notifications: { id: "settings.pane.notifications", defaultMessage: "Notifications" },
   jobSources: { id: "settings.pane.jobSources", defaultMessage: "Job sources" },
   companies: { id: "settings.pane.companies", defaultMessage: "Companies you follow" },
@@ -76,6 +79,12 @@ function withProfile(Pane: ComponentType<{ profile: SettingsProfile }>): Compone
 
 export const settingsPanes: readonly SettingsPaneEntry[] = [
   { id: "mail-accounts", label: labels.mailAccounts, icon: Mail, Pane: MailAccountsPane },
+  {
+    id: "job-preferences",
+    label: labels.jobPreferences,
+    icon: Compass,
+    Pane: withProfile(JobPreferencesPane),
+  },
   { id: "notifications", label: labels.notifications, icon: Bell, Pane: withProfile(NotificationsPane) },
   { id: "job-sources", label: labels.jobSources, icon: Radar, Pane: JobSourcesPane },
   { id: "companies", label: labels.companies, icon: Building2, Pane: CompaniesPane },

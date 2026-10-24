@@ -523,6 +523,74 @@ describe("users/{uid}/watchlist: clients own name, URL and switch only", () => {
   });
 });
 
+// Answers library (ADR 0002 "M4 Apply addendum"); constants mirror ANSWER_* in @bfhr/core.
+describe("users/{uid}/answers: owner only, valid shape", () => {
+  const path = "users/alice/answers/a1";
+  const answer = {
+    kind: "notice_period",
+    label: "Notice period",
+    values: [
+      { language: "en", text: "One month" },
+      { language: "de", text: "Ein Monat" },
+    ],
+    countries: [],
+    currency: null,
+    position: 0,
+    schemaVersion: 1,
+  };
+
+  it("lets the owner create, list, update and delete answers", async () => {
+    await assertSucceeds(client("alice").doc(path).set(answer));
+    await assertSucceeds(
+      client("alice")
+        .doc("users/alice/answers/a2")
+        .set({
+          ...answer,
+          kind: "salary_expectation",
+          label: "Salary expectation",
+          countries: ["DE", "EU"],
+          currency: "EUR",
+        }),
+    );
+    await assertSucceeds(client("alice").collection("users/alice/answers").get());
+    await assertSucceeds(client("alice").doc(path).update({ label: "Kündigungsfrist", position: 3 }));
+    await assertSucceeds(client("alice").doc(path).delete());
+  });
+
+  it.each([
+    ["an unknown kind", { kind: "favourite_colour" }],
+    ["an empty label", { label: "" }],
+    ["a label over 200 characters", { label: "x".repeat(201) }],
+    ["no values", { values: [] }],
+    [
+      "more than 6 values",
+      { values: Array.from({ length: 7 }, (_, i) => ({ language: `l${i}`, text: "x" })) },
+    ],
+    ["more than 30 countries", { countries: Array.from({ length: 31 }, () => "DE") }],
+    ["a lower-case currency", { currency: "eur" }],
+    ["a fractional position", { position: 1.5 }],
+  ])("rejects %s", async (_label, patch) => {
+    await assertFails(
+      client("alice")
+        .doc(path)
+        .set({ ...answer, ...patch }),
+    );
+    await seed(path, answer);
+    await assertFails(client("alice").doc(path).update(patch));
+  });
+
+  it("keeps other users out", async () => {
+    await seed(path, answer);
+    await assertFails(client("bob").doc(path).get());
+    await assertFails(client("bob").collection("users/alice/answers").get());
+    await assertFails(client("bob").doc(path).update({ label: "Mallory" }));
+    await assertFails(client("bob").doc("users/alice/answers/a2").set(answer));
+    await assertFails(client("bob").doc(path).delete());
+    await assertFails(unverified("alice").doc(path).get());
+    await assertFails(anonymous().doc(path).get());
+  });
+});
+
 describe("jobSources/{sourceId}: read by signed-in users, server write", () => {
   const health = { label: "Remotive", kind: "keyless", state: "ok", reason: null, lastError: null };
 

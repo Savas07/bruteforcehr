@@ -20,6 +20,29 @@ export {
   type CvAssistResult,
 } from "./cv-assist";
 export {
+  APPLY_JOB_DESCRIPTION_CHARS,
+  CV_TAILOR_EFFORT,
+  CV_TAILOR_MODEL,
+  tailorCv,
+  tailorCvLines,
+  type CvTailorDependencies,
+  type CvTailorInput,
+  type CvTailorResult,
+  type TailorDropReason,
+} from "./cv-tailor";
+export {
+  COVER_LETTER_EFFORT,
+  COVER_LETTER_MODEL,
+  draftCoverLetter,
+  isFirstPerson,
+  type CoverLetterDependencies,
+  type CoverLetterInput,
+  type CoverLetterResult,
+  type LetterDropReason,
+  type SentenceSide,
+} from "./cover-letter";
+export { cvText, entityPolicyFor, jobOnlyTerms } from "./apply-grounding";
+export {
   CV_IMPORT_EFFORT,
   CV_IMPORT_MODEL,
   groundImport,
@@ -65,6 +88,8 @@ export { CV_ASSIST_PROMPT_VERSION } from "./prompts/cv-assist";
 export { CV_IMPORT_PROMPT_VERSION } from "./prompts/cv-import";
 export { JOB_EXTRACT_PROMPT_VERSION } from "./prompts/job-extract";
 export { MATCH_RATIONALE_PROMPT_VERSION } from "./prompts/match-rationale";
+export { CV_TAILOR_PROMPT_VERSION } from "./prompts/cv-tailor";
+export { COVER_LETTER_PROMPT_VERSION } from "./prompts/cover-letter";
 export {
   AiProviderError,
   type AiProvider,

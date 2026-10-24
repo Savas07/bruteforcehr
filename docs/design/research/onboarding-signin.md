@@ -263,6 +263,21 @@ Decision: wordmark, title "Opening BruteForceHR", "Your browser may ask to open 
 
 - No "All set!" interstitial (incident.io's is an extra click). The wizard lands directly on **Tracker** when backfill items were imported, otherwise on **Today**, with a toast: "You're set up. Your preferences are saved in Settings." The toast has an **Open settings** action.
 
+### Addendum (M6, 2026-10-24) — Finish step and Settings › Job preferences (desktop)
+
+The shipped wizard follows this section with three recorded changes: step 3 is **Finish** (first saved search) instead of Mail (decisions.md **D40**), preference values follow `ProfileSchema` (single seniority, Yes / No / Not sure work authorization, CEFR language levels; **D41**), and the CV step uses two option rows that open the CV Studio import dialog instead of an inline drop zone (**D42**). The same form is Settings › Job preferences, inline with autosave rather than iOS's summary rows.
+
+References (`search_screens` web, deep: "job preferences settings page for a job search app"; examined 6, kept 4):
+
+| App       | Screen              | mobbin_url                                                      | What we borrow                                                                       | Why                                                                 |
+| --------- | ------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------- |
+| Peerlist  | Job Preferences     | https://mobbin.com/screens/fadc8235-e205-463d-b975-dae5b7894e18 | Label column + control column; country / city pickers under the workplace choice; private-salary footnote | Confirms the two-column form for both the wizard and Settings        |
+| Uxcel     | Career preferences  | https://mobbin.com/screens/1377c09d-48f2-4d53-b038-abdc16bd9f7a | One-line helper under each label; seniority and workplace as compact choices         | Same density we need in a 720 px Settings pane                       |
+| Glassdoor | Job preferences     | https://mobbin.com/screens/77a845a6-dd29-430c-8625-504bfe68d0b6 | Titles and locations as removable rows with an Add action                            | Tokens as full-width rows read better than wrapped pills for long titles |
+| Contra    | Opportunity preferences | https://mobbin.com/screens/bed024a7-bb85-4f04-8d35-58f9831001f6 | Workplace as toggle buttons, skills as removable tokens                              | Multi-select workplace (Remote · Hybrid · On-site)                   |
+
+Rejected: Wellfound (required-field onboarding form with a marketing stepper; ours is optional), Dribbble (one Yes/No for the US visa only; we ask per country). Finish shows a summary card of the search it will create (Looking for · In · Workplace · Alerts) so the automatic action states what it will do before it runs (trust principle). Critiques: [critiques/desktop/onboarding](../critiques/desktop/onboarding/r2.md), [critiques/desktop/job-preferences](../critiques/desktop/job-preferences/r2.md).
+
 ## Components needed
 
 | Component | iOS | Desktop | Notes |

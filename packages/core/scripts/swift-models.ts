@@ -13,7 +13,8 @@ const ENTITIES: readonly (readonly [z.ZodType, string])[] = [
   [core.CvSchema, "`users/{uid}/cvs/{cvId}`."],
   [core.CvRevisionSchema, "`users/{uid}/cvs/{cvId}/revisions/{revisionId}` (immutable)."],
   [core.RenderedFileSchema, "`users/{uid}/renderedFiles/{fileId}`."],
-  [core.CoverLetterSchema, "`users/{uid}/coverLetters/{id}`."],
+  [core.CoverLetterSchema, "`users/{uid}/coverLetters/{id}` (templates: `isTemplate`)."],
+  [core.AnswerSchema, "`users/{uid}/answers/{id}` (answers library)."],
   [core.JobSchema, "`users/{uid}/jobs/{jobId}` (the server-only `embedding` field is not modelled)."],
   [core.JobMatchSchema, "`users/{uid}/jobMatches/{jobId}`."],
   [core.SavedSearchSchema, "`users/{uid}/savedSearches/{id}`."],
@@ -37,6 +38,10 @@ const ENTITIES: readonly (readonly [z.ZodType, string])[] = [
   [core.MailMessageSchema, "`users/{uid}/mailMessages/{id}`."],
   [core.DeviceSchema, "`users/{uid}/devices/{id}`."],
   [core.AppConfigSchema, "`appConfig/{platform}`; `id` is the platform."],
+  [core.CvTailorRequestSchema, "Request of the `cvTailor` callable."],
+  [core.CvTailorResponseSchema, "Response of the `cvTailor` callable."],
+  [core.CoverLetterDraftRequestSchema, "Request of the `coverLetterDraft` callable."],
+  [core.CoverLetterDraftResponseSchema, "Response of the `coverLetterDraft` callable."],
 ];
 
 /** Swift names that would clash with SwiftUI when both modules are imported. */

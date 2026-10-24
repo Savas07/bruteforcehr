@@ -297,6 +297,12 @@ export function createFirestoreWriter(uid: string): FirestoreWriter {
                   converters.profile.toFirestoreUpdate(write.patch),
                 );
                 break;
+              case "createCvRevision":
+                batch.set(
+                  doc(db, firestorePaths.cvRevision(uid, write.revision.cvId, write.revision.id)),
+                  converters.cvRevision.toFirestore(write.revision),
+                );
+                break;
             }
           }
           return batch.commit();

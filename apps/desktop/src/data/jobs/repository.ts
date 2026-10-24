@@ -8,8 +8,15 @@
  * need a connection and reject with the callable's `FunctionsError`.
  */
 import type {
+  Answer,
   Application,
   CoverLetter,
+  CoverLetterAuthor,
+  CoverLetterDraftRequest,
+  CoverLetterDraftResponse,
+  CvRevision,
+  CvTailorRequest,
+  CvTailorResponse,
   DismissReason,
   Job,
   JobImportUrlResponse,
@@ -18,6 +25,7 @@ import type {
   JobsSearchResponse,
   JobSourceStatus,
   MailAccount,
+  MailSendAttachment,
   MailSendRequest,
   MailSendResponse,
   Profile,
@@ -36,6 +44,11 @@ export interface JobsData {
   readonly mailAccounts: readonly MailAccount[];
   readonly coverLetters: readonly CoverLetter[];
   readonly renderedFiles: readonly RenderedFile[];
+  /**
+   * The answers library (`users/{uid}/answers`, Settings › Application answers), copied from the
+   * external-apply kit. Empty while it can't be read: the kit and Settings still work without it.
+   */
+  readonly answers: readonly Answer[];
   /** Health of every job source (`jobSources/{id}`, server-written). */
   readonly jobSources: readonly JobSourceStatus[];
   /** Ids of documents with local writes the server hasn't confirmed. */
@@ -73,7 +86,37 @@ export interface CoverLetterInput {
   readonly title: string;
   readonly language: string;
   readonly body: string;
+  /** `ai` while the letter is an AI draft (edited or not); kept from `existing` when absent. */
+  readonly author?: CoverLetterAuthor;
 }
+
+/** "Save as template": a reusable letter (`coverLetters/{id}` with `isTemplate: true`). */
+export interface CoverLetterTemplateInput {
+  readonly title: string;
+  readonly language: string;
+  readonly body: string;
+}
+
+/** A tailored revision to save: everything but the id and time the repository assigns. */
+export interface TailoredRevisionInput {
+  readonly job: Job;
+  readonly match: JobMatch | null;
+  readonly application: Application | null;
+  readonly revision: Omit<CvRevision, "id" | "createdAt">;
+}
+
+/** Types a device file may have (`MAIL_ATTACHMENT_CONTENT_TYPES`). */
+export type MailAttachmentContentType = Extract<MailSendAttachment, { kind: "upload" }>["contentType"];
+
+/** A file from the user's computer attached to an email apply. */
+export interface MailAttachmentUpload {
+  readonly fileName: string;
+  readonly contentType: MailAttachmentContentType;
+  readonly bytes: Uint8Array;
+}
+
+/** What Settings › Application answers writes for one answer. */
+export type AnswerInput = Omit<Answer, "id" | "createdAt" | "updatedAt">;
 
 export interface JobsRepository {
   readonly uid: string;
@@ -125,14 +168,36 @@ export interface JobsRepository {
     input: CoverLetterInput,
     existing: CoverLetter | null,
   ): PendingWrite<{ readonly coverLetterId: string }>;
+  /** "Save as template": a new `coverLetters` document with `isTemplate: true`. */
+  saveCoverLetterTemplate(input: CoverLetterTemplateInput): PendingWrite<{ readonly coverLetterId: string }>;
+  /**
+   * "Save as new version" after tailoring: the `ai_tailor` revision and its pin on the job's
+   * application in one batch (`planSaveTailoredRevision`). The CV's current revision doesn't move.
+   */
+  saveTailoredRevision(
+    input: TailoredRevisionInput,
+  ): PendingWrite<{ readonly revisionId: string; readonly applicationId: string }>;
   /** Uploads a rendered PDF and creates its immutable `renderedFiles` document. */
   createRenderedFile(input: RenderedFileInput): Promise<RenderedFile>;
+  /** Uploads a device file to `users/{uid}/mail-attachments/{id}` for `mailSend`; returns its path. */
+  uploadMailAttachment(input: MailAttachmentUpload): Promise<{ readonly storagePath: string }>;
   /** `mailSend`: schedules the email (10 s undo window); the application doc carries `emailSend`. */
   sendEmail(request: MailSendRequest): Promise<MailSendResponse>;
   /** `mailSendCancel` while the send is scheduled. */
   cancelEmail(applicationId: string): Promise<void>;
   /** `mailSendNow`: ends the undo window early. */
   sendEmailNow(applicationId: string): Promise<void>;
+  /** `cvTailor`: proposed edits to one revision for one job (nothing is stored). */
+  tailorCv(request: CvTailorRequest): Promise<CvTailorResponse>;
+  /** `coverLetterDraft`: a letter drafted from the CV revision and the job (nothing is stored). */
+  draftCoverLetter(request: CoverLetterDraftRequest): Promise<CoverLetterDraftResponse>;
+  /** Creates (`existing` null) or replaces an answer of the library. */
+  saveAnswer(input: AnswerInput, existing: Answer | null): PendingWrite<{ readonly answerId: string }>;
+  deleteAnswer(answerId: string): PendingWrite;
+  /** Undo of a delete: the answer comes back with its id. */
+  restoreAnswer(answer: Answer): PendingWrite;
+  /** New `position`s after a move within a kind. */
+  reorderAnswers(positions: readonly { readonly answerId: string; readonly position: number }[]): PendingWrite;
 }
 
 export const JobsRepositoryContext = createContext<JobsRepository | null>(null);

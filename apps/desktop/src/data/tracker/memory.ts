@@ -64,6 +64,8 @@ export interface MemoryTrackerStore {
   readonly log: readonly TrackerWrite[];
   /** The jobs, including manual ones created for links. */
   jobs(): readonly Job[];
+  /** Every CV revision, including ones written by plans (`createCvRevision`). */
+  cvRevisions(): readonly CvRevision[];
   jobMatches(): readonly JobMatch[];
   savedSearches(): readonly SavedSearch[];
   /** Applies a plan like a committed batch (the memory jobs repository writes through it). */
@@ -87,6 +89,7 @@ export function createMemoryTrackerStore(seed: MemoryTrackerSeed, clock: () => D
     savedSearches: [...(seed.savedSearches ?? [])],
   };
   let profile = seed.profile;
+  let cvRevisions: readonly CvRevision[] = [...seed.cvRevisions];
   const log: TrackerWrite[] = [];
   const listeners = new Set<() => void>();
   let counter = 0;
@@ -114,6 +117,10 @@ export function createMemoryTrackerStore(seed: MemoryTrackerSeed, clock: () => D
       if (write.op === "updateProfile") {
         if (profile === null) return Promise.reject(new Error("The profile does not exist"));
         profile = { ...profile, ...write.patch };
+        continue;
+      }
+      if (write.op === "createCvRevision") {
+        cvRevisions = [...cvRevisions, write.revision];
         continue;
       }
       const table = tables[write.collection] as { id: string }[];
@@ -211,13 +218,16 @@ export function createMemoryTrackerStore(seed: MemoryTrackerSeed, clock: () => D
       return () => listeners.delete(emit);
     },
     watchCvRevisions(cvId, onChange) {
-      onChange({
-        status: "ready",
-        value: seed.cvRevisions
-          .filter((revision) => revision.cvId === cvId)
-          .toSorted((a, b) => b.createdAt.getTime() - a.createdAt.getTime()),
-      });
-      return () => undefined;
+      const emit = () =>
+        onChange({
+          status: "ready",
+          value: cvRevisions
+            .filter((revision) => revision.cvId === cvId)
+            .toSorted((a, b) => b.createdAt.getTime() - a.createdAt.getTime()),
+        });
+      emit();
+      listeners.add(emit);
+      return () => listeners.delete(emit);
     },
   };
 
@@ -233,6 +243,7 @@ export function createMemoryTrackerStore(seed: MemoryTrackerSeed, clock: () => D
     jobs: () => tables.jobs,
     jobMatches: () => tables.jobMatches,
     savedSearches: () => tables.savedSearches,
+    cvRevisions: () => cvRevisions,
     apply,
     newId,
     clock,

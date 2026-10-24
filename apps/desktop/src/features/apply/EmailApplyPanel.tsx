@@ -1,54 +1,53 @@
 /**
  * Apply by email (BRIEF §4.4, research/apply.md "Decision — Desktop", decisions.md D21–D24, F6):
- * a two-step composer the Jobs screen mounts for `?apply=1`.
+ * a two-step composer the Jobs screen mounts for `?apply=1` on a posting that takes email.
  *
  * - **Compose:** From (accounts that can send), To (prefilled from the posting, with its source),
- *   Subject and Body from templates in the posting's language, the CV (pinned to its current
- *   revision) and an optional cover letter. `Mod+Enter` → Review.
- * - **Review:** "Sending details" (From, To, Subject, attachments with sizes) above the message;
- *   the PDFs are made here. With an account, "Send to …" schedules the email (`mailSend`): a
- *   toast counts down the 10 s undo window (Undo · Send now), and the application's `emailSend`
- *   reports sent or failed. Without one, the user saves the PDFs, opens the message in their mail
- *   app and confirms with "I sent it" (`recordApplied`, files pinned).
+ *   Subject and Body from templates in the posting's language, the CV (its current version or the
+ *   one tailored for this job; "Tailor for this job" opens the tailor review), an optional cover
+ *   letter (`CoverLetterEditor`: templates, tone, language, AI draft), "Fields to fill" for merge
+ *   fields without a value, and extra attachments (`AttachmentPicker`). `Mod+Enter` → Review.
+ * - **Review:** "Sending details" (From, To, Subject, attachments with sizes) above the message
+ *   with every merge field filled; the PDFs are made here. With an account, "Send to …" schedules
+ *   the email (`mailSend`; device files are uploaded first): a toast counts down the 10 s undo
+ *   window (Undo · Send now), and the application's `emailSend` reports sent or failed. Without
+ *   one, the user saves the PDFs, opens the message in their mail app and confirms with "I sent
+ *   it" (`recordApplied`, files pinned).
  *
  * `Esc` closes; the draft stays in memory for the session (`session.ts`).
  */
-import type { CvRevision } from "@bfhr/core";
+import type { MailSendAttachment } from "@bfhr/core";
 import { useNavigate } from "@tanstack/react-router";
-import { CircleCheck, Copy, Download, FileText, Mail, Send, X } from "lucide-react";
-import { type ReactNode, type Ref, useCallback, useContext, useEffect, useId, useRef, useState } from "react";
+import { CircleCheck, Copy, Download, Mail, Send } from "lucide-react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { defineMessages, useIntl } from "react-intl";
-import { useJobsData } from "../../data/jobs/live";
 import { useJobsRepository } from "../../data/jobs/repository";
-import { displayTimeZone, useTrackerData } from "../../data/tracker/live";
-import { ModelEnvironmentContext } from "../../data/tracker/model";
-import { type Lookup, useTrackerRepository } from "../../data/tracker/repository";
+import { useTrackerData } from "../../data/tracker/live";
+import { useTrackerRepository } from "../../data/tracker/repository";
 import { saveExportFile } from "../../lib/cvExport";
 import { openMailto } from "../../lib/desktop";
 import { useConnectivity } from "../../shared/connectivity";
 import { useKeyBindings } from "../../shared/keyboard/useKeyBindings";
-import { Button, IconButton } from "../../shared/ui/Button";
+import { Button } from "../../shared/ui/Button";
 import { EmptyState } from "../../shared/ui/EmptyState";
 import { InlineAlert } from "../../shared/ui/InlineAlert";
-import { PaneError } from "../../shared/ui/PaneError";
-import { SkeletonBlock, SkeletonRegion, SkeletonText } from "../../shared/ui/Skeleton";
 import { useToast } from "../../shared/ui/Toast";
+import { AttachmentChip, type AttachmentChipVM, AttachmentPicker } from "./AttachmentPicker";
+import { CoverLetterEditor, FieldsToFill } from "./CoverLetterEditor";
+import { CvField } from "./CvField";
+import { ApplyGate } from "./gate";
 import {
   type ApplyInput,
-  type ApplyPins,
   applyRecord,
   attachmentsTooLarge,
+  blockerSentence,
   buildSendRequest,
   composerModel,
-  createDraft,
   draftBlocker,
-  blockerSentence,
+  extraAttachment,
+  extraBytes,
+  extraName,
   fileSize,
-  findApplyInput,
-  jobCoverLetter,
-  letterDay,
-  letterLanguage,
-  letterTitle,
   mailtoMessage,
   parseRecipients,
   sendErrorKind,
@@ -56,35 +55,17 @@ import {
   sendingAccounts,
   toggleLetter,
 } from "./model";
-import { type AttachmentPdfs, makeAttachmentPdfs } from "./pdf";
-import { type ApplySession, applySessions } from "./session";
+import { useApplyDocuments } from "./useApplyDocuments";
+import { BlockerLine, Field, inputClass, Outcome, OutcomeFooter, Shell, textareaClass } from "./ui";
 
 const messages = defineMessages({
   fallbackTitle: { id: "apply.email.panel.fallbackTitle", defaultMessage: "Apply by email" },
-  close: {
-    id: "apply.email.panel.close",
-    defaultMessage: "Close (your draft is kept)",
-    description: "Close button of the email composer; the draft stays for this session",
-  },
   keyGroup: { id: "apply.email.panel.keyGroup", defaultMessage: "Apply" },
   keyPrimary: { id: "apply.email.panel.keyPrimary", defaultMessage: "Review, then send the application" },
-  keyClose: { id: "apply.email.panel.keyClose", defaultMessage: "Close the email composer" },
-  loading: { id: "apply.email.panel.loading", defaultMessage: "Loading the application" },
-  loadFailedTitle: { id: "apply.email.panel.loadFailedTitle", defaultMessage: "Couldn't load this job" },
-  loadFailedBody: {
-    id: "apply.email.panel.loadFailedBody",
-    defaultMessage: "Check your connection, then try again. Nothing was sent.",
-  },
-  missingJob: { id: "apply.email.panel.missingJob", defaultMessage: "This job isn't available anymore." },
   from: { id: "apply.email.panel.from", defaultMessage: "From" },
   to: { id: "apply.email.panel.to", defaultMessage: "To" },
   subject: { id: "apply.email.panel.subject", defaultMessage: "Subject" },
   message: { id: "apply.email.panel.message", defaultMessage: "Message" },
-  cv: { id: "apply.email.panel.cv", defaultMessage: "CV" },
-  cvHint: {
-    id: "apply.email.panel.cvHint",
-    defaultMessage: "Its current version is attached as a PDF and kept with the application.",
-  },
   letterToggle: { id: "apply.email.panel.letterToggle", defaultMessage: "Attach a cover letter" },
   letter: { id: "apply.email.panel.letter", defaultMessage: "Cover letter" },
   letterHint: {
@@ -171,180 +152,33 @@ const messages = defineMessages({
     id: "apply.email.panel.recordedBody",
     defaultMessage: "{company} is in your tracker as Applied, with the files you sent.",
   },
-  done: { id: "apply.email.panel.done", defaultMessage: "Done" },
 });
 
-// ─── Shell ─────────────────────────────────────────────────────────────────────────────────────
-
-/** The panel frame: header (title, role, close), scrolling body, footer with the primary action. */
-function Shell({
-  title,
-  subtitle,
-  headingRef,
-  onClose,
-  footer,
-  children,
-}: {
-  title: string;
-  subtitle?: string;
-  headingRef?: Ref<HTMLHeadingElement>;
-  onClose: () => void;
-  footer?: ReactNode;
-  children: ReactNode;
-}) {
-  const intl = useIntl();
-  const headingId = useId();
-  return (
-    <section aria-labelledby={headingId} className="bg-surface-base flex h-full min-h-0 w-full flex-col">
-      <header className="border-line-subtle flex items-start gap-3 border-b px-5 pt-4 pb-3">
-        <div className="min-w-0 flex-1">
-          <h2 id={headingId} ref={headingRef} tabIndex={-1} className="font-display text-title3 outline-none">
-            {title}
-          </h2>
-          {subtitle && <p className="text-fg-secondary text-callout mt-0.5 truncate">{subtitle}</p>}
-        </div>
-        <IconButton icon={X} label={intl.formatMessage(messages.close)} shortcut="Escape" onClick={onClose} />
-      </header>
-      <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">{children}</div>
-      {footer && <footer className="border-line-subtle border-t px-5 py-3">{footer}</footer>}
-    </section>
-  );
-}
-
-const controlClass =
-  "bg-surface-base border-line-control text-callout text-fg-primary placeholder:text-fg-tertiary w-full min-w-0 rounded-md border px-2 aria-invalid:border-danger-solid";
-const inputClass = `${controlClass} h-8`;
-const textareaClass = `${controlClass} py-1.5 leading-relaxed resize-y`;
-
-function Field({
-  id,
-  label,
-  hint,
-  children,
-}: {
-  id: string;
-  label: string;
-  hint?: string | null;
-  children: ReactNode;
-}) {
-  return (
-    <div className="flex min-w-0 flex-col gap-1">
-      <label htmlFor={id} className="text-footnote text-fg-secondary font-medium">
-        {label}
-      </label>
-      {children}
-      {hint && (
-        <p id={`${id}-hint`} className="text-fg-tertiary text-footnote">
-          {hint}
-        </p>
-      )}
-    </div>
-  );
-}
-
-/** SendBlockerLine: exactly one reason, next to the action it blocks. */
-function BlockerLine({ text, id }: { text: string | null; id: string }) {
-  return (
-    <p id={id} role="status" className="text-fg-secondary text-footnote min-w-0 flex-1">
-      {text}
-    </p>
-  );
-}
-
-function AttachmentChip({ name, size }: { name: string; size: string | null }) {
-  return (
-    <li className="bg-surface-sunken text-callout inline-flex max-w-full items-center gap-2 rounded-md px-2 py-1">
-      <FileText aria-hidden="true" className="text-fg-secondary size-4 shrink-0" strokeWidth={1.75} />
-      <span className="min-w-0 truncate">{name}</span>
-      {size && <span className="text-fg-tertiary shrink-0 tabular-nums">{size}</span>}
-    </li>
-  );
-}
+/** A CV PDF is about this size; the size check uses it until the real PDFs are made. */
+const PDF_ESTIMATE_BYTES = 120_000;
 
 // ─── Entry ─────────────────────────────────────────────────────────────────────────────────────
 
 /** The email composer for `jobId`; reads its data itself. `onClose` keeps the draft. */
-export function EmailApplyPanel({ jobId, onClose }: { readonly jobId: string; readonly onClose: () => void }) {
+export function EmailApplyPanel({
+  jobId,
+  onClose,
+  onTailor,
+}: {
+  readonly jobId: string;
+  readonly onClose: () => void;
+  /** "Tailor for this job": opens the tailor review for this CV version (null = its current one). */
+  readonly onTailor: (cvId: string, revisionId: string | null) => void;
+}) {
   const intl = useIntl();
-  const tracker = useTrackerData();
-  const jobs = useJobsData();
-  useKeyBindings([
-    {
-      id: "apply.close",
-      keys: "Escape",
-      label: intl.formatMessage(messages.keyClose),
-      group: intl.formatMessage(messages.keyGroup),
-      inTextFields: true,
-      run: (event) => {
-        event.preventDefault();
-        onClose();
-      },
-    },
-  ]);
-
-  if (tracker.status === "error" || jobs.status === "error") {
-    const retry = () => {
-      if (tracker.status === "error") tracker.retry();
-      if (jobs.status === "error") jobs.retry();
-    };
-    return (
-      <Shell title={intl.formatMessage(messages.fallbackTitle)} onClose={onClose}>
-        <PaneError
-          title={intl.formatMessage(messages.loadFailedTitle)}
-          body={intl.formatMessage(messages.loadFailedBody)}
-          onRetry={retry}
-        />
-      </Shell>
-    );
-  }
-  if (tracker.status === "loading" || jobs.status === "loading") {
-    return (
-      <Shell title={intl.formatMessage(messages.fallbackTitle)} onClose={onClose}>
-        <SkeletonRegion
-          loading
-          label={intl.formatMessage(messages.loading)}
-          skeleton={
-            <div className="flex flex-col gap-4">
-              {[0, 1, 2].map((index) => (
-                <div key={index} className="flex flex-col gap-1">
-                  <SkeletonText widths={[20]} />
-                  <SkeletonBlock className="h-8 w-full rounded-md" />
-                </div>
-              ))}
-              <SkeletonBlock className="h-40 w-full rounded-md" />
-            </div>
-          }
-        >
-          {null}
-        </SkeletonRegion>
-      </Shell>
-    );
-  }
-  const input = findApplyInput(jobId, tracker.data, jobs.data);
-  if (!input) {
-    return (
-      <Shell title={intl.formatMessage(messages.fallbackTitle)} onClose={onClose}>
-        <EmptyState kind="subArea" body={intl.formatMessage(messages.missingJob)} />
-      </Shell>
-    );
-  }
-  return <Composer key={jobId} input={input} onClose={onClose} />;
+  return (
+    <ApplyGate jobId={jobId} fallbackTitle={intl.formatMessage(messages.fallbackTitle)} onClose={onClose}>
+      {(input) => <Composer key={jobId} input={input} onClose={onClose} onTailor={onTailor} />}
+    </ApplyGate>
+  );
 }
 
 // ─── Composer ──────────────────────────────────────────────────────────────────────────────────
-
-/** The CV's revision the application pins: its current one. */
-function useCurrentRevision(cvId: string | null, revisionId: string | null): Lookup<CvRevision> {
-  const repository = useTrackerRepository();
-  const [state, setState] = useState<{ readonly cvId: string; readonly lookup: Lookup<readonly CvRevision[]> } | null>(null);
-  useEffect(() => {
-    if (cvId === null) return;
-    return repository.watchCvRevisions(cvId, (lookup) => setState({ cvId, lookup }));
-  }, [repository, cvId]);
-  if (cvId === null) return { status: "ready", value: null };
-  if (state?.cvId !== cvId || state.lookup.status === "loading") return { status: "loading" };
-  return { status: "ready", value: state.lookup.value?.find((revision) => revision.id === revisionId) ?? null };
-}
 
 /** Whole seconds until `sendAt`, ticking while the send is scheduled (the real clock, like the toast). */
 function useSecondsUntil(sendAt: Date | null): number {
@@ -359,83 +193,44 @@ function useSecondsUntil(sendAt: Date | null): number {
 
 type Busy = "sending" | "recording" | null;
 
-function Composer({ input, onClose }: { readonly input: ApplyInput; readonly onClose: () => void }) {
+function Composer({
+  input,
+  onClose,
+  onTailor,
+}: {
+  readonly input: ApplyInput;
+  readonly onClose: () => void;
+  readonly onTailor: (cvId: string, revisionId: string | null) => void;
+}) {
   const intl = useIntl();
   const toast = useToast();
   const navigate = useNavigate();
   const repository = useJobsRepository();
   const trackerRepository = useTrackerRepository();
   const tracker = useTrackerData();
-  const environment = useContext(ModelEnvironmentContext);
   const online = useConnectivity().status !== "offline";
   const { job } = input;
-  const key = `${repository.uid}:${job.id}`;
 
-  const [session, setSession] = useState<ApplySession>(() => {
-    const existing = applySessions.get(key);
-    if (existing) return existing;
-    const created: ApplySession = {
-      draft: createDraft(input),
-      step: "compose",
-      pdfs: null,
-      pins: null,
-      sendApplicationId: null,
-      sendAt: null,
-      recordedApplicationId: null,
-    };
-    applySessions.set(key, created);
-    return created;
-  });
-  /** Writes through to the session store, so toast actions after the panel closed still land. */
-  const update = useCallback(
-    (change: (current: ApplySession) => ApplySession) => {
-      const current = applySessions.get(key);
-      if (!current) return;
-      const next = change(current);
-      applySessions.set(key, next);
-      setSession(next);
-    },
-    [key],
-  );
-  const { draft } = session;
-
-  const ctx = {
-    intl,
-    locale: intl.locale,
-    now: environment.now(),
-    timeZone: environment.timeZone ?? displayTimeZone(input.profile),
-  };
-  const model = composerModel(input, draft, { online }, ctx);
+  const [busy, setBusy] = useState<Busy>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const documents = useApplyDocuments(input, { makePdfs: (current) => current.step === "review" });
+  const { session, draft, update, values, resolved, pdfs, pdfsFailed, revision } = documents;
+  const ctx = { intl, locale: intl.locale, ...documents.ctx };
+  const model = composerModel(input, draft, values, { online }, ctx);
   const accounts = sendingAccounts(input.mailAccounts);
   const accountId = accounts.find((account) => account.id === draft.accountId)?.id ?? accounts[0]?.id ?? null;
   const account = accounts.find((candidate) => candidate.id === accountId) ?? null;
-  const cv = input.cvs.find((candidate) => candidate.id === draft.cvId) ?? null;
-  const language = letterLanguage(job, cv);
-  const revision = useCurrentRevision(cv?.id ?? null, cv?.currentRevisionId ?? null);
   const recipients = parseRecipients(draft.to).addresses;
   const firstAddress = recipients[0] ?? draft.to.trim();
-  const day = letterDay(ctx.now, ctx.timeZone);
-  const pdfKey = JSON.stringify([
-    cv?.id,
-    cv?.currentRevisionId,
-    draft.letterOn ? [draft.letter, draft.subject, language, day] : null,
-  ]);
-  const pdfs = session.pdfs?.key === pdfKey ? session.pdfs.files : null;
 
-  const reviewBlocker = draftBlocker(draft, { online: true, canSend: account !== null });
-  const actionBlocker = draftBlocker(draft, { online, canSend: account !== null });
-  /** The PDF set that failed to print (Try again clears it and prints again). */
-  const [failedPdfKey, setFailedPdfKey] = useState<string | null>(null);
-  const [attempt, setAttempt] = useState(0);
-  const pdfsFailed = failedPdfKey === pdfKey && pdfs === null;
-  const [busy, setBusy] = useState<Busy>(null);
-  const [actionError, setActionError] = useState<string | null>(null);
+  const reviewBlocker = draftBlocker(draft, values, { online: true, canSend: account !== null });
+  const actionBlocker = draftBlocker(draft, values, { online, canSend: account !== null });
   const headingRef = useRef<HTMLHeadingElement>(null);
-  const ids = { from: useId(), to: useId(), subject: useId(), body: useId(), cv: useId(), letterOn: useId(), letter: useId(), blocker: useId() };
+  const ids = { from: useId(), to: useId(), subject: useId(), body: useId(), letterOn: useId(), blocker: useId() };
 
   const edit = (patch: Partial<typeof draft>) => {
     setActionError(null);
-    update((current) => ({ ...current, draft: { ...current.draft, ...patch } }));
+    documents.edit(patch);
   };
 
   // Focus the heading when the step (or outcome) changes, so screen readers hear where they are.
@@ -460,32 +255,6 @@ function Composer({ input, onClose }: { readonly input: ApplyInput; readonly onC
     headingRef.current?.focus();
   }, [view]);
 
-  // Make the PDFs on Review (offline, by the OS webview).
-  const content = revision.status === "ready" ? (revision.value?.content ?? null) : null;
-  useEffect(() => {
-    if (session.step !== "review" || content === null || cv === null || session.pdfs?.key === pdfKey) return;
-    let cancelled = false;
-    makeAttachmentPdfs({
-      content,
-      cvLanguage: cv.language,
-      job,
-      letter: draft.letterOn ? { body: draft.letter, subject: draft.subject, language, day } : null,
-    }).then(
-      (files) => {
-        if (!cancelled) update((current) => ({ ...current, pdfs: { key: pdfKey, files } }));
-      },
-      (error: unknown) => {
-        console.error("Couldn't make the application PDFs", error);
-        if (!cancelled) setFailedPdfKey(pdfKey);
-      },
-    );
-    return () => {
-      cancelled = true;
-    };
-    // `pdfKey` covers the draft fields the PDFs depend on.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session.step, pdfKey, content, attempt]);
-
   const openTracker = useCallback(
     (applicationId: string) => void navigate({ to: "/tracker/applications/$applicationId", params: { applicationId } }),
     [navigate],
@@ -505,53 +274,10 @@ function Composer({ input, onClose }: { readonly input: ApplyInput; readonly onC
       });
     }
     // "cancelled" (Undo here or on another device) needs nothing: the view falls back to Review.
-  }, [sendState, session.sendApplicationId, toast, intl, job.company, openTracker, update]);
+  }, [sendState, session.sendApplicationId, toast, intl, job.company, openTracker]);
 
   const sendAt = emailSend?.sendAt ?? session.sendAt;
   const secondsLeft = useSecondsUntil(view === "sending" ? sendAt : null);
-
-  /** Saves the cover letter, uploads the PDFs as `renderedFiles` and returns the pins (once per PDF set). */
-  const uploadPins = async (files: AttachmentPdfs): Promise<ApplyPins> => {
-    const cached = applySessions.get(key)?.pins;
-    if (cached?.key === pdfKey) return cached.value;
-    if (cv === null || revision.status !== "ready" || revision.value === null) throw new Error("CV revision not loaded");
-    const cvRevisionId = revision.value.id;
-    const coverLetterId =
-      draft.letterOn && files.letter
-        ? repository.saveCoverLetter(
-            {
-              jobId: job.id,
-              applicationId: input.application?.id ?? null,
-              title: letterTitle(job),
-              language,
-              body: draft.letter,
-            },
-            jobCoverLetter(input.coverLetters, job.id),
-          ).ids.coverLetterId
-        : null;
-    const cvFile = await repository.createRenderedFile({
-      kind: "pdf",
-      cvId: cv.id,
-      cvRevisionId,
-      coverLetterId: null,
-      fileName: files.cv.fileName,
-      bytes: files.cv.bytes,
-    });
-    const letterFile =
-      files.letter && coverLetterId !== null
-        ? await repository.createRenderedFile({
-            kind: "pdf",
-            cvId: null,
-            cvRevisionId: null,
-            coverLetterId,
-            fileName: files.letter.fileName,
-            bytes: files.letter.bytes,
-          })
-        : null;
-    const pins: ApplyPins = { cvId: cv.id, cvRevisionId, cvFile, coverLetterId, letterFile };
-    update((current) => ({ ...current, pins: { key: pdfKey, value: pins } }));
-    return pins;
-  };
 
   const failMessage = (error: unknown) => sendErrorSentence(sendErrorKind(error, online), ctx);
 
@@ -571,14 +297,29 @@ function Composer({ input, onClose }: { readonly input: ApplyInput; readonly onC
     });
   };
 
+  /** Device files go to Storage first (`mail-attachments`); rendered files go by id. */
+  const extraAttachments = async (): Promise<MailSendAttachment[]> =>
+    Promise.all(
+      draft.extras.map(async (extra) =>
+        extraAttachment(
+          extra,
+          extra.kind === "local"
+            ? (await repository.uploadMailAttachment({ fileName: extra.fileName, contentType: extra.contentType, bytes: extra.bytes }))
+                .storagePath
+            : null,
+        ),
+      ),
+    );
+
   const send = async () => {
     if (busy !== null || actionBlocker !== null || accountId === null || pdfs === null) return;
     setBusy("sending");
     setActionError(null);
     try {
-      const pins = await uploadPins(pdfs);
+      const pins = await documents.uploadPins(pdfs);
+      const extras = await extraAttachments();
       const response = await repository.sendEmail(
-        buildSendRequest(draft, { accountId, applicationId: input.application?.id ?? null, jobId: job.id }, pins),
+        buildSendRequest(resolved, draft, { accountId, applicationId: input.application?.id ?? null, jobId: job.id }, pins, extras),
       );
       const scheduledAt = new Date(response.sendAt);
       update((current) => ({ ...current, sendApplicationId: response.applicationId, sendAt: scheduledAt }));
@@ -621,7 +362,7 @@ function Composer({ input, onClose }: { readonly input: ApplyInput; readonly onC
     setBusy("recording");
     setActionError(null);
     try {
-      const pins = await uploadPins(pdfs);
+      const pins = await documents.uploadPins(pdfs);
       const recorded = repository.recordApplied(applyRecord(input, pins)).ids;
       update((current) => ({ ...current, recordedApplicationId: recorded.applicationId }));
       toast.show({
@@ -654,7 +395,7 @@ function Composer({ input, onClose }: { readonly input: ApplyInput; readonly onC
 
   const copyMessage = async () => {
     try {
-      await navigator.clipboard.writeText(draft.body);
+      await navigator.clipboard.writeText(resolved.body);
       toast.show({ variant: "info", message: intl.formatMessage(messages.copied) });
     } catch {
       toast.show({ variant: "info", message: intl.formatMessage(messages.copyFailed) });
@@ -663,7 +404,7 @@ function Composer({ input, onClose }: { readonly input: ApplyInput; readonly onC
 
   const openMailApp = async () => {
     try {
-      await openMailto(mailtoMessage(draft));
+      await openMailto(mailtoMessage(resolved, draft));
     } catch (error) {
       console.error("Opening the mail app failed", error);
       toast.show({
@@ -696,18 +437,30 @@ function Composer({ input, onClose }: { readonly input: ApplyInput; readonly onC
     },
   ]);
 
-  const tooLarge = pdfs
-    ? attachmentsTooLarge(pdfs.cv.bytes.byteLength + (pdfs.letter?.bytes.byteLength ?? 0), account?.provider ?? null, ctx)
-    : null;
-  const attachments = [
-    ...(cv ? [{ key: "cv", name: pdfs?.cv.fileName ?? cv.title, size: pdfs ? fileSize(pdfs.cv.bytes.byteLength, ctx.locale) : null }] : []),
+  const extrasBytes = draft.extras.reduce((sum, extra) => sum + extraBytes(extra), 0);
+  const pdfBytes = pdfs
+    ? pdfs.cv.bytes.byteLength + (pdfs.letter?.bytes.byteLength ?? 0)
+    : PDF_ESTIMATE_BYTES * (draft.letterOn ? 2 : 1);
+  const tooLarge = pdfs ? attachmentsTooLarge(pdfBytes + extrasBytes, account?.provider ?? null, ctx) : null;
+  const cv = input.cvs.find((candidate) => candidate.id === draft.cvId) ?? null;
+  const chips: AttachmentChipVM[] = [
+    ...(cv
+      ? [{ key: "cv", name: pdfs?.cv.fileName ?? cv.title, size: pdfs ? fileSize(pdfs.cv.bytes.byteLength, ctx.locale) : null, removable: false }]
+      : []),
     ...(draft.letterOn
       ? [{
           key: "letter",
           name: pdfs?.letter?.fileName ?? intl.formatMessage(messages.letter),
           size: pdfs?.letter ? fileSize(pdfs.letter.bytes.byteLength, ctx.locale) : null,
+          removable: false,
         }]
       : []),
+    ...draft.extras.map((extra) => ({
+      key: extra.key,
+      name: extraName(extra),
+      size: fileSize(extraBytes(extra), ctx.locale),
+      removable: true,
+    })),
   ];
   const shell = { title: model.title, subtitle: model.subtitle, headingRef, onClose };
 
@@ -853,12 +606,12 @@ function Composer({ input, onClose }: { readonly input: ApplyInput; readonly onC
               <dt className="text-fg-secondary">{intl.formatMessage(messages.to)}</dt>
               <dd className="min-w-0 break-words">{recipients.join(", ")}</dd>
               <dt className="text-fg-secondary">{intl.formatMessage(messages.subject)}</dt>
-              <dd className="min-w-0 break-words">{draft.subject}</dd>
+              <dd className="min-w-0 break-words">{resolved.subject}</dd>
               <dt className="text-fg-secondary">{intl.formatMessage(messages.attachments)}</dt>
               <dd className="min-w-0">
                 <ul className="flex flex-wrap gap-2">
-                  {attachments.map((item) => (
-                    <AttachmentChip key={item.key} name={item.name} size={item.size} />
+                  {chips.map((chip) => (
+                    <AttachmentChip key={chip.key} chip={{ ...chip, removable: false }} />
                   ))}
                 </ul>
               </dd>
@@ -868,19 +621,13 @@ function Composer({ input, onClose }: { readonly input: ApplyInput; readonly onC
                 tone="error"
                 className="mt-3"
                 title={intl.formatMessage(messages.prepareFailed)}
-                action={{
-                  label: intl.formatMessage(messages.tryAgain),
-                  onClick: () => {
-                    setFailedPdfKey(null);
-                    setAttempt((count) => count + 1);
-                  },
-                }}
+                action={{ label: intl.formatMessage(messages.tryAgain), onClick: documents.retryPdfs }}
               />
             )}
           </section>
           <section aria-label={intl.formatMessage(messages.message)}>
             <h3 className="text-footnote text-fg-secondary font-medium">{intl.formatMessage(messages.message)}</h3>
-            <p className="bg-surface-sunken text-callout mt-1 rounded-md p-3 leading-relaxed whitespace-pre-wrap">{draft.body}</p>
+            <p className="bg-surface-sunken text-callout mt-1 rounded-md p-3 leading-relaxed whitespace-pre-wrap">{resolved.body}</p>
           </section>
           {!account && (
             <section aria-label={intl.formatMessage(messages.mailAppTitle)} className="flex flex-col gap-3">
@@ -937,13 +684,17 @@ function Composer({ input, onClose }: { readonly input: ApplyInput; readonly onC
       {/* Nothing blocks: say what goes with the email, since the attachments sit below the fold. */}
       <BlockerLine
         id={ids.blocker}
-        text={reviewReason ?? intl.formatMessage(messages.attaching, { files: attachments.map((item) => item.name).join(" · ") })}
+        text={reviewReason ?? intl.formatMessage(messages.attaching, { files: chips.map((chip) => chip.name).join(" · ") })}
       />
       <Button variant="primary" shortcut="Mod+Enter" disabledReason={reviewReason} onClick={goReview}>
         {intl.formatMessage(messages.review)}
       </Button>
     </div>
   );
+  const revisionRef =
+    draft.cvId !== null && revision.status === "ready" && revision.value
+      ? { cvId: draft.cvId, revisionId: revision.value.id }
+      : null;
   return (
     <Shell {...shell} footer={footer}>
       <form
@@ -1008,22 +759,13 @@ function Composer({ input, onClose }: { readonly input: ApplyInput; readonly onC
             className={textareaClass}
           />
         </Field>
-        <Field id={ids.cv} label={intl.formatMessage(messages.cv)} hint={model.cvs.length > 0 ? intl.formatMessage(messages.cvHint) : null}>
-          <select
-            id={ids.cv}
-            value={draft.cvId ?? ""}
-            disabled={model.cvs.length === 0}
-            aria-describedby={model.cvs.length > 0 ? `${ids.cv}-hint` : undefined}
-            onChange={(event) => edit({ cvId: event.target.value })}
-            className={inputClass}
-          >
-            {model.cvs.map((option) => (
-              <option key={option.id} value={option.id}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </Field>
+        <CvField
+          options={model.cvs}
+          draft={draft}
+          online={online}
+          onChange={edit}
+          onTailor={() => draft.cvId !== null && onTailor(draft.cvId, draft.cvRevisionId)}
+        />
         <div className="flex flex-col gap-2">
           <label htmlFor={ids.letterOn} className="text-callout inline-flex items-center gap-2 self-start">
             <input
@@ -1036,53 +778,31 @@ function Composer({ input, onClose }: { readonly input: ApplyInput; readonly onC
             {intl.formatMessage(messages.letterToggle)}
           </label>
           {draft.letterOn && (
-            <Field id={ids.letter} label={intl.formatMessage(messages.letter)} hint={intl.formatMessage(messages.letterHint)}>
-              <textarea
-                id={ids.letter}
-                rows={10}
-                value={draft.letter}
-                aria-describedby={`${ids.letter}-hint`}
-                onChange={(event) => edit({ letter: event.target.value })}
-                className={textareaClass}
+            <>
+              <p className="text-fg-tertiary text-footnote">{intl.formatMessage(messages.letterHint)}</p>
+              <CoverLetterEditor
+                input={input}
+                draft={draft}
+                values={values}
+                revision={revisionRef}
+                aiEnabled={input.profile?.aiEnabled ?? true}
+                onChange={edit}
               />
-            </Field>
+            </>
           )}
         </div>
-        <div className="flex flex-col gap-1">
-          <h3 className="text-footnote text-fg-secondary font-medium">{intl.formatMessage(messages.attachments)}</h3>
-          <ul className="flex flex-wrap gap-2">
-            {attachments.map((item) => (
-              <AttachmentChip key={item.key} name={item.name} size={item.size} />
-            ))}
-          </ul>
-        </div>
+        <FieldsToFill fields={resolved.unresolved} draft={draft} onChange={edit} />
+        <AttachmentPicker
+          chips={chips}
+          draft={draft}
+          renderedFiles={input.renderedFiles}
+          provider={account?.provider ?? null}
+          accountLabel={account?.address ?? null}
+          pdfBytes={pdfBytes}
+          onAdd={(extras) => edit({ extras: [...draft.extras, ...extras] })}
+          onRemove={(key) => edit({ extras: draft.extras.filter((extra) => extra.key !== key) })}
+        />
       </form>
     </Shell>
-  );
-}
-
-function Outcome({ title, body }: { title: string; body: string }) {
-  return (
-    <div className="flex items-start gap-3">
-      <CircleCheck aria-hidden="true" className="text-success-text mt-1 size-5 shrink-0" strokeWidth={1.75} />
-      <div className="min-w-0">
-        <p className="text-body font-semibold">{title}</p>
-        <p className="text-fg-secondary text-callout">{body}</p>
-      </div>
-    </div>
-  );
-}
-
-function OutcomeFooter({ onView, onClose }: { onView: () => void; onClose: () => void }) {
-  const intl = useIntl();
-  return (
-    <div className="flex justify-end gap-2">
-      <Button variant="secondary" onClick={onView}>
-        {intl.formatMessage(messages.viewInTracker)}
-      </Button>
-      <Button variant="primary" onClick={onClose}>
-        {intl.formatMessage(messages.done)}
-      </Button>
-    </div>
   );
 }

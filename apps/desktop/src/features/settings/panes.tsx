@@ -6,6 +6,7 @@ import {
   Bell,
   Building2,
   Mail,
+  MessageSquareText,
   Radar,
   Settings2,
   ShieldCheck,
@@ -17,6 +18,7 @@ import { defineMessages, type MessageDescriptor, useIntl } from "react-intl";
 import { PaneError } from "../../shared/ui/PaneError";
 import { SkeletonBlock, SkeletonRegion } from "../../shared/ui/Skeleton";
 import { AiPane } from "./AiPane";
+import { AnswersPane } from "./AnswersPane";
 import { DataPrivacyPane, dataPrivacyPaneLabel } from "./data-privacy";
 import { CompaniesPane } from "./CompaniesPane";
 import { GeneralPane } from "./GeneralPane";
@@ -37,6 +39,7 @@ const labels = defineMessages({
   notifications: { id: "settings.pane.notifications", defaultMessage: "Notifications" },
   jobSources: { id: "settings.pane.jobSources", defaultMessage: "Job sources" },
   companies: { id: "settings.pane.companies", defaultMessage: "Companies you follow" },
+  answers: { id: "settings.pane.answers", defaultMessage: "Application answers" },
   ai: { id: "settings.pane.ai", defaultMessage: "AI" },
   general: { id: "settings.pane.general", defaultMessage: "General" },
 });
@@ -79,6 +82,7 @@ export const settingsPanes: readonly SettingsPaneEntry[] = [
   { id: "notifications", label: labels.notifications, icon: Bell, Pane: withProfile(NotificationsPane) },
   { id: "job-sources", label: labels.jobSources, icon: Radar, Pane: JobSourcesPane },
   { id: "companies", label: labels.companies, icon: Building2, Pane: CompaniesPane },
+  { id: "answers", label: labels.answers, icon: MessageSquareText, Pane: AnswersPane },
   { id: "ai", label: labels.ai, icon: Sparkles, Pane: withProfile(AiPane) },
   { id: "general", label: labels.general, icon: Settings2, Pane: GeneralPane },
   { id: "data-privacy", label: dataPrivacyPaneLabel, icon: ShieldCheck, Pane: DataPrivacyPane },

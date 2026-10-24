@@ -84,6 +84,8 @@ async function render(entry: string) {
       sendEmail: vi.fn(unused),
       cancelEmail: vi.fn(unused),
       sendEmailNow: vi.fn(unused),
+      tailorCv: vi.fn(unused),
+      draftCoverLetter: vi.fn(unused),
     } as unknown as MemoryJobsCallables,
   );
   const rootRoute = createRootRoute({

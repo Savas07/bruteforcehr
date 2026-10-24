@@ -1,3 +1,4 @@
+import type { CvRevision } from "@bfhr/core";
 import { populatedDataset } from "@bfhr/fixtures";
 import { describe, expect, it } from "vitest";
 import type { NewId, TrackerWrite } from "../tracker/writes";
@@ -6,6 +7,7 @@ import {
   planDismiss,
   planRecordApplied,
   planSave,
+  planSaveTailoredRevision,
   planUnsave,
   planUpdateSavedSearch,
 } from "./writes";
@@ -16,7 +18,9 @@ const ids = (): NewId => {
   return (collection) => `${collection}-${(counter += 1)}`;
 };
 const summary = (writes: readonly TrackerWrite[]) =>
-  writes.map((write) => `${write.op} ${"collection" in write ? write.collection : "profile"}`);
+  writes.map((write) =>
+    write.op === "createCvRevision" ? write.op : `${write.op} ${"collection" in write ? write.collection : "profile"}`,
+  );
 
 const [firstApplication] = populatedDataset.applications;
 const [firstSearch] = populatedDataset.savedSearches;
@@ -78,7 +82,7 @@ describe("Jobs write plans", () => {
     });
   });
 
-  it("moves a Saved application to Applied with a status event and keeps existing pins", () => {
+  it("moves a Saved application to Applied with a status event; pins chosen before applying are replaced", () => {
     const saved = {
       ...firstApplication,
       status: "saved" as const,
@@ -97,8 +101,34 @@ describe("Jobs write plans", () => {
       "create applicationEvents",
       "update applications",
     ]);
-    expect(plan.writes[2]).toMatchObject({ patch: { cvRevisionId: "rev-1", channel: "external_link" } });
-    expect(plan.writes[2]).not.toMatchObject({ patch: { cvId: "cv-1" } });
+    expect(plan.writes[2]).toMatchObject({ patch: { cvId: "cv-1", cvRevisionId: "rev-1", channel: "external_link" } });
+    // From appliedAt on the pins are write-once: only empty ones are filled.
+    const applied = { ...saved, status: "applied" as const, appliedAt: at, cvId: "cv-0", cvRevisionId: "rev-0" };
+    expect(planRecordApplied({ job, application: applied, channel: "email", cvId: "cv-1", cvRevisionId: "rev-1" }, at, ids()).writes).toEqual([]);
+  });
+
+  it("saves a tailored revision with its pin on the job's application, in one batch", () => {
+    const revision = {
+      id: "rev-t",
+      cvId: "cv-1",
+      content: { meta: { template: "classic", theme: { accentColor: "#0f766e", fontPair: "inter-source-serif", density: "comfortable", paperSize: "a4" }, sectionOrder: [], customSections: [] } },
+      source: "ai_tailor",
+      basedOnRevisionId: "rev-1",
+      jobId: job.id,
+      diffSummary: null,
+      createdAt: at,
+    } as const satisfies CvRevision;
+    const saved = { ...firstApplication, status: "saved" as const, appliedAt: null };
+    const pinned = planSaveTailoredRevision({ job, match: null, application: saved, revision }, at, ids());
+    expect(summary(pinned.writes)).toEqual(["createCvRevision", "update applications"]);
+    expect(pinned.writes[1]).toMatchObject({ patch: { cvId: "cv-1", cvRevisionId: "rev-t" } });
+    const created = planSaveTailoredRevision({ job, match: null, application: null, revision }, at, ids());
+    expect(summary(created.writes)).toEqual(["createCvRevision", "create applications", "create applicationEvents"]);
+    expect(created.writes[1]).toMatchObject({ entity: { status: "saved", cvId: "cv-1", cvRevisionId: "rev-t" } });
+    const applied = { ...saved, status: "applied" as const, appliedAt: at };
+    expect(summary(planSaveTailoredRevision({ job, match: null, application: applied, revision }, at, ids()).writes)).toEqual([
+      "createCvRevision",
+    ]);
   });
 
   it("schedules a new or re-enabled saved search for the runner's next pass", () => {

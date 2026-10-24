@@ -1,11 +1,15 @@
 /**
  * The Jobs area on Firestore and Cloud Functions: one set of snapshot listeners per signed-in user
  * (`firestoreJobsSource`: jobs, matches, saved searches, mail accounts, cover letters, rendered
- * files, and the shared `jobSources` health), and the repository that commits `writes.ts` plans
- * through the tracker's writer and calls the Jobs, import and mail callables.
+ * files, the answers library, and the shared `jobSources` health), and the repository that commits
+ * `writes.ts` plans through the tracker's writer and calls the Jobs, import, mail and Apply AI
+ * callables.
  */
 import { firestorePaths, storagePaths } from "@bfhr/api";
 import {
+  type Answer,
+  CoverLetterDraftResponseSchema,
+  CvTailorResponseSchema,
   type JobImportUrlResponse,
   JobMatchesRefreshResponseSchema,
   JobImportUrlResponseSchema,
@@ -17,11 +21,13 @@ import {
 } from "@bfhr/core";
 import {
   collection,
+  deleteDoc,
   type DocumentSnapshot,
   doc,
   type FirestoreError,
   onSnapshot,
   setDoc,
+  writeBatch,
 } from "firebase/firestore";
 import { httpsCallable } from "firebase/functions";
 import { ref, uploadBytes } from "firebase/storage";
@@ -37,6 +43,7 @@ import {
   planRestore,
   planSave,
   planSaveImportedJob,
+  planSaveTailoredRevision,
   planCreateSavedSearch,
   planUnsave,
   planUpdateSavedSearch,
@@ -112,6 +119,7 @@ class FirestoreJobsSource implements JobsSource {
       "mailAccounts",
       "coverLetters",
       "renderedFiles",
+      "answers",
       "jobSources",
     ];
     let failed = false;
@@ -172,11 +180,12 @@ class FirestoreJobsSource implements JobsSource {
           snapshots[key] = { value, pending, cache: snapshot.metadata.fromCache };
           publish();
         },
-        key === "jobSources"
+        key === "jobSources" || key === "answers"
           ? (error) => {
-              // Source health is extra information: without it the feed still works.
-              console.error("Job source health listener failed", error);
-              snapshots.jobSources = { value: [], pending: new Set(), cache: false };
+              // Source health and the answers library are extras: without them the feed, apply
+              // and the kit still work (the kit then offers to add answers in Settings).
+              console.error(`${key} listener failed`, error);
+              snapshots[key] = { value: [], pending: new Set(), cache: false };
               publish();
             }
           : fail,
@@ -189,6 +198,7 @@ class FirestoreJobsSource implements JobsSource {
       listen("mailAccounts", firestorePaths.mailAccounts(uid), converters.mailAccount),
       listen("coverLetters", firestorePaths.coverLetters(uid), converters.coverLetter),
       listen("renderedFiles", firestorePaths.renderedFiles(uid), converters.renderedFile),
+      listen("answers", firestorePaths.answers(uid), converters.answer),
       listen("jobSources", firestorePaths.jobSources(), converters.jobSource),
     ];
   }
@@ -206,6 +216,16 @@ export function firestoreJobsSource(uid: string): JobsSource {
   return source;
 }
 
+declare global {
+  interface Window {
+    /**
+     * E2E builds only: recorded callable answers by name, installed by the specs
+     * (e2e/support/recorded.ts), so the Apply AI callables run without a model.
+     */
+    __BFHR_E2E_CALLABLES__?: Readonly<Record<string, unknown>>;
+  }
+}
+
 /** Calls a callable and validates its answer (a `ZodError` means the server broke the contract). */
 async function call<Request, Response>(
   name: string,
@@ -213,6 +233,10 @@ async function call<Request, Response>(
   schema: { parse(value: unknown): Response },
   timeout?: number,
 ): Promise<Response> {
+  if (__BFHR_E2E__) {
+    const recorded = window.__BFHR_E2E_CALLABLES__?.[name];
+    if (recorded !== undefined) return schema.parse(recorded);
+  }
   const callable = httpsCallable<Request, unknown>(
     functions(),
     name,
@@ -223,6 +247,8 @@ async function call<Request, Response>(
 
 /** Searches query every source; the slowest keyless ones answer in about 20 s. */
 const SEARCH_TIMEOUT_MS = 120_000;
+/** Tailoring and letter drafts: one model call plus a retry when grounding drops most of it. */
+const AI_TIMEOUT_MS = 120_000;
 
 async function sha256Hex(bytes: Uint8Array): Promise<string> {
   // A copy backed by a plain ArrayBuffer (WebCrypto doesn't take SharedArrayBuffer views).
@@ -309,10 +335,11 @@ export function createFirestoreJobsRepository(uid: string): JobsRepository {
     saveCoverLetter(input, existing) {
       const at = new Date();
       const coverLetterId = existing?.id ?? doc(collection(db, firestorePaths.coverLetters(uid))).id;
+      const { author, ...fields } = input;
       const entity = {
         id: coverLetterId,
-        ...input,
-        author: existing?.author ?? ("user" as const),
+        ...fields,
+        author: author ?? existing?.author ?? ("user" as const),
         isTemplate: false,
         createdAt: existing?.createdAt ?? at,
         updatedAt: at,
@@ -322,6 +349,34 @@ export function createFirestoreJobsRepository(uid: string): JobsRepository {
         converters.coverLetter.toFirestore(entity),
       );
       return { ids: { coverLetterId }, done };
+    },
+    saveCoverLetterTemplate(input) {
+      const at = new Date();
+      const coverLetterId = doc(collection(db, firestorePaths.coverLetters(uid))).id;
+      const done = setDoc(
+        doc(db, firestorePaths.coverLetter(uid, coverLetterId)),
+        converters.coverLetter.toFirestore({
+          id: coverLetterId,
+          ...input,
+          jobId: null,
+          applicationId: null,
+          author: "user",
+          isTemplate: true,
+          createdAt: at,
+          updatedAt: at,
+        }),
+      );
+      return { ids: { coverLetterId }, done };
+    },
+    saveTailoredRevision(input) {
+      const at = new Date();
+      const revisionId = doc(collection(db, firestorePaths.cvRevisions(uid, input.revision.cvId))).id;
+      const plan = planSaveTailoredRevision(
+        { ...input, revision: { ...input.revision, id: revisionId, createdAt: at } },
+        at,
+        newId,
+      );
+      return pending({ revisionId, applicationId: plan.applicationId }, [plan.writes]);
     },
     async createRenderedFile(input) {
       const id = doc(collection(db, firestorePaths.renderedFiles(uid))).id;
@@ -342,6 +397,12 @@ export function createFirestoreJobsRepository(uid: string): JobsRepository {
       await setDoc(doc(db, firestorePaths.renderedFile(uid, id)), converters.renderedFile.toFirestore(file));
       return file;
     },
+    async uploadMailAttachment(input) {
+      // Any unique id: the Storage path names the object, nothing in Firestore points at it.
+      const storagePath = storagePaths.mailAttachment(uid, doc(collection(db, firestorePaths.renderedFiles(uid))).id);
+      await uploadBytes(ref(storage(), storagePath), input.bytes, { contentType: input.contentType });
+      return { storagePath };
+    },
     sendEmail(request: MailSendRequest) {
       return call("mailSend", request, MailSendResponseSchema);
     },
@@ -350,6 +411,38 @@ export function createFirestoreJobsRepository(uid: string): JobsRepository {
     },
     async sendEmailNow(applicationId) {
       await call("mailSendNow", { applicationId }, ignoreState);
+    },
+    tailorCv(request) {
+      return call("cvTailor", request, CvTailorResponseSchema, AI_TIMEOUT_MS);
+    },
+    draftCoverLetter(request) {
+      return call("coverLetterDraft", request, CoverLetterDraftResponseSchema, AI_TIMEOUT_MS);
+    },
+    saveAnswer(input, existing) {
+      const at = new Date();
+      const answerId = existing?.id ?? doc(collection(db, firestorePaths.answers(uid))).id;
+      const answer: Answer = { id: answerId, ...input, createdAt: existing?.createdAt ?? at, updatedAt: at };
+      const done = setDoc(doc(db, firestorePaths.answer(uid, answerId)), converters.answer.toFirestore(answer));
+      return { ids: { answerId }, done };
+    },
+    deleteAnswer(answerId) {
+      return { ids: {}, done: deleteDoc(doc(db, firestorePaths.answer(uid, answerId))) };
+    },
+    restoreAnswer(answer) {
+      return {
+        ids: {},
+        done: setDoc(doc(db, firestorePaths.answer(uid, answer.id)), converters.answer.toFirestore(answer)),
+      };
+    },
+    reorderAnswers(positions) {
+      const at = new Date();
+      const batch = writeBatch(db);
+      for (const { answerId, position } of positions)
+        batch.update(
+          doc(db, firestorePaths.answer(uid, answerId)),
+          converters.answer.toFirestoreUpdate({ position, updatedAt: at }),
+        );
+      return { ids: {}, done: batch.commit() };
     },
   };
 }

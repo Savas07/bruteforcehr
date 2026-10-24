@@ -1148,7 +1148,7 @@ function detailVM(job: Job, data: ScreenData, ctx: ModelContext, rows: readonly 
             question: intl.formatMessage(messages.submitQuestion, { company: job.company }),
           }
         : null,
-    applyCv: applyCvVM(match, data, data.profile.defaultCvId),
+    applyCv: applyCvVM(match, application, data, data.profile.defaultCvId),
     pendingSync:
       ctx.pendingWrites.has(job.id) || (application !== undefined && ctx.pendingWrites.has(application.id)),
   };
@@ -1160,12 +1160,18 @@ function compareNewest(a: JobListRowVM, b: JobListRowVM): number {
   return posted(b) - posted(a) || compareRows(a, b);
 }
 
-/** The CV "Yes, I applied" pins: the match's basis, else the default CV, else the newest active one. */
+/**
+ * The CV "Yes, I applied" pins: the version chosen for this application before applying (a
+ * tailored one), else the match's basis, else the default CV, else the newest active one.
+ */
 function applyCvVM(
   match: JobMatch | undefined,
+  application: Application | undefined,
   data: Pick<ScreenData, "cvs">,
   defaultCvId: string | null,
 ): ApplyCvVM | null {
+  if (application && application.appliedAt === null && application.cvId && application.cvRevisionId)
+    return { cvId: application.cvId, cvRevisionId: application.cvRevisionId };
   if (match?.basedOnCvId && match.basedOnCvRevisionId)
     return { cvId: match.basedOnCvId, cvRevisionId: match.basedOnCvRevisionId };
   const active = data.cvs.filter((cv) => cv.archivedAt === null);

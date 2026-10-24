@@ -233,6 +233,8 @@ const COLLECTION_PATHS: Readonly<Record<TrackerCollection, (uid: string) => stri
   interviews: firestorePaths.interviews,
   contacts: firestorePaths.contacts,
   jobs: firestorePaths.jobs,
+  jobMatches: firestorePaths.jobMatches,
+  savedSearches: firestorePaths.savedSearches,
 };
 
 const CONVERTERS = {
@@ -241,17 +243,27 @@ const CONVERTERS = {
   interviews: converters.interview,
   contacts: converters.contact,
   jobs: converters.job,
+  jobMatches: converters.jobMatch,
+  savedSearches: converters.savedSearch,
 } as const;
 
-export function createFirestoreTrackerRepository(uid: string): TrackerRepository {
-  const db = firestore();
-  const ref = (name: TrackerCollection, id: string) => doc(db, COLLECTION_PATHS[name](uid), id);
-  const newId: NewId = (name) => doc(collection(db, COLLECTION_PATHS[name](uid))).id;
-
+/** Commits `writes.ts` plans for one user as batches (shared by the tracker and jobs repositories). */
+export interface FirestoreWriter {
+  readonly db: Firestore;
+  readonly newId: NewId;
   /**
    * Commits the writes in batches of at most 500, never splitting one item's writes (`groups`):
    * each group is all-or-nothing.
    */
+  commit(groups: readonly (readonly TrackerWrite[])[]): Promise<void>;
+  pending<Ids extends object>(ids: Ids, groups: readonly (readonly TrackerWrite[])[]): PendingWrite<Ids>;
+}
+
+export function createFirestoreWriter(uid: string): FirestoreWriter {
+  const db = firestore();
+  const ref = (name: TrackerCollection, id: string) => doc(db, COLLECTION_PATHS[name](uid), id);
+  const newId: NewId = (name) => doc(collection(db, COLLECTION_PATHS[name](uid))).id;
+
   const commit = (groups: readonly (readonly TrackerWrite[])[]): Promise<void> => {
     const batches: TrackerWrite[][] = [[]];
     for (const group of groups) {
@@ -279,6 +291,12 @@ export function createFirestoreTrackerRepository(uid: string): TrackerRepository
               case "delete":
                 batch.delete(ref(write.collection, write.id));
                 break;
+              case "updateProfile":
+                batch.update(
+                  doc(db, firestorePaths.user(uid)),
+                  converters.profile.toFirestoreUpdate(write.patch),
+                );
+                break;
             }
           }
           return batch.commit();
@@ -286,13 +304,11 @@ export function createFirestoreTrackerRepository(uid: string): TrackerRepository
     ).then(() => undefined);
   };
 
-  const pending = <Ids extends object>(
-    ids: Ids,
-    groups: readonly (readonly TrackerWrite[])[],
-  ): PendingWrite<Ids> => ({
-    ids,
-    done: commit(groups),
-  });
+  return { db, newId, commit, pending: (ids, groups) => ({ ids, done: commit(groups) }) };
+}
+
+export function createFirestoreTrackerRepository(uid: string): TrackerRepository {
+  const { db, newId, pending } = createFirestoreWriter(uid);
 
   /** Splits a flat plan into per-item groups of `size` writes. */
   const chunked = (writes: readonly TrackerWrite[], size: number): TrackerWrite[][] => {

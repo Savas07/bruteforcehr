@@ -67,11 +67,9 @@ describe("planCreateApplications", () => {
       at,
       ids(),
     );
-    expect(plan.writes.map((write) => `${write.op} ${write.collection}`)).toEqual([
-      "create jobs",
-      "create applications",
-      "create applicationEvents",
-    ]);
+    expect(
+      plan.writes.map((write) => `${write.op} ${"collection" in write ? write.collection : "profile"}`),
+    ).toEqual(["create jobs", "create applications", "create applicationEvents"]);
     const [job, application, event] = plan.writes;
     if (job?.op !== "create" || application?.op !== "create" || event?.op !== "create")
       throw new Error("creates");

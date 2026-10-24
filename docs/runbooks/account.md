@@ -4,7 +4,7 @@ Settings › Data & privacy offers **Export everything** and **Delete account** 
 
 ## What belongs to a user
 
-`userDataRoots(uid)` in `packages/api/src/paths.ts` is the single list of Firestore trees holding one user's data: `users/{uid}` with every subcollection, and the per-user `serverOnly` trees (`aiUsage`, `jobAlerts`, `jobQuota`, `mail`, `accountExport`). Storage: everything under `userStoragePrefix(uid)` = `users/{uid}/`. A feature that stores per-user data anywhere else must add its root there; the emulator test `src/account/account.emulator.test.ts` fails when a `users/{uid}/…` collection in `DOCUMENT_PATTERNS` has no seeded document.
+`userDataRoots(uid)` in `packages/api/src/paths.ts` is the single list of Firestore trees holding one user's data: `users/{uid}` with every subcollection, and the per-user `serverOnly` trees (`aiUsage`, `jobAlerts`, `jobQuota`, `jobImport`, `mail`, `accountExport`). Storage: everything under `userStoragePrefix(uid)` = `users/{uid}/`. A feature that stores per-user data anywhere else must add its root there; the emulator test `src/account/account.emulator.test.ts` fails when a `users/{uid}/…` collection in `DOCUMENT_PATTERNS` has no seeded document.
 
 ## Export everything (`accountExport`)
 

@@ -24,6 +24,11 @@ const ENTITIES: readonly (readonly [z.ZodType, string])[] = [
   [core.SavedSearchRunNowRequestSchema, "Request of the `savedSearchRunNow` callable."],
   [core.JobMatchesRefreshRequestSchema, "Request of the `jobMatchesRefresh` callable."],
   [core.JobMatchesRefreshResponseSchema, "Response of the `jobMatchesRefresh` callable."],
+  [core.JobImportUrlRequestSchema, "Request of the `jobImportUrl` callable."],
+  [
+    core.JobImportUrlResponseSchema,
+    "Response of the `jobImportUrl` callable: the job to write after the user confirms it.",
+  ],
   [core.ApplicationSchema, "`users/{uid}/applications/{id}`."],
   [core.ApplicationEventSchema, "`users/{uid}/applicationEvents/{id}` (append-only)."],
   [core.InterviewSchema, "`users/{uid}/interviews/{id}`."],
@@ -54,6 +59,7 @@ const INLINE_NAMES: Readonly<Record<string, string>> = {
   "JobSourceStatus.quota": "JobSourceQuota",
   "JobsSearchResponse.counts": "JobsSearchCounts",
   "SourceRunReport.status": "SourceRunStatus",
+  "JobWire.sources": "JobSourceLinkWire",
 };
 
 /** Swift keywords an enum case name could collide with (escaped with backticks). */
@@ -117,6 +123,13 @@ class Renderer {
 
   entity(schema: z.ZodType, doc: string, name?: string): void {
     this.object(schema, name ?? this.names.get(schema) ?? "", doc);
+  }
+
+  /** An enum no entity references (e.g. a callable's error reasons). */
+  enumeration(schema: z.ZodEnum, name: string): void {
+    if (this.emitted.has(name)) return;
+    this.emitted.add(name);
+    this.declarations.push({ kind: "enum", name, values: schema.options.map(String) });
   }
 
   private object(schema: z.ZodType, name: string, doc?: string): string {
@@ -231,6 +244,7 @@ export function renderSwiftModels(): string {
     "An application event before it has a document id.",
     "ApplicationEventDraft",
   );
+  renderer.enumeration(core.JobImportErrorReasonSchema, "JobImportErrorReason");
 
   const enums = renderer.declarations.filter((declaration) => declaration.kind === "enum");
   const structs = renderer.declarations.filter((declaration) => declaration.kind === "struct");

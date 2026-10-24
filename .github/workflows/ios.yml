@@ -1,0 +1,49 @@
+name: iOS
+
+# BFHRUI (SwiftUI, macOS-only) and the app target. BFHRCore runs on Linux in ci.yml; this catches
+# what that can't: UI-package compile/test failures and a broken app or Share Extension build.
+# Path-filtered: macOS minutes count 10x on a private repo (docs/runbooks/release.md "Actions minutes").
+on:
+  push:
+    branches: [main]
+    paths: &ios-paths
+      - apps/ios/**
+      - packages/swift/**
+      - packages/core/conformance/**
+      - packages/fixtures/conformance/**
+      - packages/cv-render/**
+      - .github/workflows/ios.yml
+  pull_request:
+    paths: *ios-paths
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-${{ github.ref }}-${{ github.event_name == 'pull_request' && 'pr' || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  COREPACK_ENABLE_DOWNLOAD_PROMPT: "0"
+
+jobs:
+  ios:
+    name: BFHRUI (swift test) + app build
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v7
+      - run: xcodebuild -version
+      - run: swift test --package-path packages/swift/BFHRUI
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+      - run: corepack enable pnpm
+      - run: pnpm install --frozen-lockfile
+      # The app bundles cv-render's JavaScriptCore build (its Xcode phase fails if it's missing or stale).
+      - run: pnpm --filter @bfhr/cv-render build
+      - name: Build app + Share Extension (simulator, unsigned)
+        run: |
+          xcodebuild build -project apps/ios/BruteForceHR.xcodeproj -scheme BruteForceHR \
+            -configuration Debug -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/dd" CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO

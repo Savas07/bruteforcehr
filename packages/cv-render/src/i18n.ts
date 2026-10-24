@@ -78,6 +78,8 @@ export const PRESENT_WORD: Readonly<Record<CvLanguage, string>> = {
 interface CvWords {
   /** Document title suffix: "Deniz Aksoy – CV". */
   readonly document: string;
+  /** Cover letter title suffix: "Deniz Aksoy – Cover letter". */
+  readonly coverLetter: string;
   readonly dateOfBirth: string;
   readonly grade: string;
   readonly courses: string;
@@ -87,6 +89,7 @@ interface CvWords {
 export const CV_WORDS: Readonly<Record<CvLanguage, CvWords>> = {
   en: {
     document: "CV",
+    coverLetter: "Cover letter",
     dateOfBirth: "Date of birth",
     grade: "Grade",
     courses: "Courses",
@@ -94,6 +97,7 @@ export const CV_WORDS: Readonly<Record<CvLanguage, CvWords>> = {
   },
   tr: {
     document: "Özgeçmiş",
+    coverLetter: "Ön yazı",
     dateOfBirth: "Doğum tarihi",
     grade: "Not ortalaması",
     courses: "Dersler",
@@ -101,6 +105,7 @@ export const CV_WORDS: Readonly<Record<CvLanguage, CvWords>> = {
   },
   de: {
     document: "Lebenslauf",
+    coverLetter: "Anschreiben",
     dateOfBirth: "Geburtsdatum",
     grade: "Note",
     courses: "Kurse",

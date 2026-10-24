@@ -83,6 +83,7 @@ describe("userDataRoots", () => {
       "serverOnly/aiUsage/users/u1",
       "serverOnly/jobAlerts/users/u1",
       "serverOnly/jobQuota/users/u1",
+      "serverOnly/jobImport/users/u1",
       "serverOnly/mail/users/u1",
       "serverOnly/accountExport/users/u1",
     ]);
@@ -96,6 +97,7 @@ describe("userDataRoots", () => {
       serverOnlyPaths.jobAlert("u1", "j1"),
       serverOnlyPaths.jobQuotaDay("u1", "2026-10-24"),
       serverOnlyPaths.accountExportDay("u1", "2026-10-24"),
+      serverOnlyPaths.jobImportPage("u1", "abc123"),
     ]) {
       expect(
         roots.some((root) => path.startsWith(`${root}/`)),

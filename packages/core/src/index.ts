@@ -15,3 +15,4 @@ export * from "./insights";
 export * from "./jobs";
 export * from "./matching";
 export * from "./account";
+export * from "./jobImport";

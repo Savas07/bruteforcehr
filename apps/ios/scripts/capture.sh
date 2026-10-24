@@ -80,9 +80,11 @@ update_states=(available required)
 sign_in_states=(email invalid offline check resent finishing confirm expired unusable retry deleted)
 data_privacy_states=(idle preparing downloading ready saved downloadError tooSoon dailyLimit tooLarge exportError offline
   deleteEmpty deleteTyped reauthNeeded linkSent linkExpired reauthDone deleting deleteError deleteOffline)
+share_states=(reading ready ai existing saved logged blocked offline signed-out manual)
 update_gate=false
 sign_in=false
 data_privacy=false
+share_sheet=false
 if contains update-gate ${screens[@]+"${screens[@]}"}; then
   ((${#screens[@]} == 1)) || { echo "capture.sh: capture update-gate on its own" >&2; exit 64; }
   update_gate=true
@@ -98,6 +100,11 @@ if contains data-privacy ${screens[@]+"${screens[@]}"}; then
   data_privacy=true
   ((${#states[@]} > 0)) || states=("${data_privacy_states[@]}")
 fi
+if contains share-sheet ${screens[@]+"${screens[@]}"}; then
+  ((${#screens[@]} == 1)) || { echo "capture.sh: capture share-sheet on its own" >&2; exit 64; }
+  share_sheet=true
+  ((${#states[@]} > 0)) || states=("${share_states[@]}")
+fi
 ((${#states[@]} > 0)) || states=("${all_states[@]}")
 
 for theme in "${themes[@]}"; do
@@ -109,10 +116,11 @@ done
 contains "$lang" en tr de || { echo "capture.sh: lang must be en, tr or de" >&2; exit 64; }
 if [[ "$lang" == en ]]; then lang_suffix=""; else lang_suffix="-$lang"; fi
 for screen in ${screens[@]+"${screens[@]}"}; do
-  contains "$screen" "${all_screens[@]}" update-gate sign-in data-privacy || { echo "capture.sh: unknown screen $screen (${all_screens[*]} update-gate sign-in data-privacy)" >&2; exit 64; }
+  contains "$screen" "${all_screens[@]}" update-gate sign-in data-privacy share-sheet || { echo "capture.sh: unknown screen $screen (${all_screens[*]} update-gate sign-in data-privacy share-sheet)" >&2; exit 64; }
 done
 if $update_gate; then valid_states=("${update_states[@]}"); elif $sign_in; then valid_states=("${sign_in_states[@]}");
-elif $data_privacy; then valid_states=("${data_privacy_states[@]}"); else valid_states=("${all_states[@]}"); fi
+elif $data_privacy; then valid_states=("${data_privacy_states[@]}"); elif $share_sheet; then valid_states=("${share_states[@]}");
+else valid_states=("${all_states[@]}"); fi
 for state in "${states[@]}"; do
   contains "$state" "${valid_states[@]}" || { echo "capture.sh: unknown state $state (${valid_states[*]})" >&2; exit 64; }
 done

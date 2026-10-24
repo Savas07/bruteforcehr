@@ -76,6 +76,10 @@ function userDocuments(uid: string): Record<string, Record<string, unknown>> {
     [serverOnlyPaths.aiUsageDay(uid, "2026-10-20")]: { microUsd: 1200 },
     [serverOnlyPaths.jobAlert(uid, "job-1")]: { score: 0.82 },
     [serverOnlyPaths.jobQuotaDay(uid, "2026-10-20")]: { search: 3 },
+    [serverOnlyPaths.jobImportPage(uid, "c".repeat(64))]: {
+      url: "https://jobs.example/backend",
+      status: "ok",
+    },
     [serverOnlyPaths.mailSeen(uid, "a".repeat(64))]: { accountId: "acc-google" },
     [serverOnlyPaths.mailOutbox(uid, "send-1")]: { subject: "Application", bodyText: "Hello" },
     [serverOnlyPaths.mailSendDay(uid, "2026-10-20")]: { count: 1 },
@@ -239,6 +243,7 @@ describe("accountExport", () => {
         "data/internal/aiUsage/aiUsageDays.json",
         "data/internal/jobAlerts/jobAlertItems.json",
         "data/internal/jobQuota/jobQuotaDays.json",
+        "data/internal/jobImport/jobImportPages.json",
         "data/internal/mail/mailCorrections.json",
         "data/internal/mail/mailOutbox.json",
         "data/internal/mail/mailSeen.json",

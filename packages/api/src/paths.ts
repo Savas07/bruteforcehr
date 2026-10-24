@@ -167,6 +167,14 @@ export const serverOnlyPaths = {
   jobQuotaRoot: (uid: string) => `serverOnly/jobQuota/users/${segment(uid)}`,
   jobQuotaDay: (uid: string, day: string) =>
     `serverOnly/jobQuota/users/${segment(uid)}/jobQuotaDays/${segment(day)}`,
+  /** URL import: owner config (denied hosts, restricted-site switch; docs/adr/0005-job-sources-scraping.md). */
+  jobImportConfig: () => "serverOnly/jobImport",
+  /** URL import: per-host politeness budget and cached robots.txt (shared by all users). */
+  jobImportHost: (host: string) => `serverOnly/jobImport/hosts/${segment(host)}`,
+  /** URL import: per-user 24 h result cache, keyed by a hash of the canonical URL. */
+  jobImportRoot: (uid: string) => `serverOnly/jobImport/users/${segment(uid)}`,
+  jobImportPage: (uid: string, key: string) =>
+    `serverOnly/jobImport/users/${segment(uid)}/jobImportPages/${segment(key)}`,
   /** Mail tokens, processed-message hashes, outbox and send counters (docs/adr/0012-mail-sync.md). */
   mailRoot: (uid: string) => `serverOnly/mail/users/${segment(uid)}`,
   /** Encrypted credentials of one account; `mailAccounts.secretRef` is this path without `serverOnly/`. */
@@ -203,6 +211,7 @@ export function userDataRoots(uid: string): readonly string[] {
     serverOnlyPaths.aiUsageRoot(uid),
     serverOnlyPaths.jobAlertsRoot(uid),
     serverOnlyPaths.jobQuotaRoot(uid),
+    serverOnlyPaths.jobImportRoot(uid),
     serverOnlyPaths.mailRoot(uid),
     serverOnlyPaths.accountExportRoot(uid),
   ];

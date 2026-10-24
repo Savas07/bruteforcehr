@@ -13,6 +13,7 @@ import { InterviewReminders } from "./data/tracker/InterviewReminders";
 import { LiveTrackerProvider } from "./data/tracker/live";
 import { AddApplicationHost } from "./features/application-add";
 import LiveApplicationDetail from "./features/application-detail/Live";
+import LiveJobs from "./features/job-detail/Live";
 import LiveCvStudio from "./features/cv-editor/LiveCvStudio";
 import LiveInsights from "./features/insights/LiveInsights";
 import LiveToday from "./features/today/Live";
@@ -99,8 +100,8 @@ function LiveTracker() {
 }
 
 /**
- * Production: CVs (M2), Today, Tracker, application detail and Insights (M3) run on live data;
- * other areas show their title until their milestone.
+ * Production: CVs (M2), Today, Tracker, application detail and Insights (M3) and Jobs (M4) run on
+ * live data; other areas show their title until their milestone.
  */
 export const productionViews: RouteViews = {
   root: LiveRoot,
@@ -114,6 +115,8 @@ export const productionViews: RouteViews = {
     today: live(LiveToday),
     tracker: live(LiveTracker),
     application: live(LiveApplicationDetail),
+    jobs: live(LiveJobs),
+    job: live(LiveJobs),
   },
 };
 

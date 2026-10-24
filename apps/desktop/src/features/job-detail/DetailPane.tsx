@@ -45,7 +45,10 @@ const messages = defineMessages({
   firstInList: { id: "job-detail.view.firstInList", defaultMessage: "This is the first job in the list" },
   lastInList: { id: "job-detail.view.lastInList", defaultMessage: "This is the last job in the list" },
   more: { id: "job-detail.view.moreActions", defaultMessage: "More actions" },
-  notForMeWithReason: { id: "job-detail.view.notForMeWithReason", defaultMessage: "Not for me, with a reason…" },
+  notForMeWithReason: {
+    id: "job-detail.view.notForMeWithReason",
+    defaultMessage: "Not for me, with a reason…",
+  },
   hideCompany: { id: "job-detail.view.hideCompany", defaultMessage: "Hide all jobs from {company}" },
   copyLink: { id: "job-detail.view.copyLink", defaultMessage: "Copy link to the posting" },
   opensInBrowser: { id: "job-detail.view.applyOpensInBrowser", defaultMessage: "(opens in your browser)" },
@@ -58,7 +61,8 @@ const messages = defineMessages({
   posted: { id: "job-detail.view.posted", defaultMessage: "Posted {time}" },
   applyOffline: {
     id: "job-detail.view.applyOffline",
-    defaultMessage: "Applying needs a connection. You can save the job now and apply once you're back online.",
+    defaultMessage:
+      "Applying needs a connection. You can save the job now and apply once you're back online.",
   },
 });
 
@@ -139,7 +143,11 @@ export function DetailPane({
               {detail.apply.label}
               {external && (
                 <>
-                  <ArrowUpRight aria-hidden="true" className="ml-1 inline size-4 align-[-3px]" strokeWidth={1.75} />
+                  <ArrowUpRight
+                    aria-hidden="true"
+                    className="ml-1 inline size-4 align-[-3px]"
+                    strokeWidth={1.75}
+                  />
                   <span className="sr-only"> {intl.formatMessage(messages.opensInBrowser)}</span>
                 </>
               )}
@@ -162,7 +170,7 @@ export function DetailPane({
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="border-line-subtle flex h-11 shrink-0 items-center gap-1 border-b px-3">
-{/* Not in the list (hidden, deep link): no prev / next to offer. */}
+        {/* Not in the list (hidden, deep link): no prev / next to offer. */}
         {position !== null && (
           <>
             <IconButton
@@ -207,10 +215,9 @@ export function DetailPane({
               {intl.formatMessage(messages.hiddenBody)}
             </InlineAlert>
           )}
-          {detail.delisted && (
-            <InlineAlert tone="warning" title={detail.delisted} />
-          )}
-          {detail.submitPrompt && showSubmitPrompt && (
+          {detail.delisted && <InlineAlert tone="warning" title={detail.delisted} />}
+          {/* The screen decides: a Preparing external application, or the round trip from Apply. */}
+          {showSubmitPrompt && detail.applied === null && (
             <SubmitPrompt
               company={detail.company.name}
               variant="asking"
@@ -235,7 +242,11 @@ export function DetailPane({
                     </>
                   )}
                 </p>
-                <h2 id={`job-title-${detail.jobId}`} tabIndex={-1} className="text-title2 mt-0.5 outline-none">
+                <h2
+                  id={`job-title-${detail.jobId}`}
+                  tabIndex={-1}
+                  className="text-title2 mt-0.5 outline-none"
+                >
                   {detail.title}
                 </h2>
               </div>
@@ -281,7 +292,11 @@ export function DetailPane({
               )}
               <Button variant="plain" shortcut="O" onClick={() => actions.onOpenUrl(detail.originalUrl)}>
                 {copy.openOriginal}
-                <ArrowUpRight aria-hidden="true" className="ml-1 inline size-4 align-[-3px]" strokeWidth={1.75} />
+                <ArrowUpRight
+                  aria-hidden="true"
+                  className="ml-1 inline size-4 align-[-3px]"
+                  strokeWidth={1.75}
+                />
                 <span className="sr-only"> {intl.formatMessage(messages.opensInBrowser)}</span>
               </Button>
               <DropdownMenu.Root>
@@ -290,7 +305,11 @@ export function DetailPane({
                 </DropdownMenu.Trigger>
                 <MenuContent align="end">
                   {!hidden && (
-                    <MenuItem icon={MessageSquareText} shortcut="Shift+D" onSelect={actions.onNotForMeWithReason}>
+                    <MenuItem
+                      icon={MessageSquareText}
+                      shortcut="Shift+D"
+                      onSelect={actions.onNotForMeWithReason}
+                    >
                       {intl.formatMessage(messages.notForMeWithReason)}
                     </MenuItem>
                   )}
@@ -318,7 +337,10 @@ export function DetailPane({
                   <InlineAlert
                     tone="info"
                     title={detail.noDescription}
-                    action={{ label: copy.openOriginalPosting, onClick: () => actions.onOpenUrl(detail.originalUrl) }}
+                    action={{
+                      label: copy.openOriginalPosting,
+                      onClick: () => actions.onOpenUrl(detail.originalUrl),
+                    }}
                   />
                 ) : (
                   <>
@@ -326,7 +348,10 @@ export function DetailPane({
                       ref={descriptionRef}
                       lang={detail.descriptionLanguage}
                       style={{ "--lines": detail.descriptionCollapsedLines } as CSSProperties}
-                      className={cx("text-body max-w-180 space-y-3", !descriptionOpen && "line-clamp-(--lines)")}
+                      className={cx(
+                        "text-body max-w-180 space-y-3",
+                        !descriptionOpen && "line-clamp-(--lines)",
+                      )}
                     >
                       {detail.description.map((paragraph, index) => (
                         <p key={index} className="whitespace-pre-line">

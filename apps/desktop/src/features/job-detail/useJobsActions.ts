@@ -14,7 +14,10 @@ import { ModelEnvironmentContext } from "../../data/tracker/model";
 import { type PendingWrite, useTrackerRepository } from "../../data/tracker/repository";
 import { useTrackerActions } from "../../data/tracker/useTrackerActions";
 import { useToast } from "../../shared/ui/Toast";
-import type { ApplyCvVM } from "./model";
+import type { ApplyRecord } from "../../data/jobs/writes";
+
+/** What "Yes, I applied" pins: the CV version, and the files the kit made when there are any. */
+export type AppliedPins = Pick<ApplyRecord, "cvId" | "cvRevisionId" | "cvFileId" | "coverLetterId" | "coverLetterFileId">;
 
 const messages = defineMessages({
   undo: { id: "job-detail.copy.undo", defaultMessage: "Undo" },
@@ -60,8 +63,8 @@ export interface JobsActions {
   haveSkill(jobId: string, skill: string): void;
   /** Re-score the job against another CV (the profile's matching CV). */
   changeCv(jobId: string, cvId: string, cvTitle: string, onUndo: () => void): void;
-  /** "Yes, I applied" after an external apply: the application moves to Applied with the CV pinned, with Undo. */
-  recordApplied(jobId: string, cv: ApplyCvVM | null, onViewInTracker: (applicationId: string) => void): void;
+  /** "Yes, I applied" after an external apply: the application moves to Applied with the documents pinned, with Undo. */
+  recordApplied(jobId: string, pins: AppliedPins | null, onViewInTracker: (applicationId: string) => void): void;
   /** `jobsSearch` with the feed's search and filters. */
   search(query: string, filters: SavedSearchFilters): Promise<JobsSearchResponse>;
 }
@@ -220,7 +223,7 @@ export function useJobsActions(): JobsActions {
         },
       });
     },
-    recordApplied(jobId, cv, onViewInTracker) {
+    recordApplied(jobId, pins, onViewInTracker) {
       const target = job(jobId);
       if (!target) return;
       const write = watch(
@@ -228,8 +231,9 @@ export function useJobsActions(): JobsActions {
           job: target,
           application: application(jobId),
           channel: "external_link",
-          cvId: cv?.cvId ?? null,
-          cvRevisionId: cv?.cvRevisionId ?? null,
+          cvId: null,
+          cvRevisionId: null,
+          ...pins,
         }),
       );
       const { applicationId, eventId, created } = write.ids;

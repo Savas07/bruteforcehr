@@ -17,6 +17,7 @@ import {
   type ApplicationEventDraft,
   type ApplicationStatus,
   type Contact,
+  type CvRevision,
   type Interview,
   type Job,
   type JobMatch,
@@ -69,7 +70,9 @@ export type TrackerWrite =
       };
     }[UpdatableCollection]
   | { readonly op: "delete"; readonly collection: DeletableCollection; readonly id: string }
-  | { readonly op: "updateProfile"; readonly patch: ProfilePatch };
+  | { readonly op: "updateProfile"; readonly patch: ProfilePatch }
+  /** A CV revision (`cvs/{cvId}/revisions/{id}`, create-only) committed with the plan: a tailored version. */
+  | { readonly op: "createCvRevision"; readonly revision: CvRevision };
 
 /** A new document id in `collection` (Firestore auto ids; counters in memory). */
 export type NewId = (collection: CreatableCollection) => string;

@@ -84,11 +84,15 @@ function CvEditor() {
     [version],
   );
   return (
-    <CvBackendContext.Provider value={store.backend}>
-      <CvSuggestionSeedContext.Provider value={designSuggestions}>
-        <DesignScreen spec={spec} />
-      </CvSuggestionSeedContext.Provider>
-    </CvBackendContext.Provider>
+    <DesignTrackerProviders>
+      <DesignJobsProviders>
+        <CvBackendContext.Provider value={store.backend}>
+          <CvSuggestionSeedContext.Provider value={designSuggestions}>
+            <DesignScreen spec={spec} />
+          </CvSuggestionSeedContext.Provider>
+        </CvBackendContext.Provider>
+      </DesignJobsProviders>
+    </DesignTrackerProviders>
   );
 }
 function DesignTrackerBoard() {

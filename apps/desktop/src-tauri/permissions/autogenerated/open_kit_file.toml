@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-open-kit-file"
+description = "Enables the open_kit_file command without any pre-configured scope."
+commands.allow = ["open_kit_file"]
+
+[[permission]]
+identifier = "deny-open-kit-file"
+description = "Denies the open_kit_file command without any pre-configured scope."
+commands.deny = ["open_kit_file"]

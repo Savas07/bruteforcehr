@@ -122,8 +122,8 @@ export const productionViews: RouteViews = {
     ...(Object.fromEntries(
       Object.keys(appRoutes).map((id) => [id, sectionTitle(id as AppRouteId)]),
     ) as Record<AppRouteId, ComponentType>),
-    cvs: LiveCvStudio,
-    cv: LiveCvStudio,
+    cvs: live(LiveCvStudio),
+    cv: live(LiveCvStudio),
     insights: LiveInsights,
     today: live(LiveToday),
     tracker: live(LiveTracker),

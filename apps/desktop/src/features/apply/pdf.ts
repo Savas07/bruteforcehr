@@ -28,25 +28,30 @@ function printPdf(html: string, paper: CvContent["meta"]["theme"]["paperSize"]):
   return printCvPdf(html, paper);
 }
 
+export interface LetterInput {
+  readonly body: string;
+  readonly subject: string;
+  readonly language: string;
+  /** `YYYY-MM-DD` on the user's calendar (`letterDay`). */
+  readonly day: string;
+}
+
 export interface AttachmentRequest {
   readonly content: CvContent;
   /** The CV's language (headings, dates). */
   readonly cvLanguage: string;
   readonly job: Pick<Job, "company">;
   /** The letter, or null without one. */
-  readonly letter: { readonly body: string; readonly subject: string; readonly language: string; readonly day: string } | null;
+  readonly letter: LetterInput | null;
 }
 
-/** Renders and prints the CV (+ letter). Rejects with `CvExportError` when printing fails. */
-export async function makeAttachmentPdfs({ content, cvLanguage, job, letter }: AttachmentRequest): Promise<AttachmentPdfs> {
+/**
+ * The cover letter alone, in the CV's template, theme and paper (the kit's "Save as PDF").
+ * Rejects with `CvExportError` when printing fails.
+ */
+export async function makeLetterPdf(content: CvContent, job: Pick<Job, "company">, letter: LetterInput): Promise<PdfFile> {
   const paper = content.meta.theme.paperSize;
   const { firstName, lastName } = splitName(content.basics?.name);
-  const name = { firstName, lastName, company: job.company, ext: "pdf" } as const;
-  const cv: PdfFile = {
-    fileName: exportFileName({ ...name, locale: cvLanguage }),
-    bytes: await printPdf(renderCv(content, cvLanguage).html, paper),
-  };
-  if (!letter) return { cv, letter: null };
   const base = renderInput(content, letter.language);
   const html = renderCoverLetterHtml({
     basics: base.resume.basics,
@@ -60,10 +65,17 @@ export async function makeAttachmentPdfs({ content, cvLanguage, job, letter }: A
     locale: letter.language,
   }).html;
   return {
-    cv,
-    letter: {
-      fileName: exportFileName({ ...name, locale: letter.language, document: "coverLetter" }),
-      bytes: await printPdf(html, paper),
-    },
+    fileName: exportFileName({ firstName, lastName, company: job.company, ext: "pdf", locale: letter.language, document: "coverLetter" }),
+    bytes: await printPdf(html, paper),
   };
+}
+
+/** Renders and prints the CV (+ letter). Rejects with `CvExportError` when printing fails. */
+export async function makeAttachmentPdfs({ content, cvLanguage, job, letter }: AttachmentRequest): Promise<AttachmentPdfs> {
+  const { firstName, lastName } = splitName(content.basics?.name);
+  const cv: PdfFile = {
+    fileName: exportFileName({ firstName, lastName, company: job.company, ext: "pdf", locale: cvLanguage }),
+    bytes: await printPdf(renderCv(content, cvLanguage).html, content.meta.theme.paperSize),
+  };
+  return { cv, letter: letter ? await makeLetterPdf(content, job, letter) : null };
 }

@@ -169,8 +169,20 @@ describe("Apply", () => {
   it("copies answers and the CV's path from the application kit", async () => {
     await openApply(SITE_JOB.id);
     await $("h2=Your application kit").waitForDisplayed({ timeout: 15_000 });
+    // The webview's clipboard needs a real user gesture on some runners: record what the kit
+    // writes instead, so the spec checks the row's text and the toast, not the OS clipboard.
+    await browser.execute(() => {
+      const copied: string[] = [];
+      Object.assign(window, { __bfhrCopied: copied });
+      Object.defineProperty(navigator, "clipboard", {
+        configurable: true,
+        value: { writeText: (text: string) => Promise.resolve(void copied.push(text)) },
+      });
+    });
+    const copied = () => browser.execute(() => (Reflect.get(window, "__bfhrCopied") as string[] | undefined) ?? []);
     await (await button("Copy Notice period")).click();
     await $("*=Notice period copied").waitForDisplayed({ timeout: 10_000 });
+    expect(await copied()).toEqual([`Three months (${RUN})`]);
     const cv = await field("CV");
     await cv.selectByAttribute("value", CV_ID);
     await (await button("Copy path")).click();
@@ -180,6 +192,11 @@ describe("Apply", () => {
     await browser.waitUntil(() => existsSync(kit) && readdirSync(kit).some((name) => name.endsWith(".pdf")), {
       timeout: 30_000,
       timeoutMsg: "the CV PDF wasn't saved to the kit folder",
+    });
+    // The copied path is the saved PDF's.
+    await browser.waitUntil(async () => (await copied()).some((text) => text.startsWith(kit) && text.endsWith(".pdf")), {
+      timeout: 10_000,
+      timeoutMsg: "Copy path didn't copy the kit file's path",
     });
   });
 });

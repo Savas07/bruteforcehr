@@ -1,4 +1,5 @@
 import {
+  AnswerSchema,
   AppConfigSchema,
   ApplicationEventSchema,
   ApplicationSchema,
@@ -30,6 +31,7 @@ const SCHEMAS = {
   cvRevisions: CvRevisionSchema,
   renderedFiles: RenderedFileSchema,
   coverLetters: CoverLetterSchema,
+  answers: AnswerSchema,
   jobs: JobSchema,
   jobMatches: JobMatchSchema,
   savedSearches: SavedSearchSchema,

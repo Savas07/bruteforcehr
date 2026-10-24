@@ -1,0 +1,1920 @@
+{
+ "model": "claude-sonnet-5-5",
+ "promptVersion": "cv-tailor@1+cover-letter@1",
+ "recordedAt": "2026-10-24T15:33:42.402Z",
+ "entries": {
+  "letter-de-02": {
+   "promptHash": "10dbc6fa58f9ec5a",
+   "output": {
+    "subject": "Bewerbung: {role}",
+    "greeting": "Sehr geehrte Damen und Herren,",
+    "paragraphs": [
+     {
+      "sentences": [
+       {
+        "text": "Die Stelle als {role} bei {company} verbindet Betreuung und Ausbau von Klinikverbünden mit der Verhandlung von Rahmenverträgen.",
+        "about": "company"
+       },
+       {
+        "text": "Genau diese Aufgaben prägen meine heutige Arbeit, und deshalb bewerbe ich mich bei Ihnen.",
+        "about": "candidate"
+       }
+      ]
+     },
+     {
+      "sentences": [
+       {
+        "text": "Als Key Account Managerin DACH bei der Nordwerk Industrietechnik GmbH betreue ich 35 Schlüsselkunden mit einem Jahresumsatz von 18,5 Mio. Euro.",
+        "about": "candidate"
+       },
+       {
+        "text": "Im Bestandskundengeschäft habe ich den Umsatz in zwei Jahren um 22 % gesteigert und 6 neue Rahmenverträge mit Automobilzulieferern abgeschlossen.",
+        "about": "candidate"
+       },
+       {
+        "text": "Meine Vertriebspipeline und Forecasts pflege ich in Salesforce.",
+        "about": "candidate"
+       }
+      ]
+     },
+     {
+      "sentences": [
+       {
+        "text": "Zuvor habe ich im Vertrieb der Elbtal Medizintechnik AG gearbeitet und kenne das Umfeld der Medizintechnik daher aus eigener Erfahrung.",
+        "about": "candidate"
+       },
+       {
+        "text": "Über ein persönliches Gespräch, in dem ich meine Erfahrung im Rahmenvertragsgeschäft näher darstelle, freue ich mich.",
+        "about": "candidate"
+       }
+      ]
+     }
+    ],
+    "closing": "Mit freundlichen Grüßen"
+   },
+   "usage": {
+    "inputTokens": 1150,
+    "outputTokens": 602,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 1277
+   }
+  },
+  "letter-de-03": {
+   "promptHash": "ddf434f3bdfff542",
+   "output": {
+    "subject": "Bewerbung als {role} bei {company}",
+    "greeting": "Sehr geehrte Damen und Herren,",
+    "paragraphs": [
+     {
+      "sentences": [
+       {
+        "text": "hiermit bewerbe ich mich um die Stelle als {role} bei {company}.",
+        "about": "candidate"
+       },
+       {
+        "text": "Die Ausschreibung beschreibt eine Rolle, in der Produktentscheidungen durch Daten messbar gemacht werden.",
+        "about": "company"
+       },
+       {
+        "text": "Genau dieser Anspruch deckt sich mit meiner Arbeitsweise, denn seit acht Jahren übersetze ich Geschäftsfragen in saubere Datenmodelle, aussagekräftige Dashboards und Experimente.",
+        "about": "candidate"
+       },
+       {
+        "text": "Besonders reizt mich, dass die Position die Arbeit mit dbt, Dashboards und A/B-Tests mit der engen Zusammenarbeit von Produkt und Operations verbindet.",
+        "about": "candidate"
+       },
+       {
+        "text": "Fahrwerk Mobility betreibt E-Scooter in 40 Städten, und da ich bereits im Mobilitätssektor tätig war, verfolge ich dieses Geschäftsfeld mit großem Interesse.",
+        "about": "other"
+       }
+      ]
+     },
+     {
+      "sentences": [
+       {
+        "text": "Bei der Lumenfold GmbH habe ich als Senior Data Analystin ein Churn-Modell in Python aufgebaut, das die Kündigungsquote im Abo-Geschäft um 9 % senkte.",
+        "about": "candidate"
+       },
+       {
+        "text": "Zudem habe ich 120 Reports auf ein dbt-basiertes Data Warehouse in PostgreSQL migriert und das Experimentation-Framework mit über 60 A/B-Tests pro Jahr verantwortet.",
+        "about": "candidate"
+       },
+       {
+        "text": "In dieser Funktion habe ich außerdem zwei Werkstudierende fachlich angeleitet.",
+        "about": "candidate"
+       },
+       {
+        "text": "Bei der Spreeblick Mobility GmbH entwickelte ich Tableau-Dashboards für 15 Städteteams und analysierte die Flottenauslastung, woraus Einsparungen von 450.000 € pro Jahr resultierten.",
+        "about": "candidate"
+       },
+       {
+        "text": "Meine Datenpipelines habe ich dort mit Apache Airflow automatisiert.",
+        "about": "candidate"
+       },
+       {
+        "text": "Mein Studium der Statistik (M.Sc., Note 1,3) und der Wirtschaftsmathematik (B.Sc.) bildet dafür das methodische Fundament.",
+        "about": "candidate"
+       }
+      ]
+     },
+     {
+      "sentences": [
+       {
+        "text": "Sehr gute SQL- und Python-Kenntnisse gehören zu meinem täglichen Handwerkszeug, und mit Dashboards in Tableau und Looker bin ich vertraut.",
+        "about": "candidate"
+       },
+       {
+        "text": "Gern bringe ich diese Erfahrung bei {company} ein und entwickle sie weiter.",
+        "about": "candidate"
+       }
+      ]
+     },
+     {
+      "sentences": [
+       {
+        "text": "Über die Gelegenheit zu einem persönlichen Gespräch freue ich mich.",
+        "about": "candidate"
+       }
+      ]
+     }
+    ],
+    "closing": "Mit freundlichen Grüßen"
+   },
+   "usage": {
+    "inputTokens": 1110,
+    "outputTokens": 1112,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 1277
+   }
+  },
+  "letter-de-04": {
+   "promptHash": "c75d28f0bd3e7968",
+   "output": {
+    "subject": "Bewerbung als {role} bei {company}",
+    "greeting": "Sehr geehrte Damen und Herren,",
+    "paragraphs": [
+     {
+      "sentences": [
+       {
+        "text": "Die Stelle als {role} bei {company} hat mich sofort angesprochen, weil sie Planung, Forecasting und Monatsabschluss in einer Position verbindet.",
+        "about": "candidate"
+       },
+       {
+        "text": "Genau in diesem Dreiklang liegen seit Jahren meine Schwerpunkte, und ich freue mich darauf, sie in einem neuen Umfeld einzubringen.",
+        "about": "candidate"
+       }
+      ]
+     },
+     {
+      "sentences": [
+       {
+        "text": "Die Rheinhafen Logistik AG sucht jemanden, der die Budgetplanung der Standorte verantwortet, das Reporting weiterentwickelt und die Geschäftsführung berät.",
+        "about": "company"
+       },
+       {
+        "text": "Als Senior Controller bei der Mainfeld Logistik AG verantworte ich heute die Budgetplanung und den Monatsabschluss von 14 Niederlassungen mit einem Umsatz von €320 Mio.",
+        "about": "candidate"
+       },
+       {
+        "text": "Dort habe ich einen rollierenden Forecast in SAP S/4HANA eingeführt und im Fuhrparkbereich Einsparungen von €1,2 Mio. jährlich identifiziert.",
+        "about": "candidate"
+       },
+       {
+        "text": "Außerdem führe ich ein Team von drei Controllern, was mir die Zusammenarbeit mit den Fachbereichen und die Entwicklung von Kolleginnen und Kollegen besonders nahebringt.",
+        "about": "candidate"
+       }
+      ]
+     },
+     {
+      "sentences": [
+       {
+        "text": "Das Unternehmen setzt Erfahrung mit SAP S/4HANA voraus.",
+        "about": "company"
+       },
+       {
+        "text": "Mit SAP S/4HANA CO/FI arbeite ich täglich und kenne die Anforderungen aus Planung und Abschluss genau.",
+        "about": "candidate"
+       },
+       {
+        "text": "Zuvor habe ich bei der Taunus Energie GmbH ein Power-BI-Reporting für die Geschäftsführung aufgebaut und das Investitionscontrolling für Netzprojekte mit einem Volumen von €60 Mio. begleitet.",
+        "about": "candidate"
+       },
+       {
+        "text": "Mein Anspruch ist es, dem Management belastbare Zahlen und klare Handlungsempfehlungen zu liefern, auf die es sich im Alltag wirklich verlassen kann.",
+        "about": "candidate"
+       }
+      ]
+     },
+     {
+      "sentences": [
+       {
+        "text": "Gerne möchte ich Sie in einem persönlichen Gespräch davon überzeugen, dass ich die Position bei {company} mit Engagement und Freude ausfüllen würde.",
+        "about": "candidate"
+       },
+       {
+        "text": "Über eine Einladung freue ich mich sehr.",
+        "about": "candidate"
+       }
+      ]
+     }
+    ],
+    "closing": "Mit freundlichen Grüßen"
+   },
+   "usage": {
+    "inputTokens": 914,
+    "outputTokens": 1011,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 1277
+   }
+  },
+  "letter-de-05": {
+   "promptHash": "120c8eeeeb1ce1f5",
+   "output": {
+    "subject": "Application: {role}",
+    "greeting": "Dear Hiring Team,",
+    "paragraphs": [
+     {
+      "sentences": [
+       {
+        "text": "As a Senior DevOps Engineer at Alpenkern Software GmbH, I run 120 microservices on Kubernetes (EKS) at 99.95 % availability.",
+        "about": "candidate"
+       },
+       {
+        "text": "I hold the Certified Kubernetes Administrator certification and have worked with Kubernetes in production for years.",
+        "about": "candidate"
+       },
+       {
+        "text": "The {role} position at {company} centres on keeping a Kubernetes fleet reliable.",
+        "about": "company"
+       }
+      ]
+     },
+     {
+      "sentences": [
+       {
+        "text": "I introduced GitOps with Argo CD for 14 development teams and built monitoring and alerting with Prometheus and Grafana.",
+        "about": "candidate"
+       },
+       {
+        "text": "I manage infrastructure as code with Terraform and cut cloud costs by 31 %, around €240,000 per year.",
+        "about": "candidate"
+       },
+       {
+        "text": "I also carry on-call duty for critical applications, which gives me hands-on incident response experience.",
+        "about": "candidate"
+       }
+      ]
+     },
+     {
+      "sentences": [
+       {
+        "text": "The posting describes a platform used by 900 engineering teams, and I would like to bring my automation and reliability work to that scale.",
+        "about": "company"
+       },
+       {
+        "text": "My cloud experience is on AWS, Azure and OpenStack, and I would be glad to discuss how it fits your team.",
+        "about": "candidate"
+       }
+      ]
+     }
+    ],
+    "closing": "Kind regards,"
+   },
+   "usage": {
+    "inputTokens": 987,
+    "outputTokens": 495,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 1277
+   }
+  },
+  "letter-en-01": {
+   "promptHash": "00b8b1373e892ec2",
+   "output": {
+    "subject": "Application: {role}",
+    "greeting": "Dear Hiring Team,",
+    "paragraphs": [
+     {
+      "sentences": [
+       {
+        "text": "Please accept my application for the position of {role} at {company}.",
+        "about": "candidate"
+       },
+       {
+        "text": "The role centres on the event-driven services behind every transfer for 4,000 merchants across Europe.",
+        "about": "company"
+       },
+       {
+        "text": "As a senior backend engineer with more than eight years of experience building high-throughput data services in Go and Python, I find this scope both familiar and appealing.",
+        "about": "candidate"
+       }
+      ]
+     },
+     {
+      "sentences": [
+       {
+        "text": "At Kestrel Analytics I built the Kafka-based ingestion pipeline that processes 1.2 billion events per day for more than 300 enterprise customers.",
+        "about": "candidate"
+       },
+       {
+        "text": "I also led the migration of over 40 microservices from EC2 to Kubernetes on EKS, which reduced infrastructure spend by 28 percent, or $410K per year.",
+        "about": "candidate"
+       },
+       {
+        "text": "In addition, I designed a PostgreSQL partitioning scheme that kept p99 query latency under 120 ms while data volumes tripled.",
+        "about": "candidate"
+       },
+       {
+        "text": "The posting asks for ownership of a Kafka streaming platform and PostgreSQL clusters, and this is the work I have carried out in production.",
+        "about": "company"
+       }
+      ]
+     },
+     {
+      "sentences": [
+       {
+        "text": "The position also involves leading incident reviews, improving on-call health and mentoring engineers across three squads.",
+        "about": "company"
+       },
+       {
+        "text": "At Brightwater Logistics I introduced contract testing across 12 services, which lowered production incidents by 35 percent.",
+        "about": "candidate"
+       },
+       {
+        "text": "At Kestrel Analytics I mentored a team of five engineers and introduced weekly architecture reviews.",
+        "about": "candidate"
+       },
+       {
+        "text": "I care about observability and on-call health, and I hold the Certified Kubernetes Administrator credential.",
+        "about": "candidate"
+       }
+      ]
+     },
+     {
+      "sentences": [
+       {
+        "text": "Outside my professional work, I created pgshard, an open-source PostgreSQL sharding proxy written in Go that supports online resharding with zero downtime for tables of up to 2 TB.",
+        "about": "candidate"
+       },
+       {
+        "text": "I would welcome the opportunity to contribute this experience to the Payments team at {company}.",
+        "about": "candidate"
+       },
+       {
+        "text": "I would be pleased to discuss my background in more detail at your convenience.",
+        "about": "candidate"
+       }
+      ]
+     },
+     {
+      "sentences": [
+       {
+        "text": "Thank you for your time and consideration.",
+        "about": "other"
+       }
+      ]
+     }
+    ],
+    "closing": "Yours sincerely,"
+   },
+   "usage": {
+    "inputTokens": 1101,
+    "outputTokens": 857,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 1277
+   }
+  },
+  "letter-en-02": {
+   "promptHash": "c6e9fee5202608ec",
+   "output": {
+    "subject": "Application: {role}",
+    "greeting": "Dear Hiring Team,",
+    "paragraphs": [
+     {
+      "sentences": [
+       {
+        "text": "I'm applying for the {role} position at {company}.",
+        "about": "other"
+       },
+       {
+        "text": "The posting describes building price-elasticity and demand-forecasting models that store managers trust, and that focus on making models useful to the people who rely on them is what draws me to this role.",
+        "about": "company"
+       },
+       {
+        "text": "I care a great deal about work that gets used on the shop floor, and a team that owns its pricing models end to end and partners closely with commercial stakeholders feels like the right place for me.",
+        "about": "candidate"
+       },
+       {
+        "text": "{company} runs 220 stores alongside a growing online shop, which sounds like a rich and varied setting for this kind of work.",
+        "about": "company"
+       }
+      ]
+     },
+     {
+      "sentences": [
+       {
+        "text": "As a Senior Data Scientist at Kestrel Analytics, I built a demand-forecasting model for 14,000 SKUs that reduced stock-outs by 18% for a national grocery client.",
+        "about": "candidate"
+       },
+       {
+        "text": "I also designed uplift models for loyalty campaigns that added an estimated £1.8M in annual incremental revenue.",
+        "about": "candidate"
+       },
+       {
+        "text": "I own my models from SQL and feature engineering through to deployment, and I moved our training from notebooks to scheduled pipelines on Snowflake and dbt, cutting refresh time from 2 days to 3 hours.",
+        "about": "candidate"
+       },
+       {
+        "text": "My daily tools are Python and SQL, and I have published work on forecasting basket demand with hierarchical models.",
+        "about": "candidate"
+       },
+       {
+        "text": "The role asks for experience partnering with commercial stakeholders and running experiments, and I have done both, from redesigning promotional calendars across 120 stores to running A/B tests on email campaigns reaching 450,000 customers.",
+        "about": "candidate"
+       },
+       {
+        "text": "I enjoy explaining findings in plain language, and I line-manage three junior data scientists, which has made me a better communicator with technical and non-technical colleagues alike.",
+        "about": "candidate"
+       }
+      ]
+     },
+     {
+      "sentences": [
+       {
+        "text": "I'd welcome the chance to talk about how I can help.",
+        "about": "other"
+       }
+      ]
+     }
+    ],
+    "closing": "Kind regards,"
+   },
+   "usage": {
+    "inputTokens": 1017,
+    "outputTokens": 740,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 1277
+   }
+  },
+  "letter-en-04": {
+   "promptHash": "151696bf27705f51",
+   "output": {
+    "subject": "Application: {role}",
+    "greeting": "Dear Hiring Team,",
+    "paragraphs": [
+     {
+      "sentences": [
+       {
+        "text": "I am applying for the {role} position at {company}.",
+        "about": "candidate"
+       },
+       {
+        "text": "The role covers shift coordination, support for junior staff and students, and quality improvement work on a 30-bed adult intensive care unit.",
+        "about": "company"
+       },
+       {
+        "text": "I am a Senior Staff Nurse in an adult ICU with five years of critical care experience.",
+        "about": "candidate"
+       }
+      ]
+     },
+     {
+      "sentences": [
+       {
+        "text": "On my current 24-bed unit I coordinate care for up to four level-3 patients per shift and manage ventilated patients and sepsis.",
+        "about": "candidate"
+       },
+       {
+        "text": "I mentor six student nurses a year as a practice assessor.",
+        "about": "candidate"
+       },
+       {
+        "text": "I led a pressure-ulcer prevention project that cut hospital-acquired pressure injuries by 40% in 12 months.",
+        "about": "candidate"
+       }
+      ]
+     },
+     {
+      "sentences": [
+       {
+        "text": "I hold Advanced Life Support certification and a BSc (Hons) in Adult Nursing, graduating with First Class honours.",
+        "about": "candidate"
+       },
+       {
+        "text": "The posting asks for experience with Epic, and I would be glad to learn it quickly.",
+        "about": "candidate"
+       },
+       {
+        "text": "I would welcome the chance to discuss how I can contribute to your team.",
+        "about": "candidate"
+       }
+      ]
+     }
+    ],
+    "closing": "Kind regards,"
+   },
+   "usage": {
+    "inputTokens": 827,
+    "outputTokens": 484,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 1277
+   }
+  },
+  "letter-en-05": {
+   "promptHash": "0996a546c66923d2",
+   "output": {
+    "subject": "Application: {role}",
+    "greeting": "Dear Hiring Team,",
+    "paragraphs": [
+     {
+      "sentences": [
+       {
+        "text": "I would like to apply for the position of {role} at {company}.",
+        "about": "candidate"
+       },
+       {
+        "text": "The role calls for someone to own the savings experience end to end, from research and first sketches through to shipped UI.",
+        "about": "company"
+       },
+       {
+        "text": "As a Senior Product Designer with eight years of experience in consumer finance and health apps, I have led projects across exactly that span.",
+        "about": "candidate"
+       }
+      ]
+     },
+     {
+      "sentences": [
+       {
+        "text": "At Fernway Bank, I redesigned the mobile onboarding flow and raised account-opening completion from 41% to 63%.",
+        "about": "candidate"
+       },
+       {
+        "text": "That work received the Gold award for Digital Product Design from the Northfield Design Awards in 2022.",
+        "about": "candidate"
+       },
+       {
+        "text": "I also run more than 40 moderated usability sessions each year and established a shared research repository for the wider team.",
+        "about": "candidate"
+       }
+      ]
+     },
+     {
+      "sentences": [
+       {
+        "text": "The posting describes growing a design system in Figma and working closely with engineers.",
+        "about": "company"
+       },
+       {
+        "text": "I built and maintain the Fernway design system in Figma, which comprises more than 300 components and is used by nine product teams.",
+        "about": "candidate"
+       },
+       {
+        "text": "Earlier, at Pulsepoint Health, I partnered with engineers to ship an accessible component library that met WCAG 2.1 AA, and I introduced design critiques and a weekly handoff checklist for a team of four designers.",
+        "about": "candidate"
+       }
+      ]
+     },
+     {
+      "sentences": [
+       {
+        "text": "Coinwell helps 2 million people save automatically, and I would value the opportunity to contribute to a product of that reach.",
+        "about": "candidate"
+       },
+       {
+        "text": "My background in consumer finance, together with my experience leading designers and shaping research practice, would allow me to take on this responsibility with confidence.",
+        "about": "candidate"
+       },
+       {
+        "text": "I would welcome the opportunity to discuss my application with you in more detail.",
+        "about": "candidate"
+       }
+      ]
+     },
+     {
+      "sentences": [
+       {
+        "text": "Thank you for your time and consideration.",
+        "about": "other"
+       }
+      ]
+     }
+    ],
+    "closing": "Yours sincerely,"
+   },
+   "usage": {
+    "inputTokens": 801,
+    "outputTokens": 723,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 1277
+   }
+  },
+  "letter-tr-01": {
+   "promptHash": "6e75ec39bb6376f1",
+   "output": {
+    "subject": "Başvuru: {role}",
+    "greeting": "Sayın Parakod İşe Alım Ekibi,",
+    "paragraphs": [
+     {
+      "sentences": [
+       {
+        "text": "{company} bünyesindeki {role} pozisyonunu büyük bir ilgiyle inceledim.",
+        "about": "candidate"
+       },
+       {
+        "text": "Parakod günde 5 milyon ödeme işlemi işleyen bir ödeme kuruluşudur ve ilan, ödeme altyapısını geliştirecek bir kıdemli backend geliştirici arıyor.",
+        "about": "company"
+       },
+       {
+        "text": "Yüksek trafikli ödeme sistemleri üzerinde çalışmak, kariyerim boyunca en çok keyif aldığım alan olduğu için bu ilan bana çok yakın geldi.",
+        "about": "candidate"
+       }
+      ]
+     },
+     {
+      "sentences": [
+       {
+        "text": "Dağıtık sistemler ve ödeme altyapıları üzerinde 8 yıllık backend deneyimine sahibim.",
+        "about": "candidate"
+       },
+       {
+        "text": "Anatolia Yazılım'da kıdemli backend geliştirici olarak ödeme altyapısını monolitten 25 mikroservise taşıdım ve dağıtım süresini 2 saatten 15 dakikaya indirdim.",
+        "about": "candidate"
+       },
+       {
+        "text": "Aynı rolde Kubernetes üzerinde günde 3 milyon işlem işleyen servisler için nöbet ve alarm süreçlerini kurdum.",
+        "about": "candidate"
+       },
+       {
+        "text": "PostgreSQL sorgu optimizasyonuyla API yanıt süresini %40 azalttım ve 4 kişilik backend ekibine teknik liderlik yaptım.",
+        "about": "candidate"
+       }
+      ]
+     },
+     {
+      "sentences": [
+       {
+        "text": "İlandaki sorumluluklar arasında Go ve Java ile yüksek trafikli mikroservisler geliştirmek ve Kubernetes üzerinde çalışan servislerin güvenilirliğini artırmak yer alıyor.",
+        "about": "company"
+       },
+       {
+        "text": "Go ve Java benim günlük olarak kullandığım dillerdir ve Kubernetes üzerindeki sistemlerin gözlemlenebilirliğini ve güvenilirliğini iyileştirmek en çok sevdiğim işlerden biridir.",
+        "about": "candidate"
+       },
+       {
+        "text": "Ayrıca Go ile yazdığım açık kaynak iş kuyruğu kütüphanesi kuyruk-go, GitHub'da 900'den fazla yıldıza ve 20 katkıcıya ulaştı.",
+        "about": "candidate"
+       },
+       {
+        "text": "PostgreSQL deneyimim de ilandaki veritabanı sorumluluklarıyla örtüşüyor.",
+        "about": "candidate"
+       }
+      ]
+     },
+     {
+      "sentences": [
+       {
+        "text": "Ekibinizle tanışıp ödeme altyapınıza nasıl katkı sağlayabileceğimi konuşmaktan memnuniyet duyarım.",
+        "about": "candidate"
+       },
+       {
+        "text": "Zaman ayırıp başvurumu değerlendireceğiniz için şimdiden teşekkür ederim.",
+        "about": "candidate"
+       }
+      ]
+     }
+    ],
+    "closing": "Saygılarımla,"
+   },
+   "usage": {
+    "inputTokens": 1280,
+    "outputTokens": 1099,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 1277
+   }
+  },
+  "letter-tr-02": {
+   "promptHash": "f34b5a2ff79a92c0",
+   "output": {
+    "subject": "Başvuru: {role}",
+    "greeting": "Sayın Yetkili,",
+    "paragraphs": [
+     {
+      "sentences": [
+       {
+        "text": "{company} bünyesindeki {role} pozisyonu için başvuruyorum.",
+        "about": "other"
+       },
+       {
+        "text": "Sepetim, 3 milyon kullanıcıya hizmet veren bir e-ticaret platformudur ve bu pozisyon büyüme ekibinin yönetimini kapsamaktadır.",
+        "about": "company"
+       },
+       {
+        "text": "Sekiz yıllık performans ve dijital pazarlama deneyimimi, bütçe sorumluluğu ve ekip liderliği içeren böyle bir role taşımak istiyorum.",
+        "about": "candidate"
+       }
+      ]
+     },
+     {
+      "sentences": [
+       {
+        "text": "Lale Kozmetik'te yıllık ₺12.000.000 dijital reklam bütçesini yöneterek ROAS'ı 3,1'den 4,6'ya çıkardım.",
+        "about": "candidate"
+       },
+       {
+        "text": "E-ticaret sitesinin organik trafiğini SEO çalışmalarıyla 18 ayda %65 artırdım.",
+        "about": "candidate"
+       },
+       {
+        "text": "HubSpot ile kurduğum pazarlama otomasyonuyla sepet terk oranını %12 düşürdüm.",
+        "about": "candidate"
+       },
+       {
+        "text": "Aynı dönemde 5 kişilik bir ekibi ve 2 dış ajansı yönettim.",
+        "about": "candidate"
+       }
+      ]
+     },
+     {
+      "sentences": [
+       {
+        "text": "İlanda performans bütçesi yönetimi, SEO ve CRM koordinasyonu ile ajans iş birliği öne çıkmaktadır.",
+        "about": "company"
+       },
+       {
+        "text": "Nasıl katkı sağlayabileceğimi konuşmaktan memnuniyet duyarım.",
+        "about": "candidate"
+       }
+      ]
+     }
+    ],
+    "closing": "Saygılarımla,"
+   },
+   "usage": {
+    "inputTokens": 1213,
+    "outputTokens": 646,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 1277
+   }
+  },
+  "letter-tr-04": {
+   "promptHash": "45d80e04851f293c",
+   "output": {
+    "subject": "Başvuru: {role}",
+    "greeting": "Sayın Yetkili,",
+    "paragraphs": [
+     {
+      "sentences": [
+       {
+        "text": "{company} bünyesinde yer alan {role} pozisyonuna başvurmak istiyorum.",
+        "about": "candidate"
+       },
+       {
+        "text": "İlanda, işe alım, performans yönetimi, ücret yönetimi ve çalışan bağlılığı süreçlerinden sorumlu bir yönetici aranmaktadır.",
+        "about": "company"
+       },
+       {
+        "text": "Bu alanların tamamında üretim sektöründe edindiğim deneyimin, söz konusu sorumluluklarla yakından örtüştüğünü düşünüyorum.",
+        "about": "candidate"
+       }
+      ]
+     },
+     {
+      "sentences": [
+       {
+        "text": "Nisan 2020'den bu yana Uludağ Otomotiv Yan Sanayi A.Ş.'de 1.200 çalışanlı bir üretim tesisinin İnsan Kaynakları İş Ortaklığını yürütmekteyim.",
+        "about": "candidate"
+       },
+       {
+        "text": "SAP SuccessFactors üzerinde devreye aldığım yeni performans yönetimi sistemiyle hedef girişi oranını %95'e çıkardım.",
+        "about": "candidate"
+       },
+       {
+        "text": "Yenilenen oryantasyon programı sayesinde mavi yaka işten ayrılma oranını %18 azalttım.",
+        "about": "candidate"
+       },
+       {
+        "text": "Ayrıca yıllık ücret artış bütçesi planlamasında finans ekibiyle birlikte çalışarak ücret yönetimi konusunda deneyim kazandım.",
+        "about": "candidate"
+       }
+      ]
+     },
+     {
+      "sentences": [
+       {
+        "text": "Bundan önce Marmara Tekstil San. ve Tic. A.Ş.'de İK Uzmanı olarak görev yaptım ve yılda ortalama 250 pozisyon için uçtan uca işe alım süreçlerini yönettim.",
+        "about": "candidate"
+       },
+       {
+        "text": "Aynı dönemde 600 çalışanın bordro ve özlük işlemlerini hatasız yürüttüm ve üniversitelerle kurduğum staj programı kapsamında üç yılda 40 stajyer ağırladım.",
+        "about": "candidate"
+       },
+       {
+        "text": "Toplamda üretim sektöründe 10 yıla yakın İK deneyimine sahibim; ayrıca İş Ortaklığı ve Endüstri İlişkileri alanındaki yüksek lisans eğitimim ile SHRM-CP sertifikam bu birikimi desteklemektedir.",
+        "about": "candidate"
+       }
+      ]
+     },
+     {
+      "sentences": [
+       {
+        "text": "İlanda belirtilen 2.500 çalışanlı yapının, büyüklük ve sorumluluk açısından yeni ve değerli bir gelişim alanı sunacağına inanıyorum.",
+        "about": "company"
+       },
+       {
+        "text": "Ekibinizin hedeflerine katkı sağlayabileceğimi düşünüyor, görüşme fırsatı bulmaktan memnuniyet duyacağımı belirtmek isterim.",
+        "about": "candidate"
+       },
+       {
+        "text": "Değerlendirmeniz için teşekkür eder, saygılarımı sunarım.",
+        "about": "other"
+       }
+      ]
+     }
+    ],
+    "closing": "Saygılarımla,"
+   },
+   "usage": {
+    "inputTokens": 1075,
+    "outputTokens": 1121,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 1277
+   }
+  },
+  "letter-tr-05": {
+   "promptHash": "a3699c8e50bd0851",
+   "output": {
+    "subject": "Application: {role}",
+    "greeting": "Dear Hiring Team,",
+    "paragraphs": [
+     {
+      "sentences": [
+       {
+        "text": "I was glad to see that {company} is looking for an English teacher for grades 9–12, and I would like to be considered for the {role} position.",
+        "about": "candidate"
+       },
+       {
+        "text": "The role combines English language and literature teaching, Cambridge exam preparation and work on exchange programmes.",
+        "about": "company"
+       },
+       {
+        "text": "These are the areas I enjoy most in my own teaching.",
+        "about": "candidate"
+       }
+      ]
+     },
+     {
+      "sentences": [
+       {
+        "text": "I have taught English to lower and upper secondary students for eight years, and since 2019 I have worked at Özel Çınar Koleji in Eskişehir.",
+        "about": "candidate"
+       },
+       {
+        "text": "There I teach 120 students in preparatory and ninth-grade classes, 24 hours a week.",
+        "about": "candidate"
+       },
+       {
+        "text": "Over two years, I raised our students' Cambridge B2 First pass rate from 62% to 85%.",
+        "about": "candidate"
+       },
+       {
+        "text": "I also coordinated my school's Erasmus+ exchange project, so I know how rewarding it is to see students grow through international experiences.",
+        "about": "candidate"
+       }
+      ]
+     },
+     {
+      "sentences": [
+       {
+        "text": "My approach is communicative: I want my students to do well in exams and also to feel confident speaking.",
+        "about": "candidate"
+       },
+       {
+        "text": "I use drama, Google Classroom and Moodle to keep lessons lively, and I built an online course programme on Moodle at Gökkuşağı Dil Kursu in Ankara.",
+        "about": "candidate"
+       },
+       {
+        "text": "I hold a CELTA certificate and a degree in English Language Teaching from Hacettepe University.",
+        "about": "candidate"
+       },
+       {
+        "text": "Outside school, I ran weekly reading workshops for children in disadvantaged neighbourhoods as a volunteer, which taught me a lot about patience and about meeting every learner where they are.",
+        "about": "candidate"
+       }
+      ]
+     },
+     {
+      "sentences": [
+       {
+        "text": "The posting mentions IB Diploma Programme experience and a DELTA qualification, and I do not have either yet.",
+        "about": "other"
+       },
+       {
+        "text": "I learn quickly, and I would be glad to talk about how I could grow into the role.",
+        "about": "candidate"
+       },
+       {
+        "text": "I would be happy to share more about my classroom work and to hear more about your students and your exchange programmes.",
+        "about": "candidate"
+       },
+       {
+        "text": "Thank you very much for your time and consideration.",
+        "about": "other"
+       }
+      ]
+     }
+    ],
+    "closing": "Kind regards,"
+   },
+   "usage": {
+    "inputTokens": 917,
+    "outputTokens": 829,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 1277
+   }
+  },
+  "tailor-de-02": {
+   "promptHash": "85ef476a83d4a458",
+   "output": {
+    "edits": [
+     {
+      "op": "replace",
+      "path": "/basics/label",
+      "text": "Key Account Managerin Medizintechnik",
+      "order": [],
+      "reason": "Der Titel der Stelle lautet Key Account Manager Medizintechnik; dein Hintergrund bei Elbtal Medizintechnik AG passt dazu.",
+      "sources": [
+       "/basics/label",
+       "/work/2/name"
+      ]
+     },
+     {
+      "op": "replace",
+      "path": "/basics/summary",
+      "text": "Vertriebsprofi mit über 10 Jahren Erfahrung im B2B-Vertrieb technischer Produkte, u. a. bei einem Medizintechnik-Unternehmen. Ich baue langfristige Kundenbeziehungen als Key Account Managerin auf, verhandle Rahmenverträge auf Geschäftsführungsebene und arbeite eng mit Produktmanagement und Service zusammen.",
+      "order": [],
+      "reason": "Betont Key Account Management, Rahmenverträge und Medizintechnik-Bezug aus der Ausschreibung.",
+      "sources": [
+       "/basics/summary",
+       "/work/2/name"
+      ]
+     },
+     {
+      "op": "replace",
+      "path": "/work/0/highlights/2",
+      "text": "Verhandlung und Abschluss von 6 neuen Rahmenverträgen mit Automobilzulieferern",
+      "order": [],
+      "reason": "Die Stelle verlangt die Verhandlung von Rahmenverträgen.",
+      "sources": [
+       "/work/0/highlights/2"
+      ]
+     },
+     {
+      "op": "replace",
+      "path": "/work/0/highlights/0",
+      "text": "Betreuung und Ausbau von 35 Schlüsselkunden (Key Accounts) mit einem Jahresumsatz von €18,5 Mio.",
+      "order": [],
+      "reason": "Spiegelt \"Betreuung und Ausbau\" und Key Account Management aus dem Posting.",
+      "sources": [
+       "/work/0/highlights/0"
+      ]
+     },
+     {
+      "op": "reorder",
+      "path": "/work/0/highlights",
+      "text": "",
+      "order": [
+       2,
+       0,
+       1,
+       3
+      ],
+      "reason": "Rahmenverträge und Key-Account-Betreuung stehen im Posting an erster Stelle.",
+      "sources": [
+       "/work/0/highlights"
+      ]
+     },
+     {
+      "op": "replace",
+      "path": "/work/0/highlights/3",
+      "text": "Pflege der Vertriebspipeline und Forecasts im CRM-System Salesforce",
+      "order": [],
+      "reason": "Das Posting verlangt Pipeline-Pflege in einem CRM-System; du bringst Salesforce mit.",
+      "sources": [
+       "/work/0/highlights/3"
+      ]
+     }
+    ]
+   },
+   "usage": {
+    "inputTokens": 2070,
+    "outputTokens": 852,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 1583
+   }
+  },
+  "tailor-de-03": {
+   "promptHash": "22bdb1d4f055b8d0",
+   "output": {
+    "edits": [
+     {
+      "op": "reorder",
+      "path": "/work/0/highlights",
+      "text": "",
+      "order": [
+       1,
+       2,
+       0,
+       3
+      ],
+      "reason": "Die Aufgaben der Stelle betonen dbt-Datenmodelle und A/B-Tests, daher stehen diese Punkte zuerst.",
+      "sources": [
+       "/work/0/highlights/1",
+       "/work/0/highlights/2"
+      ]
+     },
+     {
+      "op": "replace",
+      "path": "/work/0/highlights/2",
+      "text": "Verantwortung für das Experimentation-Framework mit über 60 A/B-Tests pro Jahr, damit Produktentscheidungen messbar werden",
+      "order": [],
+      "reason": "Greift den Satz \"Produktentscheidungen messbar machen\" aus der Stellenausschreibung auf.",
+      "sources": [
+       "/work/0/highlights/2",
+       "/basics/summary"
+      ]
+     },
+     {
+      "op": "replace",
+      "path": "/work/0/highlights/1",
+      "text": "Migration von 120 Reports auf ein dbt-basiertes Data Warehouse in PostgreSQL und Aufbau sauberer Datenmodelle mit dbt",
+      "order": [],
+      "reason": "Die Stelle verlangt Datenmodelle mit dbt und sehr gute SQL-Kenntnisse.",
+      "sources": [
+       "/work/0/highlights/1",
+       "/basics/summary"
+      ]
+     },
+     {
+      "op": "reorder",
+      "path": "/skills",
+      "text": "",
+      "order": [
+       1,
+       0,
+       2,
+       4,
+       3,
+       5
+      ],
+      "reason": "SQL, Python und dbt sind die Kernskills der Stelle, daher kommen sie zuerst.",
+      "sources": [
+       "/skills/0/name",
+       "/skills/1/name",
+       "/skills/2/name"
+      ]
+     }
+    ]
+   },
+   "usage": {
+    "inputTokens": 1755,
+    "outputTokens": 550,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 1583
+   }
+  },
+  "tailor-de-04": {
+   "promptHash": "4220d66b2b9f5606",
+   "output": {
+    "edits": [
+     {
+      "op": "replace",
+      "path": "/basics/label",
+      "text": "Senior Controller",
+      "order": [],
+      "reason": "Die Stelle heißt Senior Controller, und du bist aktuell Senior Controller bei Mainfeld Logistik.",
+      "sources": [
+       "/basics/label",
+       "/work/0/position"
+      ]
+     },
+     {
+      "op": "replace",
+      "path": "/basics/summary",
+      "text": "Controller mit neun Jahren Erfahrung in Logistik und Energiewirtschaft. Schwerpunkte sind Budgetplanung, Forecasting und Monatsabschluss in SAP S/4HANA; ich berate das Management mit belastbaren Zahlen und klaren Handlungsempfehlungen.",
+      "order": [],
+      "reason": "Übernimmt Budgetplanung, Forecasting, Monatsabschluss und SAP S/4HANA aus der Anzeige.",
+      "sources": [
+       "/basics/summary",
+       "/work/0/summary"
+      ]
+     },
+     {
+      "op": "replace",
+      "path": "/work/0/summary",
+      "text": "Verantwortlich für Budgetplanung und Monatsabschluss von 14 Niederlassungen mit einem Umsatz von €320 Mio. Einführung eines rollierenden Forecasts in SAP S/4HANA; Identifikation von Einsparungen in Höhe von €1,2 Mio. jährlich im Fuhrparkbereich; Führung eines Teams von 3 Controllern.",
+      "order": [],
+      "reason": "Deine Erfahrung mit Budgetplanung der Standorte, Forecasting und Monatsabschluss passt direkt zur Anzeige.",
+      "sources": [
+       "/work/0/summary"
+      ]
+     },
+     {
+      "op": "replace",
+      "path": "/work/1/summary",
+      "text": "Investitionscontrolling für Netzprojekte mit einem Volumen von €60 Mio. Aufbau eines Power-BI-Reportings für die Geschäftsführung, Kostenstellenrechnung für 40 Kostenstellen und Begleitung der IFRS-16-Umstellung.",
+      "order": [],
+      "reason": "Betont das Reporting für die Geschäftsführung, das die Stelle weiterentwickeln soll.",
+      "sources": [
+       "/work/1/summary"
+      ]
+     }
+    ]
+   },
+   "usage": {
+    "inputTokens": 1500,
+    "outputTokens": 742,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 1583
+   }
+  },
+  "tailor-de-05": {
+   "promptHash": "6003f7d5434991f0",
+   "output": {
+    "edits": [
+     {
+      "op": "reorder",
+      "path": "/work/0/highlights",
+      "text": "",
+      "order": [
+       0,
+       2,
+       3,
+       1
+      ],
+      "reason": "Puts Kubernetes reliability, GitOps with Argo CD and Prometheus monitoring ahead of cost savings, matching the posting's focus.",
+      "sources": [
+       "/work/0/highlights/0",
+       "/work/0/highlights/2",
+       "/work/0/highlights/3",
+       "/work/0/highlights/1"
+      ]
+     },
+     {
+      "op": "replace",
+      "path": "/work/0/highlights/0",
+      "text": "Betrieb und Zuverlässigkeit von 120 Microservices auf Kubernetes (EKS) mit einer Verfügbarkeit von 99,95 %",
+      "order": [],
+      "reason": "Emphasises keeping the Kubernetes fleet reliable, as in the posting.",
+      "sources": [
+       "/work/0/highlights/0"
+      ]
+     },
+     {
+      "op": "replace",
+      "path": "/work/0/highlights/3",
+      "text": "Aufbau von Monitoring und Alerting mit Prometheus und Grafana zur schnelleren Störungserkennung",
+      "order": [],
+      "reason": "Mirrors the posting's Prometheus/Grafana monitoring and incident response focus.",
+      "sources": [
+       "/work/0/highlights/3"
+      ]
+     },
+     {
+      "op": "replace",
+      "path": "/work/1/highlights/2",
+      "text": "Rufbereitschaft und Störungsbehebung für zentrale Versicherungsanwendungen im 24/7-Betrieb",
+      "order": [],
+      "reason": "Connects on-call work to the posting's incident response theme.",
+      "sources": [
+       "/work/1/highlights/2"
+      ]
+     },
+     {
+      "op": "reorder",
+      "path": "/skills/2/keywords",
+      "text": "",
+      "order": [
+       0,
+       3,
+       1,
+       2
+      ],
+      "reason": "Puts Terraform and Argo CD first, as the posting names them.",
+      "sources": [
+       "/skills/2/keywords/0",
+       "/skills/2/keywords/3"
+      ]
+     },
+     {
+      "op": "reorder",
+      "path": "/skills/0/keywords",
+      "text": "",
+      "order": [
+       0,
+       1,
+       2
+      ],
+      "reason": "Keeps AWS first; the CV shows no Google Cloud experience to highlight.",
+      "sources": [
+       "/skills/0/keywords/0"
+      ]
+     }
+    ]
+   },
+   "usage": {
+    "inputTokens": 2008,
+    "outputTokens": 713,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 1583
+   }
+  },
+  "tailor-en-01": {
+   "promptHash": "179a38a3315aba47",
+   "output": {
+    "edits": [
+     {
+      "op": "replace",
+      "path": "/basics/label",
+      "text": "Senior Platform Engineer, Backend & Distributed Systems",
+      "order": [],
+      "reason": "Mirrors the posting's \"Senior Platform Engineer\" title using the CV's backend and distributed-systems experience.",
+      "sources": [
+       "/basics/label",
+       "/basics/summary"
+      ]
+     },
+     {
+      "op": "replace",
+      "path": "/basics/summary",
+      "text": "Backend engineer with 8+ years building high-throughput, event-driven data services in Go and Python on Kubernetes, with Kafka and PostgreSQL at the core. I care about observability and on-call health, and I mentor engineers who are new to distributed systems.",
+      "order": [],
+      "reason": "Surfaces the posting's Go, Kubernetes, Kafka, PostgreSQL, event-driven, observability and on-call keywords.",
+      "sources": [
+       "/basics/summary",
+       "/work/0/highlights/2",
+       "/work/0/highlights/1"
+      ]
+     },
+     {
+      "op": "reorder",
+      "path": "/work/0/highlights",
+      "text": "",
+      "order": [
+       2,
+       0,
+       1,
+       3
+      ],
+      "reason": "Leads with the Kafka pipeline and Kubernetes migration, which match the posting's core stack.",
+      "sources": [
+       "/work/0/highlights"
+      ]
+     },
+     {
+      "op": "replace",
+      "path": "/work/0/highlights/3",
+      "text": "Mentored a team of 5 engineers and introduced weekly architecture reviews.",
+      "order": [],
+      "reason": "Keeps the mentoring achievement intact, which supports the posting's mentoring requirement.",
+      "sources": [
+       "/work/0/highlights/3"
+      ]
+     },
+     {
+      "op": "replace",
+      "path": "/work/0/highlights/2",
+      "text": "Built the Kafka-based, event-driven ingestion pipeline processing 1.2B events per day for 300+ enterprise customers.",
+      "order": [],
+      "reason": "Uses the posting's \"event-driven\" phrasing for the Kafka streaming work.",
+      "sources": [
+       "/work/0/highlights/2"
+      ]
+     },
+     {
+      "op": "replace",
+      "path": "/work/0/highlights/0",
+      "text": "Led migration of 40+ microservices from EC2 to Kubernetes (EKS), cutting infrastructure spend by 28% ($410K per year) and giving services a consistent platform to run on.",
+      "order": [],
+      "reason": "Frames the Kubernetes migration as platform work, matching the platform engineering role.",
+      "sources": [
+       "/work/0/highlights/0"
+      ]
+     },
+     {
+      "op": "reorder",
+      "path": "/skills",
+      "text": "",
+      "order": [
+       1,
+       2,
+       0
+      ],
+      "reason": "Puts Kubernetes, Kafka and PostgreSQL groups ahead of general programming skills, matching the posting's emphasis.",
+      "sources": [
+       "/skills/1/name",
+       "/skills/2/name",
+       "/skills/0/name"
+      ]
+     },
+     {
+      "op": "reorder",
+      "path": "/skills/2/keywords",
+      "text": "",
+      "order": [
+       1,
+       0,
+       2,
+       3
+      ],
+      "reason": "Leads with Kafka and PostgreSQL, the two data technologies the posting names.",
+      "sources": [
+       "/skills/2/keywords"
+      ]
+     },
+     {
+      "op": "reorder",
+      "path": "/skills/0/keywords",
+      "text": "",
+      "order": [
+       0,
+       1,
+       3,
+       2
+      ],
+      "reason": "Keeps Go first and places SQL before TypeScript, which suits a backend payments role.",
+      "sources": [
+       "/skills/0/keywords"
+      ]
+     },
+     {
+      "op": "reorder",
+      "path": "/projects",
+      "text": "",
+      "order": [
+       0,
+       1
+      ],
+      "reason": "Keeps the pgshard Go and PostgreSQL project first, as it matches the posting best.",
+      "sources": [
+       "/projects/0/name",
+       "/projects/0/description"
+      ]
+     },
+     {
+      "op": "replace",
+      "path": "/projects/0/highlights/1",
+      "text": "Supports online resharding with zero downtime for PostgreSQL tables up to 2 TB.",
+      "order": [],
+      "reason": "Highlights PostgreSQL operations experience, which the posting asks for.",
+      "sources": [
+       "/projects/0/highlights/1",
+       "/projects/0/description"
+      ]
+     }
+    ]
+   },
+   "usage": {
+    "inputTokens": 2205,
+    "outputTokens": 1281,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 1583
+   }
+  },
+  "tailor-en-02": {
+   "promptHash": "025cf8a4026fcd24",
+   "output": {
+    "edits": [
+     {
+      "op": "replace",
+      "path": "/work/0/highlights/0",
+      "text": "Built a SKU-level demand-forecasting model for 14,000 SKUs that reduced stock-outs by 18% for a national grocery client.",
+      "order": [],
+      "reason": "Mirrors the posting's \"forecasting at SKU level\" requirement.",
+      "sources": [
+       "/work/0/highlights/0"
+      ]
+     },
+     {
+      "op": "replace",
+      "path": "/work/0/highlights/2",
+      "text": "Moved model training from notebooks to scheduled large-scale feature pipelines on Snowflake and dbt, cutting refresh time from 2 days to 3 hours.",
+      "order": [],
+      "reason": "Echoes the posting's focus on large-scale feature pipelines.",
+      "sources": [
+       "/work/0/highlights/2"
+      ]
+     },
+     {
+      "op": "replace",
+      "path": "/basics/summary",
+      "text": "Data scientist with six years of experience turning retail and loyalty data into pricing and forecasting decisions. Comfortable owning models end to end, from SQL and feature engineering to deployment and presenting findings to commercial stakeholders and leadership.",
+      "order": [],
+      "reason": "Uses the posting's wording on end-to-end ownership, commercial stakeholders and leadership.",
+      "sources": [
+       "/basics/summary"
+      ]
+     },
+     {
+      "op": "reorder",
+      "path": "/work/0/highlights",
+      "text": "",
+      "order": [
+       0,
+       1,
+       2,
+       3
+      ],
+      "reason": "Forecasting and pricing-related results already lead, matching the posting's priorities.",
+      "sources": [
+       "/work/0/highlights"
+      ]
+     },
+     {
+      "op": "replace",
+      "path": "/work/1/highlights/1",
+      "text": "Analysed 2 years of basket data to redesign promotional calendars (pricing and promotions) across 120 stores.",
+      "order": [],
+      "reason": "Connects retail pricing work to the posting's pricing focus.",
+      "sources": [
+       "/work/1/highlights/1"
+      ]
+     },
+     {
+      "op": "replace",
+      "path": "/work/1/highlights/2",
+      "text": "Ran A/B test experiments on email campaigns reaching 450,000 customers.",
+      "order": [],
+      "reason": "Mirrors the posting's \"run experiments\" responsibility.",
+      "sources": [
+       "/work/1/highlights/2"
+      ]
+     },
+     {
+      "op": "replace",
+      "path": "/work/0/highlights/1",
+      "text": "Designed uplift models for loyalty campaigns and presented findings to commercial stakeholders, adding an estimated £1.8M in annual incremental revenue.",
+      "order": [],
+      "reason": "Highlights stakeholder partnership from the posting.",
+      "sources": [
+       "/work/0/highlights/1",
+       "/basics/summary"
+      ]
+     }
+    ]
+   },
+   "usage": {
+    "inputTokens": 1798,
+    "outputTokens": 847,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 1583
+   }
+  },
+  "tailor-en-04": {
+   "promptHash": "4e863b825fef7b24",
+   "output": {
+    "edits": [
+     {
+      "op": "replace",
+      "path": "/basics/summary",
+      "text": "Compassionate critical care nurse with five years of experience in adult intensive care. Confident managing ventilated and multi-organ-support patients, supporting junior staff and students through mentoring, and leading quality improvement on the unit. Calm under pressure and committed to family-centred care.",
+      "order": [],
+      "reason": "Mirrors the posting's \"support junior staff and students\" and \"lead quality improvement\" wording.",
+      "sources": [
+       "/basics/summary",
+       "/work/0/highlights/2",
+       "/work/0/highlights/1"
+      ]
+     },
+     {
+      "op": "replace",
+      "path": "/work/0/highlights/2",
+      "text": "Support junior staff and mentor 6 student nurses per year as a practice assessor.",
+      "order": [],
+      "reason": "Mirrors \"support junior staff and students\" from the posting.",
+      "sources": [
+       "/work/0/highlights/2"
+      ]
+     },
+     {
+      "op": "replace",
+      "path": "/work/0/highlights/0",
+      "text": "Coordinate care and the shift for up to 4 level-3 patients per shift on a 24-bed unit.",
+      "order": [],
+      "reason": "Echoes the posting's \"coordinate the shift\" responsibility.",
+      "sources": [
+       "/work/0/highlights/0"
+      ]
+     },
+     {
+      "op": "reorder",
+      "path": "/work/0/highlights",
+      "text": "",
+      "order": [
+       1,
+       0,
+       2
+      ],
+      "reason": "Leads with the quality improvement project the posting asks for.",
+      "sources": [
+       "/work/0/highlights"
+      ]
+     },
+     {
+      "op": "reorder",
+      "path": "/skills/0/keywords",
+      "text": "",
+      "order": [
+       0,
+       2,
+       1,
+       3
+      ],
+      "reason": "Puts ventilator management and sepsis management first, as the posting requests.",
+      "sources": [
+       "/skills/0/keywords"
+      ]
+     }
+    ]
+   },
+   "usage": {
+    "inputTokens": 1716,
+    "outputTokens": 569,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 1583
+   }
+  },
+  "tailor-en-05": {
+   "promptHash": "f9052e57aa784a6d",
+   "output": {
+    "edits": [
+     {
+      "op": "replace",
+      "path": "/work/0/highlights/2",
+      "text": "Led user research: ran 40+ moderated usability sessions per year and set up a shared research repository.",
+      "order": [],
+      "reason": "Mirrors the posting's 'lead research' and 'user research' requirement.",
+      "sources": [
+       "/work/0/highlights/2"
+      ]
+     },
+     {
+      "op": "reorder",
+      "path": "/work/0/highlights",
+      "text": "",
+      "order": [
+       0,
+       1,
+       2
+      ],
+      "reason": "Onboarding redesign and design system lead, matching consumer finance and design system focus, already come first.",
+      "sources": [
+       "/work/0/highlights"
+      ]
+     },
+     {
+      "op": "replace",
+      "path": "/work/0/highlights/1",
+      "text": "Built and maintain the Fernway design system in Figma (300+ components), growing it across 9 product teams.",
+      "order": [],
+      "reason": "Echoes 'grow our design system in Figma' from the posting.",
+      "sources": [
+       "/work/0/highlights/1"
+      ]
+     },
+     {
+      "op": "replace",
+      "path": "/work/0/highlights/0",
+      "text": "Led the redesign of mobile onboarding for a consumer finance app, raising account-opening completion from 41% to 63%.",
+      "order": [],
+      "reason": "Highlights consumer finance experience and end-to-end ownership the posting values.",
+      "sources": [
+       "/work/0/highlights/0",
+       "/basics/summary"
+      ]
+     },
+     {
+      "op": "replace",
+      "path": "/work/1/highlights/1",
+      "text": "Partnered closely with engineers to ship an accessible component library meeting WCAG 2.1 AA.",
+      "order": [],
+      "reason": "Uses the posting's 'partner closely with engineers' wording.",
+      "sources": [
+       "/work/1/highlights/1"
+      ]
+     },
+     {
+      "op": "reorder",
+      "path": "/skills/1/keywords",
+      "text": "",
+      "order": [
+       0,
+       2,
+       1,
+       3
+      ],
+      "reason": "Puts design systems and research-related usability testing first, as the posting emphasizes.",
+      "sources": [
+       "/skills/1/keywords"
+      ]
+     }
+    ]
+   },
+   "usage": {
+    "inputTokens": 1707,
+    "outputTokens": 630,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 1583
+   }
+  },
+  "tailor-tr-01": {
+   "promptHash": "a0fa82e24aafb8be",
+   "output": {
+    "edits": [
+     {
+      "op": "replace",
+      "path": "/basics/label",
+      "text": "Kıdemli Backend Geliştirici (Ödeme Sistemleri)",
+      "order": [],
+      "reason": "İlanın unvanı olan \"Kıdemli Backend Geliştirici (Ödeme Sistemleri)\" ifadesini yansıtır.",
+      "sources": [
+       "/basics/label",
+       "/work/0/position",
+       "/basics/summary"
+      ]
+     },
+     {
+      "op": "replace",
+      "path": "/basics/summary",
+      "text": "Yüksek trafikli ödeme altyapıları ve dağıtık sistemler üzerinde 8 yıllık backend deneyimine sahip bir geliştiriciyim. Go ve Java ile yüksek trafikli mikroservisler geliştiriyor, Kubernetes üzerinde çalışan servislerin güvenilirliğini artırıyor ve PostgreSQL ile çalışıyorum.",
+      "order": [],
+      "reason": "İlandaki \"yüksek trafikli mikroservisler\" ve \"güvenilirliğini artırmak\" ifadelerini kullanır.",
+      "sources": [
+       "/basics/summary",
+       "/work/0/highlights/0"
+      ]
+     },
+     {
+      "op": "replace",
+      "path": "/work/0/highlights/2",
+      "text": "Kubernetes üzerinde günde 3 milyon işlem işleyen servislerin güvenilirliğini artırmak için nöbet ve alarm süreçlerini kurdum.",
+      "order": [],
+      "reason": "İlandaki \"Kubernetes üzerinde çalışan servislerin güvenilirliğini artırmak\" sorumluluğuyla eşleşir.",
+      "sources": [
+       "/work/0/highlights/2"
+      ]
+     },
+     {
+      "op": "reorder",
+      "path": "/work/0/highlights",
+      "text": "",
+      "order": [
+       2,
+       0,
+       1,
+       3
+      ],
+      "reason": "İlanın öncelik verdiği Kubernetes ve yüksek trafik deneyimini öne çıkarır.",
+      "sources": [
+       "/work/0/highlights"
+      ]
+     },
+     {
+      "op": "reorder",
+      "path": "/skills",
+      "text": "",
+      "order": [
+       0,
+       2,
+       1
+      ],
+      "reason": "İlandaki Go, Java ve PostgreSQL öne çıksın diye programlama ve veritabanı gruplarını öne alır.",
+      "sources": [
+       "/skills"
+      ]
+     },
+     {
+      "op": "remove",
+      "path": "/skills/0/keywords/2",
+      "text": "",
+      "order": [],
+      "reason": "Kotlin ilandaki gereksinimlerle ilgili değildir.",
+      "sources": [
+       "/skills/0/keywords/2"
+      ]
+     }
+    ]
+   },
+   "usage": {
+    "inputTokens": 2251,
+    "outputTokens": 842,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 1583
+   }
+  },
+  "tailor-tr-02": {
+   "promptHash": "ca6ab2335b4ea027",
+   "output": {
+    "edits": [
+     {
+      "op": "replace",
+      "path": "/basics/summary",
+      "text": "Tüketici markalarında 8 yıllık performans pazarlama ve dijital pazarlama deneyimi. Veriye dayalı kampanya kurgusu, büyük reklam bütçelerinin yönetimi, SEO çalışmaları ve ajans koordinasyonu konularında uzmanım; ekiplerimle birlikte ölçülebilir büyüme hedeflerine odaklanırım.",
+      "order": [],
+      "reason": "İlanın \"performans pazarlama\", \"SEO\" ve \"ajanslarla çalışma\" ifadelerini yansıtır.",
+      "sources": [
+       "/basics/summary"
+      ]
+     },
+     {
+      "op": "replace",
+      "path": "/work/0/highlights/0",
+      "text": "Yıllık ₺12.000.000 performans kampanyası bütçesini yöneterek ROAS'ı 3,1'den 4,6'ya çıkardım.",
+      "order": [],
+      "reason": "İlandaki \"performans kampanyalarının bütçesini yönetme\" beklentisiyle örtüşür.",
+      "sources": [
+       "/work/0/highlights/0"
+      ]
+     },
+     {
+      "op": "replace",
+      "path": "/work/0/highlights/2",
+      "text": "5 kişilik pazarlama ekibini yönettim ve 2 dış ajansla birlikte çalışarak kampanyaları koordine ettim.",
+      "order": [],
+      "reason": "İlandaki ekip yönetimi ve ajanslarla çalışma gereksinimini vurgular.",
+      "sources": [
+       "/work/0/highlights/2"
+      ]
+     },
+     {
+      "op": "replace",
+      "path": "/work/0/highlights/3",
+      "text": "HubSpot ile CRM ve pazarlama otomasyonu kurarak sepet terk oranını %12 düşürdüm.",
+      "order": [],
+      "reason": "İlandaki HubSpot ve CRM koordinasyonu beklentisine karşılık gelir.",
+      "sources": [
+       "/work/0/highlights/3"
+      ]
+     },
+     {
+      "op": "reorder",
+      "path": "/work/0/highlights",
+      "text": "",
+      "order": [
+       0,
+       1,
+       3,
+       2
+      ],
+      "reason": "İlanın öne çıkardığı bütçe, SEO ve CRM çalışmalarını ekip yönetiminden önce gösterir.",
+      "sources": [
+       "/work/0/highlights"
+      ]
+     }
+    ]
+   },
+   "usage": {
+    "inputTokens": 1842,
+    "outputTokens": 774,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 1583
+   }
+  },
+  "tailor-tr-04": {
+   "promptHash": "16f0e6c37b2f5b11",
+   "output": {
+    "edits": [
+     {
+      "op": "replace",
+      "path": "/basics/summary",
+      "text": "Üretim sektöründe 10 yıla yakın deneyime sahip bir İK profesyoneliyim. İşe alım, performans yönetimi, ücret yönetimi ve çalışan bağlılığı projelerinde saha yöneticileriyle yakın çalışır, İK süreçlerini dijitalleştirmeyi severim.",
+      "order": [],
+      "reason": "İlanın 'işe alım, performans yönetimi, ücret yönetimi ve çalışan bağlılığı' ifadelerini ve üretim sektörü deneyimi vurgusunu yansıtır.",
+      "sources": [
+       "/basics/summary",
+       "/work/0/highlights/3"
+      ]
+     },
+     {
+      "op": "replace",
+      "path": "/work/0/highlights/0",
+      "text": "1.200 çalışanlı üretim tesisinin İK iş ortaklığını yürütüyorum; saha yöneticileriyle işe alım, performans yönetimi ve çalışan bağlılığı süreçlerinde çalışıyorum.",
+      "order": [],
+      "reason": "İlandaki işe alım, performans yönetimi ve çalışan bağlılığı sorumluluklarıyla eşleşir.",
+      "sources": [
+       "/work/0/highlights/0",
+       "/basics/summary"
+      ]
+     },
+     {
+      "op": "replace",
+      "path": "/work/0/highlights/3",
+      "text": "Yıllık ücret artış bütçesi planlamasında finans ekibiyle birlikte çalışarak ücret yönetimi süreçlerine katkı sağladım.",
+      "order": [],
+      "reason": "İlandaki 'ücret yönetimi' sorumluluğunu yansıtır.",
+      "sources": [
+       "/work/0/highlights/3"
+      ]
+     },
+     {
+      "op": "reorder",
+      "path": "/work/0/highlights",
+      "text": "",
+      "order": [
+       0,
+       2,
+       1,
+       3
+      ],
+      "reason": "Mavi yaka işten ayrılma oranını düşüren çalışan bağlılığı sonucu ilan için öne çıkar.",
+      "sources": [
+       "/work/0/highlights/2"
+      ]
+     },
+     {
+      "op": "reorder",
+      "path": "/skills/0/keywords",
+      "text": "",
+      "order": [
+       0,
+       1,
+       3,
+       2
+      ],
+      "reason": "İlandaki beceri sırasına (işe alım, performans yönetimi, bordro) uyar.",
+      "sources": [
+       "/skills/0/keywords"
+      ]
+     },
+     {
+      "op": "reorder",
+      "path": "/skills/1/keywords",
+      "text": "",
+      "order": [
+       0,
+       2,
+       1
+      ],
+      "reason": "SAP SuccessFactors deneyimi ilandaki İK sistemi bilgisiyle en ilgili beceridir.",
+      "sources": [
+       "/skills/1/keywords"
+      ]
+     }
+    ]
+   },
+   "usage": {
+    "inputTokens": 1916,
+    "outputTokens": 884,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 1583
+   }
+  },
+  "tailor-tr-05": {
+   "promptHash": "9c4cf4712df5524e",
+   "output": {
+    "edits": [
+     {
+      "op": "replace",
+      "path": "/work/0/highlights/2",
+      "text": "Okulun Erasmus+ değişim projesini koordine ederek okulun uluslararası değişim programlarına katkı sağladım.",
+      "order": [],
+      "reason": "İlanın \"exchange programmes\" katkı beklentisini yansıtır.",
+      "sources": [
+       "/work/0/highlights/2"
+      ]
+     },
+     {
+      "op": "reorder",
+      "path": "/work/0/highlights",
+      "text": "",
+      "order": [
+       1,
+       0,
+       2
+      ],
+      "reason": "İlanın öne çıkardığı Cambridge sınavı hazırlığı başarısını öne alır.",
+      "sources": [
+       "/work/0/highlights/0",
+       "/work/0/highlights/1",
+       "/work/0/highlights/2"
+      ]
+     },
+     {
+      "op": "replace",
+      "path": "/work/0/highlights/0",
+      "text": "Lise hazırlık ve 9. sınıflarda 120 öğrenciye haftada 24 saat İngilizce dil dersi veriyorum.",
+      "order": [],
+      "reason": "İlandaki \"English language\" ifadesiyle uyum sağlar.",
+      "sources": [
+       "/work/0/highlights/0"
+      ]
+     }
+    ]
+   },
+   "usage": {
+    "inputTokens": 1730,
+    "outputTokens": 382,
+    "cacheWriteTokens": 0,
+    "cacheReadTokens": 1583
+   }
+  }
+ }
+}

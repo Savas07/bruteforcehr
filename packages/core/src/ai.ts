@@ -174,5 +174,10 @@ export const AI_ERROR_REASONS = [
   "ai_unavailable",
   /** `internal`: the model's reply could not be used (refusal or invalid output). */
   "ai_invalid_output",
+  /** `not-found`: the CV, CV revision or job of a `cvTailor` / `coverLetterDraft` request doesn't exist. */
+  "cv_not_found",
+  "job_not_found",
+  /** `not-found`: `coverLetterDraft`'s `templateId` is neither a starter template nor one of the user's. */
+  "template_not_found",
 ] as const;
 export type AiErrorReason = (typeof AI_ERROR_REASONS)[number];

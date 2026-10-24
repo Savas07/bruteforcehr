@@ -127,6 +127,23 @@ service cloud.firestore {
           && changedKeys().hasOnly(['name', 'careersUrl', 'enabled', 'updatedAt']);
       }
 
+      // Answers library of the external-apply kit (ADR 0002 "M4 Apply addendum"). Mirrors
+      // ANSWER_KINDS, ANSWER_LABEL_MAX, ANSWER_VALUES_MAX and ANSWER_COUNTRIES_MAX in @bfhr/core.
+      function answerValid() {
+        let answer = request.resource.data;
+        return answer.kind in ['work_authorization', 'notice_period', 'salary_expectation', 'link', 'qa']
+          && answer.label is string && answer.label.size() >= 1 && answer.label.size() <= 200
+          && answer.values is list && answer.values.size() >= 1 && answer.values.size() <= 6
+          && answer.countries is list && answer.countries.size() <= 30
+          && (answer.currency == null || (answer.currency is string && answer.currency.matches('^[A-Z]{3}$')))
+          && answer.position is int;
+      }
+
+      match /answers/{answerId} {
+        allow read, delete: if isOwner(uid);
+        allow create, update: if isOwner(uid) && answerValid();
+      }
+
       // Mail connection status; credentials live under serverOnly/**.
       match /mailAccounts/{accountId} {
         allow read: if isOwner(uid);

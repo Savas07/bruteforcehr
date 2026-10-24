@@ -45,6 +45,7 @@ describe("round trips every populated fixture document", () => {
     ["cv", populatedDataset.cvs, (id: string) => firestorePaths.cv(uid, id)],
     ["renderedFile", populatedDataset.renderedFiles, (id: string) => firestorePaths.renderedFile(uid, id)],
     ["coverLetter", populatedDataset.coverLetters, (id: string) => firestorePaths.coverLetter(uid, id)],
+    ["answer", populatedDataset.answers, (id: string) => firestorePaths.answer(uid, id)],
     ["job", populatedDataset.jobs, (id: string) => firestorePaths.job(uid, id)],
     ["jobMatch", populatedDataset.jobMatches, (id: string) => firestorePaths.jobMatch(uid, id)],
     ["savedSearch", populatedDataset.savedSearches, (id: string) => firestorePaths.savedSearch(uid, id)],

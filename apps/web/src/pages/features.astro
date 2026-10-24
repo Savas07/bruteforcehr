@@ -1,0 +1,459 @@
+---
+/**
+ * Features (website.md › Features). One spotlight per part of the app, alternating copy and media:
+ * bold-lead captions (Apple b53be87c), stacked CV cards for variants (Berd 46db817d), and from
+ * 1280 px a sticky list of sub-features beside its screenshots (Intercom fe15fe44, without the
+ * JavaScript tab switch: every screenshot stays visible). Then the qualities every platform shares
+ * (Linear 940a02f4, Beside f343155a grid), the job sources as a static chip cloud generated from
+ * the connector registry (Cloudstudio e7cc2489, reduced: no physics), and a calm closing CTA.
+ * Screenshots are real captures with sample data (src/screens.ts).
+ */
+import { BOARD_CONNECTORS, SEARCH_CONNECTORS } from "@bfhr/jobs-connectors";
+import DownloadCta from "../components/DownloadCta.astro";
+import ThemedScreenshot from "../components/ThemedScreenshot.astro";
+import SiteLayout from "../layouts/SiteLayout.astro";
+import { getLatestRelease } from "../releases.ts";
+import { type ScreenName, screens } from "../screens.ts";
+
+const latest = await getLatestRelease();
+
+interface Shot {
+  screen: ScreenName;
+  caption: string;
+}
+
+interface Spotlight {
+  id: string;
+  label: string;
+  title: string;
+  points: readonly { lead: string; text: string }[];
+  /** Desktop screens: the first leads, the rest follow under it (CV Studio stacks them instead). */
+  shots: readonly Shot[];
+  /** iPhone screens, side by side under the desktop ones. */
+  phones: readonly Shot[];
+  guide: string;
+}
+
+const spotlights: Spotlight[] = [
+  {
+    id: "jobs",
+    label: "Jobs",
+    title: "Jobs that fit, from everywhere",
+    points: [
+      {
+        lead: "Many job sites, one list.",
+        text: "Job boards, job APIs and the careers pages of companies you follow. A job posted on several sites shows up once.",
+      },
+      {
+        lead: "A match you can check.",
+        text: "Every job shows how well it fits, from Stretch to Strong, and checks each requirement against a quote from the posting.",
+      },
+      {
+        lead: "Searches that run for you.",
+        text: "Save a search and it checks every hour, day or week, and tells you about new matches above the score you choose.",
+      },
+      {
+        lead: "Save from anywhere.",
+        text: "Paste a link on Mac or Windows, or share a page from Safari on iPhone. You check the details before anything is saved.",
+      },
+    ],
+    shots: [
+      { screen: "macJobs", caption: "Every requirement, with the line from the posting it came from." },
+      { screen: "macSavedSearches", caption: "Saved searches with their schedule and alerts." },
+    ],
+    phones: [
+      { screen: "iphoneJobs", caption: "Your matches, ranked by fit." },
+      { screen: "iphoneShareSheet", caption: "Save a job from Safari's share sheet." },
+    ],
+    guide: "/guide/jobs/",
+  },
+  {
+    id: "cvs",
+    label: "CV Studio",
+    title: "One CV, a version for every role",
+    points: [
+      {
+        lead: "Bring the CV you have.",
+        text: "Import a PDF, Word file, JSON Resume or your LinkedIn export. Anything we weren't sure about is marked for you to check.",
+      },
+      {
+        lead: "Versions that stay linked.",
+        text: "Copy a CV for another role or language. When you change the original, the copy shows you where.",
+      },
+      {
+        lead: "Suggestions that keep your facts.",
+        text: "Rewrite, shorten, translate or find a stronger verb. Nothing is invented, and nothing changes until you accept it.",
+      },
+      {
+        lead: "Ready for application systems.",
+        text: "One-column templates with real text, a keyword check against the job, and export to PDF, Word or JSON Resume.",
+      },
+    ],
+    shots: [
+      { screen: "macCvEditor", caption: "A base CV and its German version, with a live A4 preview." },
+      { screen: "windowsCvEditor", caption: "Suggestions to review, one by one." },
+    ],
+    phones: [{ screen: "iphoneCvEditor", caption: "Edit and preview on the go." }],
+    guide: "/guide/cv-studio/",
+  },
+  {
+    id: "apply",
+    label: "Apply",
+    title: "Apply in a few steps, with a record of each",
+    points: [
+      {
+        lead: "On the company's site.",
+        text: "Their form opens in your browser. When you're back, one question puts the application in your Tracker.",
+      },
+      {
+        lead: "Or by email.",
+        text: "The address and a first message come from the posting, in its language, with your CV and an optional cover letter as PDFs.",
+      },
+      {
+        lead: "Time to change your mind.",
+        text: "You review every email and press Send yourself. It then waits 10 seconds, with Undo, before it goes.",
+      },
+      {
+        lead: "The exact files, kept.",
+        text: "Your Tracker keeps the CV version and cover letter you sent with each application.",
+      },
+    ],
+    shots: [{ screen: "macApply", caption: "Apply by email, written in the language of the posting." }],
+    phones: [{ screen: "iphoneApply", caption: "Pick the CV, a cover letter and how to send." }],
+    guide: "/guide/apply/",
+  },
+  {
+    id: "tracker",
+    label: "Tracker",
+    title: "Every application, from saved to offer",
+    points: [
+      {
+        lead: "Board, table and calendar.",
+        text: "Drag cards between stages, sort and update many rows at once, or see interviews and deadlines by month.",
+      },
+      {
+        lead: "The whole story of each application.",
+        text: "Every change, email, interview round, contact and note in one timeline, each marked with where it came from.",
+      },
+      {
+        lead: "Gentle nudges.",
+        text: "A follow-up suggestion when a week passes without a reply. An application is only marked “No response” when you say so.",
+      },
+      {
+        lead: "Bring your spreadsheet.",
+        text: "Import the applications you tracked in Excel, Google Sheets or Numbers, with column names in English, Turkish or German.",
+      },
+    ],
+    shots: [
+      { screen: "windowsTrackerTable", caption: "The table, with the columns you choose." },
+      { screen: "macApplicationDetail", caption: "One application: stages, timeline, interview and reminder." },
+      { screen: "windowsTrackerCalendar", caption: "Interviews, deadlines and follow-ups by month." },
+    ],
+    phones: [{ screen: "iphoneTracker", caption: "Your pipeline, stage by stage." }],
+    guide: "/guide/tracker/",
+  },
+  {
+    id: "mail",
+    label: "Mail",
+    title: "Email that keeps your Tracker up to date",
+    points: [
+      {
+        lead: "Your inbox, read for job mail only.",
+        text: "Gmail, Outlook, iCloud Mail, Yahoo, Yandex, GMX, WEB.DE or any IMAP account. Other emails are skipped and never stored.",
+      },
+      {
+        lead: "Finds what you already sent.",
+        text: "The first scan looks back up to 180 days for applications and interview invites, and you choose what to add.",
+      },
+      {
+        lead: "Suggests, you decide.",
+        text: "When it isn't sure what an email means, it asks you to Confirm, Change it or mark it Not job mail. On a computer, each is one key.",
+      },
+      {
+        lead: "Every change has a reason and Undo.",
+        text: "When an email moves an application, you see which email it was and can undo it.",
+      },
+    ],
+    shots: [
+      { screen: "macMailReview", caption: "An email to review, with what it means for the application." },
+      { screen: "macMailConnect", caption: "Connect an inbox, and see what's read." },
+    ],
+    phones: [{ screen: "iphoneMailReview", caption: "Emails to review, with what each one means." }],
+    guide: "/guide/mail/",
+  },
+  {
+    id: "insights",
+    label: "Insights",
+    title: "See what's working",
+    points: [
+      {
+        lead: "How far your applications get.",
+        text: "Response, interview and offer rates, and the median time to a first reply.",
+      },
+      {
+        lead: "Where replies come from.",
+        text: "Compare by job source, how you applied, the CV variant you sent, or the market.",
+      },
+      {
+        lead: "From a number to the applications.",
+        text: "Every number opens the applications behind it in the Tracker.",
+      },
+    ],
+    shots: [{ screen: "macInsights", caption: "Key numbers and the funnel for the last 90 days." }],
+    phones: [{ screen: "iphoneInsights", caption: "Key numbers and the funnel for the last 12 weeks." }],
+    guide: "/guide/insights/",
+  },
+];
+
+const qualities = [
+  { title: "iPhone, Mac and Windows", text: "One account. Sign in with the same email address and everything is on every device." },
+  { title: "Works offline", text: "Changes are saved on your device and sync when you're back online." },
+  { title: "Keyboard first", text: "A command palette and shortcuts on every screen of the Mac and Windows app.", href: "/guide/keyboard-shortcuts/" },
+  { title: "Light and dark", text: "Follows your system, or pick one in Settings." },
+  { title: "English, Turkish and German", text: "The app, your CVs and email recognition work in all three." },
+  { title: "Updates itself", text: "The desktop app installs signed updates when you restart. iPhone updates come through TestFlight." },
+  { title: "Your data, your call", text: "Export everything as a ZIP file, or delete your account and all its data.", href: "/guide/data-and-privacy/" },
+  { title: "Stored in the EU", text: "With Google Cloud in Belgium. Never sold or used for ads." },
+] as const;
+
+const searchSources = SEARCH_CONNECTORS.map((connector) => ({ label: connector.label, keyed: connector.kind === "keyed" }));
+// The generic careers-page reader (`web`) is listed as its own chip after the ATS boards.
+const boardSources = BOARD_CONNECTORS.filter((connector) => connector.id !== "web").map(
+  (connector) => connector.label,
+);
+
+const eyebrow = "font-mono text-subheadline text-accent-text";
+const chip =
+  "inline-flex min-h-9 items-center rounded-full border border-line-subtle bg-surface-base px-4 text-prose text-fg-primary";
+---
+
+<SiteLayout
+  title="Features"
+  description="What BruteForceHR does: jobs that fit with a match you can check, CVs for every role, applying on the company site or by email, a tracker and email that keeps it up to date."
+>
+  <div class="mx-auto max-w-6xl px-5 pt-10 md:px-6 md:pt-16">
+    <header class="max-w-3xl">
+      <h1 class="font-display text-display text-fg-primary">Features</h1>
+      <p class="mt-4 text-lead text-fg-secondary">
+        Find jobs that fit, tailor your CV, apply and keep track of every application, with email that keeps it up to
+        date. On iPhone, Mac and Windows, and nothing happens without you.
+      </p>
+      <nav aria-label="Features on this page" class="mt-6">
+        <ul class="flex flex-wrap gap-2">
+          {
+            spotlights.map((spotlight) => (
+              <li>
+                <a
+                  href={`#${spotlight.id}`}
+                  class="inline-flex min-h-11 items-center rounded-full border border-line-control px-4 text-prose text-fg-primary transition-colors duration-(--bfhr-duration-fast) ease-standard hover:bg-surface-hover"
+                >
+                  {spotlight.label}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </nav>
+    </header>
+
+    {
+      spotlights.map((spotlight, index) => {
+        const [lead, ...rest] = spotlight.shots;
+        const stacked = spotlight.id === "cvs";
+        return (
+          <section
+            id={spotlight.id}
+            aria-labelledby={`${spotlight.id}-title`}
+            class:list={[
+              "mt-20 border-t border-line-subtle pt-12 md:mt-28 md:pt-16 xl:grid xl:gap-16",
+              index % 2 === 1
+                ? "xl:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]"
+                : "xl:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]",
+            ]}
+          >
+            <div class:list={["xl:sticky xl:top-28 xl:self-start", index % 2 === 1 && "xl:order-2"]}>
+              <p class={eyebrow}>{spotlight.label}</p>
+              <h2 id={`${spotlight.id}-title`} class="mt-3 font-display text-section text-fg-primary">
+                {spotlight.title}
+              </h2>
+              <ul class="mt-8 max-w-[60ch] space-y-5">
+                {spotlight.points.map((point) => (
+                  <li class="border-l-2 border-accent-solid pl-4 text-prose text-fg-secondary">
+                    <strong class="font-semibold text-fg-primary">{point.lead}</strong> {point.text}
+                  </li>
+                ))}
+              </ul>
+              <p class="mt-6 text-prose">
+                <a class="prose-link inline-flex min-h-11 items-center" href={spotlight.guide}>
+                  How {spotlight.label} works<span class="sr-only">, in the User guide</span>
+                </a>
+              </p>
+            </div>
+
+            <div class="mt-10 xl:mt-0">
+              {lead && stacked ? (
+                <div class="feature-stack">
+                  {rest.map((shot) => (
+                    <figure class="feature-stack-back hidden md:block" aria-hidden="true">
+                      <ThemedScreenshot
+                        light={screens[shot.screen].light}
+                        dark={screens[shot.screen].dark}
+                        alt=""
+                        widths={[480, 800, 1280]}
+                        sizes="(min-width: 1280px) 560px, 70vw"
+                        class="h-auto w-full rounded-lg border border-line-subtle shadow-raised"
+                      />
+                    </figure>
+                  ))}
+                  <figure class="feature-stack-front">
+                    <ThemedScreenshot
+                      light={screens[lead.screen].light}
+                      dark={screens[lead.screen].dark}
+                      alt={screens[lead.screen].alt}
+                      widths={[480, 800, 1280]}
+                      sizes="(min-width: 1280px) 560px, (min-width: 768px) 70vw, 92vw"
+                      class="h-auto w-full rounded-lg border border-line-subtle shadow-overlay"
+                    />
+                    <figcaption class="mt-3 text-subheadline text-fg-secondary">
+                      <span class="font-semibold text-fg-primary">{screens[lead.screen].device}.</span> {lead.caption}
+                      {rest.map((shot) => (
+                        <span class="hidden md:inline">
+                          {" "}
+                          Behind it: {screens[shot.screen].device}. {shot.caption}
+                        </span>
+                      ))}
+                    </figcaption>
+                  </figure>
+                </div>
+              ) : (
+                <div class="space-y-8">
+                  {spotlight.shots.map((shot) => (
+                    <figure>
+                      <ThemedScreenshot
+                        light={screens[shot.screen].light}
+                        dark={screens[shot.screen].dark}
+                        alt={screens[shot.screen].alt}
+                        widths={[480, 800, 1280]}
+                        sizes="(min-width: 1280px) 650px, 92vw"
+                        class="h-auto w-full rounded-lg border border-line-subtle shadow-raised"
+                      />
+                      <figcaption class="mt-3 text-subheadline text-fg-secondary">
+                        <span class="font-semibold text-fg-primary">{screens[shot.screen].device}.</span> {shot.caption}
+                      </figcaption>
+                    </figure>
+                  ))}
+                </div>
+              )}
+              {spotlight.phones.length > 0 && (
+                <div
+                  class:list={[
+                    "mt-10 grid gap-x-6 gap-y-8",
+                    spotlight.phones.length > 1 ? "max-w-xl grid-cols-2" : "max-w-[11rem] md:max-w-[16rem]",
+                  ]}
+                >
+                  {spotlight.phones.map((shot) => (
+                    <figure>
+                      <ThemedScreenshot
+                        light={screens[shot.screen].light}
+                        dark={screens[shot.screen].dark}
+                        alt={screens[shot.screen].alt}
+                        widths={[320, 640]}
+                        sizes="(min-width: 768px) 256px, 42vw"
+                        class="h-auto w-full rounded-[1.75rem] border border-line-subtle shadow-raised"
+                      />
+                      <figcaption class="mt-3 text-subheadline text-fg-secondary">
+                        <span class="font-semibold text-fg-primary">{screens[shot.screen].device}.</span> {shot.caption}
+                      </figcaption>
+                    </figure>
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
+        );
+      })
+    }
+
+    <p class="mt-10 text-subheadline text-fg-tertiary">Screens show sample data.</p>
+
+    <section aria-labelledby="everywhere-title" class="mt-20 md:mt-28">
+      <div class="max-w-3xl">
+        <p class={eyebrow}>On every device</p>
+        <h2 id="everywhere-title" class="mt-3 font-display text-section text-fg-primary">Built for the long haul</h2>
+      </div>
+      <ul class="mt-10 grid border-t border-l border-line-subtle md:grid-cols-2 xl:grid-cols-4">
+        {
+          qualities.map((quality) => (
+            <li class="border-r border-b border-line-subtle p-6">
+              <h3 class="text-headline text-fg-primary">{quality.title}</h3>
+              <p class="mt-2 text-prose text-fg-secondary">{quality.text}</p>
+              {"href" in quality && (
+                <a class="prose-link mt-2 inline-flex min-h-11 items-center text-prose" href={quality.href}>
+                  Learn more<span class="sr-only"> about {quality.title.toLowerCase()}</span>
+                </a>
+              )}
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+
+    <section id="sources" aria-labelledby="sources-title" class="mt-20 md:mt-28">
+      <div class="max-w-3xl">
+        <p class={eyebrow}>Job sources</p>
+        <h2 id="sources-title" class="mt-3 font-display text-section text-fg-primary">Where jobs come from</h2>
+        <p class="mt-4 text-lead text-fg-secondary">
+          Jobs searches these sites for you, politely and within their limits. Sources marked with a key start working
+          once the app's owner adds an access key; Settings › Job sources shows which are on.
+        </p>
+      </div>
+      <h3 class="mt-10 text-title2 text-fg-primary">Job boards and job APIs</h3>
+      <ul class="mt-4 flex flex-wrap gap-2">
+        {
+          searchSources.map((source) => (
+            <li class={chip}>
+              {source.label}
+              {source.keyed && (
+                <>
+                  <svg class="ml-2 size-4 text-fg-secondary" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path
+                      d="M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                    <circle cx="16.5" cy="7.5" r="1" fill="currentColor" />
+                  </svg>
+                  <span class="sr-only"> (needs an access key)</span>
+                </>
+              )}
+            </li>
+          ))
+        }
+      </ul>
+      <h3 class="mt-8 text-title2 text-fg-primary">Careers pages of companies you follow</h3>
+      <ul class="mt-4 flex flex-wrap gap-2">
+        {boardSources.map((label) => <li class={chip}>{label}</li>)}
+        <li class={chip}>Careers pages that list their jobs</li>
+      </ul>
+      <p class="mt-6 max-w-3xl text-prose text-fg-secondary">
+        Plus job alert emails from any site, once you connect your inbox, and any posting you add from a link.
+      </p>
+    </section>
+
+    <section aria-labelledby="closing-title" class="mt-20 md:mt-28">
+      <div class="rounded-xl border border-line-subtle bg-surface-base px-5 py-12 text-center shadow-raised md:px-10 md:py-16">
+        <h2 id="closing-title" class="font-display text-section text-fg-primary">Try it on your own job search</h2>
+        <p class="mx-auto mt-4 max-w-[52ch] text-lead text-fg-secondary">
+          Free, and invite-only for now. The <a class="prose-link" href="/guide/">User guide</a> walks you through
+          setting it up.
+        </p>
+        <div class="mt-8">
+          <DownloadCta latest={latest} />
+        </div>
+      </div>
+    </section>
+  </div>
+</SiteLayout>

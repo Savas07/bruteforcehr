@@ -130,6 +130,14 @@ public struct SettingsScreen<DataPrivacy: View>: View {
                         }
                     }
                     .accessibilityIdentifier("settings.ai")
+                    NavigationLink(value: SettingsRoute.answers) {
+                        SettingsRow(AnswersStrings.title, glyph: "text.badge.checkmark", tile: BFHRTone.success.solid) {
+                            loaded {
+                                if !model.answers.isEmpty { Text(AnswersStrings.count(model.answers.count)) }
+                            }
+                        }
+                    }
+                    .accessibilityIdentifier("settings.answers")
                     Button(action: openAppSettings) {
                         SettingsRow(SettingsStrings.language, glyph: "globe", tile: BFHRTone.info.solid) {
                             Text(verbatim: Self.languageName(locale: locale))
@@ -203,6 +211,7 @@ public struct SettingsScreen<DataPrivacy: View>: View {
                 case .notifications: NotificationsPage(model: model)
                 case .ai: AISettingsPage(model: model)
                 case .dataPrivacy: dataPrivacy?()
+                case .answers: AnswersLibraryPage(model: model)
                 }
             }
             .bfhrToastHost()

@@ -47,7 +47,7 @@ private struct ApplyPresentations: ViewModifier {
                 model.openedMailLink()
             }
             .sheet(isPresented: Binding(get: { composesMail && MFMailComposeViewController.canSendMail() }, set: { composesMail = $0 })) {
-                MailComposeView(draft: model.email, files: model.files.files) { result in
+                MailComposeView(draft: model.email, files: model.attachments) { result in
                     composesMail = false
                     guard result == .sent else { return }
                     if let toast = try? model.sentFromMail() { toasts?.show(toast) }
@@ -83,7 +83,7 @@ struct SafariView: UIViewControllerRepresentable {
     func updateUIViewController(_ controller: SFSafariViewController, context: Context) {}
 }
 
-/// Mail's compose sheet, prefilled, with the CV and cover letter PDFs attached.
+/// Mail's compose sheet, prefilled, with the CV and cover letter PDFs and the extra attachments.
 struct MailComposeView: UIViewControllerRepresentable {
     let draft: ApplyEmailDraft
     let files: [ApplyFile]
@@ -97,8 +97,8 @@ struct MailComposeView: UIViewControllerRepresentable {
         controller.setToRecipients([draft.to])
         controller.setSubject(draft.subject)
         controller.setMessageBody(draft.body, isHTML: false)
-        for file in files {
-            controller.addAttachmentData(file.data, mimeType: "application/pdf", fileName: file.fileName)
+        for file in files where !file.data.isEmpty {
+            controller.addAttachmentData(file.data, mimeType: file.mimeType, fileName: file.fileName)
         }
         return controller
     }
@@ -125,6 +125,10 @@ public final class DeviceApplyRenderer: ApplyRenderer {
 
     public init(engine: CVRenderEngine) {
         self.engine = engine
+    }
+
+    public func cvHTML(_ content: CvContent, language: String) throws -> CVRenderedHTML {
+        try engine.render(CVRenderInput(content: content, locale: language))
     }
 
     public func cvPDF(_ revision: CvRevision, language: String) async throws -> (fileName: String, data: Data) {

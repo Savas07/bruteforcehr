@@ -24,6 +24,7 @@ public struct FixtureDocument: Decodable, Sendable {
     public let cvRevisions: [CvRevision]
     public let renderedFiles: [RenderedFile]
     public let coverLetters: [CoverLetter]
+    public let answers: [Answer]
     public let jobs: [Job]
     public let jobMatches: [JobMatch]
     public let savedSearches: [SavedSearch]

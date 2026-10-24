@@ -419,6 +419,15 @@ Explicitly **not stored**:
 - **Why:** without it the sidebar was unreachable by Tab on macOS even with Keyboard navigation on (that setting doesn't cover links in a web view). Forcing buttons into the Tab order would diverge from native Mac apps.
 - **Affects:** sidebar, every desktop screen ([keyboard-pass.md](critiques/desktop/keyboard-pass.md)); `src-tauri/src/window.rs`.
 
+## Apply (M4 iPhone)
+
+### D48 · iPhone Apply: AI pages inside the sheet, the kit asks last, no per-card Edit
+
+- **Options:** (a) research/apply.md as written: "Did you submit?" as an inline card at the top of the kit, an **Edit** button on every tailoring card, cover letter templates managed in Settings; (b) the owner's M4 order for the kit (files, cover letter, answers, *then* "Did you apply?"), the same review controls as the desktop, templates managed where letters are written.
+- **Decision:** (b). "Tailor for this job" and the cover letter editor are pages of the Apply sheet (Back returns to the checklist; swipe-down is off while they're open). In the kit the CV PDF (Save to Files, Share), the cover letter (Copy, Share) and the answers (Copy per row, the toast names the item) come first; back from Safari, "Did you apply?" replaces "Open company site again" in the sticky bottom bar, so it's always in view without pushing the files down. Tailoring cards offer Accept / Keep original (plus Accept all, D44, and Keep original for the rest); a suggestion with a `[gap]` can only be kept, and the real figure goes into the CV in CV Studio. "Save as template" lives in the editor; there is no separate template manager. The saved tailored version is listed under its CV in the checklist ("Tailored for this job"), preselected while it's pinned (D45). CV Studio offers the same review from the CV's ⋯ menu (**Tailor for a job…**, jobs not applied to yet).
+- **Why:** the owner asked for the kit in that order; a bottom-bar prompt keeps the research's intent (never blocking, always visible on return) without a card above the files. Inline editing of a suggestion would let AI text and user text mix in one accepted edit that `Tailoring.apply` treats as the model's; keeping gaps unacceptable enforces §2.4 without it. Templates are few and are made while writing a letter.
+- **Affects:** apply (iOS: tailor review, cover letter editor, kit, attachment picker), cv-editor (⋯ menu), settings-account (Application answers).
+
 ## Other open questions resolved
 
 | Question                                                   | Decision                                                                                                                                                                                                           | Doc                      |

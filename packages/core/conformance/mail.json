@@ -53,5 +53,22 @@
     {"category":"other_job","screening":true,"target":null},
     {"category":"not_job","screening":false,"target":null},
     {"category":"not_job","screening":true,"target":null}
-  ]
+  ],
+  "sendLimits": {
+    "maxAttachments": 5,
+    "maxAttachmentBytes": {
+      "gmail": 18874368,
+      "microsoft": 2900000,
+      "imap": 18874368
+    },
+    "contentTypes": [
+      "application/pdf",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "application/msword",
+      "application/rtf",
+      "text/plain",
+      "image/png",
+      "image/jpeg"
+    ]
+  }
 }

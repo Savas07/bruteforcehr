@@ -3,9 +3,11 @@ import BFHRDesignTokens
 import SwiftUI
 
 /// The Apply sheet (docs/design/research/apply.md "Decision — iOS"): one review-first checklist
-/// (CV · Cover letter · Send via) with the bottom button naming the next step ("Open company
-/// site" / "Review email"), then the application kit with "Did you apply?", or the email review.
-/// Company and role stay in the navigation header on every page.
+/// (CV with "Tailor for this job" · Cover letter · Send via) with the bottom button naming the next
+/// step ("Open company site" / "Review email"), then the application kit (CV PDF, cover letter,
+/// answers to copy) with "Did you apply?", or the email review with its attachments. Tailoring and
+/// the cover letter editor are pages of the sheet. Company and role stay in the navigation header
+/// on every page.
 public struct ApplySheet: View {
     @Bindable private var model: ApplyModel
     @Environment(ToastCenter.self) private var toasts: ToastCenter?
@@ -28,6 +30,15 @@ public struct ApplySheet: View {
                 Group {
                     switch model.step {
                     case .checklist: checklist
+                    case .tailor:
+                        if let tailoring = model.tailoring {
+                            TailorReviewPage(model: tailoring) { _ in
+                                toasts?.show(ToastItem(glyph: ToastGlyph.confirmed, message: ApplyStrings.tailorSaved(model.company)))
+                                model.endTailoring()
+                            }
+                        }
+                    case .letter:
+                        CoverLetterEditorPage(model: model.letter) { model.step = .checklist }
                     case .kit: kit
                     case .email: emailReview
                     }
@@ -52,18 +63,19 @@ public struct ApplySheet: View {
                     if model.step == .checklist {
                         Button { dismiss() } label: { Text(ApplyStrings.cancel) }
                     } else {
-                        Button { model.step = .checklist } label: { Text(ApplyStrings.back) }
+                        Button(action: back) { Text(ApplyStrings.back) }
                             .accessibilityIdentifier("apply.back")
                     }
                 }
-                if model.step != .checklist {
+                if model.step == .kit || model.step == .email {
                     ToolbarItem(placement: .confirmationAction) {
                         Button { dismiss() } label: { Text(ApplyStrings.close) }
                     }
                 }
             }
         }
-        .interactiveDismissDisabled(model.isSending)
+        .interactiveDismissDisabled(model.isSending || model.step == .tailor || model.step == .letter)
+        .sheet(isPresented: $model.picksAttachments) { AttachmentPickerSheet(model: model) }
         .bfhrApplyPresentations(model: model, siteURL: $siteURL, composesMail: $composesMail, toasts: toasts, dismiss: dismiss)
         .onChange(of: model.writeFailures) { _, failures in
             guard failures > lastWriteFailures else { return }
@@ -92,20 +104,48 @@ public struct ApplySheet: View {
                         } label: {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(verbatim: option.title).font(.bfhr(.body)).foregroundStyle(BFHRColor.Fg.primary)
-                                Text(ApplyStrings.cvDetail(language: option.language.uppercased(), isDefault: option.isDefault))
-                                    .font(.bfhr(.footnote)).foregroundStyle(BFHRColor.Fg.secondary)
+                                if let saved = option.savedForJob {
+                                    Text(ApplyStrings.savedVersionDetail(saved, language: option.language.uppercased()))
+                                        .font(.bfhr(.footnote)).foregroundStyle(BFHRColor.Fg.secondary)
+                                } else {
+                                    Text(ApplyStrings.cvDetail(language: option.language.uppercased(), isDefault: option.isDefault))
+                                        .font(.bfhr(.footnote)).foregroundStyle(BFHRColor.Fg.secondary)
+                                }
                             }
                         } trailing: {
                             if let score = option.score { MatchBandPill(score: score) }
+                            if option.savedForJob == .tailored { AiBadge() }
                         }
                         .accessibilityIdentifier("apply.cv.\(option.id)")
                     }
+                    Button(action: model.beginTailoring) {
+                        HStack(spacing: BFHRSpace.s3) {
+                            Image(systemName: "sparkles")
+                                .foregroundStyle(BFHRColor.Accent.text)
+                                .accessibilityHidden(true)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(ApplyStrings.tailorRow).font(.bfhr(.body)).foregroundStyle(BFHRColor.Accent.text)
+                                Text(ApplyStrings.tailorRowBody).font(.bfhr(.footnote)).foregroundStyle(BFHRColor.Fg.secondary)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            Image(systemName: "chevron.forward")
+                                .font(.bfhr(.footnote, emphasized: true))
+                                .foregroundStyle(BFHRColor.Fg.tertiary)
+                                .accessibilityHidden(true)
+                        }
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(model.selectedCV == nil)
+                    .accessibilityIdentifier("apply.tailorRow")
                 }
             } header: {
                 Text(ApplyStrings.cvSection).foregroundStyle(BFHRColor.Fg.secondary)
             }
             Section {
-                Picker(selection: $model.coverLetter) {
+                Picker(selection: Binding(get: { model.coverLetter }, set: { choice in
+                    if choice == .written { model.editLetter() } else { model.coverLetter = choice }
+                })) {
                     Text(ApplyStrings.letterNone).tag(CoverLetterChoice.none)
                     ForEach(model.letterOptions) { letter in
                         Text(verbatim: letter.title).tag(CoverLetterChoice.existing(letter.id))
@@ -114,11 +154,27 @@ public struct ApplySheet: View {
                 } label: { Text(ApplyStrings.letterSection) }
                 .accessibilityIdentifier("apply.letter")
                 if model.coverLetter == .written {
-                    TextEditor(text: $model.letterText)
-                        .frame(minHeight: 160)
-                        .font(.bfhr(.body))
-                        .accessibilityLabel(Text(ApplyStrings.letterEditorLabel))
-                        .accessibilityIdentifier("apply.letterText")
+                    Button(action: model.editLetter) {
+                        HStack(spacing: BFHRSpace.s3) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(ApplyStrings.letterEdit).font(.bfhr(.body)).foregroundStyle(BFHRColor.Accent.text)
+                                if let body = model.letterBody {
+                                    Text(verbatim: body)
+                                        .font(.bfhr(.footnote))
+                                        .foregroundStyle(BFHRColor.Fg.secondary)
+                                        .lineLimit(2)
+                                }
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            Image(systemName: "chevron.forward")
+                                .font(.bfhr(.footnote, emphasized: true))
+                                .foregroundStyle(BFHRColor.Fg.tertiary)
+                                .accessibilityHidden(true)
+                        }
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("apply.letter.edit")
                 } else if let body = model.letterBody {
                     Text(verbatim: body)
                         .font(.bfhr(.footnote))
@@ -128,7 +184,7 @@ public struct ApplySheet: View {
             } header: {
                 Text(ApplyStrings.letterSection).foregroundStyle(BFHRColor.Fg.secondary)
             } footer: {
-                Text(ApplyStrings.letterFooter).foregroundStyle(BFHRColor.Fg.secondary)
+                Text(ApplyStrings.letterWriteFooter).foregroundStyle(BFHRColor.Fg.secondary)
             }
             Section {
                 ForEach(model.channelOptions) { option in
@@ -160,7 +216,7 @@ public struct ApplySheet: View {
         }
         .bfhrInsetGroupedList()
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            bottomBar {
+            ApplyBottomBar {
                 if let blocker = model.blocker {
                     Text(ApplyStrings.blocker(blocker))
                         .font(.bfhr(.footnote))
@@ -193,49 +249,89 @@ public struct ApplySheet: View {
 
     // MARK: Kit (company site)
 
+    /// The kit: the CV PDF (Save to Files / Share), the cover letter (Copy / Share), the answers
+    /// for this job with Copy, then "Did you apply?" in the bottom bar once back from Safari.
     private var kit: some View {
         List {
-            if model.asksIfSubmitted {
-                submitPrompt
-            } else if model.deferredAnswer {
-                Section {
+            Section {
+                Text(ApplyStrings.kitIntro).font(.bfhr(.subheadline)).foregroundStyle(BFHRColor.Fg.secondary)
+                if model.deferredAnswer, !model.asksIfSubmitted {
                     Label { Text(ApplyStrings.inProgress) } icon: { Image(systemName: "clock") }
                         .foregroundStyle(BFHRColor.Fg.secondary)
                 }
             }
             Section {
-                Text(ApplyStrings.kitIntro).font(.bfhr(.subheadline)).foregroundStyle(BFHRColor.Fg.secondary)
+                switch model.files {
+                case .idle, .preparing:
+                    ProgressNote(ApplyStrings.preparingFiles)
+                case .failed:
+                    InlineAlert(.warning, title: ApplyStrings.filesFailed, actionTitle: Strings.tryAgain) { Task { await model.prepareFiles() } }
+                case .ready(let files):
+                    ForEach(files.filter { if case .cv = $0.kind { true } else { false } }) { file in
+                        KitFileRow(file: file) { toasts?.show(ToastItem(glyph: ToastGlyph.confirmed, message: ApplyStrings.savedToFiles)) }
+                    }
+                }
+            } header: {
+                Text(ApplyStrings.cvSectionKit).foregroundStyle(BFHRColor.Fg.secondary)
+            } footer: {
+                Text(ApplyStrings.kitCVFooter).foregroundStyle(BFHRColor.Fg.secondary)
             }
-            Section {
-                ApplyFilesRows(state: model.files) { Task { await model.prepareFiles() } }
-                if let body = model.letterBody {
+            if let body = model.letterBody {
+                Section {
+                    Text(verbatim: body)
+                        .font(.bfhr(.footnote))
+                        .foregroundStyle(BFHRColor.Fg.secondary)
+                        .lineLimit(4)
                     Button {
                         copy(body)
                         toasts?.show(ToastItem(glyph: ToastGlyph.copied, message: ApplyStrings.letterCopied))
                     } label: {
                         Label { Text(ApplyStrings.copyLetter) } icon: { Image(systemName: "doc.on.doc") }
                     }
+                    .accessibilityIdentifier("apply.kit.copyLetter")
+                    if let file = model.files.files.first(where: { if case .coverLetter = $0.kind { true } else { false } }),
+                       let url = file.temporaryURL {
+                        ShareLink(item: url) {
+                            Label { Text(ApplyStrings.shareFile(String(localized: ApplyStrings.fileKind(file.kind)))) } icon: { Image(systemName: "square.and.arrow.up") }
+                        }
+                        .accessibilityIdentifier("apply.kit.shareLetter")
+                    }
+                } header: {
+                    Text(ApplyStrings.letterSection).foregroundStyle(BFHRColor.Fg.secondary)
+                } footer: {
+                    Text(ApplyStrings.kitLetterFooter).foregroundStyle(BFHRColor.Fg.secondary)
                 }
-            } header: {
-                Text(ApplyStrings.filesSection).foregroundStyle(BFHRColor.Fg.secondary)
-            } footer: {
-                Text(ApplyStrings.filesFooter).foregroundStyle(BFHRColor.Fg.secondary)
+            }
+            KitAnswersSections(answers: model.kitAnswers) { answer in
+                copy(answer.text)
+                toasts?.show(ToastItem(glyph: ToastGlyph.copied, message: ApplyStrings.copied(answer.label)))
             }
         }
         .bfhrInsetGroupedList()
+        .accessibilityIdentifier("apply.kit")
         .task { if model.files == .idle { await model.prepareFiles() } }
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            bottomBar {
-                Button(action: openSite) {
-                    VStack(spacing: 2) {
-                        Text(model.deferredAnswer || model.asksIfSubmitted ? ApplyStrings.openSiteAgain : ApplyStrings.openSite)
-                        if case .site(let url, _) = model.channel, let host = url.host() {
-                            Text(verbatim: host).font(.bfhr(.caption1))
+            ApplyBottomBar {
+                if model.asksIfSubmitted {
+                    SubmitPrompt(
+                        company: model.company,
+                        onApplied: { run(model.confirmApplied, thenDismiss: true) },
+                        onNotYet: model.notYet,
+                        onNotApplying: { run(model.notApplying, thenDismiss: true) }
+                    )
+                    .accessibilityIdentifier("apply.submitPrompt")
+                } else {
+                    Button(action: openSite) {
+                        VStack(spacing: 2) {
+                            Text(model.deferredAnswer ? ApplyStrings.openSiteAgain : ApplyStrings.openSite)
+                            if case .site(let url, _) = model.channel, let host = url.host() {
+                                Text(verbatim: host).font(.bfhr(.caption1))
+                            }
                         }
                     }
+                    .buttonStyle(.bfhr(.primary, fullWidth: true))
+                    .accessibilityIdentifier("apply.openSite")
                 }
-                .buttonStyle(.bfhr(.primary, fullWidth: true))
-                .accessibilityIdentifier("apply.openSite")
             }
         }
     }
@@ -307,14 +403,28 @@ public struct ApplySheet: View {
             }
             Section {
                 ApplyFilesRows(state: model.files) { Task { await model.prepareFiles() } }
+                ExtraAttachmentRows(model: model) { model.picksAttachments = true }
             } header: {
                 Text(ApplyStrings.attachments).foregroundStyle(BFHRColor.Fg.secondary)
+            } footer: {
+                Text(ApplyStrings.attachTotal(
+                    count: model.attachments.count,
+                    size: AttachmentPickerSheet.size(model.attachmentBytes),
+                    limit: AttachmentPickerSheet.size(model.attachmentLimitBytes)
+                ))
+                .foregroundStyle(BFHRColor.Fg.secondary)
+                .accessibilityIdentifier("apply.attach.total")
             }
         }
         .bfhrInsetGroupedList()
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            bottomBar {
-                if let error = model.sendError {
+            ApplyBottomBar {
+                if let problem = model.attachmentProblem {
+                    Text(ApplyStrings.attachProblem(problem, limit: AttachmentPickerSheet.size(model.attachmentLimitBytes)))
+                        .font(.bfhr(.footnote))
+                        .foregroundStyle(BFHRColor.Fg.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                } else if let error = model.sendError {
                     Text(ApplyStrings.sendError(error))
                         .font(.bfhr(.footnote))
                         .foregroundStyle(BFHRColor.Fg.secondary)
@@ -344,24 +454,10 @@ public struct ApplySheet: View {
     }
 
     private var canSend: Bool {
-        guard model.email.hasValidRecipient, !model.isSending else { return false }
+        guard model.email.hasValidRecipient, !model.isSending, model.attachmentProblem == nil else { return false }
         if case .ready = model.files {} else { return false }
         if model.canSendFromAccount { return !model.connection.isOffline }
         return true
-    }
-
-    // MARK: Pieces
-
-    private func bottomBar(@ViewBuilder content: () -> some View) -> some View {
-        VStack(spacing: BFHRSpace.s2) {
-            content()
-        }
-        .padding(.horizontal, BFHRSpace.s4)
-        .padding(.vertical, BFHRSpace.s2)
-        .frame(maxWidth: .infinity)
-        .background(.bar)
-        .overlay(alignment: .top) { Divider() }
-        .dynamicTypeSize(...DynamicTypeSize.accessibility1)
     }
 
     // MARK: Actions
@@ -372,6 +468,17 @@ public struct ApplySheet: View {
             Task { try? await model.beginEmailApplication() }
         } else {
             siteURL = try? model.beginSiteApplication()
+        }
+    }
+
+    /// Back to the checklist; leaving the review cancels a pending request.
+    private func back() {
+        switch model.step {
+        case .tailor:
+            model.tailoring?.cancel()
+            model.endTailoring()
+        default:
+            model.step = .checklist
         }
     }
 
@@ -389,7 +496,10 @@ public struct ApplySheet: View {
                 }
             }
         } else {
-            composesMail = true
+            Task {
+                await model.loadAttachmentBytes()
+                composesMail = true
+            }
         }
     }
 

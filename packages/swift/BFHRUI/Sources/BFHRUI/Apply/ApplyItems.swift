@@ -26,39 +26,78 @@ public enum ApplyChannel: Hashable, Sendable, Identifiable {
     var trackerChannel: Channel { isEmail ? .email : .externalLink }
 }
 
-/// A CV the user can send.
+/// A CV the user can send: a CV's current version, or a version saved for this job ("Tailor for
+/// this job", or what an earlier visit pinned).
 public struct ApplyCVOption: Identifiable, Hashable, Sendable {
+    /// The CV's id for its current version; `version:<revisionId>` for a version saved for this job.
     public let id: String
+    public var cvId: String
     public var title: String
     public var language: String
     /// The match score when the job's match is based on this CV.
     public var score: Int?
     public var isDefault: Bool
     public var revisionId: String
+    /// Not the CV's current version: one saved for this job (tailored, or pinned earlier).
+    public var savedForJob: SavedVersionKind?
+
+    public enum SavedVersionKind: Hashable, Sendable {
+        /// "Tailor for this job" (`source: ai_tailor`).
+        case tailored
+        /// A version an earlier visit pinned (the CV has changed since).
+        case pinned
+    }
+
+    public init(
+        id: String, cvId: String, title: String, language: String, score: Int?, isDefault: Bool,
+        revisionId: String, savedForJob: SavedVersionKind? = nil
+    ) {
+        self.id = id
+        self.cvId = cvId
+        self.title = title
+        self.language = language
+        self.score = score
+        self.isDefault = isDefault
+        self.revisionId = revisionId
+        self.savedForJob = savedForJob
+    }
+
+    static func versionID(_ revisionId: String) -> String { "version:\(revisionId)" }
 }
 
 /// The cover letter row.
 public enum CoverLetterChoice: Hashable, Sendable {
     case none
     case existing(String)
-    /// The letter typed in the sheet (saved to `coverLetters` when the application goes out).
+    /// The letter written (or drafted with AI) in the cover letter editor, saved to
+    /// `coverLetters` when the application goes out.
     case written
 }
 
 /// The sheet's pages.
 public enum ApplyStep: Hashable, Sendable {
     case checklist
-    /// The company site was opened: the kit with "Did you apply?" on top.
+    /// "Tailor for this job": Light / Thorough, the suggested edits, the preview, Save.
+    case tailor
+    /// The cover letter editor: template, tone, language, Draft with AI, fields to fill.
+    case letter
+    /// The company site was opened: the kit (files, cover letter, answers) and, back from
+    /// Safari, "Did you apply?".
     case kit
     /// Review email (with a send-capable account) before Send.
     case email
 }
 
-/// A file made on the device for this application.
+/// A file made on the device for this application, or an extra attachment (one of the user's
+/// saved files, or one picked in Files).
 public struct ApplyFile: Hashable, Sendable, Identifiable {
     public enum Kind: Hashable, Sendable {
         case cv(cvId: String, revisionId: String)
         case coverLetter(coverLetterId: String)
+        /// A file already stored (`renderedFiles/{id}`): sent by reference, no upload.
+        case saved(renderedFileId: String)
+        /// A file from Files: uploaded to `users/{uid}/mail-attachments/{id}` before sending.
+        case device(contentType: String)
     }
 
     public let id: String
@@ -73,7 +112,34 @@ public struct ApplyFile: Hashable, Sendable, Identifiable {
         self.data = data
     }
 
-    public var sizeBytes: Int { data.count }
+    /// The size of a saved file whose bytes aren't on the device yet is known from its record.
+    public var knownSize: Int?
+
+    public init(id: String, kind: Kind, fileName: String, data: Data, knownSize: Int?) {
+        self.init(id: id, kind: kind, fileName: fileName, data: data)
+        self.knownSize = knownSize
+    }
+
+    public var sizeBytes: Int { data.isEmpty ? knownSize ?? 0 : data.count }
+
+    /// The MIME type Mail's compose sheet attaches it with.
+    public var mimeType: String {
+        switch kind {
+        case .cv, .coverLetter: "application/pdf"
+        case .device(let contentType): contentType
+        case .saved:
+            fileName.lowercased().hasSuffix(".docx")
+                ? "application/vnd.openxmlformats-officedocument.wordprocessingml.document" : "application/pdf"
+        }
+    }
+
+    /// Made for this application (the CV or the cover letter PDF), not an extra attachment.
+    public var isMadeHere: Bool {
+        switch kind {
+        case .cv, .coverLetter: true
+        case .saved, .device: false
+        }
+    }
 }
 
 /// Where preparing the attachments stands.
@@ -117,7 +183,31 @@ public struct ApplyMailRequest: Hashable, Sendable {
     public var subject: String
     public var bodyText: String
     public var renderedFileIds: [String]
+    /// Files from the device, uploaded to `mail-attachments` (`kind: "upload"`).
+    public var uploads: [ApplyUpload] = []
     public var pins: ApplicationPins
+}
+
+/// A file uploaded to `users/{uid}/mail-attachments/{id}` for one email.
+public struct ApplyUpload: Hashable, Sendable {
+    public var storagePath: String
+    public var fileName: String
+    public var contentType: String
+}
+
+/// Why an AI request (tailoring, a cover letter draft) gave no result (`AI_ERROR_REASONS`).
+public enum ApplyAIError: Error, Hashable, Sendable {
+    /// `ai_disabled` (and `profile.aiEnabled == false` before asking).
+    case aiDisabled
+    /// `daily_cap`: the per-user daily AI limit; it resets at 00:00 UTC.
+    case dailyLimit
+    case offline
+    /// `email_unverified`.
+    case emailUnverified
+    /// `cv_not_found`, `job_not_found`, `template_not_found`.
+    case notFound
+    /// `ai_unavailable`, `ai_invalid_output`, anything else.
+    case failed(String)
 }
 
 public enum ApplySendError: Error, Hashable, Sendable {
@@ -144,10 +234,20 @@ public protocol ApplyServices: AnyObject {
     func sendEmail(_ request: ApplyMailRequest) async throws(ApplySendError) -> (applicationId: String, sendAt: Date)
     /// `mailSendCancel`.
     func cancelEmail(applicationId: String) async throws(ApplySendError)
+    /// `cvTailor`: proposed edits against `request.revisionId`.
+    func tailor(_ request: CvTailorRequest) async throws(ApplyAIError) -> CvTailorResponse
+    /// `coverLetterDraft`.
+    func draftCoverLetter(_ request: CoverLetterDraftRequest) async throws(ApplyAIError) -> CoverLetterDraftResponse
+    /// Uploads a file picked in Files to `users/{uid}/mail-attachments/{fileId}`; returns the path.
+    func uploadAttachment(_ file: ApplyFile, contentType: String) async throws -> String
+    /// The bytes of a stored file (an extra attachment opened in Mail's compose sheet).
+    func download(_ file: RenderedFile) async throws -> Data
 }
 
 /// Makes the PDFs on the device (cv-render in JavaScriptCore + WebKit's print path).
 public protocol ApplyRenderer: AnyObject {
+    /// The CV page as cv-render HTML (the tailoring preview).
+    func cvHTML(_ content: CvContent, language: String) throws -> CVRenderedHTML
     func cvPDF(_ revision: CvRevision, language: String) async throws -> (fileName: String, data: Data)
     func letterPDF(title: String, body: String, language: String) async throws -> Data
 }

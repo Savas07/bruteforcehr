@@ -82,6 +82,8 @@ enum CVDesignPane: String {
     case compare
     case `import`
     case languageVariant
+    /// "Tailor for a job…": the job picker.
+    case tailor
 
     /// Panes shown over the CV list rather than over an open CV.
     static var opensList: Bool { requested == .import }

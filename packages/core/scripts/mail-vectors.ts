@@ -2,14 +2,19 @@
  * `conformance/mail.json`: the mail contracts the iOS connect flow and review queue re-implement
  * in BFHRCore (`Mail.swift`): the IMAP app-password presets, preset detection by address, and the
  * status a category moves an application to (`categoryTargetStatus`, used by the review trigger
- * and the automatic decision).
+ * and the automatic decision), and the attachment limits of an email sent from a connected account
+ * (`mailSendMaxAttachmentBytes`, `MAIL_SEND_MAX_ATTACHMENTS`, `MAIL_ATTACHMENT_CONTENT_TYPES`).
  */
 import {
   categoryTargetStatus,
   IMAP_PRESETS,
   imapPresetFor,
+  MAIL_ATTACHMENT_CONTENT_TYPES,
   MAIL_ENDPOINT_PORTS,
+  MAIL_SEND_MAX_ATTACHMENTS,
   MailCategorySchema,
+  MailProviderSchema,
+  mailSendMaxAttachmentBytes,
 } from "../src/index";
 
 const ADDRESSES = [
@@ -47,5 +52,12 @@ export function buildMailVectors() {
         target: categoryTargetStatus(category, screening),
       })),
     ),
+    sendLimits: {
+      maxAttachments: MAIL_SEND_MAX_ATTACHMENTS,
+      maxAttachmentBytes: Object.fromEntries(
+        MailProviderSchema.options.map((provider) => [provider, mailSendMaxAttachmentBytes(provider)]),
+      ),
+      contentTypes: MAIL_ATTACHMENT_CONTENT_TYPES,
+    },
   };
 }

@@ -51,6 +51,8 @@ struct CVDocumentView: View {
     @State private var sharing = false
     @State private var shareFile: CVExportFile?
     @State private var shareFailed = false
+    @State private var tailors = false
+    @Environment(\.bfhrTailoring) private var tailoring
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     #if os(iOS)
     @State private var editMode: EditMode = .inactive
@@ -77,6 +79,14 @@ struct CVDocumentView: View {
         .sheet(item: $sheet) { sheet in
             CVSheetContent(model: model, sheet: sheet)
                 .environment(\.bfhrNow, model.now)
+        }
+        .sheet(isPresented: $tailors) {
+            if let tailoring, let document = model.document {
+                CVTailorSheet(
+                    tailoring: tailoring, cvId: document.id, revisionId: document.currentRevisionId,
+                    cvTitle: document.title, language: document.language
+                )
+            }
         }
         .cvActionPrompts($prompt, model: model)
         .cvShareSheet($shareFile)
@@ -186,6 +196,14 @@ struct CVDocumentView: View {
                     Text(L.versionsOfThisCV)
                 }
             }
+            if tailoring != nil, !document.isArchived {
+                Section {
+                    Button { tailors = true } label: {
+                        Label { Text(ApplyStrings.tailorForJob) } icon: { Image(systemName: "sparkles") }
+                    }
+                    .accessibilityIdentifier("cv.tailor")
+                }
+            }
             Section {
                 Button { sheet = .history } label: { Label { Text(L.versionHistory) } icon: { Image(systemName: "clock.arrow.circlepath") } }
                 Button { sheet = .reorder } label: { Label { Text(L.reorderSections) } icon: { Image(systemName: "list.bullet.indent") } }
@@ -226,7 +244,7 @@ struct CVDocumentView: View {
     }
 
     #if DEBUG
-    /// Design mode: `-BFHRCVPane preview|item|assist|summary|history|reorder|template|export|conflict`
+    /// Design mode: `-BFHRCVPane preview|item|assist|summary|history|reorder|template|export|conflict|tailor`
     /// opens one pane for critique captures and UI tests (once per launch).
     private func applyDesignPane() {
         guard let pane = CVDesignPane.takeLaunchPane() else { return }
@@ -242,6 +260,7 @@ struct CVDocumentView: View {
         case .revision: sheet = .history
         case .languageVariant: if let id = model.document?.id { prompt = .languageVariant(cvId: id) }
         case .import: break
+        case .tailor: tailors = tailoring != nil
         case .compare:
             model.simulateConflict()
             sheet = .compare

@@ -83,7 +83,8 @@ final class CloudApplyServices: ApplyServices {
             "cc": [],
             "subject": request.subject,
             "bodyText": request.bodyText,
-            "attachments": request.renderedFileIds.map { ["kind": "rendered", "renderedFileId": $0] },
+            "attachments": request.renderedFileIds.map { ["kind": "rendered", "renderedFileId": $0] as [String: Any] }
+                + request.uploads.map { ["kind": "upload", "storagePath": $0.storagePath, "fileName": $0.fileName, "contentType": $0.contentType] },
             "pins": [
                 "cvId": id(request.pins.cvId),
                 "cvRevisionId": id(request.pins.cvRevisionId),
@@ -113,6 +114,61 @@ final class CloudApplyServices: ApplyServices {
         } catch {
             throw Self.sendError(error)
         }
+    }
+
+    // MARK: AI (docs/adr/0010-ai.md "Applying")
+
+    func tailor(_ request: CvTailorRequest) async throws(ApplyAIError) -> CvTailorResponse {
+        try await aiCall("cvTailor", request, as: CvTailorResponse.self)
+    }
+
+    func draftCoverLetter(_ request: CoverLetterDraftRequest) async throws(ApplyAIError) -> CoverLetterDraftResponse {
+        try await aiCall("coverLetterDraft", request, as: CoverLetterDraftResponse.self)
+    }
+
+    private func aiCall<Response: Decodable>(_ name: String, _ request: some Encodable, as type: Response.Type) async throws(ApplyAIError) -> Response {
+        do {
+            let callable = CVCallables.functions.httpsCallable(name)
+            // Claude reads the whole CV and posting; allow more than the 70 s default.
+            callable.timeoutInterval = 120
+            let result = try await callable.call(try CallableJSON.object(request))
+            return try CallableJSON.decode(type, result.data)
+        } catch {
+            throw Self.aiError(error)
+        }
+    }
+
+    /// The AI callables' errors (`AI_ERROR_REASONS`) in the review's terms.
+    static func aiError(_ error: any Error) -> ApplyAIError {
+        let nsError = error as NSError
+        if nsError.domain == NSURLErrorDomain { return .offline }
+        guard nsError.domain == FunctionsErrorDomain, let code = FunctionsErrorCode(rawValue: nsError.code) else {
+            return .failed("\(nsError.domain) \(nsError.code): \(nsError.localizedDescription)")
+        }
+        let reason = (nsError.userInfo[FunctionsErrorDetailsKey] as? [String: Any])?["reason"] as? String
+        switch (code, reason) {
+        case (_, "ai_disabled"): return .aiDisabled
+        case (_, "daily_cap"), (.resourceExhausted, _): return .dailyLimit
+        case (_, "email_unverified"): return .emailUnverified
+        case (_, "cv_not_found"), (_, "job_not_found"), (_, "template_not_found"), (.notFound, _): return .notFound
+        case (.unavailable, nil), (.deadlineExceeded, _): return .offline
+        default: return .failed("\(code.rawValue) \(reason ?? nsError.localizedDescription)")
+        }
+    }
+
+    // MARK: Attachments
+
+    func uploadAttachment(_ file: ApplyFile, contentType: String) async throws -> String {
+        let path = "users/\(uid)/mail-attachments/\(file.id)"
+        let metadata = StorageMetadata()
+        metadata.contentType = contentType
+        _ = try await Storage.storage().reference(withPath: path).putDataAsync(file.data, metadata: metadata)
+        return path
+    }
+
+    func download(_ file: RenderedFile) async throws -> Data {
+        // MailSendLimits caps an email at 18 MB; a stored file is never larger.
+        try await Storage.storage().reference(withPath: file.storagePath).data(maxSize: 20 * 1024 * 1024)
     }
 
     static func sendError(_ error: any Error) -> ApplySendError {

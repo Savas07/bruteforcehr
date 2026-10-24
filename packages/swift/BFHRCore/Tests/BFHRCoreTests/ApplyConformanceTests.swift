@@ -48,6 +48,7 @@ struct ApplyVectors: Decodable {
     let answers: [Answer]
     let euCountries: [String]
     let kits: [KitCase]
+    let starters: [StarterCoverLetter]
 }
 
 @Suite("Apply conformance (packages/core/conformance/apply.json)")
@@ -95,5 +96,9 @@ struct ApplyConformanceTests {
         for kit in vectors.kits {
             #expect(AnswersKit.answers(vectors.answers, for: kit.context) == kit.expected, "\(kit.context)")
         }
+    }
+
+    @Test func startersMatch() throws {
+        #expect(CoverLetterStarters.all == (try vectors()).starters)
     }
 }

@@ -6,7 +6,7 @@ import Network
 
 /// Today, the Tracker, Jobs, Mail and Settings on Firestore (M3–M5; docs/adr/0002-data-model.md):
 /// snapshot listeners on `users/{uid}` and its `applications`, `applicationEvents`, `interviews`,
-/// `contacts`, `cvs`, `coverLetters`, `jobs`, `jobMatches`, `savedSearches`, `mailAccounts`,
+/// `contacts`, `cvs`, `coverLetters`, `answers`, `jobs`, `jobMatches`, `savedSearches`, `mailAccounts`,
 /// `mailMessages`, `watchlist` and `renderedFiles`, plus the project-wide `jobSources`, feed one
 /// `UserData` to every screen model; their optimistic mutations come back as `UserDataChanges`
 /// and are written as one batch each (`UserDataWriter`). Firestore's offline persistence is the
@@ -39,6 +39,7 @@ final class FirestoreUserDataStore: UserDataWriter {
     private var contacts: [Contact] = []
     private var cvs: [Cv] = []
     private var coverLetters: [CoverLetter] = []
+    private var answers: [Answer] = []
     private var jobs: [Job] = []
     private var jobMatches: [JobMatch] = []
     private var savedSearches: [SavedSearch] = []
@@ -113,6 +114,9 @@ final class FirestoreUserDataStore: UserDataWriter {
         }
         listen("coverLetters") { [weak self] documents in
             self?.coverLetters = documents.compactMap { try? Self.decode(CoverLetter.self, $0.data(), ids: ["id": $0.documentID]) }
+        }
+        listen("answers") { [weak self] documents in
+            self?.answers = documents.compactMap { try? Self.decode(Answer.self, $0.data(), ids: ["id": $0.documentID]) }
         }
         listen("jobs") { [weak self] documents in
             self?.jobs = documents.compactMap { try? Self.decode(Job.self, $0.data(), ids: ["id": $0.documentID]) }
@@ -206,6 +210,7 @@ final class FirestoreUserDataStore: UserDataWriter {
             cvs: cvs,
             renderedFiles: renderedFiles,
             coverLetters: coverLetters,
+            answers: answers,
             jobs: jobs,
             jobMatches: jobMatches,
             savedSearches: savedSearches,
@@ -268,6 +273,14 @@ final class FirestoreUserDataStore: UserDataWriter {
         for change in changes.jobs { try write(change, in: "jobs", batch) }
         for change in changes.savedSearches { try write(change, in: "savedSearches", batch) }
         for change in changes.coverLetters { try write(change, in: "coverLetters", batch) }
+        for change in changes.answers { try write(change, in: "answers", batch) }
+        // A tailored version, in the same batch as its pin on the application (create-only).
+        for revision in changes.cvRevisions {
+            batch.setData(
+                try Self.encode(revision, dropping: ["id", "cvId"]),
+                forDocument: user.collection("cvs").document(revision.cvId).collection("revisions").document(revision.id)
+            )
+        }
         for file in changes.renderedFiles {
             batch.setData(try Self.encode(file, dropping: ["id"]), forDocument: user.collection("renderedFiles").document(file.id))
         }

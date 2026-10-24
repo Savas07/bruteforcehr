@@ -1,4 +1,5 @@
 #if DEBUG
+import BFHRUIFixtures
 import SwiftUI
 
 extension DesignScenario {
@@ -28,7 +29,7 @@ public struct DesignScreenView: View {
             switch holder.model {
             case .today(let model): TodayScreen(model: model)
             case .jobs(let screen): DesignJobsTab(screen: screen, scenario: scenario)
-            case .cvEditor(let model): CVEditorScreen(model: model)
+            case .cvEditor(let model, let tailoring): CVEditorScreen(model: model).environment(\.bfhrTailoring, tailoring)
             case .trackerBoard(let model, let insights):
                 TrackerBoardScreen(model: model) {
                     InsightsScreen(model: insights) { drill in
@@ -76,7 +77,7 @@ private final class ModelHolder {
         case today(TodayModel)
         /// The Jobs tab's own stack (feed, Saved searches, Apply).
         case jobs(DesignScreen)
-        case cvEditor(CVEditorModel)
+        case cvEditor(CVEditorModel, CVTailoringModel)
         case trackerBoard(TrackerBoardModel, InsightsModel)
         case insights(InsightsModel)
         case mailReview(MailReviewModel)
@@ -86,14 +87,23 @@ private final class ModelHolder {
 
     let model: Model
     let now: Date
+    /// CV Studio's "Tailor for a job…" answers from the fixture (`services` is weak).
+    private let tailorServices: DesignApplyServices
 
     init(screen: DesignScreen, scenario: DesignScenario) {
         now = scenario.now
+        let tailorServices = DesignApplyServices(data: UserData(DesignScenario(dataset: .populated).document))
+        self.tailorServices = tailorServices
         model = switch screen {
         case .today: .today(scenario.todayModel())
         // Job detail is pushed on the real Jobs stack (toolbar, back button, Apply sheet).
         case .jobs, .jobDetail, .savedSearches, .apply: .jobs(screen)
-        case .cvEditor: .cvEditor(scenario.cvEditorModel())
+        case .cvEditor: .cvEditor(scenario.cvEditorModel(), {
+            let tailoring = CVTailoringModel(now: scenario.now)
+            tailoring.services = tailorServices
+            tailoring.load(scenario.data)
+            return tailoring
+        }())
         case .trackerBoard: Self.tracker(scenario)
         case .insights: .insights(scenario.insightsModel())
         case .mailReview: .mailReview(scenario.mailReviewModel())

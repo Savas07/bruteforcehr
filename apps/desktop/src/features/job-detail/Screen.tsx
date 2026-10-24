@@ -1,22 +1,29 @@
 /**
  * Jobs: list + job detail split view (`/jobs`, `/jobs/$jobId`; research/job-detail.md and
  * job-feed-search.md "Decision — Desktop", states.md "Job detail"). Selection lives in the route
- * (`jobId`), the search in `?q=` and the scope in `?scope=saved|hidden` (sidebar children).
- * Actions have no backend in M0: save, Not for me, "I have this", CV change and AI feedback are
- * optimistic local state with the matching toast and Undo.
+ * (`jobId`), the search and filters in the search params (`filters.ts`), the scope in
+ * `?scope=saved|hidden` and the picked saved search in `?search=` (sidebar children). Save, Not
+ * for me (with reasons), Hide company, "I have this", the CV basis and "Yes, I applied" write
+ * through the Jobs repository (`useJobsActions`); Enter in the search field searches the job sites
+ * (`jobsSearch`). Dialogs: `?import=1` (paste a link), `?searches=manage` (saved searches),
+ * `?apply=1` (apply by email).
  */
 import { layout } from "@bfhr/ui-tokens";
-import { Briefcase, Search } from "lucide-react";
+import type { JobsSearchResponse } from "@bfhr/core";
+import { Briefcase, Link2, ListFilter, Search } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { defineMessages, useIntl } from "react-intl";
+import { useJobsData } from "../../data/jobs/live";
 import { destinationMessages } from "../../lib/destinations";
 import { openJobUrl } from "../../lib/desktop";
 import { useConnectivity } from "../../shared/connectivity";
 import { useKeyBindings } from "../../shared/keyboard/useKeyBindings";
 import type { ScreenProps } from "../../shared/screen";
+import { Button } from "../../shared/ui/Button";
 import { EmptyState } from "../../shared/ui/EmptyState";
 import { useListNavigation } from "../../shared/ui/focus";
+import { InlineAlert } from "../../shared/ui/InlineAlert";
 import { Keycaps } from "../../shared/ui/Keycaps";
 import { useBreakpoints } from "../../shared/ui/layout";
 import { PaneError } from "../../shared/ui/PaneError";
@@ -26,17 +33,24 @@ import { JobDetailSkeleton, JobRowSkeleton, SkeletonBlock, SkeletonRegion } from
 import { SplitView } from "../../shared/ui/SplitView";
 import { StaleStamp } from "../../shared/ui/StaleStamp";
 import { useToast } from "../../shared/ui/Toast";
+import { EmailApplyPanel } from "../apply";
+import { ImportJobDialog } from "../jobs-import";
+import { SavedSearchesDialog, SaveSearchButton } from "../saved-searches";
 import { DetailPane } from "./DetailPane";
-import { JobList, type HiddenPlaceholder } from "./JobList";
+import { clearFacet, FILTER_FACETS, type FilterFacet } from "./filterBarModel";
+import { FilterBar } from "./FilterBar";
+import { FILTER_PARAM_KEYS, filterSearchParams, type JobsFilterState, NO_FILTERS } from "./filters";
+import { EmptyResults, JobList, type HiddenPlaceholder } from "./JobList";
 import {
   JOBS_SCOPES,
   SCOPE_MESSAGES,
+  sourceHealthLine,
   type DismissReasonVM,
   type FactorVM,
   type JobDetailModel,
-  type JobListRowVM,
   type JobsScope,
 } from "./model";
+import { useJobsActions } from "./useJobsActions";
 
 const messages = defineMessages({
   group: { id: "job-detail.view.keysGroup", defaultMessage: "Jobs", description: "Shortcuts-sheet group" },
@@ -45,8 +59,53 @@ const messages = defineMessages({
   backLabel: { id: "job-detail.view.backLabel", defaultMessage: "Back to Jobs" },
   scopesLabel: { id: "job-detail.view.scopesLabel", defaultMessage: "Job lists" },
   search: { id: "job-detail.view.search", defaultMessage: "Search jobs" },
-  searchPlaceholder: { id: "job-detail.view.searchPlaceholder", defaultMessage: "Search by title, company or place" },
+  searchPlaceholder: {
+    id: "job-detail.view.searchPlaceholder",
+    defaultMessage: "Search by title, company, place or skill",
+  },
   focusSearch: { id: "job-detail.view.focusSearch", defaultMessage: "Search jobs" },
+  focusFilters: { id: "job-detail.view.focusFilters", defaultMessage: "Focus the filters" },
+  searchSites: { id: "job-detail.view.searchSites", defaultMessage: "Search job sites" },
+  searchSitesNeedsQuery: {
+    id: "job-detail.view.searchSitesNeedsQuery",
+    defaultMessage: "Type a role or skill in the search field first.",
+  },
+  searching: { id: "job-detail.view.searching", defaultMessage: "Searching job sites for “{query}”…" },
+  searchingBody: {
+    id: "job-detail.view.searchingBody",
+    defaultMessage: "New jobs show up in the list as they're found.",
+  },
+  searchDone: {
+    id: "job-detail.view.searchDone",
+    defaultMessage:
+      "{created, plural, =0 {No new jobs for “{query}”} one {# new job for “{query}”} other {# new jobs for “{query}”}}",
+  },
+  searchChecked: {
+    id: "job-detail.view.searchChecked",
+    defaultMessage:
+      "{found, plural, =0 {The job sites had no postings for this search.} one {Checked # posting, {updated} already in your list.} other {Checked # postings, {updated} already in your list.}}",
+    description:
+      "After a live search: postings the sources returned, and how many were jobs the user already had",
+  },
+  searchSkipped: {
+    id: "job-detail.view.searchSkipped",
+    defaultMessage: "Skipped: {names} (no access key yet).",
+  },
+  searchRateLimited: {
+    id: "job-detail.view.searchRateLimited",
+    defaultMessage: "You've searched a lot today. Your saved searches keep running; try again later.",
+  },
+  searchNoSources: {
+    id: "job-detail.view.searchNoSources",
+    defaultMessage: "No job site could be searched just now. Try again in a while.",
+  },
+  searchFailed: {
+    id: "job-detail.view.searchFailed",
+    defaultMessage: "The search didn't finish. Check your connection and try again.",
+  },
+  dismissSearch: { id: "job-detail.view.dismissSearch", defaultMessage: "Close" },
+  addFromLink: { id: "job-detail.view.addFromLink", defaultMessage: "Add from link" },
+  manageSearches: { id: "job-detail.view.manageSearches", defaultMessage: "Saved searches…" },
   loading: { id: "job-detail.view.loading", defaultMessage: "Loading your jobs" },
   loadingDetail: { id: "job-detail.view.loadingDetail", defaultMessage: "Loading the job" },
   errorTitle: { id: "job-detail.view.errorTitle", defaultMessage: "We couldn't load your jobs" },
@@ -59,113 +118,97 @@ const messages = defineMessages({
   keyNotForMeReason: { id: "job-detail.view.keyNotForMeReason", defaultMessage: "Not for me, with a reason" },
   keyApply: { id: "job-detail.view.keyApply", defaultMessage: "Apply" },
   keyOpen: { id: "job-detail.view.keyOpen", defaultMessage: "Open the original posting" },
-  why: { id: "job-detail.view.why", defaultMessage: "Why?" },
-  hiddenToast: { id: "job-detail.view.hiddenToast", defaultMessage: "Hidden from your feed: {title}" },
-  unhiddenToast: { id: "job-detail.view.unhiddenToast", defaultMessage: "Back in your feed: {title}" },
-  companyHiddenToast: {
-    id: "job-detail.view.companyHiddenToast",
-    defaultMessage: "Hiding all jobs from {company}",
-  },
-  savedToast: { id: "job-detail.view.savedToast", defaultMessage: "Saved: {title}" },
-  unsavedToast: { id: "job-detail.view.unsavedToast", defaultMessage: "Removed from Saved: {title}" },
-  reasonsToast: {
-    id: "job-detail.view.reasonsToast",
-    defaultMessage: "Thanks. We'll use this to tune your matches.",
-  },
-  haveThisToast: {
-    id: "job-detail.view.haveThisToast",
-    defaultMessage: "Added to your profile: {skill}",
-  },
-  cvToast: { id: "job-detail.view.cvToast", defaultMessage: "Matching against “{cv}”" },
   linkCopied: { id: "job-detail.view.linkCopied", defaultMessage: "Link copied" },
-  emailApply: {
-    id: "job-detail.view.emailApply",
-    defaultMessage: "Apply by email opens the Apply panel, which arrives in a later build.",
-  },
   openFailed: {
     id: "job-detail.view.openFailed",
     defaultMessage: "We couldn't open the link. Copy it from the More menu instead.",
   },
-  appliedToast: { id: "job-detail.view.appliedToast", defaultMessage: "Marked as applied: {company}" },
-  notYetToast: { id: "job-detail.view.notYetToast", defaultMessage: "We'll ask again next time you open this job." },
+  notYetToast: {
+    id: "job-detail.view.notYetToast",
+    defaultMessage: "We'll ask again next time you open this job.",
+  },
   notApplyingToast: { id: "job-detail.view.notApplyingToast", defaultMessage: "Kept in Saved: {company}" },
+  needsProfile: {
+    id: "job-detail.view.needsProfile",
+    defaultMessage: "Finish setting up your profile first, then you can hide companies.",
+  },
 });
 
 /** A list row that should get focus once it renders as the selection (see `select`). */
 let rowToFocus: string | null = null;
 
-/** Optimistic, per-session state of the screen's actions (no backend in M0). */
-function useLocalState() {
-  const [saved, setSaved] = useState<ReadonlyMap<string, boolean>>(new Map());
-  const [hidden, setHidden] = useState<ReadonlySet<string>>(new Set());
-  const [unhidden, setUnhidden] = useState<ReadonlySet<string>>(new Set());
-  const [placeholder, setPlaceholder] = useState<HiddenPlaceholder | null>(null);
-  const [gaps, setGaps] = useState<ReadonlyMap<string, ReadonlySet<string>>>(new Map());
-  const [feedback, setFeedback] = useState<ReadonlyMap<string, "up" | "down">>(new Map());
-  const [rescoring, setRescoring] = useState<ReadonlyMap<string, { id: string; title: string }>>(new Map());
-  const [askSubmit, setAskSubmit] = useState<ReadonlySet<string>>(new Set());
-  const [answeredSubmit, setAnsweredSubmit] = useState<ReadonlySet<string>>(new Set());
-  return {
-    saved,
-    setSaved,
-    hidden,
-    setHidden,
-    unhidden,
-    setUnhidden,
-    placeholder,
-    setPlaceholder,
-    gaps,
-    setGaps,
-    feedback,
-    setFeedback,
-    rescoring,
-    setRescoring,
-    askSubmit,
-    setAskSubmit,
-    answeredSubmit,
-    setAnsweredSubmit,
-  };
-}
+type SearchRun =
+  | { readonly state: "running"; readonly query: string }
+  | { readonly state: "done"; readonly query: string; readonly response: JobsSearchResponse }
+  | { readonly state: "failed"; readonly message: string };
 
-function withKey<K, V>(map: ReadonlyMap<K, V>, key: K, value: V | undefined): ReadonlyMap<K, V> {
-  const next = new Map(map);
-  if (value === undefined) next.delete(key);
-  else next.set(key, value);
-  return next;
-}
-
-function toggled<T>(set: ReadonlySet<T>, item: T, on: boolean): ReadonlySet<T> {
-  const next = new Set(set);
-  if (on) next.add(item);
-  else next.delete(item);
-  return next;
+function callableReason(error: unknown): string | null {
+  if (error === null || typeof error !== "object" || !("details" in error)) return null;
+  const details = error.details;
+  return details !== null &&
+    typeof details === "object" &&
+    "reason" in details &&
+    typeof details.reason === "string"
+    ? details.reason
+    : null;
 }
 
 export default function JobDetailScreen({ model, params }: ScreenProps<JobDetailModel>) {
   const intl = useIntl();
   const navigate = useNavigate();
   const toast = useToast();
+  const actions = useJobsActions();
+  const jobsData = useJobsData();
   const { narrow, wide } = useBreakpoints();
   const offline = useConnectivity().status === "offline";
-  const local = useLocalState();
+  /** Apply by email (`?apply=1`) takes the detail column; the list's single-key shortcuts pause. */
+  const applyOpen = params.apply === "1" && model.status === "ready" && model.data.detail !== null;
+  const [placeholder, setPlaceholder] = useState<HiddenPlaceholder | null>(null);
+  // UI-only state: the re-score in flight after "Change" and the external-apply round trip.
+  const [rescoring, setRescoring] = useState<ReadonlyMap<string, { id: string; title: string }>>(new Map());
+  const [askSubmit, setAskSubmit] = useState<ReadonlySet<string>>(new Set());
+  const [answeredSubmit, setAnsweredSubmit] = useState<ReadonlySet<string>>(new Set());
+  const [feedback, setFeedback] = useState<ReadonlyMap<string, "up" | "down">>(new Map());
+  const [run, setRun] = useState<SearchRun | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const [reasonsOpen, setReasonsOpen] = useState(false);
-  const [query, setQuery] = useState(params.q ?? "");
+  const routeQuery = params.q ?? "";
+  const [query, setQuery] = useState(routeQuery);
+  // The field follows the route when the search changes from outside (a link, Back, a saved search).
+  const [syncedQuery, setSyncedQuery] = useState(routeQuery);
+  if (routeQuery !== syncedQuery) {
+    setSyncedQuery(routeQuery);
+    setQuery(routeQuery);
+  }
+  /** `?filters=<facet>` opens that filter's popover (any other value: the first one). */
+  const openFacet: FilterFacet | null =
+    params.filters === undefined
+      ? null
+      : (FILTER_FACETS.find((facet) => facet === params.filters) ?? FILTER_FACETS[0]);
   const listRef = useRef<HTMLUListElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const data = model.status === "ready" ? model.data : null;
   const group = intl.formatMessage(messages.group);
 
-  const isHidden = (jobId: string, fromModel: boolean) =>
-    (fromModel || local.hidden.has(jobId)) && !local.unhidden.has(jobId);
-  // Hidden jobs: rows unhidden this session leave; elsewhere rows hidden this session leave.
-  const rows: readonly JobListRowVM[] = (data?.list.rows ?? []).filter((row) =>
-    data?.scope === "hidden" ? !local.unhidden.has(row.jobId) : !isHidden(row.jobId, false),
-  );
-  const savedOf = (row: { jobId: string; saved: boolean }) => local.saved.get(row.jobId) ?? row.saved;
+  const rows = data?.list.rows ?? [];
   const detail = data?.detail ?? null;
   const selectedId = data?.selectedJobId ?? null;
   const visibleIds = rows.map((row) => row.jobId);
+  const jobSources = jobsData.status === "ready" ? jobsData.data.jobSources : [];
+
+  // "Change" re-scores against another CV: shown as in progress until the match names that CV.
+  const pendingCv = detail ? (rescoring.get(detail.jobId) ?? null) : null;
+  const rescoringCv =
+    pendingCv && !(detail?.match.state === "ready" && detail.match.basedOnCvId === pendingCv.id)
+      ? pendingCv
+      : null;
+
+  const setSearchParams = (patch: Readonly<Record<string, string | undefined>>, to: "/jobs" | null = null) =>
+    void navigate({
+      ...(to === null ? { to: "." } : { to }),
+      search: (previous: Readonly<Record<string, unknown>>) => ({ ...previous, ...patch }),
+      replace: true,
+    });
 
   const select = (jobId: string) => {
     // Keep keyboard focus on the list across the route change (`/jobs` → `/jobs/$jobId` remounts
@@ -190,7 +233,10 @@ export default function JobDetailScreen({ model, params }: ScreenProps<JobDetail
   const neighbour = (jobId: string, without: ReadonlySet<string>) => {
     const index = visibleIds.indexOf(jobId);
     const rest = visibleIds.filter((id) => !without.has(id));
-    return rest.find((id) => visibleIds.indexOf(id) > index) ?? rest.findLast((id) => visibleIds.indexOf(id) < index);
+    return (
+      rest.find((id) => visibleIds.indexOf(id) > index) ??
+      rest.findLast((id) => visibleIds.indexOf(id) < index)
+    );
   };
   const nav = useListNavigation({
     containerRef: listRef,
@@ -207,57 +253,66 @@ export default function JobDetailScreen({ model, params }: ScreenProps<JobDetail
 
   const setSearch = (value: string) => {
     setQuery(value);
-    void navigate({
-      to: "/jobs",
-      search: (previous: Readonly<Record<string, unknown>>) => ({ ...previous, q: value === "" ? undefined : value }),
-      replace: true,
-    });
+    setSearchParams({ q: value === "" ? undefined : value });
   };
+  const setFilters = (next: JobsFilterState) => setSearchParams(filterSearchParams(next));
   const setScope = (scope: JobsScope) =>
     void navigate({
       to: "/jobs",
       search: (previous: Readonly<Record<string, unknown>>) => ({
         ...previous,
         scope: scope === "all" ? undefined : scope,
+        search: undefined,
       }),
     });
+  const showSavedSearch = (searchParams: Readonly<Record<string, string | undefined>>) => {
+    const cleared = Object.fromEntries(FILTER_PARAM_KEYS.map((key) => [key, undefined]));
+    void navigate({
+      to: "/jobs",
+      search: (previous: Readonly<Record<string, unknown>>) => ({
+        ...previous,
+        ...cleared,
+        ...searchParams,
+        scope: undefined,
+        searches: undefined,
+      }),
+    });
+  };
+
+  /** On-demand `jobsSearch` with the feed's search and filters; results arrive through the listeners. */
+  const searchSites = () => {
+    const text = query.trim();
+    if (!data || text === "" || offline || run?.state === "running") return;
+    setRun({ state: "running", query: text });
+    actions.search(text, data.search.filters).then(
+      (response) => setRun({ state: "done", query: text, response }),
+      (error: unknown) => {
+        const reason = callableReason(error);
+        setRun({
+          state: "failed",
+          message: intl.formatMessage(
+            reason === "search_rate_limited"
+              ? messages.searchRateLimited
+              : reason === "no_sources"
+                ? messages.searchNoSources
+                : messages.searchFailed,
+          ),
+        });
+      },
+    );
+  };
 
   const openUrl = (url: string) =>
-    void openJobUrl(url).catch(() => toast.show({ variant: "info", message: intl.formatMessage(messages.openFailed) }));
+    void openJobUrl(url).catch(() =>
+      toast.show({ variant: "info", message: intl.formatMessage(messages.openFailed) }),
+    );
 
-  const toggleSave = (row: { jobId: string; saved: boolean; title: string }) => {
-    const before = local.saved.get(row.jobId);
-    const next = !savedOf(row);
-    local.setSaved((map) => withKey(map, row.jobId, next));
-    toast.show({
-      message: intl.formatMessage(next ? messages.savedToast : messages.unsavedToast, { title: row.title }),
-      action: {
-        label: data?.copy.undo ?? "",
-        run: () => local.setSaved((map) => withKey(map, row.jobId, before)),
-      },
-    });
-  };
-
-  const undoHide = (jobIds: readonly string[], reselect: string | null) => {
-    local.setHidden((set) => {
-      const next = new Set(set);
-      for (const id of jobIds) next.delete(id);
-      return next;
-    });
-    local.setPlaceholder((current) => (current && jobIds.includes(current.jobId) ? null : current));
-    setReasonsOpen(false);
-    if (reselect) select(reselect);
-  };
-
-  const hide = (row: { jobId: string; title: string }, withReason: boolean) => {
-    const jobIds = [row.jobId];
+  const hide = (row: { jobId: string }, withReason: boolean) => {
     const index = visibleIds.indexOf(row.jobId);
-    local.setHidden((set) => toggled(set, row.jobId, true));
-    local.setUnhidden((set) => toggled(set, row.jobId, false));
-    if (index >= 0) local.setPlaceholder({ jobId: row.jobId, index });
+    if (index >= 0) setPlaceholder({ jobId: row.jobId, index });
     setReasonsOpen(withReason && index >= 0);
     if (selectedId === row.jobId) {
-      const next = neighbour(row.jobId, new Set(jobIds));
+      const next = neighbour(row.jobId, new Set([row.jobId]));
       if (next) {
         // The focused row (or the detail showing it) is going away: continue triage from the next row.
         if (!withReason) rowToFocus = next;
@@ -267,76 +322,48 @@ export default function JobDetailScreen({ model, params }: ScreenProps<JobDetail
       }
       if (narrow) setDetailOpen(false);
     }
-    toast.show({
-      message: intl.formatMessage(messages.hiddenToast, { title: row.title }),
-      action: { label: data?.copy.undo ?? "", run: () => undoHide(jobIds, row.jobId) },
+    actions.dismiss(row.jobId, {
       // D19: "Hidden from your feed · Undo · Why?"; Why? opens the optional reason popover.
-      ...(index >= 0 && {
-        secondaryAction: { label: intl.formatMessage(messages.why), run: () => setReasonsOpen(true) },
-      }),
-    });
-  };
-
-  const hideCompany = (company: string) => {
-    const jobIds = rows.filter((row) => row.company.name === company).map((row) => row.jobId);
-    const ids = new Set(jobIds);
-    local.setHidden((set) => new Set([...set, ...jobIds]));
-    local.setPlaceholder(null);
-    if (selectedId !== null && ids.has(selectedId)) {
-      const next = neighbour(selectedId, ids);
-      if (next) select(next);
-    }
-    toast.show({
-      message: intl.formatMessage(messages.companyHiddenToast, { company }),
-      extended: jobIds.length > 1,
-      action: { label: data?.copy.undo ?? "", run: () => undoHide(jobIds, selectedId) },
-    });
-  };
-
-  const unhide = (row: { jobId: string; title: string }) => {
-    local.setUnhidden((set) => toggled(set, row.jobId, true));
-    local.setHidden((set) => toggled(set, row.jobId, false));
-    toast.show({
-      message: intl.formatMessage(messages.unhiddenToast, { title: row.title }),
-      action: {
-        label: data?.copy.undo ?? "",
-        run: () => local.setUnhidden((set) => toggled(set, row.jobId, false)),
+      ...(index >= 0 && { onWhy: () => setReasonsOpen(true) }),
+      onUndo: () => {
+        setPlaceholder((current) => (current?.jobId === row.jobId ? null : current));
+        setReasonsOpen(false);
+        select(row.jobId);
       },
     });
   };
 
-  const saveReasons = (keys: readonly DismissReasonVM["key"][]) => {
-    if (keys.length > 0) toast.show({ variant: "info", message: intl.formatMessage(messages.reasonsToast) });
+  const hideCompany = (jobId: string) => {
+    if (!actions.hideCompany(jobId, () => select(jobId)))
+      toast.show({ variant: "info", message: intl.formatMessage(messages.needsProfile) });
+    else setPlaceholder(null);
   };
 
-  const detailHidden = detail ? isHidden(detail.jobId, detail.hidden) : false;
+  const saveReasons = (keys: readonly DismissReasonVM["key"][]) => {
+    if (placeholder) actions.setDismissReasons(placeholder.jobId, keys);
+  };
 
+  const openApply = () => setSearchParams({ apply: "1" });
   const apply = () => {
     if (!detail || detail.applied || offline) return;
     if (!detail.apply.external) {
-      toast.show({ variant: "info", message: intl.formatMessage(messages.emailApply) });
+      openApply();
       return;
     }
     openUrl(detail.apply.target);
-    local.setAskSubmit((set) => toggled(set, detail.jobId, true));
-    local.setAnsweredSubmit((set) => toggled(set, detail.jobId, false));
-  };
-
-  const answerSubmit = (message: string, undoable: boolean) => {
-    if (!detail) return;
-    const jobId = detail.jobId;
-    local.setAnsweredSubmit((set) => toggled(set, jobId, true));
-    toast.show({
-      variant: undoable ? "undo" : "info",
-      message,
-      ...(undoable && {
-        action: {
-          label: data?.copy.undo ?? "",
-          run: () => local.setAnsweredSubmit((set) => toggled(set, jobId, false)),
-        },
-      }),
+    setAskSubmit((set) => new Set(set).add(detail.jobId));
+    setAnsweredSubmit((set) => {
+      const next = new Set(set);
+      next.delete(detail.jobId);
+      return next;
     });
   };
+  const answered = (jobId: string) => setAnsweredSubmit((set) => new Set(set).add(jobId));
+  const viewInTracker = (applicationId: string) =>
+    void navigate({
+      to: "/tracker",
+      search: (previous: Readonly<Record<string, unknown>>) => ({ ...previous, applicationId }),
+    });
 
   useKeyBindings([
     {
@@ -344,15 +371,15 @@ export default function JobDetailScreen({ model, params }: ScreenProps<JobDetail
       keys: "S",
       label: intl.formatMessage(messages.keySave),
       group,
-      enabled: detail !== null,
-      run: () => detail && toggleSave({ ...detail, saved: detail.saved }),
+      enabled: detail !== null && !applyOpen,
+      run: () => detail && actions.toggleSave(detail.jobId),
     },
     {
       id: "jobs.notForMe",
       keys: ["D", "Backspace"],
       label: intl.formatMessage(messages.keyNotForMe),
       group,
-      enabled: detail !== null && !detailHidden,
+      enabled: detail !== null && !detail.hidden && !applyOpen,
       run: () => detail && hide(detail, false),
     },
     {
@@ -360,7 +387,7 @@ export default function JobDetailScreen({ model, params }: ScreenProps<JobDetail
       keys: "Shift+D",
       label: intl.formatMessage(messages.keyNotForMeReason),
       group,
-      enabled: detail !== null && !detailHidden,
+      enabled: detail !== null && !detail.hidden && !applyOpen,
       run: () => detail && hide(detail, true),
     },
     {
@@ -368,7 +395,7 @@ export default function JobDetailScreen({ model, params }: ScreenProps<JobDetail
       keys: "A",
       label: intl.formatMessage(messages.keyApply),
       group,
-      enabled: detail !== null && detail.applied === null && !offline,
+      enabled: detail !== null && detail.applied === null && !offline && !applyOpen,
       run: apply,
     },
     {
@@ -376,7 +403,7 @@ export default function JobDetailScreen({ model, params }: ScreenProps<JobDetail
       keys: "O",
       label: intl.formatMessage(messages.keyOpen),
       group,
-      enabled: detail !== null,
+      enabled: detail !== null && !applyOpen,
       run: () => detail && openUrl(detail.originalUrl),
     },
     {
@@ -390,55 +417,200 @@ export default function JobDetailScreen({ model, params }: ScreenProps<JobDetail
         searchRef.current?.focus();
       },
     },
+    {
+      id: "jobs.filters",
+      keys: "F",
+      label: intl.formatMessage(messages.focusFilters),
+      group,
+      enabled: data !== null && !applyOpen,
+      run: (event) => {
+        event.preventDefault();
+        document.querySelector<HTMLElement>("[data-filter-bar] [data-filter-pill]")?.focus();
+      },
+    },
   ]);
-
 
   // Rendered in every state so the sidebar doesn't jump while the list loads or fails.
   const currentScope = data?.scope ?? JOBS_SCOPES.find((scope) => scope === params.scope) ?? "all";
+  const currentSearch = data?.savedSearches.find((item) => item.current) ?? null;
   const scopeTitle =
-    currentScope === "all"
+    currentSearch?.name ??
+    (currentScope === "all"
       ? intl.formatMessage(destinationMessages.jobs)
-      : intl.formatMessage(SCOPE_MESSAGES[currentScope]);
+      : intl.formatMessage(SCOPE_MESSAGES[currentScope]));
+
+  const skippedNames =
+    run?.state === "done"
+      ? run.response.sources
+          .filter((source) => source.status === "skipped" && source.reason === "no_key")
+          .map((source) => jobSources.find((status) => status.id === source.source)?.label ?? source.source)
+      : [];
+  // One polite live region that stays mounted, so starting, finishing and failing are all announced;
+  // each alert is keyed by its state so only this region (not the alert's own) reports the change.
+  const runBanner = (
+    <div aria-live="polite" className={run ? "px-6 pb-2" : undefined}>
+      {run?.state === "failed" ? (
+        <InlineAlert key="failed" tone="warning" title={run.message} onDismiss={() => setRun(null)} />
+      ) : run?.state === "running" ? (
+        <InlineAlert
+          key="running"
+          tone="info"
+          title={intl.formatMessage(messages.searching, { query: run.query })}
+        >
+          {intl.formatMessage(messages.searchingBody)}
+        </InlineAlert>
+      ) : run?.state === "done" ? (
+        <InlineAlert
+          key="done"
+          tone="info"
+          title={intl.formatMessage(messages.searchDone, {
+            query: run.query,
+            created: run.response.counts.created,
+          })}
+          onDismiss={() => setRun(null)}
+        >
+          {[
+            intl.formatMessage(messages.searchChecked, {
+              found: run.response.counts.found,
+              updated: run.response.counts.updated,
+            }),
+            ...(skippedNames.length > 0
+              ? [
+                  intl.formatMessage(messages.searchSkipped, {
+                    names: intl.formatList(skippedNames, { type: "conjunction" }),
+                  }),
+                ]
+              : []),
+          ].join(" ")}
+        </InlineAlert>
+      ) : null}
+    </div>
+  );
 
   const header = (
-    <header className="flex shrink-0 flex-wrap items-center gap-x-6 gap-y-2 px-6 pt-4 pb-3">
-      <ScreenTitle
-        title={scopeTitle}
-        documentTitle={detail ? `${detail.title} · ${detail.company.name}` : scopeTitle}
-      />
-      <label className="relative flex w-full max-w-96 items-center">
-        <span className="sr-only">{intl.formatMessage(messages.search)}</span>
-        <Search aria-hidden="true" className="text-fg-tertiary pointer-events-none absolute left-2.5 size-4" strokeWidth={1.75} />
-        <input
-          ref={searchRef}
-          type="search"
-          value={query}
-          disabled={data === null}
-          placeholder={intl.formatMessage(messages.searchPlaceholder)}
-          onChange={(event) => setSearch(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Escape" && query !== "") {
-              event.preventDefault();
-              setSearch("");
-            }
-          }}
-          className="bg-surface-base border-line-control text-body placeholder:text-fg-tertiary h-8 w-full rounded-md border pr-9 pl-8 outline-offset-0 focus-visible:outline-2 disabled:opacity-60"
+    <header className="flex shrink-0 flex-col gap-3 px-6 pt-4 pb-3">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <ScreenTitle
+          title={scopeTitle}
+          documentTitle={detail ? `${detail.title} · ${detail.company.name}` : scopeTitle}
         />
-        <span className="pointer-events-none absolute right-2" aria-hidden="true">
-          <Keycaps keys="/" />
+        {/* The field and "Search job sites" are one search: Enter in the field runs it too. */}
+        <form
+          role="search"
+          className="flex min-w-0 flex-1 basis-96 items-center gap-2"
+          onSubmit={(event) => {
+            event.preventDefault();
+            searchSites();
+          }}
+        >
+          <div className="relative flex max-w-96 min-w-48 flex-1 items-center">
+            <label className="contents">
+              <span className="sr-only">{intl.formatMessage(messages.search)}</span>
+              <Search
+                aria-hidden="true"
+                className="text-fg-tertiary pointer-events-none absolute left-2.5 size-4"
+                strokeWidth={1.75}
+              />
+              <input
+                ref={searchRef}
+                type="search"
+                value={query}
+                disabled={data === null}
+                placeholder={intl.formatMessage(messages.searchPlaceholder)}
+                onChange={(event) => setSearch(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Escape" && query !== "") {
+                    event.preventDefault();
+                    setSearch("");
+                  }
+                }}
+                className="bg-surface-base border-line-control text-body placeholder:text-fg-tertiary h-8 w-full rounded-md border pr-9 pl-8 text-ellipsis outline-offset-0 focus-visible:outline-2 disabled:opacity-60"
+              />
+            </label>
+            <span className="pointer-events-none absolute right-2" aria-hidden="true">
+              <Keycaps keys="/" />
+            </span>
+          </div>
+          <Button
+            icon={Search}
+            onClick={searchSites}
+            loading={run?.state === "running"}
+            loadingLabel={intl.formatMessage(messages.searchSites)}
+            disabledReason={
+              offline
+                ? (data?.copy.needsConnection ?? null)
+                : query.trim() === ""
+                  ? intl.formatMessage(messages.searchSitesNeedsQuery)
+                  : null
+            }
+          >
+            {intl.formatMessage(messages.searchSites)}
+          </Button>
+        </form>
+        <span className="ml-auto flex shrink-0 items-center gap-2">
+          <Button icon={ListFilter} variant="plain" onClick={() => setSearchParams({ searches: "manage" })}>
+            {intl.formatMessage(messages.manageSearches)}
+          </Button>
+          <Button icon={Link2} onClick={() => setSearchParams({ import: "1" })}>
+            {intl.formatMessage(messages.addFromLink)}
+          </Button>
         </span>
-      </label>
+      </div>
+      {data && data.list.empty?.kind !== "firstUse" && (
+        <FilterBar
+          bar={data.filterBar}
+          state={data.search}
+          resultCount={rows.length}
+          openFacet={openFacet}
+          onOpenFacetChange={(facet) => setSearchParams({ filters: facet ?? undefined })}
+          onChange={setFilters}
+          trailing={<SaveSearchButton query={data.search.query} filters={data.search.filters} />}
+        />
+      )}
     </header>
   );
 
   const scopes = (
     <SidebarChildren destination="jobs" label={intl.formatMessage(messages.scopesLabel)}>
-      {JOBS_SCOPES.map((scope) => (
-        <SidebarChildItem key={scope} current={scope === currentScope} onSelect={() => setScope(scope)}>
+      {JOBS_SCOPES.filter((scope) => scope !== "hidden").map((scope) => (
+        <SidebarChildItem
+          key={scope}
+          current={scope === currentScope && currentSearch === null}
+          onSelect={() => setScope(scope)}
+        >
           {intl.formatMessage(SCOPE_MESSAGES[scope])}
         </SidebarChildItem>
       ))}
+      {(data?.savedSearches ?? []).map((item) => (
+        <SidebarChildItem key={item.id} current={item.current} onSelect={() => showSavedSearch(item.params)}>
+          {item.name}
+        </SidebarChildItem>
+      ))}
+      <SidebarChildItem current={currentScope === "hidden"} onSelect={() => setScope("hidden")}>
+        {intl.formatMessage(SCOPE_MESSAGES.hidden)}
+      </SidebarChildItem>
     </SidebarChildren>
+  );
+
+  const dialogs = (
+    <>
+      <ImportJobDialog
+        open={params.import === "1"}
+        onOpenChange={(open) => setSearchParams({ import: open ? "1" : undefined })}
+        onImported={(jobId) => {
+          setSearchParams({ import: undefined });
+          select(jobId);
+        }}
+      />
+      <SavedSearchesDialog
+        open={params.searches === "manage"}
+        onOpenChange={(open) => setSearchParams({ searches: open ? "manage" : undefined })}
+        onShowResults={(savedSearchId) => {
+          const item = data?.savedSearches.find((candidate) => candidate.id === savedSearchId);
+          if (item) showSavedSearch(item.params);
+        }}
+      />
+    </>
   );
 
   // Below 1440 px start at the narrow end so a 13" window gives the detail more room.
@@ -510,43 +682,57 @@ export default function JobDetailScreen({ model, params }: ScreenProps<JobDetail
     );
 
   const ready = model.data;
-  const stamp = model.fromCache && <StaleStamp prefix="updated" time={model.updatedAt} clock={model.updatedClock} />;
+  const stamp = model.fromCache && (
+    <StaleStamp prefix="updated" time={model.updatedAt} clock={model.updatedClock} />
+  );
 
   if (ready.list.empty?.kind === "firstUse")
     return (
       <div className="flex min-h-0 flex-1 flex-col">
         {scopes}
         {header}
+        {runBanner}
         <EmptyState
           kind="firstUse"
           glyph={Briefcase}
           title={ready.list.empty.title}
-          body={ready.list.empty.body}
+          body={`${ready.list.empty.body} ${sourceHealthLine(jobSources, intl)}`}
           className="flex-1 justify-center"
           {...(ready.list.empty.action && {
             primary: { label: ready.list.empty.action, onClick: () => searchRef.current?.focus(), keys: "/" },
           })}
         />
+        {dialogs}
       </div>
     );
 
   const empty = ready.list.empty;
   const list = empty ? (
-    <div className="px-5 pt-6">
-      <EmptyState
-        kind={empty.kind}
-        title={empty.title}
-        body={empty.body}
-        {...(empty.action && { primary: { label: empty.action, onClick: () => setSearch("") } })}
-      />
-    </div>
+    <EmptyResults
+      empty={empty}
+      searchDisabledReason={offline ? ready.copy.needsConnection : null}
+      onRemoveFacet={(facet) => {
+        setFilters(clearFacet(ready.search, facet));
+        // The chip goes away; continue from that filter's pill in the bar.
+        requestAnimationFrame(() =>
+          document.querySelector<HTMLElement>(`[data-filter-bar] [data-filter-pill="${facet}"]`)?.focus(),
+        );
+      }}
+      // "Remove all filters" when filters hide everything, else "Clear search".
+      onAction={() =>
+        empty.chips.length > 0
+          ? setFilters({ ...ready.search, filters: NO_FILTERS, minBand: null })
+          : setSearch("")
+      }
+      onSearchSites={searchSites}
+    />
   ) : (
     <JobList
       model={ready}
       rows={rows}
-      savedOf={savedOf}
+      savedOf={(row) => row.saved}
       selectedId={selectedId}
-      placeholder={local.placeholder}
+      placeholder={placeholder}
       listRef={listRef}
       nav={nav}
       reasonsOpen={reasonsOpen}
@@ -556,102 +742,119 @@ export default function JobDetailScreen({ model, params }: ScreenProps<JobDetail
         select(jobId);
         if (narrow) setDetailOpen(true);
       }}
-      onToggleSave={toggleSave}
+      onToggleSave={(row) => actions.toggleSave(row.jobId)}
       onNotForMe={(row) => hide(row, false)}
       onOpenOriginal={(row) => openUrl(row.originalUrl)}
+      onSortChange={(sort) => setFilters({ ...ready.search, sort })}
       stamp={stamp}
     />
   );
 
   const position = detail ? visibleIds.indexOf(detail.jobId) : -1;
-  const detailView = detail ? (
-    <DetailPane
-      key={detail.jobId}
-      detail={detail}
-      copy={ready.copy}
-      position={position >= 0 ? position + 1 : null}
-      total={visibleIds.length}
-      saved={savedOf(detail)}
-      hidden={detailHidden}
-      showSubmitPrompt={
-        (detail.submitPrompt !== null || local.askSubmit.has(detail.jobId)) && !local.answeredSubmit.has(detail.jobId)
-      }
-      actions={{
-        onPrevious: () => detail.previousJobId && select(detail.previousJobId),
-        onNext: () => detail.nextJobId && select(detail.nextJobId),
-        onApply: apply,
-        onToggleSave: () => toggleSave({ ...detail, saved: detail.saved }),
-        onNotForMe: () => hide(detail, false),
-        onNotForMeWithReason: () => hide(detail, true),
-        onUnhide: () => unhide(detail),
-        onHideCompany: () => hideCompany(detail.company.name),
-        onCopyLink: () =>
-          void navigator.clipboard
-            .writeText(detail.originalUrl)
-            .then(() => toast.show({ variant: "info", message: intl.formatMessage(messages.linkCopied) })),
-        onOpenUrl: openUrl,
-        onViewInTracker: (applicationId) =>
-          void navigate({ to: "/tracker", search: (previous: Readonly<Record<string, unknown>>) => ({ ...previous, applicationId }) }),
-        onOpenCv: (cvId) =>
-          void navigate({ to: "/cvs/$cvId", params: { cvId }, search: (previous: Readonly<Record<string, unknown>>) => previous }),
-        onSubmitYes: () =>
-          answerSubmit(intl.formatMessage(messages.appliedToast, { company: detail.company.name }), true),
-        onSubmitNotYet: () => answerSubmit(intl.formatMessage(messages.notYetToast), false),
-        onSubmitNotApplying: () =>
-          answerSubmit(intl.formatMessage(messages.notApplyingToast, { company: detail.company.name }), true),
-      }}
-      match={{
-        resolvedGaps: local.gaps.get(detail.jobId) ?? new Set(),
-        onHaveThis: (gap: FactorVM) => {
-          local.setGaps((map) => withKey(map, detail.jobId, toggled(map.get(detail.jobId) ?? new Set(), gap.text, true)));
-          toast.show({
-            message: intl.formatMessage(messages.haveThisToast, { skill: gap.text }),
-            action: {
-              label: ready.copy.undo,
-              run: () =>
-                local.setGaps((map) =>
-                  withKey(map, detail.jobId, toggled(map.get(detail.jobId) ?? new Set(), gap.text, false)),
-                ),
-            },
-          });
-        },
-        onUndoHaveThis: (gap: FactorVM) =>
-          local.setGaps((map) =>
-            withKey(map, detail.jobId, toggled(map.get(detail.jobId) ?? new Set(), gap.text, false)),
-          ),
-        onAddToCv: (cvId) =>
-          void navigate({ to: "/cvs/$cvId", params: { cvId }, search: (previous: Readonly<Record<string, unknown>>) => previous }),
-        rescoringCv: local.rescoring.get(detail.jobId) ?? null,
-        onChangeCv: (cvId) => {
-          const match = detail.match;
-          if (match.state !== "ready") return;
-          const cv = match.cvOptions.find((option) => option.id === cvId);
-          const before = local.rescoring.get(detail.jobId);
-          local.setRescoring((map) => withKey(map, detail.jobId, cvId === match.basedOnCvId ? undefined : cv));
-          if (cv && cvId !== match.basedOnCvId)
+  const detailView =
+    detail && applyOpen ? (
+      <EmailApplyPanel
+        key={`apply-${detail.jobId}`}
+        jobId={detail.jobId}
+        onClose={() => setSearchParams({ apply: undefined })}
+      />
+    ) : detail ? (
+      <DetailPane
+        key={detail.jobId}
+        detail={detail}
+        copy={ready.copy}
+        position={position >= 0 ? position + 1 : null}
+        total={visibleIds.length}
+        saved={detail.saved}
+        hidden={detail.hidden}
+        showSubmitPrompt={
+          (detail.submitPrompt !== null || askSubmit.has(detail.jobId)) && !answeredSubmit.has(detail.jobId)
+        }
+        actions={{
+          onPrevious: () => detail.previousJobId && select(detail.previousJobId),
+          onNext: () => detail.nextJobId && select(detail.nextJobId),
+          onApply: apply,
+          onToggleSave: () => actions.toggleSave(detail.jobId),
+          onNotForMe: () => hide(detail, false),
+          onNotForMeWithReason: () => hide(detail, true),
+          onUnhide: () => actions.restore(detail.jobId),
+          onHideCompany: () => hideCompany(detail.jobId),
+          onCopyLink: () =>
+            void navigator.clipboard
+              .writeText(detail.originalUrl)
+              .then(() => toast.show({ variant: "info", message: intl.formatMessage(messages.linkCopied) })),
+          onOpenUrl: openUrl,
+          onViewInTracker: viewInTracker,
+          onOpenCv: (cvId) =>
+            void navigate({
+              to: "/cvs/$cvId",
+              params: { cvId },
+              search: (previous: Readonly<Record<string, unknown>>) => previous,
+            }),
+          onSubmitYes: () => {
+            answered(detail.jobId);
+            actions.recordApplied(detail.jobId, detail.applyCv, viewInTracker);
+          },
+          onSubmitNotYet: () => {
+            answered(detail.jobId);
+            toast.show({ variant: "info", message: intl.formatMessage(messages.notYetToast) });
+          },
+          onSubmitNotApplying: () => {
+            answered(detail.jobId);
             toast.show({
-              message: intl.formatMessage(messages.cvToast, { cv: cv.title }),
-              action: {
-                label: ready.copy.undo,
-                run: () => local.setRescoring((map) => withKey(map, detail.jobId, before)),
-              },
+              variant: "info",
+              message: intl.formatMessage(messages.notApplyingToast, { company: detail.company.name }),
             });
-        },
-        feedback: local.feedback.get(detail.jobId) ?? null,
-        onFeedback: (value) => local.setFeedback((map) => withKey(map, detail.jobId, value ?? undefined)),
-      }}
-    />
-  ) : (
-    <div className="flex flex-1 flex-col items-center justify-center gap-2 p-8 text-center">
-      <p className="text-title3">{ready.noSelection.title}</p>
-      <p className="text-fg-secondary text-callout">{ready.noSelection.hint}</p>
-    </div>
-  );
+          },
+        }}
+        match={{
+          resolvedGaps: new Set(),
+          onHaveThis: (gap: FactorVM) => gap.skill && actions.haveSkill(detail.jobId, gap.skill),
+          onUndoHaveThis: () => undefined,
+          onAddToCv: (cvId) =>
+            void navigate({
+              to: "/cvs/$cvId",
+              params: { cvId },
+              search: (previous: Readonly<Record<string, unknown>>) => previous,
+            }),
+          rescoringCv,
+          onChangeCv: (cvId) => {
+            const match = detail.match;
+            if (match.state !== "ready" || cvId === match.basedOnCvId) return;
+            const cv = match.cvOptions.find((option) => option.id === cvId);
+            if (!cv) return;
+            const jobId = detail.jobId;
+            setRescoring((map) => new Map(map).set(jobId, cv));
+            actions.changeCv(jobId, cvId, cv.title, () =>
+              setRescoring((map) => {
+                const next = new Map(map);
+                next.delete(jobId);
+                return next;
+              }),
+            );
+          },
+          feedback: feedback.get(detail.jobId) ?? null,
+          onFeedback: (value) =>
+            setFeedback((map) => {
+              const next = new Map(map);
+              if (value) next.set(detail.jobId, value);
+              else next.delete(detail.jobId);
+              return next;
+            }),
+        }}
+      />
+    ) : empty ? null : (
+      <div className="flex flex-1 flex-col items-center justify-center gap-2 p-8 text-center">
+        <p className="text-title3">{ready.noSelection.title}</p>
+        <p className="text-fg-secondary text-callout">{ready.noSelection.hint}</p>
+      </div>
+    );
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       {scopes}
       {header}
+      {runBanner}
       <div className="border-line-subtle flex min-h-0 flex-1 border-t">
         <SplitView
           {...splitLabels}
@@ -665,6 +868,7 @@ export default function JobDetailScreen({ model, params }: ScreenProps<JobDetail
           }}
         />
       </div>
+      {dialogs}
     </div>
   );
 }

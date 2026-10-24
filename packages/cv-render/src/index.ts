@@ -1,4 +1,10 @@
 export { renderCvHtml } from "./html";
+export {
+  type CoverLetterRecipient,
+  type CoverLetterRenderInput,
+  type CoverLetterRenderResult,
+  renderCoverLetterHtml,
+} from "./letter";
 export { buildCvDocx, buildCvDocxBase64 } from "./docx";
 export {
   exportFileName,

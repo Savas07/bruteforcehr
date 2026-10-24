@@ -44,7 +44,9 @@ export function DismissReasonPopover({
   const intl = useIntl();
   const [picked, setPicked] = useState<readonly DismissReasonVM["key"][]>([]);
   const toggle = (key: DismissReasonVM["key"]) =>
-    setPicked((current) => (current.includes(key) ? current.filter((item) => item !== key) : [...current, key]));
+    setPicked((current) =>
+      current.includes(key) ? current.filter((item) => item !== key) : [...current, key],
+    );
   const save = () => {
     if (picked.length > 0) onSave(picked);
     onOpenChange(false);

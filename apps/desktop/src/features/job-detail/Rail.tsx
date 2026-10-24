@@ -144,7 +144,9 @@ export function SourcesList({
   const shown = expanded ? sources.total : sources.collapsedCount;
   // Fill the groups in order (Direct from employer first) up to `shown` rows.
   const groups = sources.groups.map((group, index) => {
-    const before = sources.groups.slice(0, index).reduce((count, previous) => count + previous.rows.length, 0);
+    const before = sources.groups
+      .slice(0, index)
+      .reduce((count, previous) => count + previous.rows.length, 0);
     return { label: group.label, rows: group.rows.slice(0, Math.max(0, shown - before)) };
   });
   return (
@@ -166,7 +168,12 @@ export function SourcesList({
         );
       })}
       {sources.showAllLabel && (
-        <Button size="sm" variant="plain" aria-expanded={expanded} onClick={() => setExpanded((value) => !value)}>
+        <Button
+          size="sm"
+          variant="plain"
+          aria-expanded={expanded}
+          onClick={() => setExpanded((value) => !value)}
+        >
           {expanded ? copy.showLess : sources.showAllLabel}
         </Button>
       )}

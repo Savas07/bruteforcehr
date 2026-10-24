@@ -8,6 +8,7 @@
  */
 import { ANSWER_KINDS, ANSWER_LABEL_MAX, ANSWER_TEXT_MAX, type Answer, type AnswerKind } from "@bfhr/core";
 import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
+import { useSearch } from "@tanstack/react-router";
 import { useId, useState } from "react";
 import { defineMessages, useIntl } from "react-intl";
 import { useJobsData } from "../../data/jobs/live";
@@ -113,7 +114,9 @@ type Selection = string | "new" | null;
 export function AnswersPane() {
   const intl = useIntl();
   const jobs = useJobsData();
-  const [selected, setSelected] = useState<Selection>(null);
+  // `?answer=<id>` opens that answer (links from the kit, critique captures).
+  const search: Readonly<Record<string, unknown>> = useSearch({ strict: false });
+  const [selected, setSelected] = useState<Selection>(typeof search["answer"] === "string" ? search["answer"] : null);
   const add = (
     <Button icon={Plus} onClick={() => setSelected("new")}>
       {intl.formatMessage(messages.add)}

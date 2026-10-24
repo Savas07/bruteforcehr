@@ -15,97 +15,15 @@ import {
   fillMergeFields,
   type Job,
   STARTER_COVER_LETTER_TEMPLATES,
-  type TailorEdit,
 } from "@bfhr/core";
+import { designTailorEdits } from "../features/apply/designState";
+
+export { designTailorEdits };
 
 const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 function limitError(): Error {
   return Object.assign(new Error("daily_cap"), { code: "functions/resource-exhausted", details: { reason: "daily_cap" } });
-}
-
-const REASONS: Readonly<Record<string, Readonly<Record<string, string>>>> = {
-  en: {
-    reword: "Puts the result the job asks for (fast, measurable UIs) first.",
-    order: "Leads with the performance work the posting mentions twice.",
-    keyword: "TypeScript is the first requirement in the posting.",
-    gap: "The job asks about scale; a number makes this concrete.",
-  },
-  tr: {
-    reword: "İlanın istediği sonucu (hızlı, ölçülebilir arayüzler) öne çıkarır.",
-    order: "İlanda iki kez geçen performans çalışmasını başa alır.",
-    keyword: "TypeScript, ilandaki ilk gereksinim.",
-    gap: "İlan ölçeği soruyor; bir sayı bunu somutlaştırır.",
-  },
-  de: {
-    reword: "Stellt das Ergebnis nach vorn, das die Stelle sucht (schnelle, messbare UIs).",
-    order: "Beginnt mit der Performance-Arbeit, die die Anzeige zweimal nennt.",
-    keyword: "TypeScript ist die erste Anforderung der Anzeige.",
-    gap: "Die Stelle fragt nach Größenordnung; eine Zahl macht das greifbar.",
-  },
-};
-
-function edit(fields: Partial<TailorEdit> & Pick<TailorEdit, "id" | "path" | "op" | "reason">): TailorEdit {
-  return { before: null, after: null, order: null, groundedIn: [fields.path], ...fields };
-}
-
-/** Edits against `content`, phrased for whatever its first job's bullets say. */
-export function designTailorEdits(content: CvContent, locale: string): TailorEdit[] {
-  const reasons = REASONS[locale] ?? REASONS["en"] ?? {};
-  const edits: TailorEdit[] = [];
-  const first = content.work?.[0]?.highlights ?? [];
-  const second = content.work?.[1]?.highlights ?? [];
-  const bullet = first[1];
-  if (bullet !== undefined)
-    edits.push(
-      edit({
-        id: "e1",
-        path: "/work/0/highlights/1",
-        op: "replace",
-        before: bullet,
-        after: bullet.replace(/^Cut checkout Largest Contentful Paint/u, "Made checkout faster: Largest Contentful Paint down"),
-        reason: reasons["reword"] ?? "",
-        groundedIn: ["/work/0/highlights/1", "/basics/summary"],
-      }),
-    );
-  if (first.length >= 2)
-    edits.push(
-      edit({
-        id: "e2",
-        path: "/work/0/highlights",
-        op: "reorder",
-        before: first.join(" · "),
-        after: [first[1], first[0], ...first.slice(2)].join(" · "),
-        order: [1, 0, ...first.slice(2).map((_, index) => index + 2)],
-        reason: reasons["order"] ?? "",
-      }),
-    );
-  const keywords = content.skills?.[0]?.keywords ?? [];
-  if (keywords.length >= 2)
-    edits.push(
-      edit({
-        id: "e3",
-        path: "/skills/0/keywords",
-        op: "reorder",
-        before: keywords.join(" · "),
-        after: [keywords[1], keywords[0], ...keywords.slice(2)].join(" · "),
-        order: [1, 0, ...keywords.slice(2).map((_, index) => index + 2)],
-        reason: reasons["keyword"] ?? "",
-      }),
-    );
-  const scaled = second[1];
-  if (scaled !== undefined)
-    edits.push(
-      edit({
-        id: "e4",
-        path: "/work/1/highlights/1",
-        op: "replace",
-        before: scaled,
-        after: `${scaled.replace(/\.$/u, "")}, used by [X] customers.`,
-        reason: reasons["gap"] ?? "",
-      }),
-    );
-  return edits;
 }
 
 export async function designTailor(

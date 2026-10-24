@@ -8,8 +8,9 @@
  */
 import { MAIL_SEND_MAX_ATTACHMENTS, type MailProvider, type RenderedFile } from "@bfhr/core";
 import { FileText, FolderOpen, Paperclip, X } from "lucide-react";
+import { useSearch } from "@tanstack/react-router";
 import { Dialog } from "radix-ui";
-import { type DragEvent, useId, useRef, useState } from "react";
+import { type DragEvent, useEffect, useId, useRef, useState } from "react";
 import { defineMessages, useIntl } from "react-intl";
 import { cx } from "../../shared/cx";
 import { Button, IconButton } from "../../shared/ui/Button";
@@ -117,7 +118,16 @@ export function AttachmentPicker({
   const inputRef = useRef<HTMLInputElement>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
+  // `?attach=files` opens "From your files…" (critique captures).
+  const search: Readonly<Record<string, unknown>> = useSearch({ strict: false });
   const [dialogOpen, setDialogOpen] = useState(false);
+  const attach = search["attach"];
+  useEffect(() => {
+    if (attach !== "files") return;
+    // After the panel has moved focus to its heading, or that focus would close the dialog.
+    const frame = requestAnimationFrame(() => setDialogOpen(true));
+    return () => cancelAnimationFrame(frame);
+  }, [attach]);
   const ctx = { intl, locale: intl.locale };
 
   /** Adds what fits, one by one, and says why the first one that doesn't fit was refused. */

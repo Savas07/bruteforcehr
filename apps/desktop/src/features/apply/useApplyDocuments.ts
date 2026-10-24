@@ -24,6 +24,7 @@ import {
   resolveDraft,
 } from "./model";
 import { type AttachmentPdfs, makeAttachmentPdfs } from "./pdf";
+import { designDraft, designSessionSuffix } from "./designState";
 import { type ApplySession, applySessions } from "./session";
 import { useCvRevision } from "./tailor/TailorHost";
 
@@ -56,12 +57,13 @@ export function useApplyDocuments(
   const repository = useJobsRepository();
   const environment = useContext(ModelEnvironmentContext);
   const { job } = input;
-  const key = `${repository.uid}:${job.id}`;
+  const key = `${repository.uid}:${job.id}${__BFHR_DESIGN__ ? designSessionSuffix() : ""}`;
   const [session, setSession] = useState<ApplySession>(() => {
     const existing = applySessions.get(key);
     if (existing) return existing;
     const created: ApplySession = {
-      draft: createDraft(input),
+      // Design build: `?letter=ai` opens on an AI-drafted letter (designState.ts).
+      draft: __BFHR_DESIGN__ ? designDraft(createDraft(input), input.renderedFiles) : createDraft(input),
       step: "compose",
       pdfs: null,
       pins: null,

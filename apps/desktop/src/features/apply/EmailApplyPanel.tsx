@@ -35,6 +35,7 @@ import { useToast } from "../../shared/ui/Toast";
 import { AttachmentChip, type AttachmentChipVM, AttachmentPicker } from "./AttachmentPicker";
 import { CoverLetterEditor, FieldsToFill } from "./CoverLetterEditor";
 import { CvField } from "./CvField";
+import { designSessionSuffix } from "./designState";
 import { ApplyGate } from "./gate";
 import {
   type ApplyInput,
@@ -173,7 +174,10 @@ export function EmailApplyPanel({
   const intl = useIntl();
   return (
     <ApplyGate jobId={jobId} fallbackTitle={intl.formatMessage(messages.fallbackTitle)} onClose={onClose}>
-      {(input) => <Composer key={jobId} input={input} onClose={onClose} onTailor={onTailor} />}
+      {(input) => (
+        // Design build: a forced state (`?letter=ai`) starts its own composer (designState.ts).
+        <Composer key={`${jobId}${__BFHR_DESIGN__ ? designSessionSuffix() : ""}`} input={input} onClose={onClose} onTailor={onTailor} />
+      )}
     </ApplyGate>
   );
 }
@@ -254,6 +258,13 @@ function Composer({
   useEffect(() => {
     headingRef.current?.focus();
   }, [view]);
+  // Design build: the forced letter state opens scrolled to the letter (critique captures).
+  useEffect(() => {
+    if (__BFHR_DESIGN__ && designSessionSuffix() !== "")
+      document.getElementById(ids.letterOn)?.scrollIntoView({ block: "start" });
+    // Once, when the forced state opens.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const openTracker = useCallback(
     (applicationId: string) => void navigate({ to: "/tracker/applications/$applicationId", params: { applicationId } }),

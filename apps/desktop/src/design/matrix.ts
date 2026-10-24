@@ -39,6 +39,16 @@ export const designScreenPaths = {
   "jobs-import": "/jobs?import=1",
   /** Apply by email: the composer over a posting that asks for email (design build: src/design/jobs.tsx). */
   apply: "/jobs/job-fernweh-frontend?apply=1",
+  /** Tailor for this job: the review, partly decided (src/features/apply/designState.ts). */
+  "tailor-review": "/jobs/job-fernweh-frontend?apply=1&tailor=cv-de&tailor-step=review",
+  /** The composer with an AI-drafted cover letter, an unresolved field and an extra attachment. */
+  "cover-letter": "/jobs/job-fernweh-frontend?apply=1&letter=ai",
+  /** "From your files…" over the composer. */
+  "attachment-picker": "/jobs/job-fernweh-frontend?apply=1&letter=ai&attach=files",
+  /** External apply: the kit beside a posting on a company site, with "Did you submit?". */
+  "apply-kit": "/jobs/job-northstar-frontend?apply=1",
+  /** Settings › Application answers with an answer open. */
+  "answers-settings": "/settings/answers?answer=answer-auth-eu",
   "cv-editor": "/cvs",
   "tracker-board": "/tracker",
   /** An application with an automatic move (Undo), an interview, a contact and a pinned CV. */

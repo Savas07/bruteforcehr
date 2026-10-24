@@ -22,6 +22,7 @@ import { Check, CircleCheck, Info, Sparkles, Undo2, X } from "lucide-react";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { defineMessages, useIntl } from "react-intl";
 import { useJobsRepository } from "../../../data/jobs/repository";
+import { designTailorEdits, designTailorStep } from "../designState";
 import { useConnectivity } from "../../../shared/connectivity";
 import { cx } from "../../../shared/cx";
 import { useKeyBindings } from "../../../shared/keyboard/useKeyBindings";
@@ -159,7 +160,18 @@ export function TailorReview({ cv, revision, job, match, application, aiEnabled,
   const intensityId = useId();
 
   const [session, setSession] = useState<TailorSession>(
-    () => tailorSessions.get(key) ?? { intensity: "light", review: null },
+    () =>
+      tailorSessions.get(key) ??
+      // Design build: `?tailor-step=review` opens on the design answer, partly decided.
+      (__BFHR_DESIGN__ && designTailorStep() === "review"
+        ? {
+            intensity: "light",
+            review: {
+              response: { edits: designTailorEdits(revision.content, "en"), dropped: 2, model: "design", promptVersion: "design" },
+              decisions: { e1: "accepted", e2: "kept" },
+            },
+          }
+        : { intensity: "light", review: null }),
   );
   const update = (next: TailorSession) => {
     tailorSessions.set(key, next);

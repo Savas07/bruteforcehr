@@ -886,9 +886,10 @@ export default function JobDetailScreen({ model, params }: ScreenProps<JobDetail
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      {scopes}
-      {header}
-      {runBanner}
+      {/* Tailoring takes the whole content area: the feed's search and filters step aside. */}
+      {!tailorOpen && scopes}
+      {!tailorOpen && header}
+      {!tailorOpen && runBanner}
       <div className="border-line-subtle flex min-h-0 flex-1 border-t">
         {tailorOpen && detail && params.tailor ? (
           <TailorHost

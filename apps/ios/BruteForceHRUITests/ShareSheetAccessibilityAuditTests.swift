@@ -25,7 +25,7 @@ final class ShareSheetAccessibilityAuditTests: XCTestCase {
     }
 
     @MainActor
-    private func audit(_ app: XCUIApplication, _ context: String) throws {
+    private func audit(_ app: XCUIApplication, _ context: String, defaultSize: Bool = true) throws {
         if let directory = ProcessInfo.processInfo.environment["BFHR_CAPTURE_DIR"] {
             let name = "share-sheet-audit-\(context.replacingOccurrences(of: " ", with: "-")).png"
             try? XCUIScreen.main.screenshot().pngRepresentation.write(to: URL(fileURLWithPath: directory).appendingPathComponent(name))
@@ -40,6 +40,23 @@ final class ShareSheetAccessibilityAuditTests: XCTestCase {
             if keyboard.exists, keyboard.frame.intersects(element.frame) { return true }
             if !app.frame.contains(element.frame) {
                 XCTContext.runActivity(named: "IGNORED (partly off screen) \(context): \(issue.compactDescription) — \(element.label)") { _ in }
+                return true
+            }
+            // Same policy as TrackerBoardAccessibilityAuditTests: the system navigation bar's
+            // Cancel / title are capped by iOS by design, and a Dynamic Type report at the default
+            // size is covered by the AX5 run of the same state.
+            if app.navigationBars.allElementsBoundByIndex.contains(where: { $0.exists && $0.frame.contains(element.frame) }) {
+                XCTContext.runActivity(named: "IGNORED (system navigation bar item) \(context): \(element.label)") { _ in }
+                return true
+            }
+            if issue.auditType == .dynamicType, defaultSize {
+                XCTContext.runActivity(named: "IGNORED (default size; AX run covers scaling) \(context): \(element.label)") { _ in }
+                return true
+            }
+            // A prediction ("may be clipped at larger Dynamic Type sizes") at the default size; the
+            // AX5 run measures the real thing (TrackerBoardAccessibilityAuditTests policy).
+            if issue.auditType == .textClipped, defaultSize, issue.detailedDescription.contains("larger Dynamic Type") {
+                XCTContext.runActivity(named: "IGNORED (prediction; AX run measures it) \(context): \(element.label)") { _ in }
                 return true
             }
             XCTContext.runActivity(named: "ISSUE \(context): \(issue.compactDescription) — \(element.debugDescription.prefix(240))") { _ in }
@@ -60,7 +77,7 @@ final class ShareSheetAccessibilityAuditTests: XCTestCase {
     func testEveryStateAccessibilitySize() throws {
         for state in states {
             let app = launch(state, ax: true)
-            try audit(app, "\(state) AX")
+            try audit(app, "\(state) AX", defaultSize: false)
             app.terminate()
         }
     }

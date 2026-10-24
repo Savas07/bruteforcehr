@@ -45,6 +45,8 @@ artifacts/
 .env
 .env.*
 !.env.example
+# Non-secret function params (PUBLIC_BASE_URL); secrets are in Secret Manager.
+!apps/functions/.env.bruteforcehr
 *.p8
 *.p12
 *.mobileprovision

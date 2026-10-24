@@ -10,6 +10,7 @@ enum JobImportStrings {
     static let role = LocalizedStringResource.bfhr("share.role", default: "Role", table: "JobImport", comment: "Job title field.")
     static let company = LocalizedStringResource.bfhr("share.company", default: "Company", table: "JobImport")
     static let location = LocalizedStringResource.bfhr("share.location", default: "Location", table: "JobImport")
+    static let optional = LocalizedStringResource.bfhr("share.optional", default: "Optional", table: "JobImport", comment: "Placeholder of the optional location field when adding by hand.")
     static let locationPrompt = LocalizedStringResource.bfhr("share.locationPrompt", default: "Not stated", table: "JobImport", comment: "Placeholder of the location field when the posting names no place.")
     static let save = LocalizedStringResource.bfhr("share.save", default: "Save", table: "JobImport", comment: "Saves the job to Jobs › Saved and the Tracker's Saved stage.")
     static let saveAndLog = LocalizedStringResource.bfhr("share.saveAndLog", default: "Save and log as applied", table: "JobImport", comment: "Saves the job and adds an application with status Applied, dated today.")

@@ -9,6 +9,7 @@ import SwiftUI
 public struct JobImportShareSheet: View {
     @Bindable private var model: JobImportShareModel
     private let onClose: () -> Void
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     public init(model: JobImportShareModel, onClose: @escaping () -> Void) {
         self.model = model
@@ -18,7 +19,7 @@ public struct JobImportShareSheet: View {
     public var body: some View {
         NavigationStack {
             content
-                .navigationTitle(Text(JobImportStrings.title))
+                .navigationTitle(Text(model.phase == .manual ? JobImportStrings.manualTitle : JobImportStrings.title))
                 .bfhrInlineTitle()
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
@@ -129,35 +130,62 @@ public struct JobImportShareSheet: View {
             }
             Section {
                 if model.isExisting {
-                    LabeledContent { Text(verbatim: model.title) } label: { Text(JobImportStrings.role) }
-                    LabeledContent { Text(verbatim: model.company) } label: { Text(JobImportStrings.company) }
+                    readOnlyRow(JobImportStrings.role, model.title)
+                    readOnlyRow(JobImportStrings.company, model.company)
                     if !model.location.isEmpty {
-                        LabeledContent { Text(verbatim: model.location) } label: { Text(JobImportStrings.location) }
+                        readOnlyRow(JobImportStrings.location, model.location)
                     }
                 } else {
                     TrackerFormField(JobImportStrings.role, text: $model.title, kind: .jobTitle)
                         .accessibilityIdentifier("share.role")
                     TrackerFormField(JobImportStrings.company, text: $model.company, kind: .organization)
                         .accessibilityIdentifier("share.company")
-                    TrackerFormField(JobImportStrings.location, text: $model.location, prompt: JobImportStrings.locationPrompt, kind: .city)
+                    TrackerFormField(
+                        JobImportStrings.location,
+                        text: $model.location,
+                        prompt: manual ? JobImportStrings.optional : JobImportStrings.locationPrompt,
+                        kind: .city
+                    )
                         .accessibilityIdentifier("share.location")
                 }
-            } header: {
-                if manual { Text(JobImportStrings.manualTitle) }
             } footer: {
-                Text(manual ? JobImportStrings.manualFooter : (model.canSave ? JobImportStrings.footer : JobImportStrings.requiredFooter))
+                Text(model.canSave ? (manual ? JobImportStrings.manualFooter : JobImportStrings.footer) : JobImportStrings.requiredFooter)
                     .font(.bfhr(.footnote))
                     .foregroundStyle(BFHRColor.Fg.primary)
                     .fixedSize(horizontal: false, vertical: true)
             }
+            // At accessibility sizes the two buttons would cover most of the sheet: they scroll
+            // with the fields as the last section instead of staying pinned.
+            if dynamicTypeSize.isAccessibilitySize {
+                Section { actions }
+                    .listRowInsets(EdgeInsets())
+                    .listRowBackground(Color.clear)
+            }
         }
         .scrollDismissesKeyboard(.interactively)
-        .safeAreaInset(edge: .bottom) { actions(manual: manual) }
+        .safeAreaInset(edge: .bottom) {
+            if !dynamicTypeSize.isAccessibilitySize { actions }
+        }
+    }
+
+    /// A saved job's value: label above, value in the primary color (the system's trailing grey
+    /// value only nearly passes contrast), wrapping at large sizes like the editable fields.
+    private func readOnlyRow(_ label: LocalizedStringResource, _ value: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(label)
+                .font(.bfhr(.footnote))
+                .foregroundStyle(BFHRColor.Fg.secondary)
+            Text(verbatim: value)
+                .font(.bfhr(.body))
+                .foregroundStyle(BFHRColor.Fg.primary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .accessibilityElement(children: .combine)
     }
 
     private var sourceRow: some View {
         VStack(alignment: .leading, spacing: BFHRSpace.s1) {
-            Label { Text(bfhrPlain: JobImportStrings.source(model.sourceHost)) } icon: { Image(systemName: "link") }
+            Label { Text(bfhrPlain: JobImportStrings.source(model.sourceHost)).fixedSize(horizontal: false, vertical: true) } icon: { Image(systemName: "link") }
                 .labelStyle(.bfhrCompact)
                 .font(.bfhr(.subheadline, emphasized: true))
                 .foregroundStyle(BFHRColor.Fg.primary)
@@ -178,7 +206,7 @@ public struct JobImportShareSheet: View {
         .accessibilityIdentifier("share.source")
     }
 
-    private func actions(manual: Bool) -> some View {
+    private var actions: some View {
         VStack(spacing: BFHRSpace.s2) {
             if model.saveFailed {
                 Text(JobImportStrings.saveFailed)

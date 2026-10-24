@@ -153,7 +153,8 @@ export function CommandPalette({
                   return (
                     <Command.Item
                       key={pane.id}
-                      value={`${intl.formatMessage(messages.settings)} ${label}`}
+                      value={label}
+                      keywords={[intl.formatMessage(messages.settings)]}
                       onSelect={() => run(() => onOpenSettings(pane.id))}
                       className={itemClass}
                     >

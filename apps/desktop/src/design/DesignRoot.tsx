@@ -4,6 +4,7 @@ import { useEffect, useMemo } from "react";
 import { RawIntlProvider, useIntl } from "react-intl";
 import { AppShell } from "../components/AppShell";
 import { AddApplicationHost } from "../features/application-add";
+import { MailConnectHost } from "../features/mail-connect";
 import { createAppIntl } from "../i18n/intl";
 import { resolveAppLocale } from "../i18n/locale";
 import { type Connectivity, ConnectivityContext } from "../shared/connectivity";
@@ -68,6 +69,7 @@ export function DesignRoot() {
             hosts={
               <DesignTrackerProviders>
                 <AddApplicationHost />
+                <MailConnectHost />
               </DesignTrackerProviders>
             }
           />

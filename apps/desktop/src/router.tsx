@@ -13,6 +13,7 @@ import { InterviewReminders } from "./data/tracker/InterviewReminders";
 import { LiveTrackerProvider } from "./data/tracker/live";
 import { LiveMailProvider } from "./data/mail/live";
 import { AddApplicationHost } from "./features/application-add";
+import { MailConnectHost } from "./features/mail-connect";
 import LiveApplicationDetail from "./features/application-detail/Live";
 import LiveCvStudio from "./features/cv-editor/LiveCvStudio";
 import LiveInsights from "./features/insights/LiveInsights";
@@ -73,6 +74,7 @@ function LiveRoot() {
           <LiveMailProvider>
             <AddApplicationHost />
             <InterviewReminders />
+            <MailConnectHost />
           </LiveMailProvider>
         </LiveTrackerProvider>
       }

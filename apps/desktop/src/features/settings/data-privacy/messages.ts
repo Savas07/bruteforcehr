@@ -20,7 +20,8 @@ export const exportMessages = defineMessages({
   included1: { id: "settings.dataPrivacy.export.included.1", defaultMessage: "Profile and settings" },
   included2: {
     id: "settings.dataPrivacy.export.included.2",
-    defaultMessage: "CVs with every version, cover letters, and the PDF and Word files you created or imported",
+    defaultMessage:
+      "CVs with every version, cover letters, and the PDF and Word files you created or imported",
   },
   included3: {
     id: "settings.dataPrivacy.export.included.3",
@@ -67,7 +68,8 @@ export const exportMessages = defineMessages({
   },
   retention: {
     id: "settings.dataPrivacy.export.retention",
-    defaultMessage: "We delete the file from our servers 7 days after it's created. Making a new export replaces it.",
+    defaultMessage:
+      "We delete the file from our servers 7 days after it's created. Making a new export replaces it.",
   },
   errorTooSoon: {
     id: "settings.dataPrivacy.export.error.tooSoon",
@@ -128,7 +130,10 @@ export const deleteMessages = defineMessages({
     defaultMessage:
       "Connected mail accounts. We also remove our access at Google, Microsoft or your mail provider.",
   },
-  item6: { id: "settings.dataPrivacy.delete.item.6", defaultMessage: "Your devices and notification settings" },
+  item6: {
+    id: "settings.dataPrivacy.delete.item.6",
+    defaultMessage: "Your devices and notification settings",
+  },
   irreversible: { id: "settings.dataPrivacy.delete.irreversible", defaultMessage: "This can't be undone." },
   exportFirst: { id: "settings.dataPrivacy.delete.exportFirst", defaultMessage: "Export my data first" },
   confirmLabel: {

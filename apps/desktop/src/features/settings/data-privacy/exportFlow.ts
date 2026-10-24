@@ -50,7 +50,10 @@ export function fileNameOf(path: string): string {
 
 export class ExportFlow extends ViewStore<ExportView> {
   constructor(
-    private readonly backend: Pick<AccountDataBackend, "createExport" | "downloadExport" | "saveExport" | "now">,
+    private readonly backend: Pick<
+      AccountDataBackend,
+      "createExport" | "downloadExport" | "saveExport" | "now"
+    >,
     initial: ExportView = EXPORT_IDLE,
   ) {
     super(initial);
@@ -92,6 +95,7 @@ export class ExportFlow extends ViewStore<ExportView> {
   /** After `expiresAt` the server has deleted the ZIP, so the ready card goes. */
   expire(): void {
     const view = this.getSnapshot();
-    if (view.status === "ready" && this.backend.now() >= Date.parse(view.export.expiresAt)) this.set(EXPORT_IDLE);
+    if (view.status === "ready" && this.backend.now() >= Date.parse(view.export.expiresAt))
+      this.set(EXPORT_IDLE);
   }
 }

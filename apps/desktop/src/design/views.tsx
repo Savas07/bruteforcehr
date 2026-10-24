@@ -19,6 +19,7 @@ import { CvSuggestionSeedContext } from "../features/cv-editor/suggestionSeed";
 import type { ModelContext } from "../shared/model/types";
 import type { RouteViews } from "../router";
 import { readDesignParams } from "./search";
+import { DesignDataPrivacy } from "./data-privacy";
 import { Demo } from "./Demo";
 import { DesignIndex } from "./DesignIndex";
 import { DesignRoot } from "./DesignRoot";
@@ -127,5 +128,6 @@ export const designViews: RouteViews = {
     insights: Insights,
     design: DesignIndex,
     designDemo: Demo,
+    designDataPrivacy: DesignDataPrivacy,
   },
 };

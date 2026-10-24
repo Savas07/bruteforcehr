@@ -46,7 +46,12 @@ async function call(name: string, idToken: string, data: unknown): Promise<Calla
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${idToken}` },
     body: JSON.stringify({ data }),
   });
-  return (await response.json()) as CallableReply;
+  const text = await response.text();
+  try {
+    return JSON.parse(text) as CallableReply;
+  } catch {
+    return { error: { status: `HTTP ${response.status}`, message: text.slice(0, 300) } };
+  }
 }
 
 const failures: string[] = [];

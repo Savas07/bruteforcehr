@@ -16,7 +16,9 @@ import {
   MAIL_SEND_ERROR_REASONS,
   MAIL_SEND_MAX_ATTACHMENT_BYTES,
   type MailAccount,
+  type MailProvider,
   type MailSendErrorReason,
+  mailSendMaxAttachmentBytes,
   type MailSendRequest,
   type Profile,
   type RenderedFile,
@@ -596,11 +598,17 @@ export function fileSize(bytes: number, locale: string): string {
     : new Intl.NumberFormat(locale, { style: "unit", unit: "kilobyte", unitDisplay: "short", maximumFractionDigits: 0 }).format(Math.max(1, kilobytes));
 }
 
-/** Over the provider limit the server would refuse (`attachments_too_large`): say so before sending. */
-export function attachmentsTooLarge(totalBytes: number, ctx: Pick<ModelContext, "intl" | "locale">): string | null {
-  return totalBytes > MAIL_SEND_MAX_ATTACHMENT_BYTES
-    ? ctx.intl.formatMessage(messages.attachmentsTooLarge, { limit: fileSize(MAIL_SEND_MAX_ATTACHMENT_BYTES, ctx.locale) })
-    : null;
+/**
+ * Over the limit the server would refuse (`attachments_too_large`): say so before sending.
+ * Microsoft accounts send about 2.9 MB (one Graph request); without an account the 18 MB rule applies.
+ */
+export function attachmentsTooLarge(
+  totalBytes: number,
+  provider: MailProvider | null,
+  ctx: Pick<ModelContext, "intl" | "locale">,
+): string | null {
+  const limit = provider === null ? MAIL_SEND_MAX_ATTACHMENT_BYTES : mailSendMaxAttachmentBytes(provider);
+  return totalBytes > limit ? ctx.intl.formatMessage(messages.attachmentsTooLarge, { limit: fileSize(limit, ctx.locale) }) : null;
 }
 
 /** The cover letter's date (`YYYY-MM-DD`) on the user's calendar. */

@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { fetchStub, stubTokens } from "./fetch-stub";
-import { GRAPH_WRITE_SCOPE, GraphAdapter, UPLOAD_CHUNK_SIZE } from "./graph";
+import { MAIL_SEND_MICROSOFT_MAX_ATTACHMENT_BYTES, MAIL_SEND_MICROSOFT_MAX_REQUEST_BYTES } from "@bfhr/core";
+import { GRAPH_SEND_SCOPE, GraphAdapter, graphSendOverLimit } from "./graph";
 import {
   MailAuthError,
   MailCursorExpiredError,
   MailScopeError,
+  MailTooLargeError,
   MailTransientError,
   type OutgoingMail,
 } from "./types";
@@ -289,111 +291,58 @@ describe("GraphAdapter", () => {
     expect(fetchCalls).toContain("/v1.0/me/messages/unknown?$select=receivedDateTime");
   });
 
-  it("sends via draft, small and chunked large attachments, then send", async () => {
-    const uploadUrl =
-      "https://outlook.office.com/api/v2.0/Users('u')/Messages('draft-1')/AttachmentSessions('s')?authtoken=abc";
-    const stub = fetchStub([
-      { match: `POST ${BASE}/messages`, responses: [{ status: 201, body: { id: "draft-1" } }] },
-      {
-        match: `POST ${BASE}/messages/draft-1/attachments`,
-        responses: [{ status: 201, body: { id: "att-1" } }],
-      },
-      {
-        match: `POST ${BASE}/messages/draft-1/attachments/createUploadSession`,
-        responses: [{ status: 201, body: { uploadUrl, expirationDateTime: "2026-10-24T12:00:00Z" } }],
-      },
-      {
-        match: (request) => request.url.origin === "https://outlook.office.com",
-        responses: [
-          { status: 200, body: { nextExpectedRanges: [] } },
-          { status: 200, body: { nextExpectedRanges: [] } },
-          { status: 201 },
-        ],
-      },
-      {
-        match: `GET ${BASE}/messages/draft-1`,
-        responses: [{ body: { internetMessageId: "<abc@outlook.com>", conversationId: "conv-1" } }],
-      },
-      { match: `POST ${BASE}/messages/draft-1/send`, responses: [{ status: 202 }] },
-    ]);
-    const large = Buffer.alloc(9 * 1024 * 1024, 1);
+  it("sends new mail in one sendMail request with inline base64 attachments and our Message-ID", async () => {
+    const stub = fetchStub([{ match: `POST ${BASE}/sendMail`, responses: [{ status: 202 }] }]);
+    const pdf = Buffer.from("%PDF-1.7 cv");
     const sent = await new GraphAdapter({ tokens: stubTokens(), fetch: stub.fetch }).send(
       outgoing({
         attachments: [
-          { fileName: "small.txt", contentType: "text/plain", content: Buffer.from("tiny") },
-          { fileName: "large.pdf", contentType: "application/pdf", content: large },
+          { fileName: "cv.pdf", contentType: "application/pdf", content: pdf },
+          { fileName: "note.txt", contentType: "text/plain", content: Buffer.from("tiny") },
         ],
       }),
     );
+    expect(sent.rfc822MessageId).toMatch(/^<[0-9a-f-]{36}@example\.com>$/);
     expect(sent).toEqual({
-      providerMessageId: "draft-1",
-      threadId: "conv-1",
-      rfc822MessageId: "<abc@outlook.com>",
+      providerMessageId: sent.rfc822MessageId,
+      threadId: null,
+      rfc822MessageId: sent.rfc822MessageId,
     });
 
-    const [draft, small, session, ...rest] = stub.calls;
-    expect(JSON.parse(String(draft?.body))).toEqual({
-      subject: "Application",
-      body: { contentType: "Text", content: "Hello" },
-      toRecipients: [{ emailAddress: { name: "Recruiter", address: "recruiter@example.org" } }],
-      ccRecipients: [{ emailAddress: { address: "cc@example.org" } }],
-    });
-    expect(draft?.headers.get("prefer")).toBe(IMMUTABLE);
-    expect(JSON.parse(String(small?.body))).toEqual({
-      "@odata.type": "#microsoft.graph.fileAttachment",
-      name: "small.txt",
-      contentType: "text/plain",
-      contentBytes: Buffer.from("tiny").toString("base64"),
-    });
-    expect(JSON.parse(String(session?.body))).toEqual({
-      AttachmentItem: {
-        attachmentType: "file",
-        name: "large.pdf",
-        size: large.length,
-        contentType: "application/pdf",
+    expect(stub.calls.map((call) => `${call.method} ${call.url.pathname}`)).toEqual([
+      "POST /v1.0/me/sendMail",
+    ]);
+    const [call] = stub.calls;
+    expect(call?.headers.get("content-type")).toBe("application/json");
+    expect(call?.headers.has("authorization")).toBe(true);
+    expect(JSON.parse(String(call?.body))).toEqual({
+      message: {
+        subject: "Application",
+        body: { contentType: "Text", content: "Hello" },
+        toRecipients: [{ emailAddress: { name: "Recruiter", address: "recruiter@example.org" } }],
+        ccRecipients: [{ emailAddress: { address: "cc@example.org" } }],
+        attachments: [
+          {
+            "@odata.type": "#microsoft.graph.fileAttachment",
+            name: "cv.pdf",
+            contentType: "application/pdf",
+            contentBytes: pdf.toString("base64"),
+          },
+          {
+            "@odata.type": "#microsoft.graph.fileAttachment",
+            name: "note.txt",
+            contentType: "text/plain",
+            contentBytes: Buffer.from("tiny").toString("base64"),
+          },
+        ],
+        singleValueExtendedProperties: [{ id: "String 0x1035", value: sent.rfc822MessageId }],
       },
+      saveToSentItems: true,
     });
-
-    const puts = rest.filter((call) => call.method === "PUT");
-    expect(UPLOAD_CHUNK_SIZE % (320 * 1024)).toBe(0);
-    expect(UPLOAD_CHUNK_SIZE).toBeLessThanOrEqual(4 * 1024 * 1024);
-    expect(puts.map((call) => (call.body as Uint8Array).length)).toEqual([
-      UPLOAD_CHUNK_SIZE,
-      UPLOAD_CHUNK_SIZE,
-      large.length - 2 * UPLOAD_CHUNK_SIZE,
-    ]);
-    expect(puts.map((call) => call.headers.get("content-range"))).toEqual([
-      `bytes 0-${UPLOAD_CHUNK_SIZE - 1}/${large.length}`,
-      `bytes ${UPLOAD_CHUNK_SIZE}-${2 * UPLOAD_CHUNK_SIZE - 1}/${large.length}`,
-      `bytes ${2 * UPLOAD_CHUNK_SIZE}-${large.length - 1}/${large.length}`,
-    ]);
-    expect(puts.every((call) => call.url.href === uploadUrl && !call.headers.has("authorization"))).toBe(
-      true,
-    );
-
-    const meta = rest.find((call) => call.method === "GET");
-    expect(meta?.url.searchParams.get("$select")).toBe("internetMessageId,conversationId");
-    expect(stub.calls.at(-1)?.url.pathname).toBe("/v1.0/me/messages/draft-1/send");
-    expect(
-      stub.calls
-        .filter((call) => call.url.hostname === "graph.microsoft.com")
-        .every((call) => call.headers.has("authorization")),
-    ).toBe(true);
   });
 
-  it("drafts replies with createReply and replaces body and recipients", async () => {
-    const stub = fetchStub([
-      {
-        match: `POST ${BASE}/messages/orig-1/createReply`,
-        responses: [{ status: 201, body: { id: "reply-1" } }],
-      },
-      { match: `PATCH ${BASE}/messages/reply-1`, responses: [{ body: { id: "reply-1" } }] },
-      {
-        match: `GET ${BASE}/messages/reply-1`,
-        responses: [{ body: { internetMessageId: "<r@x>", conversationId: "conv-o" } }],
-      },
-      { match: `POST ${BASE}/messages/reply-1/send`, responses: [{ status: 202 }] },
-    ]);
+  it("sends follow-ups with reply on the original message, so Exchange threads them", async () => {
+    const stub = fetchStub([{ match: `POST ${BASE}/messages/orig-1/reply`, responses: [{ status: 202 }] }]);
     const sent = await new GraphAdapter({ tokens: stubTokens(), fetch: stub.fetch }).send(
       outgoing({
         subject: "Re: Application",
@@ -405,20 +354,72 @@ describe("GraphAdapter", () => {
         },
       }),
     );
-    expect(sent).toEqual({ providerMessageId: "reply-1", threadId: "conv-o", rfc822MessageId: "<r@x>" });
+    expect(sent).toEqual({
+      providerMessageId: sent.rfc822MessageId,
+      threadId: "conv-o",
+      rfc822MessageId: expect.stringMatching(/^<.+@example\.com>$/) as string,
+    });
     expect(stub.calls.map((call) => `${call.method} ${call.url.pathname}`)).toEqual([
-      "POST /v1.0/me/messages/orig-1/createReply",
-      "PATCH /v1.0/me/messages/reply-1",
-      "GET /v1.0/me/messages/reply-1",
-      "POST /v1.0/me/messages/reply-1/send",
+      "POST /v1.0/me/messages/orig-1/reply",
     ]);
-    expect(JSON.parse(String(stub.calls[1]?.body))).toMatchObject({
-      subject: "Re: Application",
-      body: { contentType: "Text", content: "Hello" },
+    expect(stub.calls[0]?.headers.get("prefer")).toBe(IMMUTABLE);
+    // `reply` always files the sent copy; `saveToSentItems` belongs to sendMail only.
+    expect(JSON.parse(String(stub.calls[0]?.body))).toEqual({
+      message: {
+        subject: "Re: Application",
+        body: { contentType: "Text", content: "Hello" },
+        toRecipients: [{ emailAddress: { name: "Recruiter", address: "recruiter@example.org" } }],
+        ccRecipients: [{ emailAddress: { address: "cc@example.org" } }],
+        singleValueExtendedProperties: [{ id: "String 0x1035", value: sent.rfc822MessageId }],
+      },
     });
   });
 
-  it("retries once on 401, maps throttling and missing write scope", async () => {
+  it("refuses a request over Graph's limit before calling Graph, sized exactly from file sizes", async () => {
+    const pdf = (size: number) => ({
+      fileName: "cv.pdf",
+      contentType: "application/pdf",
+      content: Buffer.alloc(size, 7),
+    });
+    // The request with a 3-byte file (4 base64 characters), as sent.
+    const probe = fetchStub([{ match: `POST ${BASE}/sendMail`, responses: [{ status: 202 }] }]);
+    await new GraphAdapter({ tokens: stubTokens(), fetch: probe.fetch }).send(
+      outgoing({ attachments: [pdf(3)] }),
+    );
+    const withoutContent = Buffer.byteLength(String(probe.calls[0]?.body)) - 4;
+    // The largest file that fits: every 3 more bytes add 4 to the request.
+    const fits = 3 * Math.floor((MAIL_SEND_MICROSOFT_MAX_REQUEST_BYTES - withoutContent) / 4);
+    const sizes = (size: number) => ({
+      ...outgoing(),
+      attachments: [{ fileName: "cv.pdf", contentType: "application/pdf", sizeBytes: size }],
+    });
+    expect(graphSendOverLimit(sizes(fits))).toBeNull();
+    expect(graphSendOverLimit(sizes(fits + 1))).toBe(
+      Math.min(fits, MAIL_SEND_MICROSOFT_MAX_ATTACHMENT_BYTES),
+    );
+    expect(graphSendOverLimit(sizes(5_000_000))).toBe(MAIL_SEND_MICROSOFT_MAX_ATTACHMENT_BYTES);
+
+    const atLimit = fetchStub([{ match: `POST ${BASE}/sendMail`, responses: [{ status: 202 }] }]);
+    await new GraphAdapter({ tokens: stubTokens(), fetch: atLimit.fetch }).send(
+      outgoing({ attachments: [pdf(fits)] }),
+    );
+    expect(Buffer.byteLength(String(atLimit.calls[0]?.body))).toBe(withoutContent + (4 * fits) / 3);
+    expect(Buffer.byteLength(String(atLimit.calls[0]?.body))).toBeLessThanOrEqual(
+      MAIL_SEND_MICROSOFT_MAX_REQUEST_BYTES,
+    );
+
+    const over = fetchStub([{ match: () => true, responses: [{ status: 202 }] }]);
+    const refused = await new GraphAdapter({ tokens: stubTokens(), fetch: over.fetch })
+      .send(outgoing({ attachments: [pdf(fits + 1)] }))
+      .catch((e: unknown) => e);
+    expect(refused).toBeInstanceOf(MailTooLargeError);
+    expect((refused as MailTooLargeError).limitBytes).toBe(
+      Math.min(fits, MAIL_SEND_MICROSOFT_MAX_ATTACHMENT_BYTES),
+    );
+    expect(over.calls).toHaveLength(0);
+  });
+
+  it("retries once on 401, maps throttling and missing send scope", async () => {
     const tokens = stubTokens();
     const retry = fetchStub([
       {
@@ -465,7 +466,7 @@ describe("GraphAdapter", () => {
 
     const denied = fetchStub([
       {
-        match: `POST ${BASE}/messages`,
+        match: `POST ${BASE}/sendMail`,
         responses: [{ status: 403, body: { error: { code: "ErrorAccessDenied" } } }],
       },
     ]);
@@ -473,6 +474,6 @@ describe("GraphAdapter", () => {
       .send(outgoing())
       .catch((e: unknown) => e);
     expect(scope).toBeInstanceOf(MailScopeError);
-    expect((scope as MailScopeError).missingScope).toBe(GRAPH_WRITE_SCOPE);
+    expect((scope as MailScopeError).missingScope).toBe(GRAPH_SEND_SCOPE);
   });
 });

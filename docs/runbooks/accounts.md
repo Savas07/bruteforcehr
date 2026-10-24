@@ -85,12 +85,11 @@ Uses Microsoft Graph delegated `Mail.Read`, `Mail.Send`, `offline_access`, `User
    - Redirect URI: platform **Web**, `https://bruteforcehr.web.app/connect/microsoft/callback`.
 2. _Overview_: copy **Application (client) ID**.
 3. _Certificates & secrets_ → _Client secrets_ → _New client secret_, description `bruteforcehr-connect`, expiry 24 months (put a calendar reminder 2 weeks before expiry). Copy the **Value** (shown once).
-4. _API permissions_ → _Add a permission_ → _Microsoft Graph_ → _Delegated permissions_: `Mail.Read`, `Mail.Send`, `offline_access`, `User.Read` ([Graph permissions reference](https://learn.microsoft.com/en-us/graph/permissions-reference)). Remove nothing else needed; no application permissions.
+4. _API permissions_ → _Add a permission_ → _Microsoft Graph_ → _Delegated permissions_: `Mail.Read`, `Mail.Send`, `offline_access`, `User.Read` (plus `openid`, `email`, `profile`) ([Graph permissions reference](https://learn.microsoft.com/en-us/graph/permissions-reference)). Nothing else: no `Mail.ReadWrite`, no application permissions.
 5. _Authentication_: confirm the Web redirect URI; leave implicit grant off.
-6. Store:
+6. Store, as one JSON secret (details in [runbooks/mail.md](mail.md#microsoft-entra-app)):
    ```sh
-   firebase functions:secrets:set MS_OAUTH_CLIENT_ID
-   firebase functions:secrets:set MS_OAUTH_CLIENT_SECRET
+   firebase functions:secrets:set MICROSOFT_OAUTH_CLIENT   # {"clientId":"<Application (client) ID>","clientSecret":"<Value>"}
    ```
 
 ## 5. Job API keys (M4)

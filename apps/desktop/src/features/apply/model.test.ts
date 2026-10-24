@@ -9,6 +9,7 @@ import {
   type ApplyPins,
   alreadyApplied,
   applyRecord,
+  attachmentsTooLarge,
   buildSendRequest,
   composerModel,
   createDraft,
@@ -242,6 +243,19 @@ describe("errors", () => {
     expect(sendErrorKind(callable("internal"), true)).toBe("failed");
     expect(sendErrorKind(callable("failed-precondition", "needs_reauth"), false)).toBe("offline");
     expect(sendErrorSentence("offline", ctx)).toBe("You're offline. Your draft is saved.");
+  });
+
+  it("checks attachments against the sending account's limit", () => {
+    // Microsoft sends the files inside one Graph request (≈ 4 MB), so about 2.9 MB fit.
+    expect(attachmentsTooLarge(3_000_000, "microsoft", ctx)).toBe(
+      "The attachments are larger than 2.9 MB. Try a shorter CV, or leave out the cover letter.",
+    );
+    expect(attachmentsTooLarge(2_900_000, "microsoft", ctx)).toBeNull();
+    expect(attachmentsTooLarge(3_000_000, "gmail", ctx)).toBeNull();
+    expect(attachmentsTooLarge(3_000_000, null, ctx)).toBeNull();
+    expect(attachmentsTooLarge(19 * 1024 * 1024, "imap", ctx)).toBe(
+      "The attachments are larger than 18.9 MB. Try a shorter CV, or leave out the cover letter.",
+    );
   });
 });
 

@@ -1598,6 +1598,8 @@
   "mail-connect.done": "Done",
   "mail-connect.error.accountNotFound": "This account was disconnected in the meantime. Connect it again as a new account.",
   "mail-connect.error.authFailed": "We couldn't sign in with this password. Check it was copied in full. Your regular password usually won't work here.",
+  "mail-connect.error.connectExpired": "That sign-in took too long, so nothing was connected. Start again; it only takes a moment.",
+  "mail-connect.error.connectWrongUser": "This sign-in was started from another BruteForceHR account, so nothing was connected. Start again from this account.",
   "mail-connect.error.emailUnverified": "Confirm your BruteForceHR email address first, then connect your inbox.",
   "mail-connect.error.failed": "We couldn't finish connecting. Nothing was saved. Try again in a moment.",
   "mail-connect.error.hostUnreachable": "We can't reach this server. Check the server name and port.",

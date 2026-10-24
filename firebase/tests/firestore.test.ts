@@ -100,16 +100,49 @@ describe("users/{uid}: owner only", () => {
   });
 });
 
-describe("users/{uid}/renderedFiles: create-only", () => {
+describe("users/{uid}/renderedFiles: create-only, own object", () => {
   const file = "users/alice/renderedFiles/f1";
+  const rendered = {
+    kind: "pdf",
+    storagePath: "users/alice/rendered/f1",
+    fileName: "Alice-CV.pdf",
+    sizeBytes: 81_234,
+    sha256: "ab12",
+  };
 
   it("lets the owner create and read, never change", async () => {
-    await assertSucceeds(client("alice").doc(file).set({ kind: "pdf", sha256: "ab12" }));
+    await assertSucceeds(client("alice").doc(file).set(rendered));
     await assertSucceeds(client("alice").doc(file).get());
     await assertFails(client("alice").doc(file).update({ sha256: "cd34" }));
     await assertFails(client("alice").doc(file).delete());
     await assertFails(client("bob").doc(file).get());
-    await assertFails(client("bob").doc("users/alice/renderedFiles/f2").set({ kind: "pdf" }));
+    await assertFails(
+      client("bob")
+        .doc("users/alice/renderedFiles/f2")
+        .set({ ...rendered, storagePath: "users/alice/rendered/f2" }),
+    );
+  });
+
+  it("rejects a path other than the file's own rendered object", async () => {
+    for (const storagePath of [
+      "users/bob/rendered/f1",
+      "users/alice/rendered/f2",
+      "users/alice/exports/f1.bfhr-export.zip",
+      "users/alice/cv-imports/f1",
+      "users/alice/rendered/f1/../../bob/rendered/f1",
+    ]) {
+      await assertFails(client("alice").doc(file).set({ ...rendered, storagePath }));
+    }
+    const { storagePath: _omitted, ...withoutPath } = rendered;
+    await assertFails(client("alice").doc(file).set(withoutPath));
+  });
+
+  it("rejects a size or kind the upload limit doesn't allow", async () => {
+    for (const sizeBytes of [0, -1, 10 * 1024 * 1024 + 1, 1.5, "81234"]) {
+      await assertFails(client("alice").doc(file).set({ ...rendered, sizeBytes }));
+    }
+    await assertFails(client("alice").doc(file).set({ ...rendered, kind: "zip" }));
+    await assertSucceeds(client("alice").doc(file).set({ ...rendered, kind: "docx", sizeBytes: 10 * 1024 * 1024 }));
   });
 });
 
@@ -427,6 +460,29 @@ describe("users/{uid}/watchlist: clients own name, URL and switch only", () => {
     await assertFails(client("alice").doc(entry).update({ status: "pending" }));
     await assertFails(client("alice").doc(entry).update({ boardToken: "other" }));
     await assertFails(client("alice").doc(entry).update({ lastError: null, openJobs: 0 }));
+  });
+
+  it("accepts only https careers pages of at most 2048 characters", async () => {
+    for (const careersUrl of [
+      "http://jobs.lever.co/acme",
+      "http://169.254.169.254/computeMetadata/v1/",
+      "ftp://jobs.example.com/",
+      "javascript:alert(1)",
+      "HTTPS://jobs.lever.co/acme",
+      "https://",
+      `https://jobs.example.com/${"a".repeat(2048)}`,
+      42,
+      null,
+    ]) {
+      await assertFails(client("alice").doc(entry).set({ ...pending, careersUrl }));
+    }
+    const { careersUrl: _omitted, ...withoutUrl } = pending;
+    await assertFails(client("alice").doc(entry).set(withoutUrl));
+    const longest = `https://jobs.example.com/${"a".repeat(2048 - "https://jobs.example.com/".length)}`;
+    await assertSucceeds(client("alice").doc(entry).set({ ...pending, careersUrl: longest }));
+    await assertFails(client("alice").doc(entry).update({ careersUrl: "http://10.0.0.1:8080/" }));
+    await assertFails(client("alice").doc(entry).update({ careersUrl: `${longest}a` }));
+    await assertSucceeds(client("alice").doc(entry).update({ careersUrl: "https://jobs.lever.co/acme" }));
   });
 
   it("keeps other users out", async () => {

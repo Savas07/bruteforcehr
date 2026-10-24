@@ -21,10 +21,14 @@ export const JOB_BUDGETS = {
   connectorCallsPerDay: 800,
   /** AI match rationales per day (each also counts against the AI cost cap). */
   rationalesPerDay: 40,
+  /** Client-created jobs (URL import, logged applications) embedded and matched per day (`jobCreatedMatch`). */
+  createdJobEmbeddingsPerDay: 100,
+  /** Followed careers pages read when added or edited per day (`watchlistResolve`). */
+  watchlistResolvesPerDay: 30,
 } as const;
 
 export type RunKind = "search" | "runNow" | "scheduledRun" | "refresh";
-export type MeteredUnit = "connectorCalls" | "rationales";
+export type MeteredUnit = "connectorCalls" | "rationales" | "createdJobEmbeddings" | "watchlistResolves";
 
 /** One user's counters for one UTC day. */
 export interface QuotaDay {
@@ -34,6 +38,8 @@ export interface QuotaDay {
   refresh: number;
   connectorCalls: number;
   rationales: number;
+  createdJobEmbeddings: number;
+  watchlistResolves: number;
   lastSearchAt: number | null;
   lastRunNowAt: number | null;
 }
@@ -45,6 +51,8 @@ export const EMPTY_QUOTA_DAY: QuotaDay = {
   refresh: 0,
   connectorCalls: 0,
   rationales: 0,
+  createdJobEmbeddings: 0,
+  watchlistResolves: 0,
   lastSearchAt: null,
   lastRunNowAt: null,
 };
@@ -59,6 +67,8 @@ const RUN_LIMITS: Readonly<Record<RunKind, number>> = {
 const UNIT_LIMITS: Readonly<Record<MeteredUnit, number>> = {
   connectorCalls: JOB_BUDGETS.connectorCallsPerDay,
   rationales: JOB_BUDGETS.rationalesPerDay,
+  createdJobEmbeddings: JOB_BUDGETS.createdJobEmbeddingsPerDay,
+  watchlistResolves: JOB_BUDGETS.watchlistResolvesPerDay,
 };
 
 /** The day's counters after starting one run of `kind`, or null when a limit refuses it. */

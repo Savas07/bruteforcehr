@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { decideMailAction, mailBodyPurgeAt } from "./decision";
+import { senderAuthenticated } from "./authentication";
 import { imapPresetFor } from "./connect";
 import { linkApplication } from "./linking";
 import {
@@ -31,6 +32,7 @@ const mail = (over: Partial<MailInput> = {}): MailInput => ({
   references: [],
   listUnsubscribe: false,
   bulk: false,
+  senderAuthenticated: true,
   ...over,
 });
 
@@ -104,6 +106,40 @@ describe("linking", () => {
     ).toEqual({ applicationId: "a1", linkStrength: "ats_company_role" });
   });
 
+  it("treats an unauthenticated ATS or company sender as a weak link", () => {
+    const tracked = [app()];
+    for (const from of [
+      { name: "Acme Robotics", address: "no-reply@us.greenhouse-mail.io" },
+      { name: "Acme Robotics", address: "jobs@acme-robotics.example" },
+    ]) {
+      const forged = mail({ from, senderAuthenticated: false });
+      expect(
+        linkApplication({
+          signals: mailSignals(forged, tracked),
+          applications: tracked,
+          company: "Acme Robotics",
+          role: "Backend Engineer",
+          modelChoice: null,
+        }),
+      ).toEqual({ applicationId: "a1", linkStrength: "company_domain" });
+    }
+    // A reply in our own thread stays strong: its Message-IDs are only known to the recipient.
+    const threaded = mail({
+      providerThreadId: "t1",
+      senderAuthenticated: false,
+    });
+    const withThread = [app({ threadRefs: [{ accountId: "acc", threadId: "t1", rfc822MessageId: null }] })];
+    expect(
+      linkApplication({
+        signals: mailSignals(threaded, withThread),
+        applications: withThread,
+        company: null,
+        role: null,
+        modelChoice: null,
+      }).linkStrength,
+    ).toBe("thread");
+  });
+
   it("refuses to guess between two applications at one company without a role", () => {
     const tracked = [app(), app({ id: "a2", role: "Data Engineer" })];
     const input = mail({ subject: "Update from Acme Robotics" });
@@ -126,6 +162,7 @@ describe("decision", () => {
     linkStrength: "thread" as const,
     actor: "ai" as const,
     autoApplyConfidence: 0.9,
+    folder: "inbox" as const,
   };
   it("auto-applies a confident forward move with a strong link", () => {
     expect(decideMailAction({ ...base, category: "interview_invite", applicationStatus: "applied" })).toEqual(
@@ -141,6 +178,11 @@ describe("decision", () => {
       decideMailAction({ ...base, category: "rejection", applicationStatus: "applied", confidence: 0.85 })
         .reviewState,
     ).toBe("pending");
+  });
+  it("never applies mail from the spam folder automatically", () => {
+    expect(
+      decideMailAction({ ...base, category: "rejection", applicationStatus: "applied", folder: "spam" }),
+    ).toEqual({ suggestedStatus: "rejected", reviewState: "pending", autoApply: false });
   });
   it("never moves backward or out of a closed status", () => {
     expect(
@@ -170,6 +212,34 @@ describe("decision", () => {
     expect(mailBodyPurgeAt({ receivedAt, retentionDays: 1, application: null })?.toISOString()).toBe(
       "2026-10-02T00:00:00.000Z",
     );
+  });
+});
+
+describe("senderAuthenticated", () => {
+  const gmail = (results: string) => `mx.google.com;\r\n       ${results}`;
+  it.each([
+    [gmail("dkim=pass header.i=@acme-robotics.example header.s=s1 header.b=abc; spf=pass smtp.mailfrom=x; dmarc=pass (p=REJECT sp=REJECT dis=NONE) header.from=acme-robotics.example"), "jobs@acme-robotics.example"],
+    [gmail("dkim=pass header.i=@mail.acme-robotics.example header.s=s1"), "jobs@acme-robotics.example"],
+    [gmail("dkim=pass header.d=greenhouse-mail.io; spf=neutral"), "no-reply@us.greenhouse-mail.io"],
+    // Microsoft: no authserv-id, comments in the results.
+    ["spf=pass (sender IP is 203.0.113.9) smtp.mailfrom=acme.example; dkim=pass (signature was verified) header.d=acme.example;dmarc=pass action=none header.from=acme.example;compauth=pass reason=100", "hr@acme.example"],
+    ["imap.gmx.net; dmarc=pass header.from=ACME.example", "hr@acme.example"],
+  ])("trusts %s for %s", (results, from) => {
+    expect(senderAuthenticated(results, from)).toBe(true);
+  });
+
+  it.each([
+    [null, "jobs@acme-robotics.example"],
+    [gmail("spf=pass smtp.mailfrom=acme-robotics.example"), "jobs@acme-robotics.example"],
+    [gmail("dkim=pass header.d=attacker.example; dmarc=fail header.from=acme-robotics.example"), "jobs@acme-robotics.example"],
+    [gmail("dmarc=pass header.from=attacker.example"), "jobs@acme-robotics.example"],
+    [gmail("dkim=fail header.d=acme-robotics.example; dmarc=none"), "jobs@acme-robotics.example"],
+    [gmail("dkim=pass header.d=example"), "jobs@acme-robotics.example"],
+    // A result quoted inside a comment doesn't count.
+    [gmail("dmarc=fail (forged: dmarc=pass header.from=acme-robotics.example) header.from=acme-robotics.example"), "jobs@acme-robotics.example"],
+    ["mx.google.com; dmarc=pass header.from=acme-robotics.example", "not-an-address"],
+  ])("refuses %s for %s", (results, from) => {
+    expect(senderAuthenticated(results, from)).toBe(false);
   });
 });
 

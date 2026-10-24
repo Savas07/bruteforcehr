@@ -80,5 +80,6 @@ export function testContext(
       clock += ms;
     },
   });
-  return { http, cache: memoryCache(), secrets, now: NOW, fake, sleeps };
+  // Unit tests record responses; the server's guarded page fetch is tested in apps/functions.
+  return { http, pageHttp: http, cache: memoryCache(), secrets, now: NOW, fake, sleeps };
 }

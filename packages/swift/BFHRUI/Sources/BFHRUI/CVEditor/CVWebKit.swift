@@ -65,9 +65,16 @@ struct CVWebPage: UIViewRepresentable {
 
         /// Only the HTML string itself loads; links in the CV don't navigate the preview.
         func webView(_ webView: WKWebView, decidePolicyFor action: WKNavigationAction) async -> WKNavigationActionPolicy {
-            action.navigationType == .other && (action.request.url?.absoluteString == "about:blank" || action.request.url == nil)
-                ? .allow : .cancel
+            CVWebNavigation.allows(action.navigationType, url: action.request.url) ? .allow : .cancel
         }
+    }
+}
+
+/// Navigation policy of every CV web view (preview and PDF): only the `loadHTMLString(_:baseURL: nil)`
+/// load itself (`about:blank`, type `.other`); every other navigation is cancelled.
+enum CVWebNavigation {
+    static func allows(_ type: WKNavigationType, url: URL?) -> Bool {
+        type == .other && (url == nil || url?.absoluteString == "about:blank")
     }
 }
 
@@ -132,6 +139,12 @@ final class CVPDFRenderer: NSObject, WKNavigationDelegate {
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: any Error) {
         loaded?.resume(throwing: error)
         loaded = nil
+    }
+
+    /// Only the HTML string itself loads (as in the preview): a link, redirect, frame or form in
+    /// the CV can't make the print view fetch anything.
+    func webView(_ webView: WKWebView, decidePolicyFor action: WKNavigationAction) async -> WKNavigationActionPolicy {
+        CVWebNavigation.allows(action.navigationType, url: action.request.url) ? .allow : .cancel
     }
 
     func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: any Error) {

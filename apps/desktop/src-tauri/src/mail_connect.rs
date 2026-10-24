@@ -1,8 +1,9 @@
 //! The return link of a mail OAuth connect (ADR 0012): after the user allowed access in the
 //! browser, `https://bruteforcehr.web.app/connect/{provider}/callback` redirects to
-//! `bruteforcehr://connected?nonce=…&provider=google|microsoft&intent=read|send&status=ok|error[&reason=…]`.
-//! The link's shape and every parameter are checked here; the UI gets only a
-//! [`MailConnectResult`] with known values (the nonce matches the connect it started). Like sign-in
+//! `bruteforcehr://connected?nonce=…&provider=google|microsoft&intent=read|send&status=ok&handoff=…`
+//! (or `status=error[&reason=…]`). The link's shape and every parameter are checked here; the UI
+//! gets only a [`MailConnectResult`] with known values (the nonce matches the connect it started)
+//! and redeems `handoff` with `mailConnectFinish`, which saves the account. Like sign-in
 //! links, the newest result waits in [`PendingMailConnect`] until the UI takes it
 //! (`take_mail_connect`), so a link that arrives while the UI is busy isn't lost.
 
@@ -42,6 +43,15 @@ pub struct MailConnectResult {
     pub ok: bool,
     /// One of `REASONS` when `ok` is false (`failed` when the link named none or another one).
     pub reason: Option<&'static str>,
+    /// The one-time secret `mailConnectFinish` needs (`MAIL_CONNECT_HANDOFF_PATTERN`), when `ok`.
+    pub handoff: Option<String>,
+}
+
+/// `[A-Za-z0-9_-]` (base64url without padding), the alphabet of the nonce and the handoff.
+fn is_base64url(value: &str) -> bool {
+    value
+        .bytes()
+        .all(|byte| byte.is_ascii_alphanumeric() || byte == b'-' || byte == b'_')
 }
 
 /// Whether a deep link is a connect return link (other links go to other handlers).
@@ -65,6 +75,7 @@ pub fn parse(url: &Url) -> Option<MailConnectResult> {
     let mut intent = None;
     let mut status = None;
     let mut reason = None;
+    let mut handoff = None;
     for (key, value) in url.query_pairs() {
         let slot = match key.as_ref() {
             "nonce" => &mut nonce,
@@ -72,6 +83,7 @@ pub fn parse(url: &Url) -> Option<MailConnectResult> {
             "intent" => &mut intent,
             "status" => &mut status,
             "reason" => &mut reason,
+            "handoff" => &mut handoff,
             _ => continue,
         };
         // A repeated parameter makes the link ambiguous.
@@ -79,12 +91,7 @@ pub fn parse(url: &Url) -> Option<MailConnectResult> {
             return None;
         }
     }
-    let nonce = nonce.filter(|nonce| {
-        (16..=100).contains(&nonce.len())
-            && nonce
-                .bytes()
-                .all(|byte| byte.is_ascii_alphanumeric() || byte == b'-' || byte == b'_')
-    })?;
+    let nonce = nonce.filter(|nonce| (16..=100).contains(&nonce.len()) && is_base64url(nonce))?;
     let provider = match provider.as_deref() {
         Some("google") => "google",
         Some("microsoft") => "microsoft",
@@ -99,6 +106,11 @@ pub fn parse(url: &Url) -> Option<MailConnectResult> {
         Some("ok") => true,
         Some("error") => false,
         _ => return None,
+    };
+    let handoff = if ok {
+        Some(handoff.filter(|handoff| handoff.len() == 43 && is_base64url(handoff))?)
+    } else {
+        None
     };
     let reason = if ok {
         None
@@ -116,6 +128,7 @@ pub fn parse(url: &Url) -> Option<MailConnectResult> {
         intent,
         ok,
         reason,
+        handoff,
     })
 }
 
@@ -152,6 +165,7 @@ mod tests {
     use url::Url;
 
     const NONCE: &str = "Abc-DEF_1234567890xyz";
+    const HANDOFF: &str = "h4nd0ff_-0123456789abcdefghijklmnopqrstuvwx";
 
     fn link(query: &str) -> Url {
         Url::parse(&format!("bruteforcehr://connected?{query}")).unwrap()
@@ -161,7 +175,7 @@ mod tests {
     fn reads_a_successful_connect() {
         assert_eq!(
             parse(&link(&format!(
-                "nonce={NONCE}&provider=google&intent=read&status=ok"
+                "nonce={NONCE}&provider=google&intent=read&status=ok&handoff={HANDOFF}"
             ))),
             Some(MailConnectResult {
                 nonce: NONCE.to_owned(),
@@ -169,6 +183,7 @@ mod tests {
                 intent: "read",
                 ok: true,
                 reason: None,
+                handoff: Some(HANDOFF.to_owned()),
             })
         );
     }
@@ -181,6 +196,7 @@ mod tests {
         .unwrap();
         assert_eq!(result.reason, Some("admin_consent_required"));
         assert!(!result.ok);
+        assert_eq!(result.handoff, None);
         for query in [
             format!("nonce={NONCE}&provider=google&intent=read&status=error&reason=<script>"),
             format!("nonce={NONCE}&provider=google&intent=read&status=error"),
@@ -216,7 +232,18 @@ mod tests {
                 "bruteforcehr://connected?nonce={NONCE}&nonce={NONCE}&provider=google&intent=read&status=ok"
             ),
             format!(
-                "bruteforcehr://connected?nonce={NONCE}%20&provider=google&intent=read&status=ok"
+                "bruteforcehr://connected?nonce={NONCE}%20&provider=google&intent=read&status=ok&handoff={HANDOFF}"
+            ),
+            // `ok` needs exactly one well-formed handoff.
+            format!("bruteforcehr://connected?nonce={NONCE}&provider=google&intent=read&status=ok"),
+            format!(
+                "bruteforcehr://connected?nonce={NONCE}&provider=google&intent=read&status=ok&handoff=short"
+            ),
+            format!(
+                "bruteforcehr://connected?nonce={NONCE}&provider=google&intent=read&status=ok&handoff={HANDOFF}x"
+            ),
+            format!(
+                "bruteforcehr://connected?nonce={NONCE}&provider=google&intent=read&status=ok&handoff={HANDOFF}&handoff={HANDOFF}"
             ),
         ] {
             assert_eq!(parse(&Url::parse(&input).unwrap()), None, "{input}");
@@ -227,7 +254,7 @@ mod tests {
     fn keeps_only_the_newest_result_until_taken() {
         let pending = PendingMailConnect::default();
         let first = parse(&link(&format!(
-            "nonce={NONCE}&provider=google&intent=read&status=ok"
+            "nonce={NONCE}&provider=google&intent=read&status=ok&handoff={HANDOFF}"
         )))
         .unwrap();
         let second = MailConnectResult {

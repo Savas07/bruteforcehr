@@ -9,7 +9,7 @@ import {
   type SafeFetchOptions,
   type SafeResponse,
   safeFetch,
-} from "./safe-fetch";
+} from "../net/safe-fetch";
 
 /** Politeness limits of ADR 0005 for scraped hosts. */
 export const HOST_MIN_INTERVAL_MS = 5_000;

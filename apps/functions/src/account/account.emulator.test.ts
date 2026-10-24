@@ -85,6 +85,8 @@ function userDocuments(uid: string): Record<string, Record<string, unknown>> {
     [serverOnlyPaths.mailSendDay(uid, "2026-10-20")]: { count: 1 },
     [`${serverOnlyPaths.mailCorrections(uid)}/fix-1`]: { from: "other", to: "interview" },
     [serverOnlyPaths.accountExportDay(uid, "2026-10-19")]: { count: 1 },
+    [serverOnlyPaths.renderDay(uid, "2026-10-20")]: { count: 2 },
+    [serverOnlyPaths.mailConnectDay(uid, "2026-10-20")]: { attempts: 1 },
   };
 }
 
@@ -243,10 +245,12 @@ describe("accountExport", () => {
         "data/internal/aiUsage/aiUsageDays.json",
         "data/internal/jobAlerts/jobAlertItems.json",
         "data/internal/jobQuota/jobQuotaDays.json",
+        "data/internal/render/renderDays.json",
         "data/internal/jobImport/jobImportPages.json",
         "data/internal/mail/mailCorrections.json",
         "data/internal/mail/mailOutbox.json",
         "data/internal/mail/mailSeen.json",
+        "data/internal/mail/mailConnectDays.json",
         "data/internal/mail/mailSendDays.json",
         "files/cv-imports/import-1",
         "files/cv-photos/photo-1",

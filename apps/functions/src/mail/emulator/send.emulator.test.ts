@@ -1,12 +1,13 @@
 // Email apply (scheduleSend → cancelSend / dispatch) against the Firestore and Storage emulators,
 // sending through the in-process SMTP server. The Cloud Tasks queue is an in-memory recorder.
-import { firestorePaths, serverOnlyPaths } from "@bfhr/api";
+import { firestorePaths, serverOnlyPaths, storagePaths } from "@bfhr/api";
 import {
+  MAIL_DAILY_SEND_CAP_MAX,
   MAIL_SEND_MICROSOFT_MAX_ATTACHMENT_BYTES,
   type MailSendRequest,
   MailSendRequestSchema,
 } from "@bfhr/core";
-import { getFirestore } from "firebase-admin/firestore";
+import { getFirestore, Timestamp } from "firebase-admin/firestore";
 import { getStorage } from "firebase-admin/storage";
 import { simpleParser } from "mailparser";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
@@ -73,6 +74,30 @@ function request(applicationId: string, overrides: Partial<MailSendRequest> = {}
       coverLetterFileId: null,
     },
     ...overrides,
+  });
+}
+
+/** A `renderedFiles` document as a client could write it (Admin SDK: no rules). */
+async function seedRenderedFile(id: string, fields: { storagePath: string; sizeBytes: number }) {
+  await getFirestore()
+    .doc(firestorePaths.renderedFile(UID, id))
+    .set({
+      kind: "pdf",
+      cvId: "cv-1",
+      cvRevisionId: "rev-1",
+      coverLetterId: null,
+      fileName: "Deniz-Arslan-CV.pdf",
+      sha256: "a".repeat(64),
+      createdAt: Timestamp.now(),
+      schemaVersion: 1,
+      ...fields,
+    });
+}
+
+function renderedRequest(applicationId: string, renderedFileId: string) {
+  return request(applicationId, {
+    attachments: [{ kind: "rendered", renderedFileId }],
+    pins: { cvId: "cv-1", cvRevisionId: "rev-1", cvFileId: renderedFileId, coverLetterId: null, coverLetterFileId: null },
   });
 }
 
@@ -273,6 +298,67 @@ describe("email apply", () => {
     // The small CV fits in one request.
     await expect(scheduleSend(UID, request("app-initech"), queue)).resolves.toMatchObject({
       state: "scheduled",
+    });
+  });
+
+  it("attaches a rendered file only from its own object, sized by Storage", async () => {
+    const own = storagePaths.renderedFile(UID, "file-own");
+    await getStorage().bucket().file(own).save(ATTACHMENT, { contentType: "application/pdf" });
+    await seedRenderedFile("file-own", { storagePath: own, sizeBytes: 1 });
+    const queue = recordingQueue();
+    await expect(scheduleSend(UID, renderedRequest("app-initech", "file-own"), queue)).resolves.toMatchObject({
+      state: "scheduled",
+    });
+    const sendId = (await readApplication(UID, "app-initech")).emailSend?.sendId ?? "";
+    const outbox = await getFirestore().doc(serverOnlyPaths.mailOutbox(UID, sendId)).get();
+    expect(outbox.get("attachments")).toEqual([
+      expect.objectContaining({ storagePath: own, sizeBytes: ATTACHMENT.byteLength }),
+    ]);
+
+    // Another user's object (or any other path) named in the client-written document.
+    const victim = storagePaths.renderedFile("user-victim", "file-secret");
+    await getStorage().bucket().file(victim).save(ATTACHMENT, { contentType: "application/pdf" });
+    for (const storagePath of [victim, `users/${UID}/cv-imports/file-own`, own]) {
+      await seedRenderedFile("file-forged", { storagePath, sizeBytes: 1 });
+      await expect(scheduleSend(UID, renderedRequest("app-hooli", "file-forged"), queue)).rejects.toMatchObject({
+        reason: "attachment_not_found",
+      });
+    }
+    // The document's path is right but the object was never uploaded.
+    await seedRenderedFile("file-missing", { storagePath: storagePaths.renderedFile(UID, "file-missing"), sizeBytes: 1 });
+    await expect(scheduleSend(UID, renderedRequest("app-hooli", "file-missing"), queue)).rejects.toMatchObject({
+      reason: "attachment_not_found",
+    });
+    expect((await readApplication(UID, "app-hooli")).emailSend).toBeNull();
+    expect(queue.enqueued).toHaveLength(1);
+  });
+
+  it("checks the size limit against the stored bytes, not the document", async () => {
+    const large = storagePaths.renderedFile(UID, "file-large");
+    await getStorage()
+      .bucket()
+      .file(large)
+      .save(Buffer.alloc(19 * 1024 * 1024, 1), { contentType: "application/pdf" });
+    await seedRenderedFile("file-large", { storagePath: large, sizeBytes: 1 });
+    await expect(scheduleSend(UID, renderedRequest("app-initech", "file-large"), recordingQueue())).rejects.toMatchObject({
+      reason: "attachments_too_large",
+    });
+  });
+
+  it("clamps a client-written send cap", async () => {
+    await seedProfile(UID, { dailySendCap: -5 });
+    await expect(scheduleSend(UID, request("app-initech"), recordingQueue())).rejects.toMatchObject({
+      reason: "daily_send_cap",
+    });
+    await seedProfile(UID, { dailySendCap: 10_000 });
+    await expect(scheduleSend(UID, request("app-initech"), recordingQueue())).resolves.toMatchObject({
+      state: "scheduled",
+    });
+    // At MAIL_DAILY_SEND_CAP_MAX sends today the stored 10 000 doesn't help.
+    const day = new Date().toISOString().slice(0, 10);
+    await getFirestore().doc(serverOnlyPaths.mailSendDay(UID, day)).set({ count: MAIL_DAILY_SEND_CAP_MAX }, { merge: true });
+    await expect(scheduleSend(UID, request("app-hooli"), recordingQueue())).rejects.toMatchObject({
+      reason: "daily_send_cap",
     });
   });
 });

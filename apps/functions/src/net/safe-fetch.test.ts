@@ -6,11 +6,10 @@ import {
   FetchRefusedError,
   type HopRequest,
   type HopResponse,
-  isPublicAddress,
   resolvePublicTarget,
-  type Resolver,
   safeFetch,
 } from "./safe-fetch";
+import type { Resolver } from "./address-guard";
 
 const dns =
   (table: Record<string, string[]>): Resolver =>
@@ -26,42 +25,6 @@ const PUBLIC_DNS = dns({
   "rebind.example.com": ["93.184.216.34", "127.0.0.1"],
   "v6.example.com": ["2606:2800:220:1:248:1893:25c8:1946"],
   "mapped.example.com": ["::ffff:169.254.169.254"],
-});
-
-describe("isPublicAddress", () => {
-  it.each([
-    "127.0.0.1",
-    "10.1.2.3",
-    "172.16.0.1",
-    "172.31.255.255",
-    "192.168.1.1",
-    "169.254.169.254",
-    "100.64.0.1",
-    "0.0.0.0",
-    "224.0.0.1",
-    "255.255.255.255",
-    "198.18.0.1",
-    "::1",
-    "::",
-    "fe80::1",
-    "fc00::1",
-    "fd12:3456::1",
-    "::ffff:127.0.0.1",
-    "::ffff:10.0.0.1",
-    "64:ff9b::a00:1",
-    "2002:a00:1::",
-    "ff02::1",
-    "not-an-ip",
-  ])("refuses %s", (address) => {
-    expect(isPublicAddress(address)).toBe(false);
-  });
-
-  it.each(["93.184.216.34", "8.8.8.8", "172.32.0.1", "2606:2800:220:1:248:1893:25c8:1946", "::ffff:8.8.8.8"])(
-    "allows %s",
-    (address) => {
-      expect(isPublicAddress(address)).toBe(true);
-    },
-  );
 });
 
 describe("resolvePublicTarget", () => {
@@ -152,6 +115,22 @@ describe("safeFetch", () => {
     ).rejects.toMatchObject({
       refusal,
     });
+    expect(hops).toHaveLength(1);
+  });
+
+  it("asks checkUrl about every hop (denied hosts on redirects too)", async () => {
+    const { transport, hops } = scripted({
+      "https://jobs.example.com/job/1": redirect("https://v6.example.com/job/1"),
+    });
+    const checked: string[] = [];
+    const checkUrl = (url: URL) => {
+      checked.push(url.href);
+      if (url.hostname === "v6.example.com") throw new FetchRefusedError("denied_host", "denied");
+    };
+    await expect(
+      safeFetch(new URL("https://jobs.example.com/job/1"), { ...options, transport, checkUrl }),
+    ).rejects.toMatchObject({ refusal: "denied_host" });
+    expect(checked).toEqual(["https://jobs.example.com/job/1", "https://v6.example.com/job/1"]);
     expect(hops).toHaveLength(1);
   });
 

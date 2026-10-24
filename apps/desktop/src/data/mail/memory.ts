@@ -3,7 +3,9 @@
  * app, over a seed (fixtures). Review writes apply like the server's rules allow, and "Not job
  * mail" forgets the message as the `mailMessageReviewed` trigger does; tracker changes the trigger
  * would make are not simulated. Callables answer like the deployed functions: OAuth providers are
- * not configured yet (`provider_not_configured`), an app password `wrong` is refused.
+ * not configured yet (`provider_not_configured`), an app password `wrong` is refused. With
+ * `oauthConfigured`, `connectFinish` connects `<provider>@memory.example` for the started nonce
+ * (a handoff of 43 `w` answers `connect_wrong_user`).
  */
 import type { MailAccount, MailConnectErrorReason, MailConnectImapRequest, MailMessage } from "@bfhr/core";
 import { IMAP_PRESETS, MailConnectImapRequestSchema } from "@bfhr/core";
@@ -13,6 +15,7 @@ import type { LiveMailState, MailRepository, MailReviewDecision, MailSource } fr
 export type MailMemoryLogEntry =
   | { readonly kind: "review"; readonly decision: MailReviewDecision }
   | { readonly kind: "connectStart"; readonly provider: string }
+  | { readonly kind: "connectFinish"; readonly nonce: string; readonly handoff: string }
   | { readonly kind: "connectImap"; readonly address: string; readonly accountId: string | null }
   | { readonly kind: "disconnect"; readonly accountId: string }
   | { readonly kind: "backfillStart"; readonly accountId: string; readonly lookbackDays: number }
@@ -35,6 +38,10 @@ export interface MemoryMailOptions {
   readonly latencyMs?: number;
 }
 
+/** The nonce every memory `connectStart` issues. */
+export const MEMORY_NONCE = "memory-nonce-0000000000";
+const WRONG_USER_HANDOFF = "w".repeat(43);
+
 /** A callable failure shaped like the Firebase SDK's `FunctionsError`. */
 function callableError(code: string, reason: MailConnectErrorReason, field?: string): Error {
   return Object.assign(new Error(reason), {
@@ -52,6 +59,8 @@ export function createMemoryMailStore(options: MemoryMailOptions): MemoryMailSto
   const listeners = new Set<() => void>();
   let state: LiveMailState = snapshot();
   let nextId = 1;
+  /** Provider of the last `connectStart` (its nonce is always `MEMORY_NONCE`). */
+  let started: "google" | "microsoft" | null = null;
 
   function snapshot(): LiveMailState {
     return {
@@ -153,10 +162,68 @@ export function createMemoryMailStore(options: MemoryMailOptions): MemoryMailSto
       settle(() => {
         log.push({ kind: "connectStart", provider: request.provider });
         if (!options.oauthConfigured) throw callableError("failed-precondition", "provider_not_configured");
+        started = request.provider;
         return {
-          url: `https://bruteforcehr.web.app/connect/${request.provider}?nonce=memory-nonce-0000000000`,
-          nonce: "memory-nonce-0000000000",
+          url: `https://bruteforcehr.web.app/connect/${request.provider}?nonce=${MEMORY_NONCE}`,
+          nonce: MEMORY_NONCE,
           expiresAt: new Date(now().getTime() + 600_000).toISOString(),
+        };
+      }),
+    connectFinish: (request) =>
+      settle(() => {
+        log.push({ kind: "connectFinish", nonce: request.nonce, handoff: request.handoff });
+        const provider = started;
+        if (provider === null || request.nonce !== MEMORY_NONCE)
+          throw callableError("failed-precondition", "connect_expired");
+        started = null;
+        if (request.handoff === WRONG_USER_HANDOFF) throw callableError("permission-denied", "connect_wrong_user");
+        const kind = provider === "google" ? ("gmail" as const) : ("microsoft" as const);
+        const address = `${kind}@memory.example`;
+        const existing = accounts.find((account) => account.provider === kind && account.address === address);
+        const at = now();
+        const id = existing?.id ?? `memory-account-${nextId++}`;
+        const account: MailAccount = {
+          id,
+          provider: kind,
+          address,
+          displayName: null,
+          status: "connected",
+          syncCursor: null,
+          secretRef: `mail/users/${uid}/mailTokens/${id}`,
+          scopes: [],
+          canSend: false,
+          lastSyncedAt: null,
+          lastError: null,
+          server: null,
+          backfill: existing?.backfill ?? {
+            state: "running",
+            stage: "scanning",
+            lookbackDays: 90,
+            since: new Date(at.getTime() - 90 * 86_400_000),
+            scanned: 0,
+            total: null,
+            jobMessages: 0,
+            applications: 0,
+            interviewInvites: 0,
+            jobAlerts: 0,
+            pendingReview: 0,
+            startedAt: at,
+            finishedAt: null,
+            error: null,
+          },
+          connectedAt: at,
+          createdAt: existing?.createdAt ?? at,
+          updatedAt: at,
+        };
+        accounts = [...accounts.filter((candidate) => candidate.id !== id), account];
+        changed();
+        return {
+          accountId: id,
+          provider: kind,
+          address,
+          displayName: null,
+          canSend: false,
+          reconnect: existing !== undefined,
         };
       }),
     connectImap: (request) => settle(() => connectImap(request)),

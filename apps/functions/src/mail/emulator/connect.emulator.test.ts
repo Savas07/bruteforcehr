@@ -1,5 +1,6 @@
-// OAuth connect: startConnect (mailConnectStart) → `/connect/google` → provider → callback, with a
-// fake OAuthProvider and fake Express request/response objects; Firestore in the emulator.
+// OAuth connect: startConnect (mailConnectStart) → `/connect/google` → provider → callback →
+// finishConnect (mailConnectFinish), with a fake OAuthProvider and fake Express request/response
+// objects; Firestore in the emulator.
 import { createHash } from "node:crypto";
 import { firestorePaths, serverOnlyPaths } from "@bfhr/api";
 import { MailConnectStartRequestSchema } from "@bfhr/core";
@@ -8,11 +9,12 @@ import { getFirestore, Timestamp } from "firebase-admin/firestore";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { loadBackfillProgress, loadMailSecret } from "../accounts";
 import { setOAuthProviderForTests } from "../config";
-import { handleConnect, startConnect } from "../connect-oauth";
+import { finishConnect, handleConnect, startConnect } from "../connect-oauth";
 import type { OAuthProvider } from "../oauth/types";
 import { clearFirestore, readAccount, type RecordingSyncEnqueue, recordingSyncEnqueue } from "./helpers";
 
 const UID = "user-connect";
+const OTHER_UID = "user-other";
 const READ_SCOPE = "https://www.googleapis.com/auth/gmail.readonly";
 const SEND_SCOPE = "https://www.googleapis.com/auth/gmail.send";
 const REDIRECT_URI = "https://bruteforcehr.test/connect/google/callback";
@@ -92,11 +94,7 @@ let enqueue: RecordingSyncEnqueue;
 
 async function get(path: string, query: Record<string, string>): Promise<FakeResponse> {
   const res = new FakeResponse();
-  await handleConnect(
-    { method: "GET", path, query } as unknown as Request,
-    res as unknown as Response,
-    enqueue,
-  );
+  await handleConnect({ method: "GET", path, query } as unknown as Request, res as unknown as Response);
   return res;
 }
 
@@ -138,6 +136,24 @@ async function begin(intent: "read" | "send" = "send"): Promise<{ nonce: string;
   return { nonce: start.nonce, state };
 }
 
+/** Callback with a granted code; returns the handoff from the app return link. */
+async function grant(state: string, code: string): Promise<string> {
+  const query = appReturn(await get("/connect/google/callback", { state, code }));
+  expect(query["status"]).toBe("ok");
+  expect(query["handoff"]).toMatch(/^[\w-]{43}$/u);
+  return query["handoff"] ?? "";
+}
+
+/** The `details.reason` of a `MailCallableError` thrown by `run`. */
+async function reasonOf(run: Promise<unknown>): Promise<unknown> {
+  const error = await run.then(
+    () => null,
+    (caught: unknown) => caught,
+  );
+  expect(error).not.toBeNull();
+  return (error as { details?: { reason?: unknown } }).details?.reason;
+}
+
 const accountDocs = async () =>
   (await getFirestore().collection(firestorePaths.mailAccounts(UID)).get()).docs;
 
@@ -156,17 +172,42 @@ beforeEach(async () => {
 });
 
 describe("OAuth connect", () => {
-  it("stores the account and its encrypted tokens, then starts the lookback scan", async () => {
+  it("holds the grant encrypted until the starting user finishes, then stores the account and scans", async () => {
     const { nonce, state } = await begin();
     const verifier = (await getFirestore().doc(serverOnlyPaths.mailConnect(nonce)).get()).get("codeVerifier");
 
     const res = await get("/connect/google/callback", { state, code: "good-1" });
 
-    expect(appReturn(res)).toEqual({ nonce, provider: "google", intent: "send", status: "ok" });
+    const query = appReturn(res);
+    const handoff = query["handoff"] ?? "";
+    expect(query).toEqual({ nonce, provider: "google", intent: "send", status: "ok", handoff });
+    expect(handoff).toMatch(/^[\w-]{43}$/u);
     expect(google.exchanged).toEqual([{ code: "good-1", codeVerifier: verifier, redirectUri: REDIRECT_URI }]);
+    // Nothing is saved for anyone before mailConnectFinish; the pending grant is encrypted.
+    expect(await accountDocs()).toEqual([]);
+    expect(enqueue.calls).toEqual([]);
+    const pending = await getFirestore().doc(serverOnlyPaths.mailConnect(nonce)).get();
+    expect(pending.get("stage")).toBe("ready");
+    expect(pending.get("state")).toBeNull();
+    expect(pending.get("codeVerifier")).toBeNull();
+    expect(JSON.stringify(pending.data())).not.toContain("rt-good-1");
+    expect(JSON.stringify(pending.data())).not.toContain("at-good-1");
+    expect(JSON.stringify(pending.data())).not.toContain(handoff);
+    expect((pending.get("expireAt") as Timestamp).toMillis()).toBeLessThanOrEqual(Date.now() + 10 * 60_000);
+
+    const finished = await finishConnect(UID, { nonce, handoff }, enqueue);
+
     const [doc, ...others] = await accountDocs();
     expect(others).toEqual([]);
     const accountId = doc?.id ?? "";
+    expect(finished).toEqual({
+      accountId,
+      provider: "gmail",
+      address: "deniz.arslan@gmail.example",
+      displayName: "Deniz Arslan",
+      canSend: true,
+      reconnect: false,
+    });
     const account = await readAccount(UID, accountId);
     expect(account).toMatchObject({
       provider: "gmail",
@@ -192,9 +233,11 @@ describe("OAuth connect", () => {
     });
     expect(await loadBackfillProgress(UID, accountId)).toMatchObject({ lookbackDays: 30, pageToken: null });
     expect(enqueue.calls).toEqual([{ uid: UID, accountId, mode: "backfill" }]);
+    expect(google.revoked).toEqual([]);
 
-    // The state and the nonce are single use.
+    // The state, the nonce and the handoff are single use.
     expect((await getFirestore().doc(serverOnlyPaths.mailConnect(nonce)).get()).exists).toBe(false);
+    expect(await reasonOf(finishConnect(UID, { nonce, handoff }, enqueue))).toBe("connect_expired");
     expect(appReturn(await get("/connect/google/callback", { state, code: "good-2" }))).toMatchObject({
       status: "error",
       reason: "nonce_invalid",
@@ -207,20 +250,69 @@ describe("OAuth connect", () => {
     expect(enqueue.calls).toHaveLength(1);
   });
 
+  it("revokes the grant and saves nothing when another user finishes it", async () => {
+    // The starter sends the /connect link to someone else, who consents; the app signed in as
+    // that other user (the one that received the return link) redeems it.
+    const { nonce, state } = await begin();
+    const handoff = await grant(state, "good-1");
+
+    expect(await reasonOf(finishConnect(OTHER_UID, { nonce, handoff }, enqueue))).toBe("connect_wrong_user");
+
+    expect(google.revoked).toEqual(["rt-good-1"]);
+    expect((await getFirestore().doc(serverOnlyPaths.mailConnect(nonce)).get()).exists).toBe(false);
+    expect(await accountDocs()).toEqual([]);
+    expect(
+      (await getFirestore().collection(firestorePaths.mailAccounts(OTHER_UID)).get()).empty,
+    ).toBe(true);
+    for (const uid of [UID, OTHER_UID]) {
+      const tokens = await getFirestore().collection(`${serverOnlyPaths.mailRoot(uid)}/mailTokens`).get();
+      expect(tokens.empty).toBe(true);
+    }
+    expect(enqueue.calls).toEqual([]);
+    // The starter can't redeem it afterwards either.
+    expect(await reasonOf(finishConnect(UID, { nonce, handoff }, enqueue))).toBe("connect_expired");
+  });
+
+  it("refuses the starter without the handoff from the return link", async () => {
+    // The starter knows the nonce (it issued the link) but never sees the consenting browser's redirect.
+    const { nonce, state } = await begin();
+    const handoff = await grant(state, "good-1");
+    const guessed = `${handoff.slice(0, -1)}${handoff.endsWith("A") ? "B" : "A"}`;
+
+    expect(await reasonOf(finishConnect(UID, { nonce, handoff: guessed }, enqueue))).toBe("connect_expired");
+    expect(await accountDocs()).toEqual([]);
+    expect(google.revoked).toEqual([]);
+
+    // Expired grants are refused (and revoked) even with the right handoff.
+    await getFirestore()
+      .doc(serverOnlyPaths.mailConnect(nonce))
+      .update({ expireAt: Timestamp.fromMillis(Date.now() - 1_000) });
+    expect(await reasonOf(finishConnect(UID, { nonce, handoff }, enqueue))).toBe("connect_expired");
+    expect(google.revoked).toEqual(["rt-good-1"]);
+    expect(await accountDocs()).toEqual([]);
+  });
+
   it("reconnecting the same mailbox updates the account without a second scan", async () => {
     const first = await begin();
-    await get("/connect/google/callback", { state: first.state, code: "good-1" });
+    const firstFinish = await finishConnect(
+      UID,
+      { nonce: first.nonce, handoff: await grant(first.state, "good-1") },
+      enqueue,
+    );
     const [doc] = await accountDocs();
     const accountId = doc?.id ?? "";
+    expect(firstFinish.accountId).toBe(accountId);
     await doc?.ref.update({ status: "needs_reauth" });
 
     const second = await begin("read");
-    expect(
-      appReturn(await get("/connect/google/callback", { state: second.state, code: "good-2" })),
-    ).toMatchObject({
-      status: "ok",
-      intent: "read",
-    });
+    const query = appReturn(await get("/connect/google/callback", { state: second.state, code: "good-2" }));
+    expect(query).toMatchObject({ status: "ok", intent: "read" });
+    const finished = await finishConnect(
+      UID,
+      { nonce: second.nonce, handoff: query["handoff"] ?? "" },
+      enqueue,
+    );
+    expect(finished).toMatchObject({ accountId, reconnect: true });
 
     expect((await accountDocs()).map((item) => item.id)).toEqual([accountId]);
     expect((await readAccount(UID, accountId)).status).toBe("connected");
@@ -294,7 +386,6 @@ describe("OAuth connect", () => {
     await handleConnect(
       { method: "POST", path: "/connect/google", query: {} } as unknown as Request,
       post as unknown as Response,
-      enqueue,
     );
     expect(post.statusCode).toBe(405);
     expect((await get("/connect/yahoo", {})).statusCode).toBe(404);

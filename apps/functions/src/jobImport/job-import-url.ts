@@ -21,11 +21,11 @@ import { findDuplicateJob } from "../jobs/store";
 import {
   type ImportedPosting,
   importPosting,
-  type JobImportConfig,
   JobImportError,
   MAX_PAGE_BYTES,
   PAGE_TIMEOUT_MS,
 } from "./import-posting";
+import { loadJobImportConfig } from "./config";
 import { HostBudgetError, politeFetch, robotsFor, userAgent } from "./politeness";
 import { z } from "zod";
 
@@ -49,17 +49,6 @@ const ERROR_CODES: Readonly<Record<JobImportErrorReason, ConstructorParameters<t
   ai_unavailable: "unavailable",
   rate_limited: "resource-exhausted",
 };
-
-async function loadConfig(): Promise<JobImportConfig> {
-  const snapshot = await getFirestore().doc(serverOnlyPaths.jobImportConfig()).get();
-  const denied = snapshot.get("deniedHosts");
-  return {
-    deniedHosts: Array.isArray(denied)
-      ? denied.filter((host): host is string => typeof host === "string")
-      : [],
-    restrictedSitesEnabled: snapshot.get("restrictedSitesEnabled") !== false,
-  };
-}
 
 /** Cached import result (wire form), `serverOnly/jobImport/users/{uid}/jobImportPages/{sha256(url)}`. */
 const CachedImportSchema = z.object({
@@ -104,7 +93,7 @@ export const jobImportUrl = onCall(
         }
       }
       if (base === null) {
-        const config = await loadConfig();
+        const config = await loadJobImportConfig();
         const ua = userAgent(__BFHR_VERSION__);
         imported = await importPosting(parsed.data.url, {
           config,

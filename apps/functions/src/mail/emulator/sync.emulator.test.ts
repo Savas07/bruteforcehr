@@ -25,12 +25,18 @@ const ACCOUNT = "acc-imap";
 /** Message-ID of the application email sent to Globex; the rejection replies to it. */
 const SENT_TO_GLOBEX = "<sent-globex@mail.example>";
 const DAY_MS = 86_400_000;
+/** What the receiving provider adds for mail the ATS signed (DMARC pass for the From domain). */
+const ATS_AUTHENTICATED = {
+  "Authentication-Results":
+    "imap.test.example; dkim=pass header.d=greenhouse-mail.io; dmarc=pass header.from=us.greenhouse-mail.io",
+};
 
 const receipt = rfc822({
   from: "Acme Robotics <no-reply@us.greenhouse-mail.io>",
   subject: "Thank you for applying to Acme Robotics",
   body: "Hi Deniz,\n\nThank you for applying for the Backend Engineer role at Acme Robotics. We have received your application and our team will review your application shortly.\n\nAcme Robotics Recruiting",
   messageId: "<receipt-acme@greenhouse-mail.io>",
+  headers: ATS_AUTHENTICATED,
 });
 const rejection = rfc822({
   from: "Globex Talent <talent@globex.example>",
@@ -51,6 +57,22 @@ const invite = rfc822({
   subject: "Interview invitation: Backend Engineer at Acme Robotics",
   body: "Hi Deniz,\n\nWe would like to invite you to a technical interview for the Backend Engineer role at Acme Robotics. Please schedule an interview using the link below.\n\nAcme Robotics Recruiting",
   messageId: "<invite-acme@greenhouse-mail.io>",
+  headers: ATS_AUTHENTICATED,
+});
+/**
+ * Same wording from a forged ATS sender: the provider's own (topmost) result fails DMARC, and a
+ * "pass" the sender wrote further down is ignored.
+ */
+const forgedRejection = rfc822({
+  from: "Acme Robotics <no-reply@us.greenhouse-mail.io>",
+  subject: "Your application to Acme Robotics",
+  body: "Hi Deniz,\n\nThank you for applying for the Backend Engineer role at Acme Robotics. Unfortunately, we have decided to move forward with other candidates.\n\nAcme Robotics Recruiting",
+  messageId: "<rejection-acme@attacker.example>",
+  headers: {
+    "Authentication-Results":
+      "imap.test.example; dkim=none; spf=fail smtp.mailfrom=attacker.example; dmarc=fail header.from=us.greenhouse-mail.io",
+    "authentication-results": "evil.example; dmarc=pass header.from=us.greenhouse-mail.io",
+  },
 });
 
 let servers: TestMailServers;
@@ -131,13 +153,15 @@ describe("runSync on an IMAP account", () => {
       from: { address: "no-reply@us.greenhouse-mail.io", name: "Acme Robotics" },
     });
     expect(acme?.bodyText).toContain("We have received your application");
+    // In the spam folder: never applied automatically, even with a thread link.
     expect(globex).toMatchObject({
       folder: "spam",
       category: "rejection",
       applicationId: "app-globex",
       linkStrength: "thread",
       suggestedStatus: "rejected",
-      reviewState: "auto_applied",
+      reviewState: "pending",
+      appliedEventId: null,
       inReplyTo: SENT_TO_GLOBEX,
     });
 
@@ -155,11 +179,10 @@ describe("runSync on an IMAP account", () => {
       evidence: { mailMessageId: acme?.id },
     });
     const globexApp = await readApplication(UID, "app-globex");
-    expect(globexApp.status).toBe("rejected");
-    const [globexEvent] = await statusEvents("app-globex");
-    expect(globexEvent).toMatchObject({ id: globex?.appliedEventId, toStatus: "rejected", actor: "rule" });
-    // Closed by the rejection: the retention clock starts at the status change.
-    expect(globex?.bodyPurgeAt?.getTime()).toBe(globexApp.statusChangedAt.getTime() + 180 * DAY_MS);
+    expect(globexApp.status).toBe("acknowledged");
+    expect(await statusEvents("app-globex")).toEqual([]);
+    // Linked to an active application: the body is kept.
+    expect(globex?.bodyPurgeAt).toBeNull();
 
     // The newsletter left only a dedupe hash with a TTL beyond the longest lookback.
     const seen = await getFirestore().collection(serverOnlyPaths.mailSeenCollection(UID)).get();
@@ -180,7 +203,7 @@ describe("runSync on an IMAP account", () => {
       applications: 2,
       interviewInvites: 0,
       jobAlerts: 0,
-      pendingReview: 0,
+      pendingReview: 1,
       error: null,
     });
     expect(account.backfill?.finishedAt).not.toBeNull();
@@ -234,7 +257,7 @@ describe("runSync on an IMAP account", () => {
       eventsBefore.map((event) => event.id).sort(),
     );
     expect((await readApplication(UID, "app-acme")).status).toBe("interviewing");
-    expect((await readApplication(UID, "app-globex")).status).toBe("rejected");
+    expect((await readApplication(UID, "app-globex")).status).toBe("acknowledged");
     const account = await readAccount(UID, ACCOUNT);
     expect(account.status).toBe("connected");
     const cursor = JSON.parse(account.syncCursor ?? "null") as {
@@ -248,6 +271,24 @@ describe("runSync on an IMAP account", () => {
     fetchSpy.mockClear();
     expect(await runSync({ uid: UID, accountId: ACCOUNT, mode: "incremental" })).toBe(false);
     expect(fetchedCount()).toBe(0);
+  });
+
+  it("sends mail from an unauthenticated ATS sender to review instead of applying it", async () => {
+    servers.imap.control.addMessage("INBOX", { raw: forgedRejection });
+    expect(await runSync({ uid: UID, accountId: ACCOUNT, mode: "incremental" })).toBe(false);
+
+    const forged = (await listMessages(UID)).find(
+      (item) => item.rfc822MessageId === "<rejection-acme@attacker.example>",
+    );
+    expect(forged).toMatchObject({
+      category: "rejection",
+      applicationId: "app-acme",
+      linkStrength: "company_domain",
+      suggestedStatus: "rejected",
+      reviewState: "pending",
+      appliedEventId: null,
+    });
+    expect((await readApplication(UID, "app-acme")).status).toBe("interviewing");
   });
 });
 

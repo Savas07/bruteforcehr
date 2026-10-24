@@ -79,7 +79,9 @@ export function microsoftOAuth(config: OAuthClientConfig, options: { fetch?: Fet
         response_mode: "query",
         scope: this.scopesFor(params.intent).join(" "),
         state: params.state,
-        prompt: "select_account",
+        // Always show the consent screen (as Google does), so a returning user can't be walked
+        // through a connect someone else started with only an account picker.
+        prompt: "consent",
         code_challenge: params.codeChallenge,
         code_challenge_method: "S256",
         ...(params.loginHint === null ? {} : { login_hint: params.loginHint }),

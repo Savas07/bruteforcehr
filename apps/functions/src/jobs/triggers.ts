@@ -14,9 +14,11 @@ import { logger } from "firebase-functions/v2";
 import { onDocumentCreated, onDocumentWritten } from "firebase-functions/v2/firestore";
 import { ANTHROPIC_API_KEY } from "../ai/common";
 import { adminConverters } from "../converters";
+import { loadJobImportConfig } from "../jobImport/config";
 import { projectId } from "./callables";
 import { VertexEmbedder } from "./embeddings";
 import { matchJobs } from "./matcher";
+import { guardedPageFetch } from "./page-fetch";
 import { loadMatchingContext } from "./profile-context";
 import { UserQuota } from "./quota";
 import { matcherAi, profileVector } from "./run";
@@ -50,6 +52,12 @@ export const jobCreatedMatch = onDocumentCreated(
     const uid = event.params.uid;
     if ((await db.doc(firestorePaths.jobMatch(uid, job.id)).get()).exists) return;
     const now = new Date();
+    const quota = new UserQuota(db, uid, now);
+    // Each client-created job costs a Vertex embedding and a function run: a daily allowance.
+    if ((await quota.take("createdJobEmbeddings", 1)) === 0) {
+      logger.info("job_created_match_quota");
+      return;
+    }
     const embedder = new VertexEmbedder(projectId());
     const store = new JobStore(db, uid, embedder);
     const context = await loadMatchingContext(db, uid);
@@ -61,7 +69,7 @@ export const jobCreatedMatch = onDocumentCreated(
       uid,
       context,
       profileVector: vector,
-      ai: matcherAi({ uid, quota: new UserQuota(db, uid, now), aiAvailable: true, context, now }),
+      ai: matcherAi({ uid, quota, aiAvailable: true, context, now }),
       now,
     });
   },
@@ -71,6 +79,7 @@ export const jobCreatedMatch = onDocumentCreated(
 const WATCHLIST_ERRORS = {
   not_found: "We couldn't find job postings at this address.",
   error: "The job board didn't answer. We'll try again on the next run.",
+  later: "We'll check this careers page with your next search.",
 } as const;
 
 /** Server fields of a watchlist entry after reading its board. */
@@ -89,11 +98,17 @@ export function resolvedFields(input: {
   if ("error" in input.outcome) {
     const missing =
       input.outcome.error instanceof SourceError && input.outcome.error.reason === "invalid_response";
+    const deferred =
+      input.outcome.error instanceof SourceError && input.outcome.error.reason === "rate_limited";
     return {
       ...base,
       companyDomain: employerDomain(input.careersUrl),
       status: missing ? "not_found" : "error",
-      lastError: missing ? WATCHLIST_ERRORS.not_found : WATCHLIST_ERRORS.error,
+      lastError: missing
+        ? WATCHLIST_ERRORS.not_found
+        : deferred
+          ? WATCHLIST_ERRORS.later
+          : WATCHLIST_ERRORS.error,
       openJobs: null,
     };
   }
@@ -126,6 +141,7 @@ export const watchlistResolve = onDocumentWritten(
     if (!changed && after.get("status") !== "pending") return;
 
     const now = new Date();
+    const db = getFirestore();
     const board = detectAtsBoard(careersUrl);
     const connector = BOARD_CONNECTORS.find((candidate) => candidate.ats === (board?.ats ?? "web"));
     const robots: RobotsRecord[] = [];
@@ -133,12 +149,22 @@ export const watchlistResolve = onDocumentWritten(
       userAgent: userAgent(__BFHR_VERSION__),
       onRobots: (record) => robots.push(record),
     });
+    // The careers URL is the user's: pages go through the SSRF guard and the owner's denied hosts.
+    const pageHttp = new HttpClient({
+      userAgent: userAgent(__BFHR_VERSION__),
+      fetch: guardedPageFetch((await loadJobImportConfig()).deniedHosts),
+      onRobots: (record) => robots.push(record),
+    });
     let outcome: { listings: Listing[] } | { error: unknown };
     try {
       if (connector === undefined) throw new SourceError("invalid_response", "no connector");
+      // Every edit of the URL fires this trigger: a daily allowance per user.
+      if ((await new UserQuota(db, event.params.uid, now).take("watchlistResolves", 1)) === 0)
+        throw new SourceError("rate_limited", "watchlist resolve quota");
       outcome = {
         listings: await connector.list(board ?? { boardToken: careersUrl, region: "us" }, {
           http,
+          pageHttp,
           cache: storageFeedCache(),
           // Board connectors are keyless.
           secrets: {},
@@ -148,7 +174,6 @@ export const watchlistResolve = onDocumentWritten(
     } catch (error) {
       outcome = { error };
     }
-    const db = getFirestore();
     await new SourceState(db, now).recordRobots(robots);
     const fields = resolvedFields({ careersUrl, outcome, now });
     // Server fields only; the client's name/enabled edits in between are kept.

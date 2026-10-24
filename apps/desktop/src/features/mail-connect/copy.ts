@@ -302,6 +302,15 @@ const failureMessages = defineMessages({
     id: "mail-connect.error.providerUnavailable",
     defaultMessage: "Your provider didn't respond. Nothing was saved. Try again in a moment.",
   },
+  connect_expired: {
+    id: "mail-connect.error.connectExpired",
+    defaultMessage: "That sign-in took too long, so nothing was connected. Start again; it only takes a moment.",
+  },
+  connect_wrong_user: {
+    id: "mail-connect.error.connectWrongUser",
+    defaultMessage:
+      "This sign-in was started from another BruteForceHR account, so nothing was connected. Start again from this account.",
+  },
   account_not_found: {
     id: "mail-connect.error.accountNotFound",
     defaultMessage: "This account was disconnected in the meantime. Connect it again as a new account.",
@@ -317,7 +326,7 @@ const failureMessages = defineMessages({
   },
 });
 
-/** What happened + how to fix, for a failed `mailConnectImap` / `mailConnectStart`. */
+/** What happened + how to fix, for a failed `mailConnectImap` / `mailConnectStart` / `mailConnectFinish`. */
 export function failureMessage(failure: MailCallFailure): MessageDescriptor {
   switch (failure.kind) {
     case "auth_failed":
@@ -327,6 +336,8 @@ export function failureMessage(failure: MailCallFailure): MessageDescriptor {
     case "email_unverified":
     case "provider_unavailable":
     case "account_not_found":
+    case "connect_expired":
+    case "connect_wrong_user":
     case "offline":
       return failureMessages[failure.kind];
     default:

@@ -11,6 +11,17 @@ const OTTONOVA = "https://ottonova.jobs.personio.de/job/2573573";
 const NORTHWIND = "https://www.northwind.example/careers";
 
 describe("careersPage", () => {
+  it("fetches only through pageHttp, the server's guarded client", async () => {
+    const context = testContext([{ url: NORTHWIND, fixture: "careers-page-graph.html" }]);
+    const unguarded = testContext([]);
+    await careersPage.list({ boardToken: NORTHWIND, region: "us" }, { ...unguarded, pageHttp: context.http });
+    expect(unguarded.fake.calls).toEqual([]);
+    expect(context.fake.calls.map((call) => call.url)).toEqual([
+      "https://www.northwind.example/robots.txt",
+      NORTHWIND,
+    ]);
+  });
+
   it("reads a JobPosting from a live employer page and records robots.txt", async () => {
     const context = testContext([{ url: OTTONOVA, fixture: "careers-page-ottonova.html" }]);
     const listings = await careersPage.list({ boardToken: OTTONOVA, region: "us" }, context);
@@ -98,7 +109,7 @@ describe("careersPage", () => {
     expect(await careersPage.list({ boardToken: NORTHWIND, region: "us" }, context)).toEqual([]);
   });
 
-  it("stops at a bot challenge, a missing page, unreadable postings and non-http URLs", async () => {
+  it("stops at a bot challenge, a missing page, unreadable postings and non-https URLs", async () => {
     const context = testContext([
       { url: NORTHWIND, status: 403, fixture: "careers-page-challenge.html" },
       { url: `${NORTHWIND}/gone`, status: 404, body: "<html><title>Not found</title></html>" },
@@ -121,11 +132,11 @@ describe("careersPage", () => {
       reason: "invalid_response",
     });
     const calls = context.fake.calls.length;
-    await expect(
-      careersPage.list({ boardToken: "ftp://example.com/jobs", region: "us" }, context),
-    ).rejects.toMatchObject({
-      reason: "invalid_response",
-    });
+    for (const boardToken of ["ftp://example.com/jobs", "http://www.northwind.example/careers", "not a url"]) {
+      await expect(careersPage.list({ boardToken, region: "us" }, context)).rejects.toMatchObject({
+        reason: "invalid_response",
+      });
+    }
     expect(context.fake.calls).toHaveLength(calls);
   });
 });

@@ -47,7 +47,9 @@ export function toCallableError(error: unknown): { error: HttpsError; outcome: A
       error: new AiCallableError(
         "resource-exhausted",
         "daily_cap",
-        "You've reached today's AI limit. It resets at midnight UTC.",
+        error.scope === "user"
+          ? "You've reached today's AI limit. It resets at midnight UTC."
+          : "AI help has reached today's limit for everyone. It resets at midnight UTC; everything else keeps working.",
       ),
       outcome: "daily_cap",
     };

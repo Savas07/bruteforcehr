@@ -24,7 +24,8 @@ export interface LinkInput {
  * 1. `thread` — a reply in the thread of a message we sent for the application (provider thread
  *    id, In-Reply-To or References).
  * 2. `ats_company_role` — the message names the application's company **and** role, and comes
- *    from an ATS, an assessment platform or the company's own domain.
+ *    from an ATS, an assessment platform or the company's own domain, as verified by the provider
+ *    (`senderAuthenticated`). The same match from an unverified sender is only `company_domain`.
  * 3. `company_domain` — exactly one application at that company (by sender domain, or by name
  *    from an ATS sender), role not confirmed.
  * 4. `llm` — the model picked one of the shortlisted applications.
@@ -60,7 +61,8 @@ export function linkApplication({
     if (sameRole.length === 1 && sameRole[0] !== undefined) {
       return {
         applicationId: sameRole[0].id,
-        linkStrength: trustedSender ? "ats_company_role" : "company_domain",
+        // A forged From can claim any ATS or company domain: strong only when authenticated.
+        linkStrength: trustedSender && signals.senderAuthenticated ? "ats_company_role" : "company_domain",
       };
     }
   }

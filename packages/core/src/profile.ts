@@ -53,6 +53,31 @@ export type SalaryFloor = z.infer<typeof SalaryFloorSchema>;
 
 const ClockTimeSchema = z.string().regex(/^(?:[01]\d|2[0-3]):[0-5]\d$/, "Expected HH:MM");
 
+/**
+ * Push categories the user can mute (Settings › Notifications). Decisions (rejections) keep their
+ * own toggle, `ProfileSettings.notifyRejections`.
+ */
+export const NotificationPreferencesSchema = z.object({
+  /** Interview invites. */
+  interviews: z.boolean(),
+  offers: z.boolean(),
+  assessments: z.boolean(),
+  /** Status changes applied automatically from an email (other than the categories above). */
+  autoApplied: z.boolean(),
+  /** Saved-search alerts and the daily digest. */
+  jobAlerts: z.boolean(),
+});
+export type NotificationPreferences = z.infer<typeof NotificationPreferencesSchema>;
+
+/** Every category on: the value of `settings.notifications` while it is null (never changed). */
+export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
+  interviews: true,
+  offers: true,
+  assessments: true,
+  autoApplied: true,
+  jobAlerts: true,
+};
+
 export const ProfileSettingsSchema = z.object({
   /** §4.6: suggest Ghosted after this many silent days. */
   ghostedAfterDays: z.int().min(1).max(365),
@@ -66,9 +91,15 @@ export const ProfileSettingsSchema = z.object({
   aiMailTextAllowed: z.boolean(),
   /** §4.4: daily cap for emails sent through the Apply flow. */
   dailySendCap: z.int().min(0).max(200),
+  /** Pushes wait until `end` (in `Profile.timezone`); `start` > `end` spans midnight. */
   quietHours: z.object({ start: ClockTimeSchema, end: ClockTimeSchema }).nullable(),
   /** Notify about rejections (gentle copy; can be muted). */
   notifyRejections: z.boolean(),
+  /**
+   * Per-category push toggles; null = never changed (`DEFAULT_NOTIFICATION_PREFERENCES`). Added in
+   * M5: older documents read it as null. Clients write the whole object.
+   */
+  notifications: NotificationPreferencesSchema.nullable().default(null),
 });
 export type ProfileSettings = z.infer<typeof ProfileSettingsSchema>;
 
@@ -81,6 +112,7 @@ export const DEFAULT_PROFILE_SETTINGS: ProfileSettings = {
   dailySendCap: 20,
   quietHours: null,
   notifyRejections: true,
+  notifications: null,
 };
 
 /** `users/{uid}`; `id` is the uid. */

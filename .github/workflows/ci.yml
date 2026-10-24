@@ -76,6 +76,8 @@ jobs:
           restore-keys: pnpm-${{ runner.os }}-
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @bfhr/firebase-rules-tests run test:rules
+      # Mail engine (sync, send, triggers, OAuth connect) against the emulators and in-process IMAP/SMTP.
+      - run: pnpm --filter @bfhr/functions run test:emulator
 
   security:
     name: Secret scan + dependency audit

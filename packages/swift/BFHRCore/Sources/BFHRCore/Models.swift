@@ -242,6 +242,14 @@ public enum ApplicationPriority: String, Codable, Hashable, Sendable, CaseIterab
     case high
 }
 
+public enum EmailSendState: String, Codable, Hashable, Sendable, CaseIterable {
+    case scheduled
+    case sending
+    case sent
+    case cancelled
+    case failed
+}
+
 public enum ApplicationEventType: String, Codable, Hashable, Sendable, CaseIterable {
     case created
     case statusChanged = "status_changed"
@@ -275,6 +283,25 @@ public enum MailAccountStatus: String, Codable, Hashable, Sendable, CaseIterable
     case needsReauth = "needs_reauth"
     case error
     case disconnected
+}
+
+public enum MailSecurity: String, Codable, Hashable, Sendable, CaseIterable {
+    case tls
+    case starttls
+}
+
+public enum MailBackfillState: String, Codable, Hashable, Sendable, CaseIterable {
+    case queued
+    case running
+    case done
+    case failed
+}
+
+public enum MailBackfillStage: String, Codable, Hashable, Sendable, CaseIterable {
+    case scanning
+    case classifying
+    case matching
+    case preparing
 }
 
 public enum MailFolder: String, Codable, Hashable, Sendable, CaseIterable {
@@ -319,6 +346,12 @@ public enum ReviewState: String, Codable, Hashable, Sendable, CaseIterable {
     case confirmed
     case corrected
     case dismissed
+}
+
+public enum InterviewSuggestionSource: String, Codable, Hashable, Sendable, CaseIterable {
+    case calendar
+    case model
+    case text
 }
 
 public enum Platform: String, Codable, Hashable, Sendable, CaseIterable {
@@ -492,6 +525,37 @@ public struct QuietHours: Codable, Hashable, Sendable {
     }
 }
 
+public struct NotificationPreferences: Codable, Hashable, Sendable {
+    public var interviews: Bool
+    public var offers: Bool
+    public var assessments: Bool
+    public var autoApplied: Bool
+    public var jobAlerts: Bool
+
+    public init(
+        interviews: Bool,
+        offers: Bool,
+        assessments: Bool,
+        autoApplied: Bool,
+        jobAlerts: Bool
+    ) {
+        self.interviews = interviews
+        self.offers = offers
+        self.assessments = assessments
+        self.autoApplied = autoApplied
+        self.jobAlerts = jobAlerts
+    }
+
+    public func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(interviews, forKey: .interviews)
+        try container.encode(offers, forKey: .offers)
+        try container.encode(assessments, forKey: .assessments)
+        try container.encode(autoApplied, forKey: .autoApplied)
+        try container.encode(jobAlerts, forKey: .jobAlerts)
+    }
+}
+
 public struct ProfileSettings: Codable, Hashable, Sendable {
     public var ghostedAfterDays: Int
     public var followUpAfterDays: Int
@@ -501,6 +565,7 @@ public struct ProfileSettings: Codable, Hashable, Sendable {
     public var dailySendCap: Int
     public var quietHours: QuietHours?
     public var notifyRejections: Bool
+    public var notifications: NotificationPreferences?
 
     public init(
         ghostedAfterDays: Int,
@@ -510,7 +575,8 @@ public struct ProfileSettings: Codable, Hashable, Sendable {
         aiMailTextAllowed: Bool,
         dailySendCap: Int,
         quietHours: QuietHours?,
-        notifyRejections: Bool
+        notifyRejections: Bool,
+        notifications: NotificationPreferences?
     ) {
         self.ghostedAfterDays = ghostedAfterDays
         self.followUpAfterDays = followUpAfterDays
@@ -520,6 +586,7 @@ public struct ProfileSettings: Codable, Hashable, Sendable {
         self.dailySendCap = dailySendCap
         self.quietHours = quietHours
         self.notifyRejections = notifyRejections
+        self.notifications = notifications
     }
 
     public func encode(to encoder: any Encoder) throws {
@@ -532,6 +599,7 @@ public struct ProfileSettings: Codable, Hashable, Sendable {
         try container.encode(dailySendCap, forKey: .dailySendCap)
         try container.encode(quietHours, forKey: .quietHours)
         try container.encode(notifyRejections, forKey: .notifyRejections)
+        try container.encode(notifications, forKey: .notifications)
     }
 }
 
@@ -2618,6 +2686,99 @@ public struct ThreadRef: Codable, Hashable, Sendable {
     }
 }
 
+public struct MailAddress: Codable, Hashable, Sendable {
+    public var name: String?
+    public var address: String
+
+    public init(
+        name: String?,
+        address: String
+    ) {
+        self.name = name
+        self.address = address
+    }
+
+    public func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(name, forKey: .name)
+        try container.encode(address, forKey: .address)
+    }
+}
+
+public struct EmailSendError: Codable, Hashable, Sendable {
+    public var code: String
+    public var message: String
+
+    public init(
+        code: String,
+        message: String
+    ) {
+        self.code = code
+        self.message = message
+    }
+
+    public func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(code, forKey: .code)
+        try container.encode(message, forKey: .message)
+    }
+}
+
+public struct EmailSend: Codable, Hashable, Sendable {
+    public var state: EmailSendState
+    public var sendId: String
+    public var accountId: String
+    public var to: [MailAddress]
+    public var subject: String
+    public var sendAt: Date
+    public var sentAt: Date?
+    public var providerMessageId: String?
+    public var threadId: String?
+    public var rfc822MessageId: String?
+    public var error: EmailSendError?
+
+    public init(
+        state: EmailSendState,
+        sendId: String,
+        accountId: String,
+        to: [MailAddress],
+        subject: String,
+        sendAt: Date,
+        sentAt: Date?,
+        providerMessageId: String?,
+        threadId: String?,
+        rfc822MessageId: String?,
+        error: EmailSendError?
+    ) {
+        self.state = state
+        self.sendId = sendId
+        self.accountId = accountId
+        self.to = to
+        self.subject = subject
+        self.sendAt = sendAt
+        self.sentAt = sentAt
+        self.providerMessageId = providerMessageId
+        self.threadId = threadId
+        self.rfc822MessageId = rfc822MessageId
+        self.error = error
+    }
+
+    public func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(state, forKey: .state)
+        try container.encode(sendId, forKey: .sendId)
+        try container.encode(accountId, forKey: .accountId)
+        try container.encode(to, forKey: .to)
+        try container.encode(subject, forKey: .subject)
+        try container.encode(sendAt, forKey: .sendAt)
+        try container.encode(sentAt, forKey: .sentAt)
+        try container.encode(providerMessageId, forKey: .providerMessageId)
+        try container.encode(threadId, forKey: .threadId)
+        try container.encode(rfc822MessageId, forKey: .rfc822MessageId)
+        try container.encode(error, forKey: .error)
+    }
+}
+
 /// `users/{uid}/applications/{id}`.
 public struct Application: Codable, Hashable, Sendable, Identifiable {
     public var id: String
@@ -2646,6 +2807,7 @@ public struct Application: Codable, Hashable, Sendable, Identifiable {
     public var followUpDismissedAt: Date?
     public var ghostedSnoozedUntil: Date?
     public var ghostedDismissedAt: Date?
+    public var emailSend: EmailSend?
     public var createdAt: Date
     public var updatedAt: Date
 
@@ -2676,6 +2838,7 @@ public struct Application: Codable, Hashable, Sendable, Identifiable {
         followUpDismissedAt: Date?,
         ghostedSnoozedUntil: Date?,
         ghostedDismissedAt: Date?,
+        emailSend: EmailSend?,
         createdAt: Date,
         updatedAt: Date
     ) {
@@ -2705,6 +2868,7 @@ public struct Application: Codable, Hashable, Sendable, Identifiable {
         self.followUpDismissedAt = followUpDismissedAt
         self.ghostedSnoozedUntil = ghostedSnoozedUntil
         self.ghostedDismissedAt = ghostedDismissedAt
+        self.emailSend = emailSend
         self.createdAt = createdAt
         self.updatedAt = updatedAt
     }
@@ -2737,6 +2901,7 @@ public struct Application: Codable, Hashable, Sendable, Identifiable {
         try container.encode(followUpDismissedAt, forKey: .followUpDismissedAt)
         try container.encode(ghostedSnoozedUntil, forKey: .ghostedSnoozedUntil)
         try container.encode(ghostedDismissedAt, forKey: .ghostedDismissedAt)
+        try container.encode(emailSend, forKey: .emailSend)
         try container.encode(createdAt, forKey: .createdAt)
         try container.encode(updatedAt, forKey: .updatedAt)
     }
@@ -2995,6 +3160,142 @@ public struct MailAccountError: Codable, Hashable, Sendable {
     }
 }
 
+public struct MailEndpoint: Codable, Hashable, Sendable {
+    public var host: String
+    public var port: Int
+    public var security: MailSecurity
+
+    public init(
+        host: String,
+        port: Int,
+        security: MailSecurity
+    ) {
+        self.host = host
+        self.port = port
+        self.security = security
+    }
+
+    public func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(host, forKey: .host)
+        try container.encode(port, forKey: .port)
+        try container.encode(security, forKey: .security)
+    }
+}
+
+public struct MailServerSettings: Codable, Hashable, Sendable {
+    public var preset: String
+    public var username: String
+    public var imap: MailEndpoint
+    public var smtp: MailEndpoint?
+
+    public init(
+        preset: String,
+        username: String,
+        imap: MailEndpoint,
+        smtp: MailEndpoint?
+    ) {
+        self.preset = preset
+        self.username = username
+        self.imap = imap
+        self.smtp = smtp
+    }
+
+    public func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(preset, forKey: .preset)
+        try container.encode(username, forKey: .username)
+        try container.encode(imap, forKey: .imap)
+        try container.encode(smtp, forKey: .smtp)
+    }
+}
+
+public struct MailBackfillError: Codable, Hashable, Sendable {
+    public var code: String
+    public var message: String
+
+    public init(
+        code: String,
+        message: String
+    ) {
+        self.code = code
+        self.message = message
+    }
+
+    public func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(code, forKey: .code)
+        try container.encode(message, forKey: .message)
+    }
+}
+
+public struct MailBackfill: Codable, Hashable, Sendable {
+    public var state: MailBackfillState
+    public var stage: MailBackfillStage
+    public var lookbackDays: Int
+    public var since: Date
+    public var scanned: Int
+    public var total: Int?
+    public var jobMessages: Int
+    public var applications: Int
+    public var interviewInvites: Int
+    public var jobAlerts: Int
+    public var pendingReview: Int
+    public var startedAt: Date?
+    public var finishedAt: Date?
+    public var error: MailBackfillError?
+
+    public init(
+        state: MailBackfillState,
+        stage: MailBackfillStage,
+        lookbackDays: Int,
+        since: Date,
+        scanned: Int,
+        total: Int?,
+        jobMessages: Int,
+        applications: Int,
+        interviewInvites: Int,
+        jobAlerts: Int,
+        pendingReview: Int,
+        startedAt: Date?,
+        finishedAt: Date?,
+        error: MailBackfillError?
+    ) {
+        self.state = state
+        self.stage = stage
+        self.lookbackDays = lookbackDays
+        self.since = since
+        self.scanned = scanned
+        self.total = total
+        self.jobMessages = jobMessages
+        self.applications = applications
+        self.interviewInvites = interviewInvites
+        self.jobAlerts = jobAlerts
+        self.pendingReview = pendingReview
+        self.startedAt = startedAt
+        self.finishedAt = finishedAt
+        self.error = error
+    }
+
+    public func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(state, forKey: .state)
+        try container.encode(stage, forKey: .stage)
+        try container.encode(lookbackDays, forKey: .lookbackDays)
+        try container.encode(since, forKey: .since)
+        try container.encode(scanned, forKey: .scanned)
+        try container.encode(total, forKey: .total)
+        try container.encode(jobMessages, forKey: .jobMessages)
+        try container.encode(applications, forKey: .applications)
+        try container.encode(interviewInvites, forKey: .interviewInvites)
+        try container.encode(jobAlerts, forKey: .jobAlerts)
+        try container.encode(pendingReview, forKey: .pendingReview)
+        try container.encode(startedAt, forKey: .startedAt)
+        try container.encode(finishedAt, forKey: .finishedAt)
+        try container.encode(error, forKey: .error)
+    }
+}
+
 /// `users/{uid}/mailAccounts/{id}` (client read-only).
 public struct MailAccount: Codable, Hashable, Sendable, Identifiable {
     public var id: String
@@ -3008,6 +3309,8 @@ public struct MailAccount: Codable, Hashable, Sendable, Identifiable {
     public var canSend: Bool
     public var lastSyncedAt: Date?
     public var lastError: MailAccountError?
+    public var server: MailServerSettings?
+    public var backfill: MailBackfill?
     public var connectedAt: Date
     public var createdAt: Date
     public var updatedAt: Date
@@ -3024,6 +3327,8 @@ public struct MailAccount: Codable, Hashable, Sendable, Identifiable {
         canSend: Bool,
         lastSyncedAt: Date?,
         lastError: MailAccountError?,
+        server: MailServerSettings?,
+        backfill: MailBackfill?,
         connectedAt: Date,
         createdAt: Date,
         updatedAt: Date
@@ -3039,6 +3344,8 @@ public struct MailAccount: Codable, Hashable, Sendable, Identifiable {
         self.canSend = canSend
         self.lastSyncedAt = lastSyncedAt
         self.lastError = lastError
+        self.server = server
+        self.backfill = backfill
         self.connectedAt = connectedAt
         self.createdAt = createdAt
         self.updatedAt = updatedAt
@@ -3057,28 +3364,11 @@ public struct MailAccount: Codable, Hashable, Sendable, Identifiable {
         try container.encode(canSend, forKey: .canSend)
         try container.encode(lastSyncedAt, forKey: .lastSyncedAt)
         try container.encode(lastError, forKey: .lastError)
+        try container.encode(server, forKey: .server)
+        try container.encode(backfill, forKey: .backfill)
         try container.encode(connectedAt, forKey: .connectedAt)
         try container.encode(createdAt, forKey: .createdAt)
         try container.encode(updatedAt, forKey: .updatedAt)
-    }
-}
-
-public struct MailAddress: Codable, Hashable, Sendable {
-    public var name: String?
-    public var address: String
-
-    public init(
-        name: String?,
-        address: String
-    ) {
-        self.name = name
-        self.address = address
-    }
-
-    public func encode(to encoder: any Encoder) throws {
-        var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encode(name, forKey: .name)
-        try container.encode(address, forKey: .address)
     }
 }
 
@@ -3144,6 +3434,49 @@ public struct MailExtraction: Codable, Hashable, Sendable {
     }
 }
 
+public struct InterviewSuggestion: Codable, Hashable, Sendable {
+    public var title: String
+    public var startsAt: Date
+    public var durationMinutes: Int?
+    public var timezone: String?
+    public var location: String?
+    public var meetingUrl: String?
+    public var source: InterviewSuggestionSource
+    public var interviewId: String?
+
+    public init(
+        title: String,
+        startsAt: Date,
+        durationMinutes: Int?,
+        timezone: String?,
+        location: String?,
+        meetingUrl: String?,
+        source: InterviewSuggestionSource,
+        interviewId: String?
+    ) {
+        self.title = title
+        self.startsAt = startsAt
+        self.durationMinutes = durationMinutes
+        self.timezone = timezone
+        self.location = location
+        self.meetingUrl = meetingUrl
+        self.source = source
+        self.interviewId = interviewId
+    }
+
+    public func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(title, forKey: .title)
+        try container.encode(startsAt, forKey: .startsAt)
+        try container.encode(durationMinutes, forKey: .durationMinutes)
+        try container.encode(timezone, forKey: .timezone)
+        try container.encode(location, forKey: .location)
+        try container.encode(meetingUrl, forKey: .meetingUrl)
+        try container.encode(source, forKey: .source)
+        try container.encode(interviewId, forKey: .interviewId)
+    }
+}
+
 /// `users/{uid}/mailMessages/{id}`.
 public struct MailMessage: Codable, Hashable, Sendable, Identifiable {
     public var id: String
@@ -3169,6 +3502,7 @@ public struct MailMessage: Codable, Hashable, Sendable, Identifiable {
     public var reviewedAt: Date?
     public var bodyText: String?
     public var bodyPurgeAt: Date?
+    public var interviewSuggestion: InterviewSuggestion?
     public var createdAt: Date
     public var updatedAt: Date
 
@@ -3196,6 +3530,7 @@ public struct MailMessage: Codable, Hashable, Sendable, Identifiable {
         reviewedAt: Date?,
         bodyText: String?,
         bodyPurgeAt: Date?,
+        interviewSuggestion: InterviewSuggestion?,
         createdAt: Date,
         updatedAt: Date
     ) {
@@ -3222,6 +3557,7 @@ public struct MailMessage: Codable, Hashable, Sendable, Identifiable {
         self.reviewedAt = reviewedAt
         self.bodyText = bodyText
         self.bodyPurgeAt = bodyPurgeAt
+        self.interviewSuggestion = interviewSuggestion
         self.createdAt = createdAt
         self.updatedAt = updatedAt
     }
@@ -3251,6 +3587,7 @@ public struct MailMessage: Codable, Hashable, Sendable, Identifiable {
         try container.encode(reviewedAt, forKey: .reviewedAt)
         try container.encode(bodyText, forKey: .bodyText)
         try container.encode(bodyPurgeAt, forKey: .bodyPurgeAt)
+        try container.encode(interviewSuggestion, forKey: .interviewSuggestion)
         try container.encode(createdAt, forKey: .createdAt)
         try container.encode(updatedAt, forKey: .updatedAt)
     }

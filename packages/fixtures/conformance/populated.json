@@ -185,7 +185,8 @@
         "start": "22:30",
         "end": "08:00"
       },
-      "notifyRejections": true
+      "notifyRejections": true,
+      "notifications": null
     },
     "createdAt": "2026-08-13T07:00:00.000Z",
     "updatedAt": "2026-10-19T07:30:00.000Z"
@@ -7839,6 +7840,7 @@
       "followUpDismissedAt": null,
       "ghostedSnoozedUntil": null,
       "ghostedDismissedAt": null,
+      "emailSend": null,
       "createdAt": "2026-09-08T07:30:00.000Z",
       "updatedAt": "2026-10-21T19:30:00.000Z"
     },
@@ -7869,6 +7871,7 @@
       "followUpDismissedAt": null,
       "ghostedSnoozedUntil": null,
       "ghostedDismissedAt": null,
+      "emailSend": null,
       "createdAt": "2026-09-26T07:30:00.000Z",
       "updatedAt": "2026-10-17T07:30:00.000Z"
     },
@@ -7899,6 +7902,7 @@
       "followUpDismissedAt": null,
       "ghostedSnoozedUntil": null,
       "ghostedDismissedAt": null,
+      "emailSend": null,
       "createdAt": "2026-10-02T07:30:00.000Z",
       "updatedAt": "2026-10-16T07:36:00.000Z"
     },
@@ -7929,6 +7933,7 @@
       "followUpDismissedAt": null,
       "ghostedSnoozedUntil": null,
       "ghostedDismissedAt": null,
+      "emailSend": null,
       "createdAt": "2026-10-03T07:30:00.000Z",
       "updatedAt": "2026-10-20T07:33:36.000Z"
     },
@@ -7959,6 +7964,7 @@
       "followUpDismissedAt": null,
       "ghostedSnoozedUntil": null,
       "ghostedDismissedAt": null,
+      "emailSend": null,
       "createdAt": "2026-10-06T07:30:00.000Z",
       "updatedAt": "2026-10-19T07:33:00.000Z"
     },
@@ -7989,6 +7995,7 @@
       "followUpDismissedAt": null,
       "ghostedSnoozedUntil": null,
       "ghostedDismissedAt": null,
+      "emailSend": null,
       "createdAt": "2026-09-02T07:30:00.000Z",
       "updatedAt": "2026-09-28T08:30:00.000Z"
     },
@@ -8019,6 +8026,7 @@
       "followUpDismissedAt": null,
       "ghostedSnoozedUntil": null,
       "ghostedDismissedAt": null,
+      "emailSend": null,
       "createdAt": "2026-10-10T07:30:00.000Z",
       "updatedAt": "2026-10-11T07:48:00.000Z"
     },
@@ -8049,6 +8057,7 @@
       "followUpDismissedAt": null,
       "ghostedSnoozedUntil": null,
       "ghostedDismissedAt": null,
+      "emailSend": null,
       "createdAt": "2026-10-13T07:30:00.000Z",
       "updatedAt": "2026-10-15T07:30:00.000Z"
     },
@@ -8079,6 +8088,7 @@
       "followUpDismissedAt": null,
       "ghostedSnoozedUntil": null,
       "ghostedDismissedAt": null,
+      "emailSend": null,
       "createdAt": "2026-10-08T07:30:00.000Z",
       "updatedAt": "2026-10-09T07:36:00.000Z"
     },
@@ -8109,6 +8119,7 @@
       "followUpDismissedAt": null,
       "ghostedSnoozedUntil": null,
       "ghostedDismissedAt": null,
+      "emailSend": null,
       "createdAt": "2026-10-13T07:30:00.000Z",
       "updatedAt": "2026-10-21T02:42:00.000Z"
     },
@@ -8139,6 +8150,7 @@
       "followUpDismissedAt": null,
       "ghostedSnoozedUntil": null,
       "ghostedDismissedAt": null,
+      "emailSend": null,
       "createdAt": "2026-10-12T07:30:00.000Z",
       "updatedAt": "2026-10-16T07:30:00.000Z"
     },
@@ -8169,6 +8181,7 @@
       "followUpDismissedAt": null,
       "ghostedSnoozedUntil": null,
       "ghostedDismissedAt": null,
+      "emailSend": null,
       "createdAt": "2026-10-11T07:30:00.000Z",
       "updatedAt": "2026-10-13T07:30:00.000Z"
     },
@@ -8206,6 +8219,7 @@
       "followUpDismissedAt": null,
       "ghostedSnoozedUntil": null,
       "ghostedDismissedAt": null,
+      "emailSend": null,
       "createdAt": "2026-10-19T07:30:00.000Z",
       "updatedAt": "2026-10-20T07:30:00.000Z"
     },
@@ -8236,6 +8250,7 @@
       "followUpDismissedAt": null,
       "ghostedSnoozedUntil": null,
       "ghostedDismissedAt": null,
+      "emailSend": null,
       "createdAt": "2026-10-18T07:30:00.000Z",
       "updatedAt": "2026-10-19T07:30:00.000Z"
     },
@@ -8266,6 +8281,7 @@
       "followUpDismissedAt": null,
       "ghostedSnoozedUntil": null,
       "ghostedDismissedAt": null,
+      "emailSend": null,
       "createdAt": "2026-10-19T07:30:00.000Z",
       "updatedAt": "2026-10-21T07:30:00.000Z"
     },
@@ -8296,6 +8312,7 @@
       "followUpDismissedAt": null,
       "ghostedSnoozedUntil": null,
       "ghostedDismissedAt": null,
+      "emailSend": null,
       "createdAt": "2026-10-20T07:30:00.000Z",
       "updatedAt": "2026-10-20T07:30:00.000Z"
     },
@@ -8326,6 +8343,7 @@
       "followUpDismissedAt": null,
       "ghostedSnoozedUntil": null,
       "ghostedDismissedAt": null,
+      "emailSend": null,
       "createdAt": "2026-10-21T07:30:00.000Z",
       "updatedAt": "2026-10-21T07:30:00.000Z"
     },
@@ -8356,6 +8374,7 @@
       "followUpDismissedAt": null,
       "ghostedSnoozedUntil": null,
       "ghostedDismissedAt": null,
+      "emailSend": null,
       "createdAt": "2026-10-21T19:30:00.000Z",
       "updatedAt": "2026-10-21T19:30:00.000Z"
     },
@@ -8386,6 +8405,7 @@
       "followUpDismissedAt": null,
       "ghostedSnoozedUntil": null,
       "ghostedDismissedAt": null,
+      "emailSend": null,
       "createdAt": "2026-09-14T07:30:00.000Z",
       "updatedAt": "2026-10-06T07:33:00.000Z"
     },
@@ -8416,6 +8436,7 @@
       "followUpDismissedAt": null,
       "ghostedSnoozedUntil": null,
       "ghostedDismissedAt": null,
+      "emailSend": null,
       "createdAt": "2026-09-19T07:30:00.000Z",
       "updatedAt": "2026-10-12T07:33:00.000Z"
     },
@@ -8446,6 +8467,7 @@
       "followUpDismissedAt": null,
       "ghostedSnoozedUntil": null,
       "ghostedDismissedAt": null,
+      "emailSend": null,
       "createdAt": "2026-08-21T07:30:00.000Z",
       "updatedAt": "2026-09-17T07:30:00.000Z"
     },
@@ -8476,6 +8498,7 @@
       "followUpDismissedAt": null,
       "ghostedSnoozedUntil": null,
       "ghostedDismissedAt": null,
+      "emailSend": null,
       "createdAt": "2026-09-21T07:30:00.000Z",
       "updatedAt": "2026-10-02T07:30:00.000Z"
     },
@@ -8506,6 +8529,7 @@
       "followUpDismissedAt": null,
       "ghostedSnoozedUntil": null,
       "ghostedDismissedAt": null,
+      "emailSend": null,
       "createdAt": "2026-08-26T07:30:00.000Z",
       "updatedAt": "2026-09-22T07:30:00.000Z"
     },
@@ -8536,6 +8560,7 @@
       "followUpDismissedAt": null,
       "ghostedSnoozedUntil": null,
       "ghostedDismissedAt": null,
+      "emailSend": null,
       "createdAt": "2026-08-23T07:30:00.000Z",
       "updatedAt": "2026-09-25T07:30:00.000Z"
     },
@@ -8566,6 +8591,7 @@
       "followUpDismissedAt": null,
       "ghostedSnoozedUntil": null,
       "ghostedDismissedAt": null,
+      "emailSend": null,
       "createdAt": "2026-09-26T07:30:00.000Z",
       "updatedAt": "2026-10-09T07:30:00.000Z"
     }
@@ -10294,6 +10320,8 @@
       "canSend": true,
       "lastSyncedAt": "2026-10-22T07:24:00.000Z",
       "lastError": null,
+      "server": null,
+      "backfill": null,
       "connectedAt": "2026-08-14T07:30:00.000Z",
       "createdAt": "2026-08-14T07:30:00.000Z",
       "updatedAt": "2026-10-22T07:24:00.000Z"
@@ -10314,6 +10342,21 @@
         "message": "The app-specific password was revoked. Reconnect to keep syncing this account.",
         "at": "2026-10-21T07:30:00.000Z"
       },
+      "server": {
+        "preset": "icloud",
+        "username": "deniz.aksoy@example.net",
+        "imap": {
+          "host": "imap.mail.me.com",
+          "port": 993,
+          "security": "tls"
+        },
+        "smtp": {
+          "host": "smtp.mail.me.com",
+          "port": 587,
+          "security": "starttls"
+        }
+      },
+      "backfill": null,
       "connectedAt": "2026-08-28T07:30:00.000Z",
       "createdAt": "2026-08-28T07:30:00.000Z",
       "updatedAt": "2026-10-21T07:30:00.000Z"
@@ -10333,6 +10376,7 @@
         "dates": [],
         "meetingUrls": []
       },
+      "interviewSuggestion": null,
       "id": "mail-brisk-received",
       "accountId": "acc-gmail",
       "providerMessageId": "18f1b2c3d4e5f601",
@@ -10370,6 +10414,7 @@
         "dates": [],
         "meetingUrls": []
       },
+      "interviewSuggestion": null,
       "id": "mail-ada-received",
       "accountId": "acc-icloud",
       "providerMessageId": "88102",
@@ -10407,6 +10452,7 @@
         "dates": [],
         "meetingUrls": []
       },
+      "interviewSuggestion": null,
       "id": "mail-fjordline-rejection",
       "accountId": "acc-gmail",
       "providerMessageId": "18e9a0b1c2d3e4f5",
@@ -10444,6 +10490,7 @@
         "dates": [],
         "meetingUrls": []
       },
+      "interviewSuggestion": null,
       "id": "mail-cadence-rejection",
       "accountId": "acc-gmail",
       "providerMessageId": "18f0c1d2e3f4a5b6",
@@ -10490,6 +10537,16 @@
           "https://meet.google.com/bwq-ztkx-rmh"
         ]
       },
+      "interviewSuggestion": {
+        "title": "Hiring manager interview",
+        "startsAt": "2026-10-28T14:00:00.000Z",
+        "durationMinutes": 45,
+        "timezone": "America/New_York",
+        "location": null,
+        "meetingUrl": "https://meet.google.com/bwq-ztkx-rmh",
+        "source": "model",
+        "interviewId": "int-brightwave-1"
+      },
       "id": "mail-brightwave-invite",
       "accountId": "acc-gmail",
       "providerMessageId": "18f3e4d5c6b7a809",
@@ -10533,6 +10590,16 @@
           }
         ],
         "meetingUrls": []
+      },
+      "interviewSuggestion": {
+        "title": "Kennenlerngespräch (30 Min.)",
+        "startsAt": "2026-10-23T14:00:00.000Z",
+        "durationMinutes": 30,
+        "timezone": "Europe/Berlin",
+        "location": null,
+        "meetingUrl": null,
+        "source": "model",
+        "interviewId": null
       },
       "id": "mail-nordlicht-invite",
       "accountId": "acc-gmail",
@@ -10578,6 +10645,7 @@
         ],
         "meetingUrls": []
       },
+      "interviewSuggestion": null,
       "id": "mail-grachten-assessment",
       "accountId": "acc-gmail",
       "providerMessageId": "18f2f3a4b5c6d7e8",
@@ -10622,6 +10690,7 @@
         ],
         "meetingUrls": []
       },
+      "interviewSuggestion": null,
       "id": "mail-lumenpay-offer",
       "accountId": "acc-gmail",
       "providerMessageId": "18f5b6c7d8e9f0a1",
@@ -10659,6 +10728,7 @@
         "dates": [],
         "meetingUrls": []
       },
+      "interviewSuggestion": null,
       "id": "mail-sail-outreach",
       "accountId": "acc-gmail",
       "providerMessageId": "18f6c7d8e9f0a1b2",
@@ -10703,6 +10773,7 @@
         ],
         "meetingUrls": []
       },
+      "interviewSuggestion": null,
       "id": "mail-tannenbaum-info",
       "accountId": "acc-gmail",
       "providerMessageId": "18f6d7e8f9a0b1c2",
@@ -10740,6 +10811,7 @@
         "dates": [],
         "meetingUrls": []
       },
+      "interviewSuggestion": null,
       "id": "mail-job-alert",
       "accountId": "acc-gmail",
       "providerMessageId": "18f5e6f7a8b9c0d1",
@@ -10777,6 +10849,7 @@
         "dates": [],
         "meetingUrls": []
       },
+      "interviewSuggestion": null,
       "id": "mail-kumsal-update",
       "accountId": "acc-icloud",
       "providerMessageId": "88231",

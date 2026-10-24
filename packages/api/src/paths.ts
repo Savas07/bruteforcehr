@@ -110,6 +110,8 @@ export const storagePaths = {
   renderedFile: (uid: string, fileId: string) => `${user(uid)}/rendered/${segment(fileId)}`,
   /** CV photo of a variant that opted in (U6); referenced from `basics.image`. */
   cvPhoto: (uid: string, fileId: string) => `${user(uid)}/cv-photos/${segment(fileId)}`,
+  /** A file attached from the device to an email apply (`mailSend` upload attachments). */
+  mailAttachment: (uid: string, fileId: string) => `${user(uid)}/mail-attachments/${segment(fileId)}`,
 } as const;
 
 /**
@@ -158,8 +160,24 @@ export const serverOnlyPaths = {
   jobImportRoot: (uid: string) => `serverOnly/jobImport/users/${segment(uid)}`,
   jobImportPage: (uid: string, key: string) =>
     `serverOnly/jobImport/users/${segment(uid)}/jobImportPages/${segment(key)}`,
-  /** Mail tokens, processed-message hashes, outbox and send counters (M5). */
+  /** Mail tokens, processed-message hashes, outbox and send counters (docs/adr/0012-mail-sync.md). */
   mailRoot: (uid: string) => `serverOnly/mail/users/${segment(uid)}`,
+  /** Encrypted credentials of one account; `mailAccounts.secretRef` is this path without `serverOnly/`. */
+  mailToken: (uid: string, accountId: string) =>
+    `serverOnly/mail/users/${segment(uid)}/mailTokens/${segment(accountId)}`,
+  /** Hash of a processed message id (dedupe; TTL `expireAt`). The id is a hex SHA-256. */
+  mailSeen: (uid: string, hash: string) => `serverOnly/mail/users/${segment(uid)}/mailSeen/${segment(hash)}`,
+  mailSeenCollection: (uid: string) => `serverOnly/mail/users/${segment(uid)}/mailSeen`,
+  /** Body and attachments of a scheduled email apply until it is sent or cancelled. */
+  mailOutbox: (uid: string, sendId: string) =>
+    `serverOnly/mail/users/${segment(uid)}/mailOutbox/${segment(sendId)}`,
+  /** Emails sent per UTC day (daily send cap; TTL `expireAt`). */
+  mailSendDay: (uid: string, day: string) =>
+    `serverOnly/mail/users/${segment(uid)}/mailSendDays/${segment(day)}`,
+  /** Review corrections kept as labeled examples (category from/to, sender domain; no body). */
+  mailCorrections: (uid: string) => `serverOnly/mail/users/${segment(uid)}/mailCorrections`,
+  /** Pending OAuth connect (nonce → uid, PKCE verifier; TTL `expireAt`, minutes). */
+  mailConnect: (nonce: string) => `serverOnly/mailConnect/mailConnectNonces/${segment(nonce)}`,
 } as const;
 
 /**

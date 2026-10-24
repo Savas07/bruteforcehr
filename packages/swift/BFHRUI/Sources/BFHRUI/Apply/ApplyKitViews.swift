@@ -138,10 +138,9 @@ struct KitFileRow: View {
                 .accessibilityLabel(Text(ApplyStrings.fileKind(file.kind)))
                 .accessibilityValue(Text(verbatim: ByteCountFormatter.string(fromByteCount: Int64(file.sizeBytes), countStyle: .file)))
             }
-            ViewThatFits(in: .horizontal) {
-                HStack(spacing: BFHRSpace.s2) { actions }
-                VStack(spacing: BFHRSpace.s2) { actions }
-            }
+            // Stacked full width: side by side, "Save to Files" wrapped onto two lines on iPhone 17e
+            // next to a one-line "Share" (half the row is narrower than its one-line label).
+            VStack(spacing: BFHRSpace.s2) { actions }
         }
         .fileExporter(
             isPresented: $exports,
@@ -285,6 +284,9 @@ struct AttachmentPickerSheet: View {
             }
         }
         .presentationDetents([.medium, .large])
+        // Opaque like the app's other list sheets: the default glass let the composer's text and
+        // its Send button show through the file rows at the medium detent.
+        .presentationBackground(BFHRColor.groupedBackground)
         .accessibilityIdentifier("apply.attach.sheet")
     }
 

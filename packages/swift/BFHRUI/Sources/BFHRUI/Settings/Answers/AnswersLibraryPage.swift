@@ -21,6 +21,16 @@ struct AnswersLibraryPage: View {
                 Text(AnswersStrings.intro)
                     .font(.bfhr(.subheadline))
                     .foregroundStyle(BFHRColor.Fg.secondary)
+                #if os(iOS)
+                // In the list, not the navigation bar: "Reorder" next to "+" truncated the title
+                // ("Application answ…") on iPhone 17e.
+                if model.answers.count > 1, !editMode.isEditing {
+                    Button { editMode = .active } label: {
+                        Label { Text(AnswersStrings.reorder) } icon: { Image(systemName: "arrow.up.arrow.down") }
+                    }
+                    .accessibilityIdentifier("answers.reorder")
+                }
+                #endif
             }
             if model.answers.isEmpty {
                 EmptyState(
@@ -56,19 +66,15 @@ struct AnswersLibraryPage: View {
         .toolbar {
             ToolbarItemGroup(placement: .bfhrTrailing) {
                 #if os(iOS)
-                if model.answers.count > 1 {
-                    Button {
-                        editMode = editMode.isEditing ? .inactive : .active
-                    } label: {
-                        Text(editMode.isEditing ? AnswersStrings.done : AnswersStrings.reorder)
-                    }
-                    .accessibilityIdentifier("answers.reorder")
+                if editMode.isEditing {
+                    Button { editMode = .inactive } label: { Text(AnswersStrings.done) }
+                        .accessibilityIdentifier("answers.reorderDone")
+                } else {
+                    addButton
                 }
+                #else
+                addButton
                 #endif
-                Button { editing = AnswerDraft(kind: .workAuthorization).withDefaultLabel() } label: {
-                    Label { Text(AnswersStrings.add) } icon: { Image(systemName: "plus") }
-                }
-                .accessibilityIdentifier("answers.add")
             }
         }
         #if os(iOS)
@@ -88,6 +94,13 @@ struct AnswersLibraryPage: View {
             editing = AnswerDraft(first)
         }
         #endif
+    }
+
+    private var addButton: some View {
+        Button { editing = AnswerDraft(kind: .workAuthorization).withDefaultLabel() } label: {
+            Label { Text(AnswersStrings.add) } icon: { Image(systemName: "plus") }
+        }
+        .accessibilityIdentifier("answers.add")
     }
 
     private func delete(_ id: String) {

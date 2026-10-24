@@ -85,6 +85,7 @@ enum ApplyStrings {
     static let filesUnavailable = LocalizedStringResource.bfhr("apply.files.unavailable", default: "PDFs can't be made in this build.", table: "Apply")
     static let copyLetter = LocalizedStringResource.bfhr("apply.files.copyLetter", default: "Copy cover letter text", table: "Apply")
     static let letterCopied = LocalizedStringResource.bfhr("apply.toast.letterCopied", default: "Cover letter copied", table: "Apply")
+    static let shareLetterPDF = LocalizedStringResource.bfhr("apply.kit.shareLetterPDF", default: "Share cover letter PDF", table: "Apply")
 
     /// What a file is, for VoiceOver ("Your CV, PDF").
     static func fileKind(_ kind: ApplyFile.Kind) -> LocalizedStringResource {

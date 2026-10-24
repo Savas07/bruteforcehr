@@ -292,7 +292,7 @@ public struct ApplySheet: View {
                     if let file = model.files.files.first(where: { if case .coverLetter = $0.kind { true } else { false } }),
                        let url = file.temporaryURL {
                         ShareLink(item: url) {
-                            Label { Text(ApplyStrings.shareFile(String(localized: ApplyStrings.fileKind(file.kind)))) } icon: { Image(systemName: "square.and.arrow.up") }
+                            Label { Text(ApplyStrings.shareLetterPDF) } icon: { Image(systemName: "square.and.arrow.up") }
                         }
                         .accessibilityIdentifier("apply.kit.shareLetter")
                     }

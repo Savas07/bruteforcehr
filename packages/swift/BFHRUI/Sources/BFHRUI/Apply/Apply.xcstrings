@@ -2427,6 +2427,29 @@
         }
       }
     },
+    "apply.kit.shareLetterPDF" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anschreiben als PDF teilen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Share cover letter PDF"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ön yazı PDF dosyasını paylaş"
+          }
+        }
+      }
+    },
     "apply.letter.banner" : {
       "extractionState" : "manual",
       "localizations" : {

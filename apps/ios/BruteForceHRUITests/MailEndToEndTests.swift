@@ -59,12 +59,13 @@ final class MailEndToEndTests: XCTestCase {
         let tabBar = app.tabBars.firstMatch
         XCTAssertTrue(tabBar.waitForExistence(timeout: 30), "signed in")
 
-        // 1. Today's mail section and the Mail badge, from Firestore.
-        XCTAssertTrue(element(app, containing: "Interview invitation: iOS Engineer").waitForExistence(timeout: 30), "Today lists the invite")
+        // 1. Today's mail section (the invite to review, Globex's automatic move), from Firestore.
+        XCTAssertTrue(element(app, containing: "Looks like an interview invite").waitForExistence(timeout: 30), "Today lists the invite")
+        XCTAssertTrue(element(app, containing: "Globex Live").exists, "Today lists the automatic move")
         shot("today")
         tabBar.buttons["Mail"].tap()
         XCTAssertTrue(app.descendants(matching: .any)["screen.mail"].waitForExistence(timeout: 10))
-        XCTAssertEqual(tabBar.buttons["Mail"].value as? String, "1", "Mail badge")
+        XCTAssertTrue(element(app, containing: "To review (1)").waitForExistence(timeout: 10), "one email to review")
         let row = element(app, containing: "Lena Vogel")
         XCTAssertTrue(row.waitForExistence(timeout: 20), "the invite waits for review")
         shot("queue")
@@ -90,6 +91,10 @@ final class MailEndToEndTests: XCTestCase {
         XCTAssertTrue(app.buttons["Undo"].firstMatch.waitForExistence(timeout: 5), "confirmed")
         let gone = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: row)
         XCTAssertEqual(XCTWaiter().wait(for: [gone], timeout: 10), .completed, "left To review")
+        // Past the toast and the held write: the decision goes to the server.
+        let toastGone = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: app.buttons["Undo"].firstMatch)
+        XCTAssertEqual(XCTWaiter().wait(for: [toastGone], timeout: 15), .completed, "toast gone")
+        Thread.sleep(forTimeInterval: 6)
 
         // 4. Updates: undo Globex Live's automatic move.
         element(app, containing: "Updates").tap()

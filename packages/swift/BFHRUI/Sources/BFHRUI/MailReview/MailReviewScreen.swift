@@ -236,6 +236,9 @@ public struct MailReviewScreen: View {
                     SyncLine(lastChecked: model.lastChecked, now: model.now)
                 }
             }
+            // The row's top sits in the section's rounded corner: with one account (no 44 pt scope
+            // menu) the corner clipped the first letters, so the line keeps the menu's height.
+            .frame(minHeight: BFHRHitTarget.minimum, alignment: .leading)
             if model.connection.isOffline {
                 Text(MailViewStrings.offlineFootnote)
                     .font(.bfhr(.footnote))

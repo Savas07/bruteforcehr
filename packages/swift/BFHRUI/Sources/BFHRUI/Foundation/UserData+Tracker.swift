@@ -91,6 +91,7 @@ extension UserData {
             followUpDismissedAt: nil,
             ghostedSnoozedUntil: nil,
             ghostedDismissedAt: nil,
+            emailSend: nil,
             createdAt: now,
             updatedAt: now
         )

@@ -12,6 +12,9 @@ import Observation
 public protocol MailConnectService: AnyObject {
     /// `mailConnectStart`: the `/connect/{provider}?nonce=…` URL to open.
     func startOAuth(provider: OAuthMailProvider, lookbackDays: Int, address: String?) async throws(MailConnectError) -> URL
+    /// `mailConnectFinish`: redeems the return link's `handoff` for this signed-in user; nothing is
+    /// stored before it succeeds. Returns the connected account's id.
+    func finishOAuth(nonce: String, handoff: String) async throws(MailConnectError) -> String
     /// `mailConnectImap`: tests IMAP (and SMTP), stores the password encrypted, starts the scan.
     func connectImap(_ request: ImapConnectRequest) async throws(MailConnectError) -> ImapConnectResult
     /// `mailBackfillStart`: scans the last `lookbackDays` again.
@@ -74,8 +77,10 @@ public enum MailConnectError: Error, Hashable, Sendable {
     case scopeMissing
     /// A work account whose organisation must approve the app first.
     case adminConsentRequired
-    /// The sign-in took too long or was replayed.
+    /// The sign-in took too long or its link was already used: start again.
     case expired
+    /// The provider's return link belongs to another BruteForceHR account; nothing was saved.
+    case wrongUser
     case offline
     /// Anything else, with details for "Copy details".
     case failed(String)
@@ -102,7 +107,8 @@ public enum MailConnectError: Error, Hashable, Sendable {
         case "cancelled": return .cancelled
         case "scope_missing": return .scopeMissing
         case "admin_consent_required": return .adminConsentRequired
-        case "nonce_invalid": return .expired
+        case "nonce_invalid", "connect_expired": return .expired
+        case "connect_wrong_user": return .wrongUser
         default: return .failed(reason ?? "unknown")
         }
     }
@@ -110,18 +116,22 @@ public enum MailConnectError: Error, Hashable, Sendable {
 
 /// Where the OAuth return link says the round trip ended.
 public enum MailOAuthReturn: Hashable, Sendable {
-    case connected(OAuthMailProvider)
+    /// Signed in at the provider; `mailConnectFinish(nonce, handoff)` stores the account.
+    case connected(OAuthMailProvider, nonce: String, handoff: String)
     case failed(MailConnectError)
 
-    /// Parses `bruteforcehr://connected?nonce=&provider=&intent=&status=ok|error&reason=`.
+    /// Parses `bruteforcehr://connected?nonce=&provider=&intent=&status=ok&handoff=` or
+    /// `…&status=error&reason=`.
     public init?(_ url: URL) {
         guard url.scheme?.lowercased() == "bruteforcehr", url.host()?.lowercased() == "connected",
               let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems else { return nil }
         let value = { (name: String) in items.first { $0.name == name }?.value }
         switch value("status") {
         case "ok":
-            guard let provider = value("provider").flatMap(OAuthMailProvider.init(rawValue:)) else { return nil }
-            self = .connected(provider)
+            guard let provider = value("provider").flatMap(OAuthMailProvider.init(rawValue:)),
+                  let nonce = value("nonce"), !nonce.isEmpty,
+                  let handoff = value("handoff"), !handoff.isEmpty else { return nil }
+            self = .connected(provider, nonce: nonce, handoff: handoff)
         case "error":
             self = .failed(.reason(value("reason")))
         default:
@@ -184,10 +194,8 @@ public final class MailConnectModel: ScreenModel {
     public private(set) var smtpWarning: String?
 
     // Result
-    /// The account being scanned (IMAP returns it; OAuth finds it by provider when it arrives).
+    /// The account being scanned (both callables return it).
     public internal(set) var connectedAccountId: String?
-    private var awaitedProvider: MailProvider?
-    private var connectStartedAt: Date?
     public private(set) var accounts: [MailAccount] = []
     public private(set) var backfillRetryFailed = false
 
@@ -237,14 +245,9 @@ public final class MailConnectModel: ScreenModel {
         load(data.mailAccounts)
     }
 
-    /// The accounts snapshot (progress of the scan, the OAuth account arriving).
+    /// The accounts snapshot (progress of the scan).
     public func load(_ accounts: [MailAccount]) {
         self.accounts = accounts
-        if connectedAccountId == nil, let provider = awaitedProvider, let since = connectStartedAt {
-            connectedAccountId = accounts
-                .filter { $0.provider == provider && $0.updatedAt >= since.addingTimeInterval(-60) }
-                .max { $0.updatedAt < $1.updatedAt }?.id
-        }
     }
 
     /// The account under scan, once known.
@@ -268,7 +271,8 @@ public final class MailConnectModel: ScreenModel {
         path.append(.oauth(provider))
     }
 
-    /// Continue to Google / Microsoft: `mailConnectStart`, the browser session, then the scan.
+    /// Continue to Google / Microsoft: `mailConnectStart`, the browser session, `mailConnectFinish`
+    /// with the return link's handoff, then the scan.
     public func continueOAuth(_ provider: OAuthMailProvider) async {
         guard let service, let oauthSession else { return }
         oauthState = .working
@@ -278,13 +282,11 @@ public final class MailConnectModel: ScreenModel {
                 lookbackDays: lookbackDays,
                 address: reconnecting?.address
             )
-            connectStartedAt = now()
             let callback = try await oauthSession.authenticate(url: url, callbackScheme: "bruteforcehr")
             switch MailOAuthReturn(callback) {
-            case .connected:
+            case .connected(_, let nonce, let handoff):
+                connectedAccountId = try await service.finishOAuth(nonce: nonce, handoff: handoff)
                 oauthState = .idle
-                awaitedProvider = provider == .google ? .gmail : .microsoft
-                load(accounts)
                 path.append(.scanning)
                 onConnected?()
             case .failed(.cancelled):

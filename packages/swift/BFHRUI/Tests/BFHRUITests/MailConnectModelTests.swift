@@ -17,6 +17,14 @@ final class FakeMailService: MailConnectService {
         return URL(string: "https://bruteforcehr.web.app/connect/\(provider.rawValue)?nonce=abc")!
     }
 
+    var finishResult: Result<String, MailConnectError> = .success("acc-g")
+    var finishes: [(String, String)] = []
+
+    func finishOAuth(nonce: String, handoff: String) async throws(MailConnectError) -> String {
+        finishes.append((nonce, handoff))
+        return try finishResult.get()
+    }
+
     func connectImap(_ request: ImapConnectRequest) async throws(MailConnectError) -> ImapConnectResult {
         imapRequests.append(request)
         return try imapResult.get()
@@ -86,22 +94,34 @@ struct MailConnectModelTests {
         #expect(model.oauthState == .notConfigured)
     }
 
-    @Test("OAuth return links: connected, cancelled and errors")
+    @Test("OAuth return links: connected with a handoff, cancelled and errors")
     func oauthReturn() async throws {
-        #expect(MailOAuthReturn(URL(string: "bruteforcehr://connected?nonce=a&provider=google&intent=read&status=ok")!) == .connected(.google))
+        #expect(MailOAuthReturn(URL(string: "bruteforcehr://connected?nonce=n1&provider=google&intent=read&status=ok&handoff=h1")!) == .connected(.google, nonce: "n1", handoff: "h1"))
+        #expect(MailOAuthReturn(URL(string: "bruteforcehr://connected?nonce=n1&provider=google&intent=read&status=ok")!) == nil)
         #expect(MailOAuthReturn(URL(string: "bruteforcehr://connected?nonce=a&provider=microsoft&intent=read&status=error&reason=admin_consent_required")!) == .failed(.adminConsentRequired))
         #expect(MailOAuthReturn(URL(string: "bruteforcehr://connected?status=error&reason=cancelled")!) == .failed(.cancelled))
         #expect(MailOAuthReturn(URL(string: "bruteforcehr://mail")!) == nil)
 
-        let ok = URL(string: "bruteforcehr://connected?nonce=a&provider=google&intent=read&status=ok")!
-        let model = MailConnectModel(service: FakeMailService(), oauthSession: FakeOAuthSession(.success(ok)), now: { Self.now })
+        // ok → mailConnectFinish(nonce, handoff) → the scan of the account it returns.
+        let ok = URL(string: "bruteforcehr://connected?nonce=n1&provider=google&intent=read&status=ok&handoff=h1")!
+        let service = FakeMailService()
+        let model = MailConnectModel(service: service, oauthSession: FakeOAuthSession(.success(ok)), now: { Self.now })
         await model.continueOAuth(.google)
+        #expect(service.finishes.map(\.0) == ["n1"] && service.finishes.map(\.1) == ["h1"])
         #expect(model.path == [.scanning])
-        #expect(model.connectedAccount == nil)
-        model.load([try account("acc-old", provider: .gmail, updatedAt: Self.now.addingTimeInterval(-86_400))])
-        #expect(model.connectedAccount == nil)
-        model.load([try account("acc-g", provider: .gmail, updatedAt: Self.now.addingTimeInterval(5))])
+        #expect(model.connectedAccountId == "acc-g")
+        model.load([try account("acc-g", provider: .gmail, updatedAt: Self.now)])
         #expect(model.connectedAccount?.id == "acc-g")
+
+        // Another BruteForceHR account's link, or a used one: nothing saved, calm errors.
+        service.finishResult = .failure(.reason("connect_wrong_user"))
+        let wrong = MailConnectModel(service: service, oauthSession: FakeOAuthSession(.success(ok)), now: { Self.now })
+        await wrong.continueOAuth(.google)
+        #expect(wrong.oauthState == .failed(.wrongUser) && wrong.path.isEmpty)
+        service.finishResult = .failure(.reason("connect_expired"))
+        let expired = MailConnectModel(service: service, oauthSession: FakeOAuthSession(.success(ok)), now: { Self.now })
+        await expired.continueOAuth(.google)
+        #expect(expired.oauthState == .failed(.expired))
 
         let scope = MailConnectModel(service: FakeMailService(), oauthSession: FakeOAuthSession(.success(URL(string: "bruteforcehr://connected?provider=google&status=error&reason=scope_missing")!)), now: { Self.now })
         await scope.continueOAuth(.google)

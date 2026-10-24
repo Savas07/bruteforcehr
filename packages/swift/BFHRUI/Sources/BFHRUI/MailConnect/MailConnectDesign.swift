@@ -18,6 +18,10 @@ final class DesignMailService: MailConnectService {
         throw .providerNotConfigured
     }
 
+    func finishOAuth(nonce: String, handoff: String) async throws(MailConnectError) -> String {
+        throw .providerNotConfigured
+    }
+
     func connectImap(_ request: ImapConnectRequest) async throws(MailConnectError) -> ImapConnectResult {
         try? await Task.sleep(for: .seconds(1))
         return ImapConnectResult(accountId: "acc-design", canSend: true, smtpWarning: nil)

@@ -484,6 +484,29 @@
         }
       }
     },
+    "error.wrongUser" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diese Anmeldung gehört zu einem anderen BruteForceHR-Konto, deshalb wurde nichts gespeichert. Versuch es noch einmal aus diesem Konto."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "That sign-in belongs to another BruteForceHR account, so nothing was saved. Try again from this account."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bu giriş başka bir BruteForceHR hesabına ait, bu yüzden hiçbir şey kaydedilmedi. Bu hesaptan tekrar deneyin."
+          }
+        }
+      }
+    },
     "imap.connect" : {
       "extractionState" : "manual",
       "localizations" : {

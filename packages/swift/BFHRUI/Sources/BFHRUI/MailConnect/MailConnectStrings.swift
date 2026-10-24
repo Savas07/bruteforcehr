@@ -115,6 +115,7 @@ enum MailConnectStrings {
     static let errorScope = LocalizedStringResource.bfhr("error.scope", default: "BruteForceHR didn't get permission to read your email. Try again and keep the mail permission checked.", table: "MailConnect")
     static let errorAdmin = LocalizedStringResource.bfhr("error.admin", default: "Your organization needs to approve BruteForceHR before it can read this mailbox. Ask your IT admin, or connect a personal account instead.", table: "MailConnect")
     static let errorExpired = LocalizedStringResource.bfhr("error.expired", default: "The sign-in took too long. Try again.", table: "MailConnect")
+    static let errorWrongUser = LocalizedStringResource.bfhr("error.wrongUser", default: "That sign-in belongs to another BruteForceHR account, so nothing was saved. Try again from this account.", table: "MailConnect")
 
     // Scan (Screen D/E)
     static func connectedTo(_ address: String) -> LocalizedStringResource {
@@ -168,6 +169,7 @@ enum MailConnectStrings {
         case .scopeMissing: errorScope
         case .adminConsentRequired: errorAdmin
         case .expired: errorExpired
+        case .wrongUser: errorWrongUser
         case .cancelled, .providerNotConfigured, .oauthRequired: nil
         case .failed: errorFailed
         }

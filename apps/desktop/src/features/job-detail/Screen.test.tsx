@@ -59,6 +59,9 @@ function JobsRoute() {
   );
 }
 
+/** How long a condition may take to hold (generous: CI runs every package's tests at once). */
+const WAIT = { timeout: 15_000, interval: 50 };
+
 async function settle() {
   await act(async () => {
     for (let index = 0; index < 5; index += 1) {
@@ -117,6 +120,16 @@ async function render(entry: string) {
     await router.load();
   });
   await settle();
+  // Under load (the whole monorepo's tests at once) the router and listeners need more turns.
+  await vi.waitFor(() => expect(container.querySelector('input[type="search"]')).not.toBeNull(), WAIT);
+}
+
+/** Polls `assertion` while letting React and the router run (load-independent, unlike a fixed number of turns). */
+async function eventually(assertion: () => void): Promise<void> {
+  await vi.waitFor(async () => {
+    await settle();
+    assertion();
+  }, WAIT);
 }
 
 const search = () => router.state.location.search as Record<string, unknown>;
@@ -133,52 +146,62 @@ afterEach(() => {
   container.remove();
 });
 
-describe("Jobs screen", () => {
+// The whole Jobs screen over the populated fixtures renders slowly while the monorepo's tests run in parallel.
+describe("Jobs screen", { timeout: 30_000 }, () => {
   it("shows the route's search text, also when it changes while the screen stays open", async () => {
     await render("/jobs");
     expect(searchField()?.value).toBe("");
     await act(async () => {
       await router.navigate({ to: "/jobs", search: { q: "react" } });
     });
-    await settle();
-    expect(searchField()?.value).toBe("react");
+    await eventually(() => expect(searchField()?.value).toBe("react"));
   });
 
   it("sorts by newest from the list header's menu", async () => {
     await render("/jobs");
+    await eventually(() => expect(container.querySelector("[data-sort-trigger]")).not.toBeNull());
     const trigger = container.querySelector<HTMLButtonElement>("[data-sort-trigger]");
     act(() => {
       trigger?.focus();
       trigger?.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
     });
-    const newest = [...document.querySelectorAll<HTMLElement>('[role="menuitemradio"]')].find(
-      (item) => item.textContent === "Newest",
-    );
+    const newestItem = () =>
+      [...document.querySelectorAll<HTMLElement>('[role="menuitemradio"]')].find(
+        (item) => item.textContent === "Newest",
+      );
+    await eventually(() => expect(newestItem()).toBeDefined());
+    const newest = newestItem();
     act(() => newest?.click());
-    await settle();
-    expect(search()["sort"]).toBe("newest");
-    expect(trigger?.textContent).toBe("Sorted by Newest");
+    await eventually(() => {
+      expect(search()["sort"]).toBe("newest");
+      expect(trigger?.textContent).toBe("Sorted by Newest");
+    });
   });
 
   it("removes one filter from its zero-results chip and keeps the others", async () => {
     await render("/jobs?posted=1&match=strong&level=intern");
+    await eventually(() => expect(container.querySelector('[data-remove-facet="seniority"]')).not.toBeNull());
     const chip = container.querySelector<HTMLButtonElement>('[data-remove-facet="seniority"]');
     expect(chip?.getAttribute("aria-label")).toBe("Remove filter: Seniority: Intern");
     act(() => chip?.click());
-    await settle();
-    expect(search()).toMatchObject({ posted: "1", match: "strong" });
-    expect(search()["level"]).toBeUndefined();
+    await eventually(() => {
+      expect(search()).toMatchObject({ posted: "1", match: "strong" });
+      expect(search()["level"]).toBeUndefined();
+    });
   });
 
   it("opens a filter popover from ?filters and clears the param when it closes", async () => {
     await render("/jobs?filters=1");
+    await eventually(() =>
+      expect(document.querySelector('[role="dialog"]')?.querySelector("h2")?.textContent).toBe("Work mode"),
+    );
     const dialog = document.querySelector('[role="dialog"]');
-    expect(dialog?.querySelector("h2")?.textContent).toBe("Work mode");
     act(() => {
       dialog?.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
     });
-    await settle();
-    expect(search()["filters"]).toBeUndefined();
-    expect(document.querySelector('[role="dialog"]')).toBeNull();
+    await eventually(() => {
+      expect(search()["filters"]).toBeUndefined();
+      expect(document.querySelector('[role="dialog"]')).toBeNull();
+    });
   });
 });

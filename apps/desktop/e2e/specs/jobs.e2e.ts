@@ -39,6 +39,15 @@ async function write(path: string, data: Record<string, unknown>): Promise<void>
   if (!response.ok) throw new Error(`PATCH ${path}: ${response.status} ${await response.text()}`);
 }
 
+/** Deletes a document as the emulator's owner (missing documents are fine). */
+async function remove(name: string): Promise<void> {
+  const path = name.includes("/documents/")
+    ? name.slice(name.indexOf("/documents/") + "/documents/".length)
+    : name;
+  const response = await fetch(`${BASE}/${path}`, { method: "DELETE", headers: OWNER });
+  if (!response.ok && response.status !== 404) throw new Error(`DELETE ${path}: ${response.status}`);
+}
+
 /**
  * The uid of whoever is signed in (a restored session may belong to another spec's account):
  * Firebase Auth persists the user in the webview's IndexedDB (`firebaseLocalStorageDb`).
@@ -148,6 +157,21 @@ describe("Jobs", () => {
       location.hash = "#/jobs";
     });
     await $(`[data-nav-id="${KEEP.id}"]`).waitForDisplayed({ timeout: 30_000 });
+  });
+
+  // The account is shared with the tracker specs (a restored session): leave its data as it was,
+  // or their row counts include these jobs' applications.
+  after(async () => {
+    if (uid === "") return;
+    for (const entry of [KEEP, SKIP]) {
+      for (const application of await findDocs("applications", "company", entry.company)) {
+        for (const event of await findDocs("applicationEvents", "applicationId", docId(application)))
+          await remove(event.name);
+        await remove(application.name);
+      }
+      await remove(`users/${uid}/jobMatches/${entry.id}`);
+      await remove(`users/${uid}/jobs/${entry.id}`);
+    }
   });
 
   it("triages with the keyboard: D hides the second job (the match is dismissed)", async () => {

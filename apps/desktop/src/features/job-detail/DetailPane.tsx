@@ -216,7 +216,8 @@ export function DetailPane({
             </InlineAlert>
           )}
           {detail.delisted && <InlineAlert tone="warning" title={detail.delisted} />}
-          {detail.submitPrompt && showSubmitPrompt && (
+          {/* The screen decides: a Preparing external application, or the round trip from Apply. */}
+          {showSubmitPrompt && detail.applied === null && (
             <SubmitPrompt
               company={detail.company.name}
               variant="asking"

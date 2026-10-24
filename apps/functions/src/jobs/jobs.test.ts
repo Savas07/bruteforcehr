@@ -665,6 +665,7 @@ describe("deleteUserData", () => {
       "serverOnly/aiUsage/users/u1",
       "serverOnly/jobAlerts/users/u1",
       "serverOnly/jobQuota/users/u1",
+      "serverOnly/jobImport/users/u1",
       "serverOnly/mail/users/u1",
     ]);
     expect(steps.some((root) => serverOnlyPaths.jobAlert("u1", "j").startsWith(root))).toBe(true);

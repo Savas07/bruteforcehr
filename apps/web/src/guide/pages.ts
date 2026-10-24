@@ -18,19 +18,22 @@ export const GUIDE_PAGES: readonly GuidePage[] = [
   {
     href: "/guide/getting-started/",
     title: "Getting started",
-    description: "Install the app on Mac, Windows or iPhone, sign in, and set up your CV and what you're looking for.",
+    description:
+      "Install the app on Mac, Windows or iPhone, sign in, and set up your CV and what you're looking for.",
     screen: "macToday",
   },
   {
     href: "/guide/jobs/",
     title: "Jobs",
-    description: "Where jobs come from, how matches are scored, saved searches with alerts, and saving a job from a link.",
+    description:
+      "Where jobs come from, how matches are scored, saved searches with alerts, and saving a job from a link.",
     screen: "macJobs",
   },
   {
     href: "/guide/cv-studio/",
     title: "CV Studio",
-    description: "Import or write your CV, make versions for other roles and languages, use suggestions and export.",
+    description:
+      "Import or write your CV, make versions for other roles and languages, use suggestions and export.",
     screen: "macCvEditor",
   },
   {

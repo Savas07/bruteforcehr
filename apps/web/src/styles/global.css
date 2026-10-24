@@ -635,16 +635,87 @@
     }
   }
 
-  /* Platform label above platform-specific steps ("On Mac and Windows", "On iPhone"). */
-  .guide-platform {
+  /*
+   * Features › CV Studio: screenshots stacked like cards (Berd). One grid cell holds every card; the
+   * front card sits lower left, the ones behind it upper right. Below 768 px only the front shows.
+   */
+  .feature-stack {
+    display: grid;
+
+    & > * {
+      grid-area: 1 / 1;
+    }
+
+    @media (width >= 48rem) {
+      & > .feature-stack-back {
+        margin-left: 20%;
+        align-self: start;
+      }
+
+      & > .feature-stack-front {
+        z-index: 1;
+        margin-top: 16%;
+        margin-right: 14%;
+      }
+    }
+  }
+
+  /* User guide overview card: the title link covers the whole card; the card shows its focus ring. */
+  .guide-card {
+    transition: background-color var(--bfhr-duration-fast) var(--bfhr-easing-standard);
+
+    &:hover {
+      background-color: var(--bfhr-color-surface-hover);
+    }
+
+    &:has(.guide-card-link:focus-visible) {
+      outline: var(--bfhr-border-thick) solid var(--bfhr-color-line-focus);
+      outline-offset: 2px;
+    }
+  }
+
+  .guide-card-link {
     display: inline-flex;
-    padding: calc(var(--spacing) * 0.5) calc(var(--spacing) * 3);
-    border-radius: var(--bfhr-radius-full);
-    background-color: var(--bfhr-color-surface-sunken);
-    color: var(--bfhr-color-fg-secondary);
-    font-size: var(--bfhr-text-subheadline-size);
-    line-height: var(--bfhr-text-subheadline-line-height);
-    font-weight: 600;
+    min-height: calc(var(--spacing) * 11);
+    align-items: center;
+
+    &::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+    }
+
+    &:focus-visible {
+      outline: none;
+    }
+  }
+
+  /* Keyboard shortcuts: one table per screen; row headers are the actions. */
+  .shortcut-table {
+    & table {
+      margin-top: calc(var(--spacing) * 3);
+    }
+
+    & th[scope="row"] {
+      color: var(--bfhr-color-fg-primary);
+      font-weight: 400;
+    }
+
+    & thead th:not(:first-child) {
+      width: 30%;
+    }
+  }
+
+  .shortcut-keys > span {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: calc(var(--spacing) * 1);
+  }
+
+  .shortcut-or {
+    color: var(--bfhr-color-fg-tertiary);
   }
 
   /* Keycaps, drawn like the app's shortcuts sheet (`Keycaps`): ⌘ ⇧ D / Ctrl Shift D. */

@@ -39,14 +39,14 @@ iCloud Mail, Yahoo Mail, Yandex Mail, GMX, WEB.DE and most other providers conne
 
 The app shows these steps next to the password field, with a link to your provider's settings.
 
-| Provider                   | How to create the app password                                                                                                                                                                |
-| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Gmail** (without Google sign-in) | Turn on 2-Step Verification in your Google Account. Open [App passwords](https://myaccount.google.com/apppasswords), create one named BruteForceHR, and paste the 16-letter password. |
-| **iCloud Mail**            | Sign in at [account.apple.com](https://account.apple.com) and open **Sign-In and Security**. Choose **App-Specific Passwords**, create one named BruteForceHR, and paste it (it looks like xxxx-xxxx-xxxx-xxxx). |
-| **Yahoo Mail**             | Open **Account security** in your Yahoo account, choose **Generate app password**, name it BruteForceHR, and paste it.                                                                         |
-| **Yandex Mail**            | In Yandex Mail settings, allow access from mail clients (IMAP). Then in **Yandex ID › Security**, create an app password for Mail and paste it.                                                |
-| **GMX**, **WEB.DE**        | In your mail settings, open **POP3 & IMAP** and turn on access for other programs. If you use two-factor sign-in, create an app password under **Security**; otherwise use your mail password. |
-| **Other (IMAP)**           | Ask your provider for the IMAP and SMTP server names, ports and security (SSL/TLS or STARTTLS), and an app password if they offer one.                                                        |
+| Provider                           | How to create the app password                                                                                                                                                                                   |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Gmail** (without Google sign-in) | Turn on 2-Step Verification in your Google Account. Open [App passwords](https://myaccount.google.com/apppasswords), create one named BruteForceHR, and paste the 16-letter password.                            |
+| **iCloud Mail**                    | Sign in at [account.apple.com](https://account.apple.com) and open **Sign-In and Security**. Choose **App-Specific Passwords**, create one named BruteForceHR, and paste it (it looks like xxxx-xxxx-xxxx-xxxx). |
+| **Yahoo Mail**                     | Open **Account security** in your Yahoo account, choose **Generate app password**, name it BruteForceHR, and paste it.                                                                                           |
+| **Yandex Mail**                    | In Yandex Mail settings, allow access from mail clients (IMAP). Then in **Yandex ID › Security**, create an app password for Mail and paste it.                                                                  |
+| **GMX**, **WEB.DE**                | In your mail settings, open **POP3 & IMAP** and turn on access for other programs. If you use two-factor sign-in, create an app password under **Security**; otherwise use your mail password.                   |
+| **Other (IMAP)**                   | Ask your provider for the IMAP and SMTP server names, ports and security (SSL/TLS or STARTTLS), and an app password if they offer one.                                                                           |
 
 Choose **Test and connect**. BruteForceHR sends the password once over an encrypted connection, tests it, and stores it encrypted; it never shows it again. For **Other (IMAP)**, leave the outgoing (SMTP) server empty to connect for reading only; you can add it later with **Reconnect** if you want to apply by email from that account.
 

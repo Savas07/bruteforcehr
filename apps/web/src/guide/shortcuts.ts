@@ -16,7 +16,9 @@ import path from "node:path";
 import { compileFunction } from "node:vm";
 import ts from "typescript";
 
-const desktopSrc = path.resolve(import.meta.dirname, "../../../desktop/src");
+/** `apps/desktop/src`, set by astro.config.ts (a bundled chunk can't find it from its own URL). */
+declare const __BFHR_DESKTOP_SRC__: string;
+const desktopSrc = __BFHR_DESKTOP_SRC__;
 
 type Platform = "macos" | "windows";
 interface Chord {
@@ -66,15 +68,24 @@ function loadDesktopModule(file: string): Record<string, unknown> {
   loaded.set(file, module.exports);
   const require = (specifier: string): unknown => {
     if (specifier === "react-intl") return { defineMessages: <T>(messages: T): T => messages };
-    if (specifier.startsWith(".")) return loadDesktopModule(resolveSource(path.resolve(path.dirname(file), specifier)));
-    throw new Error(`Keyboard shortcuts: ${path.relative(desktopSrc, file)} imports ${specifier}, which the guide can't load`);
+    if (specifier.startsWith("."))
+      return loadDesktopModule(resolveSource(path.resolve(path.dirname(file), specifier)));
+    throw new Error(
+      `Keyboard shortcuts: ${path.relative(desktopSrc, file)} imports ${specifier}, which the guide can't load`,
+    );
   };
-  compileFunction(outputText, ["exports", "require", "module"], { filename: file })(module.exports, require, module);
+  compileFunction(outputText, ["exports", "require", "module"], { filename: file })(
+    module.exports,
+    require,
+    module,
+  );
   return module.exports;
 }
 
 const registry = loadDesktopModule(path.join(desktopSrc, "lib/shortcuts.ts")) as unknown as ShortcutsModule;
-const keymap = loadDesktopModule(path.join(desktopSrc, "shared/keyboard/keymap.ts")) as unknown as KeymapModule;
+const keymap = loadDesktopModule(
+  path.join(desktopSrc, "shared/keyboard/keymap.ts"),
+) as unknown as KeymapModule;
 
 // ─── Reading the per-screen bindings ───────────────────────────────────────────────────────────
 
@@ -108,7 +119,12 @@ function declaration(name: string, file: string): { init: ts.Expression; file: s
   let found: { init: ts.Expression; file: string } | undefined;
   const visit = (node: ts.Node): void => {
     if (found) return;
-    if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) && node.name.text === name && node.initializer)
+    if (
+      ts.isVariableDeclaration(node) &&
+      ts.isIdentifier(node.name) &&
+      node.name.text === name &&
+      node.initializer
+    )
       found = { init: node.initializer, file };
     else ts.forEachChild(node, visit);
   };
@@ -130,7 +146,8 @@ function declaration(name: string, file: string): { init: ts.Expression; file: s
 }
 
 function staticString(expression: ts.Expression, file: string): string | undefined {
-  if (ts.isStringLiteral(expression) || ts.isNoSubstitutionTemplateLiteral(expression)) return expression.text;
+  if (ts.isStringLiteral(expression) || ts.isNoSubstitutionTemplateLiteral(expression))
+    return expression.text;
   if (ts.isIdentifier(expression)) {
     const found = declaration(expression.text, file);
     return found ? staticString(found.init, found.file) : undefined;
@@ -189,7 +206,11 @@ interface Binding {
 function bindingsIn(file: string): Binding[] {
   const bindings: Binding[] = [];
   const visit = (node: ts.Node): void => {
-    if (ts.isCallExpression(node) && ts.isIdentifier(node.expression) && node.expression.text === "useKeyBindings") {
+    if (
+      ts.isCallExpression(node) &&
+      ts.isIdentifier(node.expression) &&
+      node.expression.text === "useKeyBindings"
+    ) {
       const list = node.arguments[0];
       if (list && ts.isArrayLiteralExpression(list))
         for (const element of list.elements) {
@@ -218,20 +239,40 @@ function sourceFilesUnder(directory: string): string[] {
 // ─── The guide's tables ────────────────────────────────────────────────────────────────────────
 
 /** Guide sections in page order; each lists the desktop folders or files whose keys it shows. */
-const SECTIONS: readonly { readonly title: string; readonly guide?: string; readonly sources: readonly string[] }[] = [
+const SECTIONS: readonly {
+  readonly title: string;
+  readonly guide?: string;
+  readonly sources: readonly string[];
+}[] = [
   {
     title: "Anywhere",
-    sources: ["shared/ui/Toast.tsx", "shared/ui/ExportButton.tsx", "features/application-add/AddApplicationHost.tsx"],
+    sources: [
+      "shared/ui/Toast.tsx",
+      "shared/ui/ExportButton.tsx",
+      "features/application-add/AddApplicationHost.tsx",
+    ],
   },
   { title: "Lists and panels", sources: ["shared/"] },
   { title: "Today", guide: "/guide/getting-started/#today", sources: ["features/today/"] },
   { title: "Jobs", guide: "/guide/jobs/", sources: ["features/job-detail/", "features/saved-searches/"] },
-  { title: "Add a job from a link", guide: "/guide/jobs/#add-from-a-link", sources: ["features/jobs-import/"] },
+  {
+    title: "Add a job from a link",
+    guide: "/guide/jobs/#add-from-a-link",
+    sources: ["features/jobs-import/"],
+  },
   { title: "Apply by email", guide: "/guide/apply/", sources: ["features/apply/"] },
   { title: "CVs", guide: "/guide/cv-studio/", sources: ["features/cv-editor/"] },
   { title: "Tracker", guide: "/guide/tracker/", sources: ["features/tracker-"] },
-  { title: "Add an application", guide: "/guide/tracker/#add-an-application", sources: ["features/application-add/"] },
-  { title: "Application details", guide: "/guide/tracker/#application-details", sources: ["features/application-detail/"] },
+  {
+    title: "Add an application",
+    guide: "/guide/tracker/#add-an-application",
+    sources: ["features/application-add/"],
+  },
+  {
+    title: "Application details",
+    guide: "/guide/tracker/#application-details",
+    sources: ["features/application-detail/"],
+  },
   { title: "Mail", guide: "/guide/mail/", sources: ["features/mail-review/"] },
   { title: "Insights", guide: "/guide/insights/", sources: ["features/insights/"] },
   { title: "Settings", guide: "/guide/settings/", sources: ["features/settings/"] },
@@ -291,7 +332,9 @@ export const screenShortcutTables: readonly ShortcutTable[] = (() => {
     if (SKIPPED.some((prefix) => relative.startsWith(prefix))) continue;
     const bindings = bindingsIn(file);
     if (bindings.length === 0) continue;
-    const section = SECTIONS.find((candidate) => candidate.sources.some((source) => relative.startsWith(source)));
+    const section = SECTIONS.find((candidate) =>
+      candidate.sources.some((source) => relative.startsWith(source)),
+    );
     if (section) {
       rowsBySection.get(section.title)?.push(...bindings);
       continue;
@@ -313,7 +356,8 @@ export const screenShortcutTables: readonly ShortcutTable[] = (() => {
   ].filter((table) => table.rows.length > 0);
   const count = tables.reduce((sum, table) => sum + table.rows.length, 0);
   // A refactor that hides the bindings from this reader must not ship an empty page.
-  if (count < 40) throw new Error(`Keyboard shortcuts: found only ${count} screen shortcuts in apps/desktop/src`);
+  if (count < 40)
+    throw new Error(`Keyboard shortcuts: found only ${count} screen shortcuts in apps/desktop/src`);
   return tables;
 })();
 

@@ -52,7 +52,7 @@ A link works once, for a limited time, and a newer link replaces an older one. I
 
 The first time you sign in, BruteForceHR asks three things. Every step has **Skip for now**, and you can change everything later.
 
-1. **CV.** **Import a CV file** (PDF, Word, JSON Resume or your LinkedIn data export), **Start from scratch**, or skip. See [CV Studio](/guide/cv-studio/).
+1. **CV.** Import the CV you have (PDF, Word, JSON Resume or your LinkedIn data export), **Start from scratch**, or skip. On Mac and Windows the import button is **Import a CV file**; on iPhone, **Upload a file** or **Import LinkedIn export**. See [CV Studio](/guide/cv-studio/).
 2. **Preferences.** The roles you want, your seniority, where you want to work (places and remote), the lowest salary you'd accept, your work authorization and your languages. Matching uses these to explain how well each job fits. Nothing here is required.
 3. **Finish.** **Start searching** saves a first search from your roles and places, runs it right away, and opens Today. New matches appear in Jobs as they're found.
 
@@ -60,15 +60,15 @@ To change your answers later, open **Settings › Job preferences**. See [Settin
 
 ## Find your way around
 
-| Destination  | What it's for                                                                       | Mac and Windows | iPhone                       |
-| ------------ | ----------------------------------------------------------------------------------- | --------------- | ---------------------------- |
-| **Today**    | What needs you now: the next interview, emails to review, follow-ups and deadlines. | Sidebar         | Tab                          |
-| **Jobs**     | Openings from job sites and companies you follow, ranked by how well they fit.      | Sidebar         | Tab                          |
-| **Tracker**  | Every application from saved to offer.                                              | Sidebar         | Tab                          |
-| **CVs**      | Your CVs and their versions.                                                        | Sidebar         | Tab                          |
-| **Mail**     | Job emails from your connected inboxes, and the ones to review.                     | Sidebar         | Tab                          |
-| **Insights** | How far your applications get and where replies come from.                          | Sidebar         | Tracker, or Today's footer   |
-| **Settings** | Preferences, connections, notifications and your data.                             | Sidebar bottom  | Your initials, top right     |
+| Destination  | What it's for                                                                       | Mac and Windows | iPhone                     |
+| ------------ | ----------------------------------------------------------------------------------- | --------------- | -------------------------- |
+| **Today**    | What needs you now: the next interview, emails to review, follow-ups and deadlines. | Sidebar         | Tab                        |
+| **Jobs**     | Openings from job sites and companies you follow, ranked by how well they fit.      | Sidebar         | Tab                        |
+| **Tracker**  | Every application from saved to offer.                                              | Sidebar         | Tab                        |
+| **CVs**      | Your CVs and their versions.                                                        | Sidebar         | Tab                        |
+| **Mail**     | Job emails from your connected inboxes, and the ones to review.                     | Sidebar         | Tab                        |
+| **Insights** | How far your applications get and where replies come from.                          | Sidebar         | Tracker, or Today's footer |
+| **Settings** | Preferences, connections, notifications and your data.                              | Sidebar bottom  | Your initials, top right   |
 
 On a Mac or Windows PC, **Jump to…** at the top of the sidebar (<kbd>⌘</kbd> <kbd>K</kbd> or <kbd>Ctrl</kbd> <kbd>K</kbd>) opens the command palette: type a few letters of any destination, setting or action. Press <kbd>?</kbd> to see the keyboard shortcuts for the screen you're on, or read them all in [Keyboard shortcuts](/guide/keyboard-shortcuts/).
 

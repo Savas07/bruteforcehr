@@ -207,7 +207,10 @@ async function begin(provider: "google" | "microsoft", req: Request, res: Respon
   const state = base64url(randomBytes(24));
   const codeVerifier = base64url(randomBytes(48));
   // Fails if a concurrent request began this nonce first (the nonce is single use).
-  await ref?.update({ stage: "authorizing", state, codeVerifier }, { lastUpdateTime: snapshot.updateTime });
+  await ref?.update(
+    { stage: "authorizing", state, codeVerifier },
+    snapshot.updateTime === undefined ? {} : { lastUpdateTime: snapshot.updateTime },
+  );
   redirect(
     res,
     oauth.authorizeUrl({

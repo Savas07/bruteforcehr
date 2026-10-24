@@ -26,7 +26,6 @@ public struct TailorReviewPage: View {
             case .review, .saved: review
             }
         }
-        .accessibilityIdentifier("apply.tailor")
     }
 
     // MARK: Choice

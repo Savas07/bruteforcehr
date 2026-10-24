@@ -53,7 +53,6 @@ struct CoverLetterEditorPage: View {
         } message: {
             Text(ApplyStrings.templateNameBody)
         }
-        .accessibilityIdentifier("apply.letter.editor")
     }
 
     // MARK: Template, tone, language, Draft with AI

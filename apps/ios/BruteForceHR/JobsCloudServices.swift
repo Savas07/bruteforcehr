@@ -126,12 +126,13 @@ final class CloudApplyServices: ApplyServices {
         try await aiCall("coverLetterDraft", request, as: CoverLetterDraftResponse.self)
     }
 
-    private func aiCall<Response: Decodable>(_ name: String, _ request: some Encodable, as type: Response.Type) async throws(ApplyAIError) -> Response {
+    private func aiCall<Response: Decodable>(_ name: String, _ request: some Encodable & Sendable, as type: Response.Type) async throws(ApplyAIError) -> Response {
         do {
             let callable = CVCallables.functions.httpsCallable(name)
             // Claude reads the whole CV and posting; allow more than the 70 s default.
             callable.timeoutInterval = 120
-            let result = try await callable.call(try CallableJSON.object(request))
+            let payload: [String: Any] = try CallableJSON.object(request)
+            let result = try await callable.call(payload)
             return try CallableJSON.decode(type, result.data)
         } catch {
             throw Self.aiError(error)

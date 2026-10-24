@@ -77,7 +77,14 @@ final class JobDetailAccessibilityAuditTests: XCTestCase {
                 try runAudit(app, context, content: content, ax: ax, scrolled: scrolled)
                 return
             } catch let error as NSError where error.code == -56 && attempt < 2 {
+                // A hung audit is usually stuck on one cell mid-layout: settle, and on the second
+                // retry move the viewport a little (pages overlap, so nothing is skipped).
                 Thread.sleep(forTimeInterval: 2)
+                if attempt == 1 {
+                    let window = app.windows.firstMatch
+                    window.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.55))
+                        .press(forDuration: 0.05, thenDragTo: window.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.45)), withVelocity: .slow, thenHoldForDuration: 0.3)
+                }
             }
         }
     }

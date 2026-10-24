@@ -71,7 +71,7 @@ public struct SavedSearchesScreen: View {
             Section {
                 NavigationLink(value: JobsRoute.hiddenJobs) {
                     LabeledContent {
-                        Text(model.hiddenJobs.count, format: .number)
+                        Text(model.hiddenJobs.count, format: .number).foregroundStyle(BFHRColor.Fg.secondary)
                     } label: {
                         Label { Text(JobsStrings.hiddenJobsTitle) } icon: { Image(systemName: "eye.slash") }
                             .labelStyle(.bfhrCompact)

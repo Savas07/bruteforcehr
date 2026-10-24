@@ -421,10 +421,12 @@ struct ScopeChip: View {
             HStack(spacing: BFHRSpace.s1) {
                 title
                 if count > 0 {
+                    // Solid fills only: the audit measured the translucent badge below 4.5:1.
                     Text(count, format: .number)
                         .font(.bfhr(.caption1, emphasized: true))
+                        .foregroundStyle(isSelected ? BFHRColor.Accent.text : BFHRColor.Fg.primary)
                         .padding(.horizontal, 6)
-                        .background(isSelected ? BFHRColor.Fg.onAccent.opacity(0.2) : BFHRColor.Surface.sunken, in: Capsule())
+                        .background(isSelected ? BFHRColor.Surface.base : BFHRColor.Surface.sunken, in: Capsule())
                 }
             }
             .font(.bfhr(.subheadline, emphasized: isSelected))

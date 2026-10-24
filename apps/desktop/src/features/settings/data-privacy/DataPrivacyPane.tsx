@@ -153,7 +153,7 @@ function ExportStatus({
     <div className="flex flex-col items-start gap-3">
       {failure !== null && (
         <InlineAlert
-          tone={failure === "generic" ? "error" : "info"}
+          tone={failure === "generic" ? "error" : failure === "too-large" ? "warning" : "info"}
           fromAction={failure === "generic"}
           className="self-stretch"
           title={intl.formatMessage(exportFailureMessages[failure])}

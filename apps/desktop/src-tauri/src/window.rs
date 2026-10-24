@@ -152,11 +152,13 @@ pub fn create_main<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
     Ok(())
 }
 
-/// WKWebView's Tab skips links unless Safari's "Press Tab to highlight each item" is on, which
+/// `WKWebView`'s Tab skips links unless Safari's "Press Tab to highlight each item" is on, which
 /// left the sidebar's sections, Settings and every in-page link out of the keyboard's reach on
-/// macOS (docs/design/critiques/desktop/keyboard-pass.md). Buttons and other controls follow the
-/// system's "Keyboard navigation" setting, like every Mac app. WebView2 always tabs to links.
+/// macOS (docs/design/critiques/desktop/keyboard-pass.md, decisions.md D43). Buttons and other
+/// controls follow the system's "Keyboard navigation" setting, like every Mac app. `WebView2`
+/// always tabs to links.
 #[cfg(target_os = "macos")]
+#[allow(unsafe_code)] // One WebKit preference over FFI (Cargo.toml `[lints.rust]`).
 fn tab_to_links<R: Runtime>(window: &tauri::WebviewWindow<R>) -> tauri::Result<()> {
     window.with_webview(|webview| {
         // SAFETY: `inner()` is this window's live WKWebView (wry's `webview` field, a `WKWebView`

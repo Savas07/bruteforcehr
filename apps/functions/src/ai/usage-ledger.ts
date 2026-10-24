@@ -35,7 +35,11 @@ export function firestoreUsageLedger(uid: string, now = new Date()): UsageLedger
       const db = getFirestore();
       const change = FieldValue.increment(actualMicroUsd - reservedMicroUsd);
       const batch = db.batch();
-      batch.set(db.doc(userPath), { microUsd: change, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+      batch.set(
+        db.doc(userPath),
+        { microUsd: change, updatedAt: FieldValue.serverTimestamp() },
+        { merge: true },
+      );
       batch.set(db.doc(projectPath), { aiMicroUsd: change }, { merge: true });
       await batch.commit();
     },

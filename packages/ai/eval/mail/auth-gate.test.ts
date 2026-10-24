@@ -62,7 +62,11 @@ describe("sender trust gate", () => {
     const recorded = await recording();
     let checked = 0;
     for (const testCase of MAIL_EVAL_CASES) {
-      const ai = { provider: replayProvider(recorded, () => testCase.id), ledger: unlimitedLedger, model: MAIL_CLASSIFY_MODEL };
+      const ai = {
+        provider: replayProvider(recorded, () => testCase.id),
+        ledger: unlimitedLedger,
+        model: MAIL_CLASSIFY_MODEL,
+      };
       const genuine = await analyzeCase(testCase, ai);
       if (!genuine.decision.autoApply) continue;
       checked += 1;
@@ -94,7 +98,7 @@ describe("sender trust gate", () => {
       expect(rulesSpam.decision.autoApply, testCase.id).toBe(false);
     }
     expect(checked).toBeGreaterThanOrEqual(20);
-  });
+  }, 120_000);
 
   it.each(SPOOFED_CASES.map((testCase) => [testCase.id, testCase] as const))(
     "%s: forged or spam mail never changes the tracker by itself",

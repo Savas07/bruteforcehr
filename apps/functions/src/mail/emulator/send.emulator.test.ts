@@ -97,7 +97,13 @@ async function seedRenderedFile(id: string, fields: { storagePath: string; sizeB
 function renderedRequest(applicationId: string, renderedFileId: string) {
   return request(applicationId, {
     attachments: [{ kind: "rendered", renderedFileId }],
-    pins: { cvId: "cv-1", cvRevisionId: "rev-1", cvFileId: renderedFileId, coverLetterId: null, coverLetterFileId: null },
+    pins: {
+      cvId: "cv-1",
+      cvRevisionId: "rev-1",
+      cvFileId: renderedFileId,
+      coverLetterId: null,
+      coverLetterFileId: null,
+    },
   });
 }
 
@@ -306,9 +312,11 @@ describe("email apply", () => {
     await getStorage().bucket().file(own).save(ATTACHMENT, { contentType: "application/pdf" });
     await seedRenderedFile("file-own", { storagePath: own, sizeBytes: 1 });
     const queue = recordingQueue();
-    await expect(scheduleSend(UID, renderedRequest("app-initech", "file-own"), queue)).resolves.toMatchObject({
-      state: "scheduled",
-    });
+    await expect(scheduleSend(UID, renderedRequest("app-initech", "file-own"), queue)).resolves.toMatchObject(
+      {
+        state: "scheduled",
+      },
+    );
     const sendId = (await readApplication(UID, "app-initech")).emailSend?.sendId ?? "";
     const outbox = await getFirestore().doc(serverOnlyPaths.mailOutbox(UID, sendId)).get();
     expect(outbox.get("attachments")).toEqual([
@@ -320,13 +328,20 @@ describe("email apply", () => {
     await getStorage().bucket().file(victim).save(ATTACHMENT, { contentType: "application/pdf" });
     for (const storagePath of [victim, `users/${UID}/cv-imports/file-own`, own]) {
       await seedRenderedFile("file-forged", { storagePath, sizeBytes: 1 });
-      await expect(scheduleSend(UID, renderedRequest("app-hooli", "file-forged"), queue)).rejects.toMatchObject({
+      await expect(
+        scheduleSend(UID, renderedRequest("app-hooli", "file-forged"), queue),
+      ).rejects.toMatchObject({
         reason: "attachment_not_found",
       });
     }
     // The document's path is right but the object was never uploaded.
-    await seedRenderedFile("file-missing", { storagePath: storagePaths.renderedFile(UID, "file-missing"), sizeBytes: 1 });
-    await expect(scheduleSend(UID, renderedRequest("app-hooli", "file-missing"), queue)).rejects.toMatchObject({
+    await seedRenderedFile("file-missing", {
+      storagePath: storagePaths.renderedFile(UID, "file-missing"),
+      sizeBytes: 1,
+    });
+    await expect(
+      scheduleSend(UID, renderedRequest("app-hooli", "file-missing"), queue),
+    ).rejects.toMatchObject({
       reason: "attachment_not_found",
     });
     expect((await readApplication(UID, "app-hooli")).emailSend).toBeNull();
@@ -340,7 +355,9 @@ describe("email apply", () => {
       .file(large)
       .save(Buffer.alloc(19 * 1024 * 1024, 1), { contentType: "application/pdf" });
     await seedRenderedFile("file-large", { storagePath: large, sizeBytes: 1 });
-    await expect(scheduleSend(UID, renderedRequest("app-initech", "file-large"), recordingQueue())).rejects.toMatchObject({
+    await expect(
+      scheduleSend(UID, renderedRequest("app-initech", "file-large"), recordingQueue()),
+    ).rejects.toMatchObject({
       reason: "attachments_too_large",
     });
   });
@@ -356,7 +373,9 @@ describe("email apply", () => {
     });
     // At MAIL_DAILY_SEND_CAP_MAX sends today the stored 10 000 doesn't help.
     const day = new Date().toISOString().slice(0, 10);
-    await getFirestore().doc(serverOnlyPaths.mailSendDay(UID, day)).set({ count: MAIL_DAILY_SEND_CAP_MAX }, { merge: true });
+    await getFirestore()
+      .doc(serverOnlyPaths.mailSendDay(UID, day))
+      .set({ count: MAIL_DAILY_SEND_CAP_MAX }, { merge: true });
     await expect(scheduleSend(UID, request("app-hooli"), recordingQueue())).rejects.toMatchObject({
       reason: "daily_send_cap",
     });

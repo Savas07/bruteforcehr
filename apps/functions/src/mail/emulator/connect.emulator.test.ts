@@ -261,11 +261,11 @@ describe("OAuth connect", () => {
     expect(google.revoked).toEqual(["rt-good-1"]);
     expect((await getFirestore().doc(serverOnlyPaths.mailConnect(nonce)).get()).exists).toBe(false);
     expect(await accountDocs()).toEqual([]);
-    expect(
-      (await getFirestore().collection(firestorePaths.mailAccounts(OTHER_UID)).get()).empty,
-    ).toBe(true);
+    expect((await getFirestore().collection(firestorePaths.mailAccounts(OTHER_UID)).get()).empty).toBe(true);
     for (const uid of [UID, OTHER_UID]) {
-      const tokens = await getFirestore().collection(`${serverOnlyPaths.mailRoot(uid)}/mailTokens`).get();
+      const tokens = await getFirestore()
+        .collection(`${serverOnlyPaths.mailRoot(uid)}/mailTokens`)
+        .get();
       expect(tokens.empty).toBe(true);
     }
     expect(enqueue.calls).toEqual([]);

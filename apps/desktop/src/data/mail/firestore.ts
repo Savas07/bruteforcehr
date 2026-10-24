@@ -202,7 +202,11 @@ export function createFirestoreMailRepository(uid: string): MailRepository {
       return MailConnectStartResponseSchema.parse(data);
     },
     async connectFinish(request) {
-      const data = await call("mailConnectFinish", MailConnectFinishRequestSchema.parse(request), CONNECT_TIMEOUT_MS);
+      const data = await call(
+        "mailConnectFinish",
+        MailConnectFinishRequestSchema.parse(request),
+        CONNECT_TIMEOUT_MS,
+      );
       return MailConnectFinishResponseSchema.parse(data);
     },
     async connectImap(request: MailConnectImapRequest) {

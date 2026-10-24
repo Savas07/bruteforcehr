@@ -132,7 +132,11 @@ describe("careersPage", () => {
       reason: "invalid_response",
     });
     const calls = context.fake.calls.length;
-    for (const boardToken of ["ftp://example.com/jobs", "http://www.northwind.example/careers", "not a url"]) {
+    for (const boardToken of [
+      "ftp://example.com/jobs",
+      "http://www.northwind.example/careers",
+      "not a url",
+    ]) {
       await expect(careersPage.list({ boardToken, region: "us" }, context)).rejects.toMatchObject({
         reason: "invalid_response",
       });

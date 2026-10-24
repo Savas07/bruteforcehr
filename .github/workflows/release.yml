@@ -51,6 +51,9 @@ jobs:
   prepare:
     name: Prepare (version, notes, draft release)
     runs-on: ubuntu-latest
+    # Signing, store and deploy secrets live in the protected `release` Environment
+    # (docs/runbooks/release.md "Release environment").
+    environment: release
     permissions:
       contents: read
     outputs:
@@ -167,6 +170,9 @@ jobs:
     name: Backend (Firebase)
     needs: [prepare, verify]
     runs-on: ubuntu-latest
+    # Signing, store and deploy secrets live in the protected `release` Environment
+    # (docs/runbooks/release.md "Release environment").
+    environment: release
     permissions:
       contents: read
       id-token: write # Workload Identity Federation
@@ -184,16 +190,22 @@ jobs:
           path: ${{ steps.pnpm-store.outputs.path }}
           key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
           restore-keys: pnpm-${{ runner.os }}-
-      - run: pnpm install --frozen-lockfile
+      # This job can mint deploy credentials: no dependency install scripts run in it.
+      - run: pnpm install --frozen-lockfile --ignore-scripts
 
-      - uses: google-github-actions/auth@v3
+      # The WIF provider trusts only release.yml on `v*` tags (docs/runbooks/release.md): dry runs
+      # from `release-dry-run/**` branches build and check everything except the deploy identity.
+      - if: github.ref_type == 'tag'
+        uses: google-github-actions/auth@v3
         with:
           workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ secrets.GCP_DEPLOY_SERVICE_ACCOUNT }}
       - name: Check deploy credentials (no-op)
+        if: github.ref_type == 'tag'
         run: firebase/tests/node_modules/.bin/firebase projects:list --non-interactive
 
       - name: Deploy rules, indexes, functions (default codebase)
+        if: github.ref_type == 'tag'
         env:
           DRY_RUN: ${{ needs.prepare.outputs.dry_run }}
           BFHR_VERSION: ${{ needs.prepare.outputs.version }}
@@ -209,6 +221,9 @@ jobs:
     name: Desktop macOS (universal)
     needs: prepare
     runs-on: macos-26
+    # Signing, store and deploy secrets live in the protected `release` Environment
+    # (docs/runbooks/release.md "Release environment").
+    environment: release
     defaults:
       run:
         # Job defaults replace the workflow's, so the shell is repeated (pwsh on Windows otherwise).
@@ -344,6 +359,9 @@ jobs:
     name: Desktop Windows (x64)
     needs: prepare
     runs-on: windows-latest
+    # Signing, store and deploy secrets live in the protected `release` Environment
+    # (docs/runbooks/release.md "Release environment").
+    environment: release
     defaults:
       run:
         shell: bash
@@ -411,6 +429,9 @@ jobs:
     name: iOS (archive, TestFlight)
     needs: prepare
     runs-on: macos-26
+    # Signing, store and deploy secrets live in the protected `release` Environment
+    # (docs/runbooks/release.md "Release environment").
+    environment: release
     outputs:
       uploaded: ${{ steps.upload.outputs.uploaded }}
     env:
@@ -538,6 +559,9 @@ jobs:
     # unpublished and no latest.json is served.
     needs: [prepare, verify, verify-desktop, backend, desktop-mac, desktop-win, ios]
     runs-on: ubuntu-latest
+    # Signing, store and deploy secrets live in the protected `release` Environment
+    # (docs/runbooks/release.md "Release environment").
+    environment: release
     permissions:
       contents: write # BRIDGE v0.3.0 only (source-repo release); RELEASES_REPO uses its own token
       id-token: write # appConfig via Workload Identity Federation
@@ -552,7 +576,7 @@ jobs:
         with:
           node-version-file: .nvmrc
       - run: corepack enable pnpm
-      - run: pnpm install --frozen-lockfile --filter "@bfhr/release-scripts..."
+      - run: pnpm install --frozen-lockfile --ignore-scripts --filter "@bfhr/release-scripts..."
       - uses: actions/download-artifact@v8
         with:
           pattern: desktop-{mac,win}
@@ -634,11 +658,13 @@ jobs:
           gh release upload updater-beta "$manifest" --clobber
       # ── end BRIDGE v0.3.0 ──
 
-      - uses: google-github-actions/auth@v3
+      - if: github.ref_type == 'tag'
+        uses: google-github-actions/auth@v3
         with:
           workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ secrets.GCP_DEPLOY_SERVICE_ACCOUNT }}
       - name: appConfig/{macos,windows,ios}
+        if: github.ref_type == 'tag'
         env:
           IOS_UPLOADED: ${{ needs.ios.outputs.uploaded }}
         run: |
@@ -660,6 +686,9 @@ jobs:
     name: Website (Hosting)
     needs: [prepare, publish]
     runs-on: ubuntu-latest
+    # Signing, store and deploy secrets live in the protected `release` Environment
+    # (docs/runbooks/release.md "Release environment").
+    environment: release
     permissions:
       contents: read
       id-token: write
@@ -677,18 +706,20 @@ jobs:
           path: ${{ steps.pnpm-store.outputs.path }}
           key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
           restore-keys: pnpm-${{ runner.os }}-
-      - run: pnpm install --frozen-lockfile
+      - run: pnpm install --frozen-lockfile --ignore-scripts
       # The download page and changelog read the GitHub Releases API at build time.
       - run: |
           pnpm --filter @bfhr/ui-tokens build
           pnpm --filter @bfhr/web build
         env:
           GITHUB_TOKEN: ${{ github.token }}
-      - uses: google-github-actions/auth@v3
+      - if: github.ref_type == 'tag'
+        uses: google-github-actions/auth@v3
         with:
           workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ secrets.GCP_DEPLOY_SERVICE_ACCOUNT }}
       - name: Deploy Hosting
+        if: github.ref_type == 'tag'
         env:
           DRY_RUN: ${{ needs.prepare.outputs.dry_run }}
         run: |

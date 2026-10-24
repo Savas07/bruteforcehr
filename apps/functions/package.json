@@ -15,6 +15,7 @@
     "test:emulator": "firebase emulators:exec --only auth,firestore,storage --project demo-bruteforcehr \"vitest run -c vitest.emulator.config.ts\"",
     "chromium:local": "tsx scripts/local-chromium.ts",
     "print:local": "tsx scripts/print-local.ts",
+    "signup:allow": "tsx scripts/signup-allowlist.ts",
     "smoke:account": "tsx scripts/smoke-account.ts",
     "smoke:ai": "node scripts/smoke-ai.ts",
     "smoke:job-import": "tsx scripts/live-check-job-import.ts",

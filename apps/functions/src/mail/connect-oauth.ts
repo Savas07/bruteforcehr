@@ -123,8 +123,7 @@ export async function startConnect(
 
 function appReturn(
   params: { nonce: string; provider: string; intent: string } & (
-    | { status: "ok"; handoff: string }
-    | { status: "error"; reason: MailOAuthReturnReason }
+    { status: "ok"; handoff: string } | { status: "error"; reason: MailOAuthReturnReason }
   ),
 ): string {
   const query = new URLSearchParams({
@@ -176,8 +175,7 @@ async function begin(provider: "google" | "microsoft", req: Request, res: Respon
   const nonce = typeof req.query["nonce"] === "string" ? req.query["nonce"] : "";
   const oauth = oauthProvider(provider);
   const db = getFirestore();
-  const ref =
-    MAIL_CONNECT_NONCE_PATTERN.test(nonce) ? db.doc(serverOnlyPaths.mailConnect(nonce)) : null;
+  const ref = MAIL_CONNECT_NONCE_PATTERN.test(nonce) ? db.doc(serverOnlyPaths.mailConnect(nonce)) : null;
   const snapshot = ref === null ? null : await ref.get();
   const pending = snapshot?.exists ? PendingSchema.safeParse(snapshot.data()) : null;
   if (
@@ -223,11 +221,7 @@ async function begin(provider: "google" | "microsoft", req: Request, res: Respon
   );
 }
 
-async function callback(
-  provider: "google" | "microsoft",
-  req: Request,
-  res: Response,
-): Promise<void> {
+async function callback(provider: "google" | "microsoft", req: Request, res: Response): Promise<void> {
   const state = typeof req.query["state"] === "string" ? req.query["state"] : "";
   const db = getFirestore();
   // The state is single use: the transaction that reads the pending document clears it.
@@ -261,8 +255,9 @@ async function callback(
     );
     return;
   }
-  const back = (result: { status: "ok"; handoff: string } | { status: "error"; reason: MailOAuthReturnReason }) =>
-    redirect(res, appReturn({ nonce: pending.nonce, provider, intent: pending.intent, ...result }));
+  const back = (
+    result: { status: "ok"; handoff: string } | { status: "error"; reason: MailOAuthReturnReason },
+  ) => redirect(res, appReturn({ nonce: pending.nonce, provider, intent: pending.intent, ...result }));
   const fail = async (reason: MailOAuthReturnReason) => {
     await pending.ref.delete();
     back({ status: "error", reason });

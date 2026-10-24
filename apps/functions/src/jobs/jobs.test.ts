@@ -448,7 +448,13 @@ describe("quota", () => {
     });
     const resolved = { ...EMPTY_QUOTA_DAY, watchlistResolves: JOB_BUDGETS.watchlistResolvesPerDay - 1 };
     expect(takeUnits(resolved, "watchlistResolves", 1).granted).toBe(1);
-    expect(takeUnits({ ...resolved, watchlistResolves: JOB_BUDGETS.watchlistResolvesPerDay }, "watchlistResolves", 1).granted).toBe(0);
+    expect(
+      takeUnits(
+        { ...resolved, watchlistResolves: JOB_BUDGETS.watchlistResolvesPerDay },
+        "watchlistResolves",
+        1,
+      ).granted,
+    ).toBe(0);
   });
 });
 

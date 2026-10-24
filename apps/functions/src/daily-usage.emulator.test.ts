@@ -21,7 +21,13 @@ beforeEach(async () => {
 describe("takeDaily", () => {
   const counters = (uid: string) =>
     [
-      { name: "user" as const, path: serverOnlyPaths.renderDay(uid, DAY), field: "count", amount: 1, limit: 2 },
+      {
+        name: "user" as const,
+        path: serverOnlyPaths.renderDay(uid, DAY),
+        field: "count",
+        amount: 1,
+        limit: 2,
+      },
       projectCounter("project" as const, "renders", DAY),
     ] as const;
 

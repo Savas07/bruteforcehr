@@ -387,6 +387,8 @@
   "auth.link.expired.title": "This sign-in link has expired",
   "auth.link.invalid.body": "It may have been used already, or only part of it was copied. Send yourself a new link to sign in.",
   "auth.link.invalid.title": "This sign-in link doesn’t work",
+  "auth.link.inviteOnly.body": "This email address isn’t on the list yet, so no account was created. Ask the owner to add your email, then open a new link.",
+  "auth.link.inviteOnly.title": "BruteForceHR is invite-only for now",
   "auth.link.offline.body": "Connect to the internet, then try again. Your link still works.",
   "auth.link.offline.title": "You’re offline",
   "auth.link.sendTo": "We’ll send it to <b>{email}</b>.",

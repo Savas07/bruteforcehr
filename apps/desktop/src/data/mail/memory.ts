@@ -176,7 +176,8 @@ export function createMemoryMailStore(options: MemoryMailOptions): MemoryMailSto
         if (provider === null || request.nonce !== MEMORY_NONCE)
           throw callableError("failed-precondition", "connect_expired");
         started = null;
-        if (request.handoff === WRONG_USER_HANDOFF) throw callableError("permission-denied", "connect_wrong_user");
+        if (request.handoff === WRONG_USER_HANDOFF)
+          throw callableError("permission-denied", "connect_wrong_user");
         const kind = provider === "google" ? ("gmail" as const) : ("microsoft" as const);
         const address = `${kind}@memory.example`;
         const existing = accounts.find((account) => account.provider === kind && account.address === address);

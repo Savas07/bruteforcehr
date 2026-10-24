@@ -42,9 +42,8 @@ export async function parseMail(accountId: string, fetched: FetchedMail): Promis
   // The topmost Authentication-Results is the receiving provider's own (Gmail, Microsoft and IMAP
   // hosts add it last); lower ones may come from the sender and are ignored.
   const authenticationResults =
-    parsed.headerLines
-      .find((line) => line.key === "authentication-results")
-      ?.line.replace(/^[^:]*:/u, "") ?? null;
+    parsed.headerLines.find((line) => line.key === "authentication-results")?.line.replace(/^[^:]*:/u, "") ??
+    null;
   const fromAddress = (sender?.address ?? "unknown@invalid").toLowerCase();
   const precedence = header("precedence");
   const autoSubmitted = header("auto-submitted");

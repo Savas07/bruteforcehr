@@ -131,7 +131,11 @@ describe("users/{uid}/renderedFiles: create-only, own object", () => {
       "users/alice/cv-imports/f1",
       "users/alice/rendered/f1/../../bob/rendered/f1",
     ]) {
-      await assertFails(client("alice").doc(file).set({ ...rendered, storagePath }));
+      await assertFails(
+        client("alice")
+          .doc(file)
+          .set({ ...rendered, storagePath }),
+      );
     }
     const { storagePath: _omitted, ...withoutPath } = rendered;
     await assertFails(client("alice").doc(file).set(withoutPath));
@@ -139,10 +143,22 @@ describe("users/{uid}/renderedFiles: create-only, own object", () => {
 
   it("rejects a size or kind the upload limit doesn't allow", async () => {
     for (const sizeBytes of [0, -1, 10 * 1024 * 1024 + 1, 1.5, "81234"]) {
-      await assertFails(client("alice").doc(file).set({ ...rendered, sizeBytes }));
+      await assertFails(
+        client("alice")
+          .doc(file)
+          .set({ ...rendered, sizeBytes }),
+      );
     }
-    await assertFails(client("alice").doc(file).set({ ...rendered, kind: "zip" }));
-    await assertSucceeds(client("alice").doc(file).set({ ...rendered, kind: "docx", sizeBytes: 10 * 1024 * 1024 }));
+    await assertFails(
+      client("alice")
+        .doc(file)
+        .set({ ...rendered, kind: "zip" }),
+    );
+    await assertSucceeds(
+      client("alice")
+        .doc(file)
+        .set({ ...rendered, kind: "docx", sizeBytes: 10 * 1024 * 1024 }),
+    );
   });
 });
 
@@ -474,14 +490,26 @@ describe("users/{uid}/watchlist: clients own name, URL and switch only", () => {
       42,
       null,
     ]) {
-      await assertFails(client("alice").doc(entry).set({ ...pending, careersUrl }));
+      await assertFails(
+        client("alice")
+          .doc(entry)
+          .set({ ...pending, careersUrl }),
+      );
     }
     const { careersUrl: _omitted, ...withoutUrl } = pending;
     await assertFails(client("alice").doc(entry).set(withoutUrl));
     const longest = `https://jobs.example.com/${"a".repeat(2048 - "https://jobs.example.com/".length)}`;
-    await assertSucceeds(client("alice").doc(entry).set({ ...pending, careersUrl: longest }));
+    await assertSucceeds(
+      client("alice")
+        .doc(entry)
+        .set({ ...pending, careersUrl: longest }),
+    );
     await assertFails(client("alice").doc(entry).update({ careersUrl: "http://10.0.0.1:8080/" }));
-    await assertFails(client("alice").doc(entry).update({ careersUrl: `${longest}a` }));
+    await assertFails(
+      client("alice")
+        .doc(entry)
+        .update({ careersUrl: `${longest}a` }),
+    );
     await assertSucceeds(client("alice").doc(entry).update({ careersUrl: "https://jobs.lever.co/acme" }));
   });
 

@@ -151,7 +151,9 @@ export class ImapAdapter implements MailProviderAdapter {
   private async connection(): Promise<ImapFlow> {
     if (this.client !== null && this.client.usable) return this.client;
     const { imap, username, password } = this.credentials;
-    const target = await resolveMailServer("imap", imap, { allowPrivate: this.test.allowPrivateHosts === true });
+    const target = await resolveMailServer("imap", imap, {
+      allowPrivate: this.test.allowPrivateHosts === true,
+    });
     const options: ImapFlowOptions = {
       host: target.address,
       ...(isIP(imap.host) === 0 ? { servername: target.servername } : {}),

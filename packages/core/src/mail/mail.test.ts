@@ -218,11 +218,19 @@ describe("decision", () => {
 describe("senderAuthenticated", () => {
   const gmail = (results: string) => `mx.google.com;\r\n       ${results}`;
   it.each([
-    [gmail("dkim=pass header.i=@acme-robotics.example header.s=s1 header.b=abc; spf=pass smtp.mailfrom=x; dmarc=pass (p=REJECT sp=REJECT dis=NONE) header.from=acme-robotics.example"), "jobs@acme-robotics.example"],
+    [
+      gmail(
+        "dkim=pass header.i=@acme-robotics.example header.s=s1 header.b=abc; spf=pass smtp.mailfrom=x; dmarc=pass (p=REJECT sp=REJECT dis=NONE) header.from=acme-robotics.example",
+      ),
+      "jobs@acme-robotics.example",
+    ],
     [gmail("dkim=pass header.i=@mail.acme-robotics.example header.s=s1"), "jobs@acme-robotics.example"],
     [gmail("dkim=pass header.d=greenhouse-mail.io; spf=neutral"), "no-reply@us.greenhouse-mail.io"],
     // Microsoft: no authserv-id, comments in the results.
-    ["spf=pass (sender IP is 203.0.113.9) smtp.mailfrom=acme.example; dkim=pass (signature was verified) header.d=acme.example;dmarc=pass action=none header.from=acme.example;compauth=pass reason=100", "hr@acme.example"],
+    [
+      "spf=pass (sender IP is 203.0.113.9) smtp.mailfrom=acme.example; dkim=pass (signature was verified) header.d=acme.example;dmarc=pass action=none header.from=acme.example;compauth=pass reason=100",
+      "hr@acme.example",
+    ],
     ["imap.gmx.net; dmarc=pass header.from=ACME.example", "hr@acme.example"],
   ])("trusts %s for %s", (results, from) => {
     expect(senderAuthenticated(results, from)).toBe(true);
@@ -231,12 +239,20 @@ describe("senderAuthenticated", () => {
   it.each([
     [null, "jobs@acme-robotics.example"],
     [gmail("spf=pass smtp.mailfrom=acme-robotics.example"), "jobs@acme-robotics.example"],
-    [gmail("dkim=pass header.d=attacker.example; dmarc=fail header.from=acme-robotics.example"), "jobs@acme-robotics.example"],
+    [
+      gmail("dkim=pass header.d=attacker.example; dmarc=fail header.from=acme-robotics.example"),
+      "jobs@acme-robotics.example",
+    ],
     [gmail("dmarc=pass header.from=attacker.example"), "jobs@acme-robotics.example"],
     [gmail("dkim=fail header.d=acme-robotics.example; dmarc=none"), "jobs@acme-robotics.example"],
     [gmail("dkim=pass header.d=example"), "jobs@acme-robotics.example"],
     // A result quoted inside a comment doesn't count.
-    [gmail("dmarc=fail (forged: dmarc=pass header.from=acme-robotics.example) header.from=acme-robotics.example"), "jobs@acme-robotics.example"],
+    [
+      gmail(
+        "dmarc=fail (forged: dmarc=pass header.from=acme-robotics.example) header.from=acme-robotics.example",
+      ),
+      "jobs@acme-robotics.example",
+    ],
     ["mx.google.com; dmarc=pass header.from=acme-robotics.example", "not-an-address"],
   ])("refuses %s for %s", (results, from) => {
     expect(senderAuthenticated(results, from)).toBe(false);

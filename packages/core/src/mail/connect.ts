@@ -156,7 +156,10 @@ export const MAIL_ENDPOINT_PORTS = {
 } as const satisfies Record<"imap" | "smtp", readonly Pick<MailEndpoint, "port" | "security">[]>;
 
 /** Whether an IMAP or SMTP endpoint uses one of `MAIL_ENDPOINT_PORTS`. */
-export function mailEndpointAllowed(kind: "imap" | "smtp", endpoint: Pick<MailEndpoint, "port" | "security">): boolean {
+export function mailEndpointAllowed(
+  kind: "imap" | "smtp",
+  endpoint: Pick<MailEndpoint, "port" | "security">,
+): boolean {
   return MAIL_ENDPOINT_PORTS[kind].some(
     (allowed) => allowed.port === endpoint.port && allowed.security === endpoint.security,
   );

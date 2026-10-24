@@ -154,7 +154,11 @@ describe("resolveMailServer", () => {
 
   it("refuses an allowed port on a private host", async () => {
     await expect(
-      resolveMailServer("imap", { host: "internal.example.com", port: 993, security: "tls" }, { resolve: DNS }),
+      resolveMailServer(
+        "imap",
+        { host: "internal.example.com", port: 993, security: "tls" },
+        { resolve: DNS },
+      ),
     ).rejects.toMatchObject({ refusal: "private_address" });
   });
 });

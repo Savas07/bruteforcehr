@@ -41,15 +41,19 @@ export function guardedPageFetch(
         if (value === undefined || name === "content-encoding" || name === "content-length") continue;
         for (const item of Array.isArray(value) ? value : [value]) headers.append(name, item);
       }
-      const result = new Response(NULL_BODY_STATUSES.includes(response.status) ? null : new Uint8Array(response.body), {
-        status: response.status,
-        headers,
-      });
+      const result = new Response(
+        NULL_BODY_STATUSES.includes(response.status) ? null : new Uint8Array(response.body),
+        {
+          status: response.status,
+          headers,
+        },
+      );
       // `Response.url` is read-only and empty for constructed responses: the final URL after redirects.
       Object.defineProperty(result, "url", { value: response.url });
       return result;
     } catch (error) {
-      if (error instanceof FetchRefusedError) throw new SourceError("blocked", `page refused: ${error.refusal}`);
+      if (error instanceof FetchRefusedError)
+        throw new SourceError("blocked", `page refused: ${error.refusal}`);
       throw error;
     }
   };

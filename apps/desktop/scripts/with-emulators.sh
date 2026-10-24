@@ -79,6 +79,13 @@ for _ in $(seq 240); do
   sleep 2
 done
 ready || { cat "$log"; echo "The emulators didn't start" >&2; exit 1; }
+if $with_functions; then
+  # The identity codebase's invite-only gate runs in the Auth emulator too: allow the specs'
+  # throwaway addresses (`e2e-…@example.com`) in the emulator's `serverOnly/signup` only.
+  curl -sf -X PATCH -H "Authorization: Bearer owner" -H "Content-Type: application/json" \
+    "http://127.0.0.1:8080/v1/projects/bruteforcehr/databases/(default)/documents/serverOnly/signup" \
+    -d '{"fields":{"allowedEmails":{"arrayValue":{}},"allowedDomains":{"arrayValue":{"values":[{"stringValue":"example.com"}]}}}}' >/dev/null
+fi
 
 "$@" || {
   status=$?

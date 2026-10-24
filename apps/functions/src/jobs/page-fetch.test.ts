@@ -40,10 +40,19 @@ const page = (body: string): HopResponse => ({
   headers: { "content-type": "text/html; charset=utf-8" },
   body: Buffer.from(body),
 });
-const redirect = (location: string): HopResponse => ({ status: 302, headers: { location }, body: Buffer.alloc(0) });
+const redirect = (location: string): HopResponse => ({
+  status: 302,
+  headers: { location },
+  body: Buffer.alloc(0),
+});
 
 function client(fetch: typeof globalThis.fetch) {
-  return new HttpClient({ userAgent: "BruteForceHR/test", fetch, sleep: async () => undefined, maxRetries: 0 });
+  return new HttpClient({
+    userAgent: "BruteForceHR/test",
+    fetch,
+    sleep: async () => undefined,
+    maxRetries: 0,
+  });
 }
 
 describe("guardedPageFetch", () => {
@@ -67,18 +76,29 @@ describe("guardedPageFetch", () => {
     ["an IPv4-mapped private literal", "https://[::ffff:10.0.0.1]/", {}],
     ["a name with a private answer", "https://rebind.example/", {}],
     ["a denied host", "https://denied.example/careers", {}],
-    ["a redirect to a private address", "https://careers.acme.example/", { "https://careers.acme.example/": redirect("https://127.0.0.1:6379/") }],
-    ["a redirect to a denied host", "https://careers.acme.example/", { "https://careers.acme.example/": redirect("https://www.denied.example/") }],
-  ])("refuses %s as blocked without contacting it", async (_label, url, responses: Record<string, HopResponse>) => {
-    const { hops, transport } = scripted(responses);
-    const refusal = await guardedPageFetch(["denied.example"], { resolve, transport })(url).catch(
-      (error: unknown) => error,
-    );
-    expect(refusal).toBeInstanceOf(SourceError);
-    expect(refusal).toMatchObject({ reason: "blocked" });
-    expect(hops.length).toBeLessThanOrEqual(1);
-    expect(hops.every((hop) => hop.target.url.href === url)).toBe(true);
-  });
+    [
+      "a redirect to a private address",
+      "https://careers.acme.example/",
+      { "https://careers.acme.example/": redirect("https://127.0.0.1:6379/") },
+    ],
+    [
+      "a redirect to a denied host",
+      "https://careers.acme.example/",
+      { "https://careers.acme.example/": redirect("https://www.denied.example/") },
+    ],
+  ])(
+    "refuses %s as blocked without contacting it",
+    async (_label, url, responses: Record<string, HopResponse>) => {
+      const { hops, transport } = scripted(responses);
+      const refusal = await guardedPageFetch(["denied.example"], { resolve, transport })(url).catch(
+        (error: unknown) => error,
+      );
+      expect(refusal).toBeInstanceOf(SourceError);
+      expect(refusal).toMatchObject({ reason: "blocked" });
+      expect(hops.length).toBeLessThanOrEqual(1);
+      expect(hops.every((hop) => hop.target.url.href === url)).toBe(true);
+    },
+  );
 
   it("is what the careers page connector reads followed pages through", async () => {
     const careersPage = BOARD_CONNECTORS.find((connector) => connector.ats === "web");
@@ -88,8 +108,17 @@ describe("guardedPageFetch", () => {
     const unused = client(async () => {
       throw new Error("the API client must not fetch user URLs");
     });
-    const context = { http: unused, pageHttp, cache: { get: async () => null, put: async () => undefined }, secrets: {}, now: new Date() };
-    const listings = await careersPage.list({ boardToken: "https://careers.acme.example/", region: "us" }, context);
+    const context = {
+      http: unused,
+      pageHttp,
+      cache: { get: async () => null, put: async () => undefined },
+      secrets: {},
+      now: new Date(),
+    };
+    const listings = await careersPage.list(
+      { boardToken: "https://careers.acme.example/", region: "us" },
+      context,
+    );
     expect(listings.map((listing) => [listing.title, listing.url])).toEqual([
       ["Backend Engineer", "https://careers.acme.example/jobs/1"],
     ]);

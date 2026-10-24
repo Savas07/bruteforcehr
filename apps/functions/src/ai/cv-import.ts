@@ -1,4 +1,5 @@
 import { importCv } from "@bfhr/ai";
+import { userStoragePrefix } from "@bfhr/api";
 import { type CvImportResponse, CvImportRequestSchema, CvImportResponseSchema } from "@bfhr/core";
 import { getStorage } from "firebase-admin/storage";
 import { HttpsError, onCall } from "firebase-functions/v2/https";
@@ -32,7 +33,8 @@ export const cvImport = onCall(
       const uid = verifiedUid(request);
       if (!parsed.success) throw new HttpsError("invalid-argument", "Expected { storagePath, kind }.");
       const { storagePath } = parsed.data;
-      if (storagePath.split("/")[1] !== uid) {
+      // The exact prefix of the caller's own imports (the schema already fixes the path's shape).
+      if (!storagePath.startsWith(`${userStoragePrefix(uid)}cv-imports/`)) {
         throw new HttpsError("permission-denied", "That file belongs to another account.");
       }
       const usesAi = parsed.data.kind === "pdf" || parsed.data.kind === "docx";

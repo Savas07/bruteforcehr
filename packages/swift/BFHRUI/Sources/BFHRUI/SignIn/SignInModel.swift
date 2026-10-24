@@ -16,6 +16,8 @@ public nonisolated enum SignInError: Error, Hashable, Sendable {
     case unusable
     /// The account is disabled.
     case accountDisabled
+    /// A new account for an address that isn't on the owner's allowlist (invite-only sign-up).
+    case inviteOnly
     /// Anything else (configuration, server error).
     case other
 }
@@ -100,6 +102,8 @@ public final class SignInModel {
         /// Used, replaced by a newer link, cut off or not a sign-in link.
         case unusable
         case accountDisabled
+        /// No account was created: the address isn't on the invite list.
+        case inviteOnly
         /// Offline or a server error: the same link can be tried again.
         case retryable(offline: Bool, email: String, actionLink: String)
     }
@@ -360,6 +364,9 @@ public final class SignInModel {
             case .expired: step = .linkFailed(.expired)
             case .unusable: step = .linkFailed(.unusable)
             case .accountDisabled: step = .linkFailed(.accountDisabled)
+            case .inviteOnly:
+                store.pendingEmail = nil
+                step = .linkFailed(.inviteOnly)
             case .invalidEmail:
                 // The link went to another address than the one remembered or typed.
                 store.pendingEmail = nil

@@ -304,7 +304,8 @@ const failureMessages = defineMessages({
   },
   connect_expired: {
     id: "mail-connect.error.connectExpired",
-    defaultMessage: "That sign-in took too long, so nothing was connected. Start again; it only takes a moment.",
+    defaultMessage:
+      "That sign-in took too long, so nothing was connected. Start again; it only takes a moment.",
   },
   connect_wrong_user: {
     id: "mail-connect.error.connectWrongUser",

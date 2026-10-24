@@ -387,6 +387,8 @@
   "auth.link.expired.title": "Dieser Anmeldelink ist abgelaufen",
   "auth.link.invalid.body": "Vielleicht wurde er schon benutzt oder nur teilweise kopiert. Schick dir einen neuen Link, um dich anzumelden.",
   "auth.link.invalid.title": "Dieser Anmeldelink funktioniert nicht",
+  "auth.link.inviteOnly.body": "Diese E-Mail-Adresse steht noch nicht auf der Liste, deshalb wurde kein Konto angelegt. Bitte den Inhaber, deine E-Mail hinzuzufügen, und öffne dann einen neuen Link.",
+  "auth.link.inviteOnly.title": "BruteForceHR ist gerade nur mit Einladung nutzbar",
   "auth.link.offline.body": "Verbinde dich mit dem Internet und versuch es noch einmal. Dein Link gilt noch.",
   "auth.link.offline.title": "Du bist offline",
   "auth.link.sendTo": "Wir schicken ihn an <b>{email}</b>.",

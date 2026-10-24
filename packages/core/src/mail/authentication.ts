@@ -20,7 +20,7 @@ function aligned(signingDomain: string, fromDomain: string): boolean {
 /** Removes RFC 5322 comments (`(sender IP is 1.2.3.4)`), nested ones included. */
 function withoutComments(value: string): string {
   let text = value;
-  for (let previous = ""; previous !== text; ) {
+  for (let previous = ""; previous !== text;) {
     previous = text;
     text = text.replace(/\([^()]*\)/gu, " ");
   }

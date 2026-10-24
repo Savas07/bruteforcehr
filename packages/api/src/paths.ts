@@ -167,6 +167,8 @@ export const serverOnlyPaths = {
   jobQuotaRoot: (uid: string) => `serverOnly/jobQuota/users/${segment(uid)}`,
   jobQuotaDay: (uid: string, day: string) =>
     `serverOnly/jobQuota/users/${segment(uid)}/jobQuotaDays/${segment(day)}`,
+  /** Invite-only sign-up allowlist `{ allowedEmails, allowedDomains }` (docs/runbooks/accounts.md). */
+  signupConfig: () => "serverOnly/signup",
   /** URL import: owner config (denied hosts, restricted-site switch; docs/adr/0005-job-sources-scraping.md). */
   jobImportConfig: () => "serverOnly/jobImport",
   /** URL import: per-host politeness budget and cached robots.txt (shared by all users). */

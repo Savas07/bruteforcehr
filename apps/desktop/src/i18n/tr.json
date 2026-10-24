@@ -387,6 +387,8 @@
   "auth.link.expired.title": "Bu giriş bağlantısının süresi doldu",
   "auth.link.invalid.body": "Daha önce kullanılmış ya da yalnızca bir kısmı kopyalanmış olabilir. Giriş yapmak için kendinize yeni bir bağlantı gönderin.",
   "auth.link.invalid.title": "Bu giriş bağlantısı çalışmıyor",
+  "auth.link.inviteOnly.body": "Bu e-posta adresi henüz listede değil, bu yüzden hesap oluşturulmadı. Sahibinden e-postanızı eklemesini isteyin, ardından yeni bir bağlantı açın.",
+  "auth.link.inviteOnly.title": "BruteForceHR şimdilik yalnızca davetle kullanılabiliyor",
   "auth.link.offline.body": "İnternete bağlanın ve tekrar deneyin. Bağlantınız hâlâ geçerli.",
   "auth.link.offline.title": "Çevrimdışısınız",
   "auth.link.sendTo": "Bağlantıyı <b>{email}</b> adresine göndereceğiz.",

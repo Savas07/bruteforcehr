@@ -1,4 +1,4 @@
-import { serverOnlyPaths } from "@bfhr/api";
+import { serverOnlyPaths, userDataRoots } from "@bfhr/api";
 import {
   type Job,
   type JobMatch,
@@ -659,15 +659,8 @@ describe("deleteUserData", () => {
         steps.push(`revokeMail:${uid}`);
       },
     );
-    expect(steps).toEqual([
-      "revokeMail:u1",
-      "users/u1",
-      "serverOnly/aiUsage/users/u1",
-      "serverOnly/jobAlerts/users/u1",
-      "serverOnly/jobQuota/users/u1",
-      "serverOnly/jobImport/users/u1",
-      "serverOnly/mail/users/u1",
-    ]);
+    // The root list itself is pinned in @bfhr/api's paths.test.ts; here: revoke first, then every root.
+    expect(steps).toEqual(["revokeMail:u1", ...userDataRoots("u1")]);
     expect(steps.some((root) => serverOnlyPaths.jobAlert("u1", "j").startsWith(root))).toBe(true);
     expect(prefix).toBe("users/u1/");
   });

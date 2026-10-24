@@ -6,6 +6,8 @@
  * answers "Yes, I applied": the application is Applied with the CV-less external route recorded,
  * and it shows on the Tracker board.
  */
+import { existsSync, readFileSync } from "node:fs";
+import path from "node:path";
 import { $, browser, expect } from "@wdio/globals";
 import { firebaseConfig } from "../../src/lib/firebase.ts";
 import { ensureSignedIn, testEmail } from "../support/auth";
@@ -204,6 +206,21 @@ describe("Jobs", () => {
   it("applies on the company site and records the answer to “Did you apply?”", async () => {
     await $(`[id="job-title-${KEEP.id}"]`).waitForDisplayed({ timeout: 10_000 });
     await browser.keys("a");
+    // E2E builds record the URL instead of launching the browser (src-tauri `open`), so the app
+    // keeps the focus the following specs type into.
+    const dir = process.env["BFHR_E2E_EXPORT_DIR"];
+    if (!dir) throw new Error("BFHR_E2E_EXPORT_DIR is not set (desktop.yml sets it)");
+    const opened = path.join(dir, "opened-urls.txt");
+    await browser.waitUntil(
+      () =>
+        existsSync(opened) &&
+        readFileSync(opened, "utf8").includes(`https://boards.greenhouse.io/${KEEP.id}/jobs/${RUN}`),
+      { timeout: 10_000, timeoutMsg: "Apply didn't open the posting's apply link" },
+    );
+    // Evidence for the focus problem this avoids (CI log); not asserted, runners differ on focus.
+    console.log(
+      `jobs.e2e: app window focused after Apply: ${String(await browser.execute(() => document.hasFocus()))}`,
+    );
     // Partial text: the button also shows its keycap.
     const yes = $("button*=Yes, I applied");
     await yes.waitForDisplayed({ timeout: 10_000 });

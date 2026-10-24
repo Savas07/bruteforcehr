@@ -119,12 +119,36 @@ impl From<MailtoError> for CommandError {
     }
 }
 
+/// Opens a validated URL with the system handler (default browser, mail app).
 fn open<R: Runtime>(app: &AppHandle<R>, url: &url::Url) -> Result<(), CommandError> {
+    // E2E builds only: launching the real browser takes focus away from the app window (Windows
+    // then drops the next spec's key presses), so the URL is appended to `opened-urls.txt` in the
+    // export folder for the specs to read instead.
+    #[cfg(feature = "e2e")]
+    if let Some(directory) = std::env::var_os("BFHR_E2E_EXPORT_DIR") {
+        return record_opened_url(&std::path::PathBuf::from(directory), url).map_err(|error| {
+            CommandError::OpenFailed {
+                message: error.to_string(),
+            }
+        });
+    }
     app.opener()
         .open_url(url.as_str(), None::<&str>)
         .map_err(|error| CommandError::OpenFailed {
             message: error.to_string(),
         })
+}
+
+/// One URL per line, appended (E2E builds; see [`open`]).
+#[cfg(feature = "e2e")]
+fn record_opened_url(directory: &std::path::Path, url: &url::Url) -> std::io::Result<()> {
+    use std::io::Write;
+    std::fs::create_dir_all(directory)?;
+    let mut file = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(directory.join("opened-urls.txt"))?;
+    writeln!(file, "{url}")
 }
 
 /// Opens an allowlisted https URL (`external_url::ALLOWED_HOSTS`) in the default browser.

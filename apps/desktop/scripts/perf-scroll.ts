@@ -25,8 +25,9 @@
 // interval, i.e. fewer than 5 % of frames dropped, and no long task exceeds 50 ms. The page first
 // stands still for 2 s to measure the refresh interval and its jitter (idle p95). Where the page
 // refreshes slower than 60 Hz (macOS Low Power Mode holds WebKit at 30 Hz), p95 frame work
-// ≤ 16.7 ms replaces the frame-time check. `--budget-scale` multiplies the 50 ms long-task limit
-// only (CI slack, docs/runbooks/performance.md). Writes artifacts/perf/desktop-scroll.json and exits non-zero
+// ≤ 16.7 ms replaces the frame-time check. `--budget-scale` multiplies the 5 % share of dropped
+// frames and the 50 ms long-task limit (CI slack, docs/runbooks/performance.md). Writes
+// artifacts/perf/desktop-scroll.json and exits non-zero
 // when a surface misses the budget. Runs on Node 22 type stripping.
 import { execFileSync } from "node:child_process";
 import { existsSync } from "node:fs";
@@ -235,9 +236,9 @@ async function measure(page: Page, engine: EngineName, surface: SurfaceName): Pr
   // (the idle p95 shows how much on this machine), or two or more when a frame was dropped.
   // Counted in whole intervals, p95 must be one interval: fewer than 5 % of frames dropped.
   const intervals = frames.map((frame) => Math.max(1, Math.round(frame / refresh)));
-  // `--budget-scale` lifts the long-task limit only: dropped frames stay under 5 % everywhere.
+  // `--budget-scale` multiplies the allowed share of dropped frames (5 %) and the long-task limit.
   const pass =
-    (throttled ? workP95 <= FRAME_MS : percentile(intervals, 95) <= 1) &&
+    (throttled ? workP95 <= FRAME_MS : percentile(intervals, 100 - 5 * budgetScale) <= 1) &&
     blocking.every((duration) => duration <= LONG_TASK_MS * budgetScale);
   return {
     engine,

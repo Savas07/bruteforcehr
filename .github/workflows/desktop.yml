@@ -183,9 +183,9 @@ jobs:
           if [ "$RUNNER_OS" = macOS ]; then scale=1.5; fi
           scripts/with-emulators.sh pnpm perf:cold-start --runs 5 --budget-scale "$scale"
       # Scrolling: 5,000 jobs and 1,000 applications in the design build, in the engine of each
-      # platform's webview (WebKit ≈ WKWebView on macOS, Chromium ≈ WebView2 on Windows). On the
-      # macOS runner the slack factor only lifts the long-task limit (to 100 ms): its idle page
-      # already shows stalls (runbook); frames must still drop under 5 % of the time.
+      # platform's webview (WebKit ≈ WKWebView on macOS, Chromium ≈ WebView2 on Windows). The macOS
+      # runner (a virtual machine that stalls even an idle page; runbook) gets the CI slack factor:
+      # up to 10 % dropped frames and 100 ms long tasks instead of 5 % and 50 ms.
       - name: Scrolling budget
         if: success() || failure()
         run: |

@@ -62,7 +62,7 @@ const messages = defineMessages({
   },
   leave: {
     id: "mail-connect.scan.leave",
-    defaultMessage: "This can take a few minutes. You can keep going, and we'll let you know when it's ready.",
+    defaultMessage: "This can take a few minutes. You can keep going; the results show up in Mail.",
   },
   found: {
     id: "mail-connect.scan.found",

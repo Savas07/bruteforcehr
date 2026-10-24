@@ -6,6 +6,7 @@ import { defineMessages, useIntl } from "react-intl";
 import { destinationMessages, destinations, type DestinationId } from "../lib/destinations";
 import { shortcutById, shortcutKeys } from "../lib/shortcuts";
 import { Keycaps } from "../shared/ui/Keycaps";
+import { settingsPanes } from "../features/settings/panes";
 import { destinationIcons } from "./icons";
 
 const messages = defineMessages({
@@ -22,6 +23,7 @@ const messages = defineMessages({
     description: "Group heading above the sections",
   },
   help: { id: "shell.commandPalette.help", defaultMessage: "Help", description: "Group heading" },
+  settings: { id: "shell.commandPalette.settings", defaultMessage: "Settings", description: "Group heading" },
   keyboardShortcuts: { id: "shell.commandPalette.keyboardShortcuts", defaultMessage: "Keyboard shortcuts" },
   checkForUpdates: { id: "shell.commandPalette.checkForUpdates", defaultMessage: "Check for updates" },
   account: { id: "shell.commandPalette.account", defaultMessage: "Account", description: "Group heading" },
@@ -72,6 +74,7 @@ export function CommandPalette({
   onNavigate,
   onOpenShortcuts,
   onCheckForUpdates,
+  onOpenSettings,
   onSignOut,
 }: {
   open: boolean;
@@ -79,6 +82,8 @@ export function CommandPalette({
   onNavigate: (destination: DestinationId) => void;
   onOpenShortcuts: () => void;
   onCheckForUpdates: () => void;
+  /** Opens Settings on a pane (`settingsPanes` id). */
+  onOpenSettings: (pane: string) => void;
   onSignOut: () => void;
 }) {
   // After choosing a command, focus moves to its target instead of back to the opener.
@@ -137,6 +142,24 @@ export function CommandPalette({
                       />
                       <span className="flex-1 truncate">{label}</span>
                       <Keycaps keys={shortcutKeys(shortcutById(`go-${destination.id}`))} />
+                    </Command.Item>
+                  );
+                })}
+              </Command.Group>
+              <Command.Group heading={intl.formatMessage(messages.settings)} className={groupClass}>
+                {settingsPanes.map((pane, index) => {
+                  const Icon = pane.icon;
+                  const label = intl.formatMessage(pane.label);
+                  return (
+                    <Command.Item
+                      key={pane.id}
+                      value={`${intl.formatMessage(messages.settings)} ${label}`}
+                      onSelect={() => run(() => onOpenSettings(pane.id))}
+                      className={itemClass}
+                    >
+                      <Icon aria-hidden="true" className="text-fg-secondary size-4 shrink-0" strokeWidth={1.75} />
+                      <span className="flex-1 truncate">{label}</span>
+                      {index === 0 && <Keycaps keys={shortcutKeys(shortcutById("open-settings"))} />}
                     </Command.Item>
                   );
                 })}

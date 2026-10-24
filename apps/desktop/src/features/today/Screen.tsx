@@ -43,7 +43,9 @@ import {
 import { SnoozeDateDialog } from "../../shared/ui/SnoozeDateDialog";
 import { SplitView } from "../../shared/ui/SplitView";
 import { StaleStamp } from "../../shared/ui/StaleStamp";
+import { useMailData } from "../../data/mail/live";
 import { openAddApplication } from "../application-add";
+import { openMailConnect, ScanProgress } from "../mail-connect";
 import { AgendaRail, AgendaRailSkeleton } from "./AgendaRail";
 import { AttentionList, type DoneEntry, type ListSection } from "./AttentionList";
 import { DETAIL_MESSAGES, ItemDetail, type TodayLinks } from "./ItemDetail";
@@ -571,6 +573,20 @@ export default function TodayScreen({ model }: ScreenProps<TodayModel>) {
     />
   );
 
+  // An inbox scan in progress (or one that failed) shows its compact checklist (connect-email.md
+  // "Scanning (desktop)"); its results land in To review.
+  const mail = useMailData();
+  const scanning =
+    mail.status === "ready"
+      ? mail.data.mailAccounts.filter(
+          (account) =>
+            account.status !== "disconnected" &&
+            (account.backfill?.state === "queued" ||
+              account.backfill?.state === "running" ||
+              account.backfill?.state === "failed"),
+        )
+      : [];
+
   const header = (
     <header className="flex flex-wrap items-end justify-between gap-x-4 gap-y-3 px-7 pt-7 pb-5">
       <div className="min-w-0">
@@ -606,6 +622,15 @@ export default function TodayScreen({ model }: ScreenProps<TodayModel>) {
           ]}
         />
       )}
+      {scanning.length > 0 && (
+        <div className="flex basis-full flex-col gap-2">
+          {scanning.map((account) => (
+            <div key={account.id} className="border-line-subtle max-w-160 rounded-lg border px-4 py-3">
+              <ScanProgress account={account} variant="compact" />
+            </div>
+          ))}
+        </div>
+      )}
     </header>
   );
 
@@ -613,7 +638,7 @@ export default function TodayScreen({ model }: ScreenProps<TodayModel>) {
   if (ready && view === "later")
     empty = <EmptyState kind="subArea" body={intl.formatMessage(messages.laterEmpty)} className="px-3" />;
   else if (ready?.firstUse) {
-    const { title, body, actionLabel } = ready.firstUse;
+    const { title, body, actionLabel, connectLabel } = ready.firstUse;
     empty = (
       <EmptyState
         kind="firstUse"
@@ -621,6 +646,7 @@ export default function TodayScreen({ model }: ScreenProps<TodayModel>) {
         title={title}
         body={body}
         primary={{ label: actionLabel, keys: "Mod+N", onClick: () => openAddApplication() }}
+        secondary={{ label: connectLabel, onClick: () => openMailConnect() }}
       />
     );
   } else if (ready)

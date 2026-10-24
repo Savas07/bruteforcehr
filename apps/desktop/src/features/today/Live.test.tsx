@@ -18,6 +18,8 @@ import { act, useEffect } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { RawIntlProvider } from "react-intl";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { MailProviders } from "../../data/mail/live";
+import { createMemoryMailStore } from "../../data/mail/memory";
 import { TrackerSourceContext } from "../../data/tracker/live";
 import { createMemoryTrackerStore, type MemoryTrackerStore } from "../../data/tracker/memory";
 import { ModelEnvironmentContext } from "../../data/tracker/model";
@@ -56,6 +58,8 @@ function press(key: string) {
   });
 }
 
+const mail = createMemoryMailStore({ accounts: [], messages: [], now: () => FIXTURE_NOW });
+
 async function render() {
   const rootRoute = createRootRoute({
     component: () => (
@@ -64,7 +68,10 @@ async function render() {
         <TrackerRepositoryContext.Provider value={store.repository}>
           <TrackerSourceContext.Provider value={store.source}>
             <ModelEnvironmentContext.Provider value={environment}>
-              <Outlet />
+              {/* No inbox connected: mail sections stay out. */}
+              <MailProviders source={mail.source} repository={mail.repository}>
+                <Outlet />
+              </MailProviders>
             </ModelEnvironmentContext.Provider>
           </TrackerSourceContext.Provider>
         </TrackerRepositoryContext.Provider>

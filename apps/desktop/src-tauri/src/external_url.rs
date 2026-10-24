@@ -111,7 +111,10 @@ mod tests {
             ),
             ("https://gist.github.com/", ExternalUrlError::HostNotAllowed),
             ("https://web.app/", ExternalUrlError::HostNotAllowed),
-            ("https://accounts.google.com/", ExternalUrlError::HostNotAllowed),
+            (
+                "https://accounts.google.com/",
+                ExternalUrlError::HostNotAllowed,
+            ),
             ("https://mail.web.de/", ExternalUrlError::HostNotAllowed),
             ("https://140.82.112.3/", ExternalUrlError::HostNotAllowed),
             (

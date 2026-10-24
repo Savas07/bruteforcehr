@@ -85,6 +85,18 @@ pub fn set_signed_in<R: Runtime>(app: &AppHandle<R>, signed_in: bool) {
 }
 
 /// Builds the application menu (macOS menu bar; the window menu bar on Windows).
+/// "Settings…" in the macOS app menu after About (macOS 13+ naming); "Settings" in Windows' File.
+fn settings_item<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<MenuItem<R>> {
+    let label = if cfg!(target_os = "macos") {
+        "Settings…"
+    } else {
+        "Settings"
+    };
+    MenuItemBuilder::with_id(SETTINGS_ID, label)
+        .accelerator(accelerator(SETTINGS_KEY))
+        .build(app)
+}
+
 pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
     let palette = MenuItemBuilder::with_id(PALETTE_ID, "Command Palette…")
         .accelerator(accelerator(PALETTE_KEY))
@@ -108,17 +120,7 @@ pub fn build<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
     .enabled(false)
     .build(app)?;
     app.manage(SignOutItem(sign_out.clone()));
-    // macOS: in the app menu after About ("Settings…", macOS 13+ naming); Windows: in File.
-    let settings = MenuItemBuilder::with_id(
-        SETTINGS_ID,
-        if cfg!(target_os = "macos") {
-            "Settings…"
-        } else {
-            "Settings"
-        },
-    )
-    .accelerator(accelerator(SETTINGS_KEY))
-    .build(app)?;
+    let settings = settings_item(app)?;
 
     let mut go = SubmenuBuilder::new(app, "Go");
     for (index, (id, label)) in DESTINATIONS.iter().enumerate() {

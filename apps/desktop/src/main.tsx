@@ -2,13 +2,13 @@ import { timing } from "@bfhr/ui-tokens";
 import { RouterProvider } from "@tanstack/react-router";
 import { setNonce } from "get-nonce";
 import { Tooltip } from "radix-ui";
-import { StrictMode } from "react";
+import { StrictMode, useEffect, useMemo, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import "./app.css";
 import { RawIntlProvider } from "react-intl";
 import { createAppIntl } from "./i18n/intl";
-import { resolveAppLocale } from "./i18n/locale";
 import { chrome } from "./lib/desktop";
+import { appLocaleFor, applyAppearance, devicePreferences, useDevicePreferences } from "./lib/preferences";
 import { productionViews, router, RouteViewsContext } from "./router";
 
 // Test builds (`--mode e2e` / `design-e2e`) load the WebdriverIO bridge; production builds drop this.
@@ -27,23 +27,37 @@ if (nonce) setNonce(nonce);
 document.documentElement.dataset["platform"] = chrome.platform;
 document.documentElement.dataset["material"] = chrome.material;
 
-// UI language from the OS locale (English fallback); profile.uiLanguage overrides it once the
-// data layer lands.
-const appLocale = resolveAppLocale([chrome.locale, ...navigator.languages]);
-document.documentElement.lang = appLocale.locale;
-const intl = createAppIntl(appLocale);
+// Appearance: this computer's choice (Settings › General), else the OS. Design builds pin it per
+// route (`?theme=`).
+if (!__BFHR_DESIGN__) applyAppearance(devicePreferences().appearance);
+
+/**
+ * The UI language: this computer's choice (Settings › General), else the OS locale (English
+ * fallback). A change in Settings re-renders the app in the new language.
+ */
+function AppIntl({ children }: { readonly children: ReactNode }) {
+  const { language } = useDevicePreferences();
+  const intl = useMemo(
+    () => createAppIntl(appLocaleFor(language, [chrome.locale, ...navigator.languages])),
+    [language],
+  );
+  useEffect(() => {
+    document.documentElement.lang = intl.locale;
+  }, [intl.locale]);
+  return <RawIntlProvider value={intl}>{children}</RawIntlProvider>;
+}
 
 const container = document.getElementById("root");
 if (!container) throw new Error("#root is missing from index.html");
 
 createRoot(container).render(
   <StrictMode>
-    <RawIntlProvider value={intl}>
+    <AppIntl>
       <Tooltip.Provider delayDuration={timing.tooltipDelay}>
         <RouteViewsContext.Provider value={views}>
           <RouterProvider router={router} />
         </RouteViewsContext.Provider>
       </Tooltip.Provider>
-    </RawIntlProvider>
+    </AppIntl>
   </StrictMode>,
 );

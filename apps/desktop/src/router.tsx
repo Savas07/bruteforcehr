@@ -14,6 +14,9 @@ import { LiveTrackerProvider } from "./data/tracker/live";
 import { LiveMailProvider } from "./data/mail/live";
 import { AddApplicationHost } from "./features/application-add";
 import { MailConnectHost } from "./features/mail-connect";
+import { MailNotificationsHost } from "./features/settings";
+import LiveSettings from "./features/settings/Live";
+import { SETTINGS_START_PANE } from "./lib/settings";
 import LiveApplicationDetail from "./features/application-detail/Live";
 import LiveCvStudio from "./features/cv-editor/LiveCvStudio";
 import LiveInsights from "./features/insights/LiveInsights";
@@ -42,6 +45,8 @@ export const appRoutes = {
   mail: { path: "/mail", destination: "mail" },
   mailReview: { path: "/mail/review/$messageId", destination: "mail" },
   insights: { path: "/insights", destination: "insights" },
+  /** Settings › a pane (`Mod+,`, the menu, the sidebar row); not a numbered destination. */
+  settings: { path: "/settings/$pane", destination: null },
   /** Design builds only: the screen × state index and the shared-component demo. */
   design: { path: "/design", destination: null },
   designDemo: { path: "/design/demo", destination: null },
@@ -75,6 +80,7 @@ function LiveRoot() {
             <AddApplicationHost />
             <InterviewReminders />
             <MailConnectHost />
+            <MailNotificationsHost />
           </LiveMailProvider>
         </LiveTrackerProvider>
       }
@@ -102,8 +108,8 @@ function LiveTracker() {
 }
 
 /**
- * Production: CVs (M2), Today, Tracker, application detail and Insights (M3) and Mail (M5) run on
- * live data; other areas show their title until their milestone.
+ * Production: CVs (M2), Today, Tracker, application detail and Insights (M3), Mail and Settings
+ * (M5) run on live data; other areas show their title until their milestone.
  */
 export const productionViews: RouteViews = {
   root: LiveRoot,
@@ -119,6 +125,7 @@ export const productionViews: RouteViews = {
     application: live(LiveApplicationDetail),
     mail: live(LiveMailReview),
     mailReview: live(LiveMailReview),
+    settings: live(LiveSettings),
   },
 };
 
@@ -155,6 +162,14 @@ export const router = createRouter({
     route("mail"),
     route("mailReview"),
     route("insights"),
+    createRoute({
+      getParentRoute: () => rootRoute,
+      path: "/settings",
+      component: function SettingsStart() {
+        return <Navigate to="/settings/$pane" params={{ pane: SETTINGS_START_PANE }} replace />;
+      },
+    }),
+    route("settings"),
     route("design"),
     route("designDemo"),
   ]),

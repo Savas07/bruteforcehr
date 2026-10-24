@@ -193,19 +193,31 @@ mod tests {
     fn rejects_malformed_links() {
         for input in [
             format!("bruteforcehr://auth?nonce={NONCE}&provider=google&intent=read&status=ok"),
-            format!("bruteforcehr://connected/x?nonce={NONCE}&provider=google&intent=read&status=ok"),
-            format!("bruteforcehr://user@connected?nonce={NONCE}&provider=google&intent=read&status=ok"),
-            format!("bruteforcehr://connected:1?nonce={NONCE}&provider=google&intent=read&status=ok"),
-            format!("bruteforcehr://connected?nonce={NONCE}&provider=google&intent=read&status=ok#x"),
+            format!(
+                "bruteforcehr://connected/x?nonce={NONCE}&provider=google&intent=read&status=ok"
+            ),
+            format!(
+                "bruteforcehr://user@connected?nonce={NONCE}&provider=google&intent=read&status=ok"
+            ),
+            format!(
+                "bruteforcehr://connected:1?nonce={NONCE}&provider=google&intent=read&status=ok"
+            ),
+            format!(
+                "bruteforcehr://connected?nonce={NONCE}&provider=google&intent=read&status=ok#x"
+            ),
             format!("https://connected?nonce={NONCE}&provider=google&intent=read&status=ok"),
             "bruteforcehr://connected?nonce=short&provider=google&intent=read&status=ok".to_owned(),
             format!("bruteforcehr://connected?nonce={NONCE}&provider=yahoo&intent=read&status=ok"),
             format!("bruteforcehr://connected?nonce={NONCE}&provider=google&intent=all&status=ok"),
-            format!("bruteforcehr://connected?nonce={NONCE}&provider=google&intent=read&status=maybe"),
+            format!(
+                "bruteforcehr://connected?nonce={NONCE}&provider=google&intent=read&status=maybe"
+            ),
             format!(
                 "bruteforcehr://connected?nonce={NONCE}&nonce={NONCE}&provider=google&intent=read&status=ok"
             ),
-            format!("bruteforcehr://connected?nonce={NONCE}%20&provider=google&intent=read&status=ok"),
+            format!(
+                "bruteforcehr://connected?nonce={NONCE}%20&provider=google&intent=read&status=ok"
+            ),
         ] {
             assert_eq!(parse(&Url::parse(&input).unwrap()), None, "{input}");
         }

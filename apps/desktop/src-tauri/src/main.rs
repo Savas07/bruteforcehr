@@ -83,8 +83,9 @@ fn main() {
             app.deep_link().register_all()?;
             let handle = app.handle().clone();
             app.deep_link().on_open_url(move |event| {
-                auth_link::handle_urls(&handle, &event.urls());
-                mail_connect::handle_urls(&handle, &event.urls());
+                let urls = event.urls();
+                auth_link::handle_urls(&handle, &urls);
+                mail_connect::handle_urls(&handle, &urls);
             });
             // A link that launched the app (Windows: the first instance's argument).
             if let Some(urls) = app.deep_link().get_current()? {

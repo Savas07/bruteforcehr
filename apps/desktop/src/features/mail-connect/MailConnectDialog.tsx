@@ -33,6 +33,7 @@ import {
   type ReactNode,
   useContext,
   useEffect,
+  useEffectEvent,
   useId,
   useRef,
   useState,
@@ -360,8 +361,8 @@ function OAuthStep({
   const [openFailed, setOpenFailed] = useState(false);
   const [now, setNow] = useState(() => Date.now());
   // The parent passes fresh callbacks every render; the effects below only follow `phase`.
-  const callbacks = useRef({ onPhase, onConnected });
-  callbacks.current = { onPhase, onConnected };
+  const phaseChanged = useEffectEvent(onPhase);
+  const connectedAccount = useEffectEvent(onConnected);
 
   const start = async () => {
     setFailure(null);
@@ -404,7 +405,7 @@ function OAuthStep({
       if (!active || result === null || result.nonce !== waiting.nonce) return;
       if (!result.ok) {
         const reason = MAIL_OAUTH_RETURN_REASONS.find((known) => known === result.reason) ?? "failed";
-        callbacks.current.onPhase(
+        phaseChanged(
           reason === "provider_not_configured" ? { step: "unavailable" } : { step: "error", reason },
         );
       }
@@ -429,7 +430,7 @@ function OAuthStep({
             (!waiting.known.includes(account.id) || account.connectedAt.getTime() >= waiting.startedAt),
         ) ?? null);
   useEffect(() => {
-    if (connected !== null) callbacks.current.onConnected(connected.id);
+    if (connected !== null) connectedAccount(connected.id);
   }, [connected]);
 
   const intro = (
@@ -864,7 +865,7 @@ export function MailConnectDialog({ request, onClose }: { request: MailConnectRe
 
   let body: ReactNode;
   let side: ReactNode = <Promises days={lookback} />;
-  let footer: ReactNode = null;
+  let footer: ReactNode;
   if (view.kind === "picker") {
     body = (
       <Picker
@@ -975,9 +976,6 @@ export function MailConnectDialog({ request, onClose }: { request: MailConnectRe
         </p>
         {view.smtpWarning && <InlineAlert tone="warning" title={intl.formatMessage(messages.readingOnly)} />}
         {account.backfill ? <ScanProgress account={account} variant="full" onReview={onClose} /> : starting}
-        {account.backfill?.state !== "done" && account.backfill?.state !== "failed" && (
-          <p className="text-callout text-fg-secondary">{intl.formatMessage(messages.leave)}</p>
-        )}
       </div>
     ) : (
       starting

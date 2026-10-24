@@ -171,10 +171,6 @@ export const messages = defineMessages({
     defaultMessage:
       "Connected for reading. Sending applications from this account needs working SMTP settings; you can fix them later with Reconnect.",
   },
-  leave: {
-    id: "mail-connect.scan.leave",
-    defaultMessage: "This can take a few minutes. You can keep going, and we'll show the results in Mail.",
-  },
   scanStarting: { id: "mail-connect.scan.starting", defaultMessage: "Starting the scan…" },
 });
 

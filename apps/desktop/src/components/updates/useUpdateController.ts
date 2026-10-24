@@ -3,7 +3,7 @@
  * screen: which dialog is open, whether "Later" collapsed the card, and the restart flow that
  * saves unsaved edits first.
  */
-import { useCallback, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useRef, useState } from "react";
 import { saveUnsavedChanges, unsavedChanges, useUnsavedChangesList } from "../../shared/unsavedChanges";
 import { useUpdates, type UpdatesValue } from "./context";
 
@@ -119,4 +119,11 @@ export function useUpdateController(): UpdateController {
     saveFailed,
     blocking: updates.requirement !== null && (unsaved.length === 0 || dialog === "save-first"),
   };
+}
+
+/** The shell's controller (AppShell), for screens that show update state (Settings › General). */
+export const UpdateControllerContext = createContext<UpdateController | null>(null);
+
+export function useShellUpdateController(): UpdateController | null {
+  return useContext(UpdateControllerContext);
 }

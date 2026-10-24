@@ -26,6 +26,7 @@ import { DesignIndex } from "./DesignIndex";
 import { DesignRoot } from "./DesignRoot";
 import { DesignScreen } from "./DesignScreen";
 import { cvEditorScreen, insightsScreen, jobDetailScreen } from "./screens";
+import { DesignSettings } from "./settings";
 import { DesignTrackerProviders, DesignTrackerScreen } from "./tracker";
 import { DesignTrackerCalendar, DesignTrackerTable } from "./tracker-views";
 import { TrackerViewsRoute } from "../features/tracker-table/ViewSwitch";
@@ -132,6 +133,7 @@ export const designViews: RouteViews = {
     mail: MailReview,
     mailReview: MailReview,
     insights: Insights,
+    settings: DesignSettings,
     design: DesignIndex,
     designDemo: Demo,
   },

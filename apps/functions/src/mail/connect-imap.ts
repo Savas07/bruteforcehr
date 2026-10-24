@@ -32,29 +32,26 @@ function connectError(error: ImapConnectError): MailCallableError {
         "permission-denied",
         "auth_failed",
         "We couldn't sign in with this app password.",
-        "password",
+        { field: "password" },
       );
     case "imap_disabled":
       return new MailCallableError(
         "failed-precondition",
         "imap_disabled",
         "IMAP access is turned off for this account at the provider.",
-        "password",
+        { field: "password" },
       );
     case "tls_failed":
       return new MailCallableError(
         "failed-precondition",
         "tls_failed",
         "The server's security certificate couldn't be verified.",
-        "imapHost",
+        { field: "imapHost" },
       );
     default:
-      return new MailCallableError(
-        "unavailable",
-        "host_unreachable",
-        "Can't reach the mail server.",
-        "imapHost",
-      );
+      return new MailCallableError("unavailable", "host_unreachable", "Can't reach the mail server.", {
+        field: "imapHost",
+      });
   }
 }
 

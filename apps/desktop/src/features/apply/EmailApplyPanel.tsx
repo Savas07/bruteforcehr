@@ -696,7 +696,9 @@ function Composer({ input, onClose }: { readonly input: ApplyInput; readonly onC
     },
   ]);
 
-  const tooLarge = pdfs ? attachmentsTooLarge(pdfs.cv.bytes.byteLength + (pdfs.letter?.bytes.byteLength ?? 0), ctx) : null;
+  const tooLarge = pdfs
+    ? attachmentsTooLarge(pdfs.cv.bytes.byteLength + (pdfs.letter?.bytes.byteLength ?? 0), account?.provider ?? null, ctx)
+    : null;
   const attachments = [
     ...(cv ? [{ key: "cv", name: pdfs?.cv.fileName ?? cv.title, size: pdfs ? fileSize(pdfs.cv.bytes.byteLength, ctx.locale) : null }] : []),
     ...(draft.letterOn

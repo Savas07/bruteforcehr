@@ -1,7 +1,11 @@
 // Email apply (scheduleSend → cancelSend / dispatch) against the Firestore and Storage emulators,
 // sending through the in-process SMTP server. The Cloud Tasks queue is an in-memory recorder.
 import { firestorePaths, serverOnlyPaths } from "@bfhr/api";
-import { type MailSendRequest, MailSendRequestSchema } from "@bfhr/core";
+import {
+  MAIL_SEND_MICROSOFT_MAX_ATTACHMENT_BYTES,
+  type MailSendRequest,
+  MailSendRequestSchema,
+} from "@bfhr/core";
 import { getFirestore } from "firebase-admin/firestore";
 import { getStorage } from "firebase-admin/storage";
 import { simpleParser } from "mailparser";
@@ -240,5 +244,35 @@ describe("email apply", () => {
     });
     const stored = await getFirestore().doc(firestorePaths.application(UID, "app-initech")).get();
     expect(stored.get("emailSend.state")).toBe("scheduled");
+  });
+
+  it("refuses attachments over Graph's request limit for a Microsoft account before scheduling", async () => {
+    const largePath = `users/${UID}/mail-attachments/cv-large`;
+    await getStorage()
+      .bucket()
+      .file(largePath)
+      .save(Buffer.alloc(3_000_000, 1), { contentType: "application/pdf" });
+    await seedImapAccount(UID, ACCOUNT, servers, {
+      account: { provider: "microsoft", address: "deniz@outlook.example", server: null },
+    });
+    const queue = recordingQueue();
+    const large = request("app-initech", {
+      attachments: [
+        { kind: "upload", storagePath: largePath, fileName: "CV.pdf", contentType: "application/pdf" },
+      ],
+    });
+    await expect(scheduleSend(UID, large, queue)).rejects.toMatchObject({
+      code: "invalid-argument",
+      reason: "attachments_too_large",
+      details: { reason: "attachments_too_large", limitBytes: MAIL_SEND_MICROSOFT_MAX_ATTACHMENT_BYTES },
+    });
+    expect(queue.enqueued).toEqual([]);
+    expect((await readApplication(UID, "app-initech")).emailSend).toBeNull();
+    expect(await sendDayCount()).toBeUndefined();
+
+    // The small CV fits in one request.
+    await expect(scheduleSend(UID, request("app-initech"), queue)).resolves.toMatchObject({
+      state: "scheduled",
+    });
   });
 });

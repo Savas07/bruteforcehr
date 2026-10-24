@@ -101,6 +101,17 @@ export class MailCursorExpiredError extends Error {
   }
 }
 
+/** The send request is over the provider's size limit (Graph ≈ 4 MB); nothing was sent. */
+export class MailTooLargeError extends Error {
+  constructor(
+    /** Attachment total that fits next to this message (`details.limitBytes` for clients). */
+    readonly limitBytes: number,
+  ) {
+    super(`message over the provider size limit (attachments up to ${limitBytes} bytes fit)`);
+    this.name = "MailTooLargeError";
+  }
+}
+
 /** Temporary failure (rate limit, 5xx, network): retry later, the account stays connected. */
 export class MailTransientError extends Error {
   constructor(

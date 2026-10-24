@@ -77,10 +77,9 @@ public struct SettingsScreen<DataPrivacy: View>: View {
                     }
                     .accessibilityIdentifier("settings.mailAccounts")
                     NavigationLink(value: SettingsRoute.jobSources) {
+                        // Source trouble is ours to fix, not the user's: a count, never an alert.
                         SettingsRow(SettingsStrings.jobSources, glyph: "antenna.radiowaves.left.and.right", tile: BFHRTone.success.solid) {
-                            if !model.troubledSources.isEmpty {
-                                AttentionValue()
-                            } else if !model.workingSources.isEmpty {
+                            if !model.workingSources.isEmpty {
                                 Text(SettingsStrings.workingCount(model.workingSources.count))
                             }
                         }
@@ -101,7 +100,10 @@ public struct SettingsScreen<DataPrivacy: View>: View {
                             if model.permission == .denied {
                                 Text(SettingsStrings.offInSystem)
                             } else if let quiet = model.quietHours {
-                                Text(SettingsStrings.quietValue(quiet.start, quiet.end))
+                                Image(systemName: "moon")
+                                    .accessibilityHidden(true)
+                                Text(verbatim: "\(quiet.start)–\(quiet.end)")
+                                    .accessibilityLabel(Text(SettingsStrings.quietValue(quiet.start, quiet.end)))
                             }
                         }
                     }
@@ -127,7 +129,7 @@ public struct SettingsScreen<DataPrivacy: View>: View {
                             Text(option.title).tag(option)
                         }
                     } label: {
-                        SettingsRow(SettingsStrings.appearance, glyph: "circle.lefthalf.filled", tile: BFHRColor.Fg.secondary) { EmptyView() }
+                        SettingsRow(SettingsStrings.appearance, glyph: "circle.lefthalf.filled", tile: SettingsRow<EmptyView>.neutralTile) { EmptyView() }
                     }
                     .pickerStyle(.menu)
                     .accessibilityIdentifier("settings.appearance")
@@ -139,7 +141,7 @@ public struct SettingsScreen<DataPrivacy: View>: View {
                 if dataPrivacy != nil {
                     Section {
                         NavigationLink(value: SettingsRoute.dataPrivacy) {
-                            SettingsRow(SettingsStrings.dataPrivacy, glyph: "hand.raised", tile: BFHRColor.Fg.secondary) { EmptyView() }
+                            SettingsRow(SettingsStrings.dataPrivacy, glyph: "hand.raised", tile: SettingsRow<EmptyView>.neutralTile) { EmptyView() }
                         }
                         .accessibilityIdentifier("settings.dataPrivacy")
                     }
@@ -242,6 +244,9 @@ struct SettingsRow<Value: View>: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @ScaledMetric(relativeTo: .body) private var tileSize: CGFloat = 29
 
+    /// A grey tile that keeps its white symbol readable in light and dark.
+    static var neutralTile: Color { Color(red: 0.45, green: 0.47, blue: 0.52) }
+
     init(_ title: LocalizedStringResource, glyph: String, tile: Color, @ViewBuilder value: () -> Value) {
         self.title = title
         self.glyph = glyph
@@ -280,14 +285,20 @@ struct SettingsRow<Value: View>: View {
     }
 }
 
-/// "● Needs attention": an amber dot and the words (never color alone, never red).
+/// "● Needs attention": an amber dot and the words (never color alone, never red); "● Check"
+/// when the long form doesn't fit on one line.
 struct AttentionValue: View {
     var body: some View {
         HStack(spacing: BFHRSpace.s1) {
             ToneDot(tone: .warning)
-            Text(SettingsStrings.needsAttention)
-                .foregroundStyle(BFHRTone.warning.text)
+            ViewThatFits(in: .horizontal) {
+                Text(SettingsStrings.needsAttention).lineLimit(1)
+                Text(SettingsStrings.needsAttentionShort).lineLimit(1)
+            }
+            .foregroundStyle(BFHRTone.warning.text)
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(SettingsStrings.needsAttention))
     }
 }
 
@@ -386,6 +397,7 @@ struct NotificationsPage: View {
                 InlineAlert(
                     model.permission == .denied ? .warning : .info,
                     title: model.permission == .denied ? SettingsStrings.permissionOff : SettingsStrings.permissionQuiet,
+                    message: SettingsStrings.permissionKept,
                     actionTitle: SettingsStrings.openSettings,
                     action: openNotificationSettings
                 )

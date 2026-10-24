@@ -1749,6 +1749,29 @@
         }
       }
     },
+    "notifications.permission.kept" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deine Auswahl unten bleibt gespeichert und gilt, sobald Mitteilungen an sind. In der App siehst du trotzdem alles."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your choices below are kept and apply once notifications are on. Everything still shows up in the app."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aşağıdaki seçimleriniz saklanır ve bildirimler açıldığında geçerli olur. Her şey yine uygulamada görünür."
+          }
+        }
+      }
+    },
     "notifications.permission.off" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2481,6 +2504,29 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Kontrol edin"
+          }
+        }
+      }
+    },
+    "settings.value.needsAttentionShort" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prüfen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Check"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kontrol"
           }
         }
       }

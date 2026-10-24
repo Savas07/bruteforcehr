@@ -30,6 +30,7 @@ enum SettingsStrings {
     static let on = LocalizedStringResource.bfhr("settings.value.on", default: "On", table: "Settings")
     static let off = LocalizedStringResource.bfhr("settings.value.off", default: "Off", table: "Settings")
     static let needsAttention = LocalizedStringResource.bfhr("settings.value.needsAttention", default: "Needs attention", table: "Settings")
+    static let needsAttentionShort = LocalizedStringResource.bfhr("settings.value.needsAttentionShort", default: "Check", table: "Settings", comment: "Short form of Needs attention when the row has no room.")
     static let noneConnected = LocalizedStringResource.bfhr("settings.value.noneConnected", default: "None yet", table: "Settings")
     static let saveFailed = LocalizedStringResource.bfhr("settings.saveFailed", default: "That setting didn't save. Try again.", table: "Settings")
 
@@ -107,6 +108,7 @@ enum SettingsStrings {
     static let permissionQuiet = LocalizedStringResource.bfhr("notifications.permission.quiet", default: "Notifications arrive quietly, without sound or banner.", table: "Settings")
     static let permissionAsk = LocalizedStringResource.bfhr("notifications.permission.ask", default: "Get a note when an employer replies or an interview invite arrives.", table: "Settings")
     static let openSettings = LocalizedStringResource.bfhr("notifications.openSettings", default: "Open iOS Settings", table: "Settings")
+    static let permissionKept = LocalizedStringResource.bfhr("notifications.permission.kept", default: "Your choices below are kept and apply once notifications are on. Everything still shows up in the app.", table: "Settings")
     static let allow = LocalizedStringResource.bfhr("notifications.allow", default: "Allow notifications", table: "Settings")
     static let fromMail = LocalizedStringResource.bfhr("notifications.fromMail", default: "From your email", table: "Settings")
     static let interviews = LocalizedStringResource.bfhr("notifications.interviews", default: "Interview invites", table: "Settings")

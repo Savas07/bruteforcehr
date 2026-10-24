@@ -25,7 +25,7 @@ struct MailAccountStatusLine: View {
     @Environment(\.locale) private var locale
 
     var body: some View {
-        HStack(spacing: BFHRSpace.s1) {
+        HStack(alignment: .firstTextBaseline, spacing: BFHRSpace.s1) {
             if account.needsAttention {
                 Image(systemName: "exclamationmark.triangle.fill")
                     .foregroundStyle(BFHRTone.warning.text)
@@ -155,6 +155,8 @@ struct MailAccountPage: View {
                     LabeledContent { Text(SettingsStrings.lookbackValue(backfill.lookbackDays)) } label: { Text(SettingsStrings.pastEmails) }
                 }
             }
+            // While the account needs the user, Reconnect is the only useful action.
+            if !account.needsAttention {
             Section {
                 Button { run { await model.checkNow(account.id) } } label: { Text(SettingsStrings.checkNow) }
                     .accessibilityIdentifier("settings.account.checkNow")
@@ -168,13 +170,12 @@ struct MailAccountPage: View {
                     Text(SettingsStrings.checkAgain)
                 }
                 .accessibilityIdentifier("settings.account.checkAgain")
-                if !account.needsAttention {
-                    Button { reconnecting = true } label: { Text(SettingsStrings.reconnect) }
-                }
+                Button { reconnecting = true } label: { Text(SettingsStrings.reconnect) }
             } footer: {
                 Text(model.connection.isOffline ? SettingsStrings.needsConnection : SettingsStrings.checkAgainFooter)
             }
             .disabled(working || model.connection.isOffline)
+            }
             if let server = account.server {
                 Section {
                     LabeledContent { Text(verbatim: "\(server.imap.host):\(server.imap.port)") } label: { Text(verbatim: "IMAP") }
@@ -413,10 +414,21 @@ private struct CompanyRow: View {
             switch company.status {
             case .pending: Text(SettingsStrings.companyChecking).foregroundStyle(BFHRColor.Fg.secondary)
             case .ok: Text(SettingsStrings.openJobs(company.openJobs ?? 0)).foregroundStyle(BFHRTone.success.text)
-            case .notFound: Label { Text(SettingsStrings.companyNotFound) } icon: { Image(systemName: "exclamationmark.triangle") }.foregroundStyle(BFHRTone.warning.text)
-            case .error: Label { Text(SettingsStrings.companyError) } icon: { Image(systemName: "exclamationmark.triangle") }.foregroundStyle(BFHRTone.warning.text)
+            case .notFound: warning(SettingsStrings.companyNotFound)
+            case .error: warning(SettingsStrings.companyError)
             }
         }
+    }
+}
+
+extension CompanyRow {
+    /// Amber symbol + words, aligned on the first line.
+    fileprivate func warning(_ text: LocalizedStringResource) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: BFHRSpace.s1) {
+            Image(systemName: "exclamationmark.triangle").accessibilityHidden(true)
+            Text(text)
+        }
+        .foregroundStyle(BFHRTone.warning.text)
     }
 }
 

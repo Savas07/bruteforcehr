@@ -78,6 +78,7 @@ enum MailConnectStrings {
     }
     static let helpOther = LocalizedStringResource.bfhr("imap.help.other", default: "Ask your provider for its IMAP settings and an app password.", table: "MailConnect")
     static let address = LocalizedStringResource.bfhr("imap.field.address", default: "Email address", table: "MailConnect")
+    static let yourAccount = LocalizedStringResource.bfhr("imap.section.account", default: "Your account", table: "MailConnect")
     static let appPassword = LocalizedStringResource.bfhr("imap.field.password", default: "App password", table: "MailConnect")
     static let passwordCaption = LocalizedStringResource.bfhr("imap.field.passwordCaption", default: "Not your regular password: the one you just created.", table: "MailConnect")
     static let showPassword = LocalizedStringResource.bfhr("imap.field.show", default: "Show password", table: "MailConnect")
@@ -136,18 +137,10 @@ enum MailConnectStrings {
     static let leave = LocalizedStringResource.bfhr("scan.leave", default: "This can take a few minutes. You can keep going: new emails show up in Mail as we find them.", table: "MailConnect")
     static let continueAction = LocalizedStringResource.bfhr("scan.continue", default: "Continue", table: "MailConnect")
     static let resultTitle = LocalizedStringResource.bfhr("scan.result.title", default: "Your inbox check is done", table: "MailConnect")
-    static func resultApplications(_ count: Int) -> LocalizedStringResource {
-        .bfhr("scan.result.applications", default: "Applications found: \(count)", table: "MailConnect", comment: "%lld = count.")
-    }
-    static func resultInvites(_ count: Int) -> LocalizedStringResource {
-        .bfhr("scan.result.invites", default: "Interview invites: \(count)", table: "MailConnect", comment: "%lld = count.")
-    }
-    static func resultAlerts(_ count: Int) -> LocalizedStringResource {
-        .bfhr("scan.result.alerts", default: "Job alerts sent to Jobs: \(count)", table: "MailConnect", comment: "%lld = count.")
-    }
-    static func resultPending(_ count: Int) -> LocalizedStringResource {
-        .bfhr("scan.result.pending", default: "Waiting for your review: \(count)", table: "MailConnect", comment: "%lld = count.")
-    }
+    static let resultApplications = LocalizedStringResource.bfhr("scan.result.applicationsLabel", default: "Applications found", table: "MailConnect")
+    static let resultInvites = LocalizedStringResource.bfhr("scan.result.invitesLabel", default: "Interview invites", table: "MailConnect")
+    static let resultAlerts = LocalizedStringResource.bfhr("scan.result.alertsLabel", default: "Job alerts sent to Jobs", table: "MailConnect")
+    static let resultPending = LocalizedStringResource.bfhr("scan.result.pendingLabel", default: "Waiting for your review", table: "MailConnect")
     static let resultFooter = LocalizedStringResource.bfhr("scan.result.footer", default: "Changes we were sure about are already in your Tracker, each with its source and Undo.", table: "MailConnect")
     static let reviewNow = LocalizedStringResource.bfhr("scan.reviewNow", default: "Review emails", table: "MailConnect")
     static func emptyTitle(_ days: Int) -> LocalizedStringResource {

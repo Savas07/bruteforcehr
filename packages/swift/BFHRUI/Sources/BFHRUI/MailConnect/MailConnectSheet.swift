@@ -201,12 +201,11 @@ private struct OAuthPermissionView: View {
             switch model.oauthState {
             case .notConfigured:
                 Section {
+                    // The way forward is the button bar below; the card only explains.
                     InlineAlert(
                         .info,
                         title: MailConnectStrings.notConfiguredTitle(provider.companyName),
-                        message: provider == .google ? MailConnectStrings.notConfiguredGoogle : MailConnectStrings.notConfiguredMicrosoft,
-                        actionTitle: provider == .google ? MailConnectStrings.useAppPassword : nil,
-                        action: provider == .google ? { model.chooseAppPassword("gmail") } : nil
+                        message: provider == .google ? MailConnectStrings.notConfiguredGoogle : MailConnectStrings.notConfiguredMicrosoft
                     )
                     .listRowInsets(EdgeInsets())
                     .listRowBackground(Color.clear)
@@ -348,46 +347,7 @@ private struct AppPasswordForm: View {
                 }
             }
             help
-            Section {
-                TextField(text: $model.address, prompt: Text(verbatim: "name@example.com")) {
-                    Text(MailConnectStrings.address)
-                }
-                .bfhrEmailInput()
-                .focused($focus, equals: .address)
-                .disabled(model.reconnecting != nil)
-                .accessibilityIdentifier("connect.address")
-                HStack {
-                    Group {
-                        if showsPassword {
-                            TextField(text: $model.password) { Text(MailConnectStrings.appPassword) }
-                        } else {
-                            SecureField(text: $model.password) { Text(MailConnectStrings.appPassword) }
-                        }
-                    }
-                    .textContentType(.password)
-                    .bfhrLiteralInput()
-                    .focused($focus, equals: .password)
-                    .accessibilityIdentifier("connect.password")
-                    Button { showsPassword.toggle() } label: {
-                        Image(systemName: showsPassword ? "eye.slash" : "eye")
-                            .frame(minWidth: BFHRHitTarget.minimum, minHeight: BFHRHitTarget.minimum)
-                    }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(BFHRColor.Fg.secondary)
-                    .accessibilityLabel(Text(showsPassword ? MailConnectStrings.hidePassword : MailConnectStrings.showPassword))
-                }
-            } footer: {
-                VStack(alignment: .leading, spacing: BFHRSpace.s2) {
-                    if model.errorField == .password, case .failed(let error) = model.formState,
-                       let message = MailConnectStrings.message(for: error, imap: model.imap, smtp: model.smtp) {
-                        FieldError(message)
-                    } else if case .failed(let error) = model.formState, model.errorField == nil,
-                              let message = MailConnectStrings.message(for: error, imap: model.imap, smtp: model.smtp) {
-                        FieldError(message)
-                    }
-                    Text(MailConnectStrings.passwordCaption)
-                }
-            }
+            accountSection
             Section {
                 LookbackPicker(days: $model.lookbackDays, start: model.lookbackStart)
             }
@@ -396,13 +356,11 @@ private struct AppPasswordForm: View {
                     TextField(text: $model.username, prompt: Text(MailConnectStrings.usernamePrompt)) { Text(MailConnectStrings.username) }
                         .bfhrLiteralInput()
                     EndpointFields(title: MailConnectStrings.incoming, endpoint: $model.imap, identifier: "imap")
-                    if model.errorField == .imapHost, case .failed(let error) = model.formState,
-                       let message = MailConnectStrings.message(for: error, imap: model.imap, smtp: model.smtp) {
+                    if model.errorField == .imapHost, let message = formError {
                         FieldError(message)
                     }
                     EndpointFields(title: MailConnectStrings.outgoing, endpoint: $model.smtp, identifier: "smtp")
-                    if model.errorField == .smtpHost, case .failed(let error) = model.formState,
-                       let message = MailConnectStrings.message(for: error, imap: model.imap, smtp: model.smtp) {
+                    if model.errorField == .smtpHost, let message = formError {
                         FieldError(message)
                     }
                 } label: {
@@ -435,11 +393,65 @@ private struct AppPasswordForm: View {
                 TestingHUD()
             }
         }
+        // A failed test is spoken: the message sits under a field VoiceOver may not be on.
+        .onChange(of: model.formState) {
+            guard let message = formError else { return }
+            AccessibilityNotification.Announcement(String(localized: message)).post()
+        }
         .onChange(of: model.address) { model.editedForm() }
         .onChange(of: model.password) { model.editedForm() }
         .navigationTitle(Text(model.preset.map { MailConnectStrings.appPasswordTitle($0.label) } ?? MailConnectStrings.otherTitleForm))
         .bfhrInlineTitle()
         .accessibilityIdentifier("connect.appPassword")
+    }
+
+    /// The failed test's message, if the form shows one.
+    private var formError: LocalizedStringResource? {
+        guard case .failed(let error) = model.formState else { return nil }
+        return MailConnectStrings.message(for: error, imap: model.imap, smtp: model.smtp)
+    }
+
+    private var accountSection: some View {
+        Section {
+            TextField(text: $model.address, prompt: Text(verbatim: "name@example.com")) {
+                Text(MailConnectStrings.address)
+            }
+            .bfhrEmailInput()
+            .focused($focus, equals: .address)
+            .disabled(model.reconnecting != nil)
+            .accessibilityIdentifier("connect.address")
+            HStack {
+                passwordField
+                    .textContentType(.password)
+                    .bfhrLiteralInput()
+                    .focused($focus, equals: .password)
+                    .accessibilityIdentifier("connect.password")
+                Button { showsPassword.toggle() } label: {
+                    Image(systemName: showsPassword ? "eye.slash" : "eye")
+                        .frame(minWidth: BFHRHitTarget.minimum, minHeight: BFHRHitTarget.minimum)
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(BFHRColor.Fg.secondary)
+                .accessibilityLabel(Text(showsPassword ? MailConnectStrings.hidePassword : MailConnectStrings.showPassword))
+            }
+        } header: {
+            Text(MailConnectStrings.yourAccount)
+        } footer: {
+            // Errors of the password (or without a field) replace the caption.
+            if let message = formError, model.errorField == .password || model.errorField == nil {
+                FieldError(message)
+            } else {
+                Text(MailConnectStrings.passwordCaption)
+            }
+        }
+    }
+
+    @ViewBuilder private var passwordField: some View {
+        if showsPassword {
+            TextField(text: $model.password) { Text(MailConnectStrings.appPassword) }
+        } else {
+            SecureField(text: $model.password) { Text(MailConnectStrings.appPassword) }
+        }
     }
 
     @ViewBuilder private var help: some View {
@@ -617,10 +629,10 @@ private struct ScanProgressView: View {
                     Text(MailConnectStrings.resultTitle)
                         .font(.bfhr(.headline))
                         .accessibilityAddTraits(.isHeader)
-                    Text(MailConnectStrings.resultApplications(backfill.applications))
-                    Text(MailConnectStrings.resultInvites(backfill.interviewInvites))
-                    if backfill.jobAlerts > 0 { Text(MailConnectStrings.resultAlerts(backfill.jobAlerts)) }
-                    Text(MailConnectStrings.resultPending(backfill.pendingReview))
+                    resultRow(MailConnectStrings.resultApplications, backfill.applications)
+                    resultRow(MailConnectStrings.resultInvites, backfill.interviewInvites)
+                    if backfill.jobAlerts > 0 { resultRow(MailConnectStrings.resultAlerts, backfill.jobAlerts) }
+                    resultRow(MailConnectStrings.resultPending, backfill.pendingReview)
                 } footer: {
                     Text(MailConnectStrings.resultFooter)
                 }
@@ -648,6 +660,14 @@ private struct ScanProgressView: View {
                 Text(MailConnectStrings.leave)
             }
             .accessibilityIdentifier("connect.scan.progress")
+        }
+    }
+
+    private func resultRow(_ label: LocalizedStringResource, _ count: Int) -> some View {
+        LabeledContent {
+            Text(count, format: .number).monospacedDigit()
+        } label: {
+            Text(label)
         }
     }
 
@@ -695,17 +715,20 @@ private struct ScanStageRow: View {
     let title: LocalizedStringResource
     let state: State
     let detail: LocalizedStringResource?
+    /// The title's first line, so the symbol centres on it.
+    @ScaledMetric(relativeTo: .body) private var stageLine: CGFloat = 22
 
     var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: BFHRSpace.s3) {
+        HStack(alignment: .top, spacing: BFHRSpace.s3) {
             Group {
                 switch state {
                 case .done: Image(systemName: "checkmark.circle.fill").foregroundStyle(BFHRTone.success.text)
-                case .current: ProgressView()
+                case .current: ProgressView().controlSize(.small)
                 case .pending: Image(systemName: "circle").foregroundStyle(BFHRColor.Fg.tertiary)
                 }
             }
-            .frame(width: 24)
+            .font(.bfhr(.body))
+            .frame(width: 24, height: stageLine)
             .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)

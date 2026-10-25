@@ -47,6 +47,7 @@ final class SignInEndToEndTests: XCTestCase {
         XCTAssertTrue(app.descendants(matching: .any)["signIn.check"].waitForExistence(timeout: 20), "the pending address survived the relaunch")
         app.open(link)
         let tabBar = app.tabBars.firstMatch
+        app.skipOnboardingIfShown()
         XCTAssertTrue(tabBar.waitForExistence(timeout: 30), "signed in")
         let menu = app.buttons["account.menu"]
         XCTAssertTrue(menu.waitForExistence(timeout: 10))

@@ -65,7 +65,7 @@ jobs:
           - shard: cv-mail-insights
             suites: CVEditorAccessibilityAuditTests InsightsAccessibilityAuditTests MailReviewAccessibilityAuditTests SettingsMailAccessibilityAuditTests
           - shard: account-share
-            suites: DataPrivacyAccessibilityAuditTests ShareSheetAccessibilityAuditTests SignInAccessibilityAuditTests UpdateGateAccessibilityAuditTests
+            suites: DataPrivacyAccessibilityAuditTests ShareSheetAccessibilityAuditTests SignInAccessibilityAuditTests UpdateGateAccessibilityAuditTests OnboardingAccessibilityAuditTests
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7

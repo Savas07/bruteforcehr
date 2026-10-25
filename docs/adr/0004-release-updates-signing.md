@@ -88,6 +88,8 @@ All release credentials are **CI-only** GitHub Actions secrets on `Savas07/brute
 
 Per-secret `roles/secretmanager.viewer` bindings for `github-deployer` (2026-10-24, mail functions, [ADR 0012](0012-mail-sync.md)): `MAIL_TOKEN_KEYS`, `GOOGLE_OAUTH_CLIENT`, `MICROSOFT_OAUTH_CLIENT`. The two OAuth client secrets hold the sentinel `unset` until the owner registers the clients; `secretOrNull` treats it as "not configured".
 
+Project roles added for `github-deployer` on 2026-10-25, when the first release deployed the M4/M5 functions: `roles/cloudscheduler.admin`, for the scheduled functions (`savedSearchesRunner`, `mailPoll`, `mailBodyPurge`), and `roles/cloudtasks.queueAdmin`, for the task-queue functions (`mailSendDispatch`, `mailSyncTask`, `pushDeliver`, `pushJobAlertDigest`). These are the roles Firebase documents for deploying those function types. Release run 40169009736 failed with 403s on `cloudscheduler.jobs.update` and `cloudtasks.queues.get`; after the grant, the re-run deployed.
+
 ## Consequences
 
 - One tag drives every platform. A failed platform blocks publication, so versions stay aligned.

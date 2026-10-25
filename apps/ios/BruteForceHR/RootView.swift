@@ -291,7 +291,9 @@ struct TabRootView: View {
         switch tab {
         case .cvs:
             if let uid = Auth.auth().currentUser?.uid {
-                CVsTabRoot(uid: uid).id(uid)
+                CVsTabRoot(uid: uid)
+                    .environment(\.bfhrTailoring, live?.tailoring)
+                    .id(uid)
             } else {
                 shell
             }

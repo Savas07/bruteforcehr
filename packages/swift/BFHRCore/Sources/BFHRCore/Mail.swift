@@ -170,3 +170,29 @@ public func reviewMoveTarget(
     default: return nil
     }
 }
+
+// MARK: - Sending from a connected account
+
+/// Attachment limits of `mailSend` (@bfhr/core src/mail/send.ts): clients check them before
+/// sending; the server refuses a larger message (`attachments_too_large`).
+public enum MailSendLimits {
+    /// `MAIL_SEND_MAX_ATTACHMENTS`.
+    public static let maxAttachments = 5
+    /// `MAIL_ATTACHMENT_CONTENT_TYPES`: what a file from the device may be.
+    public static let contentTypes = [
+        "application/pdf",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "application/msword",
+        "application/rtf",
+        "text/plain",
+        "image/png",
+        "image/jpeg",
+    ]
+
+    /// Total attachment bytes an account of `provider` can send (`mailSendMaxAttachmentBytes`):
+    /// Microsoft's one Graph request carries them base64-encoded under about 4 MB; Gmail and IMAP
+    /// leave room under the providers' 25 MB for MIME overhead.
+    public static func maxAttachmentBytes(_ provider: MailProvider) -> Int {
+        provider == .microsoft ? 2_900_000 : 18 * 1024 * 1024
+    }
+}

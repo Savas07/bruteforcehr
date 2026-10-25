@@ -55,6 +55,7 @@ let package = Package(
                 .process("SignIn/SignIn.xcstrings"),
                 .process("Settings/Settings.xcstrings"),
                 .process("Settings/DataPrivacy/DataPrivacy.xcstrings"),
+                .process("Settings/Answers/Answers.xcstrings"),
                 .process("MailConnect/MailConnect.xcstrings"),
                 .process("JobImport/JobImport.xcstrings"),
                 .process("Onboarding/Onboarding.xcstrings"),

@@ -22,8 +22,8 @@ public enum DocumentChange<Document: Identifiable & Hashable & Sendable>: Hashab
     }
 }
 
-/// The documents a mutation touched, per collection. Events and rendered files are immutable, so
-/// only creates are carried; mail messages and job matches only ever change, the server creates
+/// The documents a mutation touched, per collection. Events, rendered files and CV revisions are
+/// immutable, so only creates are carried; mail messages and job matches only ever change, the server creates
 /// them.
 public struct UserDataChanges: Hashable, Sendable {
     public var applications: [DocumentChange<Application>] = []
@@ -35,7 +35,10 @@ public struct UserDataChanges: Hashable, Sendable {
     public var jobs: [DocumentChange<Job>] = []
     public var savedSearches: [DocumentChange<SavedSearch>] = []
     public var coverLetters: [DocumentChange<CoverLetter>] = []
+    public var answers: [DocumentChange<Answer>] = []
     public var renderedFiles: [RenderedFile] = []
+    /// `users/{uid}/cvs/{cvId}/revisions/{id}`: a tailored version saved with its pin (one batch).
+    public var cvRevisions: [CvRevision] = []
     /// `users/{uid}` (Settings: notifications, quiet hours, AI). Only ever updated by clients.
     public var profile: DocumentChange<Profile>?
     public var watchlist: [DocumentChange<WatchedCompany>] = []
@@ -62,6 +65,9 @@ public struct UserDataChanges: Hashable, Sendable {
         }
         savedSearches = Self.diff(before.savedSearches, after.savedSearches)
         coverLetters = Self.diff(before.coverLetters, after.coverLetters)
+        answers = Self.diff(before.answers, after.answers)
+        let knownRevisions = Set(before.cvRevisions.map(\.id))
+        cvRevisions = after.cvRevisions.filter { !knownRevisions.contains($0.id) }
         let knownFiles = Set(before.renderedFiles.map(\.id))
         renderedFiles = after.renderedFiles.filter { !knownFiles.contains($0.id) }
         if let old = before.profile, let new = after.profile, old != new {
@@ -73,7 +79,8 @@ public struct UserDataChanges: Hashable, Sendable {
     public var isEmpty: Bool {
         applications.isEmpty && applicationEvents.isEmpty && interviews.isEmpty && contacts.isEmpty
             && mailMessages.isEmpty && jobMatches.isEmpty && jobs.isEmpty && savedSearches.isEmpty
-            && coverLetters.isEmpty && renderedFiles.isEmpty && profile == nil && watchlist.isEmpty
+            && coverLetters.isEmpty && answers.isEmpty && renderedFiles.isEmpty && cvRevisions.isEmpty
+            && profile == nil && watchlist.isEmpty
     }
 
     /// Ids of every touched document (the rows that show `SyncGlyph` until the write lands).
@@ -87,6 +94,7 @@ public struct UserDataChanges: Hashable, Sendable {
         ids.formUnion(jobs.map(\.id))
         ids.formUnion(savedSearches.map(\.id))
         ids.formUnion(coverLetters.map(\.id))
+        ids.formUnion(answers.map(\.id))
         if let profile { ids.insert(profile.id) }
         ids.formUnion(watchlist.map(\.id))
         return ids

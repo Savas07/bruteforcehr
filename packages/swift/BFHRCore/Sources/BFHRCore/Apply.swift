@@ -393,3 +393,31 @@ public enum AnswersKit {
         }.map(\.row)
     }
 }
+
+// MARK: - Cover letter starters
+
+/// A built-in template ("Starter templates" in the template picker), one per language
+/// (`STARTER_COVER_LETTER_TEMPLATES`). Bracketed gaps are what the user (or the AI draft) writes.
+public struct StarterCoverLetter: Codable, Hashable, Sendable, Identifiable {
+    public var id: String
+    public var language: String
+    public var title: String
+    public var body: String
+}
+
+public enum CoverLetterStarters {
+    public static let all: [StarterCoverLetter] = [
+        StarterCoverLetter(
+            id: "starter-en", language: "en", title: "Classic",
+            body: "Dear Hiring Team,\n\nI'm applying for the {role} position at {company}. [Why this role and company appeal to you]\n\n[A relevant result and its impact]\n\nI'd welcome the chance to talk about how I can help.\n\nKind regards,\n{name}"
+        ),
+        StarterCoverLetter(
+            id: "starter-tr", language: "tr", title: "Klasik",
+            body: "Sayın Yetkili,\n\n{company} bünyesindeki {role} pozisyonu için başvuruyorum. [Bu pozisyon sizi neden ilgilendiriyor]\n\n[İlgili bir çalışmanız ve sonucu]\n\nNasıl katkı sağlayabileceğimi konuşmaktan memnuniyet duyarım.\n\nSaygılarımla,\n{name}"
+        ),
+        StarterCoverLetter(
+            id: "starter-de", language: "de", title: "Klassisch",
+            body: "Sehr geehrte Damen und Herren,\n\nhiermit bewerbe ich mich um die Stelle als {role} bei {company}. [Warum dich die Stelle reizt]\n\n[Ein passendes Projekt und sein Ergebnis]\n\nÜber die Gelegenheit zu einem persönlichen Gespräch freue ich mich.\n\nMit freundlichen Grüßen\n{name}"
+        ),
+    ]
+}

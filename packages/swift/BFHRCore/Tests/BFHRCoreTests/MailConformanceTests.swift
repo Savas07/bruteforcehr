@@ -19,6 +19,13 @@ private struct MailVectors: Decodable {
     let endpointPorts: [String: [MailEndpoint.PortSecurity]]
     let presetFor: [PresetFor]
     let categoryTargets: [CategoryTarget]
+    let sendLimits: SendLimits
+
+    struct SendLimits: Decodable {
+        let maxAttachments: Int
+        let maxAttachmentBytes: [String: Int]
+        let contentTypes: [String]
+    }
 }
 
 @Suite("Mail conformance (packages/core/conformance/mail.json)")
@@ -47,6 +54,15 @@ struct MailConformanceTests {
         #expect(MailEndpoint.tls("imap.example.com").isAllowed(as: .imap))
         #expect(!MailEndpoint.tls("imap.example.com", port: 143).isAllowed(as: .imap))
         #expect(MailEndpoint.defaultPort(.smtp, security: .starttls) == 587)
+    }
+
+    @Test func sendLimitsMatchTypeScript() {
+        #expect(MailSendLimits.maxAttachments == vectors.sendLimits.maxAttachments)
+        #expect(MailSendLimits.contentTypes == vectors.sendLimits.contentTypes)
+        #expect(vectors.sendLimits.maxAttachmentBytes.count == MailProvider.allCases.count)
+        for provider in MailProvider.allCases {
+            #expect(MailSendLimits.maxAttachmentBytes(provider) == vectors.sendLimits.maxAttachmentBytes[provider.rawValue], "\(provider)")
+        }
     }
 
     @Test func categoryTargetsMatchTypeScript() {

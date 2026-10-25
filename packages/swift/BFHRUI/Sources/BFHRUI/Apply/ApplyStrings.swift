@@ -34,7 +34,6 @@ enum ApplyStrings {
     static let letterNone = LocalizedStringResource.bfhr("apply.letter.none", default: "None", table: "Apply")
     static let letterWrite = LocalizedStringResource.bfhr("apply.letter.write", default: "Write one", table: "Apply")
     static let letterEditorLabel = LocalizedStringResource.bfhr("apply.letter.editor", default: "Cover letter text", table: "Apply")
-    static let letterFooter = LocalizedStringResource.bfhr("apply.letter.footer", default: "Sent as a PDF next to your CV. Drafting with AI is on the desktop.", table: "Apply")
 
     static func letterTitle(_ company: String) -> LocalizedStringResource {
         .bfhr("apply.letter.title", default: "Cover letter · \(company)", table: "Apply", comment: "%@ = company.")
@@ -70,7 +69,9 @@ enum ApplyStrings {
         case .noCV: .bfhr("apply.blocker.noCV", default: "Add a CV first.", table: "Apply")
         case .pickCV: .bfhr("apply.blocker.pickCV", default: "Pick the CV to send.", table: "Apply")
         case .noRoute: .bfhr("apply.blocker.noRoute", default: "This posting has no link or address. Enter a recruiter's address to apply by email.", table: "Apply")
-        case .emptyLetter: .bfhr("apply.blocker.emptyLetter", default: "Write the cover letter, or choose None.", table: "Apply")
+        case .emptyLetter: letterBlocker(.empty)
+        case .letterField(let field): letterBlocker(.field(field))
+        case .letterGap(let gap): letterBlocker(.gap(gap))
         }
     }
 
@@ -84,12 +85,14 @@ enum ApplyStrings {
     static let filesUnavailable = LocalizedStringResource.bfhr("apply.files.unavailable", default: "PDFs can't be made in this build.", table: "Apply")
     static let copyLetter = LocalizedStringResource.bfhr("apply.files.copyLetter", default: "Copy cover letter text", table: "Apply")
     static let letterCopied = LocalizedStringResource.bfhr("apply.toast.letterCopied", default: "Cover letter copied", table: "Apply")
+    static let shareLetterPDF = LocalizedStringResource.bfhr("apply.kit.shareLetterPDF", default: "Share cover letter PDF", table: "Apply")
 
     /// What a file is, for VoiceOver ("Your CV, PDF").
     static func fileKind(_ kind: ApplyFile.Kind) -> LocalizedStringResource {
         switch kind {
         case .cv: .bfhr("apply.files.kind.cv", default: "Your CV, PDF", table: "Apply")
         case .coverLetter: .bfhr("apply.files.kind.letter", default: "Your cover letter, PDF", table: "Apply")
+        case .saved, .device: .bfhr("apply.files.kind.other", default: "Attachment", table: "Apply")
         }
     }
 

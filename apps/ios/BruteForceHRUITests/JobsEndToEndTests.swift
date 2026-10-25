@@ -192,6 +192,7 @@ final class JobsEndToEndTests: XCTestCase {
                 app.descendants(matching: .any)["signIn.primary"].tap()
             }
         }
+        app.skipOnboardingIfShown()
         XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 30), "signed in")
         app.tabBars.buttons["Jobs"].tap()
         XCTAssertTrue(app.descendants(matching: .any)["jobs.feed"].firstMatch.waitForExistence(timeout: 30), "feed")

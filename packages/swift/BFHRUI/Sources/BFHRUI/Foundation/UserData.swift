@@ -10,6 +10,8 @@ public struct UserData: Hashable, Sendable {
     public var cvRevisions: [CvRevision]
     public var renderedFiles: [RenderedFile]
     public var coverLetters: [CoverLetter]
+    /// The answers library of the application kit (`users/{uid}/answers`).
+    public var answers: [Answer]
     public var jobs: [Job]
     public var jobMatches: [JobMatch]
     public var savedSearches: [SavedSearch]
@@ -30,6 +32,7 @@ public struct UserData: Hashable, Sendable {
         cvRevisions: [CvRevision] = [],
         renderedFiles: [RenderedFile] = [],
         coverLetters: [CoverLetter] = [],
+        answers: [Answer] = [],
         jobs: [Job] = [],
         jobMatches: [JobMatch] = [],
         savedSearches: [SavedSearch] = [],
@@ -47,6 +50,7 @@ public struct UserData: Hashable, Sendable {
         self.cvRevisions = cvRevisions
         self.renderedFiles = renderedFiles
         self.coverLetters = coverLetters
+        self.answers = answers
         self.jobs = jobs
         self.jobMatches = jobMatches
         self.savedSearches = savedSearches

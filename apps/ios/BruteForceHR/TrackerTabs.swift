@@ -29,6 +29,8 @@ final class LiveUserData {
     let linkImporter = CloudJobLinkImporter()
     private let applyServices: CloudApplyServices
     private let applyRenderer: DeviceApplyRenderer?
+    /// CV Studio's "Tailor for a job…" on the same data (the CVs tab has its own CV store).
+    let tailoring: CVTailoringModel
     private var details: [String: JobDetailModel] = [:]
 
     init(uid: String, email: String) {
@@ -64,6 +66,10 @@ final class LiveUserData {
         applyServices = CloudApplyServices(uid: uid)
         // The app always bundles cv-render (the build phase fails otherwise).
         applyRenderer = (try? CVRenderEngine.bundled()).map(DeviceApplyRenderer.init)
+        tailoring = CVTailoringModel(now: .now)
+        tailoring.usesSystemClock = true
+        tailoring.services = applyServices
+        tailoring.renderer = applyRenderer
         store = FirestoreUserDataStore(uid: uid)
         jobs.usesSystemClock = true
         jobs.searchService = jobSearch
@@ -142,7 +148,8 @@ final class LiveUserData {
         jobs.writer = store
         mail.writer = store
         settings.writer = store
-        store.start([today, tracker, insights, jobs, mail, settings])
+        tailoring.writer = store
+        store.start([today, tracker, insights, jobs, mail, settings, tailoring])
         // Open Job details move to the new store.
         for detail in details.values {
             detail.writer = store

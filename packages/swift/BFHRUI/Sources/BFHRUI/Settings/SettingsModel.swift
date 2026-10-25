@@ -23,6 +23,8 @@ public enum SettingsRoute: Hashable, Sendable {
     case notifications
     case ai
     case dataPrivacy
+    /// Application answers (the kit's answers library).
+    case answers
 
     /// `bruteforcehr://settings/…` → the pages to push (nil: the root). `desktop-app` and
     /// `updates` are desktop-only and open the root.
@@ -43,6 +45,7 @@ public enum SettingsRoute: Hashable, Sendable {
         case "notifications": return [.notifications]
         case "ai": return [.ai]
         case "data-privacy": return [.dataPrivacy]
+        case "answers": return [.answers]
         default: return []
         }
     }

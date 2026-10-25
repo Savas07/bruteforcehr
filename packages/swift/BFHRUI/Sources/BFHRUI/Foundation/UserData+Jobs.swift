@@ -6,7 +6,8 @@ import Foundation
 // `created` event and `jobMatches/{jobId}.state = saved`. Applying moves that application through
 // the state machine and pins what was used (docs/adr/0002-data-model.md, BRIEF §4.4).
 
-/// The CV, cover letter and files an application used (write-once once applied).
+/// The CV, cover letter and files an application uses: the current choice until it's applied
+/// (decisions.md D45), write-once from `appliedAt` on.
 public struct ApplicationPins: Hashable, Sendable {
     public var cvId: String?
     public var cvRevisionId: String?
@@ -111,20 +112,43 @@ extension UserData {
         guard let index = applications.firstIndex(where: { $0.id == applicationId }) else {
             throw UserDataError.missingApplication(applicationId)
         }
+        // Before applying a pin is the current choice and is replaced by what was used (D45).
+        let replacesPins = applications[index].appliedAt == nil
         var event: ApplicationEvent?
         if let rank = statusRank(applications[index].status), let applied = statusRank(.applied), rank < applied {
             event = try moveApplication(applicationId, to: .applied, at: date)
         }
         applications[index].channel = channel
-        setPins(pins, onApplication: index)
+        setPins(pins, onApplication: index, replacing: replacesPins)
         applications[index].updatedAt = date
         return event
     }
 
-    /// Adds the stored files to an application's pins (write-once: a set pin never changes).
+    /// "Save as new version" in the tailoring review: the tailored revision (create-only; the CV
+    /// itself keeps its current version) and its pin on the job's application, in one batch. A job
+    /// without an application is saved first (D02). Once applied the pins are kept, so only the
+    /// revision is written. Returns the application's id; nil when the job is unknown.
+    @discardableResult
+    public mutating func saveTailoredRevision(_ revision: CvRevision, forJob jobId: String, at date: Date) -> String? {
+        guard let application = saveJob(jobId, at: date),
+              let index = applications.firstIndex(where: { $0.id == application.id }) else { return nil }
+        if !cvRevisions.contains(where: { $0.id == revision.id }) { cvRevisions.append(revision) }
+        if applications[index].appliedAt == nil {
+            setPins(ApplicationPins(cvId: revision.cvId, cvRevisionId: revision.id), onApplication: index, replacing: true)
+            applications[index].updatedAt = date
+        }
+        return application.id
+    }
+
+    /// Adds the stored files to an application's pins (replacing them before it's applied, D45;
+    /// write-once after).
     public mutating func pinFiles(_ applicationId: String, cvFileId: String?, coverLetterFileId: String?, at date: Date) {
         guard let index = applications.firstIndex(where: { $0.id == applicationId }) else { return }
-        setPins(ApplicationPins(cvFileId: cvFileId, coverLetterFileId: coverLetterFileId), onApplication: index)
+        setPins(
+            ApplicationPins(cvFileId: cvFileId, coverLetterFileId: coverLetterFileId),
+            onApplication: index,
+            replacing: applications[index].appliedAt == nil
+        )
         applications[index].updatedAt = date
     }
 
@@ -135,14 +159,25 @@ extension UserData {
         return try moveApplication(applicationId, to: .saved, at: date)
     }
 
-    /// Fills the pins that are still empty; a set pin is never overwritten (the rules keep them
-    /// write-once once the application is applied).
-    private mutating func setPins(_ pins: ApplicationPins, onApplication index: Int) {
-        if applications[index].cvId == nil { applications[index].cvId = pins.cvId }
-        if applications[index].cvRevisionId == nil { applications[index].cvRevisionId = pins.cvRevisionId }
-        if applications[index].cvFileId == nil { applications[index].cvFileId = pins.cvFileId }
-        if applications[index].coverLetterId == nil { applications[index].coverLetterId = pins.coverLetterId }
-        if applications[index].coverLetterFileId == nil { applications[index].coverLetterFileId = pins.coverLetterFileId }
+    /// Sets the given (non-nil) pins: all of them while `replacing` (before `appliedAt`, D45),
+    /// otherwise only the empty ones (the rules keep set pins write-once once applied).
+    private mutating func setPins(_ pins: ApplicationPins, onApplication index: Int, replacing: Bool) {
+        func set(_ field: WritableKeyPath<Application, String?>, _ value: String?) {
+            guard let value, replacing || applications[index][keyPath: field] == nil else { return }
+            applications[index][keyPath: field] = value
+        }
+        // A replaced CV or letter takes its file pin with it: the old PDF isn't what goes out.
+        if replacing, let revision = pins.cvRevisionId, revision != applications[index].cvRevisionId {
+            applications[index].cvFileId = nil
+        }
+        if replacing, let letter = pins.coverLetterId, letter != applications[index].coverLetterId {
+            applications[index].coverLetterFileId = nil
+        }
+        set(\.cvId, pins.cvId)
+        set(\.cvRevisionId, pins.cvRevisionId)
+        set(\.cvFileId, pins.cvFileId)
+        set(\.coverLetterId, pins.coverLetterId)
+        set(\.coverLetterFileId, pins.coverLetterFileId)
     }
 
     private mutating func addApplication(for job: Job, status: ApplicationStatus, channel: Channel?, at date: Date) -> Application {

@@ -7,7 +7,8 @@ import SwiftUI
 // Design mode for Settings (Debug builds only): `-BFHRScreen settings` opens the Settings sheet
 // over Today on the scenario's fixtures; `-BFHRSettingsPage <page>` pushes a page
 // (job-preferences, job-preferences-<section>, mail-accounts, mail-account, job-sources, companies,
-// notifications, notifications-off, ai, data-privacy). Release builds compile none of this.
+// notifications, notifications-off, ai, data-privacy, answers, answer-editor). Release builds
+// compile none of this.
 
 /// The page `-BFHRSettingsPage` asks for.
 public enum DesignSettingsPage: String, CaseIterable, Sendable {
@@ -28,6 +29,10 @@ public enum DesignSettingsPage: String, CaseIterable, Sendable {
     case notificationsOff = "notifications-off"
     case ai
     case dataPrivacy = "data-privacy"
+    /// Application answers (the kit's answers library).
+    case answers
+    /// Application answers with the editor sheet open on the first answer.
+    case answerEditor = "answer-editor"
 
     public static var launch: DesignSettingsPage {
         let arguments = ProcessInfo.processInfo.arguments
@@ -52,6 +57,7 @@ public enum DesignSettingsPage: String, CaseIterable, Sendable {
         case .notifications, .notificationsOff: [.notifications]
         case .ai: [.ai]
         case .dataPrivacy: [.dataPrivacy]
+        case .answers, .answerEditor: [.answers]
         }
     }
 }

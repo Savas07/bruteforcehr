@@ -57,6 +57,7 @@ final class MailEndToEndTests: XCTestCase {
             }
         }
         let tabBar = app.tabBars.firstMatch
+        app.skipOnboardingIfShown()
         XCTAssertTrue(tabBar.waitForExistence(timeout: 30), "signed in")
 
         // 1. Today's mail section (the invite to review, Globex's automatic move), from Firestore.

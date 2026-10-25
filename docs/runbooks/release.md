@@ -199,8 +199,8 @@ Installed apps up to **0.2.2** read their manifests from the source repo (`Savas
 3. Merge this change, then the **v0.3.0** version PR (#17). `release.yml` publishes v0.3.0 in `bruteforcehr-releases` and, in the step marked **`BRIDGE v0.3.0`**, also publishes release `v0.3.0` in the source repo with only its `latest.json` (marked latest) and uploads it to the source repo's `updater-beta`. Those manifests point at the new repo's assets, so 0.1.x/0.2.x installs update to 0.3.0 and from then on poll the new repo.
 4. Check before going private: `curl -sL https://github.com/Savas07/bruteforcehr/releases/latest/download/latest.json | jq .version` and the same for `bruteforcehr-releases` both print `0.3.0`, and the URLs in it start with `https://github.com/Savas07/bruteforcehr-releases/`. Optionally `gh workflow run update-acceptance.yml -f from=0.2.2 -f target=0.3.0` (macOS + Windows minutes).
 5. Leave the source repo public for a few days so running installs pick up 0.3.0 (they check at launch and every 6 h).
-6. **Owner flips `Savas07/bruteforcehr` to private** (Settings → General → Danger Zone → Change visibility). From then on the bridge step logs `skipped: … is private`.
-7. Delete the `BRIDGE v0.3.0` step and the `contents: write` permission of `publish` in `release.yml` (one PR). Installs that never ran during step 5 stay on ≤ 0.2.2 and need a one-time download from https://bruteforcehr.web.app/download.
+6. **Done 2026-10-25:** `Savas07/bruteforcehr` is private (owner's call; installs were on 0.3.0+, and both manifests served 0.4.0 at the switch).
+7. **Done 2026-10-25:** the `BRIDGE v0.3.0` step is deleted and `publish` has `contents: read` (checkout only). Installs still on ≤ 0.2.2 need a one-time download from https://bruteforcehr.web.app/download.
 
 ## Actions minutes
 

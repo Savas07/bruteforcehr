@@ -563,7 +563,7 @@ jobs:
     # (docs/runbooks/release.md "Release environment").
     environment: release
     permissions:
-      contents: write # BRIDGE v0.3.0 only (source-repo release); RELEASES_REPO uses its own token
+      contents: read # checkout; RELEASES_REPO uses its own token
       id-token: write # appConfig via Workload Identity Federation
     env:
       VERSION: ${{ needs.prepare.outputs.version }}
@@ -629,34 +629,6 @@ jobs:
               --title "Beta update channel" --notes "Update manifest for the beta channel. Not a version."
           fi
           gh release upload updater-beta "$RUNNER_TEMP/assets/latest.json" --clobber
-
-      # ── BRIDGE v0.3.0 ── delete this step (and `contents: write` above) once the source repo is
-      # private (docs/runbooks/release.md "Moving releases to bruteforcehr-releases").
-      # Installs ≤ 0.2.2 poll this repo's latest.json; publishing the new manifest here too lets them
-      # update to a build whose endpoints point at RELEASES_REPO. Only latest.json is needed: its
-      # bundle URLs and signatures already point at RELEASES_REPO's assets.
-      - name: "BRIDGE: latest.json for installs ≤ 0.2.2 (source repo, while public)"
-        if: env.DRY_RUN == 'false'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
-        run: |
-          if [ "$(gh api "repos/$GH_REPO" --jq .private)" != false ]; then
-            echo "skipped: $GH_REPO is private; old installs can't reach its manifests"
-            exit 0
-          fi
-          manifest="$RUNNER_TEMP/assets/latest.json"
-          if [ "$CHANNEL" = stable ]; then
-            if gh release view "$TAG" >/dev/null 2>&1; then
-              gh release upload "$TAG" "$manifest" --clobber
-              gh release edit "$TAG" --draft=false --latest
-            else
-              gh release create "$TAG" "$manifest" --verify-tag --latest --title "BruteForceHR $VERSION" \
-                --notes-file "$RUNNER_TEMP/notes.md"
-            fi
-          fi
-          gh release upload updater-beta "$manifest" --clobber
-      # ── end BRIDGE v0.3.0 ──
 
       - if: github.ref_type == 'tag'
         uses: google-github-actions/auth@v3

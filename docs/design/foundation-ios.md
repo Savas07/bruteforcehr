@@ -202,16 +202,16 @@ You own `packages/swift/BFHRUI/Sources/BFHRUI/<Screen>/**`, `Tests/BFHRUITests/<
 
 Debug builds only. Any of these arguments turns design mode on; every tab then shows its core screen (Job detail is pushed over the Jobs root, with the real back button):
 
-| Argument      | Values                                                                               | Default     |
-| ------------- | ------------------------------------------------------------------------------------ | ----------- |
-| `-BFHRDesign` | `populated`, `empty`                                                                 | `populated` |
-| `-BFHRState`  | `loading`, `error`, `offline`                                                        | none        |
-| `-BFHRScreen` | `today`, `jobs`, `job-detail`, `saved-searches`, `apply`, `cv-editor`, `tracker-board`, `mail-review`, `insights`, `settings` (sheet over Today), `mail-connect` (sheet over Mail) | Today |
-| `-BFHRSettingsPage` | `root`, `mail-accounts`, `mail-account`, `job-sources`, `companies`, `notifications`, `notifications-off`, `ai`, `data-privacy` (with `-BFHRScreen settings`) | `root` |
-| `-BFHRMailPane` | `review`, `email`, `updates`, `add-interview`, `all`, `scanning` (with `-BFHRScreen mail-review`, populated) | none |
-| `-BFHRConnectStep` | `providers`, `google`, `google-not-configured`, `microsoft-not-configured`, `google-scope-error`, `imap`, `imap-filled`, `imap-error`, `imap-host-error`, `imap-testing`, `outlook-address`, `scanning`, `done`, `done-empty`, `failed`, `reconnect` (with `-BFHRScreen mail-connect`) | `providers` |
-| `-BFHRUpdate` | `available` (update banner), `required` (blocking update screen)                     | none        |
-| `-BFHRSignIn` | `email`, `invalid`, `offline`, `check`, `resent`, `finishing`, `confirm`, `expired`, `unusable`, `retry` (signed-out screen in that state, no Firebase) | none |
+| Argument            | Values                                                                                                                                                                                                                                                                                 | Default     |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
+| `-BFHRDesign`       | `populated`, `empty`                                                                                                                                                                                                                                                                   | `populated` |
+| `-BFHRState`        | `loading`, `error`, `offline`                                                                                                                                                                                                                                                          | none        |
+| `-BFHRScreen`       | `today`, `jobs`, `job-detail`, `saved-searches`, `apply`, `cv-editor`, `tracker-board`, `mail-review`, `insights`, `settings` (sheet over Today), `mail-connect` (sheet over Mail)                                                                                                     | Today       |
+| `-BFHRSettingsPage` | `root`, `mail-accounts`, `mail-account`, `job-sources`, `companies`, `notifications`, `notifications-off`, `ai`, `data-privacy` (with `-BFHRScreen settings`)                                                                                                                          | `root`      |
+| `-BFHRMailPane`     | `review`, `email`, `updates`, `add-interview`, `all`, `scanning` (with `-BFHRScreen mail-review`, populated)                                                                                                                                                                           | none        |
+| `-BFHRConnectStep`  | `providers`, `google`, `google-not-configured`, `microsoft-not-configured`, `google-scope-error`, `imap`, `imap-filled`, `imap-error`, `imap-host-error`, `imap-testing`, `outlook-address`, `scanning`, `done`, `done-empty`, `failed`, `reconnect` (with `-BFHRScreen mail-connect`) | `providers` |
+| `-BFHRUpdate`       | `available` (update banner), `required` (blocking update screen)                                                                                                                                                                                                                       | none        |
+| `-BFHRSignIn`       | `email`, `invalid`, `offline`, `check`, `resent`, `finishing`, `confirm`, `expired`, `unusable`, `retry` (signed-out screen in that state, no Firebase)                                                                                                                                | none        |
 
 `-BFHRUpdate` puts the update gate in that state without reading Firestore (design mode never reads `appConfig/ios`); combine it with `-BFHRScreen today` to see the banner over Today. The capture state names map to `populated`, `empty` (`-BFHRDesign`) and `loading`, `error`, `offline` (`-BFHRState` on the populated data). In Xcode, add the arguments under Scheme › Run › Arguments; previews use `DesignScreenView(.today, scenario: DesignScenario(state: "offline")!)` with `.environment(ToastCenter())`.
 
@@ -257,6 +257,7 @@ Known CI-only failures (2026-10-25, all pass locally on the same iOS 26.5 simula
 - **Insights, largest text:** "Show all" is flagged as partly unscaled.
 
 Design mode takes "now" from the system clock, so date strings, and the layouts they drive, change from day to day and machine to machine. The fix is a fixed design clock; until it lands, treat these three as known flakes.
+
 ## Release verification
 
 ```sh

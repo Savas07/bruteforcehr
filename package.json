@@ -1,6 +1,7 @@
 {
   "name": "bruteforcehr",
   "private": true,
+  "license": "SEE LICENSE IN LICENSE",
   "type": "module",
   "packageManager": "pnpm@12.14.0",
   "engines": {

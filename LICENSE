@@ -1,0 +1,43 @@
+BruteForceHR — Proprietary License
+
+Copyright (c) 2026 Savaş Altıntaş. All rights reserved.
+
+This repository, including its source code, designs, text, images, icons, documentation and
+build configuration (the "Software"), is the exclusive property of the copyright holder. It is
+published for viewing only. No license or other right is granted to you, by implication,
+estoppel or otherwise, except as stated below.
+
+1. Permitted. You may view the Software on GitHub and fork it on GitHub, only to the extent
+   GitHub's Terms of Service require for public repositories.
+
+2. Not permitted. Without the copyright holder's prior written permission, you may not, in
+   whole or in part:
+   a. copy, download for use, reproduce, modify, translate, adapt or create derivative works of
+      the Software;
+   b. compile, build, install, run or deploy the Software, or any app, service or package
+      made from it;
+   c. distribute, publish, sublicense, sell, rent, lend or otherwise make the Software
+      available to anyone;
+   d. use the Software, its configuration or any credentials, identifiers or endpoints in it to
+      access, call, test or load BruteForceHR's servers, APIs, cloud projects or third-party
+      accounts;
+   e. use the Software or any part of it to train, fine-tune or evaluate machine-learning or AI
+      models, or include it in any dataset;
+   f. remove or change this notice or any copyright notice in the Software.
+
+3. Official apps. The BruteForceHR apps distributed by the copyright holder (for example
+   through https://bruteforcehr.web.app or https://github.com/Savas07/bruteforcehr-releases) are
+   governed by their own terms (https://bruteforcehr.web.app/terms), not by this file.
+
+4. Contributions. The copyright holder does not accept unsolicited contributions. Anything you
+   submit to this repository may be used by the copyright holder without obligation to you.
+
+5. Termination. Any use outside section 1 is unauthorized and infringes the copyright holder's
+   rights. Any fork or copy made outside section 1 must be deleted on request.
+
+6. No warranty. The Software is provided "as is", without warranty of any kind, express or
+   implied, including merchantability, fitness for a particular purpose and non-infringement.
+   In no event shall the copyright holder be liable for any claim, damages or other liability
+   arising from or in connection with the Software.
+
+Permission requests: open an issue at https://github.com/Savas07/bruteforcehr-releases/issues.

@@ -25,7 +25,7 @@ These rules exist because days were lost to agents waiting on shared machine res
 
 ## Checks and builds
 
-The source repo is private and the owner turned GitHub Actions off (2026-10-25): every workflow in `.github/workflows` is disabled and nothing runs on push, PR or tag. Builds and releases are made on this Mac, by hand, when the owner asks.
+The owner turned GitHub Actions off (2026-10-25): every workflow in `.github/workflows` is disabled and nothing runs on push, PR or tag. Builds and releases are made on this Mac, by hand, when the owner asks. The source repo is public again, under the proprietary `LICENSE` (view only), so the same day Actions would be free again; it stays off by the owner's choice.
 
 - Before merging: `pnpm turbo run lint typecheck test --concurrency=4`, `swift test` in `packages/swift/BFHRUI` and `packages/swift/BFHRCore` (then `rm -rf .build`), plus the app build and UI suites the change touches.
 - The workflow files stay as the reference for each pipeline step. Re-enable one with `gh workflow enable <file>` only if the owner asks.

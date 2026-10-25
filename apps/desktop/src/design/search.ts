@@ -49,7 +49,7 @@ export function readDesignParams(search: Readonly<Record<string, unknown>>): Des
   for (const [key, value] of Object.entries(search))
     if (!RESERVED[key] && (typeof value === "string" || typeof value === "number")) rest[key] = String(value);
   return {
-    fixture: fixture === "empty" ? "empty" : "populated",
+    fixture: fixture === "empty" || fixture === "scaled" ? fixture : "populated",
     state: state === "loading" || state === "error" || state === "offline" ? state : "ready",
     theme: theme === "light" || theme === "dark" ? theme : null,
     locale: validLocale(locale),

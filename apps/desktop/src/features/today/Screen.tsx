@@ -24,6 +24,7 @@ import { defineMessages, useIntl } from "react-intl";
 import { ROUTE_TITLE_ID } from "../../components/RouteContainer";
 import type { SnoozeUntil } from "../../data/tracker/snooze";
 import { openExternal } from "../../lib/desktop";
+import { markPerf } from "../../lib/perf";
 import { useConnectivity } from "../../shared/connectivity";
 import { useKeyBindings } from "../../shared/keyboard/useKeyBindings";
 import type { ScreenProps } from "../../shared/screen";
@@ -197,6 +198,10 @@ export default function TodayScreen({ model }: ScreenProps<TodayModel>) {
   const { detail: split, wide } = useBreakpoints();
   const offline = useConnectivity().status === "offline";
   const ready = model.status === "ready" ? model.data : null;
+  // Test builds: the cold-start budget ends when Today first shows its data (src/lib/perf.ts).
+  useEffect(() => {
+    if (model.status === "ready") markPerf("today-interactive", true);
+  }, [model.status]);
 
   const [view, setView] = useState<View>("open");
   const [pickedId, setPickedId] = useState<string | null>(null);

@@ -19,6 +19,8 @@ fn main() {
             "save_kit_file",
             "open_kit_file",
             "reveal_kit_file",
+            // Test builds only (cargo feature `e2e`, src/perf.rs); granted by the `e2e` capability.
+            "perf_mark",
         ]))
         // tauri-build would put the Windows application manifest into the app's resources,
         // which only the `bruteforcehr` binary links; the linker embeds it below instead.

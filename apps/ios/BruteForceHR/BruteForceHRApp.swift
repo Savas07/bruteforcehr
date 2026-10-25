@@ -9,10 +9,16 @@ struct BruteForceHRApp: App {
     @UIApplicationDelegateAdaptor(PushAppDelegate.self) private var appDelegate
 
     init() {
+        #if DEBUG
+        LaunchTimeline.mark("init")
+        #endif
         // Reads the bundled GoogleService-Info.plist (project `bruteforcehr`). Configured before
         // the first view, so `RootView` sees the restored session (`Auth.auth().currentUser`) and
         // starts on the tabs instead of flashing the sign-in screen.
         FirebaseApp.configure()
+        #if DEBUG
+        LaunchTimeline.mark("firebase")
+        #endif
         // The session lives in the keychain group the Share Extension reads too; a session from
         // before this build is carried over (SharedSession).
         SharedSession.useSharedKeychain()
@@ -24,6 +30,9 @@ struct BruteForceHRApp: App {
         // Before launch finishes, so a reminder tap that launched the app is delivered.
         NotificationRouter.shared.install()
         PushRegistrar.shared.install()
+        #if DEBUG
+        LaunchTimeline.mark("app-init")
+        #endif
     }
 
     var body: some Scene {

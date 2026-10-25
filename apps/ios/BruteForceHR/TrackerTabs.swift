@@ -64,8 +64,10 @@ final class LiveUserData {
         }
         settings.appVersion = Self.appVersion
         applyServices = CloudApplyServices(uid: uid)
-        // The app always bundles cv-render (the build phase fails otherwise).
-        applyRenderer = (try? CVRenderEngine.bundled()).map(DeviceApplyRenderer.init)
+        // cv-render is evaluated on the first Apply or tailoring, not here: evaluating the 0.9 MB
+        // bundle at sign-in held up launch (docs/runbooks/performance.md). The app always bundles
+        // cv-render (the build phase fails otherwise).
+        applyRenderer = DeviceApplyRenderer(makeEngine: { try CVRenderEngine.bundled() })
         tailoring = CVTailoringModel(now: .now)
         tailoring.usesSystemClock = true
         tailoring.services = applyServices

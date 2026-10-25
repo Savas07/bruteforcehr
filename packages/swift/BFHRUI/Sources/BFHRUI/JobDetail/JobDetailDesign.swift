@@ -16,7 +16,7 @@ extension DesignScenario {
         let jobId = designJobId
         let model = JobDetailModel(jobId: jobId, now: now)
         switch dataset {
-        case .populated:
+        case .populated, .scaled:
             apply(to: model)
         case .empty:
             var job = populated.job(id: jobId)

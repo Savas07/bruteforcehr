@@ -21,8 +21,13 @@ function value(input: unknown): unknown {
   return { mapValue: { fields: fields(input as Record<string, unknown>) } };
 }
 
+/** Map fields; `undefined` ones are left out, as the converters' `toFirestore` does. */
 function fields(input: Record<string, unknown>): Record<string, unknown> {
-  return Object.fromEntries(Object.entries(input).map(([key, inner]) => [key, value(inner)]));
+  return Object.fromEntries(
+    Object.entries(input)
+      .filter(([, inner]) => inner !== undefined)
+      .map(([key, inner]) => [key, value(inner)]),
+  );
 }
 
 /** Creates or replaces the document at `path` (below `documents/`). */

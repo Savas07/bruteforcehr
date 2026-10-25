@@ -201,7 +201,10 @@ export function BoardColumn({
         </div>
         <p className="text-fg-secondary min-h-4.5 ps-4 text-footnote">{subLine}</p>
       </header>
-      <ol className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-2 pt-0.5 pb-2">
+      {/* Its own compositing layer: WebKit then scrolls the column without repainting the other
+          columns (a column of hundreds of cards held 60 fps only this way; frame work p95 56 → 6 ms
+          in Playwright WebKit, docs/runbooks/performance.md). */}
+      <ol className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-2 pt-0.5 pb-2 will-change-transform">
         {children}
         {emptyLine !== null && drop.kind !== "valid" && (
           <li className="text-fg-secondary px-1 py-2 text-footnote">{emptyLine}</li>

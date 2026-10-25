@@ -6,7 +6,7 @@
  * (a link containing `blocked` fails like a login wall), and an email send is sent after the undo
  * window.
  */
-import { emptyDataset, FIXTURE_NOW, type FixtureDataset, populatedDataset } from "@bfhr/fixtures";
+import { FIXTURE_NOW, type FixtureDataset } from "@bfhr/fixtures";
 import {
   type EmailSend,
   type JobImportUrlResponse,
@@ -23,6 +23,7 @@ import { createMemoryJobsStore, type MemoryJobsCallables, type MemoryJobsStore }
 import type { MemoryTrackerStore } from "../data/tracker/memory";
 import { newApplication, planCreateApplications } from "../data/tracker/writes";
 import { designCoverLetter, designTailor } from "./apply";
+import { designDataset } from "./datasets";
 import { readDesignParams } from "./search";
 import { designTrackerStore } from "./tracker";
 
@@ -315,7 +316,11 @@ function designCallables(
     },
     tailorCv(request) {
       const revision = tracker.cvRevisions().find((candidate) => candidate.id === request.revisionId);
-      return designTailor(request, revision?.content ?? null, tracker.jobs().find((job) => job.id === request.jobId));
+      return designTailor(
+        request,
+        revision?.content ?? null,
+        tracker.jobs().find((job) => job.id === request.jobId),
+      );
     },
     draftCoverLetter(request) {
       return designCoverLetter(
@@ -371,7 +376,7 @@ function jobsStoreFor(dataset: FixtureDataset): MemoryJobsStore {
 /** The design Jobs store of the route's dataset; goes inside `DesignTrackerProviders`. */
 export function DesignJobsProviders({ children }: { readonly children: ReactNode }) {
   const search = readDesignParams(useSearch({ strict: false }));
-  const dataset = search.fixture === "empty" ? emptyDataset : populatedDataset;
+  const dataset = designDataset(search.fixture);
   const store = jobsStoreFor(dataset);
   const base = useMemo(
     () => ({

@@ -171,6 +171,37 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
+      # Performance budgets (docs/BRIEF.md §9, docs/runbooks/performance.md). Cold start: a session
+      # spec signs in and seeds data, then the test build is launched 5 times (after a warm-up) and
+      # timed until Today is interactive; the median must stay under 2.5 s. The macOS runner (a
+      # virtual machine without a GPU) gets the runbook's CI slack factor: the same build's median
+      # varied 2.39–3.48 s between runs there, and the webview alone takes ~1.5 s to start.
+      - name: Cold-start budget
+        if: success() || failure()
+        run: |
+          scale=1
+          if [ "$RUNNER_OS" = macOS ]; then scale=1.5; fi
+          scripts/with-emulators.sh pnpm perf:cold-start --runs 5 --budget-scale "$scale"
+      # Scrolling: 5,000 jobs and 1,000 applications in the design build, in the engine of each
+      # platform's webview (WebKit ≈ WKWebView on macOS, Chromium ≈ WebView2 on Windows). The macOS
+      # runner (a virtual machine that stalls even an idle page; runbook) gets the CI slack factor:
+      # up to 10 % dropped frames and 100 ms long tasks instead of 5 % and 50 ms.
+      - name: Scrolling budget
+        if: success() || failure()
+        run: |
+          engine=chromium
+          scale=1
+          if [ "$RUNNER_OS" = macOS ]; then engine=webkit; scale=2; fi
+          pnpm exec playwright install "$engine"
+          pnpm perf:scroll --engines "$engine" --budget-scale "$scale"
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: desktop-perf-${{ matrix.os }}
+          path: artifacts/perf/
+          if-no-files-found: ignore
+          retention-days: 30
+
   # On demand (`gh workflow run desktop.yml -f design_capture=true [-f update_states=all …]`): the
   # design build (fixtures, forced states) in the real macOS and Windows apps, for the final
   # critique rounds.

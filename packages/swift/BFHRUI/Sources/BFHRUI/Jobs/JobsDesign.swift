@@ -116,10 +116,10 @@ extension DesignScenario {
         model.designRetained = services
         model.services = services
         #if os(iOS)
-        model.renderer = (try? CVRenderEngine.bundled()).map(DeviceApplyRenderer.init)
+        model.renderer = DeviceApplyRenderer(makeEngine: { try CVRenderEngine.bundled() })
         #endif
         switch dataset {
-        case .populated:
+        case .populated, .scaled:
             apply(to: model)
         case .empty:
             // No CV yet: the populated job with the empty account's profile.

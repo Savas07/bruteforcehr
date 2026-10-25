@@ -24,7 +24,15 @@ import {
 } from "@bfhr/core";
 import { describe, expect, it } from "vitest";
 import type { z } from "zod";
-import { appConfigs, emptyDataset, FIXTURE_NOW, type FixtureDataset, populatedDataset } from "./index";
+import {
+  appConfigs,
+  emptyDataset,
+  FIXTURE_NOW,
+  type FixtureDataset,
+  PERF_SIZES,
+  populatedDataset,
+  scaledDataset,
+} from "./index";
 
 const SCHEMAS = {
   cvs: CvSchema,
@@ -50,9 +58,12 @@ function expectValid(schema: z.ZodType, value: unknown, label: string) {
     throw new Error(`${label} is invalid:\n${JSON.stringify(result.error.issues, null, 2)}`);
 }
 
+const perfDataset = scaledDataset();
+
 describe.each([
   ["populated", populatedDataset],
   ["empty", emptyDataset],
+  ["scaled", perfDataset],
 ])("%s dataset", (_name, dataset) => {
   it("validates every document against the core schemas", () => {
     expectValid(ProfileSchema, dataset.profile, "profile");
@@ -184,5 +195,32 @@ describe("populated dataset content", () => {
   it("has upcoming interviews for the Today screen", () => {
     const upcoming = data.interviews.filter((interview) => interview.startsAt > FIXTURE_NOW);
     expect(upcoming).toHaveLength(3);
+  });
+});
+
+describe("scaled dataset", () => {
+  it("has the performance budget's volume with intact references", () => {
+    expect(perfDataset.jobs).toHaveLength(PERF_SIZES.jobs);
+    expect(perfDataset.jobMatches).toHaveLength(PERF_SIZES.jobs);
+    expect(perfDataset.applications).toHaveLength(PERF_SIZES.applications);
+    const jobIds = new Set(perfDataset.jobs.map((job) => job.id));
+    const applicationIds = new Set(perfDataset.applications.map((app) => app.id));
+    const eventIds = new Set(perfDataset.applicationEvents.map((event) => event.id));
+    for (const match of perfDataset.jobMatches) expect(jobIds.has(match.id), match.id).toBe(true);
+    for (const app of perfDataset.applications)
+      if (app.jobId !== null) expect(jobIds.has(app.jobId), app.id).toBe(true);
+    for (const event of perfDataset.applicationEvents) {
+      expect(applicationIds.has(event.applicationId), event.id).toBe(true);
+      if (event.revertsEventId !== null) expect(eventIds.has(event.revertsEventId), event.id).toBe(true);
+    }
+    for (const interview of perfDataset.interviews)
+      expect(applicationIds.has(interview.applicationId), interview.id).toBe(true);
+    const sourceKeys = perfDataset.jobs.flatMap((job) => job.sourceKeys);
+    expect(new Set(sourceKeys).size).toBe(sourceKeys.length);
+  });
+
+  it("starts with the populated documents", () => {
+    expect(perfDataset.jobs.slice(0, populatedDataset.jobs.length)).toEqual(populatedDataset.jobs);
+    expect(scaledDataset({ jobs: 40, applications: 25 }).applications).toEqual(populatedDataset.applications);
   });
 });

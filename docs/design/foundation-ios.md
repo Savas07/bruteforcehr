@@ -245,18 +245,18 @@ Critiques follow BRIEF §5 and the kickoff protocol: read `skill://design-critiq
 
 ### Audits on CI
 
-`ios.yml` › "UI audits" runs the `*AccessibilityAuditTests` suites on GitHub's macOS runners. It uses 3–4 shards because there are 5 macOS runners per account; new suites go into the lightest shard. Each failing test is retried once (`-retry-tests-on-failure`). On failure, the `.xcresult` is uploaded. To read it:
+The `*AccessibilityAuditTests` suites are the ones that count, and they run **locally**, one suite at a time (`xcodebuild test -only-testing:BruteForceHRUITests/<Suite>` with the shared DerivedData, inside the iOS lock). `ios.yml` › "UI audits" runs the same suites on GitHub's macOS runners, but **only on demand** (Actions › iOS › Run workflow). On 2026-10-25, every push it ran on showed it can't gate PRs:
 
-- `xcrun xcresulttool export attachments --path <bundle> --output-path <dir> --only-failures` gives each kept issue's description, an app screenshot and an element screenshot.
-- Live end-to-end suites (`*EndToEndTests`) need a test account, so they stay local (`apps/ios/scripts/*-live-check.sh`).
+- **Slow:** a shard of 4–5 suites took 1.5–2 h on the runner VMs, and the account has only 5 macOS runners.
+- **Timeouts:** audits timed out ("Audit failed to complete in time").
+- **Date-dependent layouts:** design mode takes "now" from the system clock, so date strings, and the layouts they drive, differ between machines and days. Three issues seen only on CI (on the same iOS 26.5 simulator):
+  - Mail review: a relative date was flagged as possibly clipped.
+  - Settings › Connect Gmail: "Since <date>" sat half under the bottom bar.
+  - Insights at the largest size: "Show all" was flagged as partly unscaled.
 
-Known CI-only failures (2026-10-25, all pass locally on the same iOS 26.5 simulator):
+The fix is a fixed design clock. Until then, the CI job is a manual cross-check. Failing tests are retried once.
 
-- **Mail review, live panes:** a relative date ("2 days ago, 7:30 AM") is flagged as possibly clipped.
-- **Settings, Connect Gmail:** "Since <date>" sits half under the bottom bar.
-- **Insights, largest text:** "Show all" is flagged as partly unscaled.
-
-Design mode takes "now" from the system clock, so date strings, and the layouts they drive, change from day to day and machine to machine. The fix is a fixed design clock; until it lands, treat these three as known flakes.
+When it fails, the `.xcresult` is uploaded; `xcrun xcresulttool export attachments --path <bundle> --output-path <dir> --only-failures` gives each issue's description, an app screenshot and an element screenshot. Live end-to-end suites (`*EndToEndTests`) need a test account, so they stay local (`apps/ios/scripts/*-live-check.sh`).
 
 ## Release verification
 

@@ -130,14 +130,19 @@ final class ApplyEndToEndTests: XCTestCase {
         XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label ENDSWITH '.pdf'")).firstMatch.waitForExistence(timeout: 60)
             || app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'apply.kit.saveToFiles.'")).firstMatch.waitForExistence(timeout: 5), "the CV PDF in the kit")
         shot("kit")
+        // The bottom bar holds the "Did you submit…?" card; rows must be fully above it to be tapped
+        // (a tap on a row half under the card lands on the card).
+        let barTop = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH 'Did you submit'")).firstMatch.frame.minY - 16
         if !stillBlocked {
             let copyLetter = app.buttons["apply.kit.copyLetter"]
             scrollTo(copyLetter, in: app)
+            for _ in 0..<4 where copyLetter.frame.maxY > barTop { scrollDown(app) }
             copyLetter.tap()
             XCTAssertTrue(contains(app, "Cover letter copied").waitForExistence(timeout: 5), "letter copied toast")
         }
         let copy = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'apply.kit.copy.'")).firstMatch
         scrollTo(copy, in: app)
+        for _ in 0..<4 where copy.frame.maxY > barTop { scrollDown(app) }
         XCTAssertTrue(copy.exists, "an answer to copy")
         copy.tap()
         XCTAssertTrue(contains(app, "copied").waitForExistence(timeout: 5), "answer copied toast")
@@ -165,6 +170,7 @@ final class ApplyEndToEndTests: XCTestCase {
                 app.descendants(matching: .any)["signIn.primary"].tap()
             }
         }
+        app.skipOnboardingIfShown()
         XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 30), "signed in")
         app.tabBars.buttons["Jobs"].tap()
         XCTAssertTrue(app.descendants(matching: .any)["jobs.feed"].firstMatch.waitForExistence(timeout: 30), "feed")

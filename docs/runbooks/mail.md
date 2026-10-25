@@ -4,12 +4,12 @@ Design: [ADR 0012](../adr/0012-mail-sync.md). Functions (codebase `default`, eur
 
 ## Secrets
 
-| Secret                   | Value                                                          | Created                                |
-| ------------------------ | -------------------------------------------------------------- | -------------------------------------- |
-| `MAIL_TOKEN_KEYS`        | `{"current":"k1","keys":{"k1":"<base64 of 32 random bytes>"}}` | 2026-10-24 (random key, never printed) |
-| `GOOGLE_OAUTH_CLIENT`    | `unset` → `{"clientId":"…","clientSecret":"…"}`                | 2026-10-24 as `unset`                  |
-| `MICROSOFT_OAUTH_CLIENT` | `unset` → `{"clientId":"…","clientSecret":"…"}`                | 2026-10-24 as `unset`                  |
-| `ANTHROPIC_API_KEY`      | existing (ADR 0010)                                            | —                                      |
+| Secret                   | Value                                                                    | Created                                                                |
+| ------------------------ | ------------------------------------------------------------------------ | ---------------------------------------------------------------------- |
+| `MAIL_TOKEN_KEYS`        | `{"current":"k1","keys":{"k1":"<base64 of 32 random bytes>"}}`           | 2026-10-24 (random key, never printed)                                 |
+| `GOOGLE_OAUTH_CLIENT`    | `unset` → `{"clientId":"…","clientSecret":"…"}`                          | 2026-10-24 as `unset`                                                  |
+| `MICROSOFT_OAUTH_CLIENT` | `{"clientId":"70d427aa-e610-4a6f-87cd-16201d9fa268","clientSecret":"…"}` | 2026-10-25 (client secret `bruteforcehr-mail`, expires **2028-10-25**) |
+| `ANTHROPIC_API_KEY`      | existing (ADR 0010)                                                      | —                                                                      |
 
 The integration owner grants `github-deployer` `roles/secretmanager.viewer` on each new secret (ADR 0004). Setting a value takes effect after a redeploy: `firebase functions:secrets:set NAME` then `firebase deploy --only functions:default`.
 
@@ -36,6 +36,9 @@ Google OAuth clients for Google APIs can only be created in the Cloud Console (g
 ### Microsoft (Entra app)
 
 1. Entra admin center → App registrations → New: name BruteForceHR, **Accounts in any organizational directory and personal Microsoft accounts**, redirect **Web** `https://bruteforcehr.web.app/connect/microsoft/callback`.
+
+   **Done 2026-10-25** with the Azure CLI after the owner signed in (`az login --tenant 13aca8c9-b703-46a5-8be3-7c6c9c92658c`; the directory requires MFA). App "BruteForceHR", client ID `70d427aa-e610-4a6f-87cd-16201d9fa268`, the 7 delegated Graph permissions of step 2, client secret `bruteforcehr-mail` valid until 2028-10-25. The secret went from `az ad app credential reset` into `firebase functions:secrets:set --data-file` through a `600` temp file, without being printed. Rotate before expiry: `az ad app credential reset --id <client ID> --display-name bruteforcehr-mail --years 2`, set the secret the same way, then `firebase deploy --only functions:default`.
+
 2. API permissions (Microsoft Graph, delegated): `openid`, `email`, `profile`, `offline_access`, `User.Read`, `Mail.Read`, `Mail.Send`. Nothing else: these are exactly what the privacy policy lists (reading asks for `Mail.Read`, `User.Read`, `offline_access` and OpenID; `Mail.Send` is requested separately the first time the user sends). Don't add `Mail.ReadWrite`; sending doesn't use drafts.
 3. Certificates & secrets → New client secret (24 months; put the expiry in the calendar).
 4. `firebase functions:secrets:set MICROSOFT_OAUTH_CLIENT` with `{"clientId":"<Application (client) ID>","clientSecret":"<value>"}`; redeploy as above.

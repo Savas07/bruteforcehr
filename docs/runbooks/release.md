@@ -2,6 +2,8 @@
 
 The pipeline itself is specified in [ADR 0004](../adr/0004-release-updates-signing.md). The client stack is in [ADR 0007](../adr/0007-native-ios-tauri-desktop.md). This runbook covers the **secrets inventory** (BRIEF §7.5), the one-time setup, releasing, dry runs and rollback.
 
+> **2026-10-25: GitHub Actions is off.** On GitHub Free, the private repo used up its Actions minutes. The owner chose local builds over paying for them, so every workflow is disabled (`gh workflow list --all`) and releases are built, signed and published from the owner's Mac when the owner asks. `release.yml` stays the reference for the steps, and the updater key is local (["Updater key offline backup"](#updater-key-offline-backup)). Re-enable with `gh workflow enable <file>`.
+
 The source repo `Savas07/bruteforcehr` is **private**. Releases (installers, `latest.json`, `SHA256SUMS.txt`), the `updater-beta` manifest and public support issues live in the **public** repo **`Savas07/bruteforcehr-releases`** ([ADR 0004 addendum 2026-10-24](../adr/0004-release-updates-signing.md#addendum--2026-10-24-private-source-public-releases-repo)). Version tags stay in the source repo; the releases repo gets the same tag on its default branch when a release is published.
 
 **Every secret below is CI-only.** They are GitHub Actions secrets on `Savas07/bruteforcehr` (Settings → Secrets and variables → Actions), read only by `release.yml` jobs. None of them goes into a client bundle, Firestore, chat or a commit. How to create each Apple value: [accounts.md](accounts.md) §6. Runtime secrets of the functions (Anthropic, OAuth, job APIs) are in Secret Manager, not here ([accounts.md](accounts.md) §2–5).

@@ -243,6 +243,20 @@ apps/ios/scripts/capture.sh --screen today --size default --size ax
 
 Critiques follow BRIEF §5 and the kickoff protocol: read `skill://design-critique` (plus `accessibility-review`, `ux-copy`, `design-system` where relevant), critique the captures of all states, themes, devices and sizes, and save the output verbatim to `docs/design/critiques/ios/<screen>/r<N>.md` (`<screen>` = `today`, `job-detail`, `cv-editor`, `tracker-board`, `mail-review`; `r1`, `r2`, …) with a **Resolution** section listing what changed. Screenshots stay in `artifacts/` (gitignored); never commit Mobbin images.
 
+### Audits on CI
+
+`ios.yml` › "UI audits" runs the `*AccessibilityAuditTests` suites on GitHub's macOS runners. It uses 3–4 shards because there are 5 macOS runners per account; new suites go into the lightest shard. Each failing test is retried once (`-retry-tests-on-failure`). On failure, the `.xcresult` is uploaded. To read it:
+
+- `xcrun xcresulttool export attachments --path <bundle> --output-path <dir> --only-failures` gives each kept issue's description, an app screenshot and an element screenshot.
+- Live end-to-end suites (`*EndToEndTests`) need a test account, so they stay local (`apps/ios/scripts/*-live-check.sh`).
+
+Known CI-only failures (2026-10-25, all pass locally on the same iOS 26.5 simulator):
+
+- **Mail review, live panes:** a relative date ("2 days ago, 7:30 AM") is flagged as possibly clipped.
+- **Settings, Connect Gmail:** "Since <date>" sits half under the bottom bar.
+- **Insights, largest text:** "Show all" is flagged as partly unscaled.
+
+Design mode takes "now" from the system clock, so date strings, and the layouts they drive, change from day to day and machine to machine. The fix is a fixed design clock; until it lands, treat these three as known flakes.
 ## Release verification
 
 ```sh

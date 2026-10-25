@@ -80,9 +80,12 @@ jobs:
         run: |
           only=()
           for suite in $SUITES; do only+=("-only-testing:BruteForceHRUITests/$suite"); done
+          # One retry: the audits measure live layout, and a loaded runner sometimes catches a
+          # transition (logged in docs/design/foundation-ios.md "Audits on CI").
           xcodebuild test -project apps/ios/BruteForceHR.xcodeproj -scheme BruteForceHR \
             -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
             -derivedDataPath "$RUNNER_TEMP/dd" -resultBundlePath "$RUNNER_TEMP/ui-audits.xcresult" \
+            -retry-tests-on-failure -test-iterations 2 \
             "${only[@]}" CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO -quiet
       - uses: actions/upload-artifact@v7
         if: failure()

@@ -133,7 +133,9 @@ final class ApplyAIAccessibilityAuditTests: XCTestCase {
 
     @MainActor
     func testAuditLetterDraftLargestText() throws {
-        let app = apply("letter-draft", ax: true, ready: "apply.letter.banner")
+        // At the largest size the draft banner starts below the fold of the lazy List, so wait for
+        // the bar's button instead; the page-by-page audit scrolls over the banner.
+        let app = apply("letter-draft", ax: true, ready: "apply.letter.done")
         try auditSheet(app, "letter draft AX", bar: app.buttons["apply.letter.done"], ax: true, pages: 12)
     }
 
@@ -187,6 +189,9 @@ final class ApplyAIAccessibilityAuditTests: XCTestCase {
         let app = apply("kit", ready: "apply.openSite")
         let copy = app.buttons["apply.kit.copy.answer-notice"]
         scrollTo(copy, in: app)
+        // Clear of the sticky bar: a tap on a row half under it lands on "Open company site".
+        let barTop = app.buttons["apply.openSite"].frame.minY
+        for _ in 0..<4 where copy.frame.maxY > barTop - 8 { scrollDown(app) }
         XCTAssertEqual(copy.label, "Copy Notice period")
         copy.tap()
         XCTAssertTrue(contains(app, "Notice period copied").waitForExistence(timeout: 5), "toast names the item")

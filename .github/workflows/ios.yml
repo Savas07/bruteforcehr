@@ -48,13 +48,13 @@ jobs:
             -configuration Debug -destination 'generic/platform=iOS Simulator' \
             -derivedDataPath "$RUNNER_TEMP/dd" CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO
 
-  # The XCUITest accessibility audits on CI runners, in 3 shards (each builds once, then runs its
-  # suites). macOS runners are limited to 5 concurrent jobs per account, so one runner per suite
-  # queued for hours across PRs. They run the design-mode app (fixtures, no network), so they need
-  # no secrets. Live end-to-end suites (*EndToEndTests) need a test account and stay local
-  # (apps/ios/scripts/*-live-check.sh). New audit suites go into the lightest shard.
+  # The XCUITest accessibility audits on CI runners, in 3 shards. MANUAL ONLY (workflow_dispatch):
+  # on the macOS runner VMs a shard takes 1.5–2 h and audits time out ("Audit failed to complete in
+  # time") or catch date-dependent layouts, so they can't gate PRs (2026-10-25). The audits that
+  # count run locally, one suite at a time (docs/design/foundation-ios.md "Audits on CI").
   ui-audits:
     name: UI audits (${{ matrix.shard }})
+    if: github.event_name == 'workflow_dispatch'
     runs-on: macos-26
     strategy:
       fail-fast: false
@@ -80,9 +80,12 @@ jobs:
         run: |
           only=()
           for suite in $SUITES; do only+=("-only-testing:BruteForceHRUITests/$suite"); done
+          # One retry: the audits measure live layout, and a loaded runner sometimes catches a
+          # transition (logged in docs/design/foundation-ios.md "Audits on CI").
           xcodebuild test -project apps/ios/BruteForceHR.xcodeproj -scheme BruteForceHR \
             -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
             -derivedDataPath "$RUNNER_TEMP/dd" -resultBundlePath "$RUNNER_TEMP/ui-audits.xcresult" \
+            -retry-tests-on-failure -test-iterations 2 \
             "${only[@]}" CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO -quiet
       - uses: actions/upload-artifact@v7
         if: failure()

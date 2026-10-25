@@ -170,7 +170,7 @@ final class MailReviewAccessibilityAuditTests: XCTestCase {
     ///   blurs content under the bars.
     @MainActor
     private func runAudit(_ app: XCUIApplication, atAccessibilitySize: Bool = false, wrapped: Set<String> = []) throws {
-        Thread.sleep(forTimeInterval: 0.5)
+        app.settleForAudit()
         let window = app.windows.firstMatch.frame
         let top = app.navigationBars.allElementsBoundByIndex.map(\.frame.maxY).max() ?? window.minY
         var bottom = window.maxY

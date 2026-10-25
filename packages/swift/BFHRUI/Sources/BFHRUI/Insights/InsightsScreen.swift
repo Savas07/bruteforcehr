@@ -238,7 +238,10 @@ public struct InsightsScreen: View {
                 Button {
                     showsAllRows.toggle()
                 } label: {
+                    // The app's scaled font like every other row: the List default scaled only
+                    // partly at accessibility sizes (XCUITest audit "Dynamic Type … partially unsupported").
                     Text(showsAllRows ? InsightsStrings.showFewer : InsightsStrings.showAll)
+                        .font(.bfhr(.body))
                 }
             }
         } header: {

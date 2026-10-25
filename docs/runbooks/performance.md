@@ -4,13 +4,13 @@ The four budgets in [BRIEF §9](../BRIEF.md#9-quality-bar-and-testing), how each
 
 ## Results
 
-| Budget | Measured on | Result | Status |
-| --- | --- | --- | --- |
-| Desktop cold start < 2.5 s (median of 5) | CI `macos-latest`, `windows-latest` | Not measured yet: run pending on PR #38 | Pending |
-| 60 fps scrolling, 5,000 jobs / 1,000 applications | Local, Playwright Chromium (M-series Mac on battery, Low Power Mode) | Jobs p95 16.8 ms, table p95 16.7 ms, board p95 16.7 ms; no long tasks over 50 ms | Met |
-| Same, WebKit | Local, Playwright WebKit (Low Power Mode holds WebKit at 30 Hz, so frame work is the check) | Jobs: p95 work 12 ms (met). Table: p95 work 35 ms. Board: p95 work 15–41 ms (varies run to run) | Table and board not confirmed: the CI macOS run decides |
-| iOS launch to interactive < 2 s | Simulator (stands in for a recent iPhone) | Not measured yet | Pending |
-| Incremental sync of 3 mail accounts < 30 s | CI `ubuntu-latest`, emulators (no local JDK) | Not measured yet: run pending on PR #38 | Pending |
+| Budget                                            | Measured on                                                                 | Result                                                                                                                                                                      | Status                                                                                                   |
+| ------------------------------------------------- | --------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| Desktop cold start < 2.5 s (median of 5)          | CI `macos-latest`, `windows-latest`                                         | Not measured yet: run pending on PR #38                                                                                                                                     | Pending                                                                                                  |
+| 60 fps scrolling, 5,000 jobs / 1,000 applications | Local, Playwright Chromium (M1 MacBook Pro on AC power, 2026-10-25, 3 runs) | Jobs, table and board: p95 frame time 16.7–16.8 ms, 0 dropped frames; p95 frame work ≤ 7.4 ms; no long tasks                                                                | Met                                                                                                      |
+| Same, WebKit                                      | Local, Playwright WebKit (same machine and run)                             | Jobs p95 work 14 ms (3/2,886 frames dropped), table 4 ms (0 dropped), board 6 ms (2/1,956 dropped); p95 frame time 18 ms against a measured 17–18 ms refresh; no long tasks | Met. Earlier on battery, Low Power Mode held WebKit at 30 Hz (table p95 work 35 ms); measure on AC power |
+| iOS launch to interactive < 2 s                   | Simulator (stands in for a recent iPhone)                                   | Not measured yet                                                                                                                                                            | Pending                                                                                                  |
+| Incremental sync of 3 mail accounts < 30 s        | CI `ubuntu-latest`, emulators (no local JDK)                                | Not measured yet: run pending on PR #38                                                                                                                                     | Pending                                                                                                  |
 
 Fixes made because of these measurements:
 

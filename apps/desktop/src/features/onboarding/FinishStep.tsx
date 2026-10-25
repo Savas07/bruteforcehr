@@ -1,7 +1,8 @@
 /**
- * Onboarding step 3/3 · Finish (shared onboarding contract): what the first saved search will look
- * for, before "Start searching" creates it, refreshes matches and opens Today. Without a role or a
- * place there is nothing to search for yet, so the step says how to get one instead.
+ * Onboarding step 3/3 · Finish (shared onboarding contract): what the first saved searches will look
+ * for (one per role, same places and workplace), before "Start searching" creates them, refreshes
+ * matches and opens Today. Without a role or a place there is nothing to search for yet, so the
+ * step says how to get one instead.
  */
 import type { RemoteType } from "@bfhr/core";
 import { useMemo } from "react";
@@ -30,7 +31,8 @@ const messages = defineMessages({
   },
   later: {
     id: "onboarding.finish.later",
-    defaultMessage: "You can change this search or add more under Jobs.",
+    defaultMessage:
+      "{count, plural, one {You can change this search or add more under Jobs.} other {You can change these searches or add more under Jobs.}}",
   },
 });
 
@@ -40,18 +42,21 @@ const WORKPLACE: Readonly<Record<RemoteType, MessageDescriptor>> = defineMessage
   onsite: { id: "onboarding.finish.onsite", defaultMessage: "On-site" },
 });
 
-export function FinishStep({ search }: { readonly search: SavedSearchInput | null }) {
+export function FinishStep({ searches }: { readonly searches: readonly SavedSearchInput[] }) {
   const intl = useIntl();
   const rows = useMemo(() => {
-    if (search === null) return [];
+    const first = searches[0];
+    if (first === undefined) return [];
     const regions = new Intl.DisplayNames([intl.locale], { type: "region" });
     const list = (items: readonly string[]) =>
       new Intl.ListFormat(intl.locale, { type: "conjunction" }).format(items);
-    const { countryCodes, remoteTypes } = search.filters;
+    // Every search shares the places and workplace filters; only the query differs.
+    const { countryCodes, remoteTypes } = first.filters;
+    const titles = searches.flatMap((search) => (search.query === "" ? [] : [search.query]));
     return [
       {
         label: messages.searchFor,
-        value: search.query === "" ? intl.formatMessage(messages.anyTitle) : search.query,
+        value: titles.length === 0 ? intl.formatMessage(messages.anyTitle) : list(titles),
       },
       {
         label: messages.countries,
@@ -69,9 +74,9 @@ export function FinishStep({ search }: { readonly search: SavedSearchInput | nul
       },
       { label: messages.alerts, value: intl.formatMessage(messages.alertsValue) },
     ];
-  }, [search, intl]);
+  }, [searches, intl]);
 
-  if (search === null)
+  if (searches.length === 0)
     return <p className="text-body text-fg-primary">{intl.formatMessage(messages.nothing)}</p>;
   return (
     <div className="flex flex-col gap-4">
@@ -84,7 +89,9 @@ export function FinishStep({ search }: { readonly search: SavedSearchInput | nul
           </div>
         ))}
       </dl>
-      <p className="text-footnote text-fg-secondary">{intl.formatMessage(messages.later)}</p>
+      <p className="text-footnote text-fg-secondary">
+        {intl.formatMessage(messages.later, { count: searches.length })}
+      </p>
     </div>
   );
 }

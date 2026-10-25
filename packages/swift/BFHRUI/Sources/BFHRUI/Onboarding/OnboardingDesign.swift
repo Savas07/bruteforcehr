@@ -122,8 +122,8 @@ final class DesignOnboardingService: OnboardingService {
         self.refuses = refuses
     }
 
-    func save(profile: Profile, previous: Profile?, savedSearch: SavedSearch?) async throws {
-        guard savedSearch != nil || previous == profile else { return }
+    func save(profile: Profile, previous: Profile?, savedSearches: [SavedSearch]) async throws {
+        guard !savedSearches.isEmpty || previous == profile else { return }
         if hangs { try await Task.sleep(for: .seconds(3_600)) }
         if refuses { throw CocoaError(.featureUnsupported) }
     }

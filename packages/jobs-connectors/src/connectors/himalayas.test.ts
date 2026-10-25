@@ -1,6 +1,6 @@
 import { JobSchema, type SavedSearchFilters } from "@bfhr/core";
 import { describe, expect, it } from "vitest";
-import { NOW, testContext } from "../../test/harness";
+import { fixture, NOW, testContext } from "../../test/harness";
 import { toJobDraft } from "../listing";
 import type { SearchQuery } from "../types";
 import { himalayas } from "./himalayas";
@@ -63,6 +63,41 @@ describe("himalayas", () => {
     const context = testContext([{ url, fixture: "himalayas-search.json" }]);
     expect(await himalayas.search(query("react engineer", {}, 2), context)).toHaveLength(2);
     expect(context.fake.calls[0]?.url).toBe(url);
+  });
+
+  it("reads further pages while they are full, stops at a short page, keeps pages before a failure", async () => {
+    const one = JSON.parse(fixture("himalayas-search.json")).jobs[0];
+    const page = (from: number, count: number) =>
+      JSON.stringify({
+        jobs: Array.from({ length: count }, (_, i) => ({
+          ...one,
+          guid: `https://himalayas.app/companies/acme/jobs/role-${from + i}`,
+        })),
+      });
+    const url = (n: number) => `https://himalayas.app/jobs/api/search?q=typescript&page=${n}`;
+
+    const full = testContext([
+      { url: url(1), body: page(0, 20) },
+      { url: url(2), body: page(20, 20) },
+      { url: url(3), body: page(40, 7) },
+    ]);
+    const listings = await himalayas.search(query("typescript", {}, 100), full);
+    expect(full.fake.calls.map((call) => call.url)).toEqual([url(1), url(2), url(3)]);
+    expect(listings).toHaveLength(47);
+    expect(new Set(listings.map((listing) => listing.sourceId)).size).toBe(47);
+
+    const capped = testContext([
+      { url: url(1), body: page(0, 20) },
+      { url: url(2), body: page(20, 20) },
+    ]);
+    expect(await himalayas.search(query("typescript", {}, 30), capped)).toHaveLength(30);
+    expect(capped.fake.calls).toHaveLength(2);
+
+    const failing = testContext([
+      { url: url(1), body: page(0, 20) },
+      { url: url(2), status: 429, headers: { "retry-after": "3600" }, body: "" },
+    ]);
+    expect(await himalayas.search(query("typescript", {}, 100), failing)).toHaveLength(20);
   });
 
   it("covers remote searches only", () => {

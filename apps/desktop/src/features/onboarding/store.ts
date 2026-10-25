@@ -28,8 +28,8 @@ export interface OnboardingStore {
   updateProfile(patch: ProfilePatch): Promise<void>;
   /** `defaultCvId`: the CV matching scores against. */
   setMatchingCv(cvId: string): Promise<void>;
-  /** Creates the first saved search unless the user has one already; resolves whether it did. */
-  createFirstSearch(input: SavedSearchInput): Promise<boolean>;
+  /** Creates the first saved searches unless the user has one already; resolves whether it did. */
+  createFirstSearches(inputs: readonly SavedSearchInput[]): Promise<boolean>;
   /** `jobMatchesRefresh` without job ids: re-scores the jobs nearest the new profile. */
   refreshMatches(): Promise<void>;
   /** Sets `onboardingCompletedAt`; the shell replaces the wizard as soon as it applies locally. */

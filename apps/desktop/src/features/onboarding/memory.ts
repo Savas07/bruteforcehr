@@ -49,11 +49,11 @@ export function createMemoryOnboardingStore(options: MemoryOnboardingOptions = {
       log.push({ kind: "matchingCv", cvId });
       return settle();
     },
-    async createFirstSearch(input) {
+    async createFirstSearches(inputs) {
       await settle();
       if (hasSavedSearch) return false;
       hasSavedSearch = true;
-      log.push({ kind: "savedSearch", input });
+      for (const input of inputs) log.push({ kind: "savedSearch", input });
       return true;
     },
     refreshMatches() {

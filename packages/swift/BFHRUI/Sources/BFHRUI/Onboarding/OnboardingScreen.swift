@@ -433,7 +433,7 @@ struct OnboardingFinishStep: View {
             OnboardingHeader(step: .finish, title: OnboardingStrings.finishTitle, message: message)
             if !model.hasSavedSearch, model.canSearch {
                 Section {
-                    summaryRow(OnboardingStrings.lookingFor, value: model.draft.roles.first.map { Text(verbatim: $0) } ?? Text(OnboardingStrings.anyRole))
+                    summaryRow(OnboardingStrings.lookingFor, value: roles.map { Text(verbatim: $0) } ?? Text(OnboardingStrings.anyRole))
                     summaryRow(OnboardingStrings.whereHeader, value: Text(verbatim: places))
                     summaryRow(OnboardingStrings.howOften, value: Text(OnboardingStrings.daily))
                     summaryRow(OnboardingStrings.alerts, value: Text(OnboardingStrings.alertsValue))
@@ -502,6 +502,12 @@ struct OnboardingFinishStep: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .combine)
+    }
+
+    /// "Frontend Engineer, Product Engineer and SRE": one saved search each; nil without a role.
+    private var roles: String? {
+        let roles = model.searchRoles
+        return roles.isEmpty ? nil : roles.formatted(.list(type: .and).locale(locale))
     }
 
     /// "Germany, Berlin · Remote", or Anywhere.

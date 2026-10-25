@@ -38,7 +38,7 @@ import { type AddedCv, CvStep } from "./CvStep";
 import { FinishStep } from "./FinishStep";
 import {
   clearSavedStep,
-  firstSearchInput,
+  firstSearchInputs,
   ONBOARDING_STEPS,
   type OnboardingStep,
   saveStep,
@@ -286,8 +286,8 @@ export function OnboardingWizard({
   };
 
   // ── Finish ──────────────────────────────────────────────────────────────────────────────────
-  const search = useMemo(
-    () => firstSearchInput(preferencesFromDraft(draft), intl.formatMessage(messages.defaultSearchName)),
+  const searches = useMemo(
+    () => firstSearchInputs(preferencesFromDraft(draft), intl.formatMessage(messages.defaultSearchName)),
     [draft, intl],
   );
   const finish = async (withSearch: boolean) => {
@@ -295,7 +295,7 @@ export function OnboardingWizard({
     setFinishing(true);
     try {
       await setup.ready;
-      if (withSearch && search !== null) await store.createFirstSearch(search);
+      if (withSearch && searches.length > 0) await store.createFirstSearches(searches);
     } catch (error) {
       console.error("Couldn't finish onboarding", error);
       setSetup((state) => ({ ...state, failed: true }));
@@ -374,8 +374,8 @@ export function OnboardingWizard({
               {intl.formatMessage(messages.saveFailedBody)}
             </InlineAlert>
           )}
-          <FinishStep search={search} />
-          {search === null && (
+          <FinishStep searches={searches} />
+          {searches.length === 0 && (
             <Button variant="plain" className="-ms-3 self-start" onClick={() => goTo("preferences")}>
               {intl.formatMessage(messages.backToPreferences)}
             </Button>
@@ -383,14 +383,14 @@ export function OnboardingWizard({
         </div>
       );
       primary =
-        search === null
+        searches.length === 0
           ? { label: intl.formatMessage(messages.goToday), run: () => void finish(false), loading: finishing }
           : {
               label: intl.formatMessage(messages.startSearching),
               run: () => void finish(true),
               loading: finishing,
             };
-      skip = search === null ? null : () => void finish(false);
+      skip = searches.length === 0 ? null : () => void finish(false);
       break;
   }
 

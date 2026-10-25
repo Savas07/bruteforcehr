@@ -2173,7 +2173,7 @@
   "onboarding.finish.goToday": "Bugün'e git",
   "onboarding.finish.hybrid": "Hibrit",
   "onboarding.finish.intro": "Her gün yeni ilanlara bakar ve her birini tercihlerinize göre puanlarız.",
-  "onboarding.finish.later": "Bu aramayı değiştirebilir veya İlanlar bölümünden yenilerini ekleyebilirsiniz.",
+  "onboarding.finish.later": "{count, plural, one {Bu aramayı değiştirebilir veya İlanlar bölümünden yenilerini ekleyebilirsiniz.} other {Bu aramaları değiştirebilir veya İlanlar bölümünden yenilerini ekleyebilirsiniz.}}",
   "onboarding.finish.nothing": "Tercihlerinize bir pozisyon veya yer ekleyin; sizin için her gün arayalım.",
   "onboarding.finish.onsite": "Ofisten",
   "onboarding.finish.remote": "Uzaktan",

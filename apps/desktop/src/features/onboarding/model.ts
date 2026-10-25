@@ -53,24 +53,36 @@ export function seedLanguage(locale: string): UiLanguage {
   return parsed.success ? parsed.data : "en";
 }
 
+/** Roles beyond this many get no search of their own (each search spends daily run budget). */
+export const MAX_FIRST_SEARCHES = 5;
+
 /**
- * The first saved search (shared with iOS): the first role as the query (connectors require every
- * query term, so roles are never OR-joined), the places' countries and the workplace types as
- * filters, checked daily with alerts for Good matches and above. Null when there is neither a role
- * nor a place to search for.
+ * The first saved searches (shared with iOS): one per role, up to `MAX_FIRST_SEARCHES` (connectors
+ * require every query term, so roles are never OR-joined into one query), all with the places'
+ * countries and the workplace types as filters, checked daily with alerts for Good matches and
+ * above. One "any title" search when there are places but no role; none when there is neither.
  */
-export function firstSearchInput(
+export function firstSearchInputs(
   prefs: Pick<JobPreferences, "targetRoles" | "locations" | "remotePreferences">,
   fallbackName: string,
-): SavedSearchInput | null {
+): SavedSearchInput[] {
   const countryCodes = [
     ...new Set(
       prefs.locations.flatMap((location) => (location.countryCode === null ? [] : [location.countryCode])),
     ),
   ];
-  const query = prefs.targetRoles[0] ?? "";
-  if (query === "" && countryCodes.length === 0) return null;
-  return {
+  // Case-insensitive de-duplication that keeps the first spelling and the user's order.
+  const roles = new Map<string, string>();
+  for (const role of prefs.targetRoles) {
+    const trimmed = role.trim();
+    if (trimmed !== "" && !roles.has(trimmed.toLowerCase())) roles.set(trimmed.toLowerCase(), trimmed);
+  }
+  const queries = [...roles.values()].slice(0, MAX_FIRST_SEARCHES);
+  if (queries.length === 0) {
+    if (countryCodes.length === 0) return [];
+    queries.push("");
+  }
+  return queries.map((query) => ({
     name: query === "" ? fallbackName : query,
     query,
     filters: {
@@ -86,7 +98,7 @@ export function firstSearchInput(
     alertThreshold: THRESHOLD_SCORES[DEFAULT_THRESHOLD],
     dailyDigest: false,
     enabled: true,
-  };
+  }));
 }
 
 // ─── Resume ────────────────────────────────────────────────────────────────────────────────────

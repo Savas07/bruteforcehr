@@ -2173,7 +2173,7 @@
   "onboarding.finish.goToday": "Zu Heute",
   "onboarding.finish.hybrid": "Hybrid",
   "onboarding.finish.intro": "Wir suchen jeden Tag nach neuen Jobs und bewerten jeden nach deinen Wünschen.",
-  "onboarding.finish.later": "Du kannst diese Suche ändern oder unter Jobs weitere hinzufügen.",
+  "onboarding.finish.later": "{count, plural, one {Du kannst diese Suche ändern oder unter Jobs weitere hinzufügen.} other {Du kannst diese Suchen ändern oder unter Jobs weitere hinzufügen.}}",
   "onboarding.finish.nothing": "Füge in deinen Wünschen eine Rolle oder einen Ort hinzu, dann suchen wir jeden Tag für dich.",
   "onboarding.finish.onsite": "Vor Ort",
   "onboarding.finish.remote": "Remote",

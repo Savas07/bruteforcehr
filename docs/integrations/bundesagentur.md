@@ -19,7 +19,7 @@ Connector: `packages/jobs-connectors/src/connectors/bundesagentur.ts` (`bundesag
 
 ## Access
 
-- Search: `GET https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v6/jobs?was={query}&size=25&page=1&angebotsart=1` with header `X-API-Key: jobboerse-jobsuche`. This is the public client id of the BA's own web app, not a personal key. **`/pc/v4/jobs` (named in ADR 0005 and the community README example) returned HTTP 403 on 2026-10-24.** `/pc/v6/jobs` works, and so does `/pc/v4/app/jobs` according to the spec. v6 results are in `ergebnisliste` and the reference number is in `referenznummer`. `wo` (place) is not sent because searches have no city field. An empty query omits `was`.
+- Search: `GET https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v6/jobs?was={query}&size={limit, max 100}&page=1&angebotsart=1` with header `X-API-Key: jobboerse-jobsuche` (`size=100` returned 100 results on 2026-10-25; it was a fixed 25 before). This is the public client id of the BA's own web app, not a personal key. **`/pc/v4/jobs` (named in ADR 0005 and the community README example) returned HTTP 403 on 2026-10-24.** `/pc/v6/jobs` works, and so does `/pc/v4/app/jobs` according to the spec. v6 results are in `ergebnisliste` and the reference number is in `referenznummer`. `wo` (place) is not sent because searches have no city field. An empty query omits `was`.
 - Details: `GET …/pc/v4/jobdetails/{base64(referenznummer)}` (same header; this is the spec's "empfohlene Version"; v3 is the alternative). Search results have no description; `fetchDetail` adds `stellenangebotsBeschreibung`. A 404 (posting removed) maps to `invalid_response`.
 - Schema mismatch maps to `invalid_response`. 403 maps to `blocked`, which for this source means the path or client id was retired.
 
@@ -29,7 +29,7 @@ Germany (job offers, `angebotsart=1`; self-employment, apprenticeships and inter
 
 ## Pricing / limits
 
-Free. No published rate limit. `callBudget` null; HTTP spacing 1 s (≤ 1 req/s); 1 search request per search plus 1 detail request per listing that passes the filters.
+Free. No published rate limit. `callBudget` null; HTTP spacing 1 s (≤ 1 req/s); 1 search request per search plus 1 detail request per listing without a description, at most 10 per run (`DETAIL_FETCHES_PER_RUN`).
 
 ## Attribution
 

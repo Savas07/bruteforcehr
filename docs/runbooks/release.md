@@ -169,9 +169,8 @@ So CI precompiles it: `apps/desktop/scripts/compile-app-icon.sh <dir>` runs `act
 Builds and signs everything, verifies the updater signatures, assembles `latest.json` + `SHA256SUMS.txt` (artifact `release-assets-dry-run`, kept 14 days), checks the deploy identity (`firebase projects:list`, `firebase deploy --dry-run`, a read of `appConfig`) — and publishes, tags, uploads and deploys nothing.
 
 ```sh
-# release.yml already on main:
-gh workflow run release.yml --ref main -f dry_run=true -f version=0.1.0
-# testing pipeline changes on a branch (workflow_dispatch only sees workflows on main):
+# The `release` environment only admits `v*` tags and `release-dry-run/**` branches, so a dry run
+# (`gh workflow run release.yml --ref main …` is rejected) is a push of the commit to test:
 git push origin HEAD:refs/heads/release-dry-run/0.1.0
 gh run download <run-id> -n release-assets-dry-run
 ```
@@ -199,7 +198,7 @@ Installed apps up to **0.2.2** read their manifests from the source repo (`Savas
 3. Merge this change, then the **v0.3.0** version PR (#17). `release.yml` publishes v0.3.0 in `bruteforcehr-releases` and, in the step marked **`BRIDGE v0.3.0`**, also publishes release `v0.3.0` in the source repo with only its `latest.json` (marked latest) and uploads it to the source repo's `updater-beta`. Those manifests point at the new repo's assets, so 0.1.x/0.2.x installs update to 0.3.0 and from then on poll the new repo.
 4. Check before going private: `curl -sL https://github.com/Savas07/bruteforcehr/releases/latest/download/latest.json | jq .version` and the same for `bruteforcehr-releases` both print `0.3.0`, and the URLs in it start with `https://github.com/Savas07/bruteforcehr-releases/`. Optionally `gh workflow run update-acceptance.yml -f from=0.2.2 -f target=0.3.0` (macOS + Windows minutes).
 5. Leave the source repo public for a few days so running installs pick up 0.3.0 (they check at launch and every 6 h).
-6. **Done 2026-10-25:** `Savas07/bruteforcehr` is private (owner's call; installs were on 0.3.0+, and both manifests served 0.4.0 at the switch).
+6. **Done 2026-10-25:** `Savas07/bruteforcehr` is private (owner's call). At the switch, both repos' `latest.json` served 0.4.0.
 7. **Done 2026-10-25:** the `BRIDGE v0.3.0` step is deleted and `publish` has `contents: read` (checkout only). Installs still on ≤ 0.2.2 need a one-time download from https://bruteforcehr.web.app/download.
 
 ## Actions minutes

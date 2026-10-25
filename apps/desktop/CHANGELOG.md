@@ -1,5 +1,32 @@
 # @bfhr/desktop
 
+## 0.4.0
+
+### Minor Changes
+
+- 1f1c8d2: Settings › Data & privacy: "Export everything" builds a ZIP of all your data (readable JSON per collection, your CV and attachment files, a README; never passwords or tokens), downloadable for 7 days. "Delete account" removes every document, file and the sign-in account, revoking mail access at Google first, after you confirm by typing a word and, if needed, signing in again with an email link. On the Mac/PC and iPhone.
+- b341645: Mail and Settings on the desktop. Connect an email account: Gmail and Outlook sign in through the browser (until the sign-in is switched on, the app says so calmly and offers an app password for Gmail), iCloud Mail, Yahoo, Yandex, GMX, WEB.DE and any IMAP server connect with an app password, with each provider's steps and field-level errors, and the inbox scan shows its progress. Mail runs on your real job emails: Confirm, Change or Not job mail keep a 10-second Undo before they're saved, automatic changes can be undone, and interview invites suggest the interview to add. Today lists emails to review and the inbox scan; an application shows its emails. New Settings (⌘, / Ctrl+,): mail accounts (reconnect, check now, scan again, disconnect), notifications with quiet hours and notifications on this computer, job source health, companies you follow, AI, language, appearance and update channel.
+- ae53754: First-run setup on the desktop. After you sign in for the first time, three short steps get you started: add your CV (import a file or start an empty one), tell us what you're looking for (roles, seniority, remote / hybrid / on-site, places with "I'd move here", a private salary floor with currency and per month or per year, whether you can work in each country without visa sponsorship, and your languages), then start your first saved search, which runs right away and lands you on Today. Every step can be skipped, and setup picks up where you left off if you close the app. The same preferences live in the new Settings › Job preferences, which saves as you go.
+- 5630f73: Apply on the desktop, start to finish: "Tailor for this job" (from the Apply panel or CV Studio's Check tab) shows each suggested edit with the original, the suggestion, why and what in your CV it is based on, a live preview and Accept / Keep original per edit or all at once, and saves the result as a version for that application without changing your CV. Cover letters are drafted with AI in a formal, warm or concise tone and your language, or started from a starter or your own template, with fields such as the hiring manager filled before sending. After opening a company's site, the application kit has your CV as a file (open, show in Finder / Explorer, copy its path), your cover letter (copy, save as PDF) and your saved answers, each with Copy. Settings › Application answers manages those answers per language, country and currency, and emails can carry more files from your saved PDFs or your computer, within your account's size limit.
+- 4f0d860: Jobs on your real data: a feed ranked by match with filters (work mode, location, seniority, salary, posted, match, visa, source), sort, keyboard triage (J/K, S save, D Not for me with optional reasons), live search of the job sites, saved searches with alerts, adding a job from a link, and applying — on the company site with "Did you apply?", or by email from the app (or your mail app until an account can send).
+- 257f97a: Security fixes from the M6 review. Connecting Gmail or Outlook now finishes in the app that started it: the mailbox is saved only for your account, the app shows which address was connected, and Microsoft always asks for consent. New accounts are by invitation for now. Mail from Spam, or mail whose sender can't be verified, no longer changes your applications automatically; it waits in Review. Followed careers pages must use https. Daily limits protect PDF making, email connect attempts and AI help; the website sends stricter security headers.
+
+### Patch Changes
+
+- f7a0681: Changes from another device reach the Mac app at once again: Firestore uses long polling in WebKit webviews, where WebKit since Safari 26.4 held back a listener's last update until the server sent more (up to 30 s). CV Studio no longer shows "This CV changed on another device" right after saving: the session store mistook the editor from before its own write for a remote save.
+- bcb03f2: Sending from a Microsoft account now asks Microsoft only for permission to send (`Mail.Send`), as the privacy policy says; it no longer asks to change your mailbox. Each email goes out in one request with one copy in Sent Items, and follow-ups still reply in the same conversation. Because of that, a Microsoft account can attach about 2.9 MB in total; BruteForceHR tells you before sending if the CV and cover letter are larger.
+- Updated dependencies [1f1c8d2]
+- Updated dependencies [bcb03f2]
+- Updated dependencies [0905d17]
+- Updated dependencies [01435f6]
+- Updated dependencies [1b35770]
+- Updated dependencies [fc77c88]
+- Updated dependencies [257f97a]
+  - @bfhr/core@0.4.0
+  - @bfhr/api@0.4.0
+  - @bfhr/cv-render@0.4.0
+  - @bfhr/ui-tokens@0.4.0
+
 ## 0.3.0
 
 ### Minor Changes

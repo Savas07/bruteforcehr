@@ -411,6 +411,12 @@ Explicitly **not stored**:
 - **Why:** the import dialog already has the drop zone, the parse progress and the review step with its error recovery; a second drop zone would duplicate that flow and its states. The review step is part of the import, so the thumbnail adds nothing the review doesn't show.
 - **Affects:** onboarding-signin (Step 1/3 CV desktop), cv-editor (import).
 
+### D47 · iPhone onboarding: one relocation toggle, four currencies, Skip finishes without a search
+
+- **Decision:** on iPhone (M6), the Preferences step keeps the research's single **Open to relocation** toggle under Where: it sets `relocation` on every place (D41's per-place value, written the same way as the desktop). The salary floor's currency is a menu of the four target-market currencies (EUR, TRY, GBP, USD; default from the device region) instead of a searchable sheet. Step 3 has no separate "Finish without a search" button: **Skip for now** in the navigation bar finishes without one, and **Start searching** (or **Go to Today** when a saved search exists) is the only bottom action; D40's nothing-to-search state shows **Back to preferences** above **Go to Today**. An imported CV is saved straight to CV Studio without the review step; its low-confidence fields are checked there later (onboarding-signin.md "Decision — iOS", the Today card).
+- **Why:** one toggle answers the question once instead of per place on a small screen; the four currencies cover every target market, and other currencies can be added when a market is; a second text button at the bottom of step 3 would sit next to the Skip that already does the same; the review step would break the ≤ 30 s CV budget.
+- **Affects:** onboarding-signin (iOS Screens 3–4, Finish), settings-account (Job preferences on iPhone).
+
 ## Desktop chrome
 
 ### D43 · macOS Tab reaches links always, buttons per the system setting
@@ -426,7 +432,7 @@ Explicitly **not stored**:
 - **Options:** (a) no bulk accept (research/apply.md: only "Keep original for the rest", since bulk acceptance can add content unseen); (b) "Accept all" beside "Keep original for the rest".
 - **Decision:** (b), at the owner's request (M4 desktop Apply). "Accept all" accepts every suggestion **without a `[gap]`**; suggestions with a gap stay "Keep original". Every card stays visible with its decision, "Decide again" reverts one, the preview shows the result before saving, and the disclosure ("AI suggestions. Check every change before saving.") stays in the rail header. Nothing is stored until "Save as new version".
 - **Why:** the server already drops any edit whose facts aren't in the CV or the posting (ADR 0010), and the saved result is a separate version for one application, never the CV itself (D45); one click for a reviewed set is what the owner asked for.
-- **Affects:** apply (Tailor review, desktop; iOS when built).
+- **Affects:** apply (Tailor review, desktop; iOS, D48).
 
 ### D45 · Pins before applying are the current choice and can be replaced
 
@@ -434,6 +440,15 @@ Explicitly **not stored**:
 - **Decision:** (b). A tailored version is pinned on the Saved/Preparing application so the composer, the kit and "Yes, I applied" use it; when the user applies with another CV or adds the PDFs and cover letter, `planRecordApplied` replaces the pre-apply pins with what was actually used. From `appliedAt` on only empty pins are filled (ADR 0002).
 - **Why:** before applying, a pin records intent ("use the tailored version"); keeping the first one would pin a CV the user switched away from, which breaks §4.4.4's "the exact CV used".
 - **Affects:** apply, job-detail ("Yes, I applied"), tracker (pins shown on the detail).
+
+## Apply (M4 iPhone)
+
+### D48 · iPhone Apply: AI pages inside the sheet, the kit asks last, no per-card Edit
+
+- **Options:** (a) research/apply.md as written: "Did you submit?" as an inline card at the top of the kit, an **Edit** button on every tailoring card, cover letter templates managed in Settings; (b) the owner's M4 order for the kit (files, cover letter, answers, *then* "Did you apply?"), the same review controls as the desktop, templates managed where letters are written.
+- **Decision:** (b). "Tailor for this job" and the cover letter editor are pages of the Apply sheet (Back returns to the checklist; swipe-down is off while they're open). In the kit the CV PDF (Save to Files, Share), the cover letter (Copy, Share) and the answers (Copy per row, the toast names the item) come first; back from Safari, "Did you apply?" replaces "Open company site again" in the sticky bottom bar, so it's always in view without pushing the files down. Tailoring cards offer Accept / Keep original (plus Accept all, D44, and Keep original for the rest); a suggestion with a `[gap]` can only be kept, and the real figure goes into the CV in CV Studio. "Save as template" lives in the editor; there is no separate template manager. The saved tailored version is listed under its CV in the checklist ("Tailored for this job"), preselected while it's pinned (D45). CV Studio offers the same review from the CV's ⋯ menu (**Tailor for a job…**, jobs not applied to yet).
+- **Why:** the owner asked for the kit in that order; a bottom-bar prompt keeps the research's intent (never blocking, always visible on return) without a card above the files. Inline editing of a suggestion would let AI text and user text mix in one accepted edit that `Tailoring.apply` treats as the model's; keeping gaps unacceptable enforces §2.4 without it. Templates are few and are made while writing a letter.
+- **Affects:** apply (iOS: tailor review, cover letter editor, kit, attachment picker), cv-editor (⋯ menu), settings-account (Application answers).
 
 ## Other open questions resolved
 

@@ -6,7 +6,7 @@ import Network
 
 /// Today, the Tracker, Jobs, Mail and Settings on Firestore (M3–M5; docs/adr/0002-data-model.md):
 /// snapshot listeners on `users/{uid}` and its `applications`, `applicationEvents`, `interviews`,
-/// `contacts`, `cvs`, `coverLetters`, `jobs`, `jobMatches`, `savedSearches`, `mailAccounts`,
+/// `contacts`, `cvs`, `coverLetters`, `answers`, `jobs`, `jobMatches`, `savedSearches`, `mailAccounts`,
 /// `mailMessages`, `watchlist` and `renderedFiles`, plus the project-wide `jobSources`, feed one
 /// `UserData` to every screen model; their optimistic mutations come back as `UserDataChanges`
 /// and are written as one batch each (`UserDataWriter`). Firestore's offline persistence is the
@@ -39,6 +39,7 @@ final class FirestoreUserDataStore: UserDataWriter {
     private var contacts: [Contact] = []
     private var cvs: [Cv] = []
     private var coverLetters: [CoverLetter] = []
+    private var answers: [Answer] = []
     private var jobs: [Job] = []
     private var jobMatches: [JobMatch] = []
     private var savedSearches: [SavedSearch] = []
@@ -64,6 +65,11 @@ final class FirestoreUserDataStore: UserDataWriter {
 
     /// The collections that must arrive before the screens leave the skeleton.
     private static let required: Set<String> = ["applications", "applicationEvents", "interviews", "contacts"]
+
+    /// `users/{uid}` as seen: exists, from the cache, decoded (the onboarding gate).
+    var onProfileSnapshot: ((_ exists: Bool, _ fromCache: Bool, _ profile: Profile?) -> Void)?
+    /// How many saved searches the account has.
+    var onSavedSearches: ((Int) -> Void)?
 
     init(uid: String, db: Firestore = .firestore()) {
         self.uid = uid
@@ -91,9 +97,19 @@ final class FirestoreUserDataStore: UserDataWriter {
         self.models = models
         for model in models { model.phase = .loading }
 
-        registrations.listeners.append(user.addSnapshotListener { [weak self] snapshot, _ in
-            guard let self, let snapshot, snapshot.exists, let data = snapshot.data() else { return }
-            profile = try? Self.decode(Profile.self, data, ids: ["id": snapshot.documentID])
+        // With metadata changes: a missing document from the cache is followed by the server's
+        // answer, which decides whether onboarding runs (`onProfileSnapshot`).
+        registrations.listeners.append(user.addSnapshotListener(includeMetadataChanges: true) { [weak self] snapshot, _ in
+            guard let self, let snapshot else { return }
+            let fromCache = snapshot.metadata.isFromCache
+            guard snapshot.exists, let data = snapshot.data() else {
+                onProfileSnapshot?(false, fromCache, nil)
+                return
+            }
+            let decoded = try? Self.decode(Profile.self, data, ids: ["id": snapshot.documentID])
+            onProfileSnapshot?(true, fromCache, decoded)
+            guard decoded != profile else { return }
+            profile = decoded
             push()
         })
         listen("applications") { [weak self] documents in
@@ -114,6 +130,9 @@ final class FirestoreUserDataStore: UserDataWriter {
         listen("coverLetters") { [weak self] documents in
             self?.coverLetters = documents.compactMap { try? Self.decode(CoverLetter.self, $0.data(), ids: ["id": $0.documentID]) }
         }
+        listen("answers") { [weak self] documents in
+            self?.answers = documents.compactMap { try? Self.decode(Answer.self, $0.data(), ids: ["id": $0.documentID]) }
+        }
         listen("jobs") { [weak self] documents in
             self?.jobs = documents.compactMap { try? Self.decode(Job.self, $0.data(), ids: ["id": $0.documentID]) }
         }
@@ -122,6 +141,7 @@ final class FirestoreUserDataStore: UserDataWriter {
         }
         listen("savedSearches") { [weak self] documents in
             self?.savedSearches = documents.compactMap { try? Self.decode(SavedSearch.self, $0.data(), ids: ["id": $0.documentID]) }
+            self?.onSavedSearches?(documents.count)
         }
         listen("mailAccounts") { [weak self] documents in
             self?.mailAccounts = documents.compactMap { try? Self.decode(MailAccount.self, $0.data(), ids: ["id": $0.documentID]) }
@@ -206,6 +226,7 @@ final class FirestoreUserDataStore: UserDataWriter {
             cvs: cvs,
             renderedFiles: renderedFiles,
             coverLetters: coverLetters,
+            answers: answers,
             jobs: jobs,
             jobMatches: jobMatches,
             savedSearches: savedSearches,
@@ -268,6 +289,14 @@ final class FirestoreUserDataStore: UserDataWriter {
         for change in changes.jobs { try write(change, in: "jobs", batch) }
         for change in changes.savedSearches { try write(change, in: "savedSearches", batch) }
         for change in changes.coverLetters { try write(change, in: "coverLetters", batch) }
+        for change in changes.answers { try write(change, in: "answers", batch) }
+        // A tailored version, in the same batch as its pin on the application (create-only).
+        for revision in changes.cvRevisions {
+            batch.setData(
+                try Self.encode(revision, dropping: ["id", "cvId"]),
+                forDocument: user.collection("cvs").document(revision.cvId).collection("revisions").document(revision.id)
+            )
+        }
         for file in changes.renderedFiles {
             batch.setData(try Self.encode(file, dropping: ["id"]), forDocument: user.collection("renderedFiles").document(file.id))
         }

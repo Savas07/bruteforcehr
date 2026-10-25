@@ -4,8 +4,10 @@ import BFHRUIFixtures
 import Foundation
 
 // Design mode for the Jobs tab: the feed, Saved searches and the Apply sheet on the fixtures
-// (`-BFHRScreen jobs|saved-searches|apply`). `-BFHRApplyStep checklist|kit|email|prompt` opens
-// the Apply sheet on that page; `-BFHRJobsSearch running|finished|failed` shows the on-demand
+// (`-BFHRScreen jobs|saved-searches|apply`). `-BFHRApplyStep <step>` opens the Apply sheet on
+// that page (`DesignApplyStep`: checklist, kit, prompt, email, attach, tailor, tailor-loading,
+// tailor-review, tailor-preview, tailor-off, tailor-limit, tailor-saved, letter, letter-draft,
+// letter-limit); `-BFHRJobsSearch running|finished|failed` shows the on-demand
 // search's states over the feed; `-BFHRJobId <id>` opens Job detail / Apply on that fixture job
 // instead of the featured one (e.g. `job-northstar-frontend`, Preparing: "Did you apply?";
 // `job-kumsal-frontend`, Applied: the application block); `-BFHRJobsPane filters|editor|hidden`
@@ -36,9 +38,28 @@ enum JobsDesignPane: String {
 /// Apply pages for captures.
 public enum DesignApplyStep: String, CaseIterable, Sendable {
     case checklist
+    /// The kit (CV, cover letter, answers) before Safari.
     case kit
+    /// The kit back from Safari: "Did you apply?".
     case prompt
     case email
+    /// Review email with the attachment picker open.
+    case attach
+    /// Tailor: Light / Thorough.
+    case tailor
+    case tailorLoading = "tailor-loading"
+    /// The suggested edits, one accepted and one kept.
+    case tailorReview = "tailor-review"
+    case tailorPreview = "tailor-preview"
+    case tailorOff = "tailor-off"
+    case tailorLimit = "tailor-limit"
+    /// The checklist after "Save as new version": the tailored version selected.
+    case tailorSaved = "tailor-saved"
+    /// The cover letter editor on the starter template.
+    case letter
+    /// The editor after "Draft with AI": the banner, a field to fill.
+    case letterDraft = "letter-draft"
+    case letterLimit = "letter-limit"
 
     public static let launch: DesignApplyStep? = {
         let arguments = ProcessInfo.processInfo.arguments
@@ -91,6 +112,12 @@ extension DesignScenario {
     /// The Apply sheet for the featured job, on `step`.
     public func applyModel(jobId: String, step: DesignApplyStep? = DesignApplyStep.launch) -> ApplyModel {
         let model = ApplyModel(jobId: jobId, now: now)
+        let services = DesignApplyServices(data: UserData(DesignScenario(dataset: .populated).document))
+        model.designRetained = services
+        model.services = services
+        #if os(iOS)
+        model.renderer = DeviceApplyRenderer(makeEngine: { try CVRenderEngine.bundled() })
+        #endif
         switch dataset {
         case .populated, .scaled:
             apply(to: model)
@@ -98,6 +125,12 @@ extension DesignScenario {
             // No CV yet: the populated job with the empty account's profile.
             let job = UserData(DesignScenario(dataset: .populated).document).job(id: jobId)
             apply(to: model, data: UserData(profile: data.profile, jobs: job.map { [$0] } ?? []))
+        }
+        if [.kit, .prompt].contains(step), let job = model.data.job(id: jobId) {
+            // A drafted letter with its one field filled, so the kit shows Copy / Share.
+            model.letter.designDraft(DesignApplyServices.letterResponse(job: job, name: data.profile?.fullName ?? ""))
+            model.letter.typedValues[.hiringManager] = "Ms. Weber"
+            model.coverLetter = .written
         }
         switch step {
         case .kit?:
@@ -107,7 +140,7 @@ extension DesignScenario {
             model.step = .kit
             model.designFiles()
             model.returnedFromSite()
-        case .email?:
+        case .email?, .attach?:
             model.useEmail("talent@lighthouse-learning.example")
             model.email = ApplyEmailDraft(
                 accountId: model.sendingAccounts.first?.id,
@@ -117,6 +150,39 @@ extension DesignScenario {
             )
             model.step = .email
             model.designFiles()
+            if step == .attach { model.picksAttachments = true }
+        case .tailor?, .tailorLoading?, .tailorReview?, .tailorPreview?, .tailorOff?, .tailorLimit?:
+            guard model.selectedCV != nil else { break }
+            model.beginTailoring()
+            guard let tailoring = model.tailoring else { break }
+            let revision = UserData(DesignScenario(dataset: .populated).document).cvRevisions.first { $0.id == tailoring.revisionId }
+            switch step {
+            case .tailorLoading?: tailoring.designLoading()
+            case .tailorOff?: tailoring.designFailure(.aiDisabled)
+            case .tailorLimit?: tailoring.designFailure(.dailyLimit)
+            case .tailorReview?, .tailorPreview?:
+                if let revision {
+                    tailoring.designReview(DesignApplyServices.tailorResponse(for: revision.content, language: tailoring.locale), original: revision.content, decided: true)
+                }
+                tailoring.showsPreview = step == .tailorPreview
+            default: break
+            }
+        case .tailorSaved?:
+            guard model.selectedCV != nil else { break }
+            model.beginTailoring()
+            if let tailoring = model.tailoring,
+               let revision = UserData(DesignScenario(dataset: .populated).document).cvRevisions.first(where: { $0.id == tailoring.revisionId }) {
+                tailoring.designReview(DesignApplyServices.tailorResponse(for: revision.content, language: tailoring.locale), original: revision.content, decided: true)
+                tailoring.decide("e2", .accepted)
+                tailoring.save()
+            }
+            model.endTailoring()
+        case .letter?, .letterDraft?, .letterLimit?:
+            model.editLetter()
+            if step == .letterDraft, let job = model.data.job(id: jobId) {
+                model.letter.designDraft(DesignApplyServices.letterResponse(job: job, name: data.profile?.fullName ?? ""))
+            }
+            if step == .letterLimit { model.letter.designFailure(.dailyLimit) }
         case .checklist?, nil:
             break
         }
@@ -134,9 +200,13 @@ extension ApplyModel {
     /// Placeholder PDFs so the kit and the email show their file rows.
     func designFiles() {
         guard let cv = selectedCV else { return }
-        files = .ready([
-            ApplyFile(id: "design-cv", kind: .cv(cvId: cv.id, revisionId: cv.revisionId), fileName: "Deniz-Aksoy-CV.pdf", data: Data(count: 84_211)),
-        ])
+        var made = [
+            ApplyFile(id: "design-cv", kind: .cv(cvId: cv.cvId, revisionId: cv.revisionId), fileName: "Deniz-Aksoy-CV.pdf", data: Data(count: 84_211)),
+        ]
+        if letterBody != nil {
+            made.append(ApplyFile(id: "design-letter", kind: .coverLetter(coverLetterId: "design-letter"), fileName: "Deniz-Aksoy-Cover-Letter.pdf", data: Data(count: 31_402)))
+        }
+        files = .ready(made)
     }
 }
 #endif

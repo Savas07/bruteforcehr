@@ -12,6 +12,7 @@ public struct CVEditorScreen: View {
     @Bindable private var model: CVEditorModel
     @Environment(ToastCenter.self) private var toasts: ToastCenter?
     @Environment(\.bfhrReload) private var reload
+    @Environment(\.bfhrTailoring) private var tailoring
     @State private var prompt: CVActionPrompt?
     @State private var picksFile = false
     @State private var importFlow: CVImportFlow?
@@ -45,6 +46,7 @@ public struct CVEditorScreen: View {
             CVDocumentView(model: model)
                 .environment(\.bfhrReload, reload)
                 .environment(\.bfhrNow, model.now)
+                .environment(\.bfhrTailoring, tailoring)
         }
         .cvActionPrompts($prompt, model: model)
         .fileImporter(isPresented: $picksFile, allowedContentTypes: CVImportPicker.contentTypes) { result in

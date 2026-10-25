@@ -21,19 +21,21 @@ final class LiveUserData {
     let jobsNavigation = JobsNavigation()
     private(set) var store: FirestoreUserDataStore
     let uid: String
+    /// First run (`onboardingCompletedAt == nil`): CV, Preferences, the first search.
+    let onboarding: OnboardingGate
     private let scheduler = NotificationReminderScheduler()
     private let jobSearch = CloudJobSearch()
     /// `jobImportUrl` behind "Add a job from a link".
     let linkImporter = CloudJobLinkImporter()
     private let applyServices: CloudApplyServices
-    /// cv-render in JavaScriptCore for the Apply sheet's files, loaded on the first Apply instead of
-    /// at sign-in, so a launch doesn't evaluate the 0.9 MB bundle before Today shows
-    /// (docs/runbooks/performance.md). The app always bundles cv-render (the build phase fails otherwise).
-    private lazy var applyRenderer: DeviceApplyRenderer? = (try? CVRenderEngine.bundled()).map { DeviceApplyRenderer(engine: $0) }
+    private let applyRenderer: DeviceApplyRenderer?
+    /// CV Studio's "Tailor for a job…" on the same data (the CVs tab has its own CV store).
+    let tailoring: CVTailoringModel
     private var details: [String: JobDetailModel] = [:]
 
-    init(uid: String) {
+    init(uid: String, email: String) {
         self.uid = uid
+        onboarding = OnboardingGate(uid: uid, email: email)
         today = TodayModel(now: .now)
         today.usesSystemClock = true
         today.mailAvailable = true
@@ -62,6 +64,14 @@ final class LiveUserData {
         }
         settings.appVersion = Self.appVersion
         applyServices = CloudApplyServices(uid: uid)
+        // cv-render is evaluated on the first Apply or tailoring, not here: evaluating the 0.9 MB
+        // bundle at sign-in held up launch (docs/runbooks/performance.md). The app always bundles
+        // cv-render (the build phase fails otherwise).
+        applyRenderer = DeviceApplyRenderer(makeEngine: { try CVRenderEngine.bundled() })
+        tailoring = CVTailoringModel(now: .now)
+        tailoring.usesSystemClock = true
+        tailoring.services = applyServices
+        tailoring.renderer = applyRenderer
         store = FirestoreUserDataStore(uid: uid)
         jobs.usesSystemClock = true
         jobs.searchService = jobSearch
@@ -132,11 +142,16 @@ final class LiveUserData {
 
     private func connect() {
         today.writer = store
+        store.onProfileSnapshot = { [onboarding] exists, fromCache, profile in
+            onboarding.profileSnapshot(exists: exists, fromCache: fromCache, profile: profile)
+        }
+        store.onSavedSearches = { [onboarding] count in onboarding.savedSearchCount(count) }
         tracker.writer = store
         jobs.writer = store
         mail.writer = store
         settings.writer = store
-        store.start([today, tracker, insights, jobs, mail, settings])
+        tailoring.writer = store
+        store.start([today, tracker, insights, jobs, mail, settings, tailoring])
         // Open Job details move to the new store.
         for detail in details.values {
             detail.writer = store

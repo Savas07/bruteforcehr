@@ -11,6 +11,11 @@ final class FakeApplyServices: ApplyServices {
     var sends: [ApplyMailRequest] = []
     var cancels: [String] = []
     var sendError: ApplySendError?
+    var tailorRequests: [CvTailorRequest] = []
+    var tailorResult: Result<CvTailorResponse, ApplyAIError> = .failure(.failed("not set"))
+    var draftRequests: [CoverLetterDraftRequest] = []
+    var draftResult: Result<CoverLetterDraftResponse, ApplyAIError> = .failure(.failed("not set"))
+    var attachmentUploads: [(ApplyFile, String)] = []
 
     init(revisions: [CvRevision]) {
         self.revisions = revisions
@@ -35,9 +40,33 @@ final class FakeApplyServices: ApplyServices {
     func cancelEmail(applicationId: String) async throws(ApplySendError) {
         cancels.append(applicationId)
     }
+
+    func tailor(_ request: CvTailorRequest) async throws(ApplyAIError) -> CvTailorResponse {
+        tailorRequests.append(request)
+        return try tailorResult.get()
+    }
+
+    func draftCoverLetter(_ request: CoverLetterDraftRequest) async throws(ApplyAIError) -> CoverLetterDraftResponse {
+        draftRequests.append(request)
+        return try draftResult.get()
+    }
+
+    func uploadAttachment(_ file: ApplyFile, contentType: String) async throws -> String {
+        attachmentUploads.append((file, contentType))
+        return "users/u/mail-attachments/\(file.id)"
+    }
+
+    func download(_ file: RenderedFile) async throws -> Data { Data(count: file.sizeBytes) }
 }
 
 final class FakeApplyRenderer: ApplyRenderer {
+    func cvHTML(_ content: CvContent, language: String) throws -> CVRenderedHTML {
+        CVRenderedHTML(
+            html: "<p>\(content.basics?.summary ?? "")</p>", title: "CV",
+            page: CVPageGeometry(paper: "A4", widthPt: 595.28, heightPt: 841.89, widthMm: 210, heightMm: 297, marginsMm: .init(top: 20, right: 20, bottom: 20, left: 20))
+        )
+    }
+
     func cvPDF(_ revision: CvRevision, language: String) async throws -> (fileName: String, data: Data) {
         ("Deniz-Aksoy-CV.pdf", Data("%PDF-cv".utf8))
     }
@@ -129,7 +158,7 @@ struct ApplyModelTests {
         let (model, _) = model()
         model.coverLetter = .written
         #expect(!model.canContinue && model.blocker == .emptyLetter)
-        model.letterText = "Dear team,\n\nI'd love to help."
+        model.letter.text = "Dear team,\n\nI'd love to help."
         _ = try model.beginSiteApplication()
         let letter = try #require(model.data.coverLetters.first { $0.jobId == Self.featured })
         #expect(letter.body == "Dear team,\n\nI'd love to help." && letter.author == .user && !letter.isTemplate)
@@ -171,7 +200,7 @@ struct ApplyModelTests {
         #expect(model.email.body.contains("My CV is attached."))
         model.step = .checklist
         model.coverLetter = .written
-        model.letterText = "Dear team,\n\nI'd love to help."
+        model.letter.text = "Dear team,\n\nI'd love to help."
         try await model.beginEmailApplication()
         #expect(model.email.body.contains("My CV and cover letter are attached."))
         model.email.body = "Hi, my own words."

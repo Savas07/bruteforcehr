@@ -79,6 +79,16 @@ public struct SettingsScreen<DataPrivacy: View>: View {
                     }
                 }
                 Section {
+                    NavigationLink(value: SettingsRoute.jobPreferences) {
+                        SettingsRow(OnboardingStrings.jobPreferences, glyph: "briefcase", tile: BFHRColor.Accent.solid) {
+                            loaded {
+                                if let role = model.jobPreferences?.roles.first { Text(verbatim: role).lineLimit(1) }
+                            }
+                        }
+                    }
+                    .accessibilityIdentifier("settings.jobPreferences")
+                }
+                Section {
                     NavigationLink(value: SettingsRoute.mailAccounts) {
                         SettingsRow(SettingsStrings.mailAccounts, glyph: "envelope", tile: BFHRTone.info.solid) {
                             loaded { mailValue }
@@ -130,6 +140,14 @@ public struct SettingsScreen<DataPrivacy: View>: View {
                         }
                     }
                     .accessibilityIdentifier("settings.ai")
+                    NavigationLink(value: SettingsRoute.answers) {
+                        SettingsRow(AnswersStrings.title, glyph: "text.badge.checkmark", tile: BFHRTone.success.solid) {
+                            loaded {
+                                if !model.answers.isEmpty { Text(AnswersStrings.count(model.answers.count)) }
+                            }
+                        }
+                    }
+                    .accessibilityIdentifier("settings.answers")
                     Button(action: openAppSettings) {
                         SettingsRow(SettingsStrings.language, glyph: "globe", tile: BFHRTone.info.solid) {
                             Text(verbatim: Self.languageName(locale: locale))
@@ -196,6 +214,8 @@ public struct SettingsScreen<DataPrivacy: View>: View {
             }
             .navigationDestination(for: SettingsRoute.self) { route in
                 switch route {
+                case .jobPreferences: JobPreferencesPage(model: model)
+                case .jobPreference(let section): JobPreferenceSectionPage(model: model, section: section)
                 case .mailAccounts: MailAccountsPage(model: model)
                 case .mailAccount(let id): MailAccountPage(model: model, accountId: id)
                 case .jobSources: JobSourcesPage(model: model)
@@ -203,6 +223,7 @@ public struct SettingsScreen<DataPrivacy: View>: View {
                 case .notifications: NotificationsPage(model: model)
                 case .ai: AISettingsPage(model: model)
                 case .dataPrivacy: dataPrivacy?()
+                case .answers: AnswersLibraryPage(model: model)
                 }
             }
             .bfhrToastHost()

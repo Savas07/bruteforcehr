@@ -133,5 +133,6 @@ export function buildApplyVectors() {
     answers: ANSWERS_SAMPLE,
     euCountries: EU_AUTHORIZATION_COUNTRIES,
     kits: kitContexts.map((context) => ({ context, expected: answersForJob(ANSWERS_SAMPLE, context) })),
+    starters: STARTER_COVER_LETTER_TEMPLATES,
   };
 }

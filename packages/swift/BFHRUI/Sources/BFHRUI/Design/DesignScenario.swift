@@ -147,6 +147,7 @@ extension UserData {
             cvRevisions: document.cvRevisions,
             renderedFiles: document.renderedFiles,
             coverLetters: document.coverLetters,
+            answers: document.answers,
             jobs: document.jobs,
             jobMatches: document.jobMatches,
             savedSearches: document.savedSearches,

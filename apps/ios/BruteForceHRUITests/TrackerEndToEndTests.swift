@@ -49,6 +49,7 @@ final class TrackerEndToEndTests: XCTestCase {
                 app.descendants(matching: .any)["signIn.primary"].tap()
             }
         }
+        app.skipOnboardingIfShown()
         XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 30), "signed in")
 
         // Today, first run on an empty account: calm, no connect card, Log an application.

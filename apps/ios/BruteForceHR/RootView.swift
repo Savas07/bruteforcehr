@@ -36,6 +36,8 @@ struct RootView: View {
             let _ = LaunchTimeline.mark("root")
             if let state = DesignDataPrivacyState.launch {
                 DesignDataPrivacyScreen(state, languageCode: FirebaseEmailLinkService.languageCode)
+            } else if let state = DesignOnboardingState.launch {
+                DesignOnboardingScreen(state)
             } else {
                 content
             }
@@ -79,9 +81,15 @@ struct RootView: View {
         }
     }
 
+    /// Signed in: onboarding on first run (`OnboardingGate`), then the tabs.
     @ViewBuilder private var content: some View {
         if showsApp {
-            tabs
+            if let live, case .needed(let model) = live.onboarding.state {
+                OnboardingScreen(model: model)
+                    .transition(.opacity)
+            } else {
+                tabs
+            }
         } else {
             SignInScreen(model: signIn)
         }
@@ -185,7 +193,7 @@ struct RootView: View {
     private func syncSession() {
         #if DEBUG
         if DesignScenario.launch != nil || DesignUpdateState.launch != nil || DesignSignInState.launch != nil
-            || DesignDataPrivacyState.launch != nil { return }
+            || DesignDataPrivacyState.launch != nil || DesignOnboardingState.launch != nil { return }
         #endif
         let user = signIn.isSignedIn ? Auth.auth().currentUser : nil
         guard let user else {
@@ -201,7 +209,9 @@ struct RootView: View {
             dataPrivacy = FirebaseAccountDataService.makeModel(signIn: signIn, email: email)
         }
         guard live?.uid != user.uid else { return }
-        let session = LiveUserData(uid: user.uid)
+        let session = LiveUserData(uid: user.uid, email: user.email ?? "")
+        // Finish (or Skip) on onboarding lands on Today.
+        session.onboarding.onFinished = { selection = .today }
         live = session
         PushRegistrar.shared.signedIn(uid: user.uid)
         Task { await session.refreshNotifications() }
@@ -227,7 +237,7 @@ struct RootView: View {
     /// Design states never talk to Firebase Auth.
     private static var usesFirebaseAuth: Bool {
         #if DEBUG
-        return DesignSignInState.launch == nil && DesignDataPrivacyState.launch == nil
+        return DesignSignInState.launch == nil && DesignDataPrivacyState.launch == nil && DesignOnboardingState.launch == nil
         #else
         return true
         #endif
@@ -245,7 +255,7 @@ struct RootView: View {
     private static var readsAppConfig: Bool {
         #if DEBUG
         return DesignScenario.launch == nil && DesignUpdateState.launch == nil && DesignSignInState.launch == nil
-            && DesignDataPrivacyState.launch == nil
+            && DesignDataPrivacyState.launch == nil && DesignOnboardingState.launch == nil
         #else
         return true
         #endif
@@ -283,7 +293,9 @@ struct TabRootView: View {
         switch tab {
         case .cvs:
             if let uid = Auth.auth().currentUser?.uid {
-                CVsTabRoot(uid: uid).id(uid)
+                CVsTabRoot(uid: uid)
+                    .environment(\.bfhrTailoring, live?.tailoring)
+                    .id(uid)
             } else {
                 shell
             }

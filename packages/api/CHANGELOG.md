@@ -1,5 +1,23 @@
 # @bfhr/api
 
+## 0.4.0
+
+### Minor Changes
+
+- 1f1c8d2: Settings › Data & privacy: "Export everything" builds a ZIP of all your data (readable JSON per collection, your CV and attachment files, a README; never passwords or tokens), downloadable for 7 days. "Delete account" removes every document, file and the sign-in account, revoking mail access at Google first, after you confirm by typing a word and, if needed, signing in again with an email link. On the Mac/PC and iPhone.
+- 257f97a: Security fixes from the M6 review. Connecting Gmail or Outlook now finishes in the app that started it: the mailbox is saved only for your account, the app shows which address was connected, and Microsoft always asks for consent. New accounts are by invitation for now. Mail from Spam, or mail whose sender can't be verified, no longer changes your applications automatically; it waits in Review. Followed careers pages must use https. Daily limits protect PDF making, email connect attempts and AI help; the website sends stricter security headers.
+
+### Patch Changes
+
+- Updated dependencies [1f1c8d2]
+- Updated dependencies [bcb03f2]
+- Updated dependencies [0905d17]
+- Updated dependencies [01435f6]
+- Updated dependencies [1b35770]
+- Updated dependencies [fc77c88]
+- Updated dependencies [257f97a]
+  - @bfhr/core@0.4.0
+
 ## 0.3.0
 
 ### Minor Changes

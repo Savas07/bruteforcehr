@@ -29,13 +29,13 @@ public enum PreferenceField: Hashable, Sendable {
     case languages
 }
 
-/// First-run data access: `users/{uid}` and the first saved search on Firestore in the app, a
+/// First-run data access: `users/{uid}` and the first saved searches on Firestore in the app, a
 /// fake in tests and design mode.
 public protocol OnboardingService: AnyObject {
     /// Writes in one batch: the profile (a create when `previous` is nil, else the changed
-    /// fields) and, if given, a new saved search. The write applies locally at once (Firestore's
+    /// fields) and the new saved searches. The write applies locally at once (Firestore's
     /// offline queue keeps it); the call returns when the server has it.
-    func save(profile: Profile, previous: Profile?, savedSearch: SavedSearch?) async throws
+    func save(profile: Profile, previous: Profile?, savedSearches: [SavedSearch]) async throws
     /// `jobMatchesRefresh`: scores the newest jobs against the new profile and CV.
     func refreshMatches() async throws
 }
@@ -191,7 +191,7 @@ public final class OnboardingModel {
         guard let service else { return }
         Task { [weak self] in
             do {
-                try await service.save(profile: profile, previous: previous, savedSearch: nil)
+                try await service.save(profile: profile, previous: previous, savedSearches: [])
             } catch {
                 self?.saveFailed = true
             }
@@ -342,23 +342,43 @@ public final class OnboardingModel {
         !draft.roles.isEmpty || !draft.locations.isEmpty || draft.remoteWorldwide
     }
 
-    /// The first saved search: the first role (connectors match every word of the query, so roles
-    /// aren't joined), the picked countries and workplaces, daily, alerts from Good (65).
-    public func firstSearch(at now: Date) -> SavedSearch {
-        let role = draft.roles.first
+    /// Roles beyond this many get no search of their own (each search spends daily run budget).
+    public static let maxFirstSearches = 5
+
+    /// The roles the first searches look for: trimmed, without repeats (any case), in the
+    /// user's order, at most `maxFirstSearches`.
+    public var searchRoles: [String] {
+        var seen = Set<String>()
+        var roles: [String] = []
+        for role in draft.roles {
+            let trimmed = role.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty, seen.insert(trimmed.lowercased()).inserted else { continue }
+            roles.append(trimmed)
+        }
+        return Array(roles.prefix(Self.maxFirstSearches))
+    }
+
+    /// The first saved searches (shared with the desktop): one per role (connectors match every
+    /// word of the query, so roles aren't joined), all with the picked countries and workplaces,
+    /// daily, alerts from Good (65). One "any title" search when there are places but no role.
+    public func firstSearches(at now: Date) -> [SavedSearch] {
         var countries: [String] = []
         for code in draft.locations.compactMap(\.countryCode) where !countries.contains(code) { countries.append(code) }
         var remote = draft.workplaces
         if draft.remoteWorldwide, !remote.contains(.remote) { remote.append(.remote) }
-        return SavedSearch(
-            id: UserData.makeID(),
-            name: String((role ?? String(localized: OnboardingStrings.defaultSearchName)).prefix(120)),
-            query: role ?? "",
-            filters: SavedSearchFilters(countryCodes: countries, remoteTypes: Array(remote.prefix(3)), seniority: [], salaryMin: nil,
-                                        sources: [], postedWithinDays: nil, visaSponsorship: nil),
-            schedule: .daily, alertThreshold: 65, dailyDigest: false, enabled: true,
-            lastRunAt: nil, nextRunAt: now, createdAt: now, updatedAt: now
-        )
+        let roles = searchRoles
+        let queries: [String?] = roles.isEmpty ? [nil] : roles
+        return queries.map { role in
+            SavedSearch(
+                id: UserData.makeID(),
+                name: String((role ?? String(localized: OnboardingStrings.defaultSearchName)).prefix(120)),
+                query: role ?? "",
+                filters: SavedSearchFilters(countryCodes: countries, remoteTypes: Array(remote.prefix(3)), seniority: [], salaryMin: nil,
+                                            sources: [], postedWithinDays: nil, visaSponsorship: nil),
+                schedule: .daily, alertThreshold: 65, dailyDigest: false, enabled: true,
+                lastRunAt: nil, nextRunAt: now, createdAt: now, updatedAt: now
+            )
+        }
     }
 
     /// Start my search (`createSearch`) or Skip for now: the search and the preferences reach the
@@ -369,10 +389,10 @@ public final class OnboardingModel {
         isFinishing = true
         saveFailed = false
         let now = clock()
-        let search = createSearch && !hasSavedSearch && canSearch ? firstSearch(at: now) : nil
+        let searches = createSearch && !hasSavedSearch && canSearch ? firstSearches(at: now) : []
         if let service {
             let saved = await within(serverWait) {
-                try await service.save(profile: before, previous: before, savedSearch: search)
+                try await service.save(profile: before, previous: before, savedSearches: searches)
             }
             if saved == .failed {
                 isFinishing = false
@@ -383,7 +403,7 @@ public final class OnboardingModel {
                 _ = await within(serverWait) { try await service.refreshMatches() }
             }
         }
-        if search != nil { hasSavedSearch = true }
+        if !searches.isEmpty { hasSavedSearch = true }
         change { $0.onboardingCompletedAt = now }
         progress.setStep(nil, for: uid)
         isFinishing = false

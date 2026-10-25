@@ -20,7 +20,8 @@ const query = (text: string, filters: Partial<SavedSearchFilters> = {}, limit = 
   limit,
 });
 const API = "https://rest.arbeitsagentur.de/jobboerse/jobsuche-service";
-const SEARCH = `${API}/pc/v6/jobs?was=Softwareentwickler&size=25&page=1&angebotsart=1`;
+// The page size follows the query's limit (20 here), up to the API's 100.
+const SEARCH = `${API}/pc/v6/jobs?was=Softwareentwickler&size=20&page=1&angebotsart=1`;
 // base64("10001-1003891446-S")
 const DETAIL = `${API}/pc/v4/jobdetails/MTAwMDEtMTAwMzg5MTQ0Ni1T`;
 
@@ -56,7 +57,10 @@ describe("bundesagentur", () => {
         "https://www.yourfirm.de/job/detail/YF-48852/?utm_source=bundesagentur&utm_medium=unpaid-partner&utm_campaign=000",
       salary: null,
     });
-    expect(await bundesagentur.search(query("Softwareentwickler", {}, 1), context)).toHaveLength(1);
+    const one = SEARCH.replace("size=20", "size=1");
+    const small = testContext([{ url: one, fixture: "bundesagentur-search.json" }]);
+    expect(await bundesagentur.search(query("Softwareentwickler", {}, 1), small)).toHaveLength(1);
+    expect(small.fake.calls.map((call) => call.url)).toEqual([one]);
   });
 
   it("completes a listing from the job-details endpoint", async () => {

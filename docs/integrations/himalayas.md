@@ -9,7 +9,7 @@ Connector: `packages/jobs-connectors/src/connectors/himalayas.ts` (`himalayas`, 
 
 ## Access
 
-- Search: `GET https://himalayas.app/jobs/api/search?q={keywords}&page=1` (20 results a page; also `country`, `worldwide`, `seniority`, `employment_type`, `company`, `timezone`, `sort`). We send `q` (omitted for an empty query) and `page=1`, and return at most `limit` results.
+- Search: `GET https://himalayas.app/jobs/api/search?q={keywords}&page={n}` (20 results a page; also `country`, `worldwide`, `seniority`, `employment_type`, `company`, `timezone`, `sort`). We send `q` (omitted for an empty query) and read pages 1, 2, … until `limit` results or 5 pages (100 jobs). A failing later page keeps the pages already read; a failing first page is the search's error.
 - Other endpoints (unused): browse feed `/jobs/api?limit=20&cursor=…` (offset deprecated) and `/jobs/api/companies/{company}/jobs/{slug}` (200 open / 410 closed).
 - No key needed; an optional free key (Bearer) raises limits — not used. Schema mismatch → `invalid_response`; 429 with a long `Retry-After` → `rate_limited`.
 
@@ -19,7 +19,7 @@ Remote jobs only; `locationRestrictions` (countries; empty = worldwide) → `rem
 
 ## Pricing / limits
 
-Free. "Requests without a key share one public allowance with every other caller"; keyed: 60/min and 10,000/day. Responses served from Himalayas' cache don't count; "data is cached and refreshed every 24 hours". `callBudget` null; HTTP spacing 1 s; one request per search.
+Free. "Requests without a key share one public allowance with every other caller"; keyed: 60/min and 10,000/day. Responses served from Himalayas' cache don't count; "data is cached and refreshed every 24 hours". `callBudget` null; HTTP spacing 1 s; up to 5 requests per search (since 2026-10-25; one before).
 
 ## Attribution (hard requirement)
 

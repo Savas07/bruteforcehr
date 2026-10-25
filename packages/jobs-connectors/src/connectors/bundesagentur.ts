@@ -94,7 +94,8 @@ export const bundesagentur: SearchConnector = {
   async search(query, context): Promise<Listing[]> {
     const params = new URLSearchParams();
     if (query.query.trim() !== "") params.set("was", query.query.trim());
-    params.set("size", "25");
+    // One page; the API serves up to 100 results a page (checked 2026-10-25).
+    params.set("size", String(Math.min(Math.max(query.limit, 1), 100)));
     params.set("page", "1");
     params.set("angebotsart", "1");
     const parsed = BaSearchSchema.safeParse(

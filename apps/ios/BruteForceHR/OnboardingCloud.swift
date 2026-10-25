@@ -6,7 +6,7 @@ import Foundation
 import Observation
 
 /// First-run onboarding on Firestore (BRIEF M6): `users/{uid}` (created when missing, then
-/// changed fields like Settings' writes), the first `savedSearches` document and the
+/// changed fields like Settings' writes), the first `savedSearches` documents and the
 /// `jobMatchesRefresh` callable. A write applies locally at once; `save` returns when the server
 /// has every pending write, so `jobMatchesRefresh` scores against the new profile.
 final class FirestoreOnboardingService: OnboardingService {
@@ -20,7 +20,7 @@ final class FirestoreOnboardingService: OnboardingService {
 
     private var user: DocumentReference { db.collection("users").document(uid) }
 
-    func save(profile: Profile, previous: Profile?, savedSearch: SavedSearch?) async throws {
+    func save(profile: Profile, previous: Profile?, savedSearches: [SavedSearch]) async throws {
         let batch = db.batch()
         var writes = 0
         if let previous {
@@ -33,7 +33,7 @@ final class FirestoreOnboardingService: OnboardingService {
             batch.setData(try FirestoreUserDataStore.encode(profile, dropping: ["id"]), forDocument: user)
             writes += 1
         }
-        if let savedSearch {
+        for savedSearch in savedSearches {
             batch.setData(try FirestoreUserDataStore.encode(savedSearch, dropping: ["id"]),
                           forDocument: user.collection("savedSearches").document(savedSearch.id))
             writes += 1

@@ -54,7 +54,7 @@ The first time you sign in, BruteForceHR asks three things. Every step has **Ski
 
 1. **Add your CV.** Import the CV you have (PDF, Word, JSON Resume or your LinkedIn data export), **Start from scratch**, or skip. On Mac and Windows the import button is **Import a CV file**; on iPhone, **Upload a file** or **Import LinkedIn export**. PDF and Word files are read by Claude, an AI, and you check the result. See [CV Studio](/guide/cv-studio/).
 2. **What are you looking for?** Roles, seniority, where you'd work, a salary floor, work authorization and languages. If you added a CV, what it says is filled in already; change anything that's off. Everything is optional.
-3. **Start your first search.** BruteForceHR shows the search it will run for you every day, built from your roles and places. **Start searching** saves it and runs it right away. To finish without one, choose **Finish without a search** (on iPhone, **Skip for now**). Either way you land on Today, and new matches appear in Jobs as they're found.
+3. **Start your first search.** BruteForceHR shows what it will search for you every day: one search for each of your roles (up to five), in your places. **Start searching** saves them and runs them right away. To finish without them, choose **Finish without a search** (on iPhone, **Skip for now**). Either way you land on Today, and new matches appear in Jobs as they're found.
 
 To change your answers later, open **Settings › Job preferences**. See [Settings](/guide/settings/#job-preferences).
 

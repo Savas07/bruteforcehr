@@ -7,8 +7,13 @@ import BFHRUIFixtures
 /// Records what onboarding writes, in order; `hangs` never answers (offline), `fails` refuses.
 final class OnboardingRecorder: OnboardingService {
     enum Call: Equatable {
-        case save(created: Bool, search: SavedSearch?)
+        case save(created: Bool, searches: [SavedSearch])
         case refresh
+
+        /// The saved searches a save wrote (none for a refresh).
+        var searches: [SavedSearch] {
+            if case .save(_, let searches) = self { searches } else { [] }
+        }
     }
 
     var calls: [Call] = []
@@ -16,8 +21,8 @@ final class OnboardingRecorder: OnboardingService {
     var fails = false
     var hangs = false
 
-    func save(profile: Profile, previous: Profile?, savedSearch: SavedSearch?) async throws {
-        calls.append(.save(created: previous == nil, search: savedSearch))
+    func save(profile: Profile, previous: Profile?, savedSearches: [SavedSearch]) async throws {
+        calls.append(.save(created: previous == nil, searches: savedSearches))
         profiles.append(profile)
         if hangs { try await Task.sleep(for: .seconds(60)) }
         if fails { throw URLError(.cannotLoadFromNetwork) }
@@ -68,7 +73,7 @@ struct OnboardingModelTests {
         model.start()
         await settle()
         let profile = try #require(recorder.lastProfile)
-        #expect(recorder.calls == [.save(created: true, search: nil)])
+        #expect(recorder.calls == [.save(created: true, searches: [])])
         #expect(profile.id == "u1")
         #expect(profile.fullName == "deniz.aksoy")
         #expect(profile.email == "deniz.aksoy@example.com")
@@ -208,7 +213,7 @@ struct OnboardingModelTests {
         #expect(recorder.lastProfile.map { $0.defaultCvId == "cv-old" } ?? true)
     }
 
-    @Test("Finish: preferences, the first saved search, refresh, then onboarding done")
+    @Test("Finish: preferences, one saved search per role, refresh, then onboarding done")
     func finish() async throws {
         let (model, recorder) = model()
         var completed = false
@@ -233,19 +238,22 @@ struct OnboardingModelTests {
         await settle()
         #expect(completed && model.isCompleted)
         #expect(recorder.calls.count == 3)
-        guard case .save(false, let search?) = recorder.calls.first else {
-            Issue.record("the saved search is written first: \(recorder.calls)")
+        guard case .save(false, let searches) = recorder.calls.first, searches.count == 2 else {
+            Issue.record("the saved searches are written first: \(recorder.calls)")
             return
         }
         #expect(recorder.calls[1] == .refresh)
-        #expect(search.name == "Product Designer")
-        #expect(search.query == "Product Designer", "one role: connectors match every word of the query")
-        #expect(search.filters.countryCodes == ["NL"])
-        #expect(search.filters.remoteTypes == [.hybrid])
-        #expect(search.filters.seniority.isEmpty)
-        #expect(search.schedule == .daily && search.alertThreshold == 65 && search.enabled && !search.dailyDigest)
-        #expect(search.nextRunAt == Self.now && search.lastRunAt == nil)
-        guard case .save(false, nil) = recorder.calls[2] else {
+        #expect(searches.map(\.query) == ["Product Designer", "UX Lead"], "one search per role: connectors match every word of the query")
+        #expect(Set(searches.map(\.id)).count == 2)
+        for search in searches {
+            #expect(search.name == search.query)
+            #expect(search.filters.countryCodes == ["NL"])
+            #expect(search.filters.remoteTypes == [.hybrid])
+            #expect(search.filters.seniority.isEmpty)
+            #expect(search.schedule == .daily && search.alertThreshold == 65 && search.enabled && !search.dailyDigest)
+            #expect(search.nextRunAt == Self.now && search.lastRunAt == nil)
+        }
+        guard case .save(false, let last) = recorder.calls[2], last.isEmpty else {
             Issue.record("onboardingCompletedAt is written last")
             return
         }
@@ -262,7 +270,7 @@ struct OnboardingModelTests {
         await model.finish(createSearch: false)
         await settle()
         #expect(model.isCompleted)
-        #expect(!recorder.calls.contains { if case .save(_, _?) = $0 { true } else { false } })
+        #expect(recorder.calls.allSatisfy { $0.searches.isEmpty })
         #expect(recorder.lastProfile?.onboardingCompletedAt == Self.now)
         #expect(recorder.lastProfile?.targetRoles.isEmpty == true, "Skip on Preferences saves nothing")
     }
@@ -271,12 +279,12 @@ struct OnboardingModelTests {
     func existingSearch() async throws {
         let (model, recorder) = model()
         model.start()
-        #expect(model.firstSearch(at: Self.now).query.isEmpty)
-        #expect(model.firstSearch(at: Self.now).name == String(localized: OnboardingStrings.defaultSearchName))
+        #expect(model.firstSearches(at: Self.now).map(\.query) == [""])
+        #expect(model.firstSearches(at: Self.now).first?.name == String(localized: OnboardingStrings.defaultSearchName))
         model.hasSavedSearch = true
         await model.finish(createSearch: true)
         await settle()
-        #expect(!recorder.calls.contains { if case .save(_, _?) = $0 { true } else { false } })
+        #expect(recorder.calls.allSatisfy { $0.searches.isEmpty })
         #expect(model.isCompleted)
     }
 
@@ -288,7 +296,7 @@ struct OnboardingModelTests {
         await model.finish(createSearch: true)
         await settle()
         #expect(model.isCompleted)
-        #expect(!recorder.calls.contains { if case .save(_, _?) = $0 { true } else { false } })
+        #expect(recorder.calls.allSatisfy { $0.searches.isEmpty })
 
         let (placeOnly, placeRecorder) = self.model()
         placeOnly.start()
@@ -296,12 +304,21 @@ struct OnboardingModelTests {
         #expect(placeOnly.canSearch)
         await placeOnly.finish(createSearch: true)
         await settle()
-        guard case .save(false, let search?) = placeRecorder.calls.first(where: { if case .save(_, _?) = $0 { true } else { false } }) else {
+        guard let search = placeRecorder.calls.lazy.flatMap(\.searches).first else {
             Issue.record("a place alone creates the search")
             return
         }
         #expect(search.query.isEmpty && search.filters.remoteTypes == [.remote])
         #expect(search.name == String(localized: OnboardingStrings.defaultSearchName))
+    }
+
+    @Test("Roles become searches trimmed, without repeats in any case, at most maxFirstSearches")
+    func roleSearchesDeduplicated() {
+        let (model, _) = model()
+        model.start()
+        model.draft.roles = ["DevOps Engineer", " devops engineer ", "SRE", "A", "B", "C", "D"]
+        #expect(model.searchRoles == ["DevOps Engineer", "SRE", "A", "B", "C"])
+        #expect(model.firstSearches(at: Self.now).count == OnboardingModel.maxFirstSearches)
     }
 
     @Test("A refused write keeps the step and says so")

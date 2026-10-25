@@ -24,6 +24,7 @@ const HimalayasSearchSchema = z.object({
     }),
   ),
 });
+type HimalayasJob = z.infer<typeof HimalayasSearchSchema>["jobs"][number];
 
 const SEARCH_URL = "https://himalayas.app/jobs/api/search";
 const JOB_URL_PREFIX = "https://himalayas.app/companies/";
@@ -44,10 +45,15 @@ const SALARY_PERIODS: Readonly<Record<string, SalaryPeriod>> = {
   hourly: "hour",
 };
 
+/** Results per page (fixed by the API) and pages read per search at most. */
+const PAGE_SIZE = 20;
+const MAX_PAGES = 5;
+
 /**
  * Himalayas Remote Jobs API (keyless; docs/integrations/himalayas.md), keyword search endpoint
- * (20 results a page). Terms: Apply must use `applicationLink`, show visible Himalayas credit, never
- * pass the jobs on to other boards or JobPosting structured data.
+ * (20 results a page, read until `limit` or `MAX_PAGES`). Terms: Apply must use `applicationLink`,
+ * show visible Himalayas credit, never pass the jobs on to other boards or JobPosting structured
+ * data.
  */
 export const himalayas: SearchConnector = {
   id: "himalayas",
@@ -60,13 +66,26 @@ export const himalayas: SearchConnector = {
   callBudget: () => null,
   covers: (query) => query.filters.remoteTypes.length === 0 || query.filters.remoteTypes.includes("remote"),
   async search(query, context): Promise<Listing[]> {
-    const params = new URLSearchParams();
-    if (query.query.trim() !== "") params.set("q", query.query.trim());
-    params.set("page", "1");
-    const json = await context.http.getJson(`${SEARCH_URL}?${params.toString()}`);
-    const parsed = HimalayasSearchSchema.safeParse(json);
-    if (!parsed.success) throw new SourceError("invalid_response", "unexpected Himalayas payload");
-    return parsed.data.jobs.slice(0, query.limit).map((job) => {
+    const jobs: HimalayasJob[] = [];
+    for (let page = 1; page <= MAX_PAGES && jobs.length < query.limit; page++) {
+      const params = new URLSearchParams();
+      if (query.query.trim() !== "") params.set("q", query.query.trim());
+      params.set("page", String(page));
+      let json: unknown;
+      try {
+        json = await context.http.getJson(`${SEARCH_URL}?${params.toString()}`);
+      } catch (error) {
+        // A later page failing (e.g. rate limited) still returns the pages already read.
+        if (page === 1) throw error;
+        break;
+      }
+      const parsed = HimalayasSearchSchema.safeParse(json);
+      if (!parsed.success) throw new SourceError("invalid_response", "unexpected Himalayas payload");
+      jobs.push(...parsed.data.jobs);
+      // A short page is the last one.
+      if (parsed.data.jobs.length < PAGE_SIZE) break;
+    }
+    return jobs.slice(0, query.limit).map((job) => {
       const restrictions = job.locationRestrictions ?? [];
       const period = SALARY_PERIODS[job.salaryPeriod ?? "annual"];
       return {

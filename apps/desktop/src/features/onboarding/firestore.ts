@@ -44,14 +44,16 @@ export function firestoreOnboardingStore(uid: string): OnboardingStore {
         profileRef,
         converters.profile.toFirestoreUpdate({ defaultCvId: cvId, updatedAt: new Date() }),
       ),
-    async createFirstSearch(input) {
+    async createFirstSearches(inputs) {
       const existingSearches = await getDocs(
         query(collection(db, firestorePaths.savedSearches(uid)), limit(1)),
       );
       if (!existingSearches.empty) return false;
-      jobs.createSavedSearch(input).done.catch((error: unknown) => {
-        console.error("Couldn't create the first saved search", error);
-      });
+      for (const input of inputs) {
+        jobs.createSavedSearch(input).done.catch((error: unknown) => {
+          console.error("Couldn't create a first saved search", error);
+        });
+      }
       return true;
     },
     refreshMatches: () => jobs.refreshMatches(),

@@ -31,8 +31,11 @@ import type { UserQuota } from "./quota";
 import { SourceState, storageFeedCache } from "./source-state";
 import { JobStore } from "./store";
 
-/** Listings each source is asked for per run. */
-export const LISTINGS_PER_SOURCE = 40;
+/**
+ * Listings each source is asked for per run (raised from 40 on 2026-10-25: feeds were thin). Each
+ * new job costs one Vertex embedding; AI explanations stay limited to the best matches.
+ */
+export const LISTINGS_PER_SOURCE = 100;
 /** Pending alerts expire after this many days (M5 picks them up long before). */
 const ALERT_TTL_DAYS = 14;
 

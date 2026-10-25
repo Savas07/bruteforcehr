@@ -1,5 +1,11 @@
 # @bfhr/jobs-connectors
 
+## 0.5.0
+
+### Patch Changes
+
+- @bfhr/core@0.5.0
+
 ## 0.4.0
 
 ### Patch Changes

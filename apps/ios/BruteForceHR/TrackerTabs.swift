@@ -29,7 +29,7 @@ final class LiveUserData {
     /// cv-render in JavaScriptCore for the Apply sheet's files, loaded on the first Apply instead of
     /// at sign-in, so a launch doesn't evaluate the 0.9 MB bundle before Today shows
     /// (docs/runbooks/performance.md). The app always bundles cv-render (the build phase fails otherwise).
-    private lazy var applyRenderer: DeviceApplyRenderer? = (try? CVRenderEngine.bundled()).map(DeviceApplyRenderer.init)
+    private lazy var applyRenderer: DeviceApplyRenderer? = (try? CVRenderEngine.bundled()).map { DeviceApplyRenderer(engine: $0) }
     private var details: [String: JobDetailModel] = [:]
 
     init(uid: String) {

@@ -1,7 +1,8 @@
 import { firestorePaths } from "@bfhr/api";
 import type { SavedSearch } from "@bfhr/core";
-import { type DocumentSnapshot, getFirestore, Timestamp } from "firebase-admin/firestore";
+import { type DocumentSnapshot, type Firestore, getFirestore, Timestamp } from "firebase-admin/firestore";
 import { logger } from "firebase-functions/v2";
+import { onDocumentCreated } from "firebase-functions/v2/firestore";
 import { onSchedule } from "firebase-functions/v2/scheduler";
 import { ANTHROPIC_API_KEY } from "../ai/common";
 import { adminConverters } from "../converters";
@@ -66,40 +67,82 @@ export const savedSearchesRunner = onSchedule(
     let ran = 0;
     for (const { uid, search } of due) {
       if (Date.now() - started > TICK_BUDGET_MS) break;
-      const runAt = new Date();
-      const quota = new UserQuota(db, uid, runAt);
-      try {
-        if (await quota.admit("scheduledRun")) {
-          await runSearch(
-            {
-              db,
-              uid,
-              query: search.query,
-              filters: search.filters,
-              mode: "saved",
-              savedSearch: search,
-              embedder,
-              aiAvailable: true,
-              limit: 50,
-              now: runAt,
-              version: __BFHR_VERSION__,
-            },
-            quota,
-          );
-          ran++;
-          continue;
-        }
-        logger.info("saved_search_over_budget");
-      } catch (error) {
-        logger.error("saved_search_run_failed", { name: error instanceof Error ? error.name : typeof error });
-      }
-      // Not run (budget) or failed: try again at the next slot instead of every tick.
-      await db
-        .doc(firestorePaths.savedSearch(uid, search.id))
-        .update(
-          adminConverters.savedSearch.toFirestoreUpdate({ nextRunAt: nextRunAt(search.schedule, runAt) }),
-        );
+      if (await runDue(db, uid, search, embedder)) ran++;
     }
     logger.info("saved_searches_tick", { due: due.length, ran, ms: Date.now() - started });
+  },
+);
+
+/**
+ * Runs one saved search against the user's daily budget; resolves whether it ran. Refused or
+ * failed runs move on to their next slot instead of retrying every tick.
+ */
+async function runDue(
+  db: Firestore,
+  uid: string,
+  search: SavedSearch,
+  embedder: VertexEmbedder,
+): Promise<boolean> {
+  const runAt = new Date();
+  const quota = new UserQuota(db, uid, runAt);
+  try {
+    if (await quota.admit("scheduledRun")) {
+      await runSearch(
+        {
+          db,
+          uid,
+          query: search.query,
+          filters: search.filters,
+          mode: "saved",
+          savedSearch: search,
+          embedder,
+          aiAvailable: true,
+          limit: 50,
+          now: runAt,
+          version: __BFHR_VERSION__,
+        },
+        quota,
+      );
+      return true;
+    }
+    logger.info("saved_search_over_budget");
+  } catch (error) {
+    logger.error("saved_search_run_failed", { name: error instanceof Error ? error.name : typeof error });
+  }
+  await db
+    .doc(firestorePaths.savedSearch(uid, search.id))
+    .update(adminConverters.savedSearch.toFirestoreUpdate({ nextRunAt: nextRunAt(search.schedule, runAt) }));
+  return false;
+}
+
+/**
+ * A new saved search runs at once instead of waiting up to 30 minutes for the next tick, so the
+ * first search from onboarding (or the Jobs screen) fills the feed while the user looks at it.
+ * Skips a search that already ran (the client's "Run now" got there first) or is turned off.
+ */
+export const savedSearchCreatedRun = onDocumentCreated(
+  {
+    document: "users/{uid}/savedSearches/{searchId}",
+    timeoutSeconds: 300,
+    memory: "512MiB",
+    secrets: [ANTHROPIC_API_KEY, ...JOB_SOURCE_SECRETS],
+    retry: false,
+  },
+  async (event) => {
+    const snapshot = event.data;
+    if (snapshot === undefined) return;
+    const db = getFirestore();
+    const current = await snapshot.ref.get();
+    if (!current.exists) return;
+    let search: SavedSearch;
+    try {
+      search = adminConverters.savedSearch.fromSnapshot(current);
+    } catch {
+      logger.warn("saved_search_unparsable");
+      return;
+    }
+    if (!search.enabled || search.lastRunAt !== null) return;
+    const ran = await runDue(db, event.params.uid, search, new VertexEmbedder(projectId()));
+    logger.info("saved_search_created_run", { ran });
   },
 );

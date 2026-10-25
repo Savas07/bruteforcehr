@@ -1,5 +1,18 @@
 # @bfhr/desktop
 
+## 0.5.0
+
+### Minor Changes
+
+- e113637: More jobs in your feed. First-run setup now starts one saved search for each role you're looking for (up to five), not only the first, and each search runs as soon as it's saved instead of up to 30 minutes later. Every search also brings back more jobs per source: up to 100 instead of 40, with more pages from Himalayas and Bundesagentur für Arbeit. On Mac/PC and iPhone.
+
+### Patch Changes
+
+- @bfhr/api@0.5.0
+  - @bfhr/core@0.5.0
+  - @bfhr/cv-render@0.5.0
+  - @bfhr/ui-tokens@0.5.0
+
 ## 0.4.0
 
 ### Minor Changes

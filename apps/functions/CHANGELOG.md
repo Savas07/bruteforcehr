@@ -1,5 +1,15 @@
 # @bfhr/functions
 
+## 0.5.0
+
+### Patch Changes
+
+- @bfhr/ai@0.5.0
+  - @bfhr/api@0.5.0
+  - @bfhr/core@0.5.0
+  - @bfhr/cv-render@0.5.0
+  - @bfhr/jobs-connectors@0.5.0
+
 ## 0.4.0
 
 ### Minor Changes

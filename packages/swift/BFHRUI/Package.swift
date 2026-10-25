@@ -58,6 +58,7 @@ let package = Package(
                 .process("Settings/Answers/Answers.xcstrings"),
                 .process("MailConnect/MailConnect.xcstrings"),
                 .process("JobImport/JobImport.xcstrings"),
+                .process("Onboarding/Onboarding.xcstrings"),
             ],
             swiftSettings: swiftSettings
         ),

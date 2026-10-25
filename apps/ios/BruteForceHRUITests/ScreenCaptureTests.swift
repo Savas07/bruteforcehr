@@ -84,6 +84,10 @@ final class ScreenCaptureTests: XCTestCase {
             try captureDataPrivacy(states: states, directory: directory, suffix: suffix)
             return
         }
+        if screens == ["onboarding"] {
+            try captureOnboarding(states: states, directory: directory, suffix: suffix)
+            return
+        }
         if screens == ["share-sheet"] {
             for state in states {
                 let app = XCUIApplication()
@@ -198,6 +202,30 @@ final class ScreenCaptureTests: XCTestCase {
                 Thread.sleep(forTimeInterval: 0.8)
                 let lower = directory.appendingPathComponent("data-privacy-\(state)-\(suffix)-lower.png")
                 try XCUIScreen.main.screenshot().pngRepresentation.write(to: lower)
+            }
+            app.terminate()
+        }
+    }
+
+    /// First-run onboarding (`-BFHROnboarding <state>`), saved as
+    /// `onboarding-<state>-<theme>[-ax][-lang].png`, plus `-lower1`… pages below the fold of the
+    /// long Preferences step (and of every step at AX sizes).
+    @MainActor
+    private func captureOnboarding(states: [String], directory: URL, suffix: String) throws {
+        let ax = suffix.contains("-ax")
+        for state in states {
+            let app = XCUIApplication()
+            app.launchArguments += languageArguments + ["-BFHROnboarding", state]
+            app.launch()
+            XCTAssertTrue(app.descendants(matching: .any)["onboarding"].waitForExistence(timeout: 20), "onboarding \(state)")
+            Thread.sleep(forTimeInterval: 1.2)
+            try XCUIScreen.main.screenshot().pngRepresentation.write(to: directory.appendingPathComponent("onboarding-\(state)-\(suffix).png"))
+            let pages = state.hasPrefix("preferences") ? (ax ? 8 : 3) : (ax ? 2 : 0)
+            for page in stride(from: 1, through: pages, by: 1) {
+                let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.75))
+                let end = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.25))
+                start.press(forDuration: 0.05, thenDragTo: end, withVelocity: .default, thenHoldForDuration: 0.6)
+                try XCUIScreen.main.screenshot().pngRepresentation.write(to: directory.appendingPathComponent("onboarding-\(state)-\(suffix)-lower\(page).png"))
             }
             app.terminate()
         }

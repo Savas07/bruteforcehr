@@ -79,6 +79,16 @@ public struct SettingsScreen<DataPrivacy: View>: View {
                     }
                 }
                 Section {
+                    NavigationLink(value: SettingsRoute.jobPreferences) {
+                        SettingsRow(OnboardingStrings.jobPreferences, glyph: "briefcase", tile: BFHRColor.Accent.solid) {
+                            loaded {
+                                if let role = model.jobPreferences?.roles.first { Text(verbatim: role).lineLimit(1) }
+                            }
+                        }
+                    }
+                    .accessibilityIdentifier("settings.jobPreferences")
+                }
+                Section {
                     NavigationLink(value: SettingsRoute.mailAccounts) {
                         SettingsRow(SettingsStrings.mailAccounts, glyph: "envelope", tile: BFHRTone.info.solid) {
                             loaded { mailValue }
@@ -204,6 +214,8 @@ public struct SettingsScreen<DataPrivacy: View>: View {
             }
             .navigationDestination(for: SettingsRoute.self) { route in
                 switch route {
+                case .jobPreferences: JobPreferencesPage(model: model)
+                case .jobPreference(let section): JobPreferenceSectionPage(model: model, section: section)
                 case .mailAccounts: MailAccountsPage(model: model)
                 case .mailAccount(let id): MailAccountPage(model: model, accountId: id)
                 case .jobSources: JobSourcesPage(model: model)

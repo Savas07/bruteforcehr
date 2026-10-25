@@ -9,6 +9,7 @@
 #   update gate (--screen update-gate):  update-gate-<available|required>-<theme>[-ax].png
 #   sign-in (--screen sign-in):  sign-in-<state>-<theme>[-ax].png
 #   data & privacy (--screen data-privacy):  data-privacy-<state>-<theme>[-ax].png
+#   onboarding (--screen onboarding):  onboarding-<state>-<theme>[-ax].png
 #   title-only shell (default): <tab>-<theme>[-ax].png
 #
 # Usage: apps/ios/scripts/capture.sh [--screen NAME|all]... [--state NAME]... [--size default|ax]...
@@ -21,13 +22,18 @@
 #               update-gate (on its own): the update banner and blocking screen over Today.
 #               sign-in (on its own): the signed-out screens (`-BFHRSignIn`).
 #               data-privacy (on its own): Settings › Data & privacy and Delete account (`-BFHRDataPrivacy`).
+#               onboarding (on its own): the first-run steps (`-BFHROnboarding`). Settings › Job
+#               preferences: --screen settings --arg -BFHRSettingsPage --arg job-preferences[-SECTION].
 #   --state     populated, empty, loading, error, offline (repeatable; default: all five);
 #               for update-gate: available, required (default: both);
 #               for sign-in: email, invalid, offline, check, resent, finishing, confirm, expired,
 #               unusable, retry, deleted (default: all);
 #               for data-privacy: idle, preparing, downloading, ready, saved, downloadError, tooSoon,
 #               dailyLimit, tooLarge, exportError, offline, deleteEmpty, deleteTyped, reauthNeeded,
-#               linkSent, linkExpired, reauthDone, deleting, deleteError, deleteOffline (default: all)
+#               linkSent, linkExpired, reauthDone, deleting, deleteError, deleteOffline (default: all);
+#               for onboarding: cv, cv-reading, cv-found, cv-error, preferences, preferences-cv,
+#               preferences-filled, finish, finishing, finish-existing, finish-failed,
+#               finish-nothing (default: all)
 #   --size      default (Large) or ax (largest accessibility size, files end in -ax)
 #               (repeatable; default: default)
 #   --ax        same as --size ax
@@ -76,7 +82,7 @@ while (($# > 0)); do
     --skip-build) build=false ;;
     --arg) extra_args+=("$2"); shift ;;
     --tag) tag="$2"; shift ;;
-    -h | --help) sed -n '2,43p' "$0"; exit 0 ;;
+    -h | --help) sed -n '2,53p' "$0"; exit 0 ;;
     *) echo "capture.sh: unknown argument $1" >&2; exit 64 ;;
   esac
   shift
@@ -96,10 +102,12 @@ sign_in_states=(email invalid offline check resent finishing confirm expired unu
 data_privacy_states=(idle preparing downloading ready saved downloadError tooSoon dailyLimit tooLarge exportError offline
   deleteEmpty deleteTyped reauthNeeded linkSent linkExpired reauthDone deleting deleteError deleteOffline)
 share_states=(reading ready ai existing saved logged blocked offline signed-out manual)
+onboarding_states=(cv cv-reading cv-found cv-error preferences preferences-cv preferences-filled finish finishing finish-existing finish-failed finish-nothing)
 update_gate=false
 sign_in=false
 data_privacy=false
 share_sheet=false
+onboarding=false
 if contains update-gate ${screens[@]+"${screens[@]}"}; then
   ((${#screens[@]} == 1)) || { echo "capture.sh: capture update-gate on its own" >&2; exit 64; }
   update_gate=true
@@ -120,6 +128,11 @@ if contains share-sheet ${screens[@]+"${screens[@]}"}; then
   share_sheet=true
   ((${#states[@]} > 0)) || states=("${share_states[@]}")
 fi
+if contains onboarding ${screens[@]+"${screens[@]}"}; then
+  ((${#screens[@]} == 1)) || { echo "capture.sh: capture onboarding on its own" >&2; exit 64; }
+  onboarding=true
+  ((${#states[@]} > 0)) || states=("${onboarding_states[@]}")
+fi
 ((${#states[@]} > 0)) || states=("${all_states[@]}")
 
 for theme in "${themes[@]}"; do
@@ -131,10 +144,11 @@ done
 contains "$lang" en tr de || { echo "capture.sh: lang must be en, tr or de" >&2; exit 64; }
 if [[ "$lang" == en ]]; then lang_suffix=""; else lang_suffix="-$lang"; fi
 for screen in ${screens[@]+"${screens[@]}"}; do
-  contains "$screen" "${all_screens[@]}" update-gate sign-in data-privacy share-sheet || { echo "capture.sh: unknown screen $screen (${all_screens[*]} update-gate sign-in data-privacy share-sheet)" >&2; exit 64; }
+  contains "$screen" "${all_screens[@]}" update-gate sign-in data-privacy share-sheet onboarding || { echo "capture.sh: unknown screen $screen (${all_screens[*]} update-gate sign-in data-privacy share-sheet onboarding)" >&2; exit 64; }
 done
 if $update_gate; then valid_states=("${update_states[@]}"); elif $sign_in; then valid_states=("${sign_in_states[@]}");
 elif $data_privacy; then valid_states=("${data_privacy_states[@]}"); elif $share_sheet; then valid_states=("${share_states[@]}");
+elif $onboarding; then valid_states=("${onboarding_states[@]}");
 else valid_states=("${all_states[@]}"); fi
 for state in "${states[@]}"; do
   contains "$state" "${valid_states[@]}" || { echo "capture.sh: unknown state $state (${valid_states[*]})" >&2; exit 64; }

@@ -13,6 +13,9 @@ public enum NotificationPermission: Hashable, Sendable {
 
 /// The Settings sheet's pages (IA.md "Deep links": `bruteforcehr://settings/{page}`).
 public enum SettingsRoute: Hashable, Sendable {
+    /// Job preferences (Onboarding/JobPreferencesPage.swift) and one of its section editors.
+    case jobPreferences
+    case jobPreference(JobPreferenceSection)
     case mailAccounts
     case mailAccount(String)
     case jobSources
@@ -29,6 +32,11 @@ public enum SettingsRoute: Hashable, Sendable {
         guard url.scheme?.lowercased() == "bruteforcehr", url.host()?.lowercased() == "settings" else { return nil }
         let parts = url.pathComponents.filter { $0 != "/" }
         switch parts.first {
+        case "job-preferences":
+            if let section = parts.dropFirst().first.flatMap(JobPreferenceSection.init(rawValue:)) {
+                return [.jobPreferences, .jobPreference(section)]
+            }
+            return [.jobPreferences]
         case "mail-accounts":
             if let id = parts.dropFirst().first, id != "add" { return [.mailAccounts, .mailAccount(id)] }
             return [.mailAccounts]

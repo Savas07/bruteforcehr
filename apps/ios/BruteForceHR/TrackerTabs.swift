@@ -21,6 +21,8 @@ final class LiveUserData {
     let jobsNavigation = JobsNavigation()
     private(set) var store: FirestoreUserDataStore
     let uid: String
+    /// First run (`onboardingCompletedAt == nil`): CV, Preferences, the first search.
+    let onboarding: OnboardingGate
     private let scheduler = NotificationReminderScheduler()
     private let jobSearch = CloudJobSearch()
     /// `jobImportUrl` behind "Add a job from a link".
@@ -31,8 +33,9 @@ final class LiveUserData {
     let tailoring: CVTailoringModel
     private var details: [String: JobDetailModel] = [:]
 
-    init(uid: String) {
+    init(uid: String, email: String) {
         self.uid = uid
+        onboarding = OnboardingGate(uid: uid, email: email)
         today = TodayModel(now: .now)
         today.usesSystemClock = true
         today.mailAvailable = true
@@ -137,6 +140,10 @@ final class LiveUserData {
 
     private func connect() {
         today.writer = store
+        store.onProfileSnapshot = { [onboarding] exists, fromCache, profile in
+            onboarding.profileSnapshot(exists: exists, fromCache: fromCache, profile: profile)
+        }
+        store.onSavedSearches = { [onboarding] count in onboarding.savedSearchCount(count) }
         tracker.writer = store
         jobs.writer = store
         mail.writer = store

@@ -21,6 +21,10 @@ packages/swift/BFHRUI/
     SignIn/                        email-link sign-in (M1): SignInLink (URL → action link), SignInModel + SignInStore,
                                    SignInScreen (all steps), AccountMenu (`\.bfhrAccount`), SignIn.xcstrings,
                                    SignInDesign.swift (#if DEBUG, `-BFHRSignIn`)
+    Onboarding/                    first run (M6): OnboardingModel (CV → Preferences → Finish) on OnboardingService,
+                                   JobPreferencesDraft (Profile ↔ editor mapping), JobPreferencesForm (the section
+                                   editors), OnboardingScreen, JobPreferencesPage (Settings › Job preferences),
+                                   Onboarding.xcstrings, OnboardingDesign.swift (#if DEBUG, `-BFHROnboarding`)
       <Screen>Model.swift          the view model (+ <Screen>Items.swift value types)
       <Screen>Screen.swift         the screen's view (M0 foundation: a plain data rendering, to be replaced)
       <Screen>Design.swift         DesignScenario.<screen>Model(): fixture selection for design mode
@@ -132,6 +136,15 @@ Actions: `confirm(_:draft:) throws -> ToastItem` · `markNotJobMail(_:) throws -
 - Settings (`Settings/`): the avatar menu's Settings item opens `bruteforcehr://settings`, which `RootView` presents as a sheet (`SettingsScreen(model:path:dataPrivacy:)`, pages by `SettingsRoute`). Notifications show iOS's permission (`UNUserNotificationCenter`) with Open iOS Settings, or Allow (`PushRegistrar.requestPermission`, in context); the first successful connect asks too. Appearance is per device (`@AppStorage("bfhr.appearance")`, `.preferredColorScheme` at the root); Language opens the app's page in iOS Settings (per-app language).
 - Live check: `BFHR_DERIVED_DATA=… apps/ios/scripts/with-ios-lock.sh apps/ios/scripts/mail-live-check.sh` creates a throwaway user, seeds its mail with the Admin SDK (`apps/functions/scripts/live-ios-mail.ts seed`), runs `MailEndToEndTests.testMailOnLiveData`, prints what the app and the trigger wrote (`report`) and deletes everything with `deleteUserData`. The user is created through the Admin API (sign-up is invite-only). Last run 2026-10-24 on iPhone 17 Pro: passed; Acme `applied → interviewing` with `mail_received` + `interview_scheduled` and the interview, mail `confirmed`; Globex's automatic move reverted by a user event, mail `corrected`; `settings.notifications.offers` off; user deleted and verified gone (docs/design/critiques/ios/mail-review-live/r2.md).
 
+#### First run and Job preferences (M6)
+
+- Onboarding (onboarding-signin.md "Decision — iOS"): `RootView` shows `OnboardingScreen` instead of the tabs while `OnboardingGate` (apps/ios `OnboardingCloud.swift`) says so: `users/{uid}` was seen with `onboardingCompletedAt == nil`, or the server (never an empty cache) says it doesn't exist. `FirestoreUserDataStore` listens to the profile with metadata changes and reports it through `onProfileSnapshot`, so a returning user never sees onboarding flash.
+- Nothing else creates `users/{uid}`: `OnboardingModel.start()` writes the full profile (name = the email's local part until the user or the CV gives one, `DEFAULT_PROFILE_SETTINGS`, `aiEnabled`, device timezone and language). Step 1 reads the CV with `CVImportFlow` (`cvImport`) in the background and saves it through CV Studio's model (`createImported`), then sets `defaultCvId`, `skills` and the name, and pre-fills the empty preferences ("From CV"); Start from scratch makes a blank CV. Step 2 saves on Continue. Finish writes the first saved search (D40: first role as the query, the picked countries and workplaces, daily, `alertThreshold` 65, `nextRunAt` = now; none when one exists, and without a role or a place the step offers Back to preferences and Go to Today), waits for the server (`waitForPendingWrites`, up to 15 s), calls `jobMatchesRefresh`, then sets `onboardingCompletedAt`; offline it moves on and the writes sync later. Skip for now works on every step; the step is kept per account (`onboarding.step.<uid>`), so leaving the app resumes there.
+- The mapping is shared with the desktop (D41): one seniority; "Remote worldwide" = no location + `remote`; work authorization per picked country (EU picks → one `EU` answer): Yes keeps a stored non-sponsorship status else `work_permit`, No = `needs_sponsorship`, Not sure = no entry; salary floor in TRY defaults to per month, other currencies per year; languages use CEFR levels.
+- iPhone-specific presentation (one relocation toggle, the four currencies, Skip finishes without a search, no review step during onboarding): D47.
+- Settings › Job preferences (`SettingsRoute.jobPreferences`, `bruteforcehr://settings/job-preferences[/<section>]`): summary rows that open the same section editors; every change saves at once through `SettingsModel.saveJobPreferences` (changed top-level profile fields).
+- Live check: `BFHR_DERIVED_DATA=… apps/ios/scripts/with-ios-lock.sh apps/ios/scripts/onboarding-live-check.sh` creates a user with the Admin API and no profile, runs `OnboardingEndToEndTests.testOnboardingOnLiveData` (JSON Resume through `cvImport`, preferences, Start searching, Today, Seniority in Settings, relaunch), checks `users/{uid}`, its CV and saved search, and deletes everything. The other live tests sign in fresh accounts too: they Skip for now through onboarding (`skipOnboardingIfShown`).
+
 ## Component catalogue
 
 All components use `BFHRDesignTokens` only (no raw colors), scale with Dynamic Type (`Font.bfhr`, `@ScaledMetric`), carry VoiceOver labels / actions, and follow Reduce Motion through `BFHRMotion`. Source: `Sources/BFHRUI/Components/`.
@@ -205,16 +218,17 @@ You own `packages/swift/BFHRUI/Sources/BFHRUI/<Screen>/**`, `Tests/BFHRUITests/<
 
 Debug builds only. Any of these arguments turns design mode on; every tab then shows its core screen (Job detail is pushed over the Jobs root, with the real back button):
 
-| Argument      | Values                                                                               | Default     |
-| ------------- | ------------------------------------------------------------------------------------ | ----------- |
-| `-BFHRDesign` | `populated`, `empty`                                                                 | `populated` |
-| `-BFHRState`  | `loading`, `error`, `offline`                                                        | none        |
-| `-BFHRScreen` | `today`, `jobs`, `job-detail`, `saved-searches`, `apply`, `cv-editor`, `tracker-board`, `mail-review`, `insights`, `settings` (sheet over Today), `mail-connect` (sheet over Mail) | Today |
-| `-BFHRSettingsPage` | `root`, `mail-accounts`, `mail-account`, `job-sources`, `companies`, `notifications`, `notifications-off`, `ai`, `data-privacy`, `answers`, `answer-editor` (with `-BFHRScreen settings`) | `root` |
-| `-BFHRMailPane` | `review`, `email`, `updates`, `add-interview`, `all`, `scanning` (with `-BFHRScreen mail-review`, populated) | none |
-| `-BFHRConnectStep` | `providers`, `google`, `google-not-configured`, `microsoft-not-configured`, `google-scope-error`, `imap`, `imap-filled`, `imap-error`, `imap-host-error`, `imap-testing`, `outlook-address`, `scanning`, `done`, `done-empty`, `failed`, `reconnect` (with `-BFHRScreen mail-connect`) | `providers` |
-| `-BFHRUpdate` | `available` (update banner), `required` (blocking update screen)                     | none        |
-| `-BFHRSignIn` | `email`, `invalid`, `offline`, `check`, `resent`, `finishing`, `confirm`, `expired`, `unusable`, `retry` (signed-out screen in that state, no Firebase) | none |
+| Argument            | Values                                                                                                                                                                                                                                                                                         | Default     |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
+| `-BFHRDesign`       | `populated`, `empty`                                                                                                                                                                                                                                                                           | `populated` |
+| `-BFHRState`        | `loading`, `error`, `offline`                                                                                                                                                                                                                                                                  | none        |
+| `-BFHRScreen`       | `today`, `jobs`, `job-detail`, `saved-searches`, `apply`, `cv-editor`, `tracker-board`, `mail-review`, `insights`, `settings` (sheet over Today), `mail-connect` (sheet over Mail)                                                                                                             | Today       |
+| `-BFHRSettingsPage` | `root`, `job-preferences`, `job-preferences-<roles\|seniority\|location\|salary\|authorization\|languages>`, `mail-accounts`, `mail-account`, `job-sources`, `companies`, `notifications`, `notifications-off`, `ai`, `data-privacy`, `answers`, `answer-editor` (with `-BFHRScreen settings`) | `root`      |
+| `-BFHRMailPane`     | `review`, `email`, `updates`, `add-interview`, `all`, `scanning` (with `-BFHRScreen mail-review`, populated)                                                                                                                                                                                   | none        |
+| `-BFHRConnectStep`  | `providers`, `google`, `google-not-configured`, `microsoft-not-configured`, `google-scope-error`, `imap`, `imap-filled`, `imap-error`, `imap-host-error`, `imap-testing`, `outlook-address`, `scanning`, `done`, `done-empty`, `failed`, `reconnect` (with `-BFHRScreen mail-connect`)         | `providers` |
+| `-BFHRUpdate`       | `available` (update banner), `required` (blocking update screen)                                                                                                                                                                                                                               | none        |
+| `-BFHRSignIn`       | `email`, `invalid`, `offline`, `check`, `resent`, `finishing`, `confirm`, `expired`, `unusable`, `retry` (signed-out screen in that state, no Firebase)                                                                                                                                        | none        |
+| `-BFHROnboarding`   | `cv`, `cv-reading`, `cv-found`, `cv-error`, `preferences`, `preferences-cv`, `preferences-filled`, `finish`, `finishing`, `finish-existing`, `finish-failed`, `finish-nothing` (first-run flow in that state, no Firebase)                                                                     | none        |
 
 `-BFHRUpdate` puts the update gate in that state without reading Firestore (design mode never reads `appConfig/ios`); combine it with `-BFHRScreen today` to see the banner over Today. The capture state names map to `populated`, `empty` (`-BFHRDesign`) and `loading`, `error`, `offline` (`-BFHRState` on the populated data). In Xcode, add the arguments under Scheme › Run › Arguments; previews use `DesignScreenView(.today, scenario: DesignScenario(state: "offline")!)` with `.environment(ToastCenter())`.
 
@@ -246,6 +260,21 @@ apps/ios/scripts/capture.sh --screen today --size default --size ax
 
 Critiques follow BRIEF §5 and the kickoff protocol: read `skill://design-critique` (plus `accessibility-review`, `ux-copy`, `design-system` where relevant), critique the captures of all states, themes, devices and sizes, and save the output verbatim to `docs/design/critiques/ios/<screen>/r<N>.md` (`<screen>` = `today`, `job-detail`, `cv-editor`, `tracker-board`, `mail-review`; `r1`, `r2`, …) with a **Resolution** section listing what changed. Screenshots stay in `artifacts/` (gitignored); never commit Mobbin images.
 
+### Audits on CI
+
+The `*AccessibilityAuditTests` suites are the ones that count, and they run **locally**, one suite at a time (`xcodebuild test -only-testing:BruteForceHRUITests/<Suite>` with the shared DerivedData, inside the iOS lock). `ios.yml` › "UI audits" runs the same suites on GitHub's macOS runners, but **only on demand** (Actions › iOS › Run workflow). On 2026-10-25, every push it ran on showed it can't gate PRs:
+
+- **Slow:** a shard of 4–5 suites took 1.5–2 h on the runner VMs, and the account has only 5 macOS runners.
+- **Timeouts:** audits timed out ("Audit failed to complete in time").
+- **Date-dependent layouts:** design mode takes "now" from the system clock, so date strings, and the layouts they drive, differ between machines and days. Three issues seen only on CI (on the same iOS 26.5 simulator):
+  - Mail review: a relative date was flagged as possibly clipped.
+  - Settings › Connect Gmail: "Since <date>" sat half under the bottom bar.
+  - Insights at the largest size: "Show all" was flagged as partly unscaled.
+
+The fix is a fixed design clock. Until then, the CI job is a manual cross-check. Failing tests are retried once.
+
+When it fails, the `.xcresult` is uploaded; `xcrun xcresulttool export attachments --path <bundle> --output-path <dir> --only-failures` gives each issue's description, an app screenshot and an element screenshot. Live end-to-end suites (`*EndToEndTests`) need a test account, so they stay local (`apps/ios/scripts/*-live-check.sh`).
+
 ## Release verification
 
 ```sh
@@ -253,8 +282,8 @@ cd apps/ios && xcodebuild build -project BruteForceHR.xcodeproj -scheme BruteFor
   -derivedDataPath build/DerivedData -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO -quiet
 app=build/DerivedData/Build/Products/Release-iphonesimulator/BruteForceHR.app
 find "$app" -iname '*fixture*' -o -name 'populated.json' -o -name 'empty.json'             # nothing
-strings "$app/BruteForceHR" | grep -E -- '-BFHRDesign|BFHRScreen|BFHRUpdate|BFHRSignIn|BFHRCVPane|BFHRTrackerPane|BFHRImportFile|BFHRApplyStep|BFHRJobsSearch|BFHRJobsImport|BFHRJobsPane|BFHRJobId|BFHRSettingsPage|BFHRConnectStep|BFHRMailPane|FixtureStore|BFHRFixtures|Lighthouse Learning|deniz\.aksoy'  # nothing
-nm "$app/BruteForceHR" | grep -iE 'FixtureStore|DesignScenario|DesignScreenView|DesignTabRoot|DesignUpdateState|DesignSignInState|DesignSignInService|CVDesignImporter|CVDesignSuggestions|CVDesignPane|TrackerDesignPane|DesignJobsTab|DesignJobLinkImporter|DesignApplyStep|DesignSettingsSheet|DesignSettingsPage|DesignMailConnect|DesignMailService|DesignMailPane|DesignApplyServices'     # nothing
+strings "$app/BruteForceHR" | grep -E -- '-BFHRDesign|BFHRScreen|BFHRUpdate|BFHRSignIn|BFHROnboarding|BFHRCVPane|BFHRTrackerPane|BFHRImportFile|BFHRApplyStep|BFHRJobsSearch|BFHRJobsImport|BFHRJobsPane|BFHRJobId|BFHRSettingsPage|BFHRConnectStep|BFHRMailPane|FixtureStore|BFHRFixtures|Lighthouse Learning|deniz\.aksoy'  # nothing
+nm "$app/BruteForceHR" | grep -iE 'FixtureStore|DesignScenario|DesignScreenView|DesignTabRoot|DesignUpdateState|DesignSignInState|DesignSignInService|DesignOnboarding|CVDesignImporter|CVDesignSuggestions|CVDesignPane|TrackerDesignPane|DesignJobsTab|DesignJobLinkImporter|DesignApplyStep|DesignSettingsSheet|DesignSettingsPage|DesignMailConnect|DesignMailService|DesignMailPane|DesignApplyServices'     # nothing
 ls "$app/cv-render.iife.js"                                                                    # the renderer is bundled
 ext="$app/PlugIns/BruteForceHRShare.appex"                                                    # the Share Extension is embedded
 strings "$ext/BruteForceHRShare" | grep -E -- 'BFHRShareSheet|job-ramp'                          # nothing

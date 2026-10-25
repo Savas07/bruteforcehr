@@ -6,12 +6,20 @@ import SwiftUI
 
 // Design mode for Settings (Debug builds only): `-BFHRScreen settings` opens the Settings sheet
 // over Today on the scenario's fixtures; `-BFHRSettingsPage <page>` pushes a page
-// (mail-accounts, mail-account, job-sources, companies, notifications, notifications-off, ai,
-// data-privacy, answers, answer-editor). Release builds compile none of this.
+// (job-preferences, job-preferences-<section>, mail-accounts, mail-account, job-sources, companies,
+// notifications, notifications-off, ai, data-privacy, answers, answer-editor). Release builds
+// compile none of this.
 
 /// The page `-BFHRSettingsPage` asks for.
 public enum DesignSettingsPage: String, CaseIterable, Sendable {
     case root
+    case jobPreferences = "job-preferences"
+    case jobPreferencesRoles = "job-preferences-roles"
+    case jobPreferencesSeniority = "job-preferences-seniority"
+    case jobPreferencesLocation = "job-preferences-location"
+    case jobPreferencesSalary = "job-preferences-salary"
+    case jobPreferencesAuthorization = "job-preferences-authorization"
+    case jobPreferencesLanguages = "job-preferences-languages"
     case mailAccounts = "mail-accounts"
     case mailAccount = "mail-account"
     case jobSources = "job-sources"
@@ -35,6 +43,13 @@ public enum DesignSettingsPage: String, CaseIterable, Sendable {
     public var path: [SettingsRoute] {
         switch self {
         case .root: []
+        case .jobPreferences: [.jobPreferences]
+        case .jobPreferencesRoles: [.jobPreferences, .jobPreference(.roles)]
+        case .jobPreferencesSeniority: [.jobPreferences, .jobPreference(.seniority)]
+        case .jobPreferencesLocation: [.jobPreferences, .jobPreference(.location)]
+        case .jobPreferencesSalary: [.jobPreferences, .jobPreference(.salary)]
+        case .jobPreferencesAuthorization: [.jobPreferences, .jobPreference(.authorization)]
+        case .jobPreferencesLanguages: [.jobPreferences, .jobPreference(.languages)]
         case .mailAccounts: [.mailAccounts]
         case .mailAccount: [.mailAccounts, .mailAccount("acc-icloud")]
         case .jobSources: [.jobSources]

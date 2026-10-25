@@ -72,8 +72,11 @@ xcodebuild_args=(-project "$ios_dir/BruteForceHR.xcodeproj" -scheme BruteForceHR
   ${settings[@]+"${settings[@]}"})
 if $build; then xcodebuild build-for-testing "${xcodebuild_args[@]}"; fi
 # Performance tests report their measurements; the budgets are checked below, not by XCTest.
+# One retry per failed test: on CI VMs a launch now and then stalls (17 s outliers), which fails a
+# baseline test and leaves the launch budget uncalibrated (2026-10-25, run 40165729109).
 status=0
-xcodebuild test-without-building "${xcodebuild_args[@]}" -resultBundlePath "$result" "${tests[@]}" || status=$?
+xcodebuild test-without-building "${xcodebuild_args[@]}" -resultBundlePath "$result" \
+  -retry-tests-on-failure -test-iterations 2 "${tests[@]}" || status=$?
 
 xcrun xcresulttool get test-results metrics --path "$result" --compact >"$out_dir/ios-metrics.json"
 node "$ios_dir/scripts/perf-report.ts" "$out_dir/ios-metrics.json" "$out_dir/ios.json" "$budget_scale"
